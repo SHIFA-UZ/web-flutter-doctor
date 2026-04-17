@@ -17,6 +17,46 @@ Shifa Doctor App - A Flutter web/mobile application for doctors to manage appoin
 - AI-powered consultation notes
 - Analytics dashboard with fl_chart
 
+## Git Workflow Rules
+
+**NEVER commit or push directly to the `main` branch.** When the user is on `main` and wants to commit/push changes:
+
+1. Create a new branch named after the feature or change (e.g., `feature/add-patient-search`, `fix/appointment-timezone-bug`).
+2. Switch to that branch.
+3. Stage and commit the changes on the new branch.
+4. Push the new branch to the remote.
+5. Suggest creating a PR from the new branch into `main`.
+
+If the user is already on a non-main branch, commit and push normally on that branch.
+
+### Commit Message Convention
+
+Follow **Conventional Commits** format:
+
+```
+<type>(<scope>): <short description>
+
+<optional body — explain WHY, not WHAT>
+```
+
+**Types:**
+- `feat` — new feature or functionality
+- `fix` — bug fix
+- `refactor` — code restructuring without behavior change
+- `style` — formatting, whitespace, missing semicolons (no logic change)
+- `docs` — documentation changes
+- `test` — adding or updating tests
+- `chore` — build config, dependencies, CI/CD, tooling
+- `perf` — performance improvement
+
+**Scope** (optional): the feature area affected (e.g., `auth`, `appointments`, `chat`, `calendar`, `patients`, `admin`, `video`, `profile`).
+
+**Rules:**
+- Subject line: imperative mood, lowercase, no period, max 72 characters (e.g., `feat(chat): add voice message playback`)
+- Body: explain the motivation/context when the change is non-trivial
+- One logical change per commit — don't mix unrelated changes
+- Never use generic messages like "update", "fix", "changes", or "WIP"
+
 ## Development Commands
 
 ### Running the App
