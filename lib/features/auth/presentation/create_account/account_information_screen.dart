@@ -1,17 +1,129 @@
+// Drop-in: submits registration and goes straight to Login (no schedule)
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/services/timezone_service.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
+import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/auth/presentation/create_account/registration_email_verification.dart';
+import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
+import 'package:shifa_doc_app_v1/features/profile/presentation/searchable_profession_dropdown.dart';
+import 'package:shifa_doc_app_v1/features/profile/presentation/searchable_timezone_dropdown.dart';
+import 'package:shifa_doc_app_v1/state/auth/registration_state.dart';
 
-class AccountInformationScreen extends StatefulWidget {
+class AccountInformationScreen extends ConsumerStatefulWidget {
   const AccountInformationScreen({super.key});
-
   @override
-  State<AccountInformationScreen> createState() =>
+  ConsumerState<AccountInformationScreen> createState() =>
       _AccountInformationScreenState();
 }
 
-class _AccountInformationScreenState extends State<AccountInformationScreen> {
-  String? selectedGender;
-  String? selectedProfession;
+class _AccountInformationScreenState
+    extends ConsumerState<AccountInformationScreen> {
+  DateTime? _dob;
+  String? _selectedGender;
+  String? _selectedProfession;
+  String? _selectedTimeZone; // IANA e.g. Europe/Berlin; detected on init, editable
+  final _addressCtrl = TextEditingController();
+  final _clinicCtrl = TextEditingController();
+  bool _isSubmitting = false;
+  bool _timeZoneDetecting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _detectTimeZone();
+  }
+
+  Future<void> _detectTimeZone() async {
+    final detected = await getDetectedTimeZone();
+    if (mounted) {
+      setState(() {
+        _timeZoneDetecting = false;
+        if (detected != null && detected.isNotEmpty) {
+          _selectedTimeZone = detected;
+        } else {
+          _selectedTimeZone = 'UTC';
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _addressCtrl.dispose();
+    _clinicCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dob ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked != null) setState(() => _dob = picked);
+  }
+
+  Future<void> _submit() async {
+    // Store extras (they’ll be patched after first login)
+    ref
+        .read(registrationProvider.notifier)
+        .setAccountInfo(
+          dob: _dob,
+          gender: _selectedGender,
+          address: _addressCtrl.text.trim(),
+          clinic: _clinicCtrl.text.trim(),
+          profession: _selectedProfession,
+          timeZone: _selectedTimeZone?.trim().isNotEmpty == true
+              ? _selectedTimeZone!.trim()
+              : 'UTC',
+        );
+
+    setState(() => _isSubmitting = true);
+    try {
+      final reg = ref.read(registrationProvider);
+      final email = reg.email;
+      if (email == null || email.trim().isEmpty || !email.contains('@')) {
+        throw Exception(AppLocalizations.of(context)!.enterEmail);
+      }
+
+      final otpVerified = await runRegistrationEmailVerification(
+        context: context,
+        ref: ref,
+        email: email.trim(),
+      );
+      if (!otpVerified) return;
+
+      final token = await ref.read(registrationProvider.notifier).submitRegistration();
+      if (token != null && token.isNotEmpty) {
+        await ref.read(authProvider.notifier).setSessionFromToken(token);
+      } else {
+        // Fallback (older backend): login with the same credentials used for registration.
+        await ref.read(authProvider.notifier).login(
+              (reg.email?.isNotEmpty == true) ? reg.email!.trim() : reg.phone!.trim(),
+              reg.password!.trim(),
+            );
+      }
+
+      await ref
+          .read(registrationProvider.notifier)
+          .applyOptionalProfileExtrasAfterLogin();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.shell, (r) => false);
+    } catch (e) {
+      _snack(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _snack(String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +136,12 @@ class _AccountInformationScreenState extends State<AccountInformationScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Center(child: LanguageMiniToggle()),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -31,103 +149,109 @@ class _AccountInformationScreenState extends State<AccountInformationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'Account Information',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context)!.accountInformation,
+                style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
               TextField(
+                readOnly: true,
                 decoration: InputDecoration(
-                  hintText: 'Date of Birth',
+                  hintText: _dob == null
+                      ? AppLocalizations.of(context)!.dateOfBirth
+                      : '${_dob!.year}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}',
                   suffixIcon: Icon(
                     Icons.calendar_today,
                     color: Colors.grey.shade600,
                   ),
                 ),
-                readOnly: true,
-                onTap: () async {
-                  await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now(),
-                  );
-                },
+                onTap: _pickDob,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                decoration: const InputDecoration(hintText: 'Gender'),
-                value: selectedGender,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.gender,
+                ),
+                value: _selectedGender,
                 items: ['Male', 'Female', 'Other']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(
+                            e == 'Male'
+                                ? AppLocalizations.of(context)!.male
+                                : e == 'Female'
+                                    ? AppLocalizations.of(context)!.female
+                                    : AppLocalizations.of(context)!.other,
+                          ),
+                        ))
                     .toList(),
-                onChanged: (value) => setState(() => selectedGender = value),
+                onChanged: (v) => setState(() => _selectedGender = v),
               ),
               const SizedBox(height: 16),
-              TextField(decoration: const InputDecoration(hintText: 'Address')),
-              const SizedBox(height: 16),
-              TextField(decoration: const InputDecoration(hintText: 'Clinic')),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(hintText: 'Profession'),
-                value: selectedProfession,
-                items:
-                    [
-                          'General Practitioner',
-                          'Cardiologist',
-                          'Dermatologist',
-                          'Pediatrician',
-                        ]
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                onChanged: (value) =>
-                    setState(() => selectedProfession = value),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF17C3B2),
-                    side: const BorderSide(color: Color(0xFF17C3B2), width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Continue with Google',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+              TextField(
+                controller: _addressCtrl,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.address,
                 ),
               ),
               const SizedBox(height: 16),
+              TextField(
+                controller: _clinicCtrl,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.clinic,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SearchableProfessionDropdown(
+                value: _selectedProfession,
+                hintText: AppLocalizations.of(context)!.profession,
+                labelText: AppLocalizations.of(context)!.profession,
+                onChanged: (v) => setState(() => _selectedProfession = v),
+              ),
+              const SizedBox(height: 16),
+              _timeZoneDetecting
+                  ? InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Practice timezone',
+                        border: OutlineInputBorder(),
+                        suffixIcon: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Padding(
+                            padding: EdgeInsets.all(12.0),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+                      child: Text(AppLocalizations.of(context)!.detecting),
+                    )
+                  : SearchableTimezoneDropdown(
+                      value: _selectedTimeZone,
+                      hintText: AppLocalizations.of(context)!.practiceTimezonePlaceholder,
+                      labelText: 'Practice timezone',
+                      onChanged: (v) => setState(() => _selectedTimeZone = v),
+                    ),
+              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _dot(),
-                  const SizedBox(width: 8),
-                  _dot(active: true),
-                  const SizedBox(width: 8),
-                  _dot(),
+                children: const [
+                  _Dot(),
+                  SizedBox(width: 8),
+                  _Dot(active: true),
+                  SizedBox(width: 8),
+                  _Dot(),
                 ],
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, AppRoutes.setupSchedule),
-                  child: const Text(
-                    'Next',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
+              ShifaPrimaryButton(
+                label: AppLocalizations.of(context)!.createAccount,
+                onPressed: _isSubmitting ? null : _submit,
+                isLoading: _isSubmitting,
+                width: ButtonWidth.fill,
               ),
             ],
           ),
@@ -135,13 +259,20 @@ class _AccountInformationScreenState extends State<AccountInformationScreen> {
       ),
     );
   }
+}
 
-  Widget _dot({bool active = false}) => Container(
-    width: 8,
-    height: 8,
-    decoration: BoxDecoration(
-      color: active ? const Color(0xFF17C3B2) : Colors.grey.shade300,
-      shape: BoxShape.circle,
-    ),
-  );
+class _Dot extends StatelessWidget {
+  const _Dot({this.active = false});
+  final bool active;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: active ? AppColors.primaryTeal : Colors.grey.shade300,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
 }

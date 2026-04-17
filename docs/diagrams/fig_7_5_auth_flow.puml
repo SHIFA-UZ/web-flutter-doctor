@@ -1,0 +1,14 @@
+@startuml
+actor User
+participant App
+participant Backend
+participant Database
+
+User -> App : Enter phone / credentials
+App -> Backend : POST /api/auth/login
+Backend -> Database : Lookup user, verify credentials
+Database --> Backend : User + roles
+Backend -> App : 200 OK + JWT
+App -> Backend : Subsequent requests with Authorization: Bearer <JWT>
+@enduml
+

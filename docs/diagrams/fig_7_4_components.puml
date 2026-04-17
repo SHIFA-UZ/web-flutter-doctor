@@ -1,0 +1,37 @@
+@startuml
+package "Web Layer" {
+  [AuthController]
+  [AppointmentController]
+  [BookingController]
+  [MessageController]
+  [PatientDocumentController]
+}
+
+package "Service Layer" {
+  [AuthService]
+  [AppointmentService]
+  [BookingService]
+  [MessageService]
+  [PatientDocumentService]
+}
+
+package "Repository Layer" {
+  [UserRepository]
+  [AppointmentRepository]
+  [MessageRepository]
+  [PatientDocumentRepository]
+}
+
+[AuthController] --> [AuthService]
+[AppointmentController] --> [AppointmentService]
+[BookingController] --> [BookingService]
+[MessageController] --> [MessageService]
+[PatientDocumentController] --> [PatientDocumentService]
+
+[AuthService] --> [UserRepository]
+[AppointmentService] --> [AppointmentRepository]
+[BookingService] --> [AppointmentRepository]
+[MessageService] --> [MessageRepository]
+[PatientDocumentService] --> [PatientDocumentRepository]
+@enduml
+

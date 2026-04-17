@@ -1,0 +1,85 @@
+\contentsline {chapter}{Deutsche Zusammenfassung}{2}{chapter*.1}%
+\contentsline {chapter}{English Abstract}{3}{chapter*.2}%
+\contentsline {chapter}{Acknowledgements}{4}{chapter*.3}%
+\contentsline {chapter}{\numberline {1}Background, Problem Statement and Objectives}{11}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Background and Rationale}{11}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Problem Statement and Research Questions}{11}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Objectives of the Thesis}{12}{section.1.3}%
+\contentsline {chapter}{\numberline {2}Historical Background, Key Challenges and Health Outcomes}{13}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Historical Background and Current Organization}{13}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Key Challenges in Access, Quality, and Financing}{14}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Health Outcomes and Risk Profile}{15}{section.2.3}%
+\contentsline {chapter}{\numberline {3}Introduction, Health Context and Digital Health as a Systemic Enabler}{17}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Introduction: Digital Health as a Systemic Enabler}{17}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Post-2016 Reforms: Infrastructure, Connectivity, and Policy}{17}{section.3.2}%
+\contentsline {section}{\numberline {3.3}National and Local Health Information Systems}{18}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Digital Literacy and Adoption Rates (WHO Regional Office for Europe, 2023)}{18}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Qualitative Analysis of Doctors’ Perspectives on Telemedicine in Uzbekistan}{19}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Introduction}{19}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Methodology}{19}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Complementary incorporation of patient perspectives}{20}{subsection.4.2.1}%
+\contentsline {section}{\numberline {4.3}Results}{22}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Discussion}{25}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Conclusion}{26}{section.4.5}%
+\contentsline {chapter}{\numberline {5}Requirements Derived from the Qualitative Analysis}{27}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Introduction}{27}{section.5.1}%
+\contentsline {section}{\numberline {5.2}From Practitioner Needs to System Requirements}{27}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Functional Requirements by Domain}{27}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Non-Functional Requirements and Quality Attributes}{29}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Traceability from Qualitative Themes to Platform Capabilities}{29}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Phased Evolution and Future Extensions}{29}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Requirement-to-Realization Mapping}{30}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Scope Statement}{31}{section.5.8}%
+\contentsline {chapter}{\numberline {6}User Interface and User Experience (Patient and Doctor Apps)}{32}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Overview}{32}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Wireframing to UI Solution}{32}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Doctor App UI Screens}{35}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Patient App UI Screens}{38}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Cross-Cutting UX Considerations}{42}{section.6.5}%
+\contentsline {chapter}{\numberline {7}System Architecture Overview}{43}{chapter.7}%
+\contentsline {section}{\numberline {7.1}System context}{43}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}Architectural Alignment with Research Questions}{43}{subsection.7.1.1}%
+\contentsline {section}{\numberline {7.2}System context diagram (C4 Level 1)}{45}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Container architecture (C4 Level 2)}{46}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Deployment viewpoint}{46}{section.7.4}%
+\contentsline {chapter}{\numberline {8}Backend Implementation}{47}{chapter.8}%
+\contentsline {section}{\numberline {8.1}System Architecture Overview}{47}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Role in the overall solution}{49}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Architecture and layering}{49}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Technology baseline}{51}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Data model and persistence strategy}{51}{section.8.5}%
+\contentsline {section}{\numberline {8.6}API surface and core domains}{52}{section.8.6}%
+\contentsline {subsection}{\numberline {8.6.1}Illustrative API Endpoint Example}{53}{subsection.8.6.1}%
+\contentsline {section}{\numberline {8.7}Backend Component Architecture}{54}{section.8.7}%
+\contentsline {section}{\numberline {8.8}Security and reliability}{54}{section.8.8}%
+\contentsline {section}{\numberline {8.9}Security architecture}{54}{section.8.9}%
+\contentsline {section}{\numberline {8.10}Quality attributes evaluation}{56}{section.8.10}%
+\contentsline {section}{\numberline {8.11}Runtime interaction flows}{57}{section.8.11}%
+\contentsline {section}{\numberline {8.12}Backend contribution to the research logic}{60}{section.8.12}%
+\contentsline {chapter}{\numberline {9}Doctor Application Implementation}{61}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Role and target users}{61}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Technical foundation}{61}{section.9.2}%
+\contentsline {section}{\numberline {9.3}Architecture rationale and backend interaction}{61}{section.9.3}%
+\contentsline {section}{\numberline {9.4}Functional structure}{62}{section.9.4}%
+\contentsline {section}{\numberline {9.5}Integration with backend services}{63}{section.9.5}%
+\contentsline {section}{\numberline {9.6}Quality and operational considerations}{63}{section.9.6}%
+\contentsline {chapter}{\numberline {10}Patient Application Implementation}{64}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Role and user journey}{64}{section.10.1}%
+\contentsline {section}{\numberline {10.2}Technical foundation}{64}{section.10.2}%
+\contentsline {section}{\numberline {10.3}Architecture rationale and backend interaction}{64}{section.10.3}%
+\contentsline {section}{\numberline {10.4}Core modules}{65}{section.10.4}%
+\contentsline {section}{\numberline {10.5}Experience design and workflow continuity}{65}{section.10.5}%
+\contentsline {section}{\numberline {10.6}Deployment and environment handling}{66}{section.10.6}%
+\contentsline {chapter}{\numberline {11}Security, Quality Attributes, and Operational Considerations}{67}{chapter.11}%
+\contentsline {section}{\numberline {11.1}Security analysis}{67}{section.11.1}%
+\contentsline {section}{\numberline {11.2}Quality attributes}{67}{section.11.2}%
+\contentsline {section}{\numberline {11.3}Architectural decisions}{68}{section.11.3}%
+\contentsline {section}{\numberline {11.4}Testing and operations}{69}{section.11.4}%
+\contentsline {section}{\numberline {11.5}Implementation status summary}{69}{section.11.5}%
+\contentsline {chapter}{\numberline {12}Limitations and Evidence Gaps}{71}{chapter.12}%
+\contentsline {chapter}{\numberline {13}Future-Oriented Improvements}{72}{chapter.13}%
+\contentsline {chapter}{\numberline {14}Conclusion}{73}{chapter.14}%
+\contentsline {chapter}{\numberline {15}Literaturverzeichnis}{74}{chapter.15}%
+\contentsline {chapter}{\numberline {16}Anhang}{76}{chapter.16}%
+\contentsline {chapter}{Eidesstattliche Erklärung}{77}{chapter*.64}%
+\providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

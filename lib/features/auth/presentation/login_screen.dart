@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/constants/assets.dart';
-import 'package:shifa_doc_app_v1/features/auth/presentation/create_account/create_account_screen.dart';
-import 'package:dio/dio.dart';
-import 'package:shifa_doc_app_v1/features/auth/data/auth_repository_http.dart';
-import 'package:shifa_doc_app_v1/app/router.dart';
+import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/auth/presentation/verify_key_screen.dart';
+import 'package:shifa_doc_app_v1/features/auth/presentation/email_login/email_input_screen.dart';
+import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 
-class LoginScreen extends StatefulWidget {
+// Use AuthController instead of talking to ApiClient directly
+import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
+// Optional: to force a fresh profile fetch after login if your controller
+// doesn't already invalidate it.
+import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+
+// ✅ NEW: to auto-apply optional extras after login
+import 'package:shifa_doc_app_v1/state/auth/registration_state.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
-
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _userCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
@@ -28,44 +38,60 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<bool> _signIn(String user, String pass) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    return user.trim().isNotEmpty && pass.trim().length >= 6;
-  }
-
   Future<void> _onSignIn() async {
     final form = _formKey.currentState!;
     if (!form.validate()) return;
-
     setState(() => _isLoading = true);
     try {
-      await AuthRepositoryHttp().login(
-        _userCtrl.text.trim(),
-        _passCtrl.text.trim(),
-      );
+      // 1) Login (authProvider should set JWT on ApiClient)
+      await ref
+          .read(authProvider.notifier)
+          .login(_userCtrl.text.trim(), _passCtrl.text.trim());
+
+      // 2) Ensure fresh profile load
+      ref.invalidate(profileAllProvider);
+
+      // 3) ✅ Auto-apply optional profile extras gathered during registration
+      try {
+        await ref
+            .read(registrationProvider.notifier)
+            .applyOptionalProfileExtrasAfterLogin();
+        // Extras may have updated profile -> invalidate again to refresh data in shell
+        ref.invalidate(profileAllProvider);
+      } catch (_) {
+        // Non-blocking: ignore if nothing to apply or if patch failed
+      }
+
       if (!mounted) return;
+      // 4) Navigate to main shell
       Navigator.pushReplacementNamed(context, AppRoutes.shell);
+      return;
     } catch (e) {
-      final msg = (e is DioError)
-          ? (e.response?.data?['error'] ?? e.message)
-          : e.toString();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Sign in failed: $msg')));
+      _showSnack(
+        e is Exception ? e.toString().replaceFirst('Exception: ', '') : '$e',
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   @override
   Widget build(BuildContext context) {
-    const brand = Color(0xFF17C3B2);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Center(child: LanguageMiniToggle()),
+          ),
+        ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -89,12 +115,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Sign in',
+                  Text(
+                    AppLocalizations.of(context)!.signIn,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
+
+                  // -------- Form --------
                   Form(
                     key: _formKey,
                     child: Column(
@@ -102,11 +130,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           controller: _userCtrl,
                           textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            hintText: 'Email or Phone number',
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(context)!.emailOrPhone,
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Enter email or phone'
+                              ? AppLocalizations.of(context)!.enterEmailOrPhone
                               : null,
                         ),
                         const SizedBox(height: 12),
@@ -115,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: _obscure,
                           onFieldSubmitted: (_) => _onSignIn(),
                           decoration: InputDecoration(
-                            hintText: 'Password',
+                            hintText: AppLocalizations.of(context)!.password,
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscure
@@ -126,87 +154,69 @@ class _LoginScreenState extends State<LoginScreen> {
                                   setState(() => _obscure = !_obscure),
                             ),
                           ),
-                          validator: (v) => (v == null || v.trim().length < 6)
-                              ? 'Minimum 6 characters'
+                          validator: (v) => ((v ?? '').trim().length < 6)
+                              ? AppLocalizations.of(context)!.minimum6Characters
                               : null,
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Forgot password – TBD'),
-                          ),
-                        );
-                      },
-                      child: const Text('Forgot password?'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _onSignIn,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: brand,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Text(
-                              'Sign in',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
                       onPressed: _isLoading
                           ? null
                           : () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const EmailInputScreen(forForgotPassword: true),
+                                ),
+                              ),
+                      child: Text(AppLocalizations.of(context)!.forgotPassword),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // -------- Sign in --------
+                  ShifaPrimaryButton(
+                    label: AppLocalizations.of(context)!.signIn,
+                    onPressed: _isLoading ? null : _onSignIn,
+                    isLoading: _isLoading,
+                    width: ButtonWidth.fill,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // -------- Sign in with Email OTP --------
+                  ShifaSecondaryButton(
+                    label: AppLocalizations.of(context)!.signInWithEmail,
+                    icon: Icons.email_outlined,
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const CreateAccountScreen(),
+                                builder: (_) => const EmailInputScreen(forForgotPassword: false),
                               ),
                             ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: brand),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        foregroundColor: brand,
-                      ),
-                      child: const Text(
-                        'Create account',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
+                    width: ButtonWidth.fill,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // -------- Create account --------
+                  ShifaSecondaryButton(
+                    label: AppLocalizations.of(context)!.createAccount,
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const VerifyKeyScreen(),
+                            ),
+                          ),
+                    width: ButtonWidth.fill,
                   ),
                 ],
               ),

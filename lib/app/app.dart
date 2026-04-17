@@ -1,40 +1,329 @@
+import 'dart:convert';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/app/theme.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
-import 'package:shifa_doc_app_v1/features/auth/data/auth_repository_http.dart';
-import 'package:shifa_doc_app_v1/core/services/session.dart';
+import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/services/push_notification_service.dart';
+import 'package:shifa_doc_app_v1/core/util/admin_host.dart' show isAdminHost;
+import 'package:shifa_doc_app_v1/core/util/set_web_title.dart';
+import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/core/widgets/activity_tracker.dart';
+export 'package:shifa_doc_app_v1/core/util/admin_host.dart';
+import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
+import 'package:shifa_doc_app_v1/state/chat/chat_providers.dart';
+import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
+import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
+import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
+import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
+import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 
-class ShifaDoctorApp extends StatefulWidget {
+// Global navigator key for navigation from anywhere
+final navigatorKey = GlobalKey<NavigatorState>();
+
+/// Fetches appointment by id and returns the appointment date in doctor's timezone.
+Future<DateTime?> _fetchAppointmentDay(WidgetRef ref, int appointmentId) async {
+  try {
+    final client = ref.read(apiClientProvider);
+    final tz = ref.read(profileAllProvider).valueOrNull?.profile['timeZone'] as String?;
+    if (tz == null || tz.isEmpty) return null;
+    final resp = await client.get('/api/appointments/$appointmentId');
+    if (resp.statusCode != 200) return null;
+    final map = json.decode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+    final startAtStr = map['startAt'] as String?;
+    if (startAtStr == null) return null;
+    final utc = DateTime.parse(startAtStr);
+    final inTz = utcToTimezone(utc, tz);
+    return DateTime(inTz.year, inTz.month, inTz.day);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Resolves appointment day, shows loading, then navigates to Calendar on that day (no "today" flash).
+Future<void> _openCalendarToAppointment(WidgetRef ref, int id) async {
+  final context = navigatorKey.currentContext;
+  if (context == null) return;
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(
+      child: Card(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Opening appointment...'),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  bool didNavigate = false;
+  try {
+    final day = await _fetchAppointmentDay(ref, id);
+    if (day != null) {
+      ref.read(calendarGoToAppointmentDayProvider.notifier).state = day;
+      ref.read(calendarGoToAppointmentIdProvider.notifier).state = id;
+      invalidateAppointmentRelatedProviders(ref);
+      ref.read(shellProvider.notifier).setTab(2);
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        AppRoutes.shell,
+        (route) => false,
+      );
+      didNavigate = true;
+    }
+  } finally {
+    if (!didNavigate && context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+}
+
+class ShifaDoctorApp extends ConsumerStatefulWidget {
   const ShifaDoctorApp({super.key});
 
   @override
-  State<ShifaDoctorApp> createState() => _ShifaDoctorAppState();
+  ConsumerState<ShifaDoctorApp> createState() => _ShifaDoctorAppState();
 }
 
-class _ShifaDoctorAppState extends State<ShifaDoctorApp> {
-  String _initialRoute = AppRoutes.splash;
-
-  @override
-  void initState() {
-    super.initState();
-    _bootstrap();
-  }
-
-  Future<void> _bootstrap() async {
-    final restored = await AuthRepositoryHttp().tryRestore();
-    setState(() {
-      _initialRoute = restored ? AppRoutes.shell : AppRoutes.splash;
-    });
-  }
+class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
+  bool _fcmTokenSetup = false;
+  bool _pushTapSetup = false;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Shifa Doctor',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
-      onGenerateRoute: AppRouter.onGenerateRoute,
-      initialRoute: _initialRoute,
+    final languageState = ref.watch(languageProvider);
+    final authState = ref.watch(authProvider);
+    
+    // Listen to auth state changes and navigate to login on logout
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (previous?.isAuthenticated == true && !next.isAuthenticated) {
+        // User was logged in but now logged out - navigate to correct login
+        final route = isAdminHost ? AppRoutes.adminLogin : AppRoutes.login;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          navigatorKey.currentState?.pushNamedAndRemoveUntil(
+            route,
+            (route) => false,
+          );
+        });
+      }
+    });
+
+    // Set up FCM token upload when authenticated (and Firebase is available).
+    // Admin app should NOT call doctor-only endpoints.
+    if (!isAdminHost && authState.isAuthenticated && !_fcmTokenSetup && Firebase.apps.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _fcmTokenSetup = true;
+        final pushService = PushNotificationService();
+        final api = ref.read(doctorApiClientProvider);
+        pushService.setOnFcmTokenReady((token) {
+          if (token.isEmpty) return;
+          api
+              .put('/api/doctors/me/fcm-token', <String, dynamic>{'fcmToken': token})
+              .then((_) {
+            if (kDebugMode) {
+              debugPrint('Doctor FCM token uploaded to backend');
+            }
+          }).catchError((e) {
+            if (kDebugMode) {
+              debugPrint('Doctor FCM token upload failed: $e');
+            }
+          });
+        });
+        final existing = pushService.getFcmToken();
+        if (existing != null && existing.isNotEmpty) {
+          api
+              .put('/api/doctors/me/fcm-token', <String, dynamic>{'fcmToken': existing})
+              .then((_) {
+            if (kDebugMode) {
+              debugPrint('Doctor FCM token uploaded to backend (existing)');
+            }
+          }).catchError((e) {
+            if (kDebugMode) {
+              debugPrint('Doctor FCM token upload failed (existing): $e');
+            }
+          });
+        }
+      });
+    } else if (!authState.isAuthenticated) {
+      _fcmTokenSetup = false;
+    }
+
+    // Set up push notification tap handler once.
+    if (!_pushTapSetup && Firebase.apps.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _pushTapSetup = true;
+        final pushService = PushNotificationService();
+        pushService.setOnNotificationTap((data) {
+          debugPrint('═══ NOTIFICATION TAP HANDLER (FCM) ═══');
+          debugPrint('Notification tapped - payload: $data');
+
+          // Extract notification details
+          final idRaw = data['notificationId'] ?? data['id'];
+          final type = data['type'] as String?;
+          final appointmentId = data['appointmentId'];
+          final patientId = data['patientId'];
+          final documentId = data['documentId'];
+          final documentTitle = data['documentTitle'] as String?;
+          final documentAccessRequestId = data['documentAccessRequestId'];
+          final taskId = data['taskId'];
+
+          debugPrint('Type: $type');
+          debugPrint('AppointmentId: $appointmentId');
+          debugPrint('PatientId: $patientId');
+          debugPrint('DocumentId: $documentId');
+          debugPrint('DocumentTitle: $documentTitle');
+          debugPrint('DocumentAccessRequestId: $documentAccessRequestId');
+          debugPrint('TaskId: $taskId');
+
+          // Best-effort mark-as-read
+          if (idRaw != null) {
+            final id = int.tryParse(idRaw.toString());
+            if (id != null && id > 0) {
+              debugPrint('Marking notification $id as read...');
+              Future.microtask(() async {
+                try {
+                  final api = ref.read(apiClientProvider);
+                  await api.put('/api/notifications/$id/read', <String, dynamic>{});
+                  debugPrint('✓ Notification $id marked as read');
+                } catch (e) {
+                  debugPrint('✗ Failed to mark notification as read: $e');
+                }
+              });
+            }
+          }
+
+          // AI Scribe ready: refresh notes for that appointment so open screen shows new draft; then navigate to appointment
+          if (type == 'AI_SCRIBE_READY' && appointmentId != null) {
+            final aid = appointmentId.toString();
+            ref.invalidate(draftNotesForAppointmentProvider(aid));
+            ref.invalidate(consultationNotesForAppointmentProvider(aid));
+          }
+
+          // Navigate based on notification type and available IDs
+          debugPrint('Determining navigation (priority: document access > appointment > task > patient)...');
+
+          // Priority 1: Document access (REQUEST / APPROVED / REJECTED) → Patients screen with patient + document (highlight or open PDF)
+          final isDocAccess = type == 'DOCUMENT_ACCESS_REQUEST' ||
+              type == 'DOCUMENT_ACCESS_APPROVED' ||
+              type == 'DOCUMENT_ACCESS_REJECTED';
+          if (isDocAccess && patientId != null && documentId != null) {
+            debugPrint('→ Document access: patient $patientId, document $documentId, openViewer=${type == 'DOCUMENT_ACCESS_APPROVED'}');
+            ref.read(shellProvider.notifier).setTab(3);
+            navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              AppRoutes.shell,
+              (route) => false,
+            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final shellContext = navigatorKey.currentContext;
+              if (shellContext != null) {
+                ShellScope.pushNamed(
+                  shellContext,
+                  AppRoutes.patientsWithSelection,
+                  arguments: <String, dynamic>{
+                    'patientId': patientId.toString(),
+                    'documentId': documentId.toString(),
+                    'documentTitle': documentTitle ?? 'Document',
+                    'openDocumentViewer': type == 'DOCUMENT_ACCESS_APPROVED',
+                  },
+                );
+              }
+            });
+            return;
+          }
+
+          // Priority 2: Appointment (fetch day first, then navigate so calendar opens on correct date)
+          if (appointmentId != null) {
+            final id = int.tryParse(appointmentId.toString());
+            if (id != null && id > 0) {
+              _openCalendarToAppointment(ref, id);
+              return;
+            }
+          }
+
+          // Priority 3: Task completed → Remote care task details
+          if (type == 'TASK_COMPLETED' && taskId != null) {
+            final tid = int.tryParse(taskId.toString());
+            if (tid != null && tid > 0) {
+              debugPrint('→ Opening task $tid');
+              ref.read(notificationPendingTaskIdProvider.notifier).state = tid;
+              ref.read(shellProvider.notifier).setTab(4);
+              navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                AppRoutes.shell,
+                (route) => false,
+              );
+              return;
+            }
+          }
+
+          // Priority 4: Patient only (navigate to patients screen)
+          if (patientId != null) {
+            debugPrint('→ Has patientId: $patientId');
+            navigatorKey.currentState?.pushNamed(
+              AppRoutes.patientsWithSelection,
+              arguments: patientId.toString(),
+            );
+            return;
+          }
+
+          // Default: open notifications screen
+          debugPrint('→ No navigation data (documentId, appointmentId, patientId all null)');
+          debugPrint('→ Navigating to Notifications screen (default)');
+          navigatorKey.currentState?.pushNamed(AppRoutes.notifications);
+        });
+        // Deliver any pending notification that opened the app.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          pushService.processPendingInitialMessage();
+        });
+      });
+    }
+
+    // Browser tab title: show unread chat count like a messenger (e.g. "(1) Shifa Doctor").
+    // Admin app should not poll chat unread count (doctor-only endpoint).
+    if (!isAdminHost) {
+      ref.listen<AsyncValue<int>>(unreadCountProvider, (prev, next) {
+        final count = next.valueOrNull ?? 0;
+        setWebTitle(count > 0 ? '($count) Shifa Doctor' : 'Shifa Doctor');
+      });
+    }
+    
+    return ActivityTracker(
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        title: 'Shifa Doctor',
+        debugShowCheckedModeBanner: false,
+        theme: buildTheme(),
+        locale: languageState.locale,
+        supportedLocales: const [
+          Locale('en'), // English
+          Locale('uz'), // Uzbek
+          Locale('ru'), // Russian
+        ],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        // Admin URL: start at admin login. Doctor URL: start at splash -> login
+        initialRoute: isAdminHost ? AppRoutes.adminLogin : AppRoutes.splash,
+      ),
     );
   }
 }

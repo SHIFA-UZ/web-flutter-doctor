@@ -1,0 +1,16 @@
+
+Category                                   Participants
+--------                                   ------------
+Data security/privacy concerns                       15
+Need training and support                            15
+Demand for national integrated platform              15
+Legal uncertainty                                    15
+Use of consumer apps (Telegram/WhatsApp)             15
+Documentation burden/manual work                     15
+Telemedicine as supplement not replacement           15
+Infrastructure limits (internet/devices)             15
+Boundary strain (after-hours messages)               10
+No formal telemedicine platform                       5
+
+
+

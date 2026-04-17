@@ -1,0 +1,29 @@
+@startuml
+entity User
+entity Role
+entity UserRole
+entity DoctorProfile
+entity PatientProfile
+entity Appointment
+entity PatientDocument
+entity RemoteCareTask
+entity Conversation
+entity Message
+
+User ||--o{ UserRole : has
+UserRole }o--|| Role : "assigns"
+
+User ||--|| DoctorProfile : "has doctor profile"
+User ||--|| PatientProfile : "has patient profile"
+
+DoctorProfile ||--o{ Appointment : "attends"
+PatientProfile ||--o{ Appointment : "books/attends"
+
+PatientProfile ||--o{ PatientDocument : "owns"
+PatientProfile ||--o{ RemoteCareTask : "receives"
+DoctorProfile ||--o{ RemoteCareTask : "assigns"
+
+Conversation ||--o{ Message : "contains"
+User ||--o{ Message : "sends"
+@enduml
+

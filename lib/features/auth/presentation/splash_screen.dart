@@ -1,18 +1,21 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/constants/assets.dart';
+import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   late final Animation<double> _t;
@@ -29,7 +32,13 @@ class _SplashScreenState extends State<SplashScreen>
         if (status == AnimationStatus.completed && mounted) {
           await Future.delayed(const Duration(milliseconds: 200));
           if (!mounted) return;
-          Navigator.pushReplacementNamed(context, AppRoutes.verify);
+          // Restore session from storage (e.g. localStorage on web); stay logged in across refresh
+          final restored = await ref.read(authProvider.notifier).restoreSession();
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(
+            context,
+            restored ? AppRoutes.shell : AppRoutes.login,
+          );
         }
       });
     _c.forward();
@@ -43,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    const brand = Color(0xFF17C3B2);
+    const brand = AppColors.primaryTeal;
     return AnimatedBuilder(
       animation: _t,
       builder: (context, _) {

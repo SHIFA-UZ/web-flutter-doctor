@@ -1,0 +1,70 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Video Call Frequency}}{23}{figure.caption.7}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Scheduling Methods Distribution}}{24}{figure.caption.8}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Data Loss and Legal Uncertainty}}{25}{figure.caption.9}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Patient wireframes: Get started and sign-in entry}}{32}{figure.caption.11}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Patient wireframes: Create account and registration (step 1)}}{33}{figure.caption.12}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Patient wireframes: Registration flow (steps 2--3)}}{33}{figure.caption.13}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Patient wireframes: Registration (final step) and success}}{33}{figure.caption.14}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Patient wireframes: Home and bookings overview}}{34}{figure.caption.15}%
+\contentsline {figure}{\numberline {6.6}{\ignorespaces Patient wireframes: Appointment details and documents list}}{34}{figure.caption.16}%
+\contentsline {figure}{\numberline {6.7}{\ignorespaces Patient wireframes: Document detail and profile}}{34}{figure.caption.17}%
+\contentsline {figure}{\numberline {6.8}{\ignorespaces Patient wireframes: Profile image and account information}}{35}{figure.caption.18}%
+\contentsline {figure}{\numberline {6.9}{\ignorespaces Doctor app screens: Loading and initialization}}{35}{figure.caption.19}%
+\contentsline {figure}{\numberline {6.10}{\ignorespaces Doctor app screens: Doctor onboarding}}{35}{figure.caption.20}%
+\contentsline {figure}{\numberline {6.11}{\ignorespaces Doctor app screens: Account setup}}{36}{figure.caption.21}%
+\contentsline {figure}{\numberline {6.12}{\ignorespaces Doctor app screens: Profile and daily work}}{36}{figure.caption.22}%
+\contentsline {figure}{\numberline {6.13}{\ignorespaces Doctor app screens: Calendar setup}}{36}{figure.caption.23}%
+\contentsline {figure}{\numberline {6.14}{\ignorespaces Doctor app screens: Scheduling rules}}{36}{figure.caption.24}%
+\contentsline {figure}{\numberline {6.15}{\ignorespaces Doctor app screens: Calendar finalization}}{37}{figure.caption.25}%
+\contentsline {figure}{\numberline {6.16}{\ignorespaces Doctor app screens: Patient context workflow}}{37}{figure.caption.26}%
+\contentsline {figure}{\numberline {6.17}{\ignorespaces Doctor app screens: Availability updates and records}}{37}{figure.caption.27}%
+\contentsline {figure}{\numberline {6.18}{\ignorespaces Doctor app screens: Encounter initiation}}{38}{figure.caption.28}%
+\contentsline {figure}{\numberline {6.19}{\ignorespaces Doctor app: video consultation join}}{38}{figure.caption.29}%
+\contentsline {figure}{\numberline {6.20}{\ignorespaces Patient app screens: Startup and readiness}}{38}{figure.caption.30}%
+\contentsline {figure}{\numberline {6.21}{\ignorespaces Patient app screens: Onboarding}}{39}{figure.caption.31}%
+\contentsline {figure}{\numberline {6.22}{\ignorespaces Patient app screens: Account creation flow}}{39}{figure.caption.32}%
+\contentsline {figure}{\numberline {6.23}{\ignorespaces Patient app screens: Account creation flow (continued)}}{39}{figure.caption.33}%
+\contentsline {figure}{\numberline {6.24}{\ignorespaces Patient app screens: Account confirmation and home}}{40}{figure.caption.34}%
+\contentsline {figure}{\numberline {6.25}{\ignorespaces Patient app screens: Selecting a provider}}{40}{figure.caption.35}%
+\contentsline {figure}{\numberline {6.26}{\ignorespaces Patient app screens: Provider overview and records}}{40}{figure.caption.36}%
+\contentsline {figure}{\numberline {6.27}{\ignorespaces Patient app screens: Viewing documents and profile}}{41}{figure.caption.37}%
+\contentsline {figure}{\numberline {6.28}{\ignorespaces Patient app screens: Profile settings}}{41}{figure.caption.38}%
+\contentsline {figure}{\numberline {6.29}{\ignorespaces Patient app screens: Appointments overview}}{41}{figure.caption.39}%
+\contentsline {figure}{\numberline {6.30}{\ignorespaces Patient app screens: Appointment details}}{42}{figure.caption.40}%
+\contentsline {figure}{\numberline {6.31}{\ignorespaces Patient app screens: Video encounter}}{42}{figure.caption.41}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {7.1}{\ignorespaces High-level system context: two Flutter clients, one Spring Boot API, PostgreSQL, and main external integrations.}}{45}{figure.caption.42}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {8.1}{\ignorespaces Backend-centred system context diagram (C4 Level 1).}}{48}{figure.caption.43}%
+\contentsline {figure}{\numberline {8.2}{\ignorespaces Backend-centred container architecture (C4 Level 2).}}{49}{figure.caption.44}%
+\contentsline {figure}{\numberline {8.3}{\ignorespaces Backend layering in \texttt {com.shifa}: controllers delegate to services, repositories, and JPA entities.}}{50}{figure.caption.45}%
+\contentsline {figure}{\numberline {8.4}{\ignorespaces Simplified authentication flow (see \texttt {AuthController}, \texttt {JwtAuthFilter}).}}{50}{figure.caption.46}%
+\contentsline {figure}{\numberline {8.5}{\ignorespaces Backend data relationships (ER-style sketch).}}{51}{figure.caption.47}%
+\contentsline {figure}{\numberline {8.6}{\ignorespaces Backend component layering (controllers, services, repositories).}}{54}{figure.caption.49}%
+\contentsline {figure}{\numberline {8.7}{\ignorespaces Document URL exposure (code-derived): treat as high severity until redesigned.}}{55}{figure.caption.50}%
+\contentsline {figure}{\numberline {8.8}{\ignorespaces Deployment signals from repository files: backend ships via Railway-style Gradle build; doctor web via Flutter then Firebase Hosting.}}{55}{figure.caption.51}%
+\contentsline {figure}{\numberline {8.9}{\ignorespaces Authentication and authorisation flow (backend security architecture).}}{56}{figure.caption.52}%
+\contentsline {figure}{\numberline {8.10}{\ignorespaces Runtime interaction: authentication and JWT issuance.}}{58}{figure.caption.53}%
+\contentsline {figure}{\numberline {8.11}{\ignorespaces Runtime interaction: patient-side appointment booking.}}{58}{figure.caption.54}%
+\contentsline {figure}{\numberline {8.12}{\ignorespaces Runtime interaction: doctor-side video consultation.}}{59}{figure.caption.55}%
+\contentsline {figure}{\numberline {8.13}{\ignorespaces Runtime interaction: document upload and access.}}{59}{figure.caption.56}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {9.1}{\ignorespaces Doctor \texttt {MainShell}: vertical sidebar (schematic) and inner \texttt {Navigator} for stacked routes.}}{61}{figure.caption.57}%
+\contentsline {figure}{\numberline {9.2}{\ignorespaces Doctor client interaction with backend.}}{62}{figure.caption.58}%
+\contentsline {figure}{\numberline {9.3}{\ignorespaces Qualitative automated test coverage as inferred from repository structure (not line coverage).}}{63}{figure.caption.60}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {10.1}{\ignorespaces Patient app navigation: four primary tabs preserve state per branch; account/chat/notifications/tasks share another shell; video is outside shells.}}{64}{figure.caption.61}%
+\contentsline {figure}{\numberline {10.2}{\ignorespaces Patient client interaction with backend.}}{65}{figure.caption.62}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

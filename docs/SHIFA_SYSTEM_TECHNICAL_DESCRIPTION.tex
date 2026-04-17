@@ -1,0 +1,584 @@
+% !TEX TS-program = pdflatex
+% Shifa --- codebase-derived technical description (thesis-style, expanded).
+% Build: pdflatex SHIFA_SYSTEM_TECHNICAL_DESCRIPTION.tex (run twice for TOC).
+% Requires: MiKTeX/TeX Live with TikZ (pgf).
+
+% Use openany to avoid blank "openright" pages in digital PDFs.
+\documentclass[11pt,a4paper,twoside,openany,headings=normal]{scrreprt}
+
+% Page geometry (submission-grade margins)
+\usepackage[a4paper,left=3cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{xurl}
+\usepackage[none]{hyphenat} % Disable hyphenation across the document.
+\usepackage[hidelinks,pdfusetitle]{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{ragged2e}
+\usepackage{caption}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc,backgrounds,shapes.geometric}
+
+\usepackage{pdfpages}
+
+\input{shifa_figures.tex}
+
+% Allow PDF includes with newer PDF versions (must be set in preamble).
+\pdfminorversion=7
+
+% Consistent formatting for technical strings (paths, filenames, routes).
+% Use \codepath{...} to ensure stable monospace without letterspacing artifacts.
+\newcommand{\codepath}[1]{\texttt{\detokenize{#1}}}
+\let\path\codepath
+
+\title{Technical Description of the Shifa System\\[0.5em]
+\large A Codebase-Derived Architectural Document (Patient App, Doctor App, Backend)}
+\author{Compiled from repository sources}
+\date{\today}
+
+\hypersetup{
+  pdftitle={Shifa System Technical Description},
+  pdfauthor={Shifa repositories}
+}
+
+\begin{document}
+
+% --- Global typography & layout (thesis-style consistency) ---
+\onehalfspacing
+
+% Paragraph policy (thesis-grade): first-line indent, no extra vertical gap.
+\setlength{\parindent}{0.5cm}
+\setlength{\parskip}{0pt}
+
+% Lists: consistent indentation, spacing, and wrapped-line alignment.
+\setlist[itemize]{leftmargin=*,align=parleft,itemsep=0.25\baselineskip,topsep=0.25\baselineskip,parsep=0pt}
+\setlist[enumerate]{leftmargin=*,align=parleft,itemsep=0.25\baselineskip,topsep=0.25\baselineskip,parsep=0pt}
+
+% Figures/tables: consistent caption style and float spacing.
+\captionsetup{font=small,labelfont=bf,justification=RaggedRight,singlelinecheck=false,width=\linewidth}
+\setlength{\intextsep}{0.8\baselineskip}
+\setlength{\textfloatsep}{1.0\baselineskip}
+\setlength{\floatsep}{0.8\baselineskip}
+
+% Hyphenation: reduce aggressive word breaking (esp. TOC).
+\pretolerance=1000
+\tolerance=2000
+\emergencystretch=2em
+\hbadness=20000
+\vbadness=20000
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+
+% TOC: reduce ugly hyphenation.
+\sloppy
+
+% Standardize heading spacing (KOMA-Script)
+\RedeclareSectionCommand[beforeskip=1.6\baselineskip,afterskip=0.8\baselineskip]{chapter}
+\RedeclareSectionCommand[beforeskip=1.2\baselineskip,afterskip=0.6\baselineskip]{section}
+
+% Replace the LaTeX title cover with the Word-exported cover page.
+% This ensures the first cover page matches your Word thesis.
+\includepdf[pages={1},pagecommand={}]{theory_part.docx_export.pdf}
+
+\input{theory_part_abstract_de.tex}
+\input{theory_part_abstract_en.tex}
+\input{theory_part_acknowledgements_en.tex}
+\clearpage
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\input{theory_part_ch1_background_problem_objectives.tex}
+\input{theory_part_ch2_historical_background_key_challenges_health_outcomes.tex}
+\input{theory_part_ch3_introduction_health_digital_health_enabler.tex}
+
+\input{theory_part_ch4_mayring_qualitative_analysis.tex}
+\input{theory_part_ch5_requirements_derived_from_analysis.tex}
+\input{theory_part_ch6_ui_ux.tex}
+
+\clearpage
+
+\chapter{System Architecture Overview}
+\label{ch:system-architecture}
+
+\section{System context}
+
+Following the empirical findings in Chapter~4 and the requirements synthesis in Chapter~5, this thesis implements a concrete three-tier telemedicine prototype with two client applications and one central backend service. The architecture is intentionally scoped to the study constraints: requirements were derived primarily from 15 physician interviews and then reconciled against what could be delivered as a working system within the thesis timeline. Patients use the mobile client for onboarding, appointments, messaging, documents, and video participation, while doctors and administrators use the web client for schedule control, patient workflows, communication, and operational oversight. This framing emphasizes executable integration rather than a purely conceptual platform model.
+
+From a technical perspective, the system consists of a Flutter-based patient application, a Flutter Web doctor/admin application hosted on Firebase Hosting, and a Kotlin/Spring Boot backend service that exposes REST APIs and persists data in PostgreSQL. The backend integrates with Firebase for phone authentication (OTP) and push notifications and with Daily.co for video rooms and media transport via the \texttt{daily\_flutter} SDK. The backend and database are deployed on Railway (or an equivalent PaaS), while the mobile and web clients are distributed via app stores and web hosting.
+
+The following subsection makes this alignment explicit with respect to the research questions (Chapter~1.2).
+
+\subsection{Architectural Alignment with Research Questions}
+
+The architecture described in this chapter is not merely an implementation artefact detached from the empirical programme of the thesis. It operationalises the chain from problem analysis to design: qualitative findings on everyday practice in Uzbekistan (see Chapter~4) inform a structured requirement baseline (see Chapter~5), which in turn constrains how the prototype is partitioned into clients, services, and integrations. Stating this alignment explicitly reduces the risk that technical description reads as generic platform marketing: each major container and integration choice should be traceable back to a documented need or requirement domain, while remaining honest about prototype scope and unresolved risks treated elsewhere in the document.
+
+\textbf{Alignment with the physician-centred research question (RQ2).} Chapter~4 documents recurrent service-delivery inefficiencies among interviewed physicians: reliance on informal messaging applications and telephone for patient contact, manual appointment coordination prone to error and duplication, fragmented digital documentation and ad hoc storage associated with data loss, legal uncertainty around remote practice, and pressure to remain available outside formal working hours. The implemented architecture responds to these themes by concentrating coordination in a single backend that maintains shared appointment and scheduling state, so that booking and calendar views for doctors and patients refer to the same persisted records rather than parallel informal channels. In-app messaging and notification flows routed through authenticated APIs offer a structured substitute for consumer messaging tools, preserving thread context tied to care relationships rather than dispersed chat logs. Task and follow-up constructs, together with notification delivery via Firebase Cloud Messaging, support asynchronous continuity of care and can help bound expectations compared with unbounded messaging expectations. The separation of the doctor-facing web client from the patient mobile client, with an additional administrative entry on the web stack, mirrors role differences in workflow control: clinical and operational work is grouped where physicians and administrators actually perform it, while patients encounter a journey-oriented mobile surface. This mapping is intentional: the goal is to reduce the coordination failures and cognitive overhead described in Chapter~4 without pretending that software alone resolves legal or organisational ambiguity.
+
+\textbf{Alignment with requirements and design decisions (RQ3).} Chapter~5 organises the derived platform needs into domains that include identity and trust, secure communication, video-mediated care, scheduling and coordination, documentation and cognitive load, documents, tasks and follow-up, notifications, administrative governance, and observability or resilience. The two-client split follows directly from differing roles and information needs: patients require discovery, booking, and self-service access to their own data; doctors require schedule management, patient lists, messaging, and operational tools. The Spring Boot backend functions as an orchestration kernel: it exposes REST contracts consumed by both clients, enforces role-based access after Firebase-supported OTP and backend-issued JWT authentication, and persists authoritative state in PostgreSQL rather than leaving clinical coordination to disconnected spreadsheets or messaging threads. Video encounters are delegated to Daily.co with tokens issued by the backend, which matches the interview emphasis on follow-up and triage-style remote contact while acknowledging limits of remote examination. Push notifications via Firebase support timely prompts within the notification domain. Optional AI-assisted features, where present in the broader system context, remain bounded integrations rather than the core trust anchor; the primary trust mechanism in the prototype remains authenticated access to shared records and controlled workflows. Together, these decisions instantiate the requirement domains as implementable services rather than as abstract wish lists.
+
+\textbf{Alignment with evaluation and patient-centred inquiry (RQ4; RQ1).} The fourth research question concerns user response to the prototype and feedback on access and efficiency implications; evaluation is ongoing and will be reported in the empirical chapters of the thesis rather than asserted here. Architecturally, the prototype is nevertheless shaped to make such evaluation feasible: end-to-end executable paths exist from authentication through booking, messaging, document-related workflows, and video participation, so that usability, acceptability, and perceived impact can be observed on realistic task sequences rather than on isolated screens. The backend's retention of appointment lifecycle state, message and notification events, and audit-relevant server-side logs provides a basis for correlating subjective reports with objective traces where ethically and methodologically appropriate, without claiming that full instrumentation or formal service-level measurement is already in place. The separation of patient journey surfaces from doctor workflow surfaces also supports differentiated evaluation instruments and sampling strategies. The first research question, on patient-perceived access barriers and the role of digital tools, is only partly addressed in the present thesis through complementary patient perspective input (see Chapter~4 methodology); the mobile client and booking architecture anticipate common access mechanisms (remote appointment booking, messaging, video), but the architecture chapter does not substitute for dedicated patient evidence where that evidence is still forthcoming.
+
+\textbf{Limits of what the architecture claims.} This prototype is not presented as nationally scalable infrastructure, as fully compliant with all data-protection regimes, or as interoperable with legacy institutional systems without further integration work. Deployment choices prioritise feasibility and reproducibility over geo-redundancy and formal service-level operations, consistent with Section~7.4 and with the limitations chapter. Known security and testing gaps documented later in the thesis remain part of the honest boundary of the artefact. The alignment argument here is therefore modest: the architecture is a traceable response to empirically grounded requirements within thesis constraints, not a certificate of production readiness.
+
+\section{System context diagram (C4 Level 1)}
+
+The overall placement of actors and technical systems is illustrated in the system context diagram (C4 Level 1) reproduced in Figure~\ref{fig:system-context}. This figure shows patients and doctors as external actors using the two Flutter-based clients, which in turn communicate exclusively with the central backend service. The backend delegates authentication and notification tasks to Firebase, outsources media transport for video encounters to Daily.co, and persists all core state to PostgreSQL.
+
+\ShifaFigSystemContext
+
+\section{Container architecture (C4 Level 2)}
+
+At container level, three main software containers cooperate: the patient app (Flutter mobile), the doctor/admin app (Flutter Web SPA), and the backend (Spring Boot monolith). The patient app encapsulates all patient-facing workflows, including onboarding, bookings, documents, messaging, and video participation. The doctor/admin app encapsulates doctor- and administrator-facing workflows such as dashboards, calendar views, patient lists, messaging, tasks, analytics, and configuration tools. The backend encapsulates persistence, domain logic, and integration with PostgreSQL, Firebase, and Daily.co, and exposes REST APIs that decouple client development from internal implementation choices.
+
+Conceptually, authentication proceeds by using Firebase phone OTP where applicable, after which the backend issues JWTs that are attached to subsequent REST requests. Appointment and schedule management proceeds by having the patient app initiate bookings, the backend create and manage appointment state, and the doctor app render calendar and appointment details from API responses. Messaging and document exchange are handled by both clients sending and retrieving messages and document metadata via REST, with the backend storing structured records in PostgreSQL and files in configured storage. Video consultations are orchestrated by the clients requesting join tokens from the backend, which integrates with Daily.co; clients then join video rooms using the \texttt{daily\_flutter} SDK. Together, these flows implement the requirement clusters E1--E7 and E9--E12 from Chapter~5.
+
+\section{Deployment viewpoint}
+
+The deployment topology places the backend and PostgreSQL database on Railway (or an equivalent PaaS), using health checks and environment-specific configuration profiles. In this project, deployment decisions prioritize implementation feasibility and reproducibility over high-assurance infrastructure patterns such as multi-region failover. The patient app is distributed via mobile channels and connects over HTTPS to backend and Firebase services; the doctor/admin app is deployed as a Flutter Web SPA on Firebase Hosting with separate hostnames for doctor and admin entry. This is therefore an operational prototype baseline, not a claim of national-scale production readiness. The deployment structure and external integrations are illustrated further in Section~\ref{ch:backend-implementation}.
+
+Taken together, this deployment posture should be read as prototype-grade and oriented toward supporting user-centred evaluation, rather than as evidence that the system already satisfies production-ready operational standards.
+
+\chapter{Backend Implementation}
+\label{ch:backend-implementation}
+
+\section{System Architecture Overview}
+
+At backend level, the Shifa platform operates as the integration and coordination point between two Flutter-based clients and several external services. Patients and doctors are the primary actors: patients interact with the patient mobile application to perform the workflows analysed in Chapters~4--6, whereas doctors (and administrators) interact with the web-based doctor application to manage clinical work. Both clients communicate exclusively with the backend via REST over HTTPS. The backend, in turn, relies on PostgreSQL for persistence, Firebase for phone-based authentication and notifications, and Daily.co for media transport in video consultations.
+
+The system context for the backend is thus identical in structure to the global platform context shown in Chapter~\ref{ch:system-architecture}. For convenience, Figure~\ref{fig:backend-system-context} reproduces the same diagram rendered at backend chapter scope.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{diagrams/fig_7_1_system_context.png}
+\caption{Backend-centred system context diagram (C4 Level 1).}
+\label{fig:backend-system-context}
+\end{figure}
+
+At container level, the same three platform containers (patient app, doctor app, backend API) appear together with PostgreSQL, Firebase, and Daily.co; Figure~\ref{fig:backend-container-arch} shows this view for the backend in isolation.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{diagrams/fig_7_2_containers.png}
+\caption{Backend-centred container architecture (C4 Level 2).}
+\label{fig:backend-container-arch}
+\end{figure}
+
+\section{Role in the overall solution}
+
+Following the requirement synthesis in Chapter~5 and the workflow evidence in Chapter~4, the backend acts as the coordination layer between both clients. It is implemented as a Spring Boot service in Kotlin, with PostgreSQL persistence and Flyway-based schema evolution. Analytically, the backend fulfills three roles: (1) identity and authorization control, (2) workflow orchestration for appointments, messaging, documents, and tasks, and (3) stable API contracts for mobile and web clients.
+
+\section{Architecture and layering}
+
+The internal structure follows a conventional layered organization: web controllers as API adapters, services for business logic, repositories for database access, domain entities for persistence models, and cross-cutting security/configuration modules. This architecture is technically simple enough for maintainability, while still supporting the complexity of the integrated telemedicine workflow.
+
+\ShifaFigBackendLayers
+\ShifaFigJwtFlow
+
+\section{Technology baseline}
+
+The backend is implemented with Spring Boot~3.3.x and Kotlin~2.0.x on Java~21. Core modules include Spring Web, Validation, Actuator, Data JPA, Security, Flyway, and PostgreSQL integration. Additional technical modules include JWT processing, caching, optional rate-limiting support, and integrations for Firebase and PDF processing. This stack supports the trust and continuity requirements discussed in Chapter~5 while remaining compatible with iterative domain evolution.
+
+\section{Data model and persistence strategy}
+
+The persistence model is centered on users and roles, doctor and patient profiles, appointments, messages, notifications, documents, and remote-care tasks. These entities support the thematic needs identified in Chapter~4: continuous communication, appointment reliability, and continuity of clinical records. Database changes are versioned through Flyway migrations, which allows traceable schema evolution during iterative development.
+
+The domain package contains a broad entity set, including appointment, consultation note, conversation, document access, task, notification, and schedule rule entities. This breadth indicates that the implemented backend already operates as an integrated clinical workflow kernel rather than as a single-feature prototype.
+
+The central ownership and relationship structure is summarised in Figure~\ref{fig:backend-er}. It highlights that users are associated with roles and profiles, that appointments always link one doctor and one patient profile, that messages are anchored in conversations and sent by users, and that documents and tasks are patient-centric but involve doctors as assigners or consumers.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_7_3_er.png}
+\caption{Backend data relationships (ER-style sketch).}
+\label{fig:backend-er}
+\end{figure}
+
+From the perspective of the qualitative findings, this persistence model is not only a technical schema but a response to recurring practice-level problems in Uzbekistan (see Chapter~4): fragmented documentation, manual coordination, and data-loss exposure in loosely coupled tools. By maintaining appointments, conversations/messages, documents, tasks, and notifications in a shared PostgreSQL model with Flyway-governed evolution, the backend creates a single continuity layer across patient and doctor workflows. This directly supports the requirement traceability logic in Chapter~5 and contributes to RQ2 and RQ3 in Chapter~1.2 by translating physician-reported inefficiencies into auditable data structures and coordination state.
+
+\section{API surface and core domains}
+\label{ch:api}
+
+At the API level, the backend exposes endpoints for authentication, doctor discovery, patient and doctor self-service profiles, appointment booking and lifecycle management, scheduling, messaging and attachments, documents and access requests, video tokens/webhooks, notifications, tasks, and AI-assisted clinical functions.
+
+The endpoint design is resource-oriented and grouped by domain prefixes (for example \path{/api/auth}, \path{/api/patients}, \path{/api/appointments}, \path{/api/messages}, \path{/api/video}, and \path{/api/admin}). This domain grouping supports clearer client integration and helps maintain conceptual separation between patient-facing, doctor-facing, and administrative operations.
+
+\textbf{Implementation status.} Implemented in the current prototype: controller-level endpoint structure and base-path grouping as documented in Table~\ref{tab:api-prefixes}. Partially implemented / currently limited: the thesis provides auditable endpoint groups but not a machine-readable contract with full operation-level schemas. Planned improvement (future work): export OpenAPI definitions from controllers and/or enforce contract tests in CI to keep API behaviour verifiable during iteration.
+
+\footnotesize
+\begin{longtable}{@{}>{\RaggedRight\arraybackslash}p{5.2cm}>{\RaggedRight\arraybackslash}p{6.8cm}@{}}
+\caption{REST controller base paths (backend).} \label{tab:api-prefixes} \\
+\toprule
+\textbf{Controller} & \textbf{Base path} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{c}{\tablename\ \thetable{} --- continued} \\
+\toprule
+\textbf{Controller} & \textbf{Base path} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\emph{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{AdminController} & \path{/api/admin} \\
+\texttt{AppointmentController} & \path{/api/appointments} \\
+\texttt{AuthController} & \path{/api/auth} \\
+\texttt{BookingController} & \path{/api/schedule/book} \\
+\texttt{CalendarController} & \path{/api/calendar} \\
+\texttt{ConsultationController} & \path{/api/consultations} \\
+\texttt{DoctorController} & \path{/api/doctors/me} \\
+\texttt{MessageController} & \path{/api/messages} \\
+\texttt{NotificationController} & \path{/api/notifications} \\
+\texttt{PatientAppointmentController} & \path{/api/patients/me/appointments} \\
+\texttt{PatientController} & \path{/api/patients/me} \\
+\texttt{PatientDocumentController} & \path{/api/patients} \\
+\texttt{PatientMessageController} & \path{/api/patients/me/messages} \\
+\texttt{PatientScheduleController} & \path{/api/patients/me/schedule} \\
+\texttt{RemoteCareTaskController} & \path{/api/tasks} \\
+\texttt{ScheduleController} & \path{/api/schedule} \\
+\texttt{VideoController} & \path{/api/video} \\
+\end{longtable}
+\normalsize
+
+\subsection{Illustrative API Endpoint Example}
+
+To complement Table~\ref{tab:api-prefixes}, this subsection documents one representative method-level endpoint used in the implemented prototype. The example is intentionally illustrative rather than exhaustive: it demonstrates how route grouping, authentication, and workflow purpose are aligned, but it does not constitute a full API contract. Accordingly, this example supports readability of the architectural argument and does not replace a complete OpenAPI-style specification.
+
+\begin{table}[H]
+\centering
+\caption{Illustrative endpoint documentation for patient appointment booking.}
+\label{tab:illustrative-endpoint}
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\arraybackslash}p{4.4cm}>{\RaggedRight\arraybackslash}p{2.1cm}>{\RaggedRight\arraybackslash}p{4.2cm}>{\RaggedRight\arraybackslash}X@{}}
+\toprule
+\textbf{Endpoint} & \textbf{HTTP Verb} & \textbf{Authentication / Authorization} & \textbf{Purpose in the system} \\
+\midrule
+\codepath{/api/patients/me/}\\\codepath{appointments} & \texttt{POST} & JWT bearer token required; role-scoped access for authenticated patient context via RBAC and ownership checks. & Creates a patient appointment request in shared backend state, enabling coordinated scheduling between patient and doctor workflows. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\noindent\textbf{Illustrative request body (conceptual):}
+\begin{verbatim}
+{
+  "doctorId": 42,
+  "startTimeUtc": "2026-04-10T09:30:00Z",
+  "visitType": "VIDEO",
+  "notes": "Follow-up consultation"
+}
+\end{verbatim}
+
+\noindent\textbf{Illustrative response body (conceptual):}
+\begin{verbatim}
+{
+  "appointmentId": 981,
+  "status": "BOOKED",
+  "doctorId": 42,
+  "patientId": 315,
+  "startTimeUtc": "2026-04-10T09:30:00Z"
+}
+\end{verbatim}
+
+For a thesis-stage prototype, one concrete endpoint illustration is sufficient to demonstrate method-level API semantics without overstating contract maturity. This example links Chapter~1 objectives to executable backend behaviour, preserves traceability to the scheduling and coordination requirement domains in Chapter~5, and supports evaluation readiness for RQ4 by making the booking workflow inspectable in end-to-end tests. Full contract formalization remains planned future work.
+
+\section{Backend Component Architecture}
+
+The component structure can be summarised as three cooperating layers. Controllers under \path{com.shifa.web} translate HTTP requests into typed Kotlin calls. Services under \path{com.shifa.service} implement workflow logic such as appointment lifecycle transitions and document access checks, while repositories under \path{com.shifa.repo} encapsulate JPA-based persistence against PostgreSQL. This organisation allows each layer to evolve independently; for example, HTTP contracts can change without touching data access code, and persistence optimisations can occur without altering business rules. Figure~\ref{fig:backend-components} visualises this layering.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_7_4_components.png}
+\caption{Backend component layering (controllers, services, repositories).}
+\label{fig:backend-components}
+\end{figure}
+
+\section{Security and reliability}
+
+Security is based on JWT-authenticated requests with role-aware authorization rules. The implemented role model includes doctor, patient, and administrator roles. Operationally, the service includes profile-based configuration (development, QA, production), health endpoints for deployment monitoring, and optional request-rate controls via Bucket4j.
+
+For resilience, the backend is deployment-ready for containerized environments, with environment-driven configuration and production profile hardening (for example validated schema mode and reduced debug verbosity). This design aligns with Chapter~5 requirements on trust, stability, and controlled access.
+
+\ShifaFigSecurityRisk
+\ShifaFigDeployment
+
+\section{Security architecture}
+
+In addition to the general considerations above, the backend implements a concrete security architecture based on JWT lifecycle management and role-based access control. After successful authentication, the backend issues a JWT containing the user identifier and role claims (\texttt{DOCTOR}, \texttt{PATIENT}, or \texttt{ADMIN}). Clients attach this token via the \texttt{Authorization: Bearer} header on subsequent requests, and Spring Security filters validate the token and derive the security context for controller methods.
+
+\textbf{Implementation status.} Implemented in the current prototype: OTP-assisted login flow with backend-issued JWTs, role-claim enforcement in Spring Security, and authenticated access checks across most API domains. Partially implemented / currently limited: JWT handling does not yet provide robust token revocation/rotation controls at production depth, and there is no systematic CI-backed regression suite for security routes. Planned improvement (future work): strengthen token lifecycle controls and add automated security tests (including 401/403 boundary checks) to make authentication and authorization behaviour continuously auditable.
+
+The most relevant vulnerabilities observed in the current code are, first, the static exposure of patient documents via the \path{/patientdocuments/**} URL pattern combined with a permissive security rule, and second, the lack of systematic regression tests for security-relevant routes. This means document access control is not yet fully compliant with the confidentiality target described in Chapter~5. The first vulnerability is therefore treated as unresolved and high severity in the current prototype; mitigation is planned by routing all document access through authenticated controller methods that enforce ownership checks and, where appropriate, issue short-lived signed URLs for temporary access. The second vulnerability is planned to be mitigated by introducing dedicated security tests that verify 401/403 responses across representative endpoints and integrating these tests into CI.
+
+The high-level authentication and authorisation flow is visualised in Figure~\ref{fig:backend-auth-arch}, which emphasises the interaction between client, backend, and Spring Security filters.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_7_9_auth_arch.png}
+\caption{Authentication and authorisation flow (backend security architecture).}
+\label{fig:backend-auth-arch}
+\end{figure}
+
+In relation to Chapter~4, the security architecture addresses the documented reliance on informal communication channels and the associated legal and data-protection uncertainty by introducing authenticated access boundaries (JWT, RBAC, and ownership checks) as default workflow conditions. This is aligned with the identity, trust, and secure-communication requirement domains in Chapter~5 and with RQ3 in Chapter~1.2. At the same time, the unresolved \path{/patientdocuments/**} exposure is retained as an explicit prototype limitation rather than being obscured, so that trust claims remain evidence-aware and proportionate to the current implementation scope.
+
+\section{Quality attributes evaluation}
+
+From a quality-attribute perspective, the current implementation represents a deliberate balance between research-oriented pragmatism and software-engineering rigour. With respect to scalability, the stateless monolith and shared PostgreSQL instance are adequate for the foreseen deployment scale, but they would require either vertical scaling or decomposition into bounded services if the installation were to cover a large national population. Availability is supported through health checks and environment-specific configuration, yet formal service-level objectives and multi-region failover have not been implemented in this iteration.
+
+\textbf{Implementation status.} Implemented in the current prototype: Actuator-based health endpoints, profile-driven environment configuration, and Flyway migrations that support reproducible schema evolution and operational consistency. Partially implemented / currently limited: availability engineering remains at single-service deployment level without formal SLO definitions, redundancy targets, or validated backup/restore runbooks. Planned improvement (future work): define explicit SLOs, formalize and test backup procedures as operational runbooks, and introduce higher-availability deployment patterns where required.
+
+Security benefits from JWT-based role control and ownership checks in service methods, but this remains a prototype-level security baseline rather than a finalized compliance posture. The unresolved document exposure risk and limited security-regression automation are treated as open issues requiring hardening before production use. Performance and maintainability are supported by layered backend structure and established frameworks, while the monolith decision reflects a thesis-stage trade-off: lower integration overhead now, with future decomposition if scale and operational complexity justify it (Bass et al., 2021; Richards \& Ford, 2020). Because no formal benchmark campaign was conducted, the performance discussion remains architectural and explicitly non-empirical.
+
+Methodologically, these quality-attribute trade-offs should be read as part of the thesis design logic rather than as omissions detached from context: the objective was to deliver an implementable and testable backend that can run end-to-end appointments, conversations/messages, documents, tasks, and notifications under realistic project constraints. This positioning is consistent with Chapter~5 requirement priorities and with the research trajectory in Chapter~1.2, where evaluation of usability, acceptability, and perceived impact (RQ4) follows prototype realization. The section therefore frames operational reliability as sufficient for evaluation-readiness, while explicitly deferring production-grade hardening to post-thesis work.
+
+\section{Runtime interaction flows}
+
+To clarify how the components cooperate at runtime, this section sketches four key interaction scenarios as sequence diagrams in PlantUML.
+
+\subsection*{Authentication flow}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_7_5_auth_flow.png}
+\caption{Runtime interaction: authentication and JWT issuance.}
+\end{figure}
+
+\subsection*{Appointment booking}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_7_6_booking_flow.png}
+\caption{Runtime interaction: patient-side appointment booking.}
+\end{figure}
+
+\subsection*{Video consultation}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_7_7_video_flow.png}
+\caption{Runtime interaction: doctor-side video consultation.}
+\end{figure}
+
+\subsection*{Document upload and access}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_7_8_document_flow.png}
+\caption{Runtime interaction: document upload and access.}
+\end{figure}
+
+\section{Backend contribution to the research logic}
+
+Methodologically, the backend realizes the transition from qualitative findings to executable service behavior. It operationalizes the requirement classes defined in Chapter~5 and supplies the shared process state consumed by both user interfaces discussed in Chapter~6. This closes the ``needs-to-system'' chain for the server side and prepares the subsequent analysis of client-specific implementation decisions.
+
+\chapter{Doctor Application Implementation}
+\label{ch:doctor-implementation}
+
+\section{Role and target users}
+
+The doctor application is the professional-facing interface for clinical workflow execution. It is designed for physicians and administrative users, with emphasis on schedule control, patient context switching, consultation handling, and follow-up coordination. In relation to Chapter~4, this client directly addresses the practical need for structured digital workflows instead of fragmented informal channels, and therefore represents the central operational workspace of the platform.
+
+\section{Technical foundation}
+
+The doctor client is implemented in Flutter. State handling is organized through Riverpod, and navigation combines an app shell pattern with route-based transitions for feature flows. The web deployment target is particularly relevant, including separate hosting contexts for doctor and admin entry points.
+
+\ShifaFigDoctorShell
+
+\section{Architecture rationale and backend interaction}
+
+The choice of Flutter for the doctor-side client reflects a project-specific constraint: one thesis implementation stream had to support rapid iteration of clinically relevant web workflows without building a separate frontend stack. Riverpod was selected to keep dependencies between authentication, appointments, messaging, and notifications explicit as the feature set expanded during implementation. As described by interviewed physicians, the design priority was dependable workflow execution in daily practice rather than UI novelty, so the architecture favors predictable state transitions and backend coherence.
+
+From the doctor client to the backend, all communication is mediated by a small set of HTTP client utilities that encapsulate base URLs, JWT headers, and error-handling conventions. Figure~\ref{fig:doctor-backend-seq} sketches the typical pattern: the web client invokes a REST endpoint, the backend validates the JWT and roles, services consult repositories as needed, and the response is mapped back into domain-specific view models.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_8_1_doctor_seq.png}
+\caption{Doctor client interaction with backend.}
+\label{fig:doctor-backend-seq}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Representative doctor app dependencies.}
+\label{tab:doctor-deps}
+\begin{tabularx}{\textwidth}{@{}l>{\RaggedRight\arraybackslash}X@{}}
+\toprule
+\textbf{Package} & \textbf{Role} \\
+\midrule
+\texttt{flutter\_riverpod} & State management \\
+\texttt{http} & REST client \\
+\texttt{table\_calendar}, \texttt{timezone}, \texttt{iana\_time\_zone} & Scheduling and timezone handling \\
+\texttt{daily\_flutter} & Video consultation client \\
+\texttt{fl\_chart} & Analytics visualization \\
+\texttt{cached\_network\_image}, \texttt{record}, \texttt{audioplayers} & Media messaging support \\
+\texttt{firebase\_*} & Authentication and push notification integration \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Functional structure}
+
+The implemented interface is organized around high-frequency clinical tasks: dashboard/home overview, calendar and availability management, patient list and patient attachment flows, messaging, notifications, tasks, profile management, and appointment/video encounter start flows. Administrative functions are exposed through dedicated admin screens connected to backend admin APIs.
+
+This structure aligns with the requirement narrative in Chapter~5 by emphasizing: secure communication, appointment coordination, and reduced operational friction in daily doctor work. The UI documentation in Chapter~6 shows this progression from wireframes to high-fidelity screens.
+
+\section{Integration with backend services}
+
+The doctor client communicates with backend domains through authenticated HTTP requests. In practical terms, the application consumes appointment, schedule, patient, message, notification, document, and video APIs. For video encounters, session joining is coordinated through backend-issued tokens and the integrated Daily.co stack.
+
+\section{Quality and operational considerations}
+
+The application includes localization support, structured state modules, and error-handling patterns appropriate for production-facing healthcare software. The implementation prioritizes robust task completion (for example, starting appointments, joining calls, and updating schedules) over highly customized visual behavior, consistent with the workflow-centered goals established in Chapters~4 and~5. In this sense, the doctor client can be interpreted as a reliability-oriented execution environment for the requirements mapped in Chapter~5.
+\ShifaFigTestBars
+
+\chapter{Patient Application Implementation}
+\label{ch:patient-implementation}
+
+\section{Role and user journey}
+
+The patient application provides the citizen-facing entry to the telemedicine process. Its main journey includes onboarding, doctor discovery, booking, appointment review, document access, messaging, and participation in video encounters. This sequence maps directly to the patient-side requirements synthesized in Chapter~5 and illustrated in Chapter~6, and operationalizes the accessibility and trust themes emerging from the interview analysis in Chapter~4.
+
+\section{Technical foundation}
+
+The patient client is implemented in Flutter with GoRouter-based navigation and Riverpod-based state management. The routing model uses tab-preserving navigation for primary areas (home, bookings, documents, doctors) and shell-based navigation for account and supporting modules. This combination preserves usability during repeated appointment and follow-up tasks.
+
+\ShifaFigPatientNav
+
+\section{Architecture rationale and backend interaction}
+
+For the patient app, Flutter was selected to maintain one codebase across Android and iOS under limited development time, while preserving close mapping to the user journeys shown in Chapter~6. GoRouter models tab-preserving navigation and nested flows (for booking and waiting-room transitions), and Riverpod keeps authentication, network, and UI state aligned. This conservative stack is a deliberate scope decision: it reduces platform divergence and handoff friction in core telemedicine tasks, rather than optimizing for feature breadth in the thesis phase.
+
+All patient-facing workflows that modify or retrieve clinical data are backed by REST calls to the backend. The pattern is similar across features: the Flutter app constructs a request with the relevant JWT token, the backend validates authentication and authorisation, services run domain logic and interact with repositories, and the resulting state is serialised back to the app. The following PlantUML snippet captures this for a simplified booking read-flow.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{diagrams/fig_9_1_patient_seq.png}
+\caption{Patient client interaction with backend.}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Representative patient app dependencies.}
+\label{tab:patient-deps}
+\begin{tabularx}{\textwidth}{@{}l>{\RaggedRight\arraybackslash}X@{}}
+\toprule
+\textbf{Package} & \textbf{Role} \\
+\midrule
+\texttt{flutter\_riverpod} & State management \\
+\texttt{go\_router} & Declarative navigation \\
+\texttt{dio} / \texttt{http} & API communication \\
+\texttt{firebase\_*} & Auth and notification integration \\
+\texttt{daily\_flutter} & Video visit participation \\
+\texttt{flutter\_map}, \texttt{geolocator}, \texttt{geocoding} & Location workflows \\
+\texttt{local\_auth}, \texttt{flutter\_secure\_storage} & Device-level protection and token storage \\
+\texttt{file\_picker}, \texttt{image\_picker} & Document and media uploads \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Core modules}
+
+The application is organized into feature modules for authentication, bookings, doctors, documents, chat, notifications, tasks, and profile/settings. Data access is encapsulated in repository classes that consume backend APIs through centralized client configuration. The structure keeps product logic understandable and supports incremental feature evolution.
+
+\section{Experience design and workflow continuity}
+
+From a UX perspective, the patient application prioritizes clarity and stepwise guidance. Appointment and consultation flows are decomposed into explicit stages (selection, confirmation, waiting room, video call, summary), reducing uncertainty for non-technical users. This design approach reflects the usability and trust concerns emerging from the qualitative interviews in Chapter~4.
+
+\section{Deployment and environment handling}
+
+The patient client supports environment-driven backend URL configuration and platform-specific networking behavior for development versus production contexts. In release scenarios, the configuration path prioritizes secure remote endpoints, which supports the privacy and reliability expectations formalized in Chapter~5. Together with the doctor and backend chapters above, this completes the component-level technical argument for the implemented Shifa ecosystem.
+
+\chapter{Security, Quality Attributes, and Operational Considerations}
+\label{ch:security-quality}
+
+\section{Security analysis}
+
+The security model of the platform is based on JWT-authenticated requests and role-based authorization. In the implemented prototype, patients and doctors authenticate through Firebase phone OTP steps plus backend-issued JWTs, and administrators use role-gated routes in the doctor web application. Authorization rules in Spring Security map URL patterns (such as \path{/api/patients/me/**}, \path{/api/doctors/me/**}, and \path{/api/admin/**}) to roles, while service-layer methods add resource-level identity checks. This is a practical prototype compromise between security and delivery scope, not a claim that full production-grade token governance is already complete (Kruse et al., 2017; Appari \& Johnson, 2010).
+
+\textbf{Implementation status.} Implemented in the current prototype: OTP + JWT authentication, role-based authorization, and service-level ownership checks on major clinical workflows. Partially implemented / currently limited: document-serving exposure via \path{/patientdocuments/**} remains unresolved in the present codebase, and security-route regression testing is not yet automated in CI. Planned improvement (future work): remove public document exposure by enforcing authenticated download paths and add systematic security test coverage for authorization boundaries.
+
+Two security aspects deserve particular attention from a research perspective. First, document access is currently exposed via a static resource handler for \path{/patientdocuments/**}, with a permissive security rule. This design reflects development expediency but conflicts with the confidentiality requirements articulated in Chapter~5; it should be replaced by controller-mediated access that verifies both role and relationship to the patient record, optionally issuing short-lived signed URLs for temporary access. Second, while the codebase includes building blocks for rate limiting and logging, there is no systematic suite of automated tests that assert security behaviour (for example, distinguishing authorized from unauthorized document access or enforcing role separation on administrative endpoints).
+
+In line with established secure design principles, the future evolution of the system should introduce a test-supported security policy for each route group, extend rate limiting to all high-risk endpoints (authentication and uploads), and treat JWT key management, token lifetimes, and claim validation as explicitly documented design artifacts rather than implicit configuration.
+
+\section{Quality attributes}
+
+From the vantage point of software architecture, the Shifa implementation exhibits specific strengths and limitations across its key quality attributes:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Scalability}: the backend monolith is stateless with respect to HTTP sessions and uses PostgreSQL as a single authoritative store. This allows horizontal scaling behind a load balancer, but long-term scalability will be constrained by the database instance and by the lack of explicit bounded contexts for read-heavy versus write-heavy operations.
+  \item \textbf{Availability}: health checks and environment-specific configuration provide a foundation for high availability at the current target scale. However, multi-region redundancy and formally specified service-level objectives were not yet in scope, which is acceptable for the thesis context but not sufficient for large-scale national deployment.
+  \item \textbf{Security}: the use of JWT and role-based access control, combined with service-layer checks, represents a sound baseline for controlling access to clinical data. The aforementioned static document path and the absence of systematic security tests, however, highlight the importance of continuous hardening.
+  \item \textbf{Maintainability}: the modular organization of Flutter feature modules and the layered backend structure support maintainability and incremental evolution. The monolithic backend remains sufficiently small to manage, but its eventual decomposition into separately deployable services would benefit from the existing domain boundaries.
+  \item \textbf{Performance}: no formal benchmarking was conducted in the thesis, but the chosen technologies (Spring Boot with JPA; Flutter frontends) are known to deliver adequate performance for the anticipated scale. Performance-critical operations such as document handling and video token issuance are delegated to specialized components, which reduces the likelihood of pure CPU bottlenecks in the core backend.
+\end{itemize}
+
+\section{Architectural decisions}
+
+Several architectural decisions can be made explicit in light of established software architecture theory. The choice of Flutter for both clients reflects a ``shared-code'' decision rationale: it reduces implementation and maintenance effort for cross-platform UI while preserving sufficient performance for the interaction patterns described in Chapter~6. The adoption of Spring Boot and Kotlin for the backend reflects a preference for a mature ecosystem, strong typing, and pre-existing integration support for PostgreSQL, security, and observability.
+
+JWT-based authentication was selected to align with RESTful communication and to support stateless client-server interactions, at the cost of additional complexity in token revocation and key management. The decision to implement the backend as a monolith rather than as a set of microservices reflects a deliberate trade-off: it simplifies deployment and diagnostics during early-stage development and empirical evaluation, while leaving the door open to later extraction of domain-specific services once usage patterns and performance profiles are better understood.
+
+\section{Testing and operations}
+
+From an operational viewpoint, the codebase contains concrete deployability hooks (Actuator health endpoints, environment-specific profiles, and Flyway migrations), but testing and CI/CD remain intentionally lean. The backend Railway build currently skips automated tests, and client test coverage is still minimal. This is a known boundary of the thesis artifact: architectural and functional integration were completed first, while full quality gates are explicitly deferred to the post-thesis hardening phase (Humble \& Farley, 2010; Beyer et al., 2016).
+
+\textbf{Implementation status.} Implemented in the current prototype: basic deployability, health observability primitives, and environment-specific configuration. Partially implemented / currently limited: automated test depth is thin and backend test execution is currently skipped in Railway build configuration. Planned improvement (future work): enforce \texttt{./gradlew test}, \texttt{flutter test}, and static analysis gates in CI/CD before deployment promotion.
+
+For a production transition, the following enhancements would be appropriate:
+
+\begin{itemize}[leftmargin=*]
+  \item Introduce unit and integration tests for core backend services (authentication, appointments, messaging, documents), including security-focussed tests for authorization boundaries.
+  \item Extend Flutter widget tests to cover critical user journeys (login, booking, joining video calls, document access) and to anchor UI regressions.
+  \item Establish CI/CD pipelines that enforce static analysis and tests before building and deploying backend and client artifacts, and integrate basic security scanning for dependencies.
+  \item Formalize database backup and restore procedures as executable runbooks and exercise them regularly to validate recovery time and recovery point objectives.
+\end{itemize}
+
+\section{Implementation status summary}
+
+At the current thesis stage, the implemented prototype already supports end-to-end telemedicine workflows across patient app, doctor app, and backend service: authentication, appointment handling, messaging, document-related interactions, and video-session orchestration. These flows are operational and provide the empirical basis used in Chapters~4--6 and the technical analysis in Chapters~7--11.
+
+At the same time, one security-critical issue remains unresolved and is treated explicitly as open risk: public exposure potential around \path{/patientdocuments/**} under permissive access rules. In addition, the present testing baseline remains limited, and backend tests are currently skipped in Railway build commands. For these reasons, the prototype should not be interpreted as production-grade compliant; it is functionally integrated but still incomplete in security hardening.
+
+Before the July evaluation milestone, the focus is to complete and report evaluation-oriented evidence for usability, trust, and perceived impact, while preserving transparent reporting of implementation limits. Work that remains beyond thesis scope includes production-depth security hardening (including finalized document access redesign and stronger token lifecycle governance), full CI/CD quality gates, formalized backup/recovery operations, and comprehensive machine-readable API contracts.
+
+\chapter{Limitations and Evidence Gaps}
+
+Hosted secrets, Firebase console rules, store pipelines, and penetration tests are out of scope. API tables here omit HTTP verbs per method. UI accessibility was not audited per-widget. Some markdown docs may reference flags not present in code (e.g.\ \texttt{FLAVOR} vs implemented \texttt{ENVIRONMENT} on the patient app).
+
+\textbf{Implementation status.} Implemented in the current prototype: core workflow functionality and chapter-level architectural traceability. Partially implemented / currently limited: compliance-grade evidence for security operations, accessibility, and full API contract completeness. Planned improvement (future work): close these evidence gaps through operational documentation, route-level contract artifacts, and expanded verification pipelines.
+
+\chapter{Future-Oriented Improvements}
+
+\textbf{Status note.} All items in this chapter are planned improvements (future work) and are not claimed as implemented in the current prototype.
+
+\begin{itemize}[leftmargin=*]
+  \item Planned improvement (future work): replace public document URLs with authenticated downloads or short-lived signed URLs; remove redundant \texttt{permitAll} exposure.
+  \item Planned improvement (future work): publish OpenAPI from controllers or maintain contract tests in CI.
+  \item Planned improvement (future work): add integration tests for overlapping patient appointment routes.
+  \item Planned improvement (future work): replace stale doctor \path{widget_test.dart}; add backend \path{src/test}; run tests in CI; revisit \texttt{-x test} on Railway.
+  \item Planned improvement (future work): add GitHub Actions (or equivalent) for \texttt{flutter analyze}, \texttt{flutter test}, \texttt{./gradlew test}.
+  \item Planned improvement (future work): restrict \path{TestDataController} to dev profiles or remove from production images.
+\end{itemize}
+
+\chapter{Conclusion}
+
+The Shifa ecosystem delivered in this thesis is best understood as an auditable design-and-implementation artifact: two integrated clients, one backend service, and a reproducible workflow chain grounded in 15 physician interviews and subsequent requirements synthesis. Its strengths are visible in code-level modularization, centralized API access patterns, and coherent cross-client workflow coverage. Its limitations are equally explicit: thin automated testing, skipped backend tests in the Railway build path, no machine-readable published API contract, and unresolved high-severity exposure risk around \path{/patientdocuments/**}. The thesis therefore demonstrates practical system realization under academic constraints, while clearly separating what is implemented now from what remains necessary for production-grade deployment.
+
+\clearpage
+\input{theory_part_literature_appendix_declaration.tex}
+
+\end{document}

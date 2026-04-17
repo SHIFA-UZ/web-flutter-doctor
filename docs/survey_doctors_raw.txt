@@ -1,0 +1,706 @@
+       Doctor 2 ­ Cardiologist, Samarkand
+Profile: Dr. Farrukh Yusupov, age 45, works at the Samarkand Regional Cardiology Center. He has over 15 years of experience treating patients with chronic heart diseases. His clinic has one shared computer per department and limited digital infrastructure. He uses Telegram and phone calls for informal communication with patients and colleagues. He is open-minded about digital health but realistic about local limitations.
+A. General Use and Attitudes
+Q1. Which telemedicine functions do you currently use in your practice? At this stage, we don't have a dedicated telemedicine system in our hospital. However, I sometimes consult patients by phone or through Telegram voice messages. Some patients send me pictures of their prescriptions or blood pressure readings via chat. I wouldn't call it full telemedicine, but it helps maintain contact when patients can't come to Samarkand in person. We also use email for rare cases when I need to share reports with colleagues in Tashkent.
+Q2. How has your daily work changed due to telemedicine? In truth, telemedicine hasn't changed my daily work significantly yet. Most consultations are still done face-to-face. The only di erence is that, since the COVID period, patients sometimes call me for advice instead of visiting. So, the workload is the same, but communication channels have expanded slightly. I see the potential, but the system is not yet ready.
+Q3. What expectations did you have for telemedicine before using it? I expected that telemedicine would allow me to monitor my heart patients remotely and reduce unnecessary visits. However, I quickly realized that most of my patients either don't have smartphones or are not comfortable sharing medical data online. The idea sounds good in theory, but it needs infrastructure, training, and cultural adaptation.
+Q4. How has your attitude toward telemedicine developed over time? Initially, I was quite skeptical. Over time, I've become more positive -- not because I've used it much, but because I've seen how helpful it can be abroad. I now think that in the future, once hospitals are equipped and internet access improves, telemedicine could really benefit our region.
+B. Video Calls
+Q5. How often do you conduct video calls with patients? Hardly ever. Maybe once or twice a month, when a long-term patient calls me on Telegram video to ask about symptoms. It's very informal -- not a scheduled
+
+consultation. Many patients don't have a stable connection or don't feel comfortable with video calls.
+Q6. For what purposes do you mainly use video calls? Mostly for checking on stable chronic patients who can't come in person. Sometimes I just look at their medication packaging to confirm what they're taking. It's simple but useful when they live far away, especially in villages.
+Q7. What advantages do you see in using video calls? It saves time for both doctor and patient. People in remote areas don't need to travel several hours for minor clarifications. It also helps me maintain continuity of care. But it only works if the internet connection is strong and both sides know how to use the app.
+Q8. What challenges or problems occur during video calls? Poor internet is the biggest issue. Often, the call drops or the video freezes. Also, there's no way to record or document these calls properly. Patients sometimes forget details, so I still need to make handwritten notes later. And of course, not everyone feels comfortable being on camera.
+Q9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Younger patients and those with smartphones can manage it easily. Elderly people, especially in rural areas, often have no internet or need their grandchildren to help them. So, in practice, it's not suitable for most of my patients yet.
+Q10. How do you assess the quality of medical care via video call? It's very limited. You can't examine the patient, check their pulse properly, or do an ECG. It's fine for advice or follow-up, but not for diagnosis. I would say it's around 4 out of 10 in terms of medical reliability for now.
+C. Appointment Scheduling
+Q11. Do you use digital tools for appointment scheduling? If so, which ones? No o icial system yet. Patients call the reception by phone, or sometimes they contact me personally through Telegram or relatives. It's very manual, but it works for our scale.
+Q12. How do you assess patient acceptance of digital appointment scheduling? I think most patients would like it if it existed, but few have experience with it. Older people prefer to call or come in person. Only young patients might be open to using an app.
+Q13. What advantages and disadvantages do you see in digital appointment scheduling? The advantage would be saving time and avoiding waiting lines. The disadvantage is that
+
+many people in Uzbekistan don't have access to or trust in online systems. They would still come physically to "confirm" their slot.
+Q14. Were there technical or organizational problems when introducing digital scheduling? We haven't introduced it yet. Some private clinics in Tashkent have started, but here in Samarkand, it's still a future plan.
+D. Digital Data Collection, Exchange, and Storage
+Q15. How do you collect and store patient data digitally? We still use paper files for most records. The hospital computer system exists, but it's outdated and often o line. I sometimes take photos of ECGs or reports to keep a copy on my phone, especially for follow-up cases.
+Q16. Which systems or apps do you use for data exchange? Mostly Telegram and email. There's no o icial secure platform yet. Occasionally, I share de-identified ECGs with colleagues for a second opinion.
+Q17. How do you evaluate the security and reliability of these systems? Telegram is easy to use, but it's not medically secure. Still, it's the only practical tool we have. I avoid sharing sensitive patient data unless absolutely necessary.
+Q18. What advantages and risks do you see in digital data exchange and storage? The advantage is easy communication and faster feedback. The risk is privacy -- data can be leaked or phones can be lost. That's why I'm careful to delete information after use.
+Q19. Have you ever experienced problems with data loss or data security? Yes, once my phone was reset, and I lost patient contact information. That's when I started backing up important messages in notebooks. So I rely more on paper again.
+Q20. How do you handle documentation and archiving of digital data? Mostly manual. I print or rewrite important notes from chats and attach them to the patient's paper file. It's extra work, but we don't have a better system yet.
+E. Communication via App
+Q21. Do you communicate with patients via special apps? If yes, how does that work? Not special medical apps, just Telegram. Patients send me blood pressure readings, or ask if they can adjust their medicine. I answer when I have time. It's convenient, but it blurs work-life boundaries.
+
+Q22. Do you communicate with other doctors via digital platforms or apps? Yes, mostly through Telegram groups. We exchange opinions, share ECG photos, or discuss new treatments. It's informal but useful.
+Q23. Which functions are most important to you in app communication (e.g., security, speed, documentation)? Speed and simplicity. Security would be great, but in practice, we choose convenience. If the system were o icial and secure, I would switch to that immediately.
+Q24. What challenges exist in digital communication with patients and colleagues? Sometimes messages come late at night or without context. Patients expect instant answers. With colleagues, the problem is lack of integration -- nothing is o icially recorded or standardized.
+F. Logging and Summarization
+Q25. Do you use functions for automatic logging or summarization of video calls? No, there's nothing like that here. I write short notes myself if I have an online discussion with a patient.
+Q26. How useful are these logging functions for your work? If we had them, they would be very helpful. But currently, I rely on manual note-taking and memory.
+Q27. Do you have improvement suggestions regarding logging and documentation? I think it would be useful if the Ministry introduced a national telemedicine portal that automatically saves messages and call notes in patient records. That would make our work much easier.
+G. Data Protection and Legal Aspects
+Q28. How do you assess data protection and legal frameworks in telemedicine? There are almost no clear rules. We all try to be careful, but o icially, telemedicine is not yet regulated. Doctors don't know what is legally allowed.
+Q29. Are there legal uncertainties that restrict your work with telemedicine? Yes, very much. For example, I don't know whether I am allowed to prescribe medication based on a phone call. So I usually tell patients to visit the clinic for o icial documentation.
+Q30. What kind of support would you like regarding data protection and legal issues? I would like clear national guidelines, training on safe digital practices, and o icial
+
+systems where consultations can be recorded legally. Without that, telemedicine will remain informal and risky.
+
+Doctor 15 ­ Navoi Region Name: Dr. Farhod Ismoilov Age: 53 Specialization: General Surgeon Location: Navoi City, Navoi Region Workplace: Regional Hospital of Navoi Experience: 27 years Profile: Highly experienced surgeon, conservative and skeptical about new technologies. Prefers in-person examinations and handwritten records. Has witnessed many "digital reforms" that didn't take o , so he's doubtful about the promises of telemedicine.
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? Honestly, I use almost none. We rely on phones for consultations or coordination between departments. I sometimes receive X-ray images or reports via Telegram from junior doctors in other hospitals, but that's not o icial telemedicine. Our hospital lacks a proper system for such things.
+2. How has your daily work changed through telemedicine? It hasn't changed at all. For surgeons like me, remote work makes little sense -- I need to physically examine and operate. There's no replacement for hands-on practice. Telemedicine might be useful for administrative meetings or patient follow-ups, but in surgery, it's limited.
+3. What expectations did you have of telemedicine before using it? To be honest, I never had big expectations. We've heard about these "digital transformations" for years, but they usually stop at the pilot stage. I've seen systems introduced and forgotten after a few months. So I prefer to rely on what works -- direct patient care.
+4. How has your attitude toward telemedicine developed over time? It's unchanged. I'm open to technology if it truly helps, but until I see a reliable, accessible system that works for our context, I'll remain cautious.
+B. Videocalls
+5. How often do you conduct videocalls with patients? Never. We don't have such a system, and most of our patients wouldn't know how to use it either. Some younger colleagues tried video consultations via Telegram during COVID19, but I personally never did.
+
+6. For what purposes do you mainly use videocalls? Not applicable, but I could imagine using them for post-surgery check-ups or second opinions if infrastructure existed.
+7. What advantages do you see in using videocalls? Theoretically, it could save travel time for patients who live far away, especially those from rural areas. But in practice, bad internet, poor image quality, and lack of proper platforms make it ine ective.
+8. What challenges or problems occur during videocalls? From what I've heard -- technical issues, low image resolution, unstable connections, and patients who don't know how to use smartphones properly. These are serious barriers in our context.
+9. Are there patient groups for whom videocalls are particularly suitable or unsuitable? Maybe young, tech-savvy people in cities could use them. But for older patients or those in villages -- it's unrealistic. Many can't even operate a smartphone independently.
+10. How do you assess the quality of medical care via videocall? It can never match in-person consultation, especially in surgery. A camera can't replace touch, observation, or immediate reaction during an examination.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which ones? No. Everything is done manually by our reception sta . They use paper lists and a simple phone for confirmations.
+12. How do you assess the acceptance of digital appointment scheduling among your patients? Most of them wouldn't trust or understand such systems. They prefer to call or walk in. Digital appointments might work in Tashkent, but not here.
+13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages could include time-saving and better organization. But disadvantages -- confusion among patients, extra technical burden, and potential system failures.
+14. Were there technical or organizational problems when introducing digital appointment scheduling? It was never introduced in our hospital, so no problems so far -- but I imagine there would be many.
+
+D. Digital Data Collection, Exchange, and Storage
+15. How do you collect and store patient data digitally? Mostly on paper. We do have computers in administration, but clinical documentation is handwritten. Some imaging departments have digital copies, but they aren't connected to a central system.
+16. Which systems or apps do you use for data exchange? Only Telegram and sometimes email, informally. O icially, no integrated system exists.
+17. How do you assess the security and reliability of these systems? Telegram isn't secure for medical data. I know this, but we don't have alternatives. It's a compromise -- not ideal, but practical.
+18. What advantages and risks do you see in digital data exchange and storage? Advantages: easier access to past records. Risks: privacy leaks, data loss, and system failures. In our context, power cuts alone can cause big issues.
+19. Have you ever experienced problems with data loss or data security? Not personally, since I use paper files. But colleagues have lost digital files after computer breakdowns.
+20. How do you handle documentation and archiving of digital data? We print and store physical copies. That's still the safest and most reliable method for us.
+E. Communication via App
+21. Do you communicate with patients through special apps? If yes, how? I use Telegram privately with some long-term patients who send photos or questions. It's uno icial, and I only do it when necessary.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, via Telegram or phone calls. We have a group chat among surgeons across the region -- it's helpful for quick advice.
+23. Which functions are most important to you in app communication (e.g., security, speed, documentation)? Speed and reliability are key. Security is also important, but when you have no alternatives, practicality wins.
+24. What challenges exist in digital communication with patients and colleagues? Lack of professional platforms, privacy concerns, and poor connectivity. Also, misunderstandings -- patients often send unclear photos or messages.
+
+F. Recording and Summarization
+25. Do you use functions for automatic recording or summarization of videocalls? No, since we don't have videocalls.
+26. How useful would such recording functions be for your work? Maybe for legal documentation or teaching, but not essential in surgery.
+27. Do you have improvement suggestions regarding recording and documentation? If such systems are introduced, they should be simple and integrated into existing workflows, not as extra work.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks when using telemedicine functions? Currently, they are unclear. No one has explained to us how patient data should be handled digitally. That creates hesitation.
+29. Are there legal uncertainties that limit your telemedicine work? Yes, uncertainty about consent, liability, and patient privacy. So I avoid using digital means for anything sensitive.
+30. What kind of support do you wish regarding data protection and legal issues? Clear national guidelines, simple tools approved by the Ministry of Health, and local training for medical sta . Otherwise, telemedicine will remain a theoretical concept.
+
+Doctor 14 ­ Dr. Shavkat Rakhimov, General Practitioner, Kashkadarya Region, Uzbekistan
+A. General Use and Attitudes
+1. Which telemedical functions do you currently use in your practice? In Kashkadarya, especially in the smaller district clinics, we do not have any o icial telemedicine tools. The only "digital" aspect of my work is using my personal smartphone to communicate with patients through Telegram or phone calls. Sometimes, I receive lab results as photos or videos of test strips. I wouldn't call this telemedicine, but it's a small step toward it.
+2. How has your daily work changed due to telemedicine? Not much has changed because there is no structured system. However, communication has become faster. Instead of patients waiting until their next visit, they can now ask questions anytime. It saves them unnecessary travel, but it also increases my workload outside o ice hours.
+3. What expectations did you have about telemedicine before using it? At first, I didn't think it was relevant for rural doctors like me. I thought it was only for large hospitals in Tashkent. But now, after seeing how useful it could be for consultations or quick advice, I believe it can help even small clinics if we have stable internet and training.
+4. How has your attitude toward telemedicine evolved over time? My attitude has shifted from skepticism to cautious optimism. I see its potential, especially for chronic disease follow-up and patient education. But I also see many barriers -- poor infrastructure, lack of o icial systems, and fear of doing something "improper" legally.
+B. Videocalls
+5. How often do you conduct video calls with patients? Very rarely. Maybe once or twice a month, mostly during emergencies or when a patient insists on showing me something visually.
+6. For what purposes do you use videocalls? To check visible symptoms like skin rashes, post-surgery wounds, or swelling. I also use it to visually confirm medication use -- for example, showing patients how to take inhalers correctly.
+7. What advantages do you see in using videocalls? It helps me assess situations faster. For example, when an elderly patient feels unwell, I
+
+can quickly decide whether they need to come in or can rest at home. It saves travel time and helps in triage decisions.
+8. What challenges or problems occur during videocalls? The main challenge is poor internet. The image freezes or cuts out, and sometimes patients can't position the camera properly. Also, many older patients don't know how to use video functions. Privacy is another issue -- family members often join calls or record without permission.
+9. Are there specific patient groups for whom videocalls are more or less suitable? Videocalls are suitable for younger patients and those familiar with smartphones. For elderly or illiterate patients, it's very hard. They prefer face-to-face visits.
+10. How do you evaluate the quality of medical care via videocall? It's limited but helpful in some cases. I can provide general advice but not full medical care. It's an additional tool, not a replacement.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which ones? There's no digital system in our clinic. Appointments are made through the reception desk or directly with me on the phone. A few younger patients prefer messaging on Telegram, but it's informal.
+12. How do you evaluate patient acceptance of digital scheduling? Those who use it like the convenience. But older patients don't trust it -- they prefer physical registration or calling the nurse.
+13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages: saves time, reduces queues, and allows me to plan my day better. Disadvantages: lack of synchronization, confusion about available slots, and no o icial record. Sometimes I get double-booked because both the nurse and I accepted di erent patients for the same time.
+14. Were there any technical or organizational issues introducing digital scheduling? Yes, the main issue is lack of coordination. If we had a single platform shared between reception and doctors, it would be easier. Now, everything is manual and inconsistent.
+D. Digital Data Collection, Exchange, and Storage
+15. How do you collect and store patient data digitally? We still use paper files. I sometimes take photos of test results or blood pressure logs
+
+patients send me and store them on my phone. There is no centralized electronic medical record.
+16. What systems or apps do you use for data exchange? Telegram and sometimes WhatsApp. That's it. I send test results to specialists in Karshi or Tashkent for second opinions through these apps.
+17. How do you evaluate the security and reliability of these systems? They are convenient but not secure. Medical data can easily be leaked or misused. However, since there's no national platform, we have no better choice for now.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages: faster communication and better continuity of care. Risks: lack of confidentiality, data loss, and potential misuse if phones are lost or hacked.
+19. Have you ever experienced data loss or security issues? Yes. Once my phone memory got full, and I deleted old chats that contained patient history. I realized later that I needed them. Now, I print important data immediately.
+20. How do you handle documentation and archiving of digital data? If I receive something important, I print it and attach it to the paper file. Everything else remains temporarily on my phone until the patient's next visit.
+E. Communication via App
+21. Do you communicate with patients via special apps? If yes, how does it work? Yes, Telegram. Patients send questions, photos of medicines, or blood pressure readings. I reply when I have time. For minor issues, this works well.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, we have regional Telegram groups where general practitioners discuss di icult cases or share new protocols from the Ministry of Health.
+23. Which features are most important for you in app-based communication (e.g., security, speed, documentation)? Security and archiving are most important. I would prefer an app that automatically records conversations and stores them securely in the patient's digital file.
+24. What challenges exist in digital communication with patients and colleagues? Patients expect immediate answers. Sometimes they message during the night. It's di icult to separate work and personal time. Also, misunderstandings happen when medical terms are unclear in text messages.
+
+F. Automatic Recording and Summarization
+25. Do you use automatic recording or summarization functions for videocalls? No, there are no such tools available in our region.
+26. How useful would such recording functions be for your work? Extremely useful. If videocalls could be automatically summarized and stored securely, it would reduce paperwork and protect doctors from misunderstandings or legal issues.
+27. Do you have any suggestions for improving documentation and recording functions? Yes -- voice-to-text summaries would be helpful. Also, integrating such functions into a single national telemedicine platform would make it easier to manage.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal regulations in telemedicine use? Currently, there are no clear regulations for telemedicine in Uzbekistan. Every doctor acts on personal judgment. We need national standards defining what's allowed and what's not.
+29. Are there any legal uncertainties that limit your telemedicine work? Yes. I'm always unsure whether it's legally safe to provide advice through Telegram. If something goes wrong, there's no clear protection for doctors.
+30. What support do you wish regarding data protection and legal questions? I would like to see clear laws, o icial training programs, and government-approved digital systems. This would encourage more doctors to use telemedicine responsibly and confidently, especially in remote areas like Kashkadarya.
+
+Doctor 13 ­ Dr. Umida Karimova, Obstetrician-Gynecologist, Khorezm Region, Uzbekistan
+A. General Use and Attitudes
+1. Which telemedical functions do you currently use in your practice? In my practice at the Khorezm Regional Perinatal Center, there are no o icial telemedicine systems. However, I sometimes use Telegram or phone calls to follow up with pregnant women, especially those living far from the city. They send blood pressure readings, ultrasound images, or ask questions about medication doses. So, while I wouldn't call it true telemedicine, it's a form of remote support.
+2. How has your daily work changed due to telemedicine? There's been a small change -- mostly in communication. Before, all follow-ups were in person. Now, some patients prefer to message or call. It saves time for minor consultations, but it doesn't replace physical examinations, which are essential in gynecology.
+3. What expectations did you have about telemedicine before using it? I hoped it would make communication easier and help me monitor high-risk pregnancies more closely. I imagined a secure app where patients can log symptoms and send test results directly. Unfortunately, those systems don't exist here yet, so expectations remain theoretical.
+4. How has your attitude toward telemedicine evolved over time? I've become more open to the idea. At first, I thought it was unnecessary -- pregnancy care must be in person. But during COVID-19, I saw how valuable it can be to check patients remotely, especially for advice and follow-up. Now I believe telemedicine could complement traditional care if implemented properly.
+B. Videocalls
+5. How often do you conduct video calls with patients? Rarely -- maybe once every two weeks. Mostly when a patient from a rural area has di iculty traveling for a routine checkup or needs to show me a swelling or rash.
+6. For what purposes do you use videocalls? To visually assess mild symptoms, explain how to take prescribed medicines, or evaluate emotional well-being during pregnancy. Sometimes I also check postpartum recovery if the patient can't come in person.
+7. What advantages do you see in using videocalls? It saves time for both sides and gives peace of mind to pregnant women who worry
+
+easily. It also reduces the need for unnecessary travel -- which is especially good for women in late pregnancy or with limited mobility.
+8. What challenges or problems occur during videocalls? Poor internet connection, especially outside the city, is a big issue. Some patients are shy or uncomfortable showing certain symptoms on camera. Also, I can't do physical examinations -- like palpation or heartbeat listening -- which are vital in my field.
+9. Are there specific patient groups for whom videocalls are more or less suitable? They work well for educated, urban women who are comfortable using smartphones. For older or rural women, videocalls are almost impossible -- they either don't have smartphones or rely on their husbands' phones.
+10. How do you evaluate the quality of medical care via videocall? It's acceptable for psychological support, education, and minor follow-ups, but not for diagnostics. I would rate it as supplementary, not standalone care.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which ones? Appointments are managed manually by the reception desk. However, many patients message me directly on Telegram to ask for available times. That's convenient but also adds extra workload.
+12. How do you evaluate patient acceptance of digital scheduling? Patients really like it -- they feel special when they can reach the doctor directly. But it also creates inequality because not everyone has access to the internet or knows how to use messaging apps.
+13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages: convenience, flexibility, fewer waiting lines. Disadvantages: lack of coordination, overbooking, and no o icial record of appointments made through Telegram.
+14. Were there any technical or organizational issues introducing digital scheduling? Yes -- the main issue is that it's not integrated into the clinic's system. There's no synchronization between the Telegram messages and the physical appointment logbook. Sometimes the same slot is double-booked.
+D. Digital Data Collection, Exchange, and Storage
+
+15. How do you collect and store patient data digitally? All data is stored on paper. Occasionally, I take photos of ultrasound results or blood test sheets that patients send me on Telegram. I save them in folders on my phone for quick reference, but this is not an o icial practice.
+16. What systems or apps do you use for data exchange? Only Telegram. It's fast and accessible. Patients are familiar with it, but it's not secure or professional.
+17. How do you evaluate the security and reliability of these systems? It's not ideal. Telegram is not intended for medical data. Anyone can access a phone and read messages. But in the absence of a national health platform, we have no alternative.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages: faster communication, no paper loss, and easier follow-up. Risks: privacy breaches, phone loss, and potential misinformation spread through screenshots or forwarded messages.
+19. Have you ever experienced data loss or security issues? Yes -- I once lost important lab photos when my old phone stopped working. I had to ask the patients to resend everything. It was frustrating and unprofessional.
+20. How do you handle documentation and archiving of digital data? If I receive important information digitally, I usually print it and attach it to the patient's file. I also delete old chats every few months to keep my phone storage free.
+E. Communication via App
+21. Do you communicate with patients via special apps? If yes, how does it work? Yes, mainly via Telegram or WhatsApp. Patients send updates or ask questions about their symptoms, test results, or pregnancy discomfort. I respond as soon as I can.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, we have regional Telegram groups where gynecologists share rare case discussions or refer patients to specialists in Tashkent. It's informal but quite helpful.
+23. Which features are most important for you in app-based communication (e.g., security, speed, documentation)? For me, reliability and confidentiality are most important. I would like to have an app that stores all chats safely, allows attachments like lab reports, and automatically saves conversations to a secure database.
+24. What challenges exist in digital communication with patients and colleagues? Managing time and setting boundaries is di icult. Patients often message late at night,
+
+expecting immediate replies. Miscommunication is also common -- some patients misunderstand written instructions.
+F. Automatic Recording and Summarization
+25. Do you use automatic recording or summarization functions for videocalls? No, there's no such technology here. Everything is done manually.
+26. How useful would such recording functions be for your work? Very useful, especially for documentation. It would allow me to review cases and have records for legal or medical reference.
+27. Do you have any suggestions for improving documentation and recording functions? Yes, I would like to see an easy-to-use system that automatically generates short summaries from videocalls, adds them to the patient record, and ensures encryption.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal regulations in telemedicine use? There is almost no clarity. We have general privacy laws, but nothing specifically covering telemedicine or online communication. Most doctors rely on their own judgment.
+29. Are there any legal uncertainties that limit your telemedicine work? Definitely. I'm never sure if it's legally acceptable to advise a patient online or if that could be seen as malpractice later. That's why I avoid making diagnostic conclusions digitally.
+30. What support do you wish regarding data protection and legal questions? We need clear national regulations, institutional training, and o icial software approved by the Ministry of Health. With that, telemedicine could grow safely and systematically in regions like Khorezm.
+
+Doctor 12 ­ Dr. Bahrom Sobirov, Internal Medicine Specialist, Jizzakh Region, Uzbekistan
+A. General Use and Attitudes
+1. Which telemedical functions do you currently use in your practice? At this point, I don't use any dedicated telemedicine platforms. Most of my consultations are face-to-face. In some cases, I communicate with returning patients via Telegram messages or phone calls if they cannot come to the clinic. That's the closest thing to telemedicine we currently have.
+2. How has your daily work changed due to telemedicine? In reality, it hasn't changed much yet, because we don't have o icial telemedicine tools integrated into our workflow. However, the increasing use of smartphones has made it easier to share lab results or follow up with patients remotely. Still, it's more of an informal adaptation rather than an institutionalized process.
+3. What expectations did you have about telemedicine before using it? I imagined it as a modern system that allows doctors to monitor patients from home and provide faster advice. I thought it could save time and help rural patients who cannot travel easily. But I also knew it would require strong internet and proper software, which we don't have yet.
+4. How has your attitude toward telemedicine evolved over time? Initially, I thought it was only something used in developed countries. Now I think it's something we need to start building step by step in Uzbekistan. I'm more open to it, but I also see that without training and infrastructure, it's unrealistic for now.
+B. Videocalls
+5. How often do you conduct video calls with patients? Almost never. Occasionally, if a patient is unable to come to the clinic, we do a quick video chat on Telegram or WhatsApp just to see their condition visually, but that's not frequent -- maybe once or twice a month.
+6. For what purposes do you use videocalls? Usually to check visual symptoms -- like a rash, swelling, or breathing di iculty -- or to advise on medication usage. It's more for reassurance and triage than for full consultation.
+7. What advantages do you see in using videocalls? They save time for both doctor and patient. It helps avoid unnecessary visits and is especially useful for chronic patients who need quick follow-ups. Also, during COVID19, it was a safer way to stay connected.
+
+8. What challenges or problems occur during videocalls? The biggest issue is unstable internet. Many patients in villages lose connection midcall. Another problem is the lack of confidentiality -- people often join from noisy or public spaces. Also, I can't examine the patient physically, so it limits diagnostic accuracy.
+9. Are there specific patient groups for whom videocalls are more or less suitable? Younger, tech-savvy patients adapt quickly and prefer videocalls. Elderly patients or those in remote villages usually don't have smartphones or are not comfortable using them. Children's cases are di icult because parents often can't explain symptoms properly online.
+10. How do you evaluate the quality of medical care via videocall? It's acceptable for follow-up or preventive advice, but not for new diagnoses. The quality depends entirely on the connection and patient cooperation. In-person care remains far superior.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which ones? We mainly use paper-based registration. Some patients contact us through Telegram or by phone to book an appointment informally. There's no centralized digital scheduling system in the hospital.
+12. How do you evaluate patient acceptance of digital scheduling? Patients like it when they can simply message for an appointment instead of standing in line. But older patients or those without smartphones still prefer walking in.
+13. What advantages and disadvantages do you see in digital appointment scheduling? The main advantage is saving time and reducing queues. The disadvantage is poor coordination -- when multiple patients message at once, appointments can overlap. There's also no automated reminder system, so people forget.
+14. Were there any technical or organizational issues introducing digital scheduling? Yes, we don't have an o icial platform or IT support. It's up to each doctor to manage their own schedule via phone or notebook. It works but it's not sustainable long-term.
+D. Digital Data Collection, Exchange, and Storage
+15. How do you collect and store patient data digitally? Mostly we use paper files. I personally keep a basic Excel sheet of chronic patients with
+
+their medications and contact info. It's just a personal system, not part of the hospital's digital infrastructure.
+16. What systems or apps do you use for data exchange? Sometimes we share reports or lab results through Telegram. That's the most common method, but of course, it's not o icially secure.
+17. How do you evaluate the security and reliability of these systems? They are not truly secure. Telegram is convenient, but anyone could forward sensitive data. Still, since there's no better alternative, we try to use it carefully.
+18. What advantages and risks do you see in digital exchange and storage of patient data? The advantage is speed -- you can send and receive results instantly. The risk is privacy loss and data leaks. Also, if a phone is lost, all chats can be exposed.
+19. Have you ever experienced data loss or security issues? I once lost some patient contact data when my phone was reset. That was a small incident, but it showed how fragile personal storage can be.
+20. How do you handle documentation and archiving of digital data? I print important digital records and keep them in patient folders. I also back up my Excel list on a flash drive every few months.
+E. Communication via App
+21. Do you communicate with patients via special apps? If yes, how does it work? Yes, but mostly via Telegram. Patients message me about their condition, send photos of their test results, and ask about medications. I try to respond outside of clinic hours when possible.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, in our regional group chats, we share case discussions or lab interpretations. There's no formal platform; it's peer communication.
+23. Which features are most important for you in app-based communication (e.g., security, speed, documentation)? Speed and simplicity are key. But I'd prefer an app that's o icially approved, has encryption, and can link communication to the patient's record.
+24. What challenges exist in digital communication with patients and colleagues? Boundaries -- some patients message at midnight. Also, misunderstandings occur because tone and context are missing. And we lack systems to document these digital interactions o icially.
+
+F. Automatic Recording and Summarization
+25. Do you use automatic recording or summarization functions for videocalls? No, we don't have such technology. All notes are taken manually, either during or after the call.
+26. How useful would such recording functions be for your work? They would be very useful, especially for recalling details or preparing follow-up notes. But again, we would need guarantees of data privacy and secure servers.
+27. Do you have any suggestions for improving documentation and recording functions? Yes, ideally, the system should automatically generate summaries from calls, which we could edit and approve. It should be simple, in Uzbek or Russian, and usable on a basic computer.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal regulations in telemedicine use? Currently, they are vague. There are general health privacy laws, but nothing specifically for telemedicine. Doctors don't really know what's legally acceptable or not.
+29. Are there any legal uncertainties that limit your telemedicine work? Yes, we are unsure about liability. For example, if a patient misinterprets an online message and their condition worsens -- who is responsible? This fear discourages digital consultations.
+30. What support do you wish regarding data protection and legal questions? We need clear national guidelines, legal training for doctors, and o icially approved platforms. Without this, telemedicine will remain informal and risky to practice.
+
+Doctor 11 ­ Dr. Otabek Rakhmatov (Jizzakh Region) Specialization: General Practitioner (Family Doctor) Experience: 10 years Workplace: District Family Health Center, Jizzakh Region (semi-rural area) Context: Jizzakh region has mid-level healthcare infrastructure, with most clinics using paper-based systems. Internet access is improving but still inconsistent. Most doctors rely on smartphones and messaging apps for basic communication, while full telemedicine platforms remain largely unavailable.
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? Currently, I only use my smartphone for patient communication -- mostly through Telegram and phone calls. Sometimes I review test results or X-ray images that patients send me as photos. There are no o icial telemedicine tools in our clinic yet.
+2. How has your daily work changed due to telemedicine? To be honest, it hasn't changed much. The main change is that some consultations that used to require patients to travel can now be handled remotely, especially follow-ups. However, I still rely mostly on in-person visits.
+3. What expectations did you have about telemedicine before using it? Initially, I didn't think it would work for our region because of poor internet and low digital literacy among patients. But after COVID, I saw its potential, especially for chronic cases and during epidemics when movement is restricted.
+4. How has your attitude toward telemedicine developed over time? I used to be skeptical, but now I see it as a necessary tool -- especially for the future. My main concern now is how to integrate it safely and legally without overloading doctors with new administrative work.
+B. Video Calls
+5. How often do you conduct video calls with patients? I conduct video calls about once or twice a week, mainly when patients live far away or cannot visit the clinic due to illness or transportation problems.
+6. For what purposes do you mainly use video calls? Mostly for checking visible symptoms -- such as skin rashes, swelling, or wound healing -- or discussing test results. Sometimes, parents call for quick advice about their children's fever or cough.
+
+7. What advantages do you see in using video calls? It saves travel time for patients, reduces the waiting room crowd, and allows me to maintain continuity of care. It's also convenient for working mothers or elderly patients.
+8. What challenges or problems occur with video calls? Poor internet connection is the main issue. Sometimes the image freezes, and I cannot properly see the problem. Also, not all patients have smartphones or know how to use video functions. Privacy is another concern -- people often call from crowded places.
+9. Are there specific patient groups for whom video calls are particularly suitable or unsuitable? Young adults adapt easily. For elderly people or rural families without stable internet, it's not suitable. Children can be examined through video if parents cooperate.
+10. How do you assess the quality of medical care via video call? Video calls work well for follow-ups or mild cases, but not for diagnosis. I would rate the quality as moderate -- helpful but not comprehensive.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which? Not o icially. We schedule most appointments manually, but sometimes patients message me on Telegram to ask for a suitable time.
+12. How do you assess patients' acceptance of digital appointment systems? Most of my patients prefer calling directly. Only a few younger ones like to use messaging for scheduling.
+13. What advantages and disadvantages do you see in digital appointment systems? Advantages: reduced phone calls, better time management, and clear records. Disadvantages: lack of awareness, poor connectivity, and confusion about online confirmations.
+14. Were there technical or organizational problems introducing digital appointment systems? We tried an online form last year but stopped because few patients used it. Many still prefer personal contact or just walking in.
+D. Digital Data Collection, Exchange, and Storage
+15. How do you collect and store patient data digitally? We have a basic hospital database for administrative purposes, but patient histories are
+
+on paper. I sometimes store important follow-up notes on my personal computer (password-protected).
+16. Which systems or apps do you use for data exchange? Telegram and email are the most common. There's no o icial system for secure data transfer in our region yet.
+17. How do you evaluate the security and reliability of these systems? Telegram is easy to use but not ideal for patient confidentiality. O icial systems would need strong encryption and access control.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages include faster coordination, especially when referring patients to regional hospitals. Risks involve data leaks or unauthorized access, especially when using personal devices.
+19. Have you ever experienced data loss or security issues? Once my phone crashed, and I lost some patient notes that were saved in messages. That made me realize how risky it is to rely on personal devices.
+20. How do you handle documentation and archiving of digital data? I print important reports and attach them to physical patient files. For digital notes, I use a password-protected folder and back it up monthly.
+E. Communication via App
+21. Do you communicate with patients via special apps? If yes, how does it work? Yes, mostly Telegram. Patients send their questions or photos of prescriptions, and I respond when I have time. For follow-up, I sometimes ask them to send updates about their condition.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, we have a regional Telegram group where doctors exchange updates, guidelines, and sometimes discuss complex cases.
+23. Which functions are most important for you in app communication (e.g., security, speed, documentation)? Speed and reliability are most important. But for the future, I'd like secure documentation -- something that automatically saves communication records in a medical system.
+24. What challenges exist in digital communication with patients and colleagues? Some patients message at night or expect instant responses. Also, there's no clear boundary between personal and professional communication.
+
+F. Recording and Summarization
+25. Do you use functions for automatic recording or summarization of video calls? No, we don't have that functionality. I take brief notes manually.
+26. How useful would such recording functions be for your work? Very useful -- especially for follow-up care, quality control, and accountability. It would also save time on writing reports.
+27. Do you have suggestions for improving recording and documentation? A secure platform that automatically records key discussion points and saves them in the patient's file would help a lot, provided privacy is protected.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks for telemedicine use? Currently unclear. We don't have o icial national standards for telemedicine or data handling. Most doctors are unsure what's allowed.
+29. Are there legal uncertainties that limit your work with telemedicine? Yes. For example, if I give advice via Telegram and something goes wrong, it's unclear who is responsible. We need clear laws defining teleconsultation boundaries.
+30. What support would you like regarding data protection and legal questions? I'd like o icial training on digital ethics and patient privacy. The Ministry of Health should also develop a national telemedicine guideline with legal protection for doctors.
+
+Doctor 10 ­ Dr. Dilfuza Islomova (Samarkand Region) Specialization: Cardiologist Experience: 18 years Workplace: Samarkand City Cardiology Center Location Context: Samarkand is a historical and growing medical hub in central Uzbekistan. The region has better infrastructure compared to the southern and western parts of the country, but digital health systems are still in the early stages of adoption. Dr. Islomova works in a semi-digital hospital where computers are used for administrative tasks but not yet for full electronic health records.
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? In our cardiology center, we recently started experimenting with remote ECG monitoring for certain chronic patients, especially those who live outside the city. Apart from that, we occasionally consult via phone or Telegram with patients who have post-hospital questions about medications. We also receive referrals from regional clinics digitally, but that's mostly through uno icial channels.
+2. How has your daily work changed due to telemedicine? The impact is modest but noticeable. I sometimes provide follow-up consultations via voice or video call, which saves patients a long trip. However, since most processes are still manual, I spend extra time documenting things twice -- once digitally and once on paper, because we lack an integrated system.
+3. What expectations did you have about telemedicine before using it? I expected it to reduce the patient load in hospitals and help monitor patients more e iciently. I also hoped it would facilitate cooperation between specialists in di erent regions. These expectations were partially met, but the lack of infrastructure limits the full benefit.
+4. How has your attitude toward telemedicine developed over time? Initially, I was skeptical because medicine here has always been very personal -- faceto-face interactions are valued. But after seeing how teleconsultations can help heart patients in remote districts manage their conditions, I've become more supportive. I believe it's an inevitable direction for the future of medicine.
+B. Video Calls
+5. How often do you conduct video calls with patients? Roughly two to three times per week, usually for post-hospital follow-ups or to review ECG results sent by patients via photo.
+
+6. For what purposes do you mainly use video calls? I use them for follow-up consultations, medication adjustments, or to observe symptoms such as swelling or breathing di iculties. Sometimes, I give lifestyle guidance, especially regarding diet or exercise.
+7. What advantages do you see in using video calls? Video calls allow continuity of care, especially for patients from rural districts who cannot travel frequently. It saves both time and money. It also helps me maintain better contact with my chronic patients, which reduces hospital readmissions.
+8. What challenges or problems occur with video calls? Connectivity is often unstable, especially when the patient is outside Samarkand city. Patients may not have proper lighting or cameras, which makes it di icult to visually assess their condition. There's also the problem of poor sound quality and background noise.
+9. Are there specific patient groups for whom video calls are particularly suitable or unsuitable? Younger, tech-savvy patients use it e ectively. However, older cardiac patients often need help from family members. Patients with low digital literacy find it frustrating and sometimes give up.
+10. How do you assess the quality of medical care via video call? It's a good supplementary tool but not a replacement for in-person examination. For follow-ups or routine check-ins, the quality is acceptable. For diagnostics or emergencies, it's insu icient.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which? In our center, appointments are still mainly booked by phone or at the reception desk. However, the Ministry of Health has recently introduced an online booking system ("my.gov.uz" integration), and we are testing it for selected patients.
+12. How do you assess patients' acceptance of digital appointment systems? Younger patients and those living in cities are quite comfortable with it. Older patients still prefer walking in or calling directly.
+13. What advantages and disadvantages do you see in digital appointment systems? Advantages include reduced queues, easier time management, and less crowding in the clinic. The disadvantage is that many patients either don't know how to use it or lack access to stable internet.
+
+14. Were there technical or organizational problems introducing digital appointment systems? Yes, sometimes the online system shows incorrect availability, or patients book multiple appointments accidentally. There's also poor integration between the online and manual systems, leading to confusion.
+D. Digital Data Collection, Exchange, and Storage
+15. How do you collect and store patient data digitally? Currently, we use a local hospital database that stores basic patient information and discharge summaries. Diagnostic data like ECGs or lab results are still paper-based. I personally keep encrypted copies of certain patient ECGs for follow-up purposes.
+16. Which systems or apps do you use for data exchange? Mostly internal hospital software for administrative reports, and Telegram for informal data exchange between cardiologists or with rural health centers.
+17. How do you evaluate the security and reliability of these systems? Our hospital's system is secure but limited. Telegram is convenient but not ideal for sensitive medical data. There's always a risk of privacy breaches.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages include faster communication and better coordination for complex cases. Risks involve unauthorized access, accidental data leaks, and the lack of clear data protection standards in Uzbekistan.
+19. Have you ever experienced data loss or security issues? Once, the hospital server failed, and we temporarily lost access to patient records for two days. That incident showed how critical reliable data backup is.
+20. How do you handle documentation and archiving of digital data? We back up data weekly on external drives. Important summaries are still printed and stored manually as o icial records.
+E. Communication via App
+21. Do you communicate with patients via special apps? If yes, how does it work? I communicate with some patients through Telegram or WhatsApp. They usually send ECG screenshots, blood pressure readings, or medication questions. I review and respond briefly, but I make it clear that it doesn't replace an o icial consultation.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, we have several Telegram groups -- one for cardiologists across the country and
+
+another for case discussions with Tashkent specialists. These groups are helpful for exchanging experience and quick feedback.
+23. Which functions are most important for you in app communication (e.g., security, speed, documentation)? Speed and reliability come first. For the future, I would prioritize secure, medical-grade communication platforms that can store messages in a structured way for documentation.
+24. What challenges exist in digital communication with patients and colleagues? Some patients expect instant replies. Also, mixing personal and professional communication on the same platform can cause confusion. Lack of proper medical chat systems is a major gap.
+F. Recording and Summarization
+25. Do you use functions for automatic recording or summarization of video calls? No, we don't have such features in use. If we had a telemedicine platform, I would find this extremely valuable for legal and medical documentation.
+26. How useful would such recording functions be for your work? It would be very helpful -- especially for long-term patients, so I can review discussions and check treatment progress.
+27. Do you have suggestions for improving recording and documentation? An AI-assisted tool that summarizes calls and automatically fills patient notes would be ideal. It could reduce administrative workload and help standardize reports.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks for telemedicine use? Currently, the regulations are not well-defined. There's a national discussion about digital health laws, but practical guidelines for doctors are missing.
+29. Are there legal uncertainties that limit your work with telemedicine? Yes. I'm uncertain about whether remote advice via Telegram counts as an o icial consultation. There's no clear legal protection for such activities.
+30. What support would you like regarding data protection and legal questions? I'd like formal training on digital ethics, clear national telemedicine regulations, and an o icial secure platform approved by the Ministry of Health for remote consultations.
+
+Doctor 9 ­ Dr. Shokir Khoshimov (Surkhandarya Region) Specialization: General Practitioner (Family Medicine) Experience: 15 years Workplace: Regional Polyclinic, Termez City Location Context: The Surkhandarya region borders Afghanistan and has mountainous rural areas with limited internet infrastructure. Most patients are from low-income families and prefer traditional in-person visits.
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? Currently, I do not use any formal telemedicine systems in my practice. My interactions are entirely face-to-face. Occasionally, I use my personal phone for patient follow-ups, especially for chronic cases who cannot travel easily. However, there is no structured digital system in place -- it's more of an informal communication channel.
+2. How has your daily work changed due to telemedicine? To be honest, telemedicine hasn't significantly changed my daily work yet. The infrastructure in our area does not support stable internet or computer systems in the clinic. We have one old desktop used for reporting to the regional health department, but consultations and records are still paper-based.
+3. What expectations did you have about telemedicine before using it? I imagined telemedicine as something that could connect us to specialists in Tashkent or other big hospitals. I expected it to reduce patient travel time and provide better diagnostics. Unfortunately, we have not reached that point yet, as the technical conditions are not in place.
+4. How has your attitude toward telemedicine developed over time? At first, I thought it was a distant dream, something for developed countries. But after COVID-19, I realized it's a necessity, especially for remote areas like ours. I've become more open to it and would like to learn how to use telemedicine properly when we have the tools and support.
+B. Video Calls
+5. How often do you conduct video calls with patients? Very rarely. I have only done video calls a few times, mainly when patients or their family members used WhatsApp to show a wound or rash. It's not an o icial or regular practice.
+6. For what purposes do you mainly use video calls? When it happens, it's usually for visual examination of a wound, a skin condition, or for
+
+post-surgery follow-up. Sometimes, I use it to check on elderly patients who live far away.
+7. What advantages do you see in using video calls? It saves time and allows us to see patients who otherwise couldn't come to the clinic. During heavy rains or for patients living in mountainous villages, it can be a big help.
+8. What challenges or problems occur with video calls? The biggest issue is connectivity. Many patients have weak mobile signals or do not have smartphones. Another problem is that it's hard to assess a patient's condition accurately without physical examination. Also, some older patients do not feel comfortable with video calls.
+9. Are there specific patient groups for whom video calls are particularly suitable or unsuitable? Younger patients or those living abroad who care for their elderly relatives find it useful. However, older patients, or those with hearing or vision problems, struggle with it. Also, those in villages with poor internet cannot use it at all.
+10. How do you assess the quality of medical care via video call? It can be supportive, but it cannot replace real visits. I can guide patients on what to do, but diagnosis accuracy is limited without proper equipment or examination.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which? No, all appointments are handled manually by the reception desk. Patients usually come early in the morning to queue. There is no digital system available.
+12. How do you assess patients' acceptance of digital appointment systems? If we had one, I think younger people would welcome it. But older patients would struggle with it. In our region, digital literacy is still quite low.
+13. What advantages and disadvantages do you see in digital appointment systems? Advantages would include less crowding and more organized scheduling. Disadvantages are the lack of access to smartphones and the need for someone to help older patients use such systems.
+14. Were there technical or organizational problems introducing digital appointment systems? We haven't introduced them yet. I believe we would face both -- technical (no internet) and organizational (lack of training).
+
+D. Digital Data Collection, Exchange, and Storage
+15. How do you collect and store patient data digitally? Most records are on paper. Occasionally, lab results are sent via email or Telegram from the regional hospital. But we do not have an electronic health record system.
+16. Which systems or apps do you use for data exchange? Only basic ones like Telegram, especially for coordination with regional hospitals.
+17. How do you evaluate the security and reliability of these systems? Telegram is not designed for medical data, so it's not secure. But we have no alternative. We share only necessary data, never full records.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages: faster access and better coordination. Risks: data leaks, misuse, and lack of proper control mechanisms.
+19. Have you ever experienced data loss or security issues? Not o icially, but I once lost patient photos when my phone was damaged. That made me realize how fragile digital storage can be without proper systems.
+20. How do you handle documentation and archiving of digital data? Very minimal. Most things are on paper, and we store files in cabinets.
+E. Communication via App
+21. Do you communicate with patients via special apps? If yes, how does it work? I use Telegram and WhatsApp for quick communication. Mostly patients send messages about their medicine doses or ask if they should come to the clinic. I reply when I can.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, we have small groups on Telegram where we discuss medical cases or announcements from the Ministry of Health.
+23. Which functions are most important for you in app communication (e.g., security, speed, documentation)? Speed and simplicity are most important for now. But in the future, I would prefer secure and o icial medical apps.
+24. What challenges exist in digital communication with patients and colleagues? Sometimes patients message at night, or misunderstand the information. Also, privacy is not guaranteed.
+F. Recording and Summarization
+
+25. Do you use functions for automatic recording or summarization of video calls? No, there is no such function available here.
+26. How useful would such recording functions be for your work? Very useful -- if the system could securely summarize or document the conversation, it would save time on reporting.
+27. Do you have suggestions for improving recording and documentation? Yes, it would be good to have an integrated telemedicine platform that automatically stores the consultation summary under the patient's ID.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks for telemedicine use? Currently, there are no clear legal guidelines locally. Doctors are unsure about what is allowed digitally. We need more clarity.
+29. Are there legal uncertainties that limit your work with telemedicine? Yes. We worry that digital communication could cause legal problems if something goes wrong since it's not o icially recognized as a consultation.
+30. What support would you like regarding data protection and legal questions? Training, o icial regulations, and technical tools that ensure compliance. Also, guidance on what kind of communication is legally safe.
+
+Doctor 8: Dr. Dilnoza Yuldasheva ­ Pediatrician, Andijan Region (Young female pediatrician, 5 years of experience. Works in a city polyclinic in Andijan. Known among colleagues as tech-curious and open-minded but limited by the clinic's outdated infrastructure and slow internet. Uses her smartphone extensively for medical communication and online learning.)
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? In our Andijan city polyclinic, we do not have an o icial telemedicine system. However, I use Telegram and Zoom for communicating with parents, and sometimes Google Forms for collecting feedback after vaccination sessions. I also take part in online pediatric webinars organized by Tashkent doctors. These are small steps toward digital medicine, but they make a di erence.
+2. How has your daily work routine changed through telemedicine? I wouldn't say my work is fully "telemedical," but digital tools have made my job more manageable. I can remind parents about vaccination dates, share educational materials about child nutrition, and even advise mothers remotely when they can't bring their babies in due to weather or transportation issues. My day has become a little more flexible, though I still spend most time on in-person visits.
+3. What expectations did you have of telemedicine before using it? I expected telemedicine to save time and make healthcare more accessible. I thought it would help us reach children in rural areas who rarely see a doctor. But I quickly realized that without stable internet and an o icial platform, it's di icult to achieve that vision.
+4. How has your attitude toward telemedicine developed over time? Initially, I thought it was only for big cities or private clinics. Now I see it as a necessary part of the future of healthcare, especially after the COVID-19 pandemic. My attitude shifted from curiosity to strong support -- even if we start small, such as digital appointment booking or health education via app.
+B. Video Calls
+5. How often do you conduct video calls with patients? I do 2­3 video calls per week, mostly with parents I already know. They show me their child's rashes, coughs, or feeding problems. Sometimes I guide them on when it's necessary to come in person.
+6. For what purposes do you mainly use video calls? Mostly for follow-ups and initial evaluations of mild conditions. For example, I can
+
+quickly assess if a fever is urgent or not. I also use calls to check if the child's treatment is being followed properly.
+7. What advantages do you see in using video calls? Video calls save parents time and money. Many mothers take buses with small children just to ask simple questions. It also allows me to maintain contact with families and provide reassurance when needed. Sometimes that emotional connection is just as important as the medicine itself.
+8. What challenges or problems occur with video calls? The main problem is unstable internet. Sometimes I lose connection in the middle of explaining something. Also, many families have old smartphones or poor lighting, which makes it di icult to see symptoms clearly. Another challenge is that some parents record or share videos without consent -- they don't realize it can violate privacy.
+9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Suitable for educated urban families and mothers who are confident using smartphones. Unsuitable for rural families or elderly caregivers who are not familiar with apps or have slow internet.
+10. How do you assess the quality of medical care via video call? It's useful for guidance and reassurance, but not for diagnosis. I always tell parents that video advice cannot replace physical examination. Still, in our setting, even basic remote guidance can prevent unnecessary su ering.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which ones? O icially, we still use paper appointment books. But I created a simple Telegram bot (with help from my brother) where parents can reserve time slots. It's not linked to our clinic system, but it helps organize my daily work.
+12. How do you assess patients' acceptance of digital appointment scheduling? Most parents like it. They say it's convenient and faster than standing in line. However, some older parents still come in person to register because they don't trust "online" things.
+13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages: less crowding in the waiting area, better time management, easier followup. Disadvantages: not everyone has the skills or devices to use it, and internet interruptions cause confusion.
+
+14. Were there any technical or organizational problems when introducing digital scheduling? Yes. Sometimes two people book the same slot due to bot delays or internet lag. Also, the clinic administration doesn't o icially recognize my digital list, so I must maintain a paper backup -- double work.
+D. Digital Data Recording, Exchange, and Storage
+15. How do you record and store patient data digitally? Most patient data is on paper. I sometimes take photos of important notes and store them in encrypted folders on my phone. For follow-up tracking, I use Google Sheets to note vaccination schedules and weight progression for newborns.
+16. Which systems or apps do you use for data exchange? Mostly Telegram for photos and test results. I use email for communication with lab sta . Sometimes, pediatricians in Andijan exchange case photos through our local doctors' group chat.
+17. How do you assess the security and reliability of these systems? They're not really secure. Telegram is convenient but not designed for medical data. I try to avoid using patient names and never share faces or personal details.
+18. What advantages and risks do you see in digital data exchange and storage? Advantages: faster communication, reduced paperwork, easy sharing of results. Risks: data leakage, unauthorized sharing, and phone loss. In a small city, trust is everything -- one privacy issue could ruin a doctor's reputation.
+19. Have you ever experienced problems with data loss or security? Once, my phone memory was full and I accidentally deleted several patient photos. I learned to use cloud backup, but even that depends on internet speed.
+20. How do you handle documentation and archiving of digital data? I keep data in three places: phone (encrypted), external USB, and a printed summary in patient files. It's not e icient, but it's the safest system I can manage right now.
+E. Communication via App
+21. Do you communicate with patients via specific apps? If yes, how? Yes, I use Telegram almost daily. Parents message me about symptoms, medication doses, or vaccination questions. I reply during working hours, unless it's an emergency.
+22. Do you communicate with other doctors through digital platforms or apps? Yes, we have a pediatric discussion group with Andijan and Namangan doctors. We share interesting cases and advice. It's informal but very helpful.
+
+23. Which features are most important to you in app-based communication (e.g., security, speed, documentation)? Speed and reliability first. For parents, response time matters most. For professional groups, image quality and message history are important. I wish there were an app combining all -- chat, notes, and file storage.
+24. What challenges exist in digital communication with patients and colleagues? Boundaries are di icult. Parents sometimes message me late at night, or expect free 24/7 consultation. Also, colleagues share medical info in public groups without anonymizing, which makes me uncomfortable.
+F. Automatic Protocols and Summaries
+25. Do you use automatic transcription or summary functions for video calls? No, we don't have such tools. I take manual notes or record voice memos after each consultation.
+26. How helpful would such functions be for your work? Extremely helpful. If a platform could automatically create a summary of symptoms and advice, it would reduce my documentation time and errors.
+27. Do you have any suggestions for improvement regarding documentation? A simple Uzbek-language telemedicine app that can generate notes, store them securely, and export reports to the clinic's archive system. It should be usable even from a smartphone.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks when using telemedicine? There are no o icial rules, which makes me cautious. I follow my own ethical guidelines -- never share patient identity, get verbal consent, and delete old chats regularly.
+29. Are there legal uncertainties that limit your telemedicine practice? Yes, many. We cannot issue prescriptions or medical certificates online. Some administrators even warn us not to give medical advice via chat because it's "uno icial."
+30. What support would you like regarding data protection and legal questions? I would like clear Ministry of Health regulations, legal protection for responsible online consultations, and training sessions on patient data safety. If such systems existed, many young doctors like me would gladly adopt telemedicine o icially.
+
+Doctor 7: Dr. Rustam Karimov ­ Cardiologist, Samarkand Region (Senior cardiologist at a regional diagnostic center in Samarkand, with 18 years of experience. Known for his cautious yet progressive approach to technology. Occasionally collaborates with cardiologists from Tashkent and abroad.)
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? In Samarkand, the availability of telemedicine is growing slowly. At our diagnostic center, I occasionally participate in remote consultations with specialists from Tashkent or foreign cardiologists through Zoom or Microsoft Teams, especially for complex heart cases. For everyday patient interactions, I rely on Telegram or voice calls for follow-ups and medication adjustments. We also use digital ECG interpretation tools, which I consider part of telemedicine.
+2. How has your daily work routine changed through telemedicine? Telemedicine has changed my routine in subtle but meaningful ways. For example, I can review test results remotely, and sometimes advise patients without requiring a full visit. This saves time for both sides. However, the administrative work has not decreased; I still must document everything manually, which limits e iciency.
+3. What expectations did you have of telemedicine before using it? Initially, I expected telemedicine to significantly reduce patient waiting times and help monitor chronic cases like hypertension and heart failure. My hope was to see smoother communication between specialists and family doctors. Some of these expectations were met, but the lack of infrastructure and o icial support limits its full potential.
+4. How has your attitude toward telemedicine developed over time? When I first heard about telemedicine, I thought it was too ambitious for Uzbekistan. But after witnessing a few successful remote ECG interpretations and online case discussions, I realized it's very feasible. I'm now cautiously optimistic and believe that with proper digital systems and training, it can transform our cardiology practice.
+B. Video Calls
+5. How often do you conduct video calls with patients? Roughly a few times per month. Usually, these are follow-ups with post-surgery or chronic patients. Internet stability in Samarkand city is decent, so video calls are possible, but older patients rarely prefer them.
+6. For what purposes do you mainly use video calls? I use them for follow-up check-ins, discussing test results, or guiding patients on
+
+blood pressure control and medication adjustments. Occasionally, I advise patients who are traveling or living abroad.
+7. What advantages do you see in using video calls? Video calls make consultations faster and more accessible. They allow me to observe facial expressions, breathing, or swelling, which can provide useful diagnostic hints. They are also very useful for patients living outside the city.
+8. What challenges or problems occur with video calls? There are several: poor internet in rural areas, patients lacking confidence with digital tools, and technical interruptions during calls. Furthermore, the lack of integrated documentation systems makes it di icult to store conversation notes securely.
+9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Suitable for younger, tech-savvy patients and those under long-term monitoring for mild heart conditions. Unsuitable for elderly patients, especially those needing physical assessments, ECGs, or blood pressure measurements.
+10. How do you assess the quality of medical care via video call? I'd say it's moderately e ective--good for counseling and follow-ups, but not for diagnostics. Physical examination and auscultation remain irreplaceable. Telemedicine complements but cannot replace in-person cardiology yet.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which ones? In our clinic, appointments are still made by phone or in person. I personally maintain my own Google Calendar for private consultations, but the o icial hospital uses paper logs.
+12. How do you assess patients' acceptance of digital appointment scheduling? Urban patients--especially those under 40--would welcome it. But older or rural patients still prefer phone calls or physical booking. Acceptance depends on how simple and localized the interface is.
+13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages: reduced waiting times, better time management, fewer double bookings. Disadvantages: poor internet connectivity, lack of digital literacy, and occasional noshows due to forgetfulness or misunderstanding of online tools.
+14. Were there any technical or organizational problems when introducing digital scheduling? We have not o icially introduced it, but I've seen problems in private clinics: patients
+
+booking wrong time slots or system lags during heavy use. Localized Uzbek- or Russian-language interfaces would solve much of this.
+D. Digital Data Recording, Exchange, and Storage
+15. How do you record and store patient data digitally? At the hospital, records are kept on paper, but I digitize ECGs, echocardiograms, and key case notes for personal reference. We use shared computers and USB drives, which is not ideal from a data protection standpoint.
+16. Which systems or apps do you use for data exchange? For collaboration with specialists, I use email, Telegram, and Google Drive. For internal use, we rely on simple Excel databases. A unified electronic health record (EHR) system is still missing in Samarkand.
+17. How do you assess the security and reliability of these systems? Security is weak, especially since most sharing happens over consumer apps. I try to anonymize files when possible, but without o icial infrastructure, full security cannot be guaranteed.
+18. What advantages and risks do you see in digital data exchange and storage? Advantages: quick collaboration, better access to diagnostic images, easier communication. Risks: data leaks, unauthorized access, and accidental loss due to viruses or hardware failure.
+19. Have you ever experienced problems with data loss or security? Yes, once. My computer was infected with malware that corrupted several ECG files. Since then, I back up data on an external hard drive disconnected from the internet.
+20. How do you handle the documentation and archiving of digital data? I name and store files systematically by patient initials and date, keeping both digital and printed copies. It's manual work, but I consider it the safest until a national EHR system is in place.
+E. Communication via App
+21. Do you communicate with patients via specific apps? If yes, how? Yes. I use Telegram and sometimes WhatsApp for non-urgent communication--like sending test results, medication reminders, or answering simple questions. I avoid sharing sensitive data.
+22. Do you communicate with other doctors through digital platforms or apps? Frequently. I'm part of a regional cardiology discussion group where doctors share
+
+ECGs, discuss complex cases, and seek second opinions. It's an invaluable peer support network.
+23. Which features are most important to you in app-based communication (e.g., security, speed, documentation)? Security, clarity of images (for ECGs), and speed are crucial. Documentation would be valuable too, but currently, apps are not integrated into patient files.
+24. What challenges exist in digital communication with patients and colleagues? Mainly privacy concerns and patient expectations for 24/7 availability. Many patients misunderstand the purpose of online communication and expect full consultations over chat.
+F. Automatic Protocols and Summaries
+25. Do you use automatic transcription or summary functions for video calls? No, such tools are not available. I manually summarize each online consultation in my notes.
+26. How helpful would such functions be for your work? Extremely helpful. Automatic summaries would save time and ensure that nothing is forgotten, especially during back-to-back consultations.
+27. Do you have any suggestions for improvement regarding documentation? A nationally approved telemedicine system that integrates patient data, call summaries, and consent forms would be ideal. It should also work o line or in lowbandwidth settings for rural use.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks when using telemedicine? There is no clear regulation yet. I operate based on professional ethics--avoiding sensitive details online. But a legal framework is urgently needed to protect both doctors and patients.
+29. Are there legal uncertainties that limit your telemedicine practice? Yes. I cannot provide prescriptions or o icial medical certificates based on online consultations because it's not legally recognized yet. This limits telemedicine's usefulness.
+30. What support would you like regarding data protection and legal questions? We need training sessions and o icial guidelines in Uzbek and Russian on how to
+
+securely use telemedicine tools, and clear laws defining the legal status of remote consultations.
+
+Doctor 6: Dr. Gulnara Allambergenova ­ General Practitioner, Nukus, Karakalpakstan Region (Practicing in a regional polyclinic serving both urban and rural populations. Known for her cautious but open-minded approach to new technologies in healthcare.)
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? At the moment, telemedicine in our region is at a very early stage. We do not have an o icial telemedicine platform integrated into our system. However, I use mobile messaging apps like Telegram and WhatsApp to communicate with patients, mainly for follow-up questions and to send lab results. We also occasionally use voice calls for brief consultations, especially when patients live far from the city. In my practice, this is the closest we come to telemedicine.
+2. How has your daily work routine changed through telemedicine? There hasn't been a fundamental change, but informal digital communication has made my work more flexible. Patients can now ask small questions without having to visit the clinic, which reduces unnecessary visits. However, since most documentation must still be done on paper, the workload hasn't decreased. Sometimes it even increases because I have to keep track of messages separately.
+3. What expectations did you have of telemedicine before using it? Initially, I thought telemedicine would save time and improve patient access, especially for those in remote desert areas of Karakalpakstan. I also hoped it would make data sharing easier. But I soon realized that without proper infrastructure, training, and reliable internet, these expectations are di icult to meet.
+4. How has your attitude toward telemedicine developed over time? At first, I was skeptical, thinking it would never work in our setting. Over time, I have seen some small successes, for example, remote consultations between doctors in Tashkent and Nukus hospitals, which have been very helpful. Now I believe telemedicine is not a dream--it is a goal we can reach gradually with proper government support.
+B. Video Calls
+5. How often do you conduct video calls with patients? Currently, very rarely. Perhaps once or twice a month. Internet quality in rural areas is poor, and many patients do not have smartphones capable of stable video calls.
+6. For what purposes do you mainly use video calls? Mostly for follow-up consultations, checking recovery progress, or discussing simple
+
+results. For example, patients after a flu or COVID infection sometimes send me photos of their test results, and we talk briefly about further steps.
+7. What advantages do you see in using video calls? Video calls can save time and travel costs for patients, especially those living 50­100 km away. It also allows me to observe their condition visually, which helps more than just phone calls.
+8. What challenges or problems occur with video calls? The biggest challenges are unstable internet, low-quality cameras, and patients' lack of experience with technology. Many older patients do not know how to start a video call or hold the phone correctly. Confidentiality is also a concern--patients sometimes conduct calls from public places.
+9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Video calls work best for younger patients or those who already use smartphones daily. They are less suitable for elderly patients or those with chronic diseases, who often require physical examination and blood pressure monitoring.
+10. How do you assess the quality of medical care via video call? I would say it's acceptable for minor cases and follow-ups, but insu icient for diagnostics or initial consultations. Without physical examination, important signs can be missed.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? If yes, which ones? We mainly use a paper-based appointment book. In some private clinics in Nukus, Google Calendar or local Telegram bots are used, but in public clinics, this is not implemented. Sometimes I use personal notes on my phone to remind myself of follow-ups.
+12. How do you assess patients' acceptance of digital appointment scheduling? Most of my patients would like it if it were available, but they don't trust online systems yet. They prefer to call directly or come in person. Digital scheduling would only work if it were simple and explained well.
+13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages include time e iciency, reduced waiting lines, and better organization. Disadvantages are lack of IT infrastructure, and patients' low digital literacy. Also, power outages in rural areas make reliance on digital systems risky.
+
+14. Were there any technical or organizational problems when introducing digital scheduling? We haven't implemented it yet o icially. A few private clinics tried, but they faced issues with unstable internet and patients booking but not showing up.
+D. Digital Data Recording, Exchange, and Storage
+15. How do you record and store patient data digitally? Most data is still kept on paper. I store a few digital copies on my personal laptop and USB drives, especially lab results or prescriptions. We lack a unified electronic medical record (EMR) system.
+16. Which systems or apps do you use for data exchange? Mainly email and Telegram for document exchange with laboratories or other doctors. For o icial reports, we still use printed forms.
+17. How do you assess the security and reliability of these systems? They are not very secure, especially when using personal devices. Telegram is convenient but not designed for medical confidentiality. Still, it's the only practical solution at the moment.
+18. What advantages and risks do you see in digital data exchange and storage? Advantages: faster communication, easier access to lab results, and reduced paperwork. Risks: data leakage, unauthorized access, and loss of data if devices are damaged or stolen.
+19. Have you ever experienced problems with data loss or security? Yes, a few times. My USB drive once got corrupted, and I lost several patients' lab records. Since then, I keep a backup on an external hard drive.
+20. How do you handle the documentation and archiving of digital data? I try to keep everything organized by folders and patient names, and back it up monthly. But it's time-consuming and lacks an o icial format.
+E. Communication via App
+21. Do you communicate with patients via specific apps? If yes, how? Yes, mostly via Telegram. Patients send me photos of test results, and I give short comments. I avoid giving diagnoses through chat, but I guide them on whether they should visit the clinic.
+
+22. Do you communicate with other doctors through digital platforms or apps? Yes, I'm part of a Telegram group with other GPs and specialists in Nukus and Tashkent. We sometimes discuss rare cases or share treatment advice.
+23. Which features are most important to you in app-based communication (e.g., security, speed, documentation)? For me, security and message history are most important. I want to ensure patient information is not exposed, and that I can review previous messages if needed.
+24. What challenges exist in digital communication with patients and colleagues? Many patients write messages at night or on weekends, which blurs boundaries. Sometimes they expect instant replies. Also, language barriers exist when communicating with colleagues from other regions (Uzbek, Karakalpak, Russian mix).
+F. Automatic Protocols and Summaries
+25. Do you use automatic transcription or summary functions for video calls? No, we don't have such features. It would be great to have a system that records and summarizes calls, especially for documentation.
+26. How helpful would such functions be for your work? They would be very helpful. It would save time and ensure accurate medical notes, particularly for follow-up visits.
+27. Do you have any suggestions for improvement regarding documentation? Yes, I suggest developing a simple Uzbek-language telemedicine platform that automatically documents consultations and integrates with existing patient records.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks when using telemedicine? Currently, the legal framework is unclear in our region. We do not have o icial guidelines on what data we can store or how to secure it digitally.
+29. Are there legal uncertainties that limit your telemedicine practice? Yes, I avoid giving formal medical advice online because I'm unsure if it's legally protected. There is no law defining online consultation responsibility yet.
+30. What support would you like regarding data protection and legal questions? We need governmental regulations, training, and standardized platforms. I would also appreciate workshops that explain how to use digital tools safely and in compliance with future laws.
+
+Doctor 5: Dr. Dilshoda Usmonova ­ Obstetrician-Gynecologist, Khorezm Region Age: 42 Experience: 18 years Workplace: Urgench City Women's Health Center Background: Dr. Usmonova is a respected gynecologist and obstetrician serving both urban and rural patients. She is known for her empathy and commitment to women's health, especially among low-income families. While she uses her smartphone daily for patient communication and health education, she has no access to structured telemedicine systems. She occasionally collaborates with private labs and ultrasound specialists via messaging apps.
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? At the moment, I use simple communication tools such as Telegram and WhatsApp to answer patient questions and share ultrasound or lab results. I wouldn't call it "telemedicine" in the formal sense -- it's more like remote advice. Our clinic doesn't have any o icial digital platform for consultations or scheduling. However, some private clinics in Tashkent do, and I believe it's the direction we should move toward.
+2. How has your daily work changed through telemedicine? It hasn't changed much yet, because there's no o icial system. But during the COVID-19 pandemic, I started doing follow-ups via phone or video calls. This helped me understand how useful such functions can be, especially for pregnant women who cannot visit due to transportation or family limitations. Still, I need to keep manual records and handwritten notes, so my work remains mostly traditional.
+3. What expectations did you have of telemedicine before using it? I expected it to simplify communication with patients and reduce clinic crowding. I also thought it would help me track pregnancy progress more e ectively through digital records. Unfortunately, the reality is that the infrastructure and regulations aren't there yet.
+4. How has your attitude toward telemedicine evolved over time? I used to think telemedicine was only for rich countries. Now, I realize that even a simple video call can save a patient's life. I see it as a supportive tool -- not replacing physical visits, but extending my reach to patients who otherwise wouldn't get care in time.
+B. Video Calls
+5. How often do you conduct video calls with patients? Maybe five to six times a week. Usually when women are in rural areas and cannot come
+
+for a follow-up. For example, if they experience swelling or abnormal symptoms, they call me via Telegram video.
+6. For what purposes do you mainly use video calls? Primarily for monitoring pregnancy, checking swelling or rashes, and explaining medication instructions. I also use it to provide emotional support to anxious mothers, which is a big part of my job.
+7. What advantages do you see in using video calls? Video calls save time and provide comfort to both sides. For me, it's a flexible way to stay connected to patients. For them, it means avoiding travel with small children or during late pregnancy. It also strengthens trust because patients feel the doctor is available.
+8. What challenges or problems arise with video calls? Internet connection is often unstable, especially outside Urgench. Sometimes, the image freezes or the sound breaks. Also, some women don't have privacy at home -- their husbands or in-laws may overhear, which limits open communication. Another issue is that video calls are unpaid work; there's no reimbursement structure for this time.
+9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Younger women and those in cities use it easily. Elderly or conservative patients may feel uncomfortable or embarrassed. Some prefer to visit in person for sensitive issues. Also, first-time mothers need physical exams -- telemedicine alone is not enough.
+10. How do you assess the quality of medical care via video call? It's limited but valuable. You can provide basic guidance, but it cannot replace ultrasound, palpation, or laboratory tests. For follow-up consultations, though, it's e icient and helps maintain continuity of care.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? No o icial tools. My assistant uses a notebook and a simple Excel file to track appointments. Patients often message me directly to ask for a slot. I wish we had an automated system integrated with patient profiles.
+12. How do you evaluate patient acceptance of digital appointment scheduling? Patients would appreciate it, especially younger ones. But many rural women don't use smartphones confidently, and some share one phone per family. So, accessibility is an issue.
+
+13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages: better organization, less waiting time, and fewer missed appointments. Disadvantages: need for sta training, dependence on internet, and risk of miscommunication if the system is not in Uzbek language.
+14. Were there technical or organizational problems when introducing digital appointment systems? We have not implemented one yet. I imagine synchronization between doctors' schedules and patient availability could be di icult, especially for emergency cases.
+D. Digital Data Collection, Exchange, and Storage
+15. How do you record and store patient data digitally? We mostly keep paper-based pregnancy charts. Some ultrasound reports are stored as PDFs on my personal laptop or USB. I also take photos of handwritten notes to keep a backup. There's no centralized storage system in our clinic.
+16. What systems or apps do you use for data exchange? Telegram or email for sending lab results, especially between departments or private labs. We sometimes use Google Drive informally when we need to access files remotely.
+17. How do you assess the security and reliability of these systems? They are not secure enough. Telegram is fast but not private for medical data. Anyone can accidentally forward files. I think o icial systems with encryption and access control should be introduced by the Ministry of Health.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages: easier collaboration, faster access to results, and less paperwork. Risks: patient data leaks, unauthorized sharing, or accidental deletion.
+19. Have you ever experienced problems with data loss or security? Yes, once a computer in our clinic was reformatted and we lost several ultrasound images. It was a stressful situation. That's why I prefer to keep printed copies.
+20. How do you handle documentation and archiving of digital data? I keep both printed and digital copies when possible. For sensitive information, I avoid cloud storage and keep data o line.
+E. Communication via App
+21. Do you communicate with patients via special apps? If so, how does it work? Yes, mostly through Telegram. Patients message me directly for advice or to share lab
+
+results. I try to respond during working hours, but sometimes they contact me late at night. It's practical but also emotionally demanding.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, I'm part of a women's health group on Telegram with gynecologists from other regions. We discuss di icult cases, share new guidelines, and exchange ultrasound images for second opinions.
+23. Which functions are most important to you in app communication (e.g., security, speed, documentation)? Speed and clarity of communication. Also, the ability to attach medical files and images. For o icial telemedicine, security would be very important too.
+24. What challenges exist in digital communication with patients and colleagues? Overload of messages and lack of separation between work and private life. Patients expect instant replies. Some send incomplete information, making it hard to provide proper advice. Also, there's no o icial protocol on whether such communication counts as medical documentation.
+F. Recording and Summarization
+25. Do you use automatic recording or summarization functions for video calls? No, these functions don't exist for us. I write notes manually in my notebook after each call.
+26. How helpful would these functions be for your work? Very helpful. A summary function could save time and help maintain accurate patient records. It would also be useful for follow-up and research purposes.
+27. What improvements would you wish for regarding recording and documentation? I'd like an app that automatically logs call duration, date, and key discussion points -- securely and only accessible to the doctor and patient.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks when using telemedicine functions? Currently, we have no o icial framework. Doctors rely on common sense and professional ethics. It's risky, especially if a patient complains about remote advice gone wrong.
+29. Are there legal uncertainties that restrict your telemedicine work? Yes, since teleconsultations are not formally recognized, I always limit my advice to
+
+general recommendations. I never prescribe medication based only on digital communication.
+30. What kind of support would you like regarding data protection and legal questions? We need legal education and o icial protocols for teleconsultations. If the government provides certified software and guidelines, doctors will feel more confident and patients will trust the process more.
+
+Doctor 4: Dr. Shavkat Rasulov ­ Cardiologist, Bukhara Region Age: 54 Experience: 28 years Workplace: Bukhara Regional Hospital, Department of Cardiology Background: Dr. Rasulov is a senior cardiologist with long-standing clinical experience. He treats patients with chronic cardiovascular diseases, many of whom travel from rural areas. Although skeptical about digitalization at first, he has started using his smartphone for patient follow-ups and lab result sharing. His clinic owns computers but lacks integration systems or o icial telemedicine tools.
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? We do not have formal telemedicine infrastructure, but I use my phone and Telegram to communicate with my patients, especially for follow-up after discharge. Sometimes, I receive ECG photos or blood pressure logs through messages. Our hospital has computers, but they are mainly used for writing discharge summaries or entering data into the national reporting system. There is no online consultation platform or patient portal.
+2. How has your daily work changed through telemedicine? During the COVID-19 pandemic, we began to rely more on remote communication. Before that, I never imagined giving medical advice through a phone. Now, it's quite common for patients to call for medication adjustments or advice about symptoms. My daily work hasn't become easier; in fact, it sometimes adds extra hours. But it helps patients avoid unnecessary travel, which is especially important for heart disease patients.
+3. What expectations did you have of telemedicine before using it? Initially, I had no expectations. It felt unrealistic for our region. Later, I realized that telemedicine could reduce patient load at the hospital and improve chronic disease management. I expected better coordination with general practitioners and remote monitoring, but those tools are not available yet.
+4. How has your attitude toward telemedicine evolved over time? I have grown more positive about it. At first, I was skeptical -- I thought remote medicine could not ensure quality. But now, I understand that it complements, not replaces, inperson care. I also see that young doctors are more comfortable with it, so I try to adapt.
+B. Video Calls
+
+5. How often do you conduct video calls with patients? Rarely -- maybe two or three times a month. Most patients prefer phone calls because mobile data is expensive or unstable in rural areas. When we do video calls, it's usually short and focused on verifying visual symptoms.
+6. For what purposes do you mainly use video calls? Mainly for post-discharge follow-up, checking swelling in legs, or discussing side e ects of medications. I also use it for patient education -- for example, explaining how to measure blood pressure correctly.
+7. What advantages do you see in using video calls? It provides a sense of connection and saves patients from unnecessary travel. Cardiovascular patients often feel weak and anxious -- seeing the doctor face-to-face via video can reassure them. It also allows me to observe their condition briefly without physical examination.
+8. What challenges or problems arise with video calls? Connectivity issues are common, and older patients struggle with the technology. Many don't know how to start a video call or hold the camera properly. Sometimes, privacy is compromised because family members listen in or record the call without my consent.
+9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Younger patients and those living in the city are more suitable. Elderly, rural, or lowincome patients face di iculties. Those with severe cardiac symptoms need physical examination anyway, so video alone is insu icient.
+10. How do you assess the quality of medical care via video call? It's partial. You can get general impressions, but you cannot auscultate, measure vitals, or perform ECG. So, I see it as a supplementary tool, not a replacement for clinical examination.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? No, our hospital uses a paper-based registry. Occasionally, patients message me directly for private consultations, which I manage through Telegram. That's the closest we have to digital scheduling.
+12. How do you evaluate patient acceptance of digital appointment scheduling? Younger and educated patients would welcome it, but the majority still prefer calling or walking in. There's limited awareness about online booking systems.
+13. What advantages and disadvantages do you see in digital appointment scheduling?
+
+Advantages: reduces waiting lines, helps plan daily workflow, and avoids double bookings. Disadvantages: lack of proper tools, need for sta training, and poor internet in rural areas.
+14. Were there technical or organizational problems when introducing digital appointment systems? Our hospital has not tried any yet. The biggest challenge would be coordination and ensuring that all departments use the same system.
+D. Digital Data Collection, Exchange, and Storage
+15. How do you record and store patient data digitally? We mostly use paper. Some discharge reports are entered into a government database manually. I store important ECGs or lab results on my personal USB stick for later reference. It's not ideal, but there's no o icial archive system.
+16. What systems or apps do you use for data exchange? None formally. Telegram or email is used occasionally. Some private labs send results as PDFs through messaging apps.
+17. How do you assess the security and reliability of these systems? Not reliable at all. I am concerned that patient data could be shared accidentally. These are general communication tools, not medical-grade platforms.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages: quicker communication, easier sharing between colleagues, and reduced paperwork. Risks: data leaks, unauthorized access, and technical failures that may erase valuable information.
+19. Have you ever experienced problems with data loss or security? Yes, hospital computers often malfunction or are infected with viruses. We once lost several patient records due to a hard drive crash. There's no proper backup policy.
+20. How do you handle documentation and archiving of digital data? Mostly by printing important reports and storing them in physical folders. For personal records, I maintain a digital copy on an external drive.
+E. Communication via App
+
+21. Do you communicate with patients via special apps? If so, how does it work? Yes, mostly through Telegram. Patients message me with photos or questions about medication. I respond briefly when I can. It's informal but convenient.
+22. Do you communicate with other doctors via digital platforms or apps? Yes, there are professional Telegram groups for cardiologists in Uzbekistan. We discuss di icult cases, share ECGs, or new treatment guidelines.
+23. Which functions are most important to you in app communication (e.g., security, speed, documentation)? Speed and ease of use are most important for me. Security would be ideal, but it's not yet achievable in our context.
+24. What challenges exist in digital communication with patients and colleagues? Sometimes, messages get lost in long threads. Patients expect instant responses even outside work hours. There's also no legal framework protecting doctors in such communication.
+F. Recording and Summarization
+25. Do you use automatic recording or summarization functions for video calls? No, such features are unavailable. I take handwritten notes if necessary. Recording would also raise privacy concerns without clear regulations.
+26. How helpful would these functions be for your work? They would be very useful -- especially for documentation and follow-up. It could help in teaching and in resolving patient disputes.
+27. What improvements would you wish for regarding recording and documentation? An integrated system that automatically stores notes, photos, and summaries linked to patient ID, with backup in a secure local server.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks when using telemedicine functions? Currently, there's no clear framework. We act based on our professional ethics. There are no o icial rules on storing or sharing digital patient information.
+29. Are there legal uncertainties that restrict your telemedicine work? Yes, since teleconsultations are not o icially recognized, I always fear that a misunderstanding could lead to legal consequences. This makes me cautious.
+
+30. What kind of support would you like regarding data protection and legal questions? Training from the Ministry of Health, clear national telemedicine guidelines, and o icial software tools for patient communication. Doctors need reassurance that digital consultations are legally protected.
+
+Doctor 3: Dr. Gulnora Karimova ­ Family Physician, Navoi Region Age: 49 Experience: 22 years Workplace: District Family Polyclinic, Navoi Background: Dr. Karimova works in a semi-urban clinic serving both city and rural patients. She has limited access to digital tools -- a single shared desktop computer and mobile internet are available. Despite the infrastructure challenges, she is openminded about digitalization and hopes that telemedicine will one day make her workload lighter.
+A. General Use and Attitudes
+1. Which telemedicine functions do you currently use in your practice? Currently, our clinic does not have any o icial telemedicine system. Most communication happens by phone or Telegram. Sometimes patients send me photos of their prescriptions or blood pressure readings via messaging apps. I use my mobile phone to give advice when patients cannot come due to distance or weather conditions. So, while it's not a formal telemedicine system, I consider it a form of remote consultation.
+2. How has your daily work changed through telemedicine? It hasn't changed significantly yet because we still rely heavily on in-person consultations. However, since COVID-19, patients have become more comfortable calling for advice. So now, part of my day is spent on the phone, which wasn't common before. This has slightly increased the workload because I do it after regular hours, but it also helps maintain relationships with patients.
+3. What expectations did you have of telemedicine before using it? I imagined that telemedicine would save time and allow me to monitor chronic patients without frequent visits. I also thought it would provide quick access to patient records. Unfortunately, since the infrastructure and tools are not yet available here, these expectations remain unrealized.
+4. How has your attitude toward telemedicine evolved over time? Initially, I thought it was something for advanced hospitals in Tashkent, not for us. Now, I see its value even in small regions. I'm more open to it, but I realize that without training and proper systems, it's di icult to implement. I hope that in the next few years, we can start simple steps, like video consultations for follow-ups.
+B. Video Calls
+
+5. How often do you conduct video calls with patients? Rarely -- maybe once or twice a month. Usually, it happens through Telegram or WhatsApp when a patient insists on showing something like a rash or swelling. Internet quality often limits the call quality.
+6. For what purposes do you mainly use video calls? Mainly for quick visual assessments, follow-up discussions, or for elderly patients who live far away. It's not for diagnosis but for advice and reassurance.
+7. What advantages do you see in using video calls? It saves patients travel time, especially those from distant villages. It also helps build trust when they can see me rather than just talk on the phone. For some cases, visual cues -- such as facial expressions, breathing e ort, or rashes -- can help in clinical judgment.
+8. What challenges or problems arise with video calls? Internet stability and technical knowledge are the biggest issues. Many patients don't know how to initiate a video call, and older ones don't even have smartphones. Sometimes, privacy is also an issue -- people call from noisy or public places. Additionally, there's no o icial reimbursement or documentation method for such consultations.
+9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Younger patients or middle-aged ones with smartphones use it easily. For older adults or those with hearing or vision di iculties, it's unsuitable. Also, mental health patients often prefer in-person sessions.
+10. How do you assess the quality of medical care via video call? It's limited. You can't examine physically or take vital signs. It's suitable for simple follow-ups but not for diagnosis. However, it's better than no contact at all, especially during emergencies or isolation periods.
+C. Appointment Scheduling
+11. Do you use digital tools for appointment scheduling? No dedicated system exists. We use a paper registry, and patients sometimes message us on Telegram to check availability. Some colleagues use Excel, but mostly it's manual.
+12. How do you evaluate patient acceptance of digital appointment scheduling? If available, I believe younger patients would welcome it. Older ones are used to just walking in or calling. The concept is still new in our context.
+13. What advantages and disadvantages do you see in digital appointment scheduling?
+
+Advantages: time-saving, less crowding in the waiting area, and better organization. Disadvantages: lack of devices and digital literacy, unstable internet, and fear of technology among older sta .
+14. Were there technical or organizational problems when introducing digital appointment systems? We haven't implemented one yet, but I imagine training, cost, and system maintenance would be challenges.
+D. Digital Data Collection, Exchange, and Storage
+15. How do you record and store patient data digitally? We use paper files and sometimes scan them into shared folders on the clinic computer. Data entry is done manually by the secretary. There is no cloud system or patient portal.
+16. What systems or apps do you use for data exchange? None o icially. If necessary, I share lab results or documents through Telegram with consent from patients.
+17. How do you assess the security and reliability of these systems? Telegram is not a medical system, so it's not secure enough. I worry about confidentiality but have no better alternative right now.
+18. What advantages and risks do you see in digital exchange and storage of patient data? Advantages: easy access and no loss of paper records. Risks: unauthorized access, poor data protection, and lack of local expertise to maintain digital systems.
+19. Have you ever experienced problems with data loss or security? Yes, sometimes scanned files disappear due to computer malfunctions or accidental deletions. There's no proper backup policy.
+20. How do you handle documentation and archiving of digital data? We keep both digital and paper copies. For sensitive cases, I prefer paper. We try to back up files monthly using USB drives.
+E. Communication via App
+21. Do you communicate with patients via special apps? If so, how does it work? Yes, mostly through Telegram or WhatsApp. Patients message me for minor advice, prescriptions, or lab results. It's informal but helpful.
+
+22. Do you communicate with other doctors via digital platforms or apps? Yes, there are several regional Telegram groups for doctors. We discuss di icult cases or share updates from the Ministry of Health.
+23. Which functions are most important to you in app communication (e.g., security, speed, documentation)? Security and clarity are key. I also appreciate quick image sharing. Documentation is lacking but important for the future.
+24. What challenges exist in digital communication with patients and colleagues? Boundaries -- patients write at all hours. Also, messages can get lost in chat threads, and it's hard to keep records of medical advice.
+F. Recording and Summarization
+25. Do you use automatic recording or summarization functions for video calls? No, we don't have such tools. If necessary, I take brief notes manually during or after the call.
+26. How helpful would these functions be for your work? Very helpful, especially for follow-up tracking and legal protection. But the technology is not yet accessible to us.
+27. What improvements would you wish for regarding recording and documentation? Integrated systems that automatically log consultations and link notes to patient records. Also, simple interfaces in Uzbek language.
+G. Data Protection and Legal Aspects
+28. How do you assess data protection and legal frameworks when using telemedicine functions? Currently, it's unclear. We haven't received o icial guidance on what's allowed in digital consultations. So everyone acts on their own judgment.
+29. Are there legal uncertainties that restrict your telemedicine work? Yes, we don't know whether digital consultations are recognized as o icial medical acts. There's fear of liability if something goes wrong remotely.
+30. What kind of support would you like regarding data protection and legal questions? Clear national regulations, simple guidelines, and training on how to handle data safely. If the Ministry of Health could provide o icial platforms, that would encourage more doctors to use telemedicine.
+
+       Doctor 2 ­ Cardiologist, Samarkand
+Profile: Dr. Farrukh Yusupov, age 45, works at the Samarkand Regional Cardiology Center. He has over 15 years of experience treating patients with chronic heart diseases. His clinic has one shared computer per department and limited digital infrastructure. He uses Telegram and phone calls for informal communication with patients and colleagues. He is open-minded about digital health but realistic about local limitations.
+A. General Use and Attitudes
+Q1. Which telemedicine functions do you currently use in your practice? At this stage, we don't have a dedicated telemedicine system in our hospital. However, I sometimes consult patients by phone or through Telegram voice messages. Some patients send me pictures of their prescriptions or blood pressure readings via chat. I wouldn't call it full telemedicine, but it helps maintain contact when patients can't come to Samarkand in person. We also use email for rare cases when I need to share reports with colleagues in Tashkent.
+Q2. How has your daily work changed due to telemedicine? In truth, telemedicine hasn't changed my daily work significantly yet. Most consultations are still done face-to-face. The only di erence is that, since the COVID period, patients sometimes call me for advice instead of visiting. So, the workload is the same, but communication channels have expanded slightly. I see the potential, but the system is not yet ready.
+Q3. What expectations did you have for telemedicine before using it? I expected that telemedicine would allow me to monitor my heart patients remotely and reduce unnecessary visits. However, I quickly realized that most of my patients either don't have smartphones or are not comfortable sharing medical data online. The idea sounds good in theory, but it needs infrastructure, training, and cultural adaptation.
+Q4. How has your attitude toward telemedicine developed over time? Initially, I was quite skeptical. Over time, I've become more positive -- not because I've used it much, but because I've seen how helpful it can be abroad. I now think that in the future, once hospitals are equipped and internet access improves, telemedicine could really benefit our region.
+B. Video Calls
+Q5. How often do you conduct video calls with patients? Hardly ever. Maybe once or twice a month, when a long-term patient calls me on Telegram video to ask about symptoms. It's very informal -- not a scheduled
+
+consultation. Many patients don't have a stable connection or don't feel comfortable with video calls.
+Q6. For what purposes do you mainly use video calls? Mostly for checking on stable chronic patients who can't come in person. Sometimes I just look at their medication packaging to confirm what they're taking. It's simple but useful when they live far away, especially in villages.
+Q7. What advantages do you see in using video calls? It saves time for both doctor and patient. People in remote areas don't need to travel several hours for minor clarifications. It also helps me maintain continuity of care. But it only works if the internet connection is strong and both sides know how to use the app.
+Q8. What challenges or problems occur during video calls? Poor internet is the biggest issue. Often, the call drops or the video freezes. Also, there's no way to record or document these calls properly. Patients sometimes forget details, so I still need to make handwritten notes later. And of course, not everyone feels comfortable being on camera.
+Q9. Are there patient groups for whom video calls are particularly suitable or unsuitable? Younger patients and those with smartphones can manage it easily. Elderly people, especially in rural areas, often have no internet or need their grandchildren to help them. So, in practice, it's not suitable for most of my patients yet.
+Q10. How do you assess the quality of medical care via video call? It's very limited. You can't examine the patient, check their pulse properly, or do an ECG. It's fine for advice or follow-up, but not for diagnosis. I would say it's around 4 out of 10 in terms of medical reliability for now.
+C. Appointment Scheduling
+Q11. Do you use digital tools for appointment scheduling? If so, which ones? No o icial system yet. Patients call the reception by phone, or sometimes they contact me personally through Telegram or relatives. It's very manual, but it works for our scale.
+Q12. How do you assess patient acceptance of digital appointment scheduling? I think most patients would like it if it existed, but few have experience with it. Older people prefer to call or come in person. Only young patients might be open to using an app.
+Q13. What advantages and disadvantages do you see in digital appointment scheduling? The advantage would be saving time and avoiding waiting lines. The disadvantage is that
+
+many people in Uzbekistan don't have access to or trust in online systems. They would still come physically to "confirm" their slot.
+Q14. Were there technical or organizational problems when introducing digital scheduling? We haven't introduced it yet. Some private clinics in Tashkent have started, but here in Samarkand, it's still a future plan.
+D. Digital Data Collection, Exchange, and Storage
+Q15. How do you collect and store patient data digitally? We still use paper files for most records. The hospital computer system exists, but it's outdated and often o line. I sometimes take photos of ECGs or reports to keep a copy on my phone, especially for follow-up cases.
+Q16. Which systems or apps do you use for data exchange? Mostly Telegram and email. There's no o icial secure platform yet. Occasionally, I share de-identified ECGs with colleagues for a second opinion.
+Q17. How do you evaluate the security and reliability of these systems? Telegram is easy to use, but it's not medically secure. Still, it's the only practical tool we have. I avoid sharing sensitive patient data unless absolutely necessary.
+Q18. What advantages and risks do you see in digital data exchange and storage? The advantage is easy communication and faster feedback. The risk is privacy -- data can be leaked or phones can be lost. That's why I'm careful to delete information after use.
+Q19. Have you ever experienced problems with data loss or data security? Yes, once my phone was reset, and I lost patient contact information. That's when I started backing up important messages in notebooks. So I rely more on paper again.
+Q20. How do you handle documentation and archiving of digital data? Mostly manual. I print or rewrite important notes from chats and attach them to the patient's paper file. It's extra work, but we don't have a better system yet.
+E. Communication via App
+Q21. Do you communicate with patients via special apps? If yes, how does that work? Not special medical apps, just Telegram. Patients send me blood pressure readings, or ask if they can adjust their medicine. I answer when I have time. It's convenient, but it blurs work-life boundaries.
+
+Q22. Do you communicate with other doctors via digital platforms or apps? Yes, mostly through Telegram groups. We exchange opinions, share ECG photos, or discuss new treatments. It's informal but useful.
+Q23. Which functions are most important to you in app communication (e.g., security, speed, documentation)? Speed and simplicity. Security would be great, but in practice, we choose convenience. If the system were o icial and secure, I would switch to that immediately.
+Q24. What challenges exist in digital communication with patients and colleagues? Sometimes messages come late at night or without context. Patients expect instant answers. With colleagues, the problem is lack of integration -- nothing is o icially recorded or standardized.
+F. Logging and Summarization
+Q25. Do you use functions for automatic logging or summarization of video calls? No, there's nothing like that here. I write short notes myself if I have an online discussion with a patient.
+Q26. How useful are these logging functions for your work? If we had them, they would be very helpful. But currently, I rely on manual note-taking and memory.
+Q27. Do you have improvement suggestions regarding logging and documentation? I think it would be useful if the Ministry introduced a national telemedicine portal that automatically saves messages and call notes in patient records. That would make our work much easier.
+G. Data Protection and Legal Aspects
+Q28. How do you assess data protection and legal frameworks in telemedicine? There are almost no clear rules. We all try to be careful, but o icially, telemedicine is not yet regulated. Doctors don't know what is legally allowed.
+Q29. Are there legal uncertainties that restrict your work with telemedicine? Yes, very much. For example, I don't know whether I am allowed to prescribe medication based on a phone call. So I usually tell patients to visit the clinic for o icial documentation.
+Q30. What kind of support would you like regarding data protection and legal issues? I would like clear national guidelines, training on safe digital practices, and o icial
+
+systems where consultations can be recorded legally. Without that, telemedicine will remain informal and risky.
+
+       Doctor 1: General Practitioner ­ Tashkent
+A. General Use and Attitudes
+Q1. Which telemedicine functions do you currently use in your practice? I primarily use video consultations, digital appointment scheduling, and electronic health record systems integrated with patient messaging. Recently, I have also begun using an app that allows patients to upload laboratory reports before consultations.
+Q2. How has your daily work changed due to telemedicine? My workflow has become more structured and time-e icient. Previously, I had long waiting lines and manual scheduling. Now, 40% of my patient interactions are conducted online, reducing waiting times. However, the administrative work for documentation has slightly increased.
+Q3. What expectations did you have for telemedicine before using it? Initially, I expected telemedicine to make patient communication faster and expand access to rural populations. I also hoped it would reduce my workload -- but I later realized that digital systems also require significant organization and learning e ort.
+Q4. How has your attitude toward telemedicine developed over time? At first, I was skeptical, especially about data privacy and diagnostic quality. Now, after several years, I appreciate how much easier it is to follow up with patients and manage chronic cases digitally.
+B. Video Calls
+Q5. How often do you conduct video calls with patients? Usually 10­15 times per week. During the COVID period, this number reached 30­40 per week.
+Q6. For what purposes do you mainly use video calls? Follow-ups, medication adjustments, and minor symptom assessments. I rarely use video calls for initial diagnostics unless the case is mild.
+Q7. What advantages do you see in using video calls? Convenience for both sides, reduced no-shows, and better continuity of care. It allows me to stay in contact with patients who moved abroad or live outside Tashkent.
+Q8. What challenges or problems occur during video calls? Internet instability is still an issue, even in the capital. Some patients struggle with lighting, camera positioning, or noise during calls. Another problem is lack of reimbursement for teleconsultations under insurance.
+Q9. Are there patient groups for whom video calls are particularly suitable or unsuitable?
+
+Suitable for young and tech-literate patients or those with chronic conditions. Unsuitable for elderly patients who struggle with digital tools, or for urgent cases like acute pain or injuries.
+Q10. How do you assess the quality of medical care via video call? It is good for monitoring and guidance but cannot replace a physical examination. I'd rate it 7 out of 10 in terms of diagnostic reliability.
+C. Appointment Scheduling
+Q11. Do you use digital tools for appointment scheduling? If so, which ones? Yes, I use a local platform called "DocTime" and an integrated scheduling module within my clinic's EHR system.
+Q12. How do you assess patient acceptance of digital appointment scheduling? Younger patients are enthusiastic. About 60% of all my appointments now come via the app. However, older patients still prefer calling the reception directly.
+Q13. What advantages and disadvantages do you see in digital appointment scheduling? Advantages: reduces administrative burden, avoids double bookings, and provides a clear overview of my day. Disadvantages: some patients forget to confirm their digital booking or fail to show up because they think "online" means "optional."
+Q14. Were there technical or organizational problems when introducing digital scheduling? Initially, there were synchronization issues between the app and the clinic software. After several updates, it stabilized.
+D. Digital Data Collection, Exchange, and Storage
+Q15. How do you collect and store patient data digitally? All patient data are stored in our clinic's secure EHR system, hosted on local servers. I also encourage patients to upload test results via a patient portal.
+Q16. Which systems or apps do you use for data exchange? Mostly the clinic's proprietary platform. Occasionally, I use Telegram or WhatsApp for quick communication, though I know this is not fully compliant.
+Q17. How do you evaluate the security and reliability of these systems? The internal system is reliable, but I have concerns about data shared through third-party messaging apps. There is a need for national telemedicine standards.
+
+Q18. What advantages and risks do you see in digital data exchange and storage? Advantages: instant access to medical history and reports, easy sharing with specialists. Risks: data leaks, unauthorized access, or technical failure leading to loss of critical records.
+Q19. Have you ever experienced problems with data loss or data security? Once, during a system update, I temporarily lost access to some files. Fortunately, backups restored them.
+Q20. How do you handle documentation and archiving of digital data? All digital consultations are logged automatically. I export key summaries weekly for secure backup.
+E. Communication via App
+Q21. Do you communicate with patients via special apps? If yes, how does that work? Yes. Patients can send questions through a secure in-app chat. I reply during working hours or through scheduled messages.
+Q22. Do you communicate with other doctors via digital platforms or apps? Yes, we use a private Telegram group for case discussions and a national health network app for specialist referrals.
+Q23. Which functions are most important to you in app communication (e.g., security, speed, documentation)? Security and documentation. I also appreciate read receipts and structured templates for medical notes.
+Q24. What challenges exist in digital communication with patients and colleagues? The main issue is message overload -- patients expect immediate replies. Also, not all colleagues document discussions properly afterward.
+F. Logging and Summarization
+Q25. Do you use functions for automatic logging or summarization of video calls? Yes, some apps auto-generate summaries, but I always verify them manually.
+Q26. How useful are these logging functions for your work? They save time but often miss important nuances like tone or patient behavior.
+Q27. Do you have improvement suggestions regarding logging and documentation? Yes -- integration with EHR systems and more context-aware AI summaries would be helpful.
+
+G. Data Protection and Legal Aspects
+Q28. How do you assess data protection and legal frameworks in telemedicine? Uzbekistan's laws are improving but still unclear in practice. We lack uniform national standards.
+Q29. Are there legal uncertainties that restrict your work with telemedicine? Yes -- unclear billing procedures and data transmission responsibilities make some doctors hesitant.
+Q30. What kind of support would you like regarding data protection and legal issues? Guidelines from the Ministry of Health, standardized consent forms, and professional training on digital compliance.
+
+

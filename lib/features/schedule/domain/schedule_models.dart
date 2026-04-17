@@ -1,5 +1,13 @@
+import 'package:flutter/material.dart';
+
 class TimeSlot {
-  String startTime; // e.g., "08:00-17:00"
-  String endTime; // duration e.g., "00:30"
-  TimeSlot({required this.startTime, required this.endTime});
+  final TimeOfDay start;
+  final TimeOfDay end;
+  final Duration slotDuration;
+
+  TimeSlot({
+    required this.start,
+    required this.end,
+    required this.slotDuration,
+  });
 }

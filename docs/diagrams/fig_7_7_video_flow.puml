@@ -1,0 +1,17 @@
+@startuml
+actor Doctor
+participant DoctorApp as App
+participant Backend
+participant Database
+participant Daily
+
+Doctor -> App : Start video call
+App -> Backend : POST /api/video/token
+Backend -> Database : Verify appointment and participants
+Database --> Backend : Appointment data
+Backend -> Daily : Request room/token
+Daily --> Backend : Room URL / token
+Backend -> App : 200 OK + video token
+App -> Daily : Join room with token
+@enduml
+

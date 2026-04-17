@@ -1,39 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 ThemeData buildTheme() {
-  const brand = Color(0xFF17C3B2);
-
   return ThemeData(
     // Core colors & fonts
-    primaryColor: brand,
-    scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+    primaryColor: AppColors.primaryTeal,
+    scaffoldBackgroundColor: AppColors.scaffoldBackground,
     fontFamily: 'SF Pro Display',
     colorScheme: ColorScheme.fromSeed(
-      seedColor: brand,
-      primary: brand,
-      secondary: brand,
+      seedColor: AppColors.primaryTeal,
+      primary: AppColors.primaryTeal,
+      secondary: AppColors.primaryTeal,
     ),
 
-    // Buttons
+    // Buttons — defaults kept for any raw Flutter button that slips through;
+    // prefer ShifaPrimaryButton / ShifaSecondaryButton everywhere.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: brand,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppColors.primaryTeal,
+        foregroundColor: AppColors.white,
+        padding: const EdgeInsets.all(10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: 0,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: brand,
-        side: BorderSide(color: brand, width: 2),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        foregroundColor: AppColors.primaryTeal,
+        side: const BorderSide(color: AppColors.primaryTeal, width: 2),
+        padding: const EdgeInsets.all(10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: brand),
+      style: TextButton.styleFrom(foregroundColor: AppColors.primaryTeal),
     ),
     // Inputs
     inputDecorationTheme: InputDecorationTheme(
@@ -50,7 +52,7 @@ ThemeData buildTheme() {
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(12)),
-        borderSide: BorderSide(color: brand, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryTeal, width: 2),
       ),
     ),
   );

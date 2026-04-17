@@ -1,0 +1,21 @@
+# Firebase ignore file
+.git
+.gitignore
+.firebase/
+.firebaserc
+firebase.json
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+node_modules/
+.dart_tool/
+.idea/
+.vscode/
+*.iml
+*.log
+*.lock
+.DS_Store
+Thumbs.db
+README.md
+PHASE1_SUMMARY.md
+README_DEPLOYMENT.md

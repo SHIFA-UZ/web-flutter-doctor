@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.9.2
@@ -31,14 +31,54 @@ dependencies:
   flutter_svg: ^2.0.9
   flutter:
     sdk: flutter
-  dio: ^5.5.0
-  shared_preferences: ^2.3.2
-
-
+  flutter_localizations:
+    sdk: flutter
+  fl_chart: ^0.66.0
+  flutter_riverpod: ^2.5.1  # or latest stable
   # or latest compatible
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  http: ^1.2.0
+  image_picker: ^1.0.7
+  # For web, image_picker_for_web may be needed:
+  image_picker_for_web: ^3.0.3
+  file_picker: ^8.0.0
+  url_launcher: ^6.3.0
+  shared_preferences: ^2.3.2
+  pdf: ^3.10.8
+  geolocator: ^12.0.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geocoding: ^3.0.0
+  
+  # Video calling
+  daily_flutter: ^0.37.0
+  
+  # Chat dependencies
+  cached_network_image: ^3.3.1
+  audioplayers: ^6.0.0
+  flutter_image_compress: ^2.1.0
+  record: ^6.1.2
+  path_provider: ^2.1.2
+  webview_flutter: ^4.10.0
+  
+  # IANA timezone for doctor practice time (Shifa Global Time Architecture v2)
+  timezone: ^0.9.4
+  iana_time_zone: ^0.0.1
+
+  # Local notifications & push (doctor app)
+  flutter_local_notifications: ^17.2.2
+
+  # Customizable calendar (replaces CalendarDatePicker for visible selected day)
+  table_calendar: ^3.1.3
+  intl: ^0.20.0
+
+  # Firebase Auth (phone OTP for doctor login)
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
+  firebase_auth_platform_interface: ^7.7.3
+  firebase_messaging: ^15.1.3
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +103,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/shifa_logo.svg
+    - assets/branding/shifa_logo.png
+    - assets/fonts/DejaVuSans.ttf
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

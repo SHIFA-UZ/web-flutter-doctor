@@ -1,48 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/constants/assets.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
+import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/state/auth/registration_state.dart';
 
-class VerifyKeyScreen extends StatefulWidget {
+class VerifyKeyScreen extends ConsumerStatefulWidget {
   const VerifyKeyScreen({super.key});
 
   @override
-  State<VerifyKeyScreen> createState() => _VerifyKeyScreenState();
+  ConsumerState<VerifyKeyScreen> createState() => _VerifyKeyScreenState();
 }
 
-class _VerifyKeyScreenState extends State<VerifyKeyScreen> {
+class _VerifyKeyScreenState extends ConsumerState<VerifyKeyScreen> {
   final TextEditingController _keyController = TextEditingController();
   bool _isLoading = false;
-
-  // Mock verification
-  Future<bool> _verifyKey(String key) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    const allowedKeys = {'SHIFA-2025', 'ABC-123', 'TEST-KEY', 'BEKZOD'};
-    return allowedKeys.contains(key.trim());
-  }
 
   Future<void> _onNext() async {
     final key = _keyController.text.trim();
     if (key.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your one-time key.')),
-      );
+      _snack(AppLocalizations.of(context)!.pleaseEnterOneTimeKey);
       return;
     }
-    setState(() => _isLoading = true);
-    final ok = await _verifyKey(key);
-    setState(() => _isLoading = false);
-    if (!mounted) return;
 
-    if (ok) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid key. Please check and try again.'),
-        ),
-      );
+    setState(() => _isLoading = true);
+    try {
+      // Verify key against backend (returns Future<void>)
+      await ref.read(registrationProvider.notifier).verifyKey(key);
+
+      // Defensively store it in provider (not strictly necessary after verifyKey)
+      ref.read(registrationProvider.notifier).setVerifiedKey(key);
+
+      if (!mounted) return;
+      // Flow stays the same: go to Login (not CreateAccount)
+      Navigator.pushReplacementNamed(context, AppRoutes.createAccount);
+    } catch (e) {
+      _snack(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -56,11 +60,17 @@ class _VerifyKeyScreenState extends State<VerifyKeyScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: const Text(
-          'Verify',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+        title: Text(
+          AppLocalizations.of(context)!.verify,
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Center(child: LanguageMiniToggle()),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -80,34 +90,18 @@ class _VerifyKeyScreenState extends State<VerifyKeyScreen> {
                   const SizedBox(height: 24),
                   TextField(
                     controller: _keyController,
-                    decoration: const InputDecoration(hintText: 'One time Key'),
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context)!.oneTimeKey,
+                    ),
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _onNext(),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _onNext,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Text(
-                              'Next',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
+                  ShifaPrimaryButton(
+                    label: AppLocalizations.of(context)!.next,
+                    onPressed: _isLoading ? null : _onNext,
+                    isLoading: _isLoading,
+                    width: ButtonWidth.fill,
                   ),
                 ],
               ),

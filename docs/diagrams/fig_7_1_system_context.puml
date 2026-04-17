@@ -1,0 +1,29 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(patient, "Patient", "Uses Shifa to book appointments, exchange messages and join video calls.")
+Person(doctor, "Doctor", "Provides remote and in-person care via Shifa.")
+Person(admin, "Administrator", "Oversees configuration, analytics and operational tasks.")
+
+System_Boundary(shifa, "Shifa Platform") {
+  System(spa_patient, "Patient App (Flutter)", "Android/iOS Flutter client.")
+  System(spa_doctor, "Doctor/Admin App (Flutter Web)", "Web SPA for doctors and admins.")
+  System(shifa_backend, "Backend (Spring Boot)", "Kotlin + Spring Boot monolith with PostgreSQL.")
+}
+
+System_Ext(firebase, "Firebase", "Phone auth (OTP), FCM push notifications.")
+System_Ext(daily, "Daily.co", "Video conferencing service (rooms, media).")
+System_Ext(railway, "Railway + PostgreSQL", "Application and database hosting.")
+
+Rel(patient, spa_patient, "Uses via", "Mobile (HTTPS)")
+Rel(doctor, spa_doctor, "Uses via", "Browser (HTTPS)")
+Rel(admin, spa_doctor, "Uses via", "Browser (HTTPS)")
+
+Rel(spa_patient, shifa_backend, "REST/JSON", "HTTPS")
+Rel(spa_doctor, shifa_backend, "REST/JSON", "HTTPS")
+
+Rel(shifa_backend, firebase, "Uses for OTP, FCM tokens")
+Rel(shifa_backend, daily, "Issues tokens, receives webhooks")
+Rel(shifa_backend, railway, "Runs on / uses DB")
+@enduml
+

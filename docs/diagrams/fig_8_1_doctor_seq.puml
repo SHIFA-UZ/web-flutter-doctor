@@ -1,0 +1,14 @@
+@startuml
+actor Doctor
+participant "Doctor Web UI" as DocUI
+participant Backend
+participant Database
+
+Doctor -> DocUI : Trigger action (e.g. open calendar)
+DocUI -> Backend : GET /api/calendar (with JWT)
+Backend -> Database : Load schedule and appointments
+Database --> Backend : Data
+Backend --> DocUI : JSON response
+DocUI --> Doctor : Render updated view
+@enduml
+

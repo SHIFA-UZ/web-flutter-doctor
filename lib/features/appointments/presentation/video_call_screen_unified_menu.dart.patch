@@ -1,0 +1,160 @@
+This patch unifies the two PopupMenuButtons in the notes section into one.
+
+Replace lines 1208-1304 (titleTrailing Row) with:
+
+```dart
+                                  titleTrailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.fullscreen),
+                                        onPressed: () => setState(() => _notesPanelFullScreen = true),
+                                        tooltip: AppLocalizations.of(context)!.expand,
+                                      ),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert),
+                                        tooltip: AppLocalizations.of(context)!.options,
+                                        onSelected: (value) async {
+                                          final l10n = AppLocalizations.of(context)!;
+
+                                          // Handle showing AI notes helper
+                                          if (value == 'show_ai') {
+                                            setState(() => _notesSectionsExpanded = true);
+                                            final id = widget.appointment.id;
+                                            ref.invalidate(draftNotesForAppointmentProvider(id));
+                                            ref.invalidate(consultationNotesForAppointmentProvider(id));
+                                            final drafts = await ref.read(draftNotesForAppointmentProvider(id).future);
+                                            final notes = await ref.read(consultationNotesForAppointmentProvider(id).future);
+                                            if (mounted && drafts.isEmpty && notes.isEmpty) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text(l10n.aiNotesNotReadyTryLater)),
+                                              );
+                                            }
+                                            return;
+                                          }
+
+                                          // Handle showing 025-2 form helper
+                                          if (value == 'show_0252') {
+                                            setState(() => _notesSectionsExpanded = true);
+                                            final pid = patientId;
+                                            if (pid != null && pid.isNotEmpty) {
+                                              ref.invalidate(patientFormsProvider(pid));
+                                            }
+                                            return;
+                                          }
+
+                                          // Handle switching documentation type (general <-> 025-2)
+                                          if (value == 'switch_general' || value == 'switch_0252') {
+                                            final newType = value == 'switch_general' ? 'general' : '025-2';
+                                            if (_documentationType == newType) return;
+
+                                            if (_hasUnsavedChanges) {
+                                              final result = await showDialog<String>(
+                                                context: context,
+                                                barrierDismissible: false,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: Text(l10n.unsavedChangesSwitch),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(ctx, 'cancel'),
+                                                      child: Text(l10n.cancel),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(ctx, 'discard'),
+                                                      child: Text(l10n.discardAndSwitch),
+                                                    ),
+                                                    FilledButton(
+                                                      onPressed: () => Navigator.pop(ctx, 'save'),
+                                                      child: Text(l10n.saveAndSwitch),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+
+                                              if (result == null || result == 'cancel') return;
+
+                                              if (result == 'save') {
+                                                if (_documentationType == '025-2') {
+                                                  final ok = await _form0252PanelKey.currentState?.requestSave() ?? false;
+                                                  if (!ok || !mounted) return;
+                                                }
+                                                setState(() {
+                                                  _hasUnsavedChanges = false;
+                                                  _documentationType = newType;
+                                                });
+                                                return;
+                                              }
+
+                                              if (result == 'discard') {
+                                                _notesController.clear();
+                                                setState(() {
+                                                  _beforeTreatmentImages.clear();
+                                                  _afterTreatmentImages.clear();
+                                                  _hasUnsavedChanges = false;
+                                                  _documentationType = newType;
+                                                });
+                                              }
+                                            } else {
+                                              setState(() => _documentationType = newType);
+                                            }
+                                          }
+                                        },
+                                        itemBuilder: (context) {
+                                          final l10n = AppLocalizations.of(context)!;
+                                          return [
+                                            // Show AI/025-2 helpers (only in general mode)
+                                            if (_documentationType == 'general') ...[
+                                              PopupMenuItem(
+                                                value: 'show_ai',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.auto_awesome, size: 18),
+                                                    SizedBox(width: 12),
+                                                    Text(l10n.fromShifaAi),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuItem(
+                                                value: 'show_0252',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.description, size: 18),
+                                                    SizedBox(width: 12),
+                                                    Text(l10n.fromLast0252Form),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuDivider(),
+                                            ],
+
+                                            // Switch documentation type
+                                            if (_documentationType != 'general')
+                                              PopupMenuItem(
+                                                value: 'switch_general',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.notes, size: 18),
+                                                    SizedBox(width: 12),
+                                                    Text(l10n.docModeGeneral),
+                                                  ],
+                                                ),
+                                              ),
+                                            if (_documentationType != '025-2')
+                                              PopupMenuItem(
+                                                value: 'switch_0252',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.assignment, size: 18),
+                                                    SizedBox(width: 12),
+                                                    Text(l10n.docMode0252),
+                                                  ],
+                                                ),
+                                              ),
+                                          ];
+                                        },
+                                      ),
+                                    ],
+                                  ),  // titleTrailing Row
+```
+
+This removes the first menu entirely and puts all options in the second menu with better organization and icons.

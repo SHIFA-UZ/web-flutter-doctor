@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "shifa-doctor-staging",
+    "staging": "shifa-doctor-staging",
+    "qa": "shifa-doctor-qa"
+  },
+  "targets": {
+    "shifa-doctor-staging": {
+      "hosting": {
+        "doctor": ["shifa-doctor-staging"],
+        "admin": ["shifa-admin-staging"]
+      }
+    }
+  }
+}

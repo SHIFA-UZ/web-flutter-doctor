@@ -1,0 +1,2063 @@
+// lib/features/appointments/presentation/video_call_screen.dart
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:async';
+// Conditional import: daily_flutter only works on native platforms, not web
+import 'package:daily_flutter/daily_flutter.dart' if (dart.library.html) 'package:shifa_doc_app_v1/core/services/daily_flutter_stub.dart';
+// Conditional import: embed Daily.co iframe on web (keeps call in-app instead of new tab)
+import 'package:shifa_doc_app_v1/features/appointments/presentation/daily_video_embed_stub.dart'
+    if (dart.library.html) 'package:shifa_doc_app_v1/features/appointments/presentation/daily_video_embed_web.dart' as daily_embed;
+import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
+import 'package:shifa_doc_app_v1/app/router.dart';
+import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/core/services/daily_video_service.dart';
+import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
+import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
+import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
+import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
+import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
+import 'package:url_launcher/url_launcher_string.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
+import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_data.dart';
+import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_service.dart';
+import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_translations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/appointment_form_0252_panel.dart';
+import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
+import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
+import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
+import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+
+// Provider to fetch patientId from appointment
+final _patientIdProvider = FutureProvider.family<String?, String>((ref, appointmentId) async {
+  final api = ref.read(apiClientProvider);
+  final doctorTimeZone = ref.read(profileAllProvider).valueOrNull?.profile['timeZone'] as String?;
+
+  try {
+    // Use doctor's timezone to determine "today" for consistency
+    final today = getTodayInTimezone(doctorTimeZone);
+    final ymd = '${today.year.toString().padLeft(4, '0')}-'
+        '${today.month.toString().padLeft(2, '0')}-'
+        '${today.day.toString().padLeft(2, '0')}';
+    final res = await api.get('/api/calendar', params: {'day': ymd});
+    if (res.statusCode == 200) {
+      final List data = json.decode(utf8.decode(res.bodyBytes)) as List;
+      final appointment = data.firstWhere(
+        (e) => (e['appointmentId'] ?? e['id'] ?? '').toString() == appointmentId,
+        orElse: () => null,
+      );
+      if (appointment != null) {
+        return appointment['patientId']?.toString();
+      }
+    }
+  } catch (e) {
+    debugPrint('Error fetching patientId: $e');
+  }
+  return null;
+});
+
+class VideoCallScreen extends ConsumerStatefulWidget {
+  const VideoCallScreen({super.key, required this.appointment});
+  final Appointment appointment;
+
+  @override
+  ConsumerState<VideoCallScreen> createState() => _VideoCallScreenState();
+}
+
+class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
+  final TextEditingController _notesController = TextEditingController();
+  final List<XFile> _beforeTreatmentImages = [];
+  final List<XFile> _afterTreatmentImages = [];
+  bool _isSaving = false;
+  bool _warningShown = false;
+  String _documentationType = 'general';
+  bool _hasUnsavedChanges = false;
+  /// When false, "From Shifa AI" and "From last 025-2 form" are hidden; expand via ⋮ → Show.
+  bool _notesSectionsExpanded = false;
+  final GlobalKey<AppointmentForm0252PanelState> _form0252PanelKey = GlobalKey<AppointmentForm0252PanelState>();
+  bool _notesPanelFullScreen = false;
+  int _consultationNoteIndex = 0;
+
+  // Digital signature (MVP): request + polling
+  bool _signatureRequested = false;
+  String? _patientSignedAt; // ISO string when patient signed
+  String? _patientSignatureImageBase64;
+  bool _isRequestingSignature = false;
+  Timer? _signaturePollTimer;
+
+  /// True only when we have a real signature (non-empty signed-at timestamp).
+  bool get _hasPatientSignature =>
+      _patientSignedAt != null &&
+      _patientSignedAt!.trim().isNotEmpty &&
+      _patientSignedAt != 'null';
+  
+  // Daily.co video call state
+  // For mobile: CallClient, for web: iframe URL
+  dynamic _callClient; // CallClient on mobile, String (roomUrl) on web
+  DailyVideoService? _videoService;
+  bool _isVideoInitialized = false;
+  bool _isVideoLoading = true;
+  bool _isMuted = false;
+  bool _isVideoOff = false;
+  bool _isScreenSharing = false;
+  String? _videoError;
+  StreamSubscription? _eventSubscription; // CallEvent on mobile, null on web
+  String? _roomUrl; // For web
+  String? _token; // For web
+
+  // Helper to reliably detect if we're on web platform
+  // Uses state variables as fallback since kIsWeb might not work in production builds
+  bool get _isWebPlatform {
+    // Primary check: kIsWeb
+    if (kIsWeb) return true;
+    // Fallback: if we have roomUrl/token but no callClient, we're on web
+    if (_roomUrl != null && _token != null && _callClient == null) return true;
+    // Additional fallback: if callClient is null and we're initialized, likely web
+    if (_isVideoInitialized && _callClient == null && _roomUrl != null) return true;
+    return false;
+  }
+
+  void _markUnsaved() {
+    if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController.addListener(_markUnsaved);
+    // Check for chronic disease warning after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkChronicDiseaseWarning();
+      _initializeVideoCall();
+      _fetchSignatureStatus();
+    });
+  }
+
+  Future<void> _fetchSignatureStatus() async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final res = await api.get('/api/appointments/${widget.appointment.id}');
+      if (res.statusCode != 200 || !mounted) return;
+      final map = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>?;
+      if (map == null) return;
+      setState(() {
+        _signatureRequested = map['signatureRequested'] == true;
+        final rawSignedAt = map['patientSignedAt'];
+        final signedAtStr = rawSignedAt is String ? rawSignedAt.trim() : null;
+        _patientSignedAt = (signedAtStr != null && signedAtStr.isNotEmpty && signedAtStr != 'null')
+            ? signedAtStr
+            : null;
+        final rawImg = map['patientSignatureImageBase64'];
+        _patientSignatureImageBase64 = (rawImg is String && rawImg.trim().isNotEmpty) ? rawImg : null;
+        if (_signatureRequested && _patientSignedAt == null) {
+          _startSignaturePolling();
+        } else {
+          _stopSignaturePolling();
+        }
+      });
+    } catch (e) {
+      debugPrint('Fetch signature status: $e');
+    }
+  }
+
+  void _startSignaturePolling() {
+    _signaturePollTimer?.cancel();
+    _signaturePollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      await _fetchSignatureStatus();
+    });
+  }
+
+  void _stopSignaturePolling() {
+    _signaturePollTimer?.cancel();
+    _signaturePollTimer = null;
+  }
+
+  Future<void> _requestSignature() async {
+    if (_isRequestingSignature || _signatureRequested) return;
+    setState(() => _isRequestingSignature = true);
+    try {
+      final api = ref.read(apiClientProvider);
+      final res = await api.put('/api/appointments/${widget.appointment.id}/request-signature', {});
+      if (res.statusCode == 200 && mounted) {
+        setState(() {
+          _signatureRequested = true;
+          _isRequestingSignature = false;
+        });
+        _startSignaturePolling();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.signatureRequestSent),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) setState(() => _isRequestingSignature = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${AppLocalizations.of(context)!.errorSaving}: ${res.statusCode}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isRequestingSignature = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context)!.errorSaving}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _initializeVideoCall() async {
+    try {
+      setState(() {
+        _isVideoLoading = true;
+        _videoError = null;
+      });
+      
+      final api = ref.read(apiClientProvider);
+      _videoService = DailyVideoService(api);
+      
+      // Get video token from backend
+      final appointmentId = int.tryParse(widget.appointment.id) ?? 0;
+      if (appointmentId == 0) {
+        throw Exception('Invalid appointment ID');
+      }
+      
+      final tokenData = await _videoService!.getVideoToken(
+        appointmentId: appointmentId,
+      );
+      
+      // Determine platform: web uses roomUrl/token, mobile uses CallClient
+      // Force web path if kIsWeb is true OR if we're in a browser environment
+      // The conditional import ensures daily_flutter_stub is used on web
+      final bool isWebPlatform = kIsWeb;
+      
+      // Always use web path on web builds (conditional import handles the stub)
+      if (isWebPlatform) {
+        // Web: Use Daily.co Prebuilt iframe
+        _roomUrl = tokenData.roomUrl;
+        _token = tokenData.token;
+        // On web, we'll open Daily.co Prebuilt in the iframe or new window
+        setState(() {
+          _isVideoInitialized = true;
+          _isVideoLoading = false;
+        });
+      } else {
+        // Mobile/Desktop: Use CallClient
+        _callClient = CallClient();
+        
+        // Set up event listeners
+        _eventSubscription = (_callClient as CallClient).events.listen((event) {
+          _handleCallEvent(event);
+        });
+        
+        // Join the call
+        await (_callClient as CallClient).join(
+          roomUrl: tokenData.roomUrl,
+          token: tokenData.token,
+        );
+        
+        setState(() {
+          _isVideoInitialized = true;
+          _isVideoLoading = false;
+        });
+      }
+      
+      setState(() {
+        _isVideoInitialized = true;
+        _isVideoLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Failed to initialize video call: $e');
+      final errStr = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+      setState(() {
+        _videoError = errStr;
+        _isVideoLoading = false;
+        _isVideoInitialized = false;
+      });
+      
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        final isTimingError = errStr.toLowerCase().contains('video call') &&
+            (errStr.contains('ended') || errStr.contains('window') || errStr.contains('15 minutes'));
+        final message = isTimingError
+            ? errStr
+            : '${l10n.failedToStartVideoCall}: $errStr';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    }
+  }
+  
+  void _handleCallEvent(dynamic event) {
+    if (_isWebPlatform) {
+      // Web events handled via iframe messages
+      return;
+    }
+    
+    // Mobile: Handle CallEvent
+    if (event is CallStateUpdated) {
+      final state = event.state;
+      if (state == CallState.left) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.videoCallEnded),
+            ),
+          );
+        }
+      } else if (state == CallState.error) {
+        if (mounted) {
+          setState(() {
+            _videoError = 'Call error occurred';
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.callErrorOccurred),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else if (event is ParticipantJoined) {
+      debugPrint('Participant joined: ${event.participant.id}');
+    } else if (event is ParticipantLeft) {
+      debugPrint('Participant left: ${event.participant.id}');
+    }
+  }
+  
+  Future<void> _toggleMute() async {
+    if (_isWebPlatform) {
+      // Web: Controls are handled by Daily.co Prebuilt UI
+      setState(() => _isMuted = !_isMuted);
+      return;
+    }
+    
+    if (_callClient != null) {
+      try {
+        await (_callClient as CallClient).setLocalAudio(!_isMuted);
+        setState(() => _isMuted = !_isMuted);
+      } catch (e) {
+        debugPrint('Failed to toggle mute: $e');
+      }
+    }
+  }
+  
+  Future<void> _toggleVideo() async {
+    if (_isWebPlatform) {
+      // Web: Controls are handled by Daily.co Prebuilt UI
+      setState(() => _isVideoOff = !_isVideoOff);
+      return;
+    }
+    
+    if (_callClient != null) {
+      try {
+        await (_callClient as CallClient).setLocalVideo(!_isVideoOff);
+        setState(() => _isVideoOff = !_isVideoOff);
+      } catch (e) {
+        debugPrint('Failed to toggle video: $e');
+      }
+    }
+  }
+  
+  Future<void> _toggleScreenShare() async {
+    if (_isWebPlatform) {
+      // Web: Controls are handled by Daily.co Prebuilt UI
+      setState(() => _isScreenSharing = !_isScreenSharing);
+      return;
+    }
+    
+    if (_callClient != null) {
+      try {
+        if (_isScreenSharing) {
+          await (_callClient as CallClient).stopScreenShare();
+        } else {
+          await (_callClient as CallClient).startScreenShare();
+        }
+        setState(() => _isScreenSharing = !_isScreenSharing);
+      } catch (e) {
+        debugPrint('Failed to toggle screen share: $e');
+      }
+    }
+  }
+  
+  Future<void> _endVideoCall() async {
+    if (_isWebPlatform) {
+      // Web: Navigate away or close iframe
+      _roomUrl = null;
+      _token = null;
+      setState(() {
+        _isVideoInitialized = false;
+      });
+      return;
+    }
+    
+    if (_callClient != null) {
+      try {
+        await (_callClient as CallClient).leave();
+        await _eventSubscription?.cancel();
+        _callClient = null;
+        _eventSubscription = null;
+        setState(() {
+          _isVideoInitialized = false;
+        });
+      } catch (e) {
+        debugPrint('Error ending call: $e');
+      }
+    }
+  }
+
+  Future<void> _checkChronicDiseaseWarning() async {
+    if (_warningShown) return;
+    
+    final patientId = widget.appointment.patientId;
+    if (patientId == null || patientId.isEmpty) return;
+
+    try {
+      final patientAsync = ref.read(patientByIdProvider(patientId));
+      final patient = await patientAsync.when(
+        data: (p) => Future.value(p),
+        loading: () => Future.value(null),
+        error: (_, __) => Future.value(null),
+      );
+      
+      if (patient != null &&
+          patient.general.chronicDisease != null &&
+          patient.general.chronicDisease!.isNotEmpty &&
+          patient.general.chronicDisease != 'None' &&
+          mounted) {
+        _warningShown = true;
+        await showChronicDiseaseWarning(
+          context,
+          patient.name,
+          patient.general.chronicDisease!,
+        );
+      }
+    } catch (e) {
+      // Silently fail - don't block the screen
+      debugPrint('Error checking chronic disease: $e');
+    }
+  }
+
+  Widget _buildVideoView() {
+    // Use helper getter for reliable web detection
+    if (_isWebPlatform) {
+      // Web: Use Daily.co Prebuilt iframe
+      if (_roomUrl == null || _token == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      
+      // Embed Daily.co Prebuilt using iframe
+      return _buildWebVideoView();
+    } else {
+      // Mobile: Use CallClient
+      if (_callClient == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      
+      // Get participants and render their video tracks
+      final participants = (_callClient as CallClient).participants();
+      
+      if (participants.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(AppLocalizations.of(context)!.waitingForParticipants),
+            ],
+          ),
+        );
+      }
+      
+      // Render video tracks for each participant
+      return Container(
+        color: Colors.black,
+        child: participants.length == 1
+          ? _buildSingleParticipantView(participants.first)
+          : _buildMultipleParticipantsView(participants),
+      );
+    }
+  }
+  
+  Widget _buildWebVideoView() {
+    // For web, embed Daily.co Prebuilt iframe directly in the screen
+    // (no new tab - video call stays in-app per Daily.co Flutter docs)
+    if (_roomUrl == null || _token == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Container(
+      color: Colors.black,
+      child: daily_embed.DailyVideoEmbedWeb(
+        roomUrl: _roomUrl!,
+        token: _token!,
+      ),
+    );
+  }
+  
+  Widget _buildSingleParticipantView(Participant participant) {
+    return Center(
+      child: participant.videoTrack != null
+        ? VideoView(
+            track: participant.videoTrack!,
+            mirror: participant.isLocal,
+          )
+        : const Center(
+            child: Icon(Icons.person, size: 100, color: Colors.white54),
+          ),
+    );
+  }
+  
+  Widget _buildMultipleParticipantsView(List<Participant> participants) {
+    // Show local participant small, remote participant large
+    final localParticipant = participants.firstWhere(
+      (p) => p.isLocal,
+      orElse: () => participants.first,
+    );
+    final remoteParticipant = participants.firstWhere(
+      (p) => !p.isLocal,
+      orElse: () => participants.last,
+    );
+    
+    return Stack(
+      children: [
+        // Remote participant (large)
+        Positioned.fill(
+          child: remoteParticipant.videoTrack != null
+            ? VideoView(track: remoteParticipant.videoTrack!)
+            : const Center(
+                child: Icon(Icons.person, size: 100, color: Colors.white54),
+              ),
+        ),
+        // Local participant (small, bottom right)
+        Positioned(
+          bottom: 100,
+          right: 16,
+          child: Container(
+            width: 120,
+            height: 160,
+            decoration: BoxDecoration(
+              color: Colors.grey[800],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: localParticipant.videoTrack != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: VideoView(
+                    track: localParticipant.videoTrack!,
+                    mirror: true,
+                  ),
+                )
+              : const Center(
+                  child: Icon(Icons.person, size: 60, color: Colors.white54),
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _signaturePollTimer?.cancel();
+    _endVideoCall();
+    _eventSubscription?.cancel();
+    _notesController.removeListener(_markUnsaved);
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage(bool isBeforeTreatment) async {
+    final l10n = AppLocalizations.of(context)!;
+    final picker = ImagePicker();
+    
+    // Check if we're on desktop (Windows, macOS, Linux)
+    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    
+    // Show bottom sheet to choose between camera and gallery
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text(l10n.takePhoto),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text(l10n.chooseFromGallery),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      XFile? image;
+      
+      // On desktop, camera source doesn't work with image_picker
+      // Use file_picker as fallback for camera selection on desktop
+      if (isDesktop && source == ImageSource.camera) {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+        );
+        
+        if (result != null && result.files.single.path != null) {
+          // Create XFile from the selected file path
+          image = XFile(result.files.single.path!);
+        }
+      } else {
+        // Use image_picker for mobile/web or gallery on desktop
+        image = await picker.pickImage(
+          source: source,
+          imageQuality: 85,
+        );
+      }
+
+      if (image != null) {
+        setState(() {
+          if (isBeforeTreatment) {
+            _beforeTreatmentImages.add(image!);
+          } else {
+            _afterTreatmentImages.add(image!);
+          }
+          _hasUnsavedChanges = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.errorPickingImage}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+
+  Future<void> _endAppointment() async {
+    setState(() => _isSaving = true);
+
+    // First, end the video call if it's active
+    await _endVideoCall();
+
+    try {
+      final api = ref.read(apiClientProvider);
+      
+      // Get patientId - try from appointment first, or fetch from appointment details
+      String? patientId = widget.appointment.patientId;
+      
+      if (patientId == null || patientId.isEmpty) {
+        // Try to fetch patientId from calendar endpoint for this day
+        final doctorTimeZone = ref.read(profileAllProvider).valueOrNull?.profile['timeZone'] as String?;
+        try {
+          final today = getTodayInTimezone(doctorTimeZone);
+          final ymd = '${today.year.toString().padLeft(4, '0')}-'
+              '${today.month.toString().padLeft(2, '0')}-'
+              '${today.day.toString().padLeft(2, '0')}';
+          final res = await api.get('/api/calendar', params: {'day': ymd});
+          if (res.statusCode == 200) {
+            final List data = json.decode(utf8.decode(res.bodyBytes)) as List;
+            final appointment = data.firstWhere(
+              (e) => (e['appointmentId'] ?? e['id'] ?? '').toString() == widget.appointment.id,
+              orElse: () => null,
+            );
+            if (appointment != null) {
+              patientId = appointment['patientId']?.toString();
+            }
+          }
+        } catch (e) {
+          debugPrint('Error fetching appointment details: $e');
+        }
+      }
+
+      if (patientId == null || patientId.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${AppLocalizations.of(context)!.patientIdNotAvailable}. ${AppLocalizations.of(context)!.cannotSaveNotes}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Use doctor's timezone for recording appointment completion time
+      final doctorTimeZone = ref.read(profileAllProvider).valueOrNull?.profile['timeZone'] as String?;
+      final now = getNowInTimezone(doctorTimeZone);
+      final dateStr = '${now.year.toString().padLeft(4, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+      final timeStr = '${now.hour.toString().padLeft(2, '0')}:'
+          '${now.minute.toString().padLeft(2, '0')}';
+
+      // Check if there's anything to save
+      final hasNotes = _notesController.text.trim().isNotEmpty;
+      final hasBeforeImages = _beforeTreatmentImages.isNotEmpty;
+      final hasAfterImages = _afterTreatmentImages.isNotEmpty;
+
+      if (!hasNotes && !hasBeforeImages && !hasAfterImages) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.noItemsToSave),
+            ),
+          );
+          // Pop back to shell (Home/Calendar), not to waiting room
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+        return;
+      }
+
+      // Generate professional appointment summary PDF (localized, branded)
+      try {
+        // Refetch appointment so PDF gets latest patient signature from server
+        String? pdfSignatureBase64;
+        String? pdfSignedAtStr;
+        try {
+          final res = await api.get('/api/appointments/${widget.appointment.id}');
+          if (res.statusCode == 200) {
+            final map = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>?;
+            if (map != null) {
+              final rawImg = map['patientSignatureImageBase64'];
+              pdfSignatureBase64 = (rawImg is String && rawImg.trim().isNotEmpty) ? rawImg : null;
+              final rawAt = map['patientSignedAt'];
+              pdfSignedAtStr = (rawAt is String && rawAt.trim().isNotEmpty && rawAt != 'null') ? rawAt : null;
+            }
+          }
+        } catch (_) {}
+
+        final languageCode = ref.read(languageProvider).locale.languageCode;
+        final t = AppointmentPdfTranslations.forLanguage(languageCode);
+        String? doctorName;
+        String? specialization;
+        try {
+          final all = await ref.read(profileAllProvider.future);
+          final p = all.profile;
+          doctorName = '${p['firstName'] ?? ''} ${p['lastName'] ?? ''}'.trim();
+          if (doctorName.isEmpty) doctorName = null;
+          specialization = p['profession'] as String?;
+        } catch (_) {}
+
+        final start = widget.appointment.start;
+        final end = widget.appointment.end;
+        final durationMin = (end.hour * 60 + end.minute) - (start.hour * 60 + start.minute);
+        final durationStr = durationMin > 0 ? '$durationMin min' : null;
+
+        Uint8List? signatureBytes;
+        DateTime? signedAt;
+        if (pdfSignatureBase64 != null && pdfSignatureBase64.trim().isNotEmpty) {
+          try {
+            signatureBytes = base64Decode(pdfSignatureBase64);
+          } catch (_) {}
+        }
+        if (pdfSignedAtStr != null) {
+          signedAt = DateTime.tryParse(pdfSignedAtStr);
+          if (signedAt == null) {
+            final cleaned = pdfSignedAtStr.replaceFirst(RegExp(r'\[[^\]]*\]$'), '').trim();
+            signedAt = DateTime.tryParse(cleaned);
+          }
+        }
+
+        final pdfData = AppointmentPdfData(
+          appointmentId: widget.appointment.id,
+          patientName: widget.appointment.patientName,
+          patientId: widget.appointment.patientId,
+          dateOfBirth: null,
+          gender: null,
+          doctorName: doctorName,
+          specialization: specialization,
+          licenseNumber: null,
+          appointmentType: widget.appointment.isVideo ? t.videoConsultation : t.faceToFace,
+          duration: durationStr,
+          dateStr: dateStr,
+          timeStr: timeStr,
+          appointmentDate: now,
+          notes: hasNotes ? _notesController.text.trim() : null,
+          diagnosis: null,
+          prescriptions: null,
+          recommendations: null,
+          followUpDate: null,
+          patientSignatureImageBytes: signatureBytes,
+          patientSignedAt: signedAt,
+        );
+
+        final combinedPdf = await generateAppointmentPdf(
+          data: pdfData,
+          languageCode: languageCode,
+          beforeImages: _beforeTreatmentImages.isNotEmpty ? _beforeTreatmentImages : null,
+          afterImages: _afterTreatmentImages.isNotEmpty ? _afterTreatmentImages : null,
+        );
+
+        final l10n = AppLocalizations.of(context)!;
+        final title = '${l10n.appointmentDocumentation} - $dateStr $timeStr';
+        await uploadPatientDocumentWithClient(
+          client: api,
+          patientId: patientId,
+          fileBytes: combinedPdf,
+          fileName: 'appointment_${now.millisecondsSinceEpoch}.pdf',
+          title: title,
+        );
+
+        debugPrint('Combined PDF saved successfully');
+
+        // Mark appointment as completed in backend
+        try {
+          await api.put('/api/appointments/${widget.appointment.id}/complete', {});
+          debugPrint('Appointment ${widget.appointment.id} marked as completed');
+        } catch (e) {
+          debugPrint('Error marking appointment as completed: $e');
+          // Continue even if status update fails
+        }
+
+        // Refresh appointments and analytics
+        invalidateAppointmentRelatedProviders(ref);
+
+        // Refresh documents
+        ref.invalidate(patientDocumentsProvider(patientId));
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.appointmentEndedDocumentationSaved),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Pop back to shell (Home/Calendar), not to waiting room
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } catch (e, stackTrace) {
+        debugPrint('Error saving combined PDF: $e');
+        debugPrint('Stack trace: $stackTrace');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.somethingWentWrong),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error in _endAppointment: $e');
+      debugPrint('Stack trace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.somethingWentWrong),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = const Color(0xFF17C3B2);
+    final initialPatientId = widget.appointment.patientId;
+
+    // If patientId is not available, try to fetch it from calendar
+    final patientIdAsync = (initialPatientId == null || initialPatientId.isEmpty)
+        ? ref.watch(_patientIdProvider(widget.appointment.id))
+        : null;
+    
+    // Get the actual patientId to use
+    final patientId = initialPatientId ?? patientIdAsync?.value;
+
+    // Fetch patient documents
+    final documentsAsync = patientId != null && patientId.isNotEmpty
+        ? ref.watch(patientDocumentsProvider(patientId))
+        : null;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          widget.appointment.patientName,
+          style: const TextStyle(color: Colors.black),
+        ),
+        centerTitle: false,
+      ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Row(
+                children: [
+                  // Left: video canvas + controls
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Video canvas with Daily.co
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: _isVideoLoading
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const CircularProgressIndicator(
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Connecting to video call...',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : _videoError != null
+                                    ? Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline,
+                                              size: 64,
+                                              color: Colors.red.shade300,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'Video call error',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                                              child: Text(
+                                                _videoError!,
+                                                style: TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 12,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            ElevatedButton(
+                                              onPressed: _initializeVideoCall,
+                                              child: Text(AppLocalizations.of(context)!.retry),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : _isVideoInitialized
+                                      ? Stack(
+                                          children: [
+                                            _buildVideoView(),
+                                            // Controls - hide on web as Daily.co Prebuilt has its own controls
+                                            if (!_isWebPlatform)
+                                              Align(
+                                                alignment: Alignment.bottomCenter,
+                                                child: _CallControls(
+                                                  onMute: _toggleMute,
+                                                  onVideo: _toggleVideo,
+                                                  onScreenShare: _toggleScreenShare,
+                                                  onEndCall: _endVideoCall,
+                                                  isMuted: _isMuted,
+                                                  isVideoOff: _isVideoOff,
+                                                  isScreenSharing: _isScreenSharing,
+                                                ),
+                                              ),
+                                          ],
+                                        )
+                                      : Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.videocam_off,
+                                                size: 64,
+                                                color: Colors.grey.shade400,
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'Video call not available',
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 18,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                              ),
+                            ),
+                          ),
+                          // Request Signature (MVP)
+                          if (_hasPatientSignature)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      AppLocalizations.of(context)!.patientSigned,
+                                      style: TextStyle(
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else if (_signatureRequested)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                AppLocalizations.of(context)!.waitingForPatientSignature,
+                                style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
+                              ),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: _isRequestingSignature ? null : _requestSignature,
+                                  icon: _isRequestingSignature
+                                      ? const SizedBox(
+                                          height: 18,
+                                          width: 18,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Icon(Icons.draw, size: 20),
+                                  label: Text(AppLocalizations.of(context)!.requestSignature),
+                                ),
+                              ),
+                            ),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : _endAppointment,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE75656),
+                              ),
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(AppLocalizations.of(context)!.endAppointment),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 24),
+
+                  // Right: Documents + Notes
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        // Documents
+                        Expanded(
+                          child: _CardBox(
+                            title: AppLocalizations.of(context)!.documents,
+                            child: patientIdAsync != null && patientIdAsync.isLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                : patientIdAsync != null && patientIdAsync.hasError
+                                    ? Center(
+                                        child: Text('${AppLocalizations.of(context)!.errorLoadingPatientId}: ${patientIdAsync.error}'),
+                                      )
+                                    : documentsAsync == null
+                                        ? Center(
+                                            child: Text(AppLocalizations.of(context)!.patientIdNotAvailable),
+                                          )
+                                        : documentsAsync.when(
+                                            data: (docs) => Column(
+                                              children: [
+                                                Expanded(
+                                                  child: docs.isEmpty
+                                                      ? Center(
+                                                          child: Text(
+                                                            AppLocalizations.of(context)!.noDocuments,
+                                                            style: TextStyle(
+                                                              color: Colors.grey,
+                                                            ),
+                                                          ),
+                                                        )
+                                                      : ListView.separated(
+                                                          itemCount: docs.length,
+                                                          separatorBuilder: (_, __) =>
+                                                              const SizedBox(height: 8),
+                                                          itemBuilder: (_, i) {
+                                                            final doc = docs[i];
+                                                            return _DocTile(
+                                                              doc,
+                                                              brand,
+                                                              patientId: patientId,
+                                                              onRequestAccess: (!doc.canView && patientId != null)
+                                                                  ? () async {
+                                                                      final client = ref.read(apiClientProvider);
+                                                                      await requestDocumentAccessWithClient(
+                                                                        client: client,
+                                                                        patientId: patientId!,
+                                                                        documentId: doc.id,
+                                                                      );
+                                                                      ref.refresh(patientDocumentsProvider(patientId!));
+                                                                    }
+                                                                  : null,
+                                                            );
+                                                          },
+                                                        ),
+                                                ),
+                                              ],
+                                            ),
+                                            loading: () => const Center(
+                                                child: CircularProgressIndicator()),
+                                            error: (err, _) => Center(
+                                              child: Text('${AppLocalizations.of(context)!.error}: $err'),
+                                            ),
+                                          ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Documentation (general notes or 025-2 form)
+                        Expanded(
+                          child: _notesPanelFullScreen
+                              ? const SizedBox.shrink()
+                              : _CardBox(
+                                  title: _documentationType == 'general'
+                                      ? AppLocalizations.of(context)!.notes
+                                      : AppLocalizations.of(context)!.docMode0252,
+                                  titleTrailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_documentationType == 'general')
+                                        PopupMenuButton<String>(
+                                          icon: const Icon(Icons.more_horiz),
+                                          tooltip: AppLocalizations.of(context)!.notes,
+                                          onSelected: (value) async {
+                                            final l10n = AppLocalizations.of(context)!;
+                                            if (value == 'ai') {
+                                              setState(() => _notesSectionsExpanded = true);
+                                              final id = widget.appointment.id;
+                                              ref.invalidate(
+                                                  draftNotesForAppointmentProvider(id));
+                                              ref.invalidate(
+                                                  consultationNotesForAppointmentProvider(id));
+                                              final drafts = await ref
+                                                  .read(draftNotesForAppointmentProvider(id).future);
+                                              final notes = await ref
+                                                  .read(consultationNotesForAppointmentProvider(id).future);
+                                              if (mounted && drafts.isEmpty && notes.isEmpty) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      l10n.aiNotesNotReadyTryLater,
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            } else if (value == '0252') {
+                                              setState(() => _notesSectionsExpanded = true);
+                                              final pid = patientId;
+                                              if (pid != null && pid.isNotEmpty) {
+                                                ref.invalidate(patientFormsProvider(pid));
+                                              }
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            PopupMenuItem(
+                                              value: 'ai',
+                                              child: Text(AppLocalizations.of(context)!.fromShifaAi),
+                                            ),
+                                            PopupMenuItem(
+                                              value: '0252',
+                                              child:
+                                                  Text(AppLocalizations.of(context)!.fromLast0252Form),
+                                            ),
+                                          ],
+                                        ),
+                                      IconButton(
+                                        icon: const Icon(Icons.fullscreen),
+                                        onPressed: () => setState(() => _notesPanelFullScreen = true),
+                                        tooltip: AppLocalizations.of(context)!.expand,
+                                      ),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert),
+                                        onSelected: (value) async {
+                                if (_documentationType == value) return;
+                                if (_hasUnsavedChanges) {
+                                  final l10n = AppLocalizations.of(context)!;
+                                  final result = await showDialog<String>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+                                    title: Text(l10n.unsavedChangesSwitch),
+                                    actions: [
+TextButton(onPressed: () => Navigator.pop(ctx, 'cancel'), child: Text(l10n.cancel)),
+                                    TextButton(onPressed: () => Navigator.pop(ctx, 'discard'), child: Text(l10n.discardAndSwitch)),
+                                      FilledButton(onPressed: () => Navigator.pop(ctx, 'save'), child: Text(l10n.saveAndSwitch)),
+                                    ],
+                                  ));
+                                  if (result == null || result == 'cancel') return;
+                                  if (result == 'save') {
+                                    if (_documentationType == '025-2') {
+                                      final ok = await _form0252PanelKey.currentState?.requestSave() ?? false;
+                                      if (!ok || !mounted) return;
+                                    }
+                                    setState(() { _hasUnsavedChanges = false; _documentationType = value; });
+                                    return;
+                                  }
+                                  if (result == 'discard') {
+                                    _notesController.clear();
+                                    setState(() {
+                                      _beforeTreatmentImages.clear();
+                                      _afterTreatmentImages.clear();
+                                      _hasUnsavedChanges = false;
+                                      _documentationType = value;
+                                    });
+                                  }
+                                } else {
+                                  setState(() => _documentationType = value);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem(value: 'general', child: Text(AppLocalizations.of(context)!.docModeGeneral)),
+                                PopupMenuItem(value: '025-2', child: Text(AppLocalizations.of(context)!.docMode0252)),
+                              ],
+                                        ),
+                                    ],
+                                  ),  // titleTrailing Row
+                                  child: _buildNotesPanelChild(brand, patientId),
+                                ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+          if (_notesPanelFullScreen)
+            Positioned.fill(
+              child: _buildNotesFullScreenOverlay(brand, patientId),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesFullScreenOverlay(Color brand, String? patientId) {
+    final l10n = AppLocalizations.of(context)!;
+    final notesTitle = _documentationType == 'general'
+        ? l10n.notes
+        : l10n.docMode0252;
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 12,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 12),
+              child: Row(
+                children: [
+                  Text(
+                    notesTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.fullscreen_exit),
+                    onPressed: () => setState(() => _notesPanelFullScreen = false),
+                    tooltip: l10n.collapse,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: _buildNotesPanelChild(brand, patientId),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesPanelChild(Color brand, String? patientId) {
+    if (_documentationType == 'general') {
+      final consultationNotesAsync = ref.watch(consultationNotesForAppointmentProvider(widget.appointment.id));
+      final draftNotesAsync = ref.watch(draftNotesForAppointmentProvider(widget.appointment.id));
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!_notesSectionsExpanded)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                AppLocalizations.of(context)!.notesSectionsHidden,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ),
+          if (_notesSectionsExpanded) ...[
+          // Pending AI drafts (e.g. AI Scribe) – Confirm to save as consultation note, or Discard
+          draftNotesAsync.when(
+            data: (drafts) {
+              if (drafts.isEmpty) return const SizedBox.shrink();
+              final l10n = AppLocalizations.of(context)!;
+              final appointmentIdInt = int.tryParse(widget.appointment.id);
+              final patientIdInt = patientId != null && patientId.isNotEmpty ? int.tryParse(patientId) : null;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 260),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: drafts.length,
+                    itemBuilder: (context, i) {
+                      final d = drafts[i];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.edit_note, size: 16, color: Colors.orange.shade800),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    d.aiLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: Colors.orange.shade900,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  l10n.draft,
+                                  style: TextStyle(fontSize: 11, color: Colors.orange.shade700),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            SingleChildScrollView(
+                              child: Text(
+                                d.body,
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () async {
+                                    try {
+                                      final aiApi = ref.read(aiApiProvider);
+                                      await aiApi.discardDraft(d.id);
+                                      if (context.mounted) {
+                                        ref.invalidate(draftNotesForAppointmentProvider(widget.appointment.id));
+                                        ref.invalidate(consultationNotesForAppointmentProvider(widget.appointment.id));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.translate('draftDiscarded') ?? 'Draft discarded')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.translate('failedToSaveDraft') ?? 'Failed to discard draft')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: Text(l10n.discard),
+                                ),
+                                const SizedBox(width: 8),
+                                FilledButton.icon(
+                                  icon: const Icon(Icons.check, size: 18),
+                                  label: Text(l10n.translate('saveAsConsultationNote') ?? 'Save as note'),
+                                  onPressed: () async {
+                                    try {
+                                      final aiApi = ref.read(aiApiProvider);
+                                      await aiApi.confirmDraft(
+                                        d.id,
+                                        patientId: patientIdInt,
+                                        appointmentId: appointmentIdInt,
+                                      );
+                                      if (context.mounted) {
+                                        ref.invalidate(draftNotesForAppointmentProvider(widget.appointment.id));
+                                        ref.invalidate(consultationNotesForAppointmentProvider(widget.appointment.id));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.translate('draftSavedAsConsultationNote') ?? 'Draft saved as consultation note')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.translate('failedToSaveDraft') ?? 'Failed to save draft')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          // Saved AI outputs – browse with < >, add to notes with +
+          consultationNotesAsync.when(
+            data: (notes) {
+              if (notes.isEmpty) return const SizedBox.shrink();
+              final l10n = AppLocalizations.of(context)!;
+              final currentIndex = _consultationNoteIndex.clamp(0, notes.length - 1);
+              final n = notes[currentIndex];
+              final hasMultiple = notes.length > 1;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 220),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (hasMultiple)
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left),
+                          onPressed: currentIndex > 0
+                              ? () => setState(() => _consultationNoteIndex = currentIndex - 1)
+                              : null,
+                          tooltip: l10n.translate('previous') ?? 'Previous',
+                          style: IconButton.styleFrom(foregroundColor: brand),
+                        ),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: brand.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: brand.withOpacity(0.3)),
+                          ),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.auto_awesome, size: 16, color: brand),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      l10n.fromShifaAi,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                        color: brand,
+                                      ),
+                                    ),
+                                    if (hasMultiple) ...[
+                                      const Spacer(),
+                                      Text(
+                                        '${currentIndex + 1} / ${notes.length}',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  n.displayText,
+                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (hasMultiple)
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          onPressed: currentIndex < notes.length - 1
+                              ? () => setState(() => _consultationNoteIndex = currentIndex + 1)
+                              : null,
+                          tooltip: l10n.translate('next') ?? 'Next',
+                          style: IconButton.styleFrom(foregroundColor: brand),
+                        ),
+                      IconButton.filled(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          final toAdd = n.displayText;
+                          if (toAdd.trim().isEmpty) return;
+                          if (_notesController.text.trim().isNotEmpty) {
+                            _notesController.text += '\n\n';
+                          }
+                          _notesController.text += toAdd;
+                          _markUnsaved();
+                          setState(() => _notesSectionsExpanded = false);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.translate('addedToNotes') ?? 'Added to notes'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        tooltip: l10n.translate('addToNotes') ?? 'Add to notes',
+                        style: IconButton.styleFrom(
+                          backgroundColor: brand,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          // From last 025-2 form: Shikoyati, Tashxis, Davolanish – add to notes with +
+          if (patientId != null && patientId.isNotEmpty)
+            ref.watch(last0252FormForPatientProvider(patientId!)).when(
+              data: (form) {
+                if (form == null) return const SizedBox.shrink();
+                final c = form.complaints?.trim() ?? '';
+                final d = form.diagnosis?.trim() ?? '';
+                final t = form.treatment?.trim() ?? '';
+                if (c.isEmpty && d.isEmpty && t.isEmpty) return const SizedBox.shrink();
+                final l10n = AppLocalizations.of(context)!;
+                final parts = <String>[];
+                if (c.isNotEmpty) parts.add('${l10n.complaints}: $c');
+                if (d.isNotEmpty) parts.add('${l10n.diagnosis}: $d');
+                if (t.isNotEmpty) parts.add('${l10n.treatment}: $t');
+                final toAdd = parts.join('\n\n');
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: brand.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: brand.withOpacity(0.3)),
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.description, size: 16, color: brand),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        l10n.fromLast0252Form,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                          color: brand,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  if (c.isNotEmpty) Text('${l10n.complaints}: $c', style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
+                                  if (c.isNotEmpty) const SizedBox(height: 4),
+                                  if (d.isNotEmpty) Text('${l10n.diagnosis}: $d', style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
+                                  if (d.isNotEmpty) const SizedBox(height: 4),
+                                  if (t.isNotEmpty) Text('${l10n.treatment}: $t', style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton.filled(
+                          icon: const Icon(Icons.add),
+                          onPressed: () {
+                            if (toAdd.trim().isEmpty) return;
+                            if (_notesController.text.trim().isNotEmpty) {
+                              _notesController.text += '\n\n';
+                            }
+                            _notesController.text += toAdd;
+                            _markUnsaved();
+                            setState(() => _notesSectionsExpanded = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(l10n.translate('addedToNotes') ?? 'Added to notes'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          tooltip: l10n.translate('addToNotes') ?? 'Add to notes',
+                          style: IconButton.styleFrom(
+                            backgroundColor: brand,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          ],
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: TextField(
+                controller: _notesController,
+                maxLines: null,
+                expands: true,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.enterNotes,
+                  border: InputBorder.none,
+                ),
+                textAlignVertical: TextAlignVertical.top,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickImage(true),
+                  icon: const Icon(Icons.camera_alt),
+                  label: Text(AppLocalizations.of(context)!.beforeTreatment),
+                  style: OutlinedButton.styleFrom(foregroundColor: brand),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pickImage(false),
+                  icon: const Icon(Icons.camera_alt),
+                  label: Text(AppLocalizations.of(context)!.afterTreatment),
+                  style: OutlinedButton.styleFrom(foregroundColor: brand),
+                ),
+              ),
+            ],
+          ),
+          if (_beforeTreatmentImages.isNotEmpty || _afterTreatmentImages.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ..._beforeTreatmentImages.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  return Chip(
+                    label: Text('${AppLocalizations.of(context)!.beforeTreatment} ${index + 1}'),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    onDeleted: () {
+                      setState(() {
+                        _beforeTreatmentImages.removeAt(index);
+                        _hasUnsavedChanges = true;
+                      });
+                    },
+                    backgroundColor: Colors.blue.shade50,
+                  );
+                }),
+                ..._afterTreatmentImages.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  return Chip(
+                    label: Text('${AppLocalizations.of(context)!.afterTreatment} ${index + 1}'),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    onDeleted: () {
+                      setState(() {
+                        _afterTreatmentImages.removeAt(index);
+                        _hasUnsavedChanges = true;
+                      });
+                    },
+                    backgroundColor: Colors.green.shade50,
+                  );
+                }),
+              ],
+            ),
+          ],
+        ],
+      );
+    }
+    if (patientId == null || patientId.isEmpty) {
+      return Center(child: Text(AppLocalizations.of(context)!.patientIdNotAvailable));
+    }
+    return AppointmentForm0252Panel(
+      key: _form0252PanelKey,
+      patientId: patientId,
+      brand: brand,
+      onDocumentsChanged: () {
+        ref.invalidate(patientDocumentsProvider(patientId));
+        ref.refresh(patientFormsProvider(patientId));
+      },
+      onHasUnsavedChanges: (v) => setState(() => _hasUnsavedChanges = v),
+    );
+  }
+}
+
+// --- controls and helpers ---
+class _CallControls extends StatelessWidget {
+  final VoidCallback? onMute;
+  final VoidCallback? onVideo;
+  final VoidCallback? onScreenShare;
+  final VoidCallback? onEndCall;
+  final bool isMuted;
+  final bool isVideoOff;
+  final bool isScreenSharing;
+  
+  const _CallControls({
+    this.onMute,
+    this.onVideo,
+    this.onScreenShare,
+    this.onEndCall,
+    this.isMuted = false,
+    this.isVideoOff = false,
+    this.isScreenSharing = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = Colors.black.withOpacity(0.35);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _RoundBtn(
+            icon: isVideoOff ? Icons.videocam_off : Icons.videocam,
+            onPressed: onVideo,
+            color: isVideoOff ? Colors.red : Colors.white,
+          ),
+          const SizedBox(width: 8),
+          _RoundBtn(
+            icon: isMuted ? Icons.mic_off : Icons.mic,
+            onPressed: onMute,
+            color: isMuted ? Colors.red : Colors.white,
+          ),
+          const SizedBox(width: 8),
+          _RoundBtn(
+            icon: Icons.screen_share,
+            onPressed: onScreenShare,
+            color: isScreenSharing ? Colors.green : Colors.white,
+          ),
+          const SizedBox(width: 8),
+          _RoundBtn(
+            icon: Icons.call_end,
+            color: const Color(0xFFE75656),
+            onPressed: onEndCall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundBtn extends StatelessWidget {
+  const _RoundBtn({
+    required this.icon,
+    this.color,
+    this.onPressed,
+  });
+  
+  final IconData icon;
+  final Color? color;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: CircleAvatar(
+        radius: 22,
+        backgroundColor: Colors.white,
+        child: Icon(icon, color: color ?? Colors.black87),
+      ),
+    );
+  }
+}
+
+class _CardBox extends StatelessWidget {
+  const _CardBox({required this.title, required this.child, this.titleTrailing});
+  final String title;
+  final Widget child;
+  final Widget? titleTrailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (titleTrailing != null) titleTrailing!,
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocTile extends StatelessWidget {
+  const _DocTile(this.doc, this.brand, {this.patientId, this.onRequestAccess});
+  final PatientDocument doc;
+  final Color brand;
+  final String? patientId;
+  final Future<void> Function()? onRequestAccess;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = doc.date;
+    final dateStr = '${date.day.toString().padLeft(2, '0')}.'
+        '${date.month.toString().padLeft(2, '0')}.'
+        '${date.year}';
+    final l10n = AppLocalizations.of(context)!;
+    final isLocked = !doc.canView;
+    final canOpen = doc.canView && doc.url != null && doc.url!.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (isLocked) Icon(Icons.lock_outline, size: 14, color: Colors.grey.shade600),
+                    if (isLocked) const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        doc.title,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dateStr,
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+                if (isLocked && doc.creatorLabel.isNotEmpty)
+                  Text(
+                    '${l10n.uploadedBy} ${doc.creatorLabel == 'Unknown' ? (l10n.translate('anotherUser') ?? 'Another user') : doc.creatorLabel}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+              ],
+            ),
+          ),
+          if (isLocked && patientId != null && onRequestAccess != null)
+            TextButton.icon(
+              onPressed: () async {
+                try {
+                  await onRequestAccess?.call();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.requestAccessSent)),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${l10n.error}: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.lock_open, size: 18),
+              label: Text(l10n.requestAccess),
+            ),
+          IconButton.filledTonal(
+            onPressed: canOpen
+                ? () async {
+                    final url = doc.url!;
+                    try {
+                      if (await canLaunchUrlString(url)) {
+                        await launchUrlString(
+                          url,
+                          mode: LaunchMode.platformDefault,
+                        );
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(l10n.cannotOpenDocumentUrl),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${l10n.errorOpeningDocument}: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  }
+                : null,
+            icon: const Icon(Icons.open_in_browser),
+            style: ButtonStyle(
+              backgroundColor: WidgetStatePropertyAll(brand.withOpacity(0.15)),
+              foregroundColor: WidgetStatePropertyAll(brand),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

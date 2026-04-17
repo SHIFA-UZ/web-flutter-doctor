@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/utils/text_cleaner.dart';
+import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
+
+/// Collapsible chatbot-like panel from bottom-right showing AI patient briefing.
+/// Rendered in the shell so it appears on any screen when briefing is generated.
+class PatientBriefingPanel extends ConsumerStatefulWidget {
+  const PatientBriefingPanel({super.key});
+
+  @override
+  ConsumerState<PatientBriefingPanel> createState() => _PatientBriefingPanelState();
+}
+
+class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(patientBriefingProvider);
+    if (!state.isVisible) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context)!;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final panelHeight = (screenHeight * 0.5).clamp(280.0, 500.0);
+
+    return Positioned(
+      right: 12,
+      bottom: 12,
+      child: Material(
+        elevation: 8,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: 380,
+          height: _expanded ? panelHeight : 56,
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title bar (always visible when panel is shown)
+              InkWell(
+                onTap: () => setState(() => _expanded = !_expanded),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.patientName != null
+                              ? '${l10n.patientBriefingTitle} — ${state.patientName}'
+                              : l10n.patientBriefingTitle,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () => ref.read(patientBriefingProvider.notifier).close(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_expanded)
+                Expanded(
+                  child:                     state.isLoading
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 16),
+                                Text(l10n.patientBriefingGenerating),
+                              ],
+                            ),
+                          ),
+                        )
+                      : state.isError
+                          ? Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 32),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    state.errorMessage ?? l10n.patientBriefingError,
+                                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (state.documentCount > 0 || state.appointmentCount > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Text(
+                                        state.documentCount > 0 && state.appointmentCount > 0
+                                            ? l10n.patientBriefingSourcesWithAppointments(
+                                                state.documentCount,
+                                                state.appointmentCount,
+                                              )
+                                            : state.documentCount > 0
+                                                ? l10n.patientBriefingSources(state.documentCount)
+                                                : l10n.patientBriefingSourcesAppointmentsOnly(state.appointmentCount),
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ),
+                                  Builder(
+                                    builder: (context) {
+                                      final raw = state.briefingText ?? '';
+                                      // Keep the model output mostly as-is; just light cleanup.
+                                      final cleaned = TextCleaner.clean(raw);
+                                      var display = cleaned.replaceAllMapped(
+                                        RegExp(r'\*\*(.*?)\*\*', dotAll: true),
+                                        (m) => m.group(1) ?? '',
+                                      );
+                                      display = display.replaceAll(
+                                        RegExp(r'^- ', multiLine: true),
+                                        '• ',
+                                      );
+                                      return SelectableText(
+                                        display.trim(),
+                                        style: const TextStyle(fontSize: 14, height: 1.4),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ShifaSecondaryButton(
+                                    label: l10n.patientBriefingCopy,
+                                    icon: Icons.copy,
+                                    onPressed: () {
+                                      final text = state.briefingText ?? '';
+                                      if (text.isNotEmpty) {
+                                        Clipboard.setData(ClipboardData(text: text));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.patientBriefingCopied)),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

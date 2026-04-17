@@ -1,0 +1,61 @@
+// lib/features/shell/presentation/shell_scope.dart
+import 'package:flutter/material.dart';
+
+/// Provides access to the shell's nested navigator so that pushes happen
+/// inside the content area and the sidebar stays visible.
+class ShellScope extends InheritedWidget {
+  const ShellScope({
+    super.key,
+    required this.navigatorKey,
+    required super.child,
+  });
+
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  static ShellScope? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ShellScope>();
+  }
+
+  /// Pushes a named route using the shell navigator when available,
+  /// so the sidebar remains visible. Falls back to root Navigator otherwise.
+  static Future<T?> pushNamed<T extends Object?>(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
+    final scope = ShellScope.of(context);
+    if (scope != null) {
+      return scope.navigatorKey.currentState!.pushNamed<T>(
+        routeName,
+        arguments: arguments,
+      );
+    }
+    return Navigator.pushNamed<T>(context, routeName, arguments: arguments);
+  }
+
+  /// Pushes a route using the shell navigator when available.
+  static Future<T?> push<T extends Object?>(
+    BuildContext context,
+    Route<T> route,
+  ) {
+    final scope = ShellScope.of(context);
+    if (scope != null) {
+      return scope.navigatorKey.currentState!.push<T>(route);
+    }
+    return Navigator.push<T>(context, route);
+  }
+
+  /// Pops the shell navigator when available.
+  static void pop<T extends Object?>(BuildContext context, [T? result]) {
+    final scope = ShellScope.of(context);
+    if (scope != null && scope.navigatorKey.currentState?.canPop() == true) {
+      scope.navigatorKey.currentState!.pop(result);
+    } else {
+      Navigator.of(context).pop(result);
+    }
+  }
+
+  @override
+  bool updateShouldNotify(ShellScope oldWidget) =>
+      navigatorKey != oldWidget.navigatorKey;
+}

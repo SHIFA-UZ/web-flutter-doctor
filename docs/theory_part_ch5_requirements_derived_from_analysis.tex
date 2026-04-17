@@ -1,0 +1,118 @@
+\chapter{Requirements Derived from the Qualitative Analysis}
+\label{ch:requirements-derived}
+
+\section{Introduction}
+
+Chapter 4 synthesizes physicians' experiences with telemedicine in Uzbekistan through qualitative content analysis. The present chapter translates those findings into a structured set of system requirements and describes how the Shifa platform---comprising a patient mobile application, a doctor-oriented client with administrative capabilities, and a shared backend service---addresses them. The exposition follows a conventional engineering progression from stakeholder needs to requirements and onward to architectural realization, as developed in subsequent chapters of this document.
+
+\section{From Practitioner Needs to System Requirements}
+
+The interview material in Chapter 4 yields recurring themes: reliance on informal channels for communication, uneven adoption of video consultations, manual and error-prone scheduling practices, fragmented documentation and storage, concern about data protection and legal clarity, and pressure from asynchronous communication outside formal working hours. These themes are not treated as isolated anecdotes; they are abstracted into \emph{system requirements} that specify \emph{what} the platform must enable, without prescribing a single commercial product architecture.
+
+Requirement formulation follows three principles. First, each major requirement can be traced to at least one thematic cluster in Chapter 4. Second, where implementation necessarily introduces capabilities that the interviews did not name explicitly---for example token-based API security, push notification infrastructure, or timezone-aware scheduling---these are classified as \emph{technical enablers} that support the primary clinical and organizational requirements. Third, capabilities that extend the core narrative but are not yet central to everyday practice in the sample (for example deep interoperability with national health information systems) are noted as \emph{future extensions} so that the scope of the described system remains clear without diverting the main line of argument.
+
+\section{Functional Requirements by Domain}
+
+Table~\ref{tab:functional-requirements-domains} summarizes functional requirement domains, their rationale in light of Chapter 4, and how the three software components collectively realize them. The division into domains follows the structure of the interview guide and the coding categories used in the qualitative analysis.
+
+\footnotesize
+\begin{longtable}{@{}>{\RaggedRight\arraybackslash}p{2.4cm}>{\RaggedRight\arraybackslash}p{4.8cm}>{\RaggedRight\arraybackslash}p{5.6cm}@{}}
+\caption{Functional requirement domains derived from Chapter 4 and their realization across the Shifa platform.}\label{tab:functional-requirements-domains}\\
+\toprule
+\textbf{Domain} & \textbf{Requirement intent (from qualitative themes)} & \textbf{Realization in the system}\\\midrule
+\endfirsthead
+\toprule
+\textbf{Domain} & \textbf{Requirement intent (from qualitative themes)} & \textbf{Realization in the system}\\\midrule
+\endhead
+\midrule
+\multicolumn{3}{r@{}}{Continued on next page}\\\endfoot
+\bottomrule
+\endlastfoot
+Identity and trust & Verified participation of doctors and patients, role-appropriate access, and session integrity. & Firebase phone authentication and JWT-backed API access; backend roles for doctor, patient, and administrator; dedicated onboarding and account flows in both clients.\\
+Secure communication & Replace ad-hoc messengers with a channel that preserves clinical context and supports rich media. & Conversation-based messaging with attachments in both applications, backed by shared messaging and file APIs.\\
+Video care & Support follow-up and triage-style encounters when in-person examination is limited or impractical. & Appointment-linked video sessions using a managed real-time stack (Daily.co), including waiting-room and token flows coordinated by the backend.\\
+Scheduling and coordination & Reduce double-booking and manual coordination by anchoring appointments in a single source of truth. & Doctor-defined availability and calendar views; patient booking flows; appointment lifecycle and schedule APIs shared by both clients.\\
+Documentation and cognitive load & Reduce documentation burden while keeping clinical judgment with the physician. & Consultation notes, AI-assisted drafting where offered, visit summaries, and structured patient-facing steps (e.g.\ signing and summary screens) aligned with backend consultation and AI endpoints.\\
+Documents and continuity of information & Exchange investigations and records in a controlled way tied to the care episode. & Patient and doctor document features with upload, listing, and access mediation through the API.\\
+Tasks and remote follow-up & Structure asynchronous follow-up and reminders beyond single messages. & Remote care tasks with check-in flows surfaced in both clients and task-related backend controllers.\\
+Notifications and awareness & Keep participants informed about bookings, messages, and time-sensitive events. & In-app notification centers and push-oriented delivery (Firebase Cloud Messaging) with server-side notification records.\\
+Administration and governance & Support operational oversight without embedding policy in application code alone. & Web-based administrative entry in the doctor build and administrator APIs for user and system management.\\
+Observability and resilience (enabler) & Sustain trustworthy operation under real-world deployment constraints. & Spring Security, health endpoints, profile-based configuration, and deployment-oriented backend setup; client-side error handling and optional crash reporting on mobile.\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Non-Functional Requirements and Quality Attributes}
+
+Based on the identified needs, the system is expected to remain usable under variable mobile connectivity, to protect data in transit through modern transport security, and to keep latency of routine API interactions within responsive bounds for chat and booking workflows. Availability and recovery objectives depend on the chosen hosting environment; the backend is structured for containerized deployment and health checking so that operators can meet institutional targets. Accessibility and multilingual use are addressed through localized user interfaces---including multiple languages on the patient application---consistent with the cross-linguistic interview setting and the intended user base.
+
+\section{Traceability from Qualitative Themes to Platform Capabilities}
+
+Table~\ref{tab:traceability-themes-capabilities} links the high-level findings of Chapter 4 to the capability areas instantiated in the previous section. The mapping is intentionally coarse: it shows \emph{which} parts of the platform respond to \emph{which} empirical themes, supporting the claim that the engineering work is grounded in the qualitative evidence.
+
+\begin{table}[H]
+\centering
+\caption{Qualitative themes (Chapter 4) and corresponding platform capability areas.}
+\label{tab:traceability-themes-capabilities}
+\begin{tabularx}{\textwidth}{@{}>{\RaggedRight\arraybackslash}X>{\RaggedRight\arraybackslash}X@{}}
+\toprule
+\textbf{Theme from Chapter 4} & \textbf{Capability area in the Shifa platform}\\
+\midrule
+Informal messaging; security and legal concern & Secure in-app messaging, authenticated access, administrative oversight\\
+Video for follow-up and triage; connectivity limits & Appointment-based video, mobile-first clients, localized UI\\
+Manual scheduling; coordination friction & Shared scheduling model, patient booking, doctor calendar\\
+Fragmented records; fear of data loss & Documents API, consultation and visit documentation flows\\
+After-hours pressure and workload & Notifications, tasks, structured asynchronous follow-up\\
+Need for trustworthy institutional tooling & Backend RBAC, admin surfaces, deployment-oriented service design\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Phased Evolution and Future Extensions}
+
+The platform is described in this thesis primarily in terms of its current integrated scope across patient application, doctor application, and backend. Guided by the same interview insights, further extensions---such as deeper integration with national health information infrastructure, advanced analytics dashboards for population-level monitoring, or specialized clinician-to-clinician case sharing with formal de-identification workflows---can be positioned as natural next steps once core adoption and governance processes stabilize. This subsection does not alter the normative requirements for the system as presented; it situates the described implementation within a plausible longer-term roadmap.
+
+\section{Requirement-to-Realization Mapping}
+
+Table~\ref{tab:requirement-realization-matrix} provides a consolidated view suitable for review: each row states a requirement derived from or motivated by Chapter 4, elaborates it briefly, and indicates which major software component contributes to satisfying it. A checkmark denotes primary responsibility; ``support'' denotes a contributing or enabling role (for example the backend for almost all cross-client features).
+
+\footnotesize
+\begin{longtable}{@{}>{\RaggedRight\arraybackslash}p{2.6cm}>{\RaggedRight\arraybackslash}p{4.2cm}>{\RaggedRight\arraybackslash}p{1.7cm}>{\RaggedRight\arraybackslash}p{1.7cm}>{\RaggedRight\arraybackslash}p{1.7cm}@{}}
+\caption{Requirements and their realization across doctor client, patient client, and backend.}\label{tab:requirement-realization-matrix}\\
+\toprule
+\textbf{Requirement} & \textbf{Description} & \textbf{Doctor} & \textbf{Patient} & \textbf{Backend}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Requirement} & \textbf{Description} & \textbf{Doctor} & \textbf{Patient} & \textbf{Backend}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r@{}}{Continued on next page}\\\endfoot
+\bottomrule
+\endlastfoot
+Authenticated access & Users prove identity and receive role-appropriate API access. & \checkmark & \checkmark & \checkmark\\
+Role separation & Clinical, patient, and administrative actions are separated by authorization. & \checkmark & \checkmark & \checkmark\\
+Doctor onboarding & New physicians can enter the platform through controlled onboarding paths. & \checkmark & --- & \checkmark\\
+Patient registration and profile & Patients establish accounts and maintain profile data for care coordination. & --- & \checkmark & \checkmark\\
+Secure messaging & Contextual chat replaces informal messengers for care-related dialogue. & \checkmark & \checkmark & \checkmark\\
+Media exchange & Images and files support clinical communication (e.g.\ investigations). & \checkmark & \checkmark & \checkmark\\
+Video visits & Remote encounters support follow-up and triage within appointment structure. & \checkmark & \checkmark & \checkmark\\
+Scheduling integrity & Appointments are created and updated against shared server state. & \checkmark & \checkmark & \checkmark\\
+Doctor availability & Physicians define when they can be booked. & \checkmark & --- & \checkmark\\
+Clinical documentation & Notes and summaries capture encounter content for continuity of care. & \checkmark & \textit{support} & \checkmark\\
+AI-assisted drafting & Optional assistance reduces documentation burden under physician control. & \checkmark & \textit{support} & \checkmark\\
+Patient visit workflow & Patients complete steps tied to visits (e.g.\ confirmation, summary). & --- & \checkmark & \checkmark\\
+Document repository & Structured storage and retrieval of patient-associated files. & \checkmark & \checkmark & \checkmark\\
+Remote tasks & Structured follow-up complements unstructured messages. & \checkmark & \checkmark & \checkmark\\
+Notifications & Users are alerted to relevant events. & \checkmark & \checkmark & \checkmark\\
+Administration & Operational management without redeploying application code. & \checkmark & --- & \checkmark\\
+Public discovery & Patients can find and select doctors for booking. & --- & \checkmark & \checkmark\\
+Deployment and health & Service can be operated with monitoring and controlled configuration. & --- & --- & \checkmark\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Scope Statement}
+
+To address the requirements identified in Chapter 4 within a manageable engineering scope, the thesis describes an integrated telemedicine platform centered on authenticated communication, appointment-based video, shared scheduling, documentation, documents, tasks, and notifications across two client applications and one backend. Extensions that would primarily serve national-scale interoperability or specialized secondary-use research workflows remain outside the core requirement set for this document, while remaining compatible with the architecture described in the following chapters.

@@ -1,0 +1,14 @@
+@startuml
+actor Patient
+participant PatientApp as App
+participant Backend
+participant Database
+
+Patient -> App : Select doctor, time slot
+App -> Backend : POST /api/schedule/book
+Backend -> Database : Check availability, create Appointment
+Database --> Backend : Appointment persisted
+Backend -> App : 201 Created + appointment details
+Backend -> Database : Optionally create Notification
+@enduml
+

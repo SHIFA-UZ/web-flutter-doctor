@@ -1,0 +1,14 @@
+@startuml
+actor Patient
+participant "Patient App" as PatApp
+participant Backend
+participant Database
+
+Patient -> PatApp : Open bookings tab
+PatApp -> Backend : GET /api/patients/me/appointments (with JWT)
+Backend -> Database : Query appointments for patient
+Database --> Backend : Appointment list
+Backend --> PatApp : JSON list
+PatApp --> Patient : Render upcoming and past appointments
+@enduml
+

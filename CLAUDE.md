@@ -4,176 +4,368 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Shifa Doctor App** - A Flutter application for doctors to manage appointments, patients, and schedules. This is a doctor-facing medical app with features for video consultations, in-person appointments, patient management, and scheduling.
+Shifa Doctor App - A Flutter web/mobile application for doctors to manage appointments, patients, schedules, and consultations. Uses **Flutter Riverpod** for state management and integrates with a Spring Boot backend.
+
+**Key Features:**
+- Firebase phone authentication (OTP) for doctor login
+- Video calling via Daily.co (daily_flutter)
+- Real-time chat with patients (text, voice, images)
+- Patient management with document uploads
+- Appointment scheduling with timezone-aware handling
+- Calendar with table_calendar widget
+- Admin panel (separate entry point via hostname detection)
+- AI-powered consultation notes
+- Analytics dashboard with fl_chart
 
 ## Development Commands
 
 ### Running the App
+
 ```bash
-# Run in debug mode (default: localhost:4000 API)
-flutter run
+# Development (local backend at localhost:8080)
+flutter run -d chrome
 
-# Run with custom API base URL
-flutter run --dart-define=API_BASE=https://api.example.com
+# Run with custom API URL
+flutter run -d chrome --dart-define=API_BASE_URL=https://api-staging.example.com
 
-# Run on specific device
-flutter run -d chrome  # Web
-flutter run -d macos   # macOS
-flutter run -d <device-id>
+# iOS
+flutter run -d ios
+
+# Android
+flutter run -d android
+```
+
+### Building
+
+```bash
+# Development build
+flutter build web
+
+# Production build with environment variables
+flutter build web --release \
+  --dart-define=API_BASE_URL=https://api.example.com \
+  --dart-define=ENVIRONMENT=production \
+  --dart-define=GOOGLE_MAPS_API_KEY=your_key_here
+
+# iOS build
+flutter build ios --release
+
+# Android build
+flutter build apk --release
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 flutter test
 
-# Run specific test file
-flutter test test/widget_test.dart
-
-# Run tests with coverage
+# Run with coverage
 flutter test --coverage
+
+# Analyze code
+flutter analyze
 ```
 
-### Code Quality
+### Firebase Deployment
+
 ```bash
-# Static analysis
-flutter analyze
+# Build once
+flutter build web --release
 
-# Format code
-flutter format lib/ test/
+# Deploy doctor app (default site)
+firebase deploy --only hosting:doctor --project staging
 
-# Check formatting without making changes
-flutter format --set-exit-if-changed lib/ test/
+# Deploy admin panel (same build, different site)
+firebase deploy --only hosting:admin --project staging
+
+# First-time setup (if deploy targets not configured)
+firebase target:apply hosting doctor shifa-doctor-staging
+firebase target:apply hosting admin shifa-admin-staging
 ```
 
 ### Dependencies
+
 ```bash
-# Get dependencies
+# Install/update dependencies
 flutter pub get
 
-# Update dependencies
+# Upgrade dependencies
 flutter pub upgrade
 
-# Check for outdated packages
-flutter pub outdated
+# Clean build artifacts
+flutter clean
 ```
 
-### Build
-```bash
-# Build APK (Android)
-flutter build apk
+## Code Architecture
 
-# Build iOS
-flutter build ios
+### Project Structure
 
-# Build web
-flutter build web
-
-# Build macOS
-flutter build macos
-```
-
-## Architecture
-
-This project follows a **feature-based clean architecture** pattern with clear separation of concerns:
-
-### Directory Structure
 ```
 lib/
-├── main.dart                    # App entry point
-├── core/                        # Shared utilities and services
-│   ├── constants/              # App-wide constants (assets, etc.)
-│   └── services/               # Shared services (ApiClient, Session)
-├── app/                        # App-level configuration
-│   ├── app.dart                # Main app widget with bootstrap logic
-│   ├── router.dart             # Centralized routing (AppRouter, AppRoutes)
-│   └── theme.dart              # App theme configuration
-└── features/                   # Feature modules
-    └── <feature>/
-        ├── domain/             # Business models and entities
-        ├── data/               # Repositories and API clients
-        └── presentation/       # UI screens and widgets
+├── main.dart                    # Entry point (initializes Firebase, timezones, i18n)
+├── app/                         # App-level configuration
+│   ├── app.dart                 # Root widget (MaterialApp with Riverpod)
+│   ├── router.dart              # Centralized route definitions
+│   └── theme.dart               # App theme configuration
+├── core/                        # Shared infrastructure
+│   ├── api/                     # API clients (ApiClient, AI API)
+│   ├── config/                  # AppConfig (reads --dart-define env vars)
+│   ├── services/                # Core services (timezone, video, geocoding)
+│   ├── widgets/                 # Reusable widgets
+│   ├── localization/            # i18n (AppLocalizations)
+│   └── utils/                   # Utilities (image, validation, text cleaning)
+├── features/                    # Feature modules
+│   ├── auth/                    # Authentication (login, verify, create account)
+│   ├── home/                    # Dashboard with analytics
+│   ├── appointments/            # Appointment management, video calls
+│   ├── patients/                # Patient records, forms, documents
+│   ├── calendar/                # Calendar view with table_calendar
+│   ├── schedule/                # Doctor availability setup
+│   ├── tasks/                   # Task management (remote care)
+│   ├── chat/                    # Patient chat (messages, voice, images)
+│   ├── notifications/           # Notification center
+│   ├── admin/                   # Admin panel screens
+│   ├── profile/                 # Doctor profile management
+│   └── shell/                   # Main navigation shell
+└── state/                       # Riverpod state management
+    ├── auth/                    # AuthController (JWT, login/logout)
+    ├── appointments/            # Appointment state
+    ├── patients/                # Patient list state
+    └── [other feature states]   # One state folder per feature
 ```
 
-### Key Features
-- **auth**: Authentication flow (splash → verify → login → create account → setup schedule)
-- **shell**: Main app shell with sidebar navigation (5 tabs: chat, home, calendar, patients, profile)
-- **appointments**: In-person, video call, and waiting room screens
-- **calendar**: Schedule and calendar management
-- **patients**: Patient list and management
-- **chat**: Doctor-patient messaging
-- **home**: Dashboard/home screen
-- **schedule**: Doctor schedule setup
-- **profile**: Doctor profile management
+### Feature Module Pattern
 
-### Core Services
+Each feature follows a layered architecture:
 
-**Session** (`lib/core/services/session.dart`):
-- Singleton pattern for managing global auth state
-- Stores: `token`, `doctorId`, `doctorName`
-- Use `Session().isAuthenticated` to check login status
-- Call `Session().clear()` on logout
+```
+features/<feature_name>/
+├── domain/              # Models, entities, business logic
+├── presentation/        # Screens and widgets (UI layer)
+├── application/         # Application services (orchestration)
+└── services/            # Feature-specific services
+```
 
-**ApiClient** (`lib/core/services/api_client.dart`):
-- Singleton Dio client with automatic Bearer token injection
-- Base URL defaults to `http://localhost:4000`
-- Override via: `--dart-define=API_BASE=<url>`
-- 10-second timeout for connect and receive
-- Automatically adds Authorization header from Session
+**Example:** `features/appointments/`
+- `domain/appointment_models.dart` - Data models
+- `presentation/video_call_screen.dart` - UI screens
+- `application/doctor_analytics_service.dart` - Business logic
+- `services/video_service.dart` - External integrations
 
-### Routing
+### State Management with Riverpod
 
-All routes are defined in `lib/app/router.dart`:
-- Use `AppRoutes.*` constants for navigation (e.g., `AppRoutes.login`)
-- Pass arguments via `Navigator.pushNamed(context, route, arguments: data)`
-- Route arguments are type-cast in `AppRouter.onGenerateRoute`
-- Example: Appointment screens expect `Appointment` object as argument
+**Pattern:** Riverpod providers are centralized in `lib/state/<feature>/` folders.
 
-### Authentication Flow
-1. **Splash**: Attempts token restoration via `AuthRepositoryHttp().tryRestore()`
-2. If restored → direct to **MainShell** (app home)
-3. If not → **VerifyKeyScreen** → **LoginScreen** → **CreateAccountScreen** → **AccountInformationScreen** → **SetupScheduleScreen** → **MainShell**
+**Key Providers:**
+- `authTokenProvider` (StateProvider) - JWT token
+- `authControllerProvider` (StateNotifierProvider) - Auth state
+- `apiClientProvider` (Provider) - Configured ApiClient instance
+- `doctorProfileProvider` (FutureProvider) - Current doctor profile
 
-### Data Layer Pattern
-Features follow a repository pattern:
-- `*_models.dart` in `domain/` - Business entities
-- `*_api.dart` in `data/` - Raw API calls (if needed)
-- `*_repository.dart` or `*_repository_http.dart` in `data/` - Repository interface/implementation
-- Repositories use `ApiClient().dio` for HTTP requests
-- Use `shared_preferences` for local persistence (see auth token restoration)
+**Example State Controller:**
 
-### UI Patterns
-- Screens are StatefulWidget in `presentation/` directories
-- MainShell uses indexed stack pattern with sidebar navigation
-- Material design with custom theme in `lib/app/theme.dart`
-- Brand colors: Primary teal (#17C3B2), darker teal (#13A89E)
+```dart
+// lib/state/auth/auth_controller.dart
+class AuthController extends StateNotifier<AuthState> {
+  final Ref ref;
 
-## Important Notes
+  Future<void> login(String username, String password) async {
+    final api = ref.read(apiClientProvider);
+    // ... API call, update state
+  }
+}
 
-### API Configuration
-- Backend defaults to `http://localhost:4000`
-- Change via: `flutter run --dart-define=API_BASE=<your-url>`
-- ApiClient is a singleton - access via `ApiClient().dio`
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
+  return AuthController(ref);
+});
+```
 
-### State Management
-- Currently using StatefulWidget with setState
-- Session is global singleton for auth state
-- No state management library (Provider, Riverpod, Bloc) is used yet
+**Consuming providers:**
+```dart
+// In widgets
+final authState = ref.watch(authControllerProvider);
+ref.read(authControllerProvider.notifier).login(username, password);
+```
 
-### Adding New Features
-1. Create feature directory under `lib/features/<feature_name>/`
-2. Add `domain/` for models (`<feature>_models.dart`)
-3. Add `data/` for repository (`<feature>_repository_http.dart`)
-4. Add `presentation/` for screens (`<feature>_screen.dart`)
-5. Register routes in `lib/app/router.dart` if needed
-6. Follow existing naming conventions
+### API Client
+
+**Location:** `lib/core/api/api_client.dart`
+
+**Key Features:**
+- Automatic JWT token injection from `authTokenProvider`
+- 401/403 handling with automatic logout callback
+- Specialized methods: `postWithBearer` (Firebase auth), `postNoUnauthorizedCheck` (video tokens)
+
+**Usage:**
+```dart
+final api = ref.read(apiClientProvider);
+final response = await api.get('/api/doctors/profile');
+final response = await api.post('/api/patients', patientData);
+```
+
+### Configuration & Environment
+
+**Configuration file:** `lib/core/config/app_config.dart`
+
+Reads build-time environment variables via `--dart-define`:
+- `API_BASE_URL` - Backend API URL (default: `http://localhost:8080`)
+- `ENVIRONMENT` - Environment name (development/staging/production)
+- `GOOGLE_MAPS_API_KEY` - Google Maps API key for geocoding
+
+**Access in code:**
+```dart
+import 'package:shifa_doc_app_v1/core/config/app_config.dart';
+
+final apiUrl = AppConfig.apiBaseUrl;
+final isProduction = AppConfig.isProduction;
+```
+
+## Important Technical Details
+
+### Timezone Handling (Critical)
+
+The app implements "Shifa Global Time Architecture v2":
+- **Backend stores:** All timestamps as UTC (`TIMESTAMPTZ` in PostgreSQL, `Instant` in Kotlin)
+- **Doctor practice timezone:** Stored in `doctor_profiles.practice_time_zone` (IANA timezone string, e.g., "Asia/Tashkent")
+- **Frontend displays:** All times converted to doctor's practice timezone using `timezone` package
+- **Service:** `lib/core/services/timezone_service.dart` handles conversions
+
+**When working with dates/times:**
+1. Always use IANA timezone identifiers (not UTC offsets)
+2. Convert to doctor's practice timezone for display
+3. Send UTC timestamps to backend
+4. See `SHIFA_DATETIME_TIMEZONE_AUDIT.md` for detailed audit
+
+### Firebase Authentication
+
+- **Phone OTP login** for doctors via Firebase Auth
+- **Setup:** Requires Firebase project configuration (`flutterfire configure`)
+- **Login flow:** `VerifyKeyScreen` → Firebase phone auth → JWT from backend
+- **Config file:** `lib/firebase_options.dart` (auto-generated)
+
+### Admin vs Doctor Entry Points
+
+The same web build serves both doctor and admin interfaces:
+- **Doctor app:** Any hostname without "admin" → shows splash/verify screen
+- **Admin panel:** Hostname containing "admin" → shows admin login directly
+- **Logic:** `lib/features/shell/presentation/main_shell.dart` checks hostname
+
+### Video Calling
+
+- **Provider:** Daily.co via `daily_flutter` package
+- **Flow:** Request video token from backend → join Daily.co room
+- **Screens:** `waiting_room_screen.dart`, `video_call_screen.dart`
+- **Service:** `lib/core/services/daily_video_service.dart`
+
+### Chat System
+
+- **Features:** Text messages, voice recording, image uploads
+- **Location:** `lib/features/chat/`
+- **Audio:** `audioplayers` package for playback, `record` package for recording
+- **Images:** `cached_network_image` for display, `flutter_image_compress` for uploads
+
+### Localization (i18n)
+
+- **Languages:** English (en), Uzbek (uz), Russian (ru)
+- **Implementation:** `lib/core/localization/app_localizations.dart`
+- **Initialization:** `main.dart` calls `initializeDateFormatting` for calendar
+- **Provider:** `languageProvider` in `lib/core/providers/language_provider.dart`
+
+### PDF Generation
+
+- **Package:** `pdf` for generating consultation notes
+- **Font:** DejaVuSans.ttf (supports Cyrillic characters for Russian/Uzbek)
+- **Location:** `assets/fonts/DejaVuSans.ttf`
+- **Usage:** See patient consultation note generation features
+
+## Common Patterns & Conventions
 
 ### Navigation
-- Use named routes via `AppRoutes` constants
-- Don't hardcode route strings
-- Pass data through `arguments` parameter, not constructor (except for simple data)
 
-### Code Style
-- Use `flutter_lints` rules (enforced via `analysis_options.yaml`)
-- Run `flutter analyze` before committing
-- Format with `flutter format` (2-space indentation)
+**Centralized routing:** `lib/app/router.dart`
+
+```dart
+// Navigate to route
+Navigator.pushNamed(context, AppRoutes.patientForm, arguments: patientId);
+
+// Go back
+Navigator.pop(context);
+```
+
+### Error Handling
+
+**API calls:**
+```dart
+try {
+  final response = await api.get('/api/endpoint');
+  if (response.statusCode == 200) {
+    // Success
+  } else {
+    // Handle error (show snackbar)
+  }
+} catch (e) {
+  // Network error
+}
+```
+
+### Form Validation
+
+- **Location:** `lib/core/utils/password_validation.dart`
+- **Pattern:** Use validators in TextFormField widgets
+
+### Image Handling
+
+- **Utils:** `lib/core/utils/image_utils.dart`
+- **Compression:** Always compress images before upload using `flutter_image_compress`
+- **Picker:** `image_picker` package (web and mobile support)
+
+## Testing Notes
+
+- Basic widget test exists in `test/widget_test.dart`
+- No comprehensive test suite currently (add tests for new features as needed)
+- Follow Flutter testing best practices: widget tests, integration tests, unit tests
+
+## Documentation Files
+
+The repository contains extensive documentation:
+- `README_DEPLOYMENT.md` - Deployment guide with environment configuration
+- `FIREBASE_QUICKSTART.md` - Quick Firebase hosting setup
+- `FIREBASE_SETUP.md` - Detailed Firebase configuration
+- `SETUP_FIREBASE_PHONE.md` - Firebase phone auth setup
+- `SHIFA_DATETIME_TIMEZONE_AUDIT.md` - Comprehensive timezone architecture
+- `GOOGLE_MAPS_SETUP.md` - Google Maps API configuration
+- `CYRILLIC_FONT_SETUP.md` - PDF font configuration for Cyrillic
+
+## Common Tasks
+
+### Adding a New Feature
+
+1. Create feature folder in `lib/features/<feature_name>/`
+2. Add domain models in `domain/`
+3. Create screens in `presentation/`
+4. Add Riverpod providers in `lib/state/<feature_name>/`
+5. Update router in `lib/app/router.dart` if needed
+6. Add navigation in shell or other screens
+
+### Adding a New API Endpoint
+
+1. Use `ApiClient` from `lib/core/api/api_client.dart`
+2. Call from state controller or service
+3. Handle responses and errors
+4. Update UI based on state changes
+
+### Modifying Existing Feature
+
+1. Read existing code in `lib/features/<feature>/` and `lib/state/<feature>/`
+2. Understand the data flow: UI → Controller → API → Backend
+3. Make changes following existing patterns
+4. Test in development environment first
+
+## Backend Integration
+
+- **Backend:** Spring Boot (Kotlin) REST API
+- **Database:** PostgreSQL
+- **Authentication:** JWT tokens (returned by `/api/auth/login`)
+- **API Base:** Configurable via `API_BASE_URL` environment variable
+- **Endpoints:** Follow REST conventions (`/api/<resource>`)

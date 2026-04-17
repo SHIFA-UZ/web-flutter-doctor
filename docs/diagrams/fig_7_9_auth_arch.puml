@@ -1,0 +1,18 @@
+@startuml
+actor User
+participant Client
+participant Backend
+participant "Spring Security" as Sec
+
+User -> Client : Submit credentials / OTP
+Client -> Backend : POST /api/auth/login
+Backend -> Sec : Authenticate and create JWT
+Sec --> Backend : Auth result
+Backend -> Client : JWT
+
+Client -> Backend : API call with JWT
+Backend -> Sec : Validate JWT, load roles
+Sec --> Backend : SecurityContext with roles
+Backend --> Client : Authorised response
+@enduml
+

@@ -1,0 +1,24 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+System_Boundary(shifa, "Shifa Platform") {
+  Container(spa_patient, "Patient App", "Flutter", "Mobile client for patients.")
+  Container(spa_doctor, "Doctor/Admin App", "Flutter Web", "Web SPA for doctors and admins.")
+  Container(shifa_backend, "Backend API", "Spring Boot (Kotlin)", "REST API, workflow orchestration, persistence.")
+  ContainerDb(db, "PostgreSQL", "Relational DB", "Clinical, scheduling and messaging data.")
+}
+
+Container_Ext(firebase, "Firebase", "Auth + FCM", "Phone auth (OTP) and notifications.")
+Container_Ext(daily, "Daily.co", "Video service", "Video rooms, media transport.")
+
+Rel(spa_patient, shifa_backend, "HTTPS REST")
+Rel(spa_doctor, shifa_backend, "HTTPS REST")
+Rel(shifa_backend, db, "JPA/Hibernate")
+
+Rel(spa_patient, firebase, "OTP + FCM SDK")
+Rel(spa_doctor, firebase, "FCM SDK")
+Rel(shifa_backend, firebase, "Admin SDK")
+
+Rel(shifa_backend, daily, "Token issuance, webhooks")
+@enduml
+

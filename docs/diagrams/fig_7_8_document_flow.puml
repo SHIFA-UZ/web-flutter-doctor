@@ -1,0 +1,18 @@
+@startuml
+actor Patient
+participant PatientApp as App
+participant Backend
+participant Database
+
+Patient -> App : Select file to upload
+App -> Backend : POST /api/patients/{id}/documents (multipart)
+Backend -> Database : Insert PatientDocument metadata
+Database --> Backend : Persisted record
+Backend -> App : 201 Created + document ID
+
+App -> Backend : GET /api/patients/{id}/documents/{docId}
+Backend -> Database : Authorise and read metadata
+Database --> Backend : Document metadata
+Backend --> App : 200 OK + file stream or signed URL
+@enduml
+

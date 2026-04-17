@@ -1,7 +1,10 @@
 // lib/features/appointments/presentation/waiting_room_screen.dart
 import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
+import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
 class WaitingRoomScreen extends StatelessWidget {
   const WaitingRoomScreen({super.key, required this.appointment});
@@ -9,8 +12,6 @@ class WaitingRoomScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brand = const Color(0xFF17C3B2);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -20,9 +21,9 @@ class WaitingRoomScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Waiting room',
-          style: TextStyle(color: Colors.black),
+        title: Text(
+          AppLocalizations.of(context)!.translate('waitingRoom') ?? 'Waiting room',
+          style: const TextStyle(color: Colors.black),
         ),
         centerTitle: false,
       ),
@@ -46,7 +47,7 @@ class WaitingRoomScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${appointment.patientName} is waiting.',
+                    '${appointment.patientName} ${AppLocalizations.of(context)!.translate('isWaiting') ?? 'is waiting'}.',
                     style: TextStyle(
                       color: Colors.grey.shade800,
                       fontWeight: FontWeight.w600,
@@ -54,7 +55,7 @@ class WaitingRoomScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Open the room when you're ready to start the call",
+                    AppLocalizations.of(context)!.translate('openRoomWhenReady') ?? "Open the room when you're ready to start the call",
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ],
@@ -64,28 +65,23 @@ class WaitingRoomScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: ShifaSecondaryButton(
+                    label: AppLocalizations.of(context)!.back,
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Back'),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: brand),
-                      foregroundColor: brand,
-                    ),
+                    icon: Icons.arrow_back,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
+                  child: ShifaPrimaryButton(
+                    label: AppLocalizations.of(context)!.openRoom,
                     onPressed: () {
-                      Navigator.pushNamed(
+                      ShellScope.pushNamed(
                         context,
                         AppRoutes.videoCall,
                         arguments: appointment,
                       );
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: brand),
-                    child: const Text('Open Room'),
                   ),
                 ),
               ],
