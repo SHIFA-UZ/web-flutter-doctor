@@ -65,3 +65,8 @@ build/
 
 # Web
 /web/index.html.bak
+
+# Markdown files (except CLAUDE.md and README.md)
+*.md
+!CLAUDE.md
+!README.md
