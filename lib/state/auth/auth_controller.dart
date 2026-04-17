@@ -224,8 +224,10 @@ class AuthController extends StateNotifier<AuthState> {
   /// Send forgot-password OTP (identifier can be email or phone).
   Future<void> sendForgotPasswordOtp(String identifier) async {
     final api = ref.read(apiClientProvider);
+    final appType = isAdminHost ? 'admin' : 'doctor';
     final res = await api.post('/api/auth/send-forgot-password-otp', {
       'identifier': identifier,
+      'app': appType,
     });
     if (res.statusCode != 200) {
       final body = _tryDecodeJson(res.body);
@@ -272,8 +274,10 @@ class AuthController extends StateNotifier<AuthState> {
   /// Forgot-password flow (legacy): send Firebase ID token + new password.
   Future<void> resetPasswordWithFirebaseToken(String idToken, String newPassword) async {
     final api = ref.read(apiClientProvider);
+    final appType = isAdminHost ? 'admin' : 'doctor';
     final res = await api.post('/api/auth/forgot-password-reset', {
       'idToken': idToken,
+      'app': appType,
       'newPassword': newPassword,
     });
     final isJson = (res.headers['content-type'] ?? '').contains('application/json') ||
