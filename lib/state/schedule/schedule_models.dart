@@ -12,18 +12,22 @@ class TimeSlot {
   });
 }
 
-/// Backend DTO
+/// Backend DTO for a weekly rule. Optionally carries a [locationId] when the
+/// doctor has multiple practice locations. When null, the backend treats it as
+/// the doctor's primary location.
 class RuleDto {
   final int weekday; // 1..7 (Mon..Sun)
   final String startTime; // "HH:mm"
   final String endTime; // "HH:mm"
   final int slotMinutes;
+  final int? locationId;
 
   RuleDto({
     required this.weekday,
     required this.startTime,
     required this.endTime,
     required this.slotMinutes,
+    this.locationId,
   });
 
   factory RuleDto.fromJson(Map<String, dynamic> j) => RuleDto(
@@ -31,6 +35,7 @@ class RuleDto {
     startTime: j['startTime'] as String,
     endTime: j['endTime'] as String,
     slotMinutes: j['slotMinutes'] as int,
+    locationId: (j['locationId'] as num?)?.toInt(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -38,6 +43,7 @@ class RuleDto {
     'startTime': startTime,
     'endTime': endTime,
     'slotMinutes': slotMinutes,
+    if (locationId != null) 'locationId': locationId,
   };
 }
 
@@ -49,6 +55,7 @@ class DateSpecificRuleDto {
   final String startTime; // HH:mm
   final String endTime;
   final int slotMinutes;
+  final int? locationId;
 
   DateSpecificRuleDto({
     this.id,
@@ -57,15 +64,17 @@ class DateSpecificRuleDto {
     required this.startTime,
     required this.endTime,
     required this.slotMinutes,
+    this.locationId,
   });
 
   factory DateSpecificRuleDto.fromJson(Map<String, dynamic> j) => DateSpecificRuleDto(
-    id: j['id'] as int?,
+    id: (j['id'] as num?)?.toInt(),
     startDate: j['startDate'] as String,
     endDate: j['endDate'] as String,
     startTime: j['startTime'] as String,
     endTime: j['endTime'] as String,
     slotMinutes: j['slotMinutes'] as int,
+    locationId: (j['locationId'] as num?)?.toInt(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -75,6 +84,7 @@ class DateSpecificRuleDto {
     'startTime': startTime,
     'endTime': endTime,
     'slotMinutes': slotMinutes,
+    if (locationId != null) 'locationId': locationId,
   };
 }
 

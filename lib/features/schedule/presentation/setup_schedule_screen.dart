@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/features/schedule/presentation/doctor_locations_screen.dart';
+import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
+import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_controller.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_models.dart';
@@ -47,6 +50,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   DateTime? _existingValidFrom;
   DateTime? _existingValidUntil;
 
+  // Multi-location support
+  List<DoctorLocationDto> _locations = const [];
+  int? _selectedLocationId;
+
   @override
   void initState() {
     super.initState();
@@ -59,8 +66,38 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final api = ref.read(apiClientProvider);
 
     try {
-      // 1) Load existing rules
-      final rulesRes = await api.get('/api/schedule/rules');
+      // 0) Load the doctor's practice locations first. The selected location (if any)
+      // scopes schedule rules and date-specific expansions so the doctor can edit
+      // each location's calendar independently.
+      try {
+        final locs = await fetchDoctorLocations(ref);
+        if (mounted) {
+          setState(() {
+            _locations = locs;
+            // Keep previous selection if still valid; otherwise pick primary / first.
+            if (_selectedLocationId != null &&
+                locs.any((l) => l.id == _selectedLocationId)) {
+              // already valid
+            } else if (locs.isNotEmpty) {
+              final primary = locs.firstWhere(
+                (l) => l.isPrimary,
+                orElse: () => locs.first,
+              );
+              _selectedLocationId = primary.id;
+            } else {
+              _selectedLocationId = null;
+            }
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _locations = const []);
+      }
+
+      // 1) Load existing rules (optionally filtered by the selected location).
+      final rulesPath = _selectedLocationId != null
+          ? '/api/schedule/rules?locationId=${_selectedLocationId}'
+          : '/api/schedule/rules';
+      final rulesRes = await api.get(rulesPath);
       if (rulesRes.statusCode == 200) {
         final list = (jsonDecode(utf8.decode(rulesRes.bodyBytes)) as List)
             .cast<Map<String, dynamic>>();
@@ -115,8 +152,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         }
       }
 
-      // 3) Load date-specific schedule rules (expansions)
-      final expanded = await fetchDateSpecificRules(ref);
+      // 3) Load date-specific schedule rules (expansions) for the selected location.
+      final expanded =
+          await fetchDateSpecificRules(ref, locationId: _selectedLocationId);
       if (mounted) setState(() => _dateSpecificRules = expanded);
     } catch (e) {
       debugPrint('Schedule load error: $e');
@@ -371,9 +409,11 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         startTime: '${startT.hour.toString().padLeft(2, '0')}:${startT.minute.toString().padLeft(2, '0')}',
         endTime: '${endT.hour.toString().padLeft(2, '0')}:${endT.minute.toString().padLeft(2, '0')}',
         slotMinutes: dur.inMinutes,
+        locationId: _selectedLocationId,
       );
       if (!mounted) return;
-      final list = await fetchDateSpecificRules(ref);
+      final list =
+          await fetchDateSpecificRules(ref, locationId: _selectedLocationId);
       if (mounted) setState(() => _dateSpecificRules = list);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.expansionAdded)),
@@ -390,7 +430,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     try {
       await deleteDateSpecificRule(ref, id);
       if (!mounted) return;
-      final list = await fetchDateSpecificRules(ref);
+      final list =
+          await fetchDateSpecificRules(ref, locationId: _selectedLocationId);
       if (mounted) setState(() => _dateSpecificRules = list);
     } catch (e) {
       debugPrint('Delete date-specific rule error: $e');
@@ -493,6 +534,36 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     }
   }
 
+  Future<void> _onLocationChanged(int? newId) async {
+    if (newId == _selectedLocationId) return;
+    setState(() => _selectedLocationId = newId);
+    await _loadFromBackend();
+  }
+
+  Future<void> _openLocationsScreen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const DoctorLocationsScreen(),
+      ),
+    );
+    // After editing locations, reload so the selector reflects add/remove/primary.
+    if (mounted) await _loadFromBackend();
+  }
+
+  DoctorLocationDto? _effectiveCurrentLocation() {
+    if (_locations.isEmpty) return null;
+    if (_selectedLocationId != null) {
+      for (final location in _locations) {
+        if (location.id == _selectedLocationId) return location;
+      }
+    }
+    if (_locations.length == 1) return _locations.first;
+    for (final location in _locations) {
+      if (location.isPrimary) return location;
+    }
+    return _locations.first;
+  }
+
   Future<void> _save() async {
     final schedule = ref.read(scheduleProvider);
     final l10n = AppLocalizations.of(context)!;
@@ -542,7 +613,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     
     setState(() => _saving = true);
     try {
-      await saveScheduleToBackend(ref);
+      await saveScheduleToBackend(ref, locationId: _selectedLocationId);
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -571,6 +642,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final schedule = ref.watch(scheduleProvider); // ScheduleState
     final slotsByDay = schedule.slots; // Map<String, List<TimeSlot>>
     final l10n = AppLocalizations.of(context)!;
+    final currentLocation = _effectiveCurrentLocation();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -579,6 +651,13 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            tooltip: l10n.translate('manageLocations') ?? 'Manage locations',
+            icon: const Icon(Icons.place_outlined),
+            onPressed: _openLocationsScreen,
+          ),
+        ],
       ),
       body: SafeArea(
         child: _loading
@@ -597,6 +676,24 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
+                    if (currentLocation != null) ...[
+                      _CurrentLocationBadge(location: currentLocation),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Location selector — hidden for doctors with 0/1 location.
+                    if (_locations.length > 1) ...[
+                      _LocationSelector(
+                        locations: _locations,
+                        selectedId: _selectedLocationId,
+                        onChanged: _onLocationChanged,
+                        onManage: _openLocationsScreen,
+                      ),
+                      const SizedBox(height: 16),
+                    ] else if (_locations.isEmpty) ...[
+                      _NoLocationsHint(onManage: _openLocationsScreen),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Existing calendar periods (multiple allowed)
                     if (_existingValidityPeriods.isNotEmpty) ...[
@@ -747,6 +844,148 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+}
+
+// ====================== Location selector ======================
+
+class _LocationSelector extends StatelessWidget {
+  const _LocationSelector({
+    required this.locations,
+    required this.selectedId,
+    required this.onChanged,
+    required this.onManage,
+  });
+
+  final List<DoctorLocationDto> locations;
+  final int? selectedId;
+  final ValueChanged<int?> onChanged;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.place_outlined, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                isExpanded: true,
+                value: selectedId,
+                hint: Text(l10n.translate('selectLocation') ?? 'Select location'),
+                items: locations
+                    .map(
+                      (l) => DropdownMenuItem<int>(
+                        value: l.id,
+                        child: Text(
+                          l.isPrimary ? '${l.label} · ★' : l.label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: onManage,
+            icon: const Icon(Icons.settings_outlined, size: 18),
+            label: Text(l10n.translate('manage') ?? 'Manage'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CurrentLocationBadge extends StatelessWidget {
+  const _CurrentLocationBadge({required this.location});
+
+  final DoctorLocationDto location;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade100),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on_outlined, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${l10n.translate('selectedLocation') ?? 'Current location'}: ${location.label}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (location.isPrimary)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                l10n.translate('primary') ?? 'Primary',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoLocationsHint extends StatelessWidget {
+  const _NoLocationsHint({required this.onManage});
+
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.orange),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.translate('addFirstLocationHint') ??
+                  'Add at least one practice location to organize your schedule.',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+          TextButton(
+            onPressed: onManage,
+            child: Text(l10n.translate('addLocation') ?? 'Add location'),
+          ),
+        ],
       ),
     );
   }

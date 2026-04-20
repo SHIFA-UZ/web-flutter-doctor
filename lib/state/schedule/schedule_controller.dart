@@ -114,8 +114,8 @@ class ScheduleController extends StateNotifier<ScheduleState> {
     state = state.copyWith(endDate: endDate);
   }
 
-  /// Map UI -> backend DTOs
-  List<RuleDto> toRuleDtos() {
+  /// Map UI -> backend DTOs. When [locationId] is provided, each rule carries that location.
+  List<RuleDto> toRuleDtos({int? locationId}) {
     const reverseWeekdays = <String, int>{
       'Monday': 1,
       'Tuesday': 2,
@@ -137,6 +137,7 @@ class ScheduleController extends StateNotifier<ScheduleState> {
             startTime: hhmm(r.start),
             endTime: hhmm(r.end),
             slotMinutes: r.slotDuration.inMinutes,
+            locationId: locationId,
           ),
         );
       }

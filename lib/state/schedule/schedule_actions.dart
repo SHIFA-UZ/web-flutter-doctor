@@ -10,11 +10,16 @@ import 'package:shifa_doc_app_v1/state/schedule/schedule_controller.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_models.dart';
 
 /// PUT rules + PATCH valid-until.
+///
+/// When [locationId] is non-null, the save only replaces rules for that location and the
+/// request URL carries `?locationId=...`. When null, the legacy full-replacement behavior
+/// is preserved so single-location doctors don't have to change anything.
+///
 /// Throws on non-200 so caller can show SnackBar.
-Future<void> saveScheduleToBackend(WidgetRef ref) async {
+Future<void> saveScheduleToBackend(WidgetRef ref, {int? locationId}) async {
   final api = ref.read(apiClientProvider);
   final state = ref.read(scheduleProvider);
-  final dtos = ref.read(scheduleProvider.notifier).toRuleDtos();
+  final dtos = ref.read(scheduleProvider.notifier).toRuleDtos(locationId: locationId);
 
   // Debug: verify exact dates sent (no gap-fill; 08 Apr – 30 Apr must stay as-is)
   final startStr = state.startDate != null
@@ -23,13 +28,16 @@ Future<void> saveScheduleToBackend(WidgetRef ref) async {
   final endStr = '${state.endDate.year}-${state.endDate.month.toString().padLeft(2, '0')}-${state.endDate.day.toString().padLeft(2, '0')}';
   debugPrint('Submitting calendar: startDate=$startStr, endDate=$endStr');
 
-  // PUT /api/schedule/rules
+  // PUT /api/schedule/rules[?locationId=...]
+  final putPath = locationId != null
+      ? '/api/schedule/rules?locationId=$locationId'
+      : '/api/schedule/rules';
   final put = await api.put(
-    '/api/schedule/rules',
+    putPath,
     dtos.map((e) => e.toJson()).toList(),
   );
   if (put.statusCode != 200) {
-    throw Exception('Saving rules failed: ${put.statusCode} ${put.body}');
+    throw Exception(_errorMessageFromResponse(put));
   }
 
   // PATCH /api/schedule/valid-range — adds a new period (must not overlap any existing)
@@ -71,10 +79,16 @@ Future<List<ValidityPeriodDto>> fetchValidityPeriods(WidgetRef ref) async {
   return list.map(ValidityPeriodDto.fromJson).toList();
 }
 
-/// GET /api/schedule/date-specific
-Future<List<DateSpecificRuleDto>> fetchDateSpecificRules(WidgetRef ref) async {
+/// GET /api/schedule/date-specific[?locationId=...]
+Future<List<DateSpecificRuleDto>> fetchDateSpecificRules(
+  WidgetRef ref, {
+  int? locationId,
+}) async {
   final api = ref.read(apiClientProvider);
-  final res = await api.get('/api/schedule/date-specific');
+  final path = locationId != null
+      ? '/api/schedule/date-specific?locationId=$locationId'
+      : '/api/schedule/date-specific';
+  final res = await api.get(path);
   if (res.statusCode != 200) {
     throw Exception('Failed to load date-specific rules: ${res.statusCode} ${res.body}');
   }
@@ -91,14 +105,16 @@ Future<DateSpecificRuleDto> createDateSpecificRule(
   required String startTime,
   required String endTime,
   required int slotMinutes,
+  int? locationId,
 }) async {
   final api = ref.read(apiClientProvider);
-  final body = {
+  final body = <String, dynamic>{
     'startDate': startDate,
     'endDate': endDate,
     'startTime': startTime,
     'endTime': endTime,
     'slotMinutes': slotMinutes,
+    if (locationId != null) 'locationId': locationId,
   };
   final res = await api.post('/api/schedule/date-specific', body);
   if (res.statusCode != 200 && res.statusCode != 201) {
