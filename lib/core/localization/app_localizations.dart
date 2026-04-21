@@ -302,6 +302,33 @@ class AppLocalizations {
       'locationPermissionDeniedForever':
           'Location permissions are permanently denied. Please enable them in settings.',
       'selectedLocation': 'Selected Location',
+      'selectLocation': 'Select location',
+      'primary': 'Primary',
+      'manage': 'Manage',
+      'label': 'Label',
+      'manageLocations': 'Manage locations',
+      'addLocation': 'Add location',
+      'editLocation': 'Edit location',
+      'deleteLocation': 'Delete location',
+      'deleteLocationConfirm':
+          'Delete "{label}"? Schedule rules and appointments at this location must be removed first.',
+      'noLocationsYet':
+          'No locations yet. Tap "Add location" to create your first one.',
+      'labelRequired': 'Label is required',
+      'exampleMainClinic': 'e.g. Main Clinic',
+      'setAsPrimary': 'Set as primary',
+      'addFirstLocationHint':
+          'Add at least one practice location to organize your schedule.',
+      'copyFromPreviousDay': 'Copy from previous day',
+      'copyFromAnotherDay': 'Copy from another day',
+      'copyScheduleFromDay': 'Copy schedule from which day?',
+      'noPreviousDayScheduleToCopy':
+          'Previous day has no schedule to copy.',
+      'scheduleCopiedFromPreviousDay': 'Schedule copied from previous day.',
+      'noSourceDaysToCopyFrom': 'No other days have schedule to copy from.',
+      'failedToCopySchedule':
+          'Failed to copy schedule from selected day.',
+      'scheduleCopiedFromDay': 'Schedule copied from {day}.',
       'current': 'Current',
       'birthDate': 'Birth Date',
       'gender': 'Gender',
@@ -1216,6 +1243,35 @@ class AppLocalizations {
       'locationPermissionDeniedForever':
           'Joylashuv ruxsatlari doimiy ravishda rad etilgan. Iltimos, sozlamalarda yoqing.',
       'selectedLocation': 'Tanlangan joylashuv',
+      'selectLocation': 'Joylashuvni tanlang',
+      'primary': 'Asosiy',
+      'manage': 'Boshqarish',
+      'label': 'Nomi',
+      'manageLocations': 'Joylashuvlarni boshqarish',
+      'addLocation': 'Joylashuv qo\'shish',
+      'editLocation': 'Joylashuvni tahrirlash',
+      'deleteLocation': 'Joylashuvni o\'chirish',
+      'deleteLocationConfirm':
+          '"{label}" joylashuvini o\'chirasizmi? Bu joylashuvdagi jadval qoidalari va uchrashuvlar avval olib tashlanishi kerak.',
+      'noLocationsYet':
+          'Hali joylashuvlar yo\'q. Birinchisini yaratish uchun "Joylashuv qo\'shish"ni bosing.',
+      'labelRequired': 'Nomi majburiy',
+      'exampleMainClinic': 'masalan: Asosiy klinika',
+      'setAsPrimary': 'Asosiy qilib belgilash',
+      'addFirstLocationHint':
+          'Jadvalni tartibga solish uchun kamida bitta amaliyot joylashuvini qo\'shing.',
+      'copyFromPreviousDay': 'Oldingi kundan nusxa olish',
+      'copyFromAnotherDay': 'Boshqa kundan nusxa olish',
+      'copyScheduleFromDay': 'Jadvalni qaysi kundan nusxa olinsin?',
+      'noPreviousDayScheduleToCopy':
+          'Oldingi kunda nusxa olish uchun jadval yo\'q.',
+      'scheduleCopiedFromPreviousDay':
+          'Jadval oldingi kundan nusxa olindi.',
+      'noSourceDaysToCopyFrom':
+          'Nusxa olish uchun boshqa kunlarda jadval yo\'q.',
+      'failedToCopySchedule':
+          'Tanlangan kundan jadval nusxalanmadi.',
+      'scheduleCopiedFromDay': 'Jadval {day} dan nusxa olindi.',
       'current': 'Joriy',
       'birthDate': 'Tug\'ilgan sana',
       'gender': 'Jins',
@@ -2138,6 +2194,35 @@ class AppLocalizations {
       'locationPermissionDeniedForever':
           'Разрешения на определение местоположения отклонены навсегда. Пожалуйста, включите их в настройках.',
       'selectedLocation': 'Выбранное местоположение',
+      'selectLocation': 'Выберите местоположение',
+      'primary': 'Основное',
+      'manage': 'Управлять',
+      'label': 'Название',
+      'manageLocations': 'Управление местоположениями',
+      'addLocation': 'Добавить местоположение',
+      'editLocation': 'Редактировать местоположение',
+      'deleteLocation': 'Удалить местоположение',
+      'deleteLocationConfirm':
+          'Удалить "{label}"? Правила расписания и записи в этом местоположении сначала нужно удалить.',
+      'noLocationsYet':
+          'Местоположений пока нет. Нажмите "Добавить местоположение", чтобы создать первое.',
+      'labelRequired': 'Название обязательно',
+      'exampleMainClinic': 'например: Основная клиника',
+      'setAsPrimary': 'Сделать основным',
+      'addFirstLocationHint':
+          'Добавьте как минимум одно место приема, чтобы организовать расписание.',
+      'copyFromPreviousDay': 'Копировать с предыдущего дня',
+      'copyFromAnotherDay': 'Копировать с другого дня',
+      'copyScheduleFromDay': 'С какого дня копировать расписание?',
+      'noPreviousDayScheduleToCopy':
+          'На предыдущий день нет расписания для копирования.',
+      'scheduleCopiedFromPreviousDay':
+          'Расписание скопировано с предыдущего дня.',
+      'noSourceDaysToCopyFrom':
+          'Нет других дней с расписанием для копирования.',
+      'failedToCopySchedule':
+          'Не удалось скопировать расписание с выбранного дня.',
+      'scheduleCopiedFromDay': 'Расписание скопировано с {day}.',
       'current': 'Текущее',
       'birthDate': 'Дата рождения',
       'gender': 'Пол',

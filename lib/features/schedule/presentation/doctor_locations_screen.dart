@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/profile/presentation/location_picker_widget.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 
@@ -71,21 +72,20 @@ class _DoctorLocationsScreenState extends ConsumerState<DoctorLocationsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.translate('deleteLocation') ?? 'Delete location'),
+        title: Text(l10n.translate('deleteLocation')),
         content: Text(
-          (l10n.translate('deleteLocationConfirm') ??
-                  'Delete "{label}"? Schedule rules and appointments at this location must be removed first.')
+          l10n.translate('deleteLocationConfirm')
               .replaceFirst('{label}', loc.label),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.translate('cancel') ?? 'Cancel'),
+            child: Text(l10n.translate('cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.destructiveRed),
-            child: Text(l10n.translate('delete') ?? 'Delete'),
+            child: Text(l10n.translate('delete')),
           ),
         ],
       ),
@@ -108,7 +108,7 @@ class _DoctorLocationsScreenState extends ConsumerState<DoctorLocationsScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.translate('manageLocations') ?? 'Manage locations'),
+        title: Text(l10n.translate('manageLocations')),
         foregroundColor: Colors.black,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -116,7 +116,7 @@ class _DoctorLocationsScreenState extends ConsumerState<DoctorLocationsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openEditor(),
         icon: const Icon(Icons.add),
-        label: Text(l10n.translate('addLocation') ?? 'Add location'),
+        label: Text(l10n.translate('addLocation')),
       ),
       body: SafeArea(
         child: _loading
@@ -126,8 +126,7 @@ class _DoctorLocationsScreenState extends ConsumerState<DoctorLocationsScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
-                        l10n.translate('noLocationsYet') ??
-                            'No locations yet. Tap “Add location” to create your first one.',
+                        l10n.translate('noLocationsYet'),
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey.shade700),
                       ),
@@ -220,7 +219,7 @@ class _LocationCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            l10n.translate('primary') ?? 'Primary',
+                            l10n.translate('primary'),
                             style: const TextStyle(fontSize: 11),
                           ),
                         ),
@@ -274,11 +273,15 @@ class _LocationEditorDialog extends StatefulWidget {
 class _LocationEditorDialogState extends State<_LocationEditorDialog> {
   late final TextEditingController _label;
   late final TextEditingController _clinic;
-  late final TextEditingController _address;
-  late final TextEditingController _city;
-  late final TextEditingController _region;
-  late final TextEditingController _country;
   late bool _isPrimary;
+  double? _latitude;
+  double? _longitude;
+  String? _locationCountry;
+  String? _locationRegion;
+  String? _locationDistrict;
+  String? _locationCity;
+  String? _locationPostalCode;
+  String? _locationStreetAddress;
 
   @override
   void initState() {
@@ -286,21 +289,21 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
     final e = widget.existing;
     _label = TextEditingController(text: e?.label ?? '');
     _clinic = TextEditingController(text: e?.clinic ?? '');
-    _address = TextEditingController(text: e?.address ?? '');
-    _city = TextEditingController(text: e?.locationCity ?? '');
-    _region = TextEditingController(text: e?.locationRegion ?? '');
-    _country = TextEditingController(text: e?.locationCountry ?? '');
     _isPrimary = e?.isPrimary ?? false;
+    _latitude = e?.latitude;
+    _longitude = e?.longitude;
+    _locationCountry = e?.locationCountry;
+    _locationRegion = e?.locationRegion;
+    _locationDistrict = e?.locationDistrict;
+    _locationCity = e?.locationCity;
+    _locationPostalCode = e?.locationPostalCode;
+    _locationStreetAddress = e?.locationStreetAddress ?? e?.address;
   }
 
   @override
   void dispose() {
     _label.dispose();
     _clinic.dispose();
-    _address.dispose();
-    _city.dispose();
-    _region.dispose();
-    _country.dispose();
     super.dispose();
   }
 
@@ -309,8 +312,7 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
     if (label.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(
-          AppLocalizations.of(context)!.translate('labelRequired') ??
-              'Label is required',
+          AppLocalizations.of(context)!.translate('labelRequired'),
         )),
       );
       return;
@@ -319,11 +321,29 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
       id: widget.existing?.id,
       label: label,
       clinic: _clinic.text.trim().isEmpty ? null : _clinic.text.trim(),
-      address: _address.text.trim().isEmpty ? null : _address.text.trim(),
-      locationCity: _city.text.trim().isEmpty ? null : _city.text.trim(),
-      locationRegion: _region.text.trim().isEmpty ? null : _region.text.trim(),
-      locationCountry:
-          _country.text.trim().isEmpty ? null : _country.text.trim(),
+      address: (_locationStreetAddress ?? '').trim().isEmpty
+          ? null
+          : _locationStreetAddress!.trim(),
+      latitude: _latitude,
+      longitude: _longitude,
+      locationCountry: (_locationCountry ?? '').trim().isEmpty
+          ? null
+          : _locationCountry!.trim(),
+      locationRegion: (_locationRegion ?? '').trim().isEmpty
+          ? null
+          : _locationRegion!.trim(),
+      locationDistrict: (_locationDistrict ?? '').trim().isEmpty
+          ? null
+          : _locationDistrict!.trim(),
+      locationCity: (_locationCity ?? '').trim().isEmpty
+          ? null
+          : _locationCity!.trim(),
+      locationPostalCode: (_locationPostalCode ?? '').trim().isEmpty
+          ? null
+          : _locationPostalCode!.trim(),
+      locationStreetAddress: (_locationStreetAddress ?? '').trim().isEmpty
+          ? null
+          : _locationStreetAddress!.trim(),
       isPrimary: _isPrimary,
     );
     Navigator.pop(context, dto);
@@ -335,8 +355,8 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
     final isNew = widget.existing == null;
     return AlertDialog(
       title: Text(isNew
-          ? (l10n.translate('addLocation') ?? 'Add location')
-          : (l10n.translate('editLocation') ?? 'Edit location')),
+          ? l10n.translate('addLocation')
+          : l10n.translate('editLocation')),
       content: SingleChildScrollView(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
@@ -346,58 +366,46 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
               TextField(
                 controller: _label,
                 decoration: InputDecoration(
-                  labelText: l10n.translate('label') ?? 'Label',
-                  hintText: 'e.g. Main Clinic',
+                  labelText: l10n.translate('label'),
+                  hintText: l10n.translate('exampleMainClinic'),
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _clinic,
                 decoration: InputDecoration(
-                  labelText: l10n.translate('clinic') ?? 'Clinic name',
+                  labelText: l10n.translate('clinic'),
                 ),
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _address,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: l10n.translate('address') ?? 'Address',
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _city,
-                      decoration: InputDecoration(
-                        labelText: l10n.translate('city') ?? 'City',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _region,
-                      decoration: InputDecoration(
-                        labelText: l10n.translate('region') ?? 'Region',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _country,
-                decoration: InputDecoration(
-                  labelText: l10n.translate('country') ?? 'Country',
-                ),
+              const SizedBox(height: 12),
+              LocationPickerSection(
+                latitude: _latitude,
+                longitude: _longitude,
+                locationCountry: _locationCountry,
+                locationRegion: _locationRegion,
+                locationDistrict: _locationDistrict,
+                locationCity: _locationCity,
+                locationPostalCode: _locationPostalCode,
+                locationStreetAddress: _locationStreetAddress,
+                onLocationSelected: (locationData) {
+                  setState(() {
+                    _latitude = (locationData['latitude'] as num?)?.toDouble();
+                    _longitude = (locationData['longitude'] as num?)?.toDouble();
+                    _locationCountry = locationData['locationCountry'] as String?;
+                    _locationRegion = locationData['locationRegion'] as String?;
+                    _locationDistrict = locationData['locationDistrict'] as String?;
+                    _locationCity = locationData['locationCity'] as String?;
+                    _locationPostalCode =
+                        locationData['locationPostalCode'] as String?;
+                    _locationStreetAddress =
+                        locationData['locationStreetAddress'] as String?;
+                  });
+                },
               ),
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(l10n.translate('setAsPrimary') ?? 'Set as primary'),
+                title: Text(l10n.translate('setAsPrimary')),
                 value: _isPrimary,
                 onChanged: (v) => setState(() => _isPrimary = v),
               ),
@@ -408,10 +416,10 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n.translate('cancel') ?? 'Cancel'),
+          child: Text(l10n.translate('cancel')),
         ),
         ShifaPrimaryButton(
-          label: l10n.translate('save') ?? 'Save',
+          label: l10n.translate('save'),
           onPressed: _submit,
         ),
       ],

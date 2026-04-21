@@ -449,8 +449,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.translate('noPreviousDayScheduleToCopy') ??
-                'Previous day has no schedule to copy.',
+            l10n.translate('noPreviousDayScheduleToCopy'),
           ),
         ),
       );
@@ -458,8 +457,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.translate('scheduleCopiedFromPreviousDay') ??
-                'Schedule copied from previous day.',
+            l10n.translate('scheduleCopiedFromPreviousDay'),
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -478,8 +476,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.translate('noSourceDaysToCopyFrom') ??
-                'No other days have schedule to copy from.',
+            l10n.translate('noSourceDaysToCopyFrom'),
           ),
         ),
       );
@@ -492,8 +489,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         final loc = AppLocalizations.of(ctx)!;
         return SimpleDialog(
           title: Text(
-            loc.translate('copyScheduleFromDay') ??
-                'Copy schedule from which day?',
+            loc.translate('copyScheduleFromDay'),
           ),
           children: sources
               .map(
@@ -515,8 +511,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.translate('failedToCopySchedule') ??
-                'Failed to copy schedule from selected day.',
+            l10n.translate('failedToCopySchedule'),
           ),
         ),
       );
@@ -524,8 +519,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            (l10n.translate('scheduleCopiedFromDay') ??
-                    'Schedule copied from {day}.')
+            l10n
+                .translate('scheduleCopiedFromDay')
                 .replaceFirst('{day}', _DayCard._translateDay(selected, context)),
           ),
           duration: const Duration(seconds: 2),
@@ -550,65 +545,59 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     if (mounted) await _loadFromBackend();
   }
 
-  DoctorLocationDto? _effectiveCurrentLocation() {
-    if (_locations.isEmpty) return null;
-    if (_selectedLocationId != null) {
-      for (final location in _locations) {
-        if (location.id == _selectedLocationId) return location;
-      }
-    }
-    if (_locations.length == 1) return _locations.first;
-    for (final location in _locations) {
-      if (location.isPrimary) return location;
-    }
-    return _locations.first;
-  }
-
   Future<void> _save() async {
     final schedule = ref.read(scheduleProvider);
     final l10n = AppLocalizations.of(context)!;
     
-    // Frontend validation: New range must not overlap existing (no replacement allowed)
-    // Allowed: new entirely before existing (new end <= existing start) OR new entirely after existing (new start >= existing end)
-    if (_existingValidFrom != null && _existingValidUntil != null) {
-      final newStart = schedule.startDate ?? DateTime.now();
-      final newEnd = schedule.endDate;
-      final existingStart = _existingValidFrom!;
-      final existingEnd = _existingValidUntil!;
+    // Frontend validation: the new range is allowed if, for every existing validity period,
+    // the new range is either entirely before it, entirely after it, OR fully contained in it.
+    // "Fully contained" is the common case when a multi-location doctor saves a schedule for
+    // another location within the already-defined validity window — no new period is created.
+    final newStartRaw = schedule.startDate ?? DateTime.now();
+    final newEndRaw = schedule.endDate;
+    final newStartDate = DateTime(newStartRaw.year, newStartRaw.month, newStartRaw.day);
+    final newEndDate = DateTime(newEndRaw.year, newEndRaw.month, newEndRaw.day);
 
-      final newEndDate = DateTime(newEnd.year, newEnd.month, newEnd.day);
-      final existingStartDate = DateTime(existingStart.year, existingStart.month, existingStart.day);
-      final existingEndDate = DateTime(existingEnd.year, existingEnd.month, existingEnd.day);
-      final newStartDate = DateTime(newStart.year, newStart.month, newStart.day);
+    final conflicting = _existingValidityPeriods.where((p) {
+      final ps = DateTime.tryParse(p.validFrom);
+      final pe = DateTime.tryParse(p.validUntil);
+      if (ps == null || pe == null) return false;
+      final psD = DateTime(ps.year, ps.month, ps.day);
+      final peD = DateTime(pe.year, pe.month, pe.day);
 
-      final entirelyBefore = !newEndDate.isAfter(existingStartDate);
-      final entirelyAfter = !newStartDate.isBefore(existingEndDate);
+      final entirelyBefore = !newEndDate.isAfter(psD);
+      final entirelyAfter = !newStartDate.isBefore(peD);
+      final fullyContained = !newStartDate.isBefore(psD) && !newEndDate.isAfter(peD);
+      return !(entirelyBefore || entirelyAfter || fullyContained);
+    }).toList();
 
-      if (!entirelyBefore && !entirelyAfter) {
-        if (!mounted) return;
-        final existingRangeStr = '${existingStart.year}-'
-            '${existingStart.month.toString().padLeft(2, '0')}-'
-            '${existingStart.day.toString().padLeft(2, '0')} - '
-            '${existingEnd.year}-'
-            '${existingEnd.month.toString().padLeft(2, '0')}-'
-            '${existingEnd.day.toString().padLeft(2, '0')}';
-        final firstAllowedAfter = existingEnd.add(const Duration(days: 1));
-        final l10nSafe = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${l10nSafe.scheduleOverlapsExisting} '
-              '${l10nSafe.existingSchedule}: $existingRangeStr. '
-              '${l10nSafe.newScheduleMustBeBeforeOrAfter} '
-              '${l10nSafe.before} ${existingStart.year}-${existingStart.month.toString().padLeft(2, '0')}-${existingStart.day.toString().padLeft(2, '0')}, '
-              '${l10nSafe.orAfter} ${firstAllowedAfter.year}-${firstAllowedAfter.month.toString().padLeft(2, '0')}-${firstAllowedAfter.day.toString().padLeft(2, '0')}.',
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 6),
+    if (conflicting.isNotEmpty) {
+      if (!mounted) return;
+      final p = conflicting.first;
+      final ps = DateTime.parse(p.validFrom);
+      final pe = DateTime.parse(p.validUntil);
+      final existingRangeStr = '${ps.year}-'
+          '${ps.month.toString().padLeft(2, '0')}-'
+          '${ps.day.toString().padLeft(2, '0')} - '
+          '${pe.year}-'
+          '${pe.month.toString().padLeft(2, '0')}-'
+          '${pe.day.toString().padLeft(2, '0')}';
+      final firstAllowedAfter = pe.add(const Duration(days: 1));
+      final l10nSafe = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${l10nSafe.scheduleOverlapsExisting} '
+            '${l10nSafe.existingSchedule}: $existingRangeStr. '
+            '${l10nSafe.newScheduleMustBeBeforeOrAfter} '
+            '${l10nSafe.before} ${ps.year}-${ps.month.toString().padLeft(2, '0')}-${ps.day.toString().padLeft(2, '0')}, '
+            '${l10nSafe.orAfter} ${firstAllowedAfter.year}-${firstAllowedAfter.month.toString().padLeft(2, '0')}-${firstAllowedAfter.day.toString().padLeft(2, '0')}.',
           ),
-        );
-        return;
-      }
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+      return;
     }
     
     setState(() => _saving = true);
@@ -642,7 +631,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final schedule = ref.watch(scheduleProvider); // ScheduleState
     final slotsByDay = schedule.slots; // Map<String, List<TimeSlot>>
     final l10n = AppLocalizations.of(context)!;
-    final currentLocation = _effectiveCurrentLocation();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -653,7 +641,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         foregroundColor: Colors.black,
         actions: [
           IconButton(
-            tooltip: l10n.translate('manageLocations') ?? 'Manage locations',
+            tooltip: l10n.translate('manageLocations'),
             icon: const Icon(Icons.place_outlined),
             onPressed: _openLocationsScreen,
           ),
@@ -676,10 +664,6 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-                    if (currentLocation != null) ...[
-                      _CurrentLocationBadge(location: currentLocation),
-                      const SizedBox(height: 16),
-                    ],
 
                     // Location selector — hidden for doctors with 0/1 location.
                     if (_locations.length > 1) ...[
@@ -883,7 +867,7 @@ class _LocationSelector extends StatelessWidget {
               child: DropdownButton<int>(
                 isExpanded: true,
                 value: selectedId,
-                hint: Text(l10n.translate('selectLocation') ?? 'Select location'),
+                hint: Text(l10n.translate('selectLocation')),
                 items: locations
                     .map(
                       (l) => DropdownMenuItem<int>(
@@ -902,53 +886,8 @@ class _LocationSelector extends StatelessWidget {
           TextButton.icon(
             onPressed: onManage,
             icon: const Icon(Icons.settings_outlined, size: 18),
-            label: Text(l10n.translate('manage') ?? 'Manage'),
+            label: Text(l10n.translate('manage')),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CurrentLocationBadge extends StatelessWidget {
-  const _CurrentLocationBadge({required this.location});
-
-  final DoctorLocationDto location;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade100),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.location_on_outlined, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '${l10n.translate('selectedLocation') ?? 'Current location'}: ${location.label}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (location.isPrimary)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade100,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                l10n.translate('primary') ?? 'Primary',
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-            ),
         ],
       ),
     );
@@ -976,14 +915,13 @@ class _NoLocationsHint extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              l10n.translate('addFirstLocationHint') ??
-                  'Add at least one practice location to organize your schedule.',
+              l10n.translate('addFirstLocationHint'),
               style: const TextStyle(fontSize: 13),
             ),
           ),
           TextButton(
             onPressed: onManage,
-            child: Text(l10n.translate('addLocation') ?? 'Add location'),
+            child: Text(l10n.translate('addLocation')),
           ),
         ],
       ),
@@ -1228,11 +1166,11 @@ class _DayCard extends StatelessWidget {
                         return [
                           PopupMenuItem(
                             value: 'prev',
-                            child: Text(l10n.translate('copyFromPreviousDay') ?? 'Copy from previous day'),
+                            child: Text(l10n.translate('copyFromPreviousDay')),
                           ),
                           PopupMenuItem(
                             value: 'other',
-                            child: Text(l10n.translate('copyFromAnotherDay') ?? 'Copy from another day'),
+                            child: Text(l10n.translate('copyFromAnotherDay')),
                           ),
                         ];
                       },
