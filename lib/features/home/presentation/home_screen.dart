@@ -25,6 +25,8 @@ import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_context_provider.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/analytics_kpi_cards.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/analytics_engagement_widget.dart';
+import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
+import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import '../../../core/widgets/appointments_trend_chart.dart';
@@ -358,6 +360,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const int _maxConversationMessages = 15;
   static const String _conversationStoragePrefix = 'ask_shifa_ai_conversation_v1';
   String? _lastConversationStorageKey;
+  List<DoctorLocationDto> _locations = const [];
+  int? _activeLocationId;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadActiveLocation);
+  }
+
+  String _activeLocationPrefKey() {
+    final profile = ref.read(profileAllProvider).valueOrNull?.profile;
+    final doctorId = (profile?['id'] ?? profile?['doctorId'] ?? 'unknown')
+        .toString();
+    return 'active_location_id:$doctorId';
+  }
+
+  Future<int?> _loadSavedActiveLocationId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_activeLocationPrefKey());
+  }
+
+  Future<void> _saveActiveLocationId(int? id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _activeLocationPrefKey();
+    if (id == null) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setInt(key, id);
+    }
+  }
+
+  Future<void> _loadActiveLocation() async {
+    try {
+      final locs = await fetchDoctorLocations(ref);
+      final savedId = await _loadSavedActiveLocationId();
+      DoctorLocationDto? active;
+      if (savedId != null) {
+        for (final l in locs) {
+          if (l.id == savedId) {
+            active = l;
+            break;
+          }
+        }
+      }
+      active ??= locs.cast<DoctorLocationDto?>().firstWhere(
+            (l) => l?.isPrimary == true,
+            orElse: () => locs.isNotEmpty ? locs.first : null,
+          );
+      if (!mounted) return;
+      setState(() {
+        _locations = locs;
+        _activeLocationId = active?.id;
+      });
+      await _saveActiveLocationId(active?.id);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _locations = const [];
+        _activeLocationId = null;
+      });
+    }
+  }
+
+  Future<void> _onActiveLocationChanged(int? locationId) async {
+    if (locationId == _activeLocationId) return;
+    await _saveActiveLocationId(locationId);
+    if (!mounted) return;
+    setState(() => _activeLocationId = locationId);
+  }
 
   String _assistantSystemPromptForLanguage() {
     final lang = _selectedLanguage.toUpperCase();
@@ -824,13 +895,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final appointmentsAsync = ref.watch(todayAppointmentsProvider);
     final brand = Theme.of(context).colorScheme.primary;
+    final l10n = AppLocalizations.of(context)!;
     final patients = ref.watch(patientsProvider);
+    final activeLocation = _locations
+        .where((l) => l.id == _activeLocationId)
+        .cast<DoctorLocationDto?>()
+        .firstWhere((l) => l != null, orElse: () => null);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: brand.withOpacity(0.25)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.location_on, color: brand, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${l10n.currentLocation}: ',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int?>(
+                        isExpanded: true,
+                        value: activeLocation?.id,
+                        hint: Text(l10n.translate('selectLocation')),
+                        items: _locations
+                            .where((l) => l.id != null)
+                            .map(
+                              (l) => DropdownMenuItem<int?>(
+                                value: l.id,
+                                child: Text(
+                                  l.label,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _locations.isEmpty
+                            ? null
+                            : (v) => _onActiveLocationChanged(v),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      await ShellScope.pushNamed(context, AppRoutes.setupSchedule);
+                      if (!mounted) return;
+                      await _loadActiveLocation();
+                    },
+                    child: Text(l10n.translate('manage')),
+                  ),
+                ],
+              ),
+            ),
             // Layout from sketch: Left 35% Today | Right 65% KPI row + trend + donut + engagement. Collapses to stack on narrow screens.
             Expanded(
               child: LayoutBuilder(

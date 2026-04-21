@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
@@ -54,6 +55,28 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   List<DoctorLocationDto> _locations = const [];
   int? _selectedLocationId;
 
+  String _activeLocationPrefKey() {
+    final profile = ref.read(profileAllProvider).valueOrNull?.profile;
+    final doctorId = (profile?['id'] ?? profile?['doctorId'] ?? 'unknown')
+        .toString();
+    return 'active_location_id:$doctorId';
+  }
+
+  Future<int?> _loadSavedActiveLocationId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_activeLocationPrefKey());
+  }
+
+  Future<void> _saveActiveLocationId(int? id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _activeLocationPrefKey();
+    if (id == null) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setInt(key, id);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -71,24 +94,31 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       // each location's calendar independently.
       try {
         final locs = await fetchDoctorLocations(ref);
+        final savedId = await _loadSavedActiveLocationId();
+        int? resolvedLocationId = _selectedLocationId;
+        if (resolvedLocationId != null &&
+            !locs.any((l) => l.id == resolvedLocationId)) {
+          resolvedLocationId = null;
+        }
+        if (resolvedLocationId == null &&
+            savedId != null &&
+            locs.any((l) => l.id == savedId)) {
+          resolvedLocationId = savedId;
+        }
+        if (resolvedLocationId == null && locs.isNotEmpty) {
+          final primary = locs.firstWhere(
+            (l) => l.isPrimary,
+            orElse: () => locs.first,
+          );
+          resolvedLocationId = primary.id;
+        }
         if (mounted) {
           setState(() {
             _locations = locs;
-            // Keep previous selection if still valid; otherwise pick primary / first.
-            if (_selectedLocationId != null &&
-                locs.any((l) => l.id == _selectedLocationId)) {
-              // already valid
-            } else if (locs.isNotEmpty) {
-              final primary = locs.firstWhere(
-                (l) => l.isPrimary,
-                orElse: () => locs.first,
-              );
-              _selectedLocationId = primary.id;
-            } else {
-              _selectedLocationId = null;
-            }
+            _selectedLocationId = resolvedLocationId;
           });
         }
+        await _saveActiveLocationId(resolvedLocationId);
       } catch (_) {
         if (mounted) setState(() => _locations = const []);
       }
@@ -531,6 +561,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   Future<void> _onLocationChanged(int? newId) async {
     if (newId == _selectedLocationId) return;
+    await _saveActiveLocationId(newId);
     setState(() => _selectedLocationId = newId);
     await _loadFromBackend();
   }

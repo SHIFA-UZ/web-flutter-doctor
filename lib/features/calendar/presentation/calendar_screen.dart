@@ -700,25 +700,59 @@ class _DayEntriesList extends StatelessWidget {
                     e.patientName ?? AppLocalizations.of(context)!.appointments,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-            subtitle: e.type == EntryType.freeSlot
+            subtitle: locationLabel.trim().isEmpty
                 ? null
-                : Row(
-                    children: [
-                      if (isVideoLocation)
-                        const Icon(
-                          Icons.videocam,
-                          size: 14,
-                          color: Colors.grey,
+                : Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                      if (isVideoLocation) const SizedBox(width: 4),
-                      Text(
-                        locationLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+                        decoration: BoxDecoration(
+                          color: isVideoLocation
+                              ? Colors.blue.shade50
+                              : Colors.teal.shade50,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isVideoLocation
+                                ? Colors.blue.shade100
+                                : Colors.teal.shade100,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isVideoLocation
+                                  ? Icons.videocam
+                                  : Icons.location_on_outlined,
+                              size: 13,
+                              color: isVideoLocation
+                                  ? Colors.blue.shade700
+                                  : Colors.teal.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                locationLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isVideoLocation
+                                      ? Colors.blue.shade700
+                                      : Colors.teal.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
             trailing: Column(
               crossAxisAlignment: CrossAxisAlignment.end,

@@ -53,10 +53,10 @@ class CalendarEntry {
     required this.end,
     this.startAtUtc,
     this.endAtUtc,
+    this.location = '',
   })  : type = EntryType.freeSlot,
         patientName = null,
         isVideo = false,
-        location = '',
         reason = '',
         photoUrl = null,
         appointmentId = null,
@@ -104,14 +104,18 @@ class CalendarEntry {
 
     final start = _utcToTimeOfDayInZone(startAt, zone);
     final end = _utcToTimeOfDayInZone(endAt, zone);
+    final locationLabel = (j['locationLabel'] as String?)?.trim();
+    final locationText = (j['location'] as String?)?.trim();
+    final effectiveLocation = (locationLabel?.isNotEmpty == true)
+        ? locationLabel!
+        : (locationText ?? '');
 
     final typeStr = (j['type'] as String?)?.toUpperCase();
 
     if (typeStr == 'APPOINTMENT') {
-      final loc = (j['location'] as String?) ?? '';
       final reason = (j['reason'] as String?) ?? '';
       final pname = j['patientName'] as String?;
-      final isVideo = loc.toLowerCase().contains('video');
+      final isVideo = effectiveLocation.toLowerCase().contains('video');
       final photoUrl =
           (j['patientPhotoUrl'] as String?) ?? (j['photoUrl'] as String?);
       final appointmentId = _intFromJson(j['appointmentId']);
@@ -124,7 +128,7 @@ class CalendarEntry {
         startAtUtc: startAt,
         endAtUtc: endAt,
         patientName: pname,
-        location: loc,
+        location: effectiveLocation,
         reason: reason,
         isVideo: isVideo,
         photoUrl: photoUrl,
@@ -139,6 +143,7 @@ class CalendarEntry {
       end: end,
       startAtUtc: startAt,
       endAtUtc: endAt,
+      location: effectiveLocation,
     );
   }
 
