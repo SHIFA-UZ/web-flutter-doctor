@@ -32,6 +32,7 @@ class CalendarEntry {
 
   /// Backend status string (e.g. CONFIRMED, COMPLETED, CANCELLED) for Today list.
   final String? status;
+  final String? paymentStatus;
 
   CalendarEntry.appointment({
     required this.start,
@@ -46,6 +47,7 @@ class CalendarEntry {
     this.appointmentId,
     this.patientId,
     this.status,
+    this.paymentStatus,
   }) : type = EntryType.appointment;
 
   CalendarEntry.freeSlot({
@@ -61,7 +63,8 @@ class CalendarEntry {
         photoUrl = null,
         appointmentId = null,
         patientId = null,
-        status = null;
+        status = null,
+        paymentStatus = null;
 
   /// Converts ISO 8601 UTC string to TimeOfDay in [doctorTimeZone]. Use for consistent display (Today list and Calendar).
   static TimeOfDay utcIsoToTimeOfDayInZone(String isoUtc, String? doctorTimeZone) {
@@ -121,6 +124,7 @@ class CalendarEntry {
       final appointmentId = _intFromJson(j['appointmentId']);
       final patientId = _intFromJson(j['patientId']);
       final status = j['status'] as String?;
+      final paymentStatus = j['paymentStatus'] as String?;
 
       return CalendarEntry.appointment(
         start: start,
@@ -135,6 +139,7 @@ class CalendarEntry {
         appointmentId: appointmentId,
         patientId: patientId,
         status: status,
+        paymentStatus: paymentStatus,
       );
     }
 

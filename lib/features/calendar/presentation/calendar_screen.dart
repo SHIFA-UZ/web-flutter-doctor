@@ -1858,6 +1858,66 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     );
   }
 
+  Widget _buildPaymentChip(BuildContext context) {
+    final raw = (widget.entry.paymentStatus ?? '').trim().toUpperCase();
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+
+    IconData icon = Icons.payments_outlined;
+    Color bg = Colors.grey.shade100;
+    Color fg = Colors.grey.shade800;
+    String label = raw.isEmpty ? 'PAYMENT UNKNOWN' : 'PAYMENT $raw';
+
+    if (raw == 'PAID') {
+      icon = Icons.check_circle_outline;
+      bg = Colors.green.shade50;
+      fg = Colors.green.shade800;
+      final paid = lang == 'uz' ? 'To\'lov qilingan' : (lang == 'ru' ? 'Оплачено' : 'Paid');
+      label = 'PAYMENT: $paid';
+    } else if (raw == 'PENDING') {
+      icon = Icons.schedule;
+      bg = Colors.orange.shade50;
+      fg = Colors.orange.shade800;
+      final pending = lang == 'uz' ? 'To\'lov kutilmoqda' : (lang == 'ru' ? 'Ожидает оплату' : 'Pending');
+      label = 'PAYMENT: $pending';
+    } else if (raw == 'FAILED') {
+      icon = Icons.error_outline;
+      bg = Colors.red.shade50;
+      fg = Colors.red.shade700;
+      final failed = lang == 'uz' ? 'To\'lov xatosi' : (lang == 'ru' ? 'Ошибка оплаты' : 'Failed');
+      label = 'PAYMENT: $failed';
+    } else if (raw == 'NOT_REQUIRED') {
+      icon = Icons.info_outline;
+      bg = Colors.blueGrey.shade50;
+      fg = Colors.blueGrey.shade700;
+      final nr = lang == 'uz' ? 'Kerak emas' : (lang == 'ru' ? 'Не требуется' : 'Not required');
+      label = 'PAYMENT: $nr';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: fg.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _compactDateTime(String raw) {
     final dt = DateTime.tryParse(raw);
     if (dt == null) {
@@ -2009,7 +2069,15 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
                   ],
                 ),
               ),
-              if (_isAppointment) _buildStatusChip(context),
+              if (_isAppointment)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildStatusChip(context),
+                    if (_isVideoAppointment) _buildPaymentChip(context),
+                  ],
+                ),
             ],
           ),
         ),
