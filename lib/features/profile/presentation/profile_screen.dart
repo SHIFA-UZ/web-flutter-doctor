@@ -835,6 +835,8 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'location_picker_widget.dart';
 import 'searchable_profession_dropdown.dart';
 import 'searchable_timezone_dropdown.dart';
+import 'services_pricing_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -842,7 +844,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-enum _ProfilePanel { profile, contact, payment, settings, extended, password }
+enum _ProfilePanel { profile, contact, payment, settings, servicesPricing, extended, password }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   _ProfilePanel _selected = _ProfilePanel.profile;
@@ -859,6 +861,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final TextEditingController _serviceCtrl = TextEditingController();
 
   bool _uploadingPhoto = false;
+  bool _paymentActionLoading = false;
+  String _selectedSubscriptionPlanCode = 'BASIC';
   Timer? _debounceTimer;
   _ProfilePanel? _lastSelectedPanel;
   List<String>? _cachedServices;
@@ -910,6 +914,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       case _ProfilePanel.settings:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.settingsSaved)),
+        );
+        break;
+      case _ProfilePanel.servicesPricing:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Open Services & Pricing to manage entries')),
         );
         break;
       case _ProfilePanel.extended:
@@ -1151,6 +1160,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         selected: _selected == _ProfilePanel.settings,
                         onTap: () =>
                             setState(() => _selected = _ProfilePanel.settings),
+                      ),
+                      const SizedBox(height: 10),
+                      _SectionCard(
+                        title: 'Services & Pricing',
+                        subtitleLines: const ['Manage service titles, prices, currencies and descriptions'],
+                        selected: _selected == _ProfilePanel.servicesPricing,
+                        onTap: () =>
+                            setState(() => _selected = _ProfilePanel.servicesPricing),
                       ),
                       const SizedBox(height: 10),
                       _SectionCard(
@@ -1480,11 +1497,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           final taxIdCtrl = TextEditingController(
             text: (billing['taxId'] ?? '') as String,
           );
+          final stripeConnectAccountId = (billing['stripeConnectAccountId'] as String?) ?? '';
           return _panelWrapper(
             profile: profile,
             contact: contact,
             billing: billing,
             settings: settings,
+            onSaveAsync: () async {
+              await patchBilling(ref, {
+                'billingName': billingNameCtrl.text.trim().isEmpty ? null : billingNameCtrl.text.trim(),
+                'billingEmail': billingEmailCtrl.text.trim().isEmpty ? null : billingEmailCtrl.text.trim(),
+                'iban': ibanCtrl.text.trim().isEmpty ? null : ibanCtrl.text.trim(),
+                'taxId': taxIdCtrl.text.trim().isEmpty ? null : taxIdCtrl.text.trim(),
+                'stripeConnectAccountId': stripeConnectAccountId.isEmpty ? null : stripeConnectAccountId,
+                'clickMerchantId': billing['clickMerchantId'],
+                'paymeMerchantId': billing['paymeMerchantId'],
+              });
+            },
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1494,9 +1523,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   TextFormField(
                     controller: billingNameCtrl,
                     decoration: InputDecoration(hintText: AppLocalizations.of(context)!.billingName),
-                    onChanged: (v) {
-                      // patchBilling(ref, {'billingName': v, 'billingEmail': billingEmailCtrl.text, 'iban': ibanCtrl.text, 'taxId': taxIdCtrl.text});
-                    },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -1505,9 +1531,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)!.billingEmail,
                     ),
-                    onChanged: (v) {
-                      // patchBilling(ref, {'billingName': billingNameCtrl.text, 'billingEmail': v, 'iban': ibanCtrl.text, 'taxId': taxIdCtrl.text});
-                    },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -1515,9 +1538,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)!.ibanAccountNumber,
                     ),
-                    onChanged: (v) {
-                      // patchBilling(ref, {'billingName': billingNameCtrl.text, 'billingEmail': billingEmailCtrl.text, 'iban': v, 'taxId': taxIdCtrl.text});
-                    },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -1525,9 +1545,108 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)!.taxIdVatId,
                     ),
-                    onChanged: (v) {
-                      // patchBilling(ref, {'billingName': billingNameCtrl.text, 'billingEmail': billingEmailCtrl.text, 'iban': ibanCtrl.text, 'taxId': v});
-                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Stripe Connect payouts',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            stripeConnectAccountId.isEmpty
+                                ? 'Not connected'
+                                : 'Connected account: $stripeConnectAccountId',
+                            style: TextStyle(color: Colors.grey.shade700),
+                          ),
+                          const SizedBox(height: 10),
+                          ShifaPrimaryButton(
+                            onPressed: _paymentActionLoading
+                                ? null
+                                : () async {
+                                    setState(() => _paymentActionLoading = true);
+                                    try {
+                                      final result = await createStripeConnectOnboarding(ref);
+                                      final url = result['onboardingUrl']?.toString();
+                                      if (url != null && url.isNotEmpty) {
+                                        await launchUrl(
+                                          Uri.parse(url),
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      }
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() => _paymentActionLoading = false);
+                                      }
+                                    }
+                                  },
+                            label: stripeConnectAccountId.isEmpty ? 'Connect Stripe' : 'Resume Stripe onboarding',
+                            isLoading: _paymentActionLoading,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Doctor monthly subscription',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            value: _selectedSubscriptionPlanCode,
+                            items: const [
+                              DropdownMenuItem(value: 'BASIC', child: Text('BASIC')),
+                              DropdownMenuItem(value: 'PRO', child: Text('PRO')),
+                            ],
+                            onChanged: (v) {
+                              if (v != null) {
+                                setState(() => _selectedSubscriptionPlanCode = v);
+                              }
+                            },
+                            decoration: const InputDecoration(labelText: 'Plan'),
+                          ),
+                          const SizedBox(height: 10),
+                          ShifaPrimaryButton(
+                            onPressed: _paymentActionLoading
+                                ? null
+                                : () async {
+                                    setState(() => _paymentActionLoading = true);
+                                    try {
+                                      final checkout = await createSubscriptionCheckout(
+                                        ref,
+                                        planCode: _selectedSubscriptionPlanCode,
+                                      );
+                                      final url = checkout['checkoutUrl']?.toString();
+                                      if (url != null && url.isNotEmpty) {
+                                        await launchUrl(
+                                          Uri.parse(url),
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      }
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() => _paymentActionLoading = false);
+                                      }
+                                    }
+                                  },
+                            label: 'Start subscription checkout',
+                            isLoading: _paymentActionLoading,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1856,6 +1975,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           );
         }
+      case _ProfilePanel.servicesPricing:
+        return _panelWrapper(
+          profile: profile,
+          contact: contact,
+          billing: billing,
+          settings: settings,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _panelTitle('Services & Pricing'),
+              const SizedBox(height: 12),
+              const Text(
+                'Define billable services with descriptions and multi-currency prices.',
+              ),
+              const SizedBox(height: 16),
+              ShifaPrimaryButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ServicesPricingScreen()),
+                  );
+                },
+                label: 'Open Services & Pricing',
+                icon: Icons.medical_services_outlined,
+                width: ButtonWidth.hug,
+              ),
+            ],
+          ),
+        );
       case _ProfilePanel.password:
         return _panelWrapper(
           profile: profile,

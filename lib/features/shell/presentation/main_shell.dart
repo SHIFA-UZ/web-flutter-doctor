@@ -1,6 +1,7 @@
 // lib/features/shell/presentation/main_shell.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/chat_screen.dart';
@@ -17,6 +18,8 @@ import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/chat/chat_providers.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
+import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
+import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
@@ -32,11 +35,52 @@ class MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserver {
   final GlobalKey<NavigatorState> _shellNavKey = GlobalKey<NavigatorState>();
+  String? _activeLocationLabel;
+
+  String _activeLocationPrefKey() {
+    final profile = ref.read(profileAllProvider).valueOrNull?.profile;
+    final doctorId = (profile?['id'] ?? profile?['doctorId'] ?? 'unknown')
+        .toString();
+    return 'active_location_id:$doctorId';
+  }
+
+  Future<void> _loadActiveLocationLabel() async {
+    try {
+      final locs = await fetchDoctorLocations(ref);
+      final prefs = await SharedPreferences.getInstance();
+      final savedId = prefs.getInt(_activeLocationPrefKey());
+
+      DoctorLocationDto? active;
+      if (savedId != null) {
+        for (final l in locs) {
+          if (l.id == savedId) {
+            active = l;
+            break;
+          }
+        }
+      }
+      active ??= locs.cast<DoctorLocationDto?>().firstWhere(
+            (l) => l?.isPrimary == true,
+            orElse: () => locs.isNotEmpty ? locs.first : null,
+          );
+
+      if (!mounted) return;
+      setState(() {
+        _activeLocationLabel = active?.label;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _activeLocationLabel = null;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    Future.microtask(_loadActiveLocationLabel);
   }
 
   @override
@@ -54,6 +98,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       ref.invalidate(doctorNotificationsProvider);
       ref.invalidate(doctorNotificationsUnreadCountProvider);
       invalidateAppointmentRelatedProviders(ref);
+      _loadActiveLocationLabel();
     }
   }
 
@@ -61,6 +106,9 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   void _goToTab(int index) {
     _shellNavKey.currentState?.popUntil((route) => route.isFirst);
     ref.read(shellProvider.notifier).setTab(index);
+    if (index == 1 || index == 2) {
+      _loadActiveLocationLabel();
+    }
   }
 
   @override
@@ -239,6 +287,45 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     ),
 
                     const SizedBox(height: 12),
+
+                    if ((_activeLocationLabel ?? '').trim().isNotEmpty)
+                      Container(
+                        width: 64,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.16),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _activeLocationLabel!,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    if ((_activeLocationLabel ?? '').trim().isNotEmpty)
+                      const SizedBox(height: 12),
 
                     // ───── Logout ─────
                     _LogoutButton(brand: brand),

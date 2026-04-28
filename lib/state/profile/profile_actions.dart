@@ -39,6 +39,30 @@ Future<void> patchBilling(WidgetRef ref, Map<String, dynamic> body) async {
   await ref.refresh(profileAllProvider.future);
 }
 
+Future<Map<String, dynamic>> createStripeConnectOnboarding(WidgetRef ref) async {
+  final api = ref.read(apiClientProvider);
+  final res = await api.post('/api/doctor/payments/stripe/connect/onboard', {});
+  if (res.statusCode != 200) {
+    throw Exception('Stripe connect onboarding failed: ${res.body}');
+  }
+  return jsonDecode(res.body) as Map<String, dynamic>;
+}
+
+Future<Map<String, dynamic>> createSubscriptionCheckout(
+  WidgetRef ref, {
+  required String planCode,
+}) async {
+  final api = ref.read(apiClientProvider);
+  final res = await api.post('/api/doctor/subscription/checkout', {
+    'planCode': planCode,
+    'gateway': 'STRIPE',
+  });
+  if (res.statusCode != 200) {
+    throw Exception('Subscription checkout failed: ${res.body}');
+  }
+  return jsonDecode(res.body) as Map<String, dynamic>;
+}
+
 Future<void> patchSettings(WidgetRef ref, Map<String, dynamic> body) async {
   final api = ref.read(apiClientProvider);
   final res = await api.patch('/api/doctors/me/settings', body);
