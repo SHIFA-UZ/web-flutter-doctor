@@ -253,3 +253,44 @@ class DeletedPatientMatch {
     );
   }
 }
+
+class FailedWebhookEvent {
+  final int id;
+  final String eventId;
+  final String eventType;
+  final bool processed;
+  final String? processedAt;
+  final String? failureReason;
+  final int retryCount;
+  final String? lastRetryAt;
+  final int? retriedByAdminUserId;
+  final String createdAt;
+
+  FailedWebhookEvent({
+    required this.id,
+    required this.eventId,
+    required this.eventType,
+    required this.processed,
+    this.processedAt,
+    this.failureReason,
+    required this.retryCount,
+    this.lastRetryAt,
+    this.retriedByAdminUserId,
+    required this.createdAt,
+  });
+
+  factory FailedWebhookEvent.fromJson(Map<String, dynamic> json) {
+    return FailedWebhookEvent(
+      id: (json['id'] as num).toInt(),
+      eventId: json['eventId']?.toString() ?? '',
+      eventType: json['eventType']?.toString() ?? '',
+      processed: json['processed'] == true,
+      processedAt: json['processedAt']?.toString(),
+      failureReason: json['failureReason']?.toString(),
+      retryCount: (json['retryCount'] as num?)?.toInt() ?? 0,
+      lastRetryAt: json['lastRetryAt']?.toString(),
+      retriedByAdminUserId: (json['retriedByAdminUserId'] as num?)?.toInt(),
+      createdAt: json['createdAt']?.toString() ?? '',
+    );
+  }
+}

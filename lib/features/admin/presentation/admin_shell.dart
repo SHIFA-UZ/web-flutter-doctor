@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'admin_dashboard_screen.dart';
+import 'admin_payments_screen.dart';
 import 'admin_tokens_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_create_admin_screen.dart';
@@ -62,6 +63,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
 
   final _screens = const [
     AdminDashboardScreen(),
+    AdminPaymentsScreen(),
     AdminTokensScreen(),
     AdminUsersScreen(),
     AdminCreateAdminScreen(),
@@ -72,12 +74,13 @@ class _AdminShellState extends ConsumerState<AdminShell> {
 
   final List<_AdminNavItem> _navItems = const [
     _AdminNavItem(icon: Icons.dashboard, label: 'Dashboard', index: 0),
-    _AdminNavItem(icon: Icons.vpn_key, label: 'Tokens', index: 1),
-    _AdminNavItem(icon: Icons.people, label: 'Users', index: 2),
-    _AdminNavItem(icon: Icons.person_add, label: 'Create admin', index: 3),
-    _AdminNavItem(icon: Icons.history, label: 'Audit Logs', index: 4),
-    _AdminNavItem(icon: Icons.settings, label: 'Settings', index: 5),
-    _AdminNavItem(icon: Icons.privacy_tip, label: 'Deleted Patients', index: 6),
+    _AdminNavItem(icon: Icons.payments_outlined, label: 'Payments Ops', index: 1),
+    _AdminNavItem(icon: Icons.vpn_key, label: 'Tokens', index: 2),
+    _AdminNavItem(icon: Icons.people, label: 'Users', index: 3),
+    _AdminNavItem(icon: Icons.person_add, label: 'Create admin', index: 4),
+    _AdminNavItem(icon: Icons.history, label: 'Audit Logs', index: 5),
+    _AdminNavItem(icon: Icons.settings, label: 'Settings', index: 6),
+    _AdminNavItem(icon: Icons.privacy_tip, label: 'Deleted Patients', index: 7),
   ];
 
   @override

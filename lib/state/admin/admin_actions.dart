@@ -429,4 +429,27 @@ class AdminActions {
 
     return Map<String, String>.from(jsonDecode(response.body) as Map);
   }
+
+  Future<List<FailedWebhookEvent>> listFailedStripeWebhooks() async {
+    final response = await apiClient.get('/api/admin/payments/webhooks/stripe/failed');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load failed Stripe webhooks: ${response.body}');
+    }
+    final data = jsonDecode(response.body) as List<dynamic>;
+    return data
+        .map((e) => FailedWebhookEvent.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<bool> retryFailedStripeWebhook(int paymentEventId) async {
+    final response = await apiClient.post(
+      '/api/admin/payments/webhooks/stripe/failed/$paymentEventId/retry',
+      {},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to retry Stripe webhook: ${response.body}');
+    }
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return json['success'] == true;
+  }
 }

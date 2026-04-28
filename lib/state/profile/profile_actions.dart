@@ -43,7 +43,7 @@ Future<Map<String, dynamic>> createStripeConnectOnboarding(WidgetRef ref) async 
   final api = ref.read(apiClientProvider);
   final res = await api.post('/api/doctor/payments/stripe/connect/onboard', {});
   if (res.statusCode != 200) {
-    throw Exception('Stripe connect onboarding failed: ${res.body}');
+    throw Exception(_messageFromResponse(res));
   }
   return jsonDecode(res.body) as Map<String, dynamic>;
 }
@@ -58,7 +58,7 @@ Future<Map<String, dynamic>> createSubscriptionCheckout(
     'gateway': 'STRIPE',
   });
   if (res.statusCode != 200) {
-    throw Exception('Subscription checkout failed: ${res.body}');
+    throw Exception(_messageFromResponse(res));
   }
   return jsonDecode(res.body) as Map<String, dynamic>;
 }

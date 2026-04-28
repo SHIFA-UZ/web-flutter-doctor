@@ -1574,9 +1574,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       final result = await createStripeConnectOnboarding(ref);
                                       final url = result['onboardingUrl']?.toString();
                                       if (url != null && url.isNotEmpty) {
-                                        await launchUrl(
+                                        final opened = await launchUrl(
                                           Uri.parse(url),
                                           mode: LaunchMode.externalApplication,
+                                        );
+                                        if (!opened && mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Could not open Stripe onboarding page.'),
+                                              backgroundColor: Colors.orange,
+                                            ),
+                                          );
+                                        }
+                                      } else if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Stripe onboarding URL is missing.'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(e.toString().replaceFirst('Exception: ', '')),
+                                            backgroundColor: Colors.red,
+                                          ),
                                         );
                                       }
                                     } finally {
@@ -1630,9 +1654,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       );
                                       final url = checkout['checkoutUrl']?.toString();
                                       if (url != null && url.isNotEmpty) {
-                                        await launchUrl(
+                                        final opened = await launchUrl(
                                           Uri.parse(url),
                                           mode: LaunchMode.externalApplication,
+                                        );
+                                        if (!opened && mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Could not open Stripe subscription checkout.'),
+                                              backgroundColor: Colors.orange,
+                                            ),
+                                          );
+                                        }
+                                      } else if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Stripe subscription checkout URL is missing.'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(e.toString().replaceFirst('Exception: ', '')),
+                                            backgroundColor: Colors.red,
+                                          ),
                                         );
                                       }
                                     } finally {

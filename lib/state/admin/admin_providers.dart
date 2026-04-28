@@ -62,3 +62,8 @@ final systemConfigProvider = FutureProvider<Map<String, String>>((ref) async {
   final actions = ref.watch(adminActionsProvider);
   return actions.getSystemConfig();
 });
+
+final failedStripeWebhooksProvider = FutureProvider<List<FailedWebhookEvent>>((ref) async {
+  final actions = ref.watch(adminActionsProvider);
+  return actions.listFailedStripeWebhooks();
+});
