@@ -918,7 +918,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         break;
       case _ProfilePanel.servicesPricing:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Open Services & Pricing to manage entries')),
+          SnackBar(content: Text(l10n.openServicesPricingToManageEntries)),
         );
         break;
       case _ProfilePanel.extended:

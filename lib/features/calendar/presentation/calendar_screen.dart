@@ -1860,38 +1860,37 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
 
   Widget _buildPaymentChip(BuildContext context) {
     final raw = (widget.entry.paymentStatus ?? '').trim().toUpperCase();
-    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+    final l10n = AppLocalizations.of(context)!;
 
     IconData icon = Icons.payments_outlined;
     Color bg = Colors.grey.shade100;
     Color fg = Colors.grey.shade800;
-    String label = raw.isEmpty ? 'PAYMENT UNKNOWN' : 'PAYMENT $raw';
+    String paymentText = raw.isEmpty
+        ? l10n.translate('paymentUnknown')
+        : l10n.translate('paymentStateRaw').replaceAll('{{state}}', raw);
 
     if (raw == 'PAID') {
       icon = Icons.check_circle_outline;
       bg = Colors.green.shade50;
       fg = Colors.green.shade800;
-      final paid = lang == 'uz' ? 'To\'lov qilingan' : (lang == 'ru' ? 'Оплачено' : 'Paid');
-      label = 'PAYMENT: $paid';
+      paymentText = l10n.translate('paymentPaid');
     } else if (raw == 'PENDING') {
       icon = Icons.schedule;
       bg = Colors.orange.shade50;
       fg = Colors.orange.shade800;
-      final pending = lang == 'uz' ? 'To\'lov kutilmoqda' : (lang == 'ru' ? 'Ожидает оплату' : 'Pending');
-      label = 'PAYMENT: $pending';
+      paymentText = l10n.translate('paymentPending');
     } else if (raw == 'FAILED') {
       icon = Icons.error_outline;
       bg = Colors.red.shade50;
       fg = Colors.red.shade700;
-      final failed = lang == 'uz' ? 'To\'lov xatosi' : (lang == 'ru' ? 'Ошибка оплаты' : 'Failed');
-      label = 'PAYMENT: $failed';
+      paymentText = l10n.translate('paymentFailed');
     } else if (raw == 'NOT_REQUIRED') {
       icon = Icons.info_outline;
       bg = Colors.blueGrey.shade50;
       fg = Colors.blueGrey.shade700;
-      final nr = lang == 'uz' ? 'Kerak emas' : (lang == 'ru' ? 'Не требуется' : 'Not required');
-      label = 'PAYMENT: $nr';
+      paymentText = l10n.translate('paymentNotRequired');
     }
+    final label = l10n.translate('paymentLabel').replaceAll('{{status}}', paymentText);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

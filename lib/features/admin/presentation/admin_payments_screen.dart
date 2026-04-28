@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_actions.dart';
@@ -18,11 +19,12 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final webhooksAsync = ref.watch(failedStripeWebhooksProvider);
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Payments Ops'),
+        title: Text(l10n.translate('paymentsOpsTitle')),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black87,
@@ -35,14 +37,18 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
       ),
       body: webhooksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Failed to load failed webhooks: $e')),
+        error: (e, _) => Center(
+          child: Text(
+            l10n.translate('failedToLoadFailedWebhooks').replaceAll('{{error}}', '$e'),
+          ),
+        ),
         data: (items) {
           final itemById = {for (final i in items) i.id: i};
           _selectedIds.removeWhere((id) => !itemById.containsKey(id));
           final allSelected = items.isNotEmpty && _selectedIds.length == items.length;
           if (items.isEmpty) {
-            return const Center(
-              child: Text('No failed or unprocessed Stripe webhook events.'),
+            return Center(
+              child: Text(l10n.translate('noFailedOrUnprocessedStripeWebhooks')),
             );
           }
           return Column(
@@ -66,7 +72,11 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
                         });
                       },
                     ),
-                    Text('${_selectedIds.length} selected'),
+                    Text(
+                      l10n
+                          .translate('selectedCount')
+                          .replaceAll('{{count}}', '${_selectedIds.length}'),
+                    ),
                     const Spacer(),
                     FilledButton.icon(
                       onPressed: _selectedIds.isEmpty || _retryingIds.isNotEmpty
@@ -81,7 +91,7 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
                               await _retrySelected(ref.read(adminActionsProvider), selectedEvents);
                             },
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Retry selected'),
+                      label: Text(l10n.translate('retrySelected')),
                     ),
                   ],
                 ),
@@ -130,7 +140,9 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
-                                    it.processed ? 'FAILED' : 'UNPROCESSED',
+                                    it.processed
+                                        ? l10n.translate('statusFailed')
+                                        : l10n.translate('statusUnprocessed'),
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       color: it.processed ? Colors.orange.shade900 : Colors.red.shade900,
@@ -140,17 +152,35 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            SelectableText('eventId: ${it.eventId}'),
+                            SelectableText(
+                              l10n.translate('eventIdLabel').replaceAll('{{eventId}}', it.eventId),
+                            ),
                             const SizedBox(height: 4),
                             Text(
-                              'created: ${created != null ? DateFormat('yyyy-MM-dd HH:mm:ss').format(created) : it.createdAt}',
+                              l10n
+                                  .translate('createdLabel')
+                                  .replaceAll(
+                                    '{{created}}',
+                                    created != null
+                                        ? DateFormat('yyyy-MM-dd HH:mm:ss').format(created)
+                                        : it.createdAt,
+                                  ),
                               style: TextStyle(color: Colors.grey.shade700),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'retryCount: ${it.retryCount}'
-                              '${it.lastRetryAt != null ? ' · lastRetryAt: ${it.lastRetryAt}' : ''}'
-                              '${it.retriedByAdminUserId != null ? ' · retriedByAdminUserId: ${it.retriedByAdminUserId}' : ''}',
+                              l10n
+                                  .translate('retryMetaLine')
+                                  .replaceAll('{{retryCount}}', '${it.retryCount}')
+                                  .replaceAll(
+                                    '{{lastRetryAt}}',
+                                    it.lastRetryAt ?? l10n.translate('notAvailableShort'),
+                                  )
+                                  .replaceAll(
+                                    '{{retriedByAdminUserId}}',
+                                    it.retriedByAdminUserId?.toString() ??
+                                        l10n.translate('notAvailableShort'),
+                                  ),
                               style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
                             ),
                             if ((it.failureReason ?? '').isNotEmpty) ...[
@@ -178,7 +208,11 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
                                         child: CircularProgressIndicator(strokeWidth: 2),
                                       )
                                     : const Icon(Icons.refresh),
-                                label: Text(_retryingIds.contains(it.id) ? 'Retrying...' : 'Retry'),
+                                label: Text(
+                                  _retryingIds.contains(it.id)
+                                      ? l10n.translate('retrying')
+                                      : l10n.translate('retry'),
+                                ),
                               ),
                             ),
                           ],
@@ -199,20 +233,21 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Retry webhook event?'),
+        title: Text(AppLocalizations.of(context)!.translate('retryWebhookEventTitle')),
         content: Text(
-          'This will reprocess the stored Stripe webhook payload.\n\n'
-          'eventType: $eventType\n'
-          'eventId: $eventId',
+          AppLocalizations.of(context)!
+              .translate('retryWebhookEventBody')
+              .replaceAll('{{eventType}}', eventType)
+              .replaceAll('{{eventId}}', eventId),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Retry'),
+            child: Text(AppLocalizations.of(context)!.retry),
           ),
         ],
       ),
@@ -223,19 +258,20 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Retry selected webhook events?'),
+        title: Text(AppLocalizations.of(context)!.translate('retrySelectedWebhookEventsTitle')),
         content: Text(
-          'You are about to retry ${items.length} webhook event(s). '
-          'Each selected event will be replayed from stored payload.',
+          AppLocalizations.of(context)!
+              .translate('retrySelectedWebhookEventsBody')
+              .replaceAll('{{count}}', '${items.length}'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Retry selected'),
+            child: Text(AppLocalizations.of(context)!.translate('retrySelected')),
           ),
         ],
       ),
@@ -249,7 +285,11 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ok ? 'Webhook retried successfully.' : 'Retry attempted but still failing.'),
+          content: Text(
+            ok
+                ? AppLocalizations.of(context)!.translate('webhookRetriedSuccessfully')
+                : AppLocalizations.of(context)!.translate('retryStillFailing'),
+          ),
           backgroundColor: ok ? Colors.green : Colors.orange,
         ),
       );
@@ -288,7 +328,12 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Bulk retry complete: $successCount succeeded, $failCount failed.'),
+        content: Text(
+          AppLocalizations.of(context)!
+              .translate('bulkRetryComplete')
+              .replaceAll('{{successCount}}', '$successCount')
+              .replaceAll('{{failCount}}', '$failCount'),
+        ),
         backgroundColor: failCount == 0 ? Colors.green : Colors.orange,
       ),
     );

@@ -57,6 +57,39 @@ class AppLocalizations {
       'doctor': 'Doctor',
       'patient': 'Patient',
       'admin': 'Admin',
+      'paymentsOpsTitle': 'Payments Ops',
+      'failedToLoadFailedWebhooks': 'Failed to load failed webhooks: {{error}}',
+      'noFailedOrUnprocessedStripeWebhooks':
+          'No failed or unprocessed Stripe webhook events.',
+      'selectedCount': '{{count}} selected',
+      'retrySelected': 'Retry selected',
+      'retrying': 'Retrying...',
+      'statusFailed': 'FAILED',
+      'statusUnprocessed': 'UNPROCESSED',
+      'eventIdLabel': 'eventId: {{eventId}}',
+      'createdLabel': 'created: {{created}}',
+      'retryMetaLine':
+          'retryCount: {{retryCount}} · lastRetryAt: {{lastRetryAt}} · retriedByAdminUserId: {{retriedByAdminUserId}}',
+      'notAvailableShort': 'N/A',
+      'retryWebhookEventTitle': 'Retry webhook event?',
+      'retryWebhookEventBody':
+          'This will reprocess the stored Stripe webhook payload.\n\n'
+              'eventType: {{eventType}}\n'
+              'eventId: {{eventId}}',
+      'retrySelectedWebhookEventsTitle': 'Retry selected webhook events?',
+      'retrySelectedWebhookEventsBody':
+          'You are about to retry {{count}} webhook event(s). Each selected event will be replayed from stored payload.',
+      'webhookRetriedSuccessfully': 'Webhook retried successfully.',
+      'retryStillFailing': 'Retry attempted but still failing.',
+      'bulkRetryComplete':
+          'Bulk retry complete: {{successCount}} succeeded, {{failCount}} failed.',
+      'paymentLabel': 'PAYMENT: {{status}}',
+      'paymentUnknown': 'Unknown',
+      'paymentStateRaw': '{{state}}',
+      'paymentPaid': 'Paid',
+      'paymentPending': 'Pending',
+      'paymentFailed': 'Failed',
+      'paymentNotRequired': 'Not required',
 
       // Navigation
       'chat': 'Chat',
@@ -158,6 +191,8 @@ class AppLocalizations {
       'uploadCertificate': 'Upload Certificate',
       'addService': 'Add Service',
       'removeService': 'Remove Service',
+      'openServicesPricingToManageEntries':
+          'Open Services & Pricing to manage entries',
       'enterService': 'Enter service name',
       'profileInformation': 'Profile Information',
       'contactDetails': 'Contact Details',
@@ -1015,6 +1050,43 @@ class AppLocalizations {
       'doctor': 'Shifokor',
       'patient': 'Bemor',
       'admin': 'Administrator',
+      'paymentsOpsTitle': 'To\'lov operatsiyalari',
+      'failedToLoadFailedWebhooks':
+          'Muvaffaqiyatsiz webhooklarni yuklab bo\'lmadi: {{error}}',
+      'noFailedOrUnprocessedStripeWebhooks':
+          'Muvaffaqiyatsiz yoki qayta ishlanmagan Stripe webhook hodisalari yo\'q.',
+      'selectedCount': '{{count}} tanlandi',
+      'retrySelected': 'Tanlanganlarni qayta urinish',
+      'retrying': 'Qayta urinilmoqda...',
+      'statusFailed': 'XATO',
+      'statusUnprocessed': 'QAYTA ISHLANMAGAN',
+      'eventIdLabel': 'eventId: {{eventId}}',
+      'createdLabel': 'yaratilgan: {{created}}',
+      'retryMetaLine':
+          'retryCount: {{retryCount}} · lastRetryAt: {{lastRetryAt}} · retriedByAdminUserId: {{retriedByAdminUserId}}',
+      'notAvailableShort': 'Mavjud emas',
+      'retryWebhookEventTitle': 'Webhook hodisasini qayta urinishmi?',
+      'retryWebhookEventBody':
+          'Bu saqlangan Stripe webhook payloadini qayta ishlaydi.\n\n'
+              'eventType: {{eventType}}\n'
+              'eventId: {{eventId}}',
+      'retrySelectedWebhookEventsTitle':
+          'Tanlangan webhook hodisalarini qayta urinishmi?',
+      'retrySelectedWebhookEventsBody':
+          '{{count}} ta webhook hodisasini qayta urinish arafasidasiz. Har bir tanlangan hodisa saqlangan payload orqali qayta ijro etiladi.',
+      'webhookRetriedSuccessfully':
+          'Webhook muvaffaqiyatli qayta ishlatildi.',
+      'retryStillFailing':
+          'Qayta urinish bajarildi, lekin hali ham xato qaytmoqda.',
+      'bulkRetryComplete':
+          'Ommaviy qayta urinish yakunlandi: {{successCount}} muvaffaqiyatli, {{failCount}} xato.',
+      'paymentLabel': 'TO\'LOV: {{status}}',
+      'paymentUnknown': 'Noma\'lum',
+      'paymentStateRaw': '{{state}}',
+      'paymentPaid': 'To\'langan',
+      'paymentPending': 'Kutilmoqda',
+      'paymentFailed': 'Xato',
+      'paymentNotRequired': 'Talab qilinmaydi',
 
       // Navigation
       'chat': 'Suhbat',
@@ -1118,6 +1190,8 @@ class AppLocalizations {
       'uploadCertificate': 'Sertifikat yuklash',
       'addService': 'Xizmat qo\'shish',
       'removeService': 'Xizmatni olib tashlash',
+      'openServicesPricingToManageEntries':
+          'Yozuvlarni boshqarish uchun Xizmatlar va narxlar sahifasini oching',
       'enterService': 'Xizmat nomini kiriting',
       'profileInformation': 'Profil ma\'lumotlari',
       'contactDetails': 'Aloqa ma\'lumotlari',
@@ -1969,6 +2043,42 @@ class AppLocalizations {
       'doctor': 'Врач',
       'patient': 'Пациент',
       'admin': 'Администратор',
+      'paymentsOpsTitle': 'Платёжные операции',
+      'failedToLoadFailedWebhooks':
+          'Не удалось загрузить неуспешные webhook: {{error}}',
+      'noFailedOrUnprocessedStripeWebhooks':
+          'Нет неуспешных или необработанных Stripe webhook событий.',
+      'selectedCount': 'Выбрано: {{count}}',
+      'retrySelected': 'Повторить выбранные',
+      'retrying': 'Повтор...',
+      'statusFailed': 'ОШИБКА',
+      'statusUnprocessed': 'НЕ ОБРАБОТАНО',
+      'eventIdLabel': 'eventId: {{eventId}}',
+      'createdLabel': 'создано: {{created}}',
+      'retryMetaLine':
+          'retryCount: {{retryCount}} · lastRetryAt: {{lastRetryAt}} · retriedByAdminUserId: {{retriedByAdminUserId}}',
+      'notAvailableShort': 'Н/Д',
+      'retryWebhookEventTitle': 'Повторить webhook событие?',
+      'retryWebhookEventBody':
+          'Это повторно обработает сохранённый Stripe webhook payload.\n\n'
+              'eventType: {{eventType}}\n'
+              'eventId: {{eventId}}',
+      'retrySelectedWebhookEventsTitle':
+          'Повторить выбранные webhook события?',
+      'retrySelectedWebhookEventsBody':
+          'Вы собираетесь повторить {{count}} webhook событие(й). Каждое выбранное событие будет переиграно из сохранённого payload.',
+      'webhookRetriedSuccessfully': 'Webhook успешно повторно обработан.',
+      'retryStillFailing':
+          'Повтор выполнен, но событие всё ещё завершается ошибкой.',
+      'bulkRetryComplete':
+          'Массовый повтор завершён: успешно {{successCount}}, ошибок {{failCount}}.',
+      'paymentLabel': 'ОПЛАТА: {{status}}',
+      'paymentUnknown': 'Неизвестно',
+      'paymentStateRaw': '{{state}}',
+      'paymentPaid': 'Оплачено',
+      'paymentPending': 'Ожидает оплату',
+      'paymentFailed': 'Ошибка',
+      'paymentNotRequired': 'Не требуется',
 
       // Navigation
       'chat': 'Чат',
@@ -2075,6 +2185,8 @@ class AppLocalizations {
       'uploadCertificate': 'Загрузить сертификат',
       'addService': 'Добавить услугу',
       'removeService': 'Удалить услугу',
+      'openServicesPricingToManageEntries':
+          'Откройте «Услуги и цены», чтобы управлять записями',
       'enterService': 'Введите название услуги',
       'profileInformation': 'Личная информация',
       'contactDetails': 'Контактные данные',
@@ -2972,6 +3084,8 @@ class AppLocalizations {
   String get uploadCertificate => translate('uploadCertificate');
   String get addService => translate('addService');
   String get removeService => translate('removeService');
+  String get openServicesPricingToManageEntries =>
+      translate('openServicesPricingToManageEntries');
   String get enterService => translate('enterService');
 
   // Home
