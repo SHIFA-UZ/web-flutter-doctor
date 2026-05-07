@@ -959,7 +959,7 @@ class _CalendarPanel extends StatelessWidget {
   }
 }
 
-/// Dropdown for Place in slot details: doctor's clinic address (from backend) or VIDEO CONSULTATION.
+/// Read-only place field for already booked appointments.
 class _AppointmentPlaceDropdown extends ConsumerWidget {
   const _AppointmentPlaceDropdown({Key? key, required this.entry})
     : super(key: key);
@@ -981,18 +981,11 @@ class _AppointmentPlaceDropdown extends ConsumerWidget {
         ? doctorAddress
         : (l10n.translate('clinicAddress') ?? 'Clinic Address');
     final videoOption = l10n.videoCall;
-    final options = <String>{
-      clinicOption,
-      videoOption,
-    }.where((v) => v.trim().isNotEmpty).toList(growable: false);
     final isVideo = entry.location.toLowerCase().contains('video');
     final currentValue = isVideo
         ? videoOption
         : (entry.location.isEmpty ? clinicOption : entry.location);
-    // If current location is neither option (e.g. legacy text), show it or fallback to clinic
-    final value = options.contains(currentValue)
-        ? currentValue
-        : (options.isNotEmpty ? options.first : null);
+    final placeLabel = currentValue.trim().isEmpty ? clinicOption : currentValue;
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1009,33 +1002,40 @@ class _AppointmentPlaceDropdown extends ConsumerWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: value,
-              isExpanded: true,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade50,
               ),
-              items: options
-                  .map(
-                    (String opt) => DropdownMenuItem<String>(
-                      value: opt,
-                      child: Text(
-                        opt,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.grey.shade800),
-                      ),
+              child: Row(
+                children: [
+                  Icon(
+                    isVideo ? Icons.videocam_outlined : Icons.location_on_outlined,
+                    size: 18,
+                    color: Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      placeLabel,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.grey.shade800),
                     ),
-                  )
-                  .toList(),
-              onChanged: (_) {
-                // Place change for existing appointment could be wired to an API when available.
-              },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.translate('appointmentPlaceLockedHint') ??
+                  'Booked appointment location is informational and cannot be changed here.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
             ),
           ],
         ),
