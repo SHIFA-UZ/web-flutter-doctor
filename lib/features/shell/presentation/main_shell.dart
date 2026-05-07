@@ -1,4 +1,5 @@
 // lib/features/shell/presentation/main_shell.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,8 +24,11 @@ import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/patient_briefing_panel.dart';
+import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
+import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({Key? key}) : super(key: key);
@@ -36,6 +40,7 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserver {
   final GlobalKey<NavigatorState> _shellNavKey = GlobalKey<NavigatorState>();
   String? _activeLocationLabel;
+  Timer? _sidebarLocationTicker;
 
   String _activeLocationPrefKey() {
     final profile = ref.read(profileAllProvider).valueOrNull?.profile;
@@ -44,8 +49,77 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     return 'active_location_id:$doctorId';
   }
 
+  String? _deriveCurrentLocationLabel({
+    required List<CalendarEntry> entries,
+    required DateTime nowInDoctorZone,
+    required AppLocalizations? l10n,
+  }) {
+    int toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+    final nowMinutes = nowInDoctorZone.hour * 60 + nowInDoctorZone.minute;
+    final dated = entries.where((e) => e.location.trim().isNotEmpty).toList()
+      ..sort((a, b) => toMinutes(a.start).compareTo(toMinutes(b.start)));
+
+    for (final entry in dated) {
+      final start = toMinutes(entry.start);
+      final end = toMinutes(entry.end);
+      if (nowMinutes >= start && nowMinutes < end) {
+        return _normalizeLocationLabel(entry.location, l10n);
+      }
+    }
+
+    for (final entry in dated) {
+      if (toMinutes(entry.start) >= nowMinutes) {
+        return _normalizeLocationLabel(entry.location, l10n);
+      }
+    }
+
+    if (dated.isNotEmpty) {
+      return _normalizeLocationLabel(dated.last.location, l10n);
+    }
+    return null;
+  }
+
+  String _normalizeLocationLabel(String raw, AppLocalizations? l10n) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return trimmed;
+    if (trimmed.toLowerCase().contains('video')) {
+      return l10n?.videoCall ?? 'Video call';
+    }
+    return trimmed;
+  }
+
   Future<void> _loadActiveLocationLabel() async {
     try {
+      final profile = ref.read(profileAllProvider).valueOrNull?.profile;
+      final doctorTimeZone = profile?['timeZone'] as String?;
+      final l10n = mounted ? AppLocalizations.of(context) : null;
+      if (doctorTimeZone != null && doctorTimeZone.trim().isNotEmpty) {
+        final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
+        final todayInDoctorZone = DateTime(
+          nowInDoctorZone.year,
+          nowInDoctorZone.month,
+          nowInDoctorZone.day,
+        );
+
+        await ref.read(calendarProvider.notifier).loadDay(
+              day: todayInDoctorZone,
+              doctorTimeZone: doctorTimeZone,
+            );
+        final todayEntries = ref.read(calendarProvider)[todayInDoctorZone] ?? const <CalendarEntry>[];
+        final currentLocation = _deriveCurrentLocationLabel(
+          entries: todayEntries,
+          nowInDoctorZone: nowInDoctorZone,
+          l10n: l10n,
+        );
+        if (currentLocation != null && currentLocation.isNotEmpty) {
+          if (!mounted) return;
+          setState(() {
+            _activeLocationLabel = currentLocation;
+          });
+          return;
+        }
+      }
+
       final locs = await fetchDoctorLocations(ref);
       final prefs = await SharedPreferences.getInstance();
       final savedId = prefs.getInt(_activeLocationPrefKey());
@@ -81,10 +155,15 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Future.microtask(_loadActiveLocationLabel);
+    _sidebarLocationTicker = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _loadActiveLocationLabel(),
+    );
   }
 
   @override
   void dispose() {
+    _sidebarLocationTicker?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
