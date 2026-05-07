@@ -242,7 +242,11 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     setState(() => _icdSearching = true);
     try {
       final api = ref.read(apiClientProvider);
-      final res = await api.get('/api/icd10/search', params: {'q': query, 'limit': '20'});
+      final lang = Localizations.localeOf(context).languageCode;
+      final res = await api.get(
+        '/api/icd10/search',
+        params: {'q': query, 'limit': '20', 'lang': lang},
+      );
       if (!mounted) return;
       if (res.statusCode == 200) {
         final list = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
