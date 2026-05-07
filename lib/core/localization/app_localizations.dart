@@ -918,6 +918,9 @@ class AppLocalizations {
       'addReturnVisit': 'Add return visit',
       'saveForm': 'Save Form',
       'dentalChart': 'Dental Chart',
+      'icd10SearchHint': 'Search ICD-10 code or title',
+      'dentalLegend':
+          'Legend: K=caries, P=filling, pulpitis, periodontitis, crown, post, missing, prosthetic.',
       'toothMap': 'Tooth map',
       'toothMapState': 'Tooth map',
       'willBeSetAutomaticallyOnSave': 'Will be set automatically on save',
@@ -1872,6 +1875,9 @@ class AppLocalizations {
       'addReturnVisit': 'Tashrif qo\'shish',
       'saveForm': 'Saqlash',
       'dentalChart': 'Tish diagrammasi',
+      'icd10SearchHint': 'ICD-10 kodi yoki nomi bo\'yicha qidiring',
+      'dentalLegend':
+          'Belgilanishlar: K=kariyes, P=plomba, pulpit, periodontit, koronka, shtift, yetishmaydigan, protez.',
       'toothMap': 'Tishlar holati',
       'toothMapState': 'Tishlar holati',
       'willBeSetAutomaticallyOnSave': 'Avtomatik tarzda to\'ldiriladi',
@@ -2728,6 +2734,9 @@ class AppLocalizations {
       'addReturnVisit': 'Добавить повторный визит',
       'saveForm': 'Сохранить форму',
       'dentalChart': 'Зубная карта',
+      'icd10SearchHint': 'Поиск по коду или названию ICD-10',
+      'dentalLegend':
+          'Легенда: K=кариес, P=пломба, пульпит, периодонтит, коронка, штифт, отсутствует, протез.',
       'toothMap': 'Карта зубов',
       'toothMapState': 'Состояние зубов',
       'willBeSetAutomaticallyOnSave':

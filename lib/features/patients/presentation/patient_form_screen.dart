@@ -1081,7 +1081,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 focusNode: _icdSearchFocus,
                 decoration: InputDecoration(
                   labelText: 'ICD-10',
-                  hintText: 'Search ICD-10 code or title',
+                  hintText: l10n.translate('icd10SearchHint'),
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _icdSearching
@@ -1203,7 +1203,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Legend: K=carries, P=filling, pulpitis, periodontitis, crown, post, missing, prosthetic.',
+                  l10n.translate('dentalLegend'),
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                 ),
 
