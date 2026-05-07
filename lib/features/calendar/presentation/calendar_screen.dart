@@ -190,6 +190,37 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   String _ymd(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  bool _shouldShowTimeZoneMismatchHint(String? scheduleTimeZone) {
+    final tz = scheduleTimeZone?.trim();
+    if (tz == null || tz.isEmpty) return false;
+    try {
+      final scheduleNow = getNowInTimezone(tz);
+      final deviceNow = DateTime.now();
+      return scheduleNow.timeZoneOffset != deviceNow.timeZoneOffset;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String _timeZoneMismatchHintMessage({
+    required String scheduleTimeZone,
+  }) {
+    final localeCode = Localizations.localeOf(context).languageCode.toLowerCase();
+    if (localeCode == 'uz') {
+      return 'Joriy qurilma vaqt zonasi ($scheduleTimeZone bilan) mos emas. '
+          'Siz slotlarni bir vaqt zonasida belgilagansiz, hozir esa boshqa vaqt zonasidasiz. '
+          'Iltimos, uchrashuvlar bilan ishlaganda buni inobatga oling.';
+    }
+    if (localeCode == 'ru') {
+      return 'Текущий часовой пояс устройства не совпадает с часовым поясом расписания ($scheduleTimeZone). '
+          'Слоты были заданы в одном часовом поясе, а сейчас вы в другом. '
+          'Пожалуйста, учитывайте это при работе с приёмами.';
+    }
+    return 'Your current device timezone does not match the calendar schedule timezone ($scheduleTimeZone). '
+        'Your slots were defined in one timezone, but you are currently in another. '
+        'Please keep this in mind while managing appointments.';
+  }
+
   @override
   Widget build(BuildContext context) {
     // Go-to-appointment: day already set in initState from calendarGoToAppointmentDayProvider.
@@ -242,9 +273,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         : null;
     final showTimeZoneHint =
         !_timeZoneHintDismissed &&
-        (profileTimeZone == null ||
-            profileTimeZone.trim().isEmpty ||
-            profileTimeZone == 'Asia/Tashkent');
+        _shouldShowTimeZoneMismatchHint(profileTimeZone);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -279,8 +308,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  l10n.translate('setPracticeTimezoneHint') ??
-                                      'Set your practice timezone in Profile (e.g. Europe/Berlin) so appointment times are correct.',
+                                  _timeZoneMismatchHintMessage(
+                                    scheduleTimeZone: profileTimeZone?.trim() ?? 'Unknown',
+                                  ),
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.amber.shade900,

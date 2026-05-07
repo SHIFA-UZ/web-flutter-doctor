@@ -37,6 +37,7 @@ import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/core/utils/error_formatter.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
 class PatientsScreen extends ConsumerStatefulWidget {
@@ -1774,9 +1775,36 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
           Expanded(
             child: docsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(
-                child: Text('${AppLocalizations.of(context)!.error}: $e'),
-              ),
+              error: (e, st) {
+                final l10n = AppLocalizations.of(context)!;
+                final safeMessage = sanitizeErrorMessage(e, l10n);
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.red.shade400,
+                          size: 28,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${l10n.error}: $safeMessage',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () => ref.refresh(patientDocumentsProvider(p.id)),
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: Text(l10n.retry),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
               data: (docs) {
                 final l10n = AppLocalizations.of(context)!;
                 // Filter documents by search query
