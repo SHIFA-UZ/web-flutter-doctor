@@ -632,6 +632,13 @@ class AppLocalizations {
       'sharePasswordSecurely': 'Share this password securely with the user',
       'forceLogout': 'Force Logout',
       'userLoggedOut': 'User logged out successfully',
+      'changeSubscriptionTier': 'Change Subscription Tier',
+      'subscriptionTierBasic': 'Basic',
+      'subscriptionTierPro': 'Pro',
+      'subscriptionTierPremium': 'Premium',
+      'subscriptionTierDialogHint':
+          'Pick the subscription level for this user. Patients can only be Pro or Premium. The user will be logged out so the new tier takes effect on next sign-in.',
+      'subscriptionTierUpdated': 'Subscription tier updated',
       'deleteUser': 'Delete User',
       'deleteUserConfirm':
           'Are you sure you want to delete this user? This action cannot be undone.',

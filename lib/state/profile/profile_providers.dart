@@ -24,5 +24,6 @@ final profileAllProvider = FutureProvider<ProfileAll>((ref) async {
     m['contact'] as Map<String, dynamic>,
     m['billing'] as Map<String, dynamic>,
     m['settings'] as Map<String, dynamic>,
+    (m['subscription'] as Map<String, dynamic>?) ?? const <String, dynamic>{},
   );
 });

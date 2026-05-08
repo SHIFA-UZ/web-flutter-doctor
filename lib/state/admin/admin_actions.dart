@@ -228,6 +228,30 @@ class AdminActions {
     return AdminUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  /// Set the admin-managed subscription tier (BASIC | PRO | PREMIUM) for a user.
+  /// Backend rejects BASIC for PATIENT users and forces a logout so the
+  /// new tier is applied as soon as the user signs back in.
+  Future<AdminUser> setUserSubscriptionTier(int userId, String tier) async {
+    final response = await apiClient.patch(
+      '/api/admin/users/$userId/subscription-tier',
+      {'tier': tier.toUpperCase()},
+    );
+
+    if (response.statusCode != 200) {
+      final body = response.body;
+      try {
+        final json = jsonDecode(body) as Map<String, dynamic>?;
+        final msg = json?['message'] ?? json?['error'] ?? body;
+        throw Exception(msg);
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('Failed to update subscription tier: $body');
+      }
+    }
+
+    return AdminUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
   /// Create a new admin user only (role ADMIN with admin profile).
   Future<AdminUser> createAdminUser({
     required String email,

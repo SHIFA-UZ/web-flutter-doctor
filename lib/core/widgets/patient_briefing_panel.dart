@@ -5,6 +5,8 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/utils/text_cleaner.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 
 /// Collapsible chatbot-like panel from bottom-right showing AI patient briefing.
 /// Rendered in the shell so it appears on any screen when briefing is generated.
@@ -21,7 +23,8 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(patientBriefingProvider);
-    if (!state.isVisible) return const SizedBox.shrink();
+    final canUseBriefing = ref.watch(doctorFeatureProvider(DoctorFeature.patientBriefing));
+    if (!canUseBriefing || !state.isVisible) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
     final screenHeight = MediaQuery.of(context).size.height;

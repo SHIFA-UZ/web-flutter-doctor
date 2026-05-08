@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -25,6 +27,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Don't fetch tasks for doctors who can't use the feature — the screen
+      // is built eagerly inside the IndexedStack shell even when the Tasks
+      // tab is hidden, so a BASIC/PRO doctor would otherwise hit a 403.
+      if (!ref.read(doctorFeatureProvider(DoctorFeature.remoteCareTasks))) {
+        return;
+      }
       ref.read(tasksProvider.notifier).loadTasks();
     });
   }

@@ -26,6 +26,8 @@ import 'package:shifa_doc_app_v1/features/patients/presentation/document_viewer_
 import 'package:flutter/services.dart'; // ✅ for Clipboard
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
@@ -1668,45 +1670,53 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                   ),
                   child: const Icon(Icons.flag, color: Colors.white, size: 20),
                 ),
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, color: brand, size: 24),
-                padding: EdgeInsets.zero,
-                onSelected: (value) {
-                  if (value == 'make_appointment') {
-                    _showMakeAppointmentDialog(context, ref, p, brand);
-                  } else if (value == 'briefing') {
-                    ref
-                        .read(patientBriefingProvider.notifier)
-                        .generate(p.id, p.name);
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'make_appointment',
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today, size: 18, color: brand),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(
-                                context,
-                              )!.translate('makeAppointment') ??
-                              'Make appointment',
+              Builder(
+                builder: (context) {
+                  final canUseBriefing = ref.watch(
+                    doctorFeatureProvider(DoctorFeature.patientBriefing),
+                  );
+                  return PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: brand, size: 24),
+                    padding: EdgeInsets.zero,
+                    onSelected: (value) {
+                      if (value == 'make_appointment') {
+                        _showMakeAppointmentDialog(context, ref, p, brand);
+                      } else if (value == 'briefing') {
+                        ref
+                            .read(patientBriefingProvider.notifier)
+                            .generate(p.id, p.name);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'make_appointment',
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today, size: 18, color: brand),
+                            const SizedBox(width: 8),
+                            Text(
+                              AppLocalizations.of(
+                                    context,
+                                  )!.translate('makeAppointment') ??
+                                  'Make appointment',
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'briefing',
-                    child: Row(
-                      children: [
-                        Icon(Icons.summarize, size: 18, color: brand),
-                        const SizedBox(width: 8),
-                        Text(AppLocalizations.of(context)!.generateBriefing),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                      if (canUseBriefing)
+                        PopupMenuItem(
+                          value: 'briefing',
+                          child: Row(
+                            children: [
+                              Icon(Icons.summarize, size: 18, color: brand),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.generateBriefing),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ],
           ),

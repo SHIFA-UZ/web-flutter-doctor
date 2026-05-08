@@ -4,5 +4,14 @@ class ProfileAll {
   final Map<String, dynamic> contact;
   final Map<String, dynamic> billing;
   final Map<String, dynamic> settings;
-  ProfileAll(this.profile, this.contact, this.billing, this.settings);
+  /// Admin-managed subscription block (`{ tier, features[] }`). Empty map when
+  /// the backend response does not include it.
+  final Map<String, dynamic> subscription;
+  ProfileAll(
+    this.profile,
+    this.contact,
+    this.billing,
+    this.settings, [
+    Map<String, dynamic>? subscription,
+  ]) : subscription = subscription ?? const {};
 }

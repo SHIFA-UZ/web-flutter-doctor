@@ -19,6 +19,8 @@ import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/chat/chat_providers.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
@@ -221,7 +223,15 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     }
 
     final brand = Theme.of(context).colorScheme.primary;
-    final selectedIndex = ref.watch(shellProvider);
+    var selectedIndex = ref.watch(shellProvider);
+    final canUseTasks = ref.watch(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
+    if (selectedIndex == 4 && !canUseTasks) {
+      // Doctor was on Tasks but tier no longer permits it — bounce to Home.
+      Future.microtask(() {
+        if (mounted) ref.read(shellProvider.notifier).setTab(1);
+      });
+      selectedIndex = 1;
+    }
 
     final screens = const [
       _KeepAlive(child: ChatScreen()),
@@ -333,15 +343,17 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                 ),
                     const SizedBox(height: 20),
 
-                _buildNavItem(
-                  context,
-                  ref,
-                  Icons.task_alt,
-                  4,
-                  brand,
-                  selectedIndex,
-                ),
-                const SizedBox(height: 20),
+                if (canUseTasks) ...[
+                  _buildNavItem(
+                    context,
+                    ref,
+                    Icons.task_alt,
+                    4,
+                    brand,
+                    selectedIndex,
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
                     _buildNotificationsNavItem(
                   context,

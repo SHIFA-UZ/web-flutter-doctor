@@ -56,6 +56,11 @@ class AdminUser {
   final String? lockedUntil;
   final Map<String, dynamic>? profile;
 
+  /// Admin-managed subscription tier (BASIC | PRO | PREMIUM).
+  /// ADMIN role users always behave as PREMIUM and the value is informational.
+  /// PATIENT users are restricted to PRO or PREMIUM by the backend.
+  final String subscriptionTier;
+
   AdminUser({
     required this.id,
     this.email,
@@ -66,6 +71,7 @@ class AdminUser {
     required this.failedLoginAttempts,
     this.lockedUntil,
     this.profile,
+    this.subscriptionTier = 'PREMIUM',
   });
 
   factory AdminUser.fromJson(Map<String, dynamic> json) {
@@ -79,6 +85,8 @@ class AdminUser {
       failedLoginAttempts: json['failedLoginAttempts'] as int,
       lockedUntil: json['lockedUntil'] as String?,
       profile: json['profile'] as Map<String, dynamic>?,
+      subscriptionTier:
+          (json['subscriptionTier'] as String?)?.toUpperCase() ?? 'PREMIUM',
     );
   }
 

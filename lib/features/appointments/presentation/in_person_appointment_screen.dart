@@ -34,6 +34,8 @@ import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/voice_recording_dialog.dart';
 import 'package:http/http.dart' as http;
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 
 // Provider to fetch patientId from appointment
 final _patientIdProvider = FutureProvider.family<String?, String>((
@@ -2220,15 +2222,16 @@ class _InPersonAppointmentScreenState
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                // Start AI Notes button
-                                ShifaSecondaryButton(
-                                  label: AppLocalizations.of(
-                                    context,
-                                  )!.startAiNotes,
-                                  onPressed: _startAiNotes,
-                                  icon: Icons.mic,
-                                  width: ButtonWidth.fill,
-                                ),
+                                // Start AI Notes button — PRO+ feature.
+                                if (ref.watch(doctorFeatureProvider(DoctorFeature.aiNotes)))
+                                  ShifaSecondaryButton(
+                                    label: AppLocalizations.of(
+                                      context,
+                                    )!.startAiNotes,
+                                    onPressed: _startAiNotes,
+                                    icon: Icons.mic,
+                                    width: ButtonWidth.fill,
+                                  ),
                                 if (_beforeTreatmentImages.isNotEmpty ||
                                     _afterTreatmentImages.isNotEmpty)
                                   Padding(

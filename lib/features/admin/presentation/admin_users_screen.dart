@@ -338,6 +338,16 @@ class _UserCard extends ConsumerWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+            // ADMIN role users always behave as PREMIUM — hide the chip there
+            // to avoid the impression that admins can be downgraded.
+            if (user.role != 'ADMIN') ...[
+              Chip(
+                label: Text(_tierLabel(user.subscriptionTier, l10n)),
+                backgroundColor: _tierColor(user.subscriptionTier),
+                labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+              const SizedBox(width: 6),
+            ],
             Chip(
               label: Text(user.enabled ? l10n.translate('enabled') : l10n.translate('disabled')),
               backgroundColor: user.enabled ? Colors.green : Colors.red,
@@ -446,6 +456,18 @@ class _UserCard extends ConsumerWidget {
                       }
                     },
                   ),
+                  if (user.role != 'ADMIN')
+                    PopupMenuItem(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.workspace_premium, size: 18, color: Colors.deepPurple),
+                          const SizedBox(width: 8),
+                          Text(l10n.translate('changeSubscriptionTier'),
+                              style: const TextStyle(color: Colors.deepPurple)),
+                        ],
+                      ),
+                      onTap: () => _showChangeTierDialog(context, ref, user, usersParams),
+                    ),
                   PopupMenuItem(
                     child: Row(
                       children: [
@@ -532,6 +554,112 @@ class _UserCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  static String _tierLabel(String tier, AppLocalizations l10n) {
+    switch (tier.toUpperCase()) {
+      case 'BASIC':
+        return l10n.translate('subscriptionTierBasic');
+      case 'PRO':
+        return l10n.translate('subscriptionTierPro');
+      case 'PREMIUM':
+        return l10n.translate('subscriptionTierPremium');
+      default:
+        return tier;
+    }
+  }
+
+  static Color _tierColor(String tier) {
+    switch (tier.toUpperCase()) {
+      case 'BASIC':
+        return Colors.blueGrey;
+      case 'PRO':
+        return Colors.indigo;
+      case 'PREMIUM':
+        return Colors.deepPurple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Shows a tier picker scoped by the user's role: doctors can pick any of
+  /// BASIC/PRO/PREMIUM, patients are restricted to PRO/PREMIUM (the backend
+  /// enforces the same rule and will return 400 if violated).
+  static Future<void> _showChangeTierDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AdminUser user,
+    UsersProviderParams usersParams,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final allowedTiers = user.role == 'PATIENT'
+        ? const ['PRO', 'PREMIUM']
+        : const ['BASIC', 'PRO', 'PREMIUM'];
+    String selected = allowedTiers.contains(user.subscriptionTier.toUpperCase())
+        ? user.subscriptionTier.toUpperCase()
+        : allowedTiers.first;
+
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocalState) => AlertDialog(
+          title: Text(l10n.translate('changeSubscriptionTier')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.translate('subscriptionTierDialogHint'),
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+              const SizedBox(height: 8),
+              for (final tier in allowedTiers)
+                RadioListTile<String>(
+                  value: tier,
+                  groupValue: selected,
+                  onChanged: (v) => setLocalState(() => selected = v ?? selected),
+                  title: Text(_tierLabel(tier, l10n)),
+                  dense: true,
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.cancel),
+            ),
+            ShifaPrimaryButton(
+              onPressed: () => Navigator.of(ctx).pop(selected),
+              label: l10n.save,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!context.mounted || picked == null) return;
+    if (picked.toUpperCase() == user.subscriptionTier.toUpperCase()) return;
+
+    try {
+      final actions = ref.read(adminActionsProvider);
+      await actions.setUserSubscriptionTier(user.id, picked);
+      ref.invalidate(adminUsersProvider(usersParams));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${l10n.translate('subscriptionTierUpdated')}: ${_tierLabel(picked, l10n)}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.error}: $e')),
+        );
+      }
+    }
   }
 
   static int? _doctorId(AdminUser user) {

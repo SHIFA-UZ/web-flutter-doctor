@@ -27,6 +27,8 @@ import 'package:shifa_doc_app_v1/features/home/presentation/analytics_kpi_cards.
 import 'package:shifa_doc_app_v1/features/home/presentation/analytics_engagement_widget.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 import '../../../core/widgets/appointments_trend_chart.dart';
 import '../../../core/widgets/visit_type_donut_chart.dart';
 
@@ -825,6 +827,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final appointmentsAsync = ref.watch(todayAppointmentsProvider);
     final brand = Theme.of(context).colorScheme.primary;
     final patients = ref.watch(patientsProvider);
+    // Advanced analytics charts (trend / visit-type / engagement) are PREMIUM-only.
+    // BASIC and PRO tiers see only the KPI summary cards (basic analytics).
+    // Ask Shifa AI panel is PRO+.
+    final showAdvancedAnalytics =
+        ref.watch(doctorFeatureProvider(DoctorFeature.advancedAnalytics));
+    final canUseAskShifaAi = ref.watch(doctorFeatureProvider(DoctorFeature.askShifaAi));
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
@@ -848,10 +856,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           const SizedBox(height: 16),
                           const AnalyticsKpiCards(),
-                          const SizedBox(height: 16),
-                          const AppointmentsTrendChart(),
-                          const VisitTypeDonutChart(),
-                          const AnalyticsEngagementWidget(),
+                          if (showAdvancedAnalytics) ...const [
+                            SizedBox(height: 16),
+                            AppointmentsTrendChart(),
+                            VisitTypeDonutChart(),
+                            AnalyticsEngagementWidget(),
+                          ],
                         ],
                       ),
                     );
@@ -869,12 +879,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         flex: 65,
                         child: SingleChildScrollView(
                           child: Column(
-                            children: const [
-                              AnalyticsKpiCards(),
-                              SizedBox(height: 16),
-                              AppointmentsTrendChart(),
-                              VisitTypeDonutChart(),
-                              AnalyticsEngagementWidget(),
+                            children: [
+                              const AnalyticsKpiCards(),
+                              if (showAdvancedAnalytics) ...const [
+                                SizedBox(height: 16),
+                                AppointmentsTrendChart(),
+                                VisitTypeDonutChart(),
+                                AnalyticsEngagementWidget(),
+                              ],
                             ],
                           ),
                         ),
@@ -885,10 +897,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            if (canUseAskShifaAi) const SizedBox(height: 24),
 
             // -------- AI PANEL (Collapsible) --------
-            AnimatedContainer(
+            if (canUseAskShifaAi) AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
               // Let the panel size itself naturally so it can
