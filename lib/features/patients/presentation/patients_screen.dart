@@ -39,6 +39,7 @@ import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/utils/error_formatter.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/patients/domain/document_category.dart';
 
 class PatientsScreen extends ConsumerStatefulWidget {
   const PatientsScreen({
@@ -188,7 +189,177 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     );
   }
 
-  // Pick a PDF, optional title, upload to backend, then refresh the doc list
+  /// Modal that asks the doctor for an optional title plus a required category
+  /// (the category drives whether the document is shared with all doctors of
+  /// the patient or stays restricted to the uploader).
+  ///
+  /// Returns null if the doctor cancels. The map has keys {title, category}.
+  Future<Map<String, String?>?> _askForTitleAndCategory({
+    required String defaultTitle,
+  }) async {
+    final titleCtrl = TextEditingController(text: defaultTitle);
+    DocumentCategory? selected;
+    return showModalBottomSheet<Map<String, String?>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 16 + MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: StatefulBuilder(
+            builder: (ctx, setSheetState) {
+              final l10n = AppLocalizations.of(ctx)!;
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.uploadDocument,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: InputDecoration(
+                        labelText: l10n.documentTitle,
+                        hintText: l10n.enterDocumentTitle,
+                      ),
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.translate('documentCategoryLabel') ??
+                          'Document type',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.translate('documentCategoryHint') ??
+                          'Pick a medical-result type to share with all doctors of this patient. Internal/private types stay visible only to you.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<DocumentCategory>(
+                      value: selected,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      hint: Text(
+                        l10n.translate('documentCategorySelect') ??
+                            'Select a type',
+                      ),
+                      items: [
+                        // ---- Medical results (auto-shared) ----
+                        DropdownMenuItem<DocumentCategory>(
+                          enabled: false,
+                          child: Text(
+                            l10n.translate('documentCategoryGroupMedical') ??
+                                'Medical results (visible to all doctors)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        ...kMedicalResultCategories.map(
+                          (c) => DropdownMenuItem<DocumentCategory>(
+                            value: c,
+                            child: Row(
+                              children: [
+                                Icon(c.icon, size: 16, color: Colors.teal),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    c.label(l10n),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // ---- Doctor-private categories ----
+                        DropdownMenuItem<DocumentCategory>(
+                          enabled: false,
+                          child: Text(
+                            l10n.translate('documentCategoryGroupPrivate') ??
+                                'Private (visible only to you)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        ...kPrivateCategories.map(
+                          (c) => DropdownMenuItem<DocumentCategory>(
+                            value: c,
+                            child: Row(
+                              children: [
+                                Icon(c.icon, size: 16, color: Colors.grey.shade700),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    c.label(l10n),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) => setSheetState(() => selected = v),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: Text(l10n.cancel),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ShifaPrimaryButton(
+                            width: ButtonWidth.fill,
+                            onPressed: selected == null
+                                ? null
+                                : () => Navigator.pop(ctx, {
+                                      'title': titleCtrl.text.trim(),
+                                      'category': selected!.code,
+                                    }),
+                            label: l10n.translate('add') ?? 'Add',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // Pick a PDF, ask for title + category, upload to backend, then refresh.
   Future<void> _addDocument(Patient patient) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -211,47 +382,14 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
       return;
     }
 
-    String tempTitle = '';
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: 16 + MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                AppLocalizations.of(ctx)!.uploadDocument,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(ctx)!.enterDocumentTitle,
-                ),
-                onChanged: (v) => tempTitle = v,
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              ShifaPrimaryButton(
-                width: ButtonWidth.fill,
-                onPressed: () => Navigator.pop(ctx),
-                label: AppLocalizations.of(ctx)!.translate('add') ?? 'Add',
-              ),
-            ],
-          ),
-        );
-      },
+    final defaultTitle = f.name.replaceAll(
+      RegExp(r'\.pdf$', caseSensitive: false),
+      '',
     );
+    final form = await _askForTitleAndCategory(defaultTitle: defaultTitle);
+    if (form == null) return;
+    final title = (form['title'] ?? '').toString().trim();
+    final category = form['category'];
 
     try {
       if (mounted) {
@@ -265,20 +403,18 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
         );
       }
 
-      // ✅ Read ApiClient and call the client-based action
       final client = ref.read(apiClientProvider);
       final newDoc = await uploadPatientDocumentWithClient(
         client: client,
         patientId: patient.id,
         fileBytes: f.bytes!,
-        // already checked
         fileName: f.name,
-        title: tempTitle.trim().isEmpty ? f.name : tempTitle.trim(),
+        title: title.isEmpty ? f.name : title,
+        category: category,
       );
 
       if (!mounted) return;
       if (newDoc != null) {
-        // Refresh only this patient's docs
         ref.refresh(patientDocumentsProvider(patient.id));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -364,6 +500,14 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   }
 
   Future<void> _uploadPagesAsPdf(Patient patient, List<Uint8List> pages) async {
+    final l10n = AppLocalizations.of(context)!;
+    final defaultTitle =
+        '${l10n.translate('scannedDocument') ?? 'Scanned document'} (${pages.length} ${l10n.translate('pages') ?? 'pages'})';
+    final form = await _askForTitleAndCategory(defaultTitle: defaultTitle);
+    if (form == null) return;
+    final title = (form['title'] ?? '').toString().trim();
+    final category = form['category'];
+
     try {
       final pdf = pw.Document();
 
@@ -385,14 +529,13 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
         patientId: patient.id,
         fileBytes: pdfBytes,
         fileName: 'scanned_document.pdf',
-        title:
-            '${AppLocalizations.of(context)!.translate('scannedDocument') ?? 'Scanned document'} (${pages.length} ${AppLocalizations.of(context)!.translate('pages') ?? 'pages'})',
+        title: title.isEmpty ? defaultTitle : title,
+        category: category,
       );
 
       ref.refresh(patientDocumentsProvider(patient.id));
 
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -402,7 +545,6 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${l10n.translate('scanFailed') ?? 'Scan failed'}: $e'),
@@ -1954,6 +2096,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
             widget.selectedDocumentId != null &&
             d.id.toString() == widget.selectedDocumentId;
 
+        final docCategory = findDoctorCategory(d.category);
         final card = _CardBox(
           child: Row(
             children: [
@@ -1986,12 +2129,65 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      formatDate(d.date),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          formatDate(d.date),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        if (docCategory != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: docCategory.isMedicalResult
+                                  ? Colors.teal.withOpacity(0.12)
+                                  : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  docCategory.icon,
+                                  size: 10,
+                                  color: docCategory.isMedicalResult
+                                      ? Colors.teal.shade700
+                                      : Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  docCategory.label(l10n),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: docCategory.isMedicalResult
+                                        ? Colors.teal.shade700
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (d.isSharedWithTeam) ...[
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            message: l10n.translate('sharedWithTeamTooltip') ??
+                                'Visible to all doctors of this patient',
+                            child: Icon(
+                              Icons.group,
+                              size: 12,
+                              color: Colors.teal.shade600,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (isLocked && d.creatorLabel.isNotEmpty) ...[
                       const SizedBox(height: 2),

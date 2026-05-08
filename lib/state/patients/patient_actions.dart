@@ -7,28 +7,56 @@ import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_form_models.dart';
 
-/// Upload a PDF and get the created document JSON from backend.
-/// Returns PatientDocument with absolute `url` (8090) to open in the viewer).
+/// Upload a document and get the created document JSON from the backend.
+///
+/// Pass [category] to tag the upload with a [PatientDocumentCategory] code.
+/// Medical-result categories (MRI, BLOOD_TEST, ULTRASOUND, ...) make the doc
+/// visible to every doctor of the patient. Doctor-private categories
+/// (APPOINTMENT_NOTE, INTERNAL_NOTE, ...) keep it restricted to the uploader.
 Future<PatientDocument?> uploadPatientDocumentWithClient({
   required ApiClient client,
   required String patientId,
   required Uint8List fileBytes,
   required String fileName,
   required String title,
+  String? category,
 }) async {
+  final lowerName = fileName.toLowerCase();
+  // Use the actual MIME type when we can detect it from the filename so the
+  // backend stores the file with the right extension (jpg/png/pdf/...).
+  final MediaType mediaType;
+  if (lowerName.endsWith('.pdf')) {
+    mediaType = MediaType('application', 'pdf');
+  } else if (lowerName.endsWith('.png')) {
+    mediaType = MediaType('image', 'png');
+  } else if (lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+    mediaType = MediaType('image', 'jpeg');
+  } else if (lowerName.endsWith('.gif')) {
+    mediaType = MediaType('image', 'gif');
+  } else if (lowerName.endsWith('.webp')) {
+    mediaType = MediaType('image', 'webp');
+  } else {
+    mediaType = MediaType('application', 'octet-stream');
+  }
+
   final files = <http.MultipartFile>[
     http.MultipartFile.fromBytes(
       'file',
       fileBytes,
       filename: fileName,
-      contentType: MediaType('application', 'pdf'),
+      contentType: mediaType,
     ),
   ];
+
+  final fields = <String, String>{'title': title};
+  if (category != null && category.isNotEmpty) {
+    fields['category'] = category;
+  }
 
   final streamed = await client.postMultipart(
     '/api/patients/$patientId/documents',
     files: files,
-    fields: {'title': title},
+    fields: fields,
   );
 
   final res = await http.Response.fromStream(streamed);
@@ -43,6 +71,8 @@ Future<PatientDocument?> uploadPatientDocumentWithClient({
       filePath: null,
       canView: j['canView'] as bool? ?? true,
       creatorLabel: (j['creatorLabel'] as String?) ?? 'Unknown',
+      category: j['category'] as String?,
+      isSharedWithTeam: j['isSharedWithTeam'] as bool? ?? false,
     );
   }
   throw Exception('Upload failed: ${res.statusCode} ${res.body}');
@@ -86,6 +116,8 @@ Future<PatientDocument?> updatePatientDocumentWithClient({
       filePath: null,
       canView: j['canView'] as bool? ?? true,
       creatorLabel: (j['creatorLabel'] as String?) ?? 'Unknown',
+      category: j['category'] as String?,
+      isSharedWithTeam: j['isSharedWithTeam'] as bool? ?? false,
     );
   }
   throw Exception('Update failed: ${res.statusCode} ${res.body}');
@@ -106,16 +138,28 @@ Future<void> requestDocumentAccessWithClient({
   throw Exception('Failed to request access: ${res.statusCode} ${res.body}');
 }
 
-/// Result of a document download: bytes and optional filename (for correct extension).
+/// Result of a document download.
+///
+/// Includes filename (from Content-Disposition when available) and content
+/// type (from the response Content-Type) so callers can pick the right
+/// renderer regardless of which signal is present. Note that on Flutter web
+/// browsers may strip Content-Disposition unless the server explicitly
+/// exposes it via CORS, so the most reliable signal is usually the bytes
+/// themselves (see `detectMimeFromBytes`).
 class DocumentDownloadResult {
-  const DocumentDownloadResult({required this.bytes, this.filename});
+  const DocumentDownloadResult({
+    required this.bytes,
+    this.filename,
+    this.contentType,
+  });
   final Uint8List bytes;
   final String? filename;
+  final String? contentType;
 }
 
 /// Download document via authenticated GET so it works after access is granted.
-/// Returns bytes and filename (from Content-Disposition) or null if not found/forbidden.
-/// Use filename so images (e.g. .jpg) are saved with the right extension, not always .pdf.
+/// Returns the bytes plus any filename/content-type the server provided, or
+/// null on 4xx/5xx.
 Future<DocumentDownloadResult?> fetchDocumentDownloadWithClient({
   required ApiClient client,
   required String patientId,
@@ -126,16 +170,88 @@ Future<DocumentDownloadResult?> fetchDocumentDownloadWithClient({
   );
   if (res.statusCode != 200) return null;
   final filename = _filenameFromContentDisposition(res.headers['content-disposition']);
-  return DocumentDownloadResult(bytes: res.bodyBytes, filename: filename);
+  return DocumentDownloadResult(
+    bytes: res.bodyBytes,
+    filename: filename,
+    contentType: res.headers['content-type'],
+  );
 }
 
 String? _filenameFromContentDisposition(String? value) {
   if (value == null || value.isEmpty) return null;
-  // Match filename="x" or filename=x (Content-Disposition header)
+  // Try plain filename="x" first (Spring's default for ASCII filenames).
   final match = RegExp(r'filename\s*=\s*"([^"]+)"').firstMatch(value);
   if (match != null) return match.group(1)?.trim();
   final match2 = RegExp(r'filename\s*=\s*([^;\s]+)').firstMatch(value);
-  return match2?.group(1)?.trim();
+  if (match2 != null) return match2.group(1)?.trim();
+
+  // RFC 5987 form: filename*=UTF-8''percent-encoded.jpg (Spring uses this
+  // when the filename has non-ASCII characters). Decode percent escapes so
+  // the extension is recoverable.
+  final ext5987 = RegExp(
+    r"""filename\*\s*=\s*[A-Za-z0-9-]+''([^;\s"]+)""",
+  ).firstMatch(value);
+  if (ext5987 != null) {
+    final raw = ext5987.group(1);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        return Uri.decodeComponent(raw);
+      } catch (_) {
+        return raw;
+      }
+    }
+  }
+  return null;
+}
+
+/// Inspect the first few bytes of a downloaded file to determine its MIME
+/// type. This is more reliable than trusting Content-Disposition or
+/// Content-Type because some proxies/CORS configurations strip those.
+String? detectMimeFromBytes(Uint8List bytes) {
+  if (bytes.length < 4) return null;
+  // JPEG: FF D8 FF
+  if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+    return 'image/jpeg';
+  }
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (bytes.length >= 8 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4E &&
+      bytes[3] == 0x47 &&
+      bytes[4] == 0x0D &&
+      bytes[5] == 0x0A &&
+      bytes[6] == 0x1A &&
+      bytes[7] == 0x0A) {
+    return 'image/png';
+  }
+  // GIF: "GIF8"
+  if (bytes[0] == 0x47 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46 &&
+      bytes[3] == 0x38) {
+    return 'image/gif';
+  }
+  // WebP: "RIFF" .. "WEBP"
+  if (bytes.length >= 12 &&
+      bytes[0] == 0x52 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46 &&
+      bytes[3] == 0x46 &&
+      bytes[8] == 0x57 &&
+      bytes[9] == 0x45 &&
+      bytes[10] == 0x42 &&
+      bytes[11] == 0x50) {
+    return 'image/webp';
+  }
+  // PDF: "%PDF"
+  if (bytes[0] == 0x25 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x44 &&
+      bytes[3] == 0x46) {
+    return 'application/pdf';
+  }
+  return null;
 }
 
 /// Fetch list of documents for a patient (from patient_documents table).
@@ -158,6 +274,8 @@ Future<List<PatientDocument>> fetchPatientDocumentsWithClient({
         filePath: null,
         canView: j['canView'] as bool? ?? true,
         creatorLabel: (j['creatorLabel'] as String?) ?? 'Unknown',
+        category: j['category'] as String?,
+        isSharedWithTeam: j['isSharedWithTeam'] as bool? ?? false,
       );
     }).toList();
   } else if (res.statusCode == 401) {

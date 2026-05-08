@@ -915,6 +915,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           fileBytes: combinedPdf,
           fileName: 'appointment_${now.millisecondsSinceEpoch}.pdf',
           title: title,
+          // Appointment notes stay doctor-private under the new visibility
+          // rules; tag the upload so the document list shows the type.
+          category: 'APPOINTMENT_NOTE',
         );
 
         debugPrint('Combined PDF saved successfully');

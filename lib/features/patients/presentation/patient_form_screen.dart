@@ -458,13 +458,15 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
           fileName: fileName,
         );
       } else {
-        // Create new document
+        // Create new document. Forms (e.g. 025-2) stay doctor-private regardless
+        // of category, but tag the upload so the document list shows the type.
         document = await uploadPatientDocumentWithClient(
           client: client,
           patientId: _patientId,
           fileBytes: pdfBytes,
           fileName: fileName,
           title: title,
+          category: 'FORM_025_2',
         );
 
         // Link document to form if form was just created

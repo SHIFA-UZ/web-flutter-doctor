@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -33,6 +34,7 @@ class DocumentViewerScreen extends ConsumerStatefulWidget {
 class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   Uint8List? _bytes;
   String? _filename;
+  String? _contentType;
   String? _error;
   bool _loading = true;
 
@@ -55,13 +57,29 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       if (result != null && result.bytes.isNotEmpty) {
         _bytes = result.bytes;
         _filename = result.filename;
+        _contentType = result.contentType;
       } else {
-        _error = 'Could not load document';
+        // Resolved against AppLocalizations in build() since context isn't
+        // safe to use synchronously here.
+        _error = '';
       }
     });
   }
 
-  static bool _isImage(String? filename) {
+  /// True when the underlying bytes are an image we can render with
+  /// `Image.memory`. We trust the byte signature first (most reliable),
+  /// then the response Content-Type, and finally the filename extension.
+  /// This avoids falling back to the PDF embed when Content-Disposition is
+  /// stripped by CORS or encoded via RFC 5987.
+  static bool _isImage({
+    required Uint8List bytes,
+    String? filename,
+    String? contentType,
+  }) {
+    final mime = detectMimeFromBytes(bytes);
+    if (mime != null) return mime.startsWith('image/');
+    final ct = contentType?.toLowerCase().split(';').first.trim();
+    if (ct != null && ct.startsWith('image/')) return true;
     if (filename == null) return false;
     final ext = filename.toLowerCase().split('.').last;
     return ext == 'jpg' || ext == 'jpeg' || ext == 'png' || ext == 'gif' || ext == 'webp';
@@ -76,6 +94,10 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       );
     }
     if (_error != null) {
+      final l10n = AppLocalizations.of(context)!;
+      final message = _error!.isNotEmpty
+          ? _error!
+          : (l10n.translate('couldNotLoadDocument') ?? 'Could not load document');
       return Scaffold(
         appBar: AppBar(title: Text(widget.title)),
         body: Center(
@@ -86,7 +108,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey.shade600),
                 const SizedBox(height: 16),
-                Text(_error!, textAlign: TextAlign.center),
+                Text(message, textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -94,7 +116,11 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       );
     }
     final bytes = _bytes!;
-    final isImage = _isImage(_filename);
+    final isImage = _isImage(
+      bytes: bytes,
+      filename: _filename,
+      contentType: _contentType,
+    );
 
     return Scaffold(
       appBar: AppBar(

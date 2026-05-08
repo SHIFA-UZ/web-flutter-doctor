@@ -88,6 +88,8 @@ class Patient {
         url: hasUrl ? d['url'] as String : null,
         canView: d['canView'] as bool? ?? true,
         creatorLabel: (d['creatorLabel'] as String?) ?? 'Unknown',
+        category: d['category'] as String?,
+        isSharedWithTeam: d['isSharedWithTeam'] as bool? ?? false,
       );
     }).toList();
 
@@ -184,6 +186,14 @@ class PatientDocument {
   /// Who created/uploaded: "Doctor", "Patient", or "Unknown".
   final String creatorLabel;
 
+  /// Optional category/tag chosen at upload (e.g. "MRI", "BLOOD_TEST",
+  /// "FORM_025_2"). Null when uploaded before categories existed.
+  final String? category;
+
+  /// True when the document is visible to every doctor of the patient
+  /// (patient uploads, or doctor uploads tagged as a medical result).
+  final bool isSharedWithTeam;
+
   PatientDocument({
     required this.id,
     required this.title,
@@ -192,6 +202,8 @@ class PatientDocument {
     this.url,
     this.canView = true,
     this.creatorLabel = 'Unknown',
+    this.category,
+    this.isSharedWithTeam = false,
   });
 
   PatientDocument copyWith({
@@ -202,6 +214,8 @@ class PatientDocument {
     String? url,
     bool? canView,
     String? creatorLabel,
+    String? category,
+    bool? isSharedWithTeam,
   }) {
     return PatientDocument(
       id: id ?? this.id,
@@ -211,6 +225,8 @@ class PatientDocument {
       url: url ?? this.url,
       canView: canView ?? this.canView,
       creatorLabel: creatorLabel ?? this.creatorLabel,
+      category: category ?? this.category,
+      isSharedWithTeam: isSharedWithTeam ?? this.isSharedWithTeam,
     );
   }
 }
