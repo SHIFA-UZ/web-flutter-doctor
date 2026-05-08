@@ -194,6 +194,18 @@ class AppLocalizations {
       'openServicesPricingToManageEntries':
           'Open Services & Pricing to manage entries',
       'enterService': 'Enter service name',
+      'servicesPricing': 'Services & Pricing',
+      'servicesPricingSubtitle':
+          'Manage service titles, prices, currencies and descriptions',
+      'servicesPricingPanelDesc':
+          'Define billable services with descriptions and multi-currency prices.',
+      'openServicesPricing': 'Open Services & Pricing',
+      'newService': 'New Service',
+      'editService': 'Edit Service',
+      'serviceTitleLabel': 'Title',
+      'serviceDescriptionLabel': 'Description',
+      'servicePriceLabel': 'Price amount (e.g. 25.00)',
+      'serviceCurrencyLabel': 'Currency (EUR/UZS/USD)',
       'profileInformation': 'Profile Information',
       'contactDetails': 'Contact Details',
       'paymentAndInvoicing': 'Payment and Invoicing',
@@ -1248,6 +1260,18 @@ class AppLocalizations {
       'openServicesPricingToManageEntries':
           'Yozuvlarni boshqarish uchun Xizmatlar va narxlar sahifasini oching',
       'enterService': 'Xizmat nomini kiriting',
+      'servicesPricing': 'Xizmatlar va narxlar',
+      'servicesPricingSubtitle':
+          'Xizmat nomlari, narxlari, valyutalari va tavsiflarini boshqaring',
+      'servicesPricingPanelDesc':
+          'Tavsif va ko\'p valyutali narxlarga ega hisob-fakturali xizmatlarni belgilang.',
+      'openServicesPricing': 'Xizmatlar va narxlarni ochish',
+      'newService': 'Yangi xizmat',
+      'editService': 'Xizmatni tahrirlash',
+      'serviceTitleLabel': 'Nomi',
+      'serviceDescriptionLabel': 'Tavsif',
+      'servicePriceLabel': 'Narx miqdori (masalan, 25.00)',
+      'serviceCurrencyLabel': 'Valyuta (EUR/UZS/USD)',
       'profileInformation': 'Profil ma\'lumotlari',
       'contactDetails': 'Aloqa ma\'lumotlari',
       'paymentAndInvoicing': 'To\'lov va hisob-faktura',
@@ -2299,6 +2323,18 @@ class AppLocalizations {
       'openServicesPricingToManageEntries':
           'Откройте «Услуги и цены», чтобы управлять записями',
       'enterService': 'Введите название услуги',
+      'servicesPricing': 'Услуги и цены',
+      'servicesPricingSubtitle':
+          'Управляйте названиями услуг, ценами, валютами и описаниями',
+      'servicesPricingPanelDesc':
+          'Определите оплачиваемые услуги с описаниями и ценами в нескольких валютах.',
+      'openServicesPricing': 'Открыть «Услуги и цены»',
+      'newService': 'Новая услуга',
+      'editService': 'Изменить услугу',
+      'serviceTitleLabel': 'Название',
+      'serviceDescriptionLabel': 'Описание',
+      'servicePriceLabel': 'Стоимость (например, 25.00)',
+      'serviceCurrencyLabel': 'Валюта (EUR/UZS/USD)',
       'profileInformation': 'Личная информация',
       'contactDetails': 'Контактные данные',
       'paymentAndInvoicing': 'Оплата и выставление счетов',

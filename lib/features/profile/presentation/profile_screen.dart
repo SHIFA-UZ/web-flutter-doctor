@@ -1163,8 +1163,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 10),
                       _SectionCard(
-                        title: 'Services & Pricing',
-                        subtitleLines: const ['Manage service titles, prices, currencies and descriptions'],
+                        title: AppLocalizations.of(context)!
+                            .translate('servicesPricing') ??
+                            'Services & Pricing',
+                        subtitleLines: [
+                          AppLocalizations.of(context)!
+                                  .translate('servicesPricingSubtitle') ??
+                              'Manage service titles, prices, currencies and descriptions',
+                        ],
                         selected: _selected == _ProfilePanel.servicesPricing,
                         onTap: () =>
                             setState(() => _selected = _ProfilePanel.servicesPricing),
@@ -2032,10 +2038,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _panelTitle('Services & Pricing'),
+              _panelTitle(AppLocalizations.of(context)!
+                      .translate('servicesPricing') ??
+                  'Services & Pricing'),
               const SizedBox(height: 12),
-              const Text(
-                'Define billable services with descriptions and multi-currency prices.',
+              Text(
+                AppLocalizations.of(context)!
+                        .translate('servicesPricingPanelDesc') ??
+                    'Define billable services with descriptions and multi-currency prices.',
               ),
               const SizedBox(height: 16),
               ShifaPrimaryButton(
@@ -2044,7 +2054,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     MaterialPageRoute(builder: (_) => const ServicesPricingScreen()),
                   );
                 },
-                label: 'Open Services & Pricing',
+                label: AppLocalizations.of(context)!
+                        .translate('openServicesPricing') ??
+                    'Open Services & Pricing',
                 icon: Icons.medical_services_outlined,
                 width: ButtonWidth.hug,
               ),

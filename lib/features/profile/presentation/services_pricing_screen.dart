@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
 class ServicesPricingScreen extends ConsumerStatefulWidget {
@@ -46,30 +47,66 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(service == null ? 'New Service' : 'Edit Service'),
-        content: SizedBox(
-          width: 420,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
-                const SizedBox(height: 10),
-                TextField(controller: descCtrl, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Description')),
-                const SizedBox(height: 10),
-                TextField(controller: amountCtrl, decoration: const InputDecoration(labelText: 'Price amount (e.g. 25.00)')),
-                const SizedBox(height: 10),
-                TextField(controller: currencyCtrl, decoration: const InputDecoration(labelText: 'Currency (EUR/UZS/USD)')),
-              ],
+      builder: (ctx) {
+        final dl10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(service == null
+              ? (dl10n.translate('newService') ?? 'New Service')
+              : (dl10n.translate('editService') ?? 'Edit Service')),
+          content: SizedBox(
+            width: 420,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleCtrl,
+                    decoration: InputDecoration(
+                      labelText: dl10n.translate('serviceTitleLabel') ?? 'Title',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: descCtrl,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: dl10n.translate('serviceDescriptionLabel') ??
+                          'Description',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: amountCtrl,
+                    decoration: InputDecoration(
+                      labelText: dl10n.translate('servicePriceLabel') ??
+                          'Price amount (e.g. 25.00)',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: currencyCtrl,
+                    decoration: InputDecoration(
+                      labelText: dl10n.translate('serviceCurrencyLabel') ??
+                          'Currency (EUR/UZS/USD)',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(dl10n.translate('cancel') ?? 'Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(dl10n.translate('save') ?? 'Save'),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
 
@@ -102,8 +139,13 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Services & Pricing')),
+      appBar: AppBar(
+        title: Text(
+          l10n.translate('servicesPricing') ?? 'Services & Pricing',
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -111,7 +153,7 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
               children: [
                 ShifaPrimaryButton(
                   onPressed: () => _editService(),
-                  label: 'Add Service',
+                  label: l10n.translate('addService') ?? 'Add Service',
                   icon: Icons.add,
                   width: ButtonWidth.hug,
                 ),
