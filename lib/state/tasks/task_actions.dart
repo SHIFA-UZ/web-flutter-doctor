@@ -16,6 +16,9 @@ Future<RemoteCareTask> createTaskWithClient({
   required int timesPerDay,
   TimeOfDay? startTime,
   int? intervalHours,
+  /// Optional explicit list of slot times. When non-null and non-empty,
+  /// overrides startTime/intervalHours-based scheduling on the backend.
+  List<TimeOfDay>? customTimes,
   required DateTime startDate,
   DateTime? endDate,
   int? durationDays,
@@ -24,6 +27,7 @@ Future<RemoteCareTask> createTaskWithClient({
   required bool notesRequired,
   String? notesLabel,
 }) async {
+  final hasCustomTimes = customTimes != null && customTimes.isNotEmpty;
   final body = {
     'patientId': patientId,
     'taskName': taskName,
@@ -31,7 +35,10 @@ Future<RemoteCareTask> createTaskWithClient({
     'category': category.name.toUpperCase(),
     'timesPerDay': timesPerDay.clamp(1, 15),
     if (startTime != null) 'startTime': _timeOfDayToApi(startTime),
-    if (timesPerDay >= 2 && intervalHours != null) 'intervalHours': intervalHours,
+    if (!hasCustomTimes && timesPerDay >= 2 && intervalHours != null)
+      'intervalHours': intervalHours,
+    if (hasCustomTimes)
+      'customTimes': customTimes.map(_timeOfDayToApi).toList(),
     'startDate': '${startDate.year.toString().padLeft(4, '0')}-'
         '${startDate.month.toString().padLeft(2, '0')}-'
         '${startDate.day.toString().padLeft(2, '0')}',

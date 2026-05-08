@@ -38,7 +38,10 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserver {
-  final GlobalKey<NavigatorState> _shellNavKey = GlobalKey<NavigatorState>();
+  // Use the top-level [shellNavigatorKey] from shell_scope.dart so deep-link
+  // handlers in app.dart (notification taps, FCM, ...) can push routes
+  // straight into the shell's nested navigator and keep the sidebar visible.
+  GlobalKey<NavigatorState> get _shellNavKey => shellNavigatorKey;
   String? _activeLocationLabel;
   Timer? _sidebarLocationTicker;
 

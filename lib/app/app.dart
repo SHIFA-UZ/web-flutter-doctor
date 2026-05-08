@@ -47,6 +47,35 @@ Future<DateTime?> _fetchAppointmentDay(WidgetRef ref, int appointmentId) async {
   }
 }
 
+/// Push the patients screen into the shell's nested navigator after the
+/// shell has been mounted on the outer navigator. Retries on the next frame
+/// if the shell's [Navigator] has not finished building yet, since
+/// [pushNamedAndRemoveUntil] only schedules MainShell to be built — the
+/// inner navigator is one frame behind.
+void _pushIntoShell(Object arguments, {int retriesLeft = 5}) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final navState = shellNavigatorKey.currentState;
+    if (navState != null) {
+      navState.pushNamed(
+        AppRoutes.patientsWithSelection,
+        arguments: arguments,
+      );
+      return;
+    }
+    if (retriesLeft > 0) {
+      _pushIntoShell(arguments, retriesLeft: retriesLeft - 1);
+    } else {
+      debugPrint(
+        '⚠ Shell navigator not ready after retries; falling back to outer navigator',
+      );
+      navigatorKey.currentState?.pushNamed(
+        AppRoutes.patientsWithSelection,
+        arguments: arguments,
+      );
+    }
+  });
+}
+
 /// Resolves appointment day, shows loading, then navigates to Calendar on that day (no "today" flash).
 Future<void> _openCalendarToAppointment(WidgetRef ref, int id) async {
   final context = navigatorKey.currentContext;
@@ -228,20 +257,17 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
               AppRoutes.shell,
               (route) => false,
             );
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final shellContext = navigatorKey.currentContext;
-              if (shellContext != null) {
-                ShellScope.pushNamed(
-                  shellContext,
-                  AppRoutes.patientsWithSelection,
-                  arguments: <String, dynamic>{
-                    'patientId': patientId.toString(),
-                    'documentId': documentId.toString(),
-                    'documentTitle': documentTitle ?? 'Document',
-                    'openDocumentViewer': type == 'DOCUMENT_ACCESS_APPROVED',
-                  },
-                );
-              }
+            // Push patientsWithSelection into the shell's nested navigator
+            // (NOT the outer one) so the sidebar/scaffold remains visible.
+            // Pushing on `navigatorKey` would render PatientsScreen via the
+            // outer router which renders it standalone, and any subsequent
+            // pop (e.g. closing the document viewer) would land on a
+            // sidebar-less Patients screen.
+            _pushIntoShell(<String, dynamic>{
+              'patientId': patientId.toString(),
+              'documentId': documentId.toString(),
+              'documentTitle': documentTitle ?? 'Document',
+              'openDocumentViewer': type == 'DOCUMENT_ACCESS_APPROVED',
             });
             return;
           }
@@ -273,10 +299,12 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
           // Priority 4: Patient only (navigate to patients screen)
           if (patientId != null) {
             debugPrint('→ Has patientId: $patientId');
-            navigatorKey.currentState?.pushNamed(
-              AppRoutes.patientsWithSelection,
-              arguments: patientId.toString(),
+            ref.read(shellProvider.notifier).setTab(3);
+            navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              AppRoutes.shell,
+              (route) => false,
             );
+            _pushIntoShell(patientId.toString());
             return;
           }
 

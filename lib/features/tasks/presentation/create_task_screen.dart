@@ -10,6 +10,13 @@ import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
+/// Schedule mode for the create-task form.
+/// - [evenSpacing]: simple `(startTime + intervalHours) × timesPerDay` schedule.
+/// - [customTimes]: explicit list of HH:mm slot times — supports arbitrary
+///   non-uniform medication patterns (e.g. "first 3 doses 2h apart, then
+///   the last 2 doses 5h apart").
+enum _ScheduleMode { evenSpacing, customTimes }
+
 class CreateTaskScreen extends ConsumerStatefulWidget {
   final int? patientId;
   /// When set, form is pre-filled from this template (e.g. from "Use template").
@@ -33,13 +40,27 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   TaskInputType _selectedInputType = TaskInputType.numeric;
   int _timesPerDay = 1;
   TimeOfDay _startTime = const TimeOfDay(hour: 8, minute: 0);
-  int _intervalHours = 1; // used when timesPerDay >= 4: every 1, 2, or 3 hours
+  // Hours between consecutive slots when timesPerDay >= 2. Range 1–24 to
+  // cover common pharmacy schedules (every 4h / 6h / 8h / 12h / 24h).
+  int _intervalHours = 1;
   DateTime _startDate = DateTime.now();
   DateTime? _endDate;
   int? _durationDays;
   bool _useEndDate = true;
   bool _notesRequired = false;
   bool _isSaving = false;
+
+  /// Selectable interval values (in hours). Matches typical medication
+  /// dosing schedules; the backend accepts any value 1–24 so this list
+  /// can be expanded freely.
+  static const List<int> _intervalOptions = [1, 2, 3, 4, 6, 8, 12, 24];
+
+  /// Schedule mode. `evenSpacing` keeps the simple form (start time +
+  /// interval + count). `customTimes` lets the doctor enter an explicit
+  /// list of slot times to support arbitrary patterns like
+  /// "08:00, 10:00, 12:00, 17:00, 22:00".
+  _ScheduleMode _scheduleMode = _ScheduleMode.evenSpacing;
+  final List<TimeOfDay> _customTimes = [const TimeOfDay(hour: 8, minute: 0)];
 
   @override
   void initState() {
@@ -55,9 +76,62 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
       _selectedInputType = t.inputType;
       _timesPerDay = t.timesPerDay.clamp(1, 15);
       _startTime = t.startTime ?? const TimeOfDay(hour: 8, minute: 0);
-      _intervalHours = (t.intervalHours ?? 1).clamp(1, 3);
+      _intervalHours = (t.intervalHours ?? 1).clamp(1, 24);
+      // Snap the loaded value to the nearest available option so the
+      // dropdown can render it without throwing a "value not in items" error.
+      if (!_intervalOptions.contains(_intervalHours)) {
+        _intervalHours = _intervalOptions.firstWhere(
+          (h) => h >= _intervalHours,
+          orElse: () => _intervalOptions.last,
+        );
+      }
+      // Populate custom-times mode if the template carries explicit slot
+      // times. Otherwise leave the mode in `evenSpacing` with the default
+      // single 08:00 entry so toggling to custom-times in the UI starts
+      // from a sensible baseline.
+      final templateCustom = t.customTimes;
+      if (templateCustom != null && templateCustom.isNotEmpty) {
+        _scheduleMode = _ScheduleMode.customTimes;
+        _customTimes
+          ..clear()
+          ..addAll(templateCustom);
+      }
       _notesRequired = t.notesRequired;
     }
+  }
+
+  /// Sort the in-memory custom-times list ascending so the editor and
+  /// preview always show entries in chronological order.
+  void _sortCustomTimes() {
+    _customTimes.sort((a, b) {
+      final am = a.hour * 60 + a.minute;
+      final bm = b.hour * 60 + b.minute;
+      return am.compareTo(bm);
+    });
+  }
+
+  /// Format a [TimeOfDay] as "HH:mm" for the wire and for display in the
+  /// editor (avoids relying on the device's locale 12/24h formatting).
+  String _formatTime24(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  /// Compute the slot times that will be generated for the current
+  /// `(startTime, intervalHours, timesPerDay)` configuration. Mirrors the
+  /// backend logic in [RemoteCareTaskController.generateCheckIns] so the
+  /// doctor sees an accurate preview as they tweak the values.
+  List<TimeOfDay> _previewSlots() {
+    if (_timesPerDay <= 1) return [_startTime];
+    final startMin = _startTime.hour * 60 + _startTime.minute;
+    final intervalMin = _intervalHours * 60;
+    final result = <TimeOfDay>[];
+    var min = startMin;
+    var count = 0;
+    while (count < _timesPerDay && min < 24 * 60) {
+      result.add(TimeOfDay(hour: min ~/ 60, minute: min % 60));
+      min += intervalMin;
+      count++;
+    }
+    return result;
   }
 
   @override
@@ -79,10 +153,40 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
       return;
     }
 
+    final isCustomMode = _scheduleMode == _ScheduleMode.customTimes;
+    if (isCustomMode && _customTimes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.translate('customTimesAddAtLeastOne') ??
+                'Add at least one time slot',
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
       final client = ref.read(apiClientProvider);
+      // In custom-times mode the slot times override the start/interval/count
+      // tuple. We still pass startTime so existing fallbacks (e.g. legacy
+      // clients) have something sensible, and timesPerDay tracks the count.
+      final customTimesPayload = isCustomMode
+          ? (_customTimes.toList()..sort((a, b) {
+              final am = a.hour * 60 + a.minute;
+              final bm = b.hour * 60 + b.minute;
+              return am.compareTo(bm);
+            }))
+          : null;
+      final effectiveTimesPerDay = isCustomMode
+          ? _customTimes.length.clamp(1, 15)
+          : _timesPerDay;
+      final effectiveStartTime = isCustomMode && customTimesPayload!.isNotEmpty
+          ? customTimesPayload.first
+          : _startTime;
+
       await createTaskWithClient(
         client: client,
         patientId: _selectedPatientId!,
@@ -91,9 +195,12 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             ? null
             : _descriptionController.text.trim(),
         category: _selectedCategory,
-        timesPerDay: _timesPerDay,
-        startTime: _startTime,
-        intervalHours: _timesPerDay >= 2 ? _intervalHours : null,
+        timesPerDay: effectiveTimesPerDay,
+        startTime: effectiveStartTime,
+        intervalHours: isCustomMode
+            ? null
+            : (_timesPerDay >= 2 ? _intervalHours : null),
+        customTimes: customTimesPayload,
         startDate: _startDate,
         endDate: _useEndDate ? _endDate : null,
         durationDays: _useEndDate ? null : _durationDays,
@@ -261,54 +368,163 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Times Per Day (1–15)
-              Row(
-                children: [
-                  Text('${l10n.timesPerDay}: '),
-                  const SizedBox(width: 16),
-                  DropdownButton<int>(
-                    value: _timesPerDay,
-                    items: List.generate(15, (i) => i + 1)
-                        .map((n) => DropdownMenuItem(value: n, child: Text('$n')))
-                        .toList(),
-                    onChanged: (value) => setState(() => _timesPerDay = value!),
+              // ── Schedule mode selector ──────────────────────────────
+              // Even spacing: simple (start time + interval + count).
+              // Custom times: explicit list of slots — supports any pattern.
+              Text(
+                l10n.translate('scheduleMode') ?? 'Schedule',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<_ScheduleMode>(
+                segments: [
+                  ButtonSegment(
+                    value: _ScheduleMode.evenSpacing,
+                    icon: const Icon(Icons.timer_outlined, size: 18),
+                    label: Text(
+                      l10n.translate('scheduleModeEvenSpacing') ??
+                          'Even spacing',
+                    ),
+                  ),
+                  ButtonSegment(
+                    value: _ScheduleMode.customTimes,
+                    icon: const Icon(Icons.schedule_outlined, size: 18),
+                    label: Text(
+                      l10n.translate('scheduleModeCustomTimes') ??
+                          'Custom times',
+                    ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-
-              // Start Time (first slot; window is start to 8 PM)
-              ListTile(
-                title: Text(l10n.startTime),
-                trailing: Text(_startTime.format(context)),
-                onTap: () async {
-                  final time = await showTimePicker(
-                    context: context,
-                    initialTime: _startTime,
-                  );
-                  if (time != null) {
-                    setState(() => _startTime = time);
-                  }
+                selected: {_scheduleMode},
+                onSelectionChanged: (s) {
+                  setState(() {
+                    _scheduleMode = s.first;
+                    if (_scheduleMode == _ScheduleMode.customTimes &&
+                        _customTimes.isEmpty) {
+                      // Seed with the current start time so the doctor has a
+                      // sensible starting point when switching modes.
+                      _customTimes.add(_startTime);
+                    }
+                  });
                 },
               ),
-              // When 2+ times per day: interval between tasks (every 1, 2, or 3 hours)
-              if (_timesPerDay >= 2) ...[
-                const SizedBox(height: 12),
+              const SizedBox(height: 12),
+
+              if (_scheduleMode == _ScheduleMode.evenSpacing) ...[
+                // Times Per Day (1–15)
                 Row(
                   children: [
-                    Text('${l10n.translate('intervalBetweenTasks') ?? 'Interval between tasks'}: '),
-                    const SizedBox(width: 8),
+                    Text('${l10n.timesPerDay}: '),
+                    const SizedBox(width: 16),
                     DropdownButton<int>(
-                      value: _intervalHours,
-                      items: [1, 2, 3]
-                          .map((h) => DropdownMenuItem(
-                                value: h,
-                                child: Text(h == 1 ? (l10n.translate('every1Hour') ?? 'Every 1 hour') : (l10n.translate('everyNHours')?.replaceAll('%d', '$h') ?? 'Every $h hours')),
-                              ))
+                      value: _timesPerDay,
+                      items: List.generate(15, (i) => i + 1)
+                          .map((n) => DropdownMenuItem(value: n, child: Text('$n')))
                           .toList(),
-                      onChanged: (value) => setState(() => _intervalHours = value!),
+                      onChanged: (value) =>
+                          setState(() => _timesPerDay = value!),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+
+                // Start Time (first slot of the day). Subsequent slots are
+                // [intervalHours] apart and fit until midnight on the same day.
+                ListTile(
+                  title: Text(l10n.startTime),
+                  trailing: Text(_startTime.format(context)),
+                  onTap: () async {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: _startTime,
+                    );
+                    if (time != null) {
+                      setState(() => _startTime = time);
+                    }
+                  },
+                ),
+                // When 2+ times per day: interval between tasks (1–24 hours).
+                // Doctors picking large intervals + many slots may not fit
+                // every slot in a single day; the live preview below shows
+                // the actual times that will be generated so they can adjust.
+                if (_timesPerDay >= 2) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${l10n.translate('intervalBetweenTasks') ?? 'Interval between tasks'}: ',
+                        ),
+                      ),
+                      DropdownButton<int>(
+                        value: _intervalHours,
+                        items: _intervalOptions
+                            .map((h) => DropdownMenuItem(
+                                  value: h,
+                                  child: Text(
+                                    h == 1
+                                        ? (l10n.translate('every1Hour') ??
+                                            'Every 1 hour')
+                                        : (l10n
+                                                .translate('everyNHours')
+                                                ?.replaceAll('%d', '$h') ??
+                                            'Every $h hours'),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (value) =>
+                            setState(() => _intervalHours = value!),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _SlotPreview(
+                    slots: _previewSlots(),
+                    expectedCount: _timesPerDay,
+                    l10n: l10n,
+                  ),
+                ],
+              ] else ...[
+                // ── Custom times editor ───────────────────────────────
+                _CustomTimesEditor(
+                  times: _customTimes,
+                  formatTime: _formatTime24,
+                  l10n: l10n,
+                  onAdd: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: _customTimes.isEmpty
+                          ? const TimeOfDay(hour: 8, minute: 0)
+                          : _customTimes.last,
+                    );
+                    if (picked == null) return;
+                    setState(() {
+                      // Avoid exact duplicates; otherwise add and sort.
+                      final dup = _customTimes.any(
+                        (t) => t.hour == picked.hour && t.minute == picked.minute,
+                      );
+                      if (!dup) _customTimes.add(picked);
+                      _sortCustomTimes();
+                    });
+                  },
+                  onEdit: (index) async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: _customTimes[index],
+                    );
+                    if (picked == null) return;
+                    setState(() {
+                      _customTimes[index] = picked;
+                      _sortCustomTimes();
+                    });
+                  },
+                  onRemove: (index) {
+                    setState(() {
+                      if (_customTimes.length > 1) {
+                        _customTimes.removeAt(index);
+                      }
+                    });
+                  },
                 ),
               ],
               const SizedBox(height: 16),
@@ -597,6 +813,225 @@ class _PatientSearchDialogState extends State<_PatientSearchDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Tiny inline preview of the slot times that will be generated for the
+/// task. Helps the doctor verify the (start time × interval × times-per-day)
+/// combo before saving — large intervals can cause slots to be silently
+/// dropped if they would cross midnight on the same day.
+class _SlotPreview extends StatelessWidget {
+  final List<TimeOfDay> slots;
+  final int expectedCount;
+  final AppLocalizations l10n;
+
+  const _SlotPreview({
+    required this.slots,
+    required this.expectedCount,
+    required this.l10n,
+  });
+
+  String _formatTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fits = slots.length >= expectedCount;
+    final color = fits ? theme.colorScheme.primary : Colors.orange.shade800;
+    final icon = fits ? Icons.event_available : Icons.warning_amber_rounded;
+    final label = l10n.translate('slotsPreviewLabel') ?? 'Daily slots';
+    final preview = slots.map(_formatTime).join(' · ');
+    final fitMsg = fits
+        ? null
+        : (l10n.translate('slotsPreviewClipped')?.replaceAll(
+                  '%d',
+                  (expectedCount - slots.length).toString(),
+                ) ??
+            '${expectedCount - slots.length} slot(s) won\'t fit before midnight; '
+                'pick a smaller interval or an earlier start time.');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$label: $preview',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (fitMsg != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    fitMsg,
+                    style: theme.textTheme.bodySmall?.copyWith(color: color),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Editable list of explicit slot times. Doctors use this to build any
+/// custom medication pattern (e.g. "08:00, 10:00, 12:00, 17:00, 22:00")
+/// that the simple even-spacing form can't express.
+class _CustomTimesEditor extends StatelessWidget {
+  final List<TimeOfDay> times;
+  final String Function(TimeOfDay) formatTime;
+  final AppLocalizations l10n;
+  final VoidCallback onAdd;
+  final void Function(int index) onEdit;
+  final void Function(int index) onRemove;
+
+  const _CustomTimesEditor({
+    required this.times,
+    required this.formatTime,
+    required this.l10n,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final addLabel =
+        l10n.translate('customTimesAddSlot') ?? 'Add time slot';
+    final emptyLabel =
+        l10n.translate('customTimesEmpty') ?? 'No slots yet — add one below.';
+    final hint = l10n.translate('customTimesHint') ??
+        'Define each slot explicitly to support non-uniform schedules.';
+    final countLabel = l10n.translate('customTimesCount') ??
+        '%d slot(s) per day';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.translate('customTimesLabel') ?? 'Daily slot times',
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (times.isEmpty)
+            Text(
+              emptyLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            )
+          else
+            ...List.generate(times.length, (index) {
+              final t = times[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => onEdit(index),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 10,
+                          ),
+                          child: Text(
+                            formatTime(t),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: l10n.translate('edit') ?? 'Edit',
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () => onEdit(index),
+                    ),
+                    IconButton(
+                      tooltip: l10n.translate('remove') ?? 'Remove',
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: times.length > 1
+                            ? Colors.red.shade400
+                            : Colors.grey.shade400,
+                      ),
+                      onPressed: times.length > 1 ? () => onRemove(index) : null,
+                    ),
+                  ],
+                ),
+              );
+            }),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                countLabel.replaceAll('%d', '${times.length}'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(addLabel),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

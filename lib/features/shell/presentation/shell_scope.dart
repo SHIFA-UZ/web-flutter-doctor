@@ -1,6 +1,18 @@
 // lib/features/shell/presentation/shell_scope.dart
 import 'package:flutter/material.dart';
 
+/// Top-level key for the shell's nested navigator. Use this to push routes
+/// into the shell's content area from places that do not have a BuildContext
+/// inside the shell (e.g. notification tap handlers in [app.dart]).
+///
+/// The shell's [Navigator] in `main_shell.dart` is keyed with this so its
+/// `currentState` is reachable globally once the shell is mounted. Using the
+/// outer [navigatorKey] for the same routes would render the target screen
+/// outside the sidebar/scaffold, since the outer router's matching cases
+/// don't wrap them in [MainShell].
+final GlobalKey<NavigatorState> shellNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'shellNavigator');
+
 /// Provides access to the shell's nested navigator so that pushes happen
 /// inside the content area and the sidebar stays visible.
 class ShellScope extends InheritedWidget {

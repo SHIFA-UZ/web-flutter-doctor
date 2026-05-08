@@ -28,6 +28,29 @@ enum CheckInStatus {
   missed,
 }
 
+/// Helper for parsing a list of HH:mm strings into [TimeOfDay] entries.
+List<TimeOfDay>? _parseCustomTimes(dynamic raw) {
+  if (raw is! List) return null;
+  final result = <TimeOfDay>[];
+  for (final entry in raw) {
+    final s = entry?.toString().trim();
+    if (s == null || s.isEmpty) continue;
+    final parts = s.split(':');
+    if (parts.length < 2) continue;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) continue;
+    result.add(TimeOfDay(hour: h, minute: m));
+  }
+  if (result.isEmpty) return null;
+  result.sort((a, b) {
+    final am = a.hour * 60 + a.minute;
+    final bm = b.hour * 60 + b.minute;
+    return am.compareTo(bm);
+  });
+  return result;
+}
+
 /// Reusable task config from backend (no patient, no dates). Used to pre-fill create form.
 class TaskTemplate {
   final String taskName;
@@ -36,6 +59,9 @@ class TaskTemplate {
   final int timesPerDay;
   final TimeOfDay? startTime;
   final int? intervalHours;
+  /// Optional explicit list of slot times. When non-null and non-empty,
+  /// the task uses these times instead of (startTime, intervalHours).
+  final List<TimeOfDay>? customTimes;
   final TimeOfDay? morningTime;
   final TimeOfDay? afternoonTime;
   final TimeOfDay? eveningTime;
@@ -51,6 +77,7 @@ class TaskTemplate {
     required this.timesPerDay,
     this.startTime,
     this.intervalHours,
+    this.customTimes,
     this.morningTime,
     this.afternoonTime,
     this.eveningTime,
@@ -82,6 +109,7 @@ class TaskTemplate {
       timesPerDay: json['timesPerDay'] as int,
       startTime: parseTime(json['startTime'] as String?),
       intervalHours: json['intervalHours'] as int?,
+      customTimes: _parseCustomTimes(json['customTimes']),
       morningTime: parseTime(json['morningTime'] as String?),
       afternoonTime: parseTime(json['afternoonTime'] as String?),
       eveningTime: parseTime(json['eveningTime'] as String?),
@@ -107,6 +135,9 @@ class RemoteCareTask {
   final TaskCategory category;
   final TaskStatus status;
   final int timesPerDay;
+  final TimeOfDay? startTime;
+  final int? intervalHours;
+  final List<TimeOfDay>? customTimes;
   final TimeOfDay? morningTime;
   final TimeOfDay? afternoonTime;
   final TimeOfDay? eveningTime;
@@ -130,6 +161,9 @@ class RemoteCareTask {
     required this.category,
     required this.status,
     required this.timesPerDay,
+    this.startTime,
+    this.intervalHours,
+    this.customTimes,
     this.morningTime,
     this.afternoonTime,
     this.eveningTime,
@@ -173,6 +207,9 @@ class RemoteCareTask {
         orElse: () => TaskStatus.active,
       ),
       timesPerDay: json['timesPerDay'] as int,
+      startTime: parseTime(json['startTime'] as String?),
+      intervalHours: json['intervalHours'] as int?,
+      customTimes: _parseCustomTimes(json['customTimes']),
       morningTime: parseTime(json['morningTime'] as String?),
       afternoonTime: parseTime(json['afternoonTime'] as String?),
       eveningTime: parseTime(json['eveningTime'] as String?),
