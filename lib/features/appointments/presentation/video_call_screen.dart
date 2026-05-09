@@ -158,66 +158,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     _soapPlan.clear();
   }
 
-  Future<void> _openConsultationFocusMode() async {
-    if (_documentationType != 'general') return;
-    final l10n = AppLocalizations.of(context)!;
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (ctx) => Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.consultationFocusModeTitle),
-            leading: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.pop(ctx),
-            ),
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ConsultationSoapSection(
-                    l10n: l10n,
-                    subjective: _soapSubjective,
-                    objective: _soapObjective,
-                    assessment: _soapAssessment,
-                    plan: _soapPlan,
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9FAFB),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.black.withValues(alpha: 0.07),
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _notesController,
-                        maxLines: null,
-                        expands: true,
-                        textAlignVertical: TextAlignVertical.top,
-                        style: const TextStyle(fontSize: 17, height: 1.45),
-                        decoration: InputDecoration(
-                          hintText: l10n.enterNotes,
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -1429,17 +1369,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                       titleTrailing: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          if (_documentationType == 'general')
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.center_focus_strong,
-                                              ),
-                                              tooltip: AppLocalizations.of(
-                                                context,
-                                              )!.consultationFocusModeTooltip,
-                                              onPressed:
-                                                  _openConsultationFocusMode,
-                                            ),
                                           IconButton(
                                             icon: const Icon(Icons.fullscreen),
                                             onPressed: () => setState(
@@ -1536,6 +1465,15 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                     patientFormsProvider(pid),
                                                   );
                                                 }
+                                                return;
+                                              }
+
+                                              if (value == 'pick_before') {
+                                                await _pickImage(true);
+                                                return;
+                                              }
+                                              if (value == 'pick_after') {
+                                                await _pickImage(false);
                                                 return;
                                               }
 
@@ -1683,6 +1621,34 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                       ],
                                                     ),
                                                   ),
+                                                  PopupMenuItem(
+                                                    value: 'pick_before',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.photo_camera_outlined,
+                                                          size: 18,
+                                                          color: brand,
+                                                        ),
+                                                        SizedBox(width: 12),
+                                                        Text(l10n.beforeTreatment),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  PopupMenuItem(
+                                                    value: 'pick_after',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.photo_camera_outlined,
+                                                          size: 18,
+                                                          color: Colors.green.shade700,
+                                                        ),
+                                                        SizedBox(width: 12),
+                                                        Text(l10n.afterTreatment),
+                                                      ],
+                                                    ),
+                                                  ),
                                                   PopupMenuDivider(),
                                                 ],
 
@@ -1792,12 +1758,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                     ),
                   ),
                   const Spacer(),
-                  if (_documentationType == 'general')
-                    IconButton(
-                      icon: const Icon(Icons.center_focus_strong),
-                      tooltip: l10n.consultationFocusModeTooltip,
-                      onPressed: _openConsultationFocusMode,
-                    ),
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     tooltip: AppLocalizations.of(context)!.notes,
@@ -1854,6 +1814,15 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                         if (pid != null && pid.isNotEmpty) {
                           ref.invalidate(patientFormsProvider(pid));
                         }
+                        return;
+                      }
+
+                      if (value == 'pick_before') {
+                        await _pickImage(true);
+                        return;
+                      }
+                      if (value == 'pick_after') {
+                        await _pickImage(false);
                         return;
                       }
 
@@ -1956,6 +1925,34 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                               ],
                             ),
                           ),
+                          PopupMenuItem(
+                            value: 'pick_before',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.photo_camera_outlined,
+                                  size: 18,
+                                  color: brand,
+                                ),
+                                SizedBox(width: 12),
+                                Text(l10n.beforeTreatment),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'pick_after',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.photo_camera_outlined,
+                                  size: 18,
+                                  color: Colors.green.shade700,
+                                ),
+                                SizedBox(width: 12),
+                                Text(l10n.afterTreatment),
+                              ],
+                            ),
+                          ),
                           PopupMenuDivider(),
                         ],
 
@@ -2018,14 +2015,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!_notesSectionsExpanded)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                AppLocalizations.of(context)!.notesSectionsHidden,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-            ),
           if (_notesSectionsExpanded) ...[
             // Show AI notes ONLY if 'ai' source selected
             if (_expandedNoteSource == 'ai') ...[
@@ -2656,26 +2645,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                 textAlignVertical: TextAlignVertical.top,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ShifaSecondaryButton(
-                  label: AppLocalizations.of(context)!.beforeTreatment,
-                  onPressed: () => _pickImage(true),
-                  icon: Icons.camera_alt,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ShifaSecondaryButton(
-                  label: AppLocalizations.of(context)!.afterTreatment,
-                  onPressed: () => _pickImage(false),
-                  icon: Icons.camera_alt,
-                ),
-              ),
-            ],
           ),
           if (_beforeTreatmentImages.isNotEmpty ||
               _afterTreatmentImages.isNotEmpty) ...[

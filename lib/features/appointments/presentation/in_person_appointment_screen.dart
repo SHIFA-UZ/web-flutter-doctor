@@ -1234,6 +1234,15 @@ class _InPersonAppointmentScreenState
                                 return;
                               }
 
+                              if (value == 'pick_before') {
+                                await _pickImage(true);
+                                return;
+                              }
+                              if (value == 'pick_after') {
+                                await _pickImage(false);
+                                return;
+                              }
+
                               // Mode switching (general vs 025-2) with unsaved-changes protection.
                               if (_documentationType == value) return;
                               if (_hasUnsavedChanges) {
@@ -1303,6 +1312,34 @@ class _InPersonAppointmentScreenState
                                     value: '0252',
                                     child: Text(l10n.fromLast0252Form),
                                   ),
+                                  PopupMenuItem(
+                                    value: 'pick_before',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.photo_camera_outlined,
+                                          size: 18,
+                                          color: brand,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(child: Text(l10n.beforeTreatment)),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'pick_after',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.photo_camera_outlined,
+                                          size: 18,
+                                          color: Colors.green.shade700,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(child: Text(l10n.afterTreatment)),
+                                      ],
+                                    ),
+                                  ),
                                   const PopupMenuDivider(),
                                 ]);
                               }
@@ -1325,19 +1362,6 @@ class _InPersonAppointmentScreenState
                           ? Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                if (!_notesSectionsExpanded)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.notesSectionsHidden,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ),
                                 if (_notesSectionsExpanded) ...[
                                   // From Shifa AI – only when AI source is selected
                                   if (_expandedNoteSource == 'ai') ...[
@@ -2273,31 +2297,7 @@ class _InPersonAppointmentScreenState
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                // Before/After buttons
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ShifaSecondaryButton(
-                                        label: AppLocalizations.of(
-                                          context,
-                                        )!.beforeTreatment,
-                                        onPressed: () => _pickImage(true),
-                                        icon: Icons.camera_alt,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: ShifaSecondaryButton(
-                                        label: AppLocalizations.of(
-                                          context,
-                                        )!.afterTreatment,
-                                        onPressed: () => _pickImage(false),
-                                        icon: Icons.camera_alt,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
+                                // Before/after photos: ⋮ → Before treatment / After treatment
                                 // Start AI Notes button — PRO+ feature.
                                 if (ref.watch(doctorFeatureProvider(DoctorFeature.aiNotes)))
                                   ShifaSecondaryButton(
