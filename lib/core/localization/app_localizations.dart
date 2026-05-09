@@ -931,6 +931,40 @@ class AppLocalizations {
       'errorLoadingPatientId': 'Error loading patient ID',
       'useEndAppointmentToSave':
           'Use "End Appointment" to save all documentation',
+      'documentsFinalizeHint':
+          'Final notes and PDFs are saved when you end the appointment. New uploads appear here immediately.',
+      'documentsEmptyHint':
+          'Uploaded files and scans will appear here so you can open them during the visit.',
+      'consultationScheduleLine': '{start} – {end} • Consultation',
+      'patientIdLabel': 'ID #{id}',
+      'patientAgeYears': '{age} years',
+      'appointmentStatusRequested': 'Requested',
+      'appointmentStatusConfirmed': 'Confirmed',
+      'appointmentStatusCancelled': 'Cancelled',
+      'appointmentStatusCompleted': 'Completed',
+      'docSectionLaboratory': 'Laboratory',
+      'docSectionImaging': 'Imaging',
+      'docSectionClinical': 'Clinical & prescriptions',
+      'docSectionForms': 'Forms & notes',
+      'docSectionPrivate': 'Private',
+      'docSectionOther': 'Other',
+      'docSectionUncategorized': 'Uncategorized',
+      'consultationDocumentsDropHint':
+          'Drop files here or tap to upload (shared as medical result)',
+      'consultationDocumentsUploading': 'Uploading…',
+      'consultationUploadNoBytes':
+          'Could not read file data. Try a smaller file or another format.',
+      'consultationUploadFailed': 'Upload failed',
+      'consultationUploadSuccess': 'Uploaded {count} file(s).',
+      'soapNotesSectionTitle': 'Structured notes (SOAP)',
+      'soapNotesSectionSubtitle':
+          'Optional sections — included in the saved consultation PDF.',
+      'soapSubjective': 'Subjective',
+      'soapObjective': 'Objective',
+      'soapAssessment': 'Assessment',
+      'soapPlan': 'Plan',
+      'consultationFocusModeTooltip': 'Focus mode (large notes)',
+      'consultationFocusModeTitle': 'Consultation notes',
       'typeANote': 'Type a note',
       'appointmentDocumentation': 'Appointment Documentation',
       'errorOpeningDocument': 'Error opening document',
@@ -1943,6 +1977,40 @@ class AppLocalizations {
       'errorLoadingPatientId': 'Bemor ID ni yuklashda xatolik',
       'useEndAppointmentToSave':
           'Barcha hujjatlarni saqlash uchun "Uchrashuvni tugatish" tugmasidan foydalaning',
+      'documentsFinalizeHint':
+          'Yakuniy izohlar va PDF fayllar uchrashuvni tugatganingizda saqlanadi. Yangi yuklamalar darhol shu yerda ko\'rinadi.',
+      'documentsEmptyHint':
+          'Yuklangan fayllar va skanlar qabul vaqtida ochish uchun shu yerda paydo bo\'ladi.',
+      'consultationScheduleLine': '{start} – {end} • Konsultatsiya',
+      'patientIdLabel': 'ID #{id}',
+      'patientAgeYears': '{age} yosh',
+      'appointmentStatusRequested': 'So\'ralgan',
+      'appointmentStatusConfirmed': 'Tasdiqlangan',
+      'appointmentStatusCancelled': 'Bekor qilingan',
+      'appointmentStatusCompleted': 'Yakunlangan',
+      'docSectionLaboratory': 'Laboratoriya',
+      'docSectionImaging': 'Tasvirlash',
+      'docSectionClinical': 'Klinik va retseptlar',
+      'docSectionForms': 'Formalari va qaydlar',
+      'docSectionPrivate': 'Shaxsiy',
+      'docSectionOther': 'Boshqa',
+      'docSectionUncategorized': 'Toifalanmagan',
+      'consultationDocumentsDropHint':
+          'Fayllarni shu yerga torting yoki yuklash uchun bosing (tibbiy natija sifatida)',
+      'consultationDocumentsUploading': 'Yuklanmoqda…',
+      'consultationUploadNoBytes':
+          'Fayl o\'qilmadi. Kichikroq fayl yoki boshqa formatdan foydalaning.',
+      'consultationUploadFailed': 'Yuklash amalga oshmadi',
+      'consultationUploadSuccess': '{count} ta fayl yuklandi.',
+      'soapNotesSectionTitle': 'Tuzilgan izohlar (SOAP)',
+      'soapNotesSectionSubtitle':
+          'Ixtiyoriy bo\'limlar — saqlangan konsultatsiya PDF ga kiritiladi.',
+      'soapSubjective': 'Subyektiv',
+      'soapObjective': 'Obyektiv',
+      'soapAssessment': 'Baholash',
+      'soapPlan': 'Reja',
+      'consultationFocusModeTooltip': 'Katta izoh rejimi',
+      'consultationFocusModeTitle': 'Konsultatsiya izohlari',
       'typeANote': 'Izoh yozing',
       'appointmentDocumentation': 'Uchrashuv hujjatlari',
       'docModeGeneral': 'Umumiy uchrashuv hujjati',
@@ -2858,6 +2926,40 @@ class AppLocalizations {
       'errorLoadingPatientId': 'Ошибка при загрузке ID пациента',
       'useEndAppointmentToSave':
           'Используйте "Завершить прием", чтобы сохранить всю документацию',
+      'documentsFinalizeHint':
+          'Итоговые записи и PDF сохраняются при завершении приёма. Новые загрузки сразу отображаются здесь.',
+      'documentsEmptyHint':
+          'Загруженные файлы и сканы появятся здесь для быстрого просмотра во время приёма.',
+      'consultationScheduleLine': '{start} – {end} • Консультация',
+      'patientIdLabel': 'ID №{id}',
+      'patientAgeYears': '{age} лет',
+      'appointmentStatusRequested': 'Запрошен',
+      'appointmentStatusConfirmed': 'Подтверждён',
+      'appointmentStatusCancelled': 'Отменён',
+      'appointmentStatusCompleted': 'Завершён',
+      'docSectionLaboratory': 'Лаборатория',
+      'docSectionImaging': 'Визуализация',
+      'docSectionClinical': 'Клиника и назначения',
+      'docSectionForms': 'Формы и записи',
+      'docSectionPrivate': 'Частные',
+      'docSectionOther': 'Прочее',
+      'docSectionUncategorized': 'Без категории',
+      'consultationDocumentsDropHint':
+          'Перетащите файлы сюда или нажмите для загрузки (как медицинский результат)',
+      'consultationDocumentsUploading': 'Загрузка…',
+      'consultationUploadNoBytes':
+          'Не удалось прочитать файл. Попробуйте меньший файл или другой формат.',
+      'consultationUploadFailed': 'Ошибка загрузки',
+      'consultationUploadSuccess': 'Загружено файлов: {count}.',
+      'soapNotesSectionTitle': 'Структурированные записи (SOAP)',
+      'soapNotesSectionSubtitle':
+          'Необязательные блоки — попадают в сохранённый PDF приёма.',
+      'soapSubjective': 'Субъективно',
+      'soapObjective': 'Объективно',
+      'soapAssessment': 'Оценка',
+      'soapPlan': 'План',
+      'consultationFocusModeTooltip': 'Режим крупных записей',
+      'consultationFocusModeTitle': 'Записи консультации',
       'typeANote': 'Введите примечание',
       'appointmentDocumentation': 'Документация приема',
       'docModeGeneral': 'Общий документ приема',
@@ -3661,6 +3763,59 @@ class AppLocalizations {
   String get errorPickingImage => translate('errorPickingImage');
   String get errorLoadingPatientId => translate('errorLoadingPatientId');
   String get useEndAppointmentToSave => translate('useEndAppointmentToSave');
+  String get documentsFinalizeHint => translate('documentsFinalizeHint');
+  String get documentsEmptyHint => translate('documentsEmptyHint');
+
+  String consultationScheduleLine(String start, String end) => translate(
+        'consultationScheduleLine',
+      ).replaceAll('{start}', start).replaceAll('{end}', end);
+
+  String patientIdLabel(String id) =>
+      translate('patientIdLabel').replaceAll('{id}', id);
+
+  String patientAgeYears(int age) =>
+      translate('patientAgeYears').replaceAll('{age}', age.toString());
+
+  String get appointmentStatusRequested =>
+      translate('appointmentStatusRequested');
+  String get appointmentStatusConfirmed =>
+      translate('appointmentStatusConfirmed');
+  String get appointmentStatusCancelled =>
+      translate('appointmentStatusCancelled');
+  String get appointmentStatusCompleted =>
+      translate('appointmentStatusCompleted');
+
+  String get docSectionLaboratory => translate('docSectionLaboratory');
+  String get docSectionImaging => translate('docSectionImaging');
+  String get docSectionClinical => translate('docSectionClinical');
+  String get docSectionForms => translate('docSectionForms');
+  String get docSectionPrivate => translate('docSectionPrivate');
+  String get docSectionOther => translate('docSectionOther');
+  String get docSectionUncategorized => translate('docSectionUncategorized');
+
+  String get consultationDocumentsDropHint =>
+      translate('consultationDocumentsDropHint');
+  String get consultationDocumentsUploading =>
+      translate('consultationDocumentsUploading');
+  String get consultationUploadNoBytes =>
+      translate('consultationUploadNoBytes');
+  String get consultationUploadFailed => translate('consultationUploadFailed');
+
+  String consultationUploadSuccess(int count) => translate(
+        'consultationUploadSuccess',
+      ).replaceAll('{count}', count.toString());
+
+  String get soapNotesSectionTitle => translate('soapNotesSectionTitle');
+  String get soapNotesSectionSubtitle => translate('soapNotesSectionSubtitle');
+  String get soapSubjective => translate('soapSubjective');
+  String get soapObjective => translate('soapObjective');
+  String get soapAssessment => translate('soapAssessment');
+  String get soapPlan => translate('soapPlan');
+  String get consultationFocusModeTooltip =>
+      translate('consultationFocusModeTooltip');
+  String get consultationFocusModeTitle =>
+      translate('consultationFocusModeTitle');
+
   String get typeANote => translate('typeANote');
   String get appointmentDocumentation => translate('appointmentDocumentation');
   String get docModeGeneral => translate('docModeGeneral');

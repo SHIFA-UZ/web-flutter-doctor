@@ -13,14 +13,11 @@ import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models
 import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_data.dart';
 import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_service.dart';
 import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_translations.dart';
-import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
-import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
@@ -36,6 +33,9 @@ import 'package:http/http.dart' as http;
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
 import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_documentation_widgets.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_document_upload_strip.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
 
 // Provider to fetch patientId from appointment
 final _patientIdProvider = FutureProvider.family<String?, String>((
@@ -83,6 +83,10 @@ class InPersonAppointmentScreen extends ConsumerStatefulWidget {
 class _InPersonAppointmentScreenState
     extends ConsumerState<InPersonAppointmentScreen> {
   final _notesController = TextEditingController();
+  final _soapSubjective = TextEditingController();
+  final _soapObjective = TextEditingController();
+  final _soapAssessment = TextEditingController();
+  final _soapPlan = TextEditingController();
   final _noteInputController = TextEditingController();
   final List<XFile> _beforeTreatmentImages = [];
   final List<XFile> _afterTreatmentImages = [];
@@ -120,6 +124,10 @@ class _InPersonAppointmentScreenState
   void initState() {
     super.initState();
     _notesController.addListener(_markUnsaved);
+    _soapSubjective.addListener(_markUnsaved);
+    _soapObjective.addListener(_markUnsaved);
+    _soapAssessment.addListener(_markUnsaved);
+    _soapPlan.addListener(_markUnsaved);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkChronicDiseaseWarning();
       _fetchSignatureStatus();
@@ -128,6 +136,74 @@ class _InPersonAppointmentScreenState
 
   void _markUnsaved() {
     if (mounted) setState(() => _hasUnsavedChanges = true);
+  }
+
+  void _clearGeneralNoteFields() {
+    _notesController.clear();
+    _soapSubjective.clear();
+    _soapObjective.clear();
+    _soapAssessment.clear();
+    _soapPlan.clear();
+  }
+
+  Future<void> _openConsultationFocusMode() async {
+    if (_documentationType != 'general') return;
+    final l10n = AppLocalizations.of(context)!;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (ctx) => Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.consultationFocusModeTitle),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ConsultationSoapSection(
+                    l10n: l10n,
+                    subjective: _soapSubjective,
+                    objective: _soapObjective,
+                    assessment: _soapAssessment,
+                    plan: _soapPlan,
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9FAFB),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.07),
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _notesController,
+                        maxLines: null,
+                        expands: true,
+                        textAlignVertical: TextAlignVertical.top,
+                        style: const TextStyle(fontSize: 17, height: 1.45),
+                        decoration: InputDecoration(
+                          hintText: l10n.enterNotes,
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _fetchSignatureStatus() async {
@@ -541,10 +617,17 @@ class _InPersonAppointmentScreenState
           : consultationNotes
                 .map((n) => '${l10nForPdf.fromShifaAi}:\n${n.displayText}')
                 .join('\n\n');
-      final manualNotes = _notesController.text.trim();
+      final structuredAndFree = composeConsultationNotesPdf(
+        l10n: l10nForPdf,
+        soapSubjective: _soapSubjective,
+        soapObjective: _soapObjective,
+        soapAssessment: _soapAssessment,
+        soapPlan: _soapPlan,
+        freeNotes: _notesController,
+      );
       final combinedNotes = [
         if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
-        if (manualNotes.isNotEmpty) manualNotes,
+        if (structuredAndFree.isNotEmpty) structuredAndFree,
       ].join('\n\n').trim();
 
       final hasNotes = combinedNotes.isNotEmpty;
@@ -817,6 +900,34 @@ class _InPersonAppointmentScreenState
     );
   }
 
+  Widget _documentsFinalizeHintRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            l10n.documentsFinalizeHint,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final brand = AppColors.primaryTeal;
@@ -836,6 +947,12 @@ class _InPersonAppointmentScreenState
         ? ref.watch(patientDocumentsProvider(patientId))
         : null;
 
+    final consultationUploadEnabled =
+        patientId != null &&
+        patientId.isNotEmpty &&
+        (patientIdAsync == null ||
+            (!patientIdAsync.isLoading && !patientIdAsync.hasError));
+
     // Consultation notes for this appointment (e.g. saved Shifa AI drafts) – shown in documentation with "From Shifa AI" badge
     final consultationNotesAsync = ref.watch(
       consultationNotesForAppointmentProvider(widget.appointment.id),
@@ -845,26 +962,30 @@ class _InPersonAppointmentScreenState
       draftNotesForAppointmentProvider(widget.appointment.id),
     );
 
+    final patientProfileAsync =
+        patientId != null && patientId.isNotEmpty
+            ? ref.watch(patientByIdProvider(patientId))
+            : null;
+    final resolvedPatient = patientProfileAsync?.asData?.value;
+    final patientProfileLoading =
+        patientProfileAsync != null &&
+        patientProfileAsync.isLoading &&
+        !patientProfileAsync.hasValue;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          widget.appointment.patientName,
-          style: const TextStyle(color: Colors.black),
-        ),
-        centerTitle: false,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Expanded(
+      backgroundColor: AppColors.scaffoldBackground,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppointmentConsultationHeader(
+            appointment: widget.appointment,
+            resolvedPatient: resolvedPatient,
+            patientLoading: patientProfileLoading,
+            onBack: () => Navigator.pop(context),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Row(
                 children: [
                   // Documents (collapsible)
@@ -875,6 +996,16 @@ class _InPersonAppointmentScreenState
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.black.withValues(alpha: 0.06),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Material(
                             color: Colors.transparent,
@@ -907,7 +1038,7 @@ class _InPersonAppointmentScreenState
                           ),
                         )
                       : Expanded(
-                          child: _CardBox(
+                          child: DocumentationSectionCard(
                             title: AppLocalizations.of(context)!.documents,
                             titleTrailing: IconButton(
                               icon: const Icon(Icons.chevron_left),
@@ -916,6 +1047,7 @@ class _InPersonAppointmentScreenState
                               tooltip: AppLocalizations.of(context)!.collapse,
                             ),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Expanded(
                                   child: () {
@@ -936,65 +1068,27 @@ class _InPersonAppointmentScreenState
                                             patientDocumentsProvider(id),
                                           );
                                           return docsAsync.when(
-                                            data: (docs) => Column(
-                                              children: [
-                                                Expanded(
-                                                  child: docs.isEmpty
-                                                      ? Center(
-                                                          child: Text(
-                                                            AppLocalizations.of(
-                                                              context,
-                                                            )!.noDocuments,
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.grey,
-                                                            ),
-                                                          ),
-                                                        )
-                                                      : ListView.separated(
-                                                          itemCount:
-                                                              docs.length,
-                                                          separatorBuilder:
-                                                              (_, __) =>
-                                                                  const SizedBox(
-                                                                    height: 8,
-                                                                  ),
-                                                          itemBuilder: (_, i) {
-                                                            final doc = docs[i];
-                                                            return _DocTile(
-                                                              doc,
-                                                              brand,
-                                                              patientId: id,
-                                                              onRequestAccess:
-                                                                  (!doc.canView &&
-                                                                      id !=
-                                                                          null)
-                                                                  ? () async {
-                                                                      final client =
-                                                                          ref.read(
-                                                                            apiClientProvider,
-                                                                          );
-                                                                      await requestDocumentAccessWithClient(
-                                                                        client:
-                                                                            client,
-                                                                        patientId:
-                                                                            id!,
-                                                                        documentId:
-                                                                            doc.id,
-                                                                      );
-                                                                      ref.refresh(
-                                                                        patientDocumentsProvider(
-                                                                          id!,
-                                                                        ),
-                                                                      );
-                                                                    }
-                                                                  : null,
-                                                            );
-                                                          },
-                                                        ),
+                                            data: (docs) =>
+                                                GroupedPatientDocumentsList(
+                                                  documents: docs,
+                                                  brand: brand,
+                                                  patientId: id,
+                                                  onRequestAccess: (doc) async {
+                                                    final client = ref.read(
+                                                      apiClientProvider,
+                                                    );
+                                                    await requestDocumentAccessWithClient(
+                                                      client: client,
+                                                      patientId: id,
+                                                      documentId: doc.id,
+                                                    );
+                                                    ref.refresh(
+                                                      patientDocumentsProvider(
+                                                        id,
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
-                                              ],
-                                            ),
                                             loading: () => const Center(
                                               child:
                                                   CircularProgressIndicator(),
@@ -1027,62 +1121,29 @@ class _InPersonAppointmentScreenState
                                       );
                                     }
                                     return documentsAsync.when(
-                                      data: (docs) => Column(
-                                        children: [
-                                          Expanded(
-                                            child: docs.isEmpty
-                                                ? Center(
-                                                    child: Text(
-                                                      AppLocalizations.of(
-                                                        context,
-                                                      )!.noDocuments,
-                                                      style: TextStyle(
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  )
-                                                : ListView.separated(
-                                                    itemCount: docs.length,
-                                                    separatorBuilder: (_, __) =>
-                                                        const SizedBox(
-                                                          height: 8,
-                                                        ),
-                                                    itemBuilder: (_, i) {
-                                                      final doc = docs[i];
-                                                      return _DocTile(
-                                                        doc,
-                                                        brand,
-                                                        patientId: patientId,
-                                                        onRequestAccess:
-                                                            (!doc.canView &&
-                                                                patientId !=
-                                                                    null)
-                                                            ? () async {
-                                                                final client =
-                                                                    ref.read(
-                                                                      apiClientProvider,
-                                                                    );
-                                                                await requestDocumentAccessWithClient(
-                                                                  client:
-                                                                      client,
-                                                                  patientId:
-                                                                      patientId!,
-                                                                  documentId:
-                                                                      doc.id,
-                                                                );
-                                                                ref.refresh(
-                                                                  patientDocumentsProvider(
-                                                                    patientId!,
-                                                                  ),
-                                                                );
-                                                              }
-                                                            : null,
-                                                      );
-                                                    },
-                                                  ),
-                                          ),
-                                        ],
-                                      ),
+                                      data: (docs) {
+                                        final pid = patientId!;
+                                        return GroupedPatientDocumentsList(
+                                            documents: docs,
+                                            brand: brand,
+                                            patientId: pid,
+                                            onRequestAccess: (doc) async {
+                                              final client = ref.read(
+                                                apiClientProvider,
+                                              );
+                                              await requestDocumentAccessWithClient(
+                                                client: client,
+                                                patientId: pid,
+                                                documentId: doc.id,
+                                              );
+                                              ref.refresh(
+                                                patientDocumentsProvider(
+                                                  pid,
+                                                ),
+                                              );
+                                            },
+                                          );
+                                      },
                                       loading: () => const Center(
                                         child: CircularProgressIndicator(),
                                       ),
@@ -1094,25 +1155,13 @@ class _InPersonAppointmentScreenState
                                     );
                                   }(),
                                 ),
-                                const SizedBox(height: 8),
-                                ShifaPrimaryButton(
-                                  label: AppLocalizations.of(context)!.save,
-                                  onPressed: () {
-                                    // Save button functionality - could be used for saving notes separately
-                                    ScaffoldMessenger.of(
-                                      context,
-                                    ).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.useEndAppointmentToSave,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  width: ButtonWidth.fill,
+                                ConsultationDocumentUploadStrip(
+                                  patientId: patientId,
+                                  brand: brand,
+                                  enabled: consultationUploadEnabled,
                                 ),
+                                const SizedBox(height: 10),
+                                _documentsFinalizeHintRow(context),
                               ],
                             ),
                           ),
@@ -1120,13 +1169,21 @@ class _InPersonAppointmentScreenState
                   const SizedBox(width: 24),
                   // Documentation (general notes or 025-2 form)
                   Expanded(
-                    child: _CardBox(
+                    child: DocumentationSectionCard(
                       title: _documentationType == 'general'
                           ? AppLocalizations.of(context)!.notes
                           : AppLocalizations.of(context)!.docMode0252,
                       titleTrailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (_documentationType == 'general')
+                            IconButton(
+                              icon: const Icon(Icons.center_focus_strong),
+                              tooltip: AppLocalizations.of(
+                                context,
+                              )!.consultationFocusModeTooltip,
+                              onPressed: _openConsultationFocusMode,
+                            ),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.more_vert),
                             tooltip: AppLocalizations.of(context)!.notes,
@@ -1221,7 +1278,7 @@ class _InPersonAppointmentScreenState
                                   return;
                                 }
                                 if (result == 'discard') {
-                                  _notesController.clear();
+                                  _clearGeneralNoteFields();
                                   setState(() {
                                     _beforeTreatmentImages.clear();
                                     _afterTreatmentImages.clear();
@@ -2172,15 +2229,34 @@ class _InPersonAppointmentScreenState
                                                 const SizedBox.shrink(),
                                           ),
                                 ],
+                                ConsultationSoapSection(
+                                  l10n: AppLocalizations.of(context)!,
+                                  subjective: _soapSubjective,
+                                  objective: _soapObjective,
+                                  assessment: _soapAssessment,
+                                  plan: _soapPlan,
+                                ),
+                                const SizedBox(height: 8),
                                 Expanded(
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
+                                      color: const Color(0xFFF9FAFB),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: Colors.grey.shade300,
+                                        color: Colors.black.withValues(
+                                          alpha: 0.07,
+                                        ),
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.03,
+                                          ),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
                                     child: TextField(
                                       controller: _notesController,
@@ -2324,231 +2400,16 @@ class _InPersonAppointmentScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            if (_hasPatientSignature)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context)!.patientSigned,
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else if (_signatureRequested)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  AppLocalizations.of(context)!.waitingForPatientSignature,
-                  style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
-                ),
-              ),
-            Row(
-              children: [
-                const Spacer(),
-                if (!_hasPatientSignature && !_signatureRequested)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: ShifaSecondaryButton(
-                      label: AppLocalizations.of(context)!.requestSignature,
-                      onPressed: _isRequestingSignature
-                          ? null
-                          : _requestSignature,
-                      icon: Icons.draw,
-                      isLoading: _isRequestingSignature,
-                    ),
-                  ),
-                ShifaPrimaryButton(
-                  label: AppLocalizations.of(context)!.endAppointment,
-                  onPressed: _isSaving ? null : _endAppointment,
-                  variant: ButtonVariant.destructive,
-                  isLoading: _isSaving,
-                ),
-              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// --- small helpers ---
-class _CardBox extends StatelessWidget {
-  const _CardBox({
-    required this.title,
-    required this.child,
-    this.titleTrailing,
-  });
-  final String title;
-  final Widget child;
-  final Widget? titleTrailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (titleTrailing != null)
-            Row(
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                titleTrailing!,
-              ],
-            )
-          else
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          const SizedBox(height: 12),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-}
-
-class _DocTile extends StatelessWidget {
-  const _DocTile(this.doc, this.brand, {this.patientId, this.onRequestAccess});
-  final PatientDocument doc;
-  final Color brand;
-  final String? patientId;
-  final Future<void> Function()? onRequestAccess;
-
-  @override
-  Widget build(BuildContext context) {
-    final date = doc.date;
-    final dateStr =
-        '${date.day.toString().padLeft(2, '0')}.'
-        '${date.month.toString().padLeft(2, '0')}.'
-        '${date.year}';
-    final l10n = AppLocalizations.of(context)!;
-    final isLocked = !doc.canView;
-    final canOpen = doc.canView && doc.url != null && doc.url!.isNotEmpty;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (isLocked)
-                      Icon(
-                        Icons.lock_outline,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    if (isLocked) const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        doc.title,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(dateStr, style: TextStyle(color: Colors.grey.shade600)),
-                if (isLocked && doc.creatorLabel.isNotEmpty)
-                  Text(
-                    '${l10n.uploadedBy} ${doc.creatorLabel == 'Unknown' ? (l10n.translate('anotherUser') ?? 'Another user') : doc.creatorLabel}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  ),
-              ],
-            ),
-          ),
-          if (isLocked && patientId != null && onRequestAccess != null)
-            TextButton.icon(
-              onPressed: () async {
-                try {
-                  await onRequestAccess?.call();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.requestAccessSent)),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${l10n.error}: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              icon: const Icon(Icons.lock_open, size: 18),
-              label: Text(l10n.requestAccess),
-            ),
-          IconButton.filledTonal(
-            onPressed: canOpen
-                ? () async {
-                    final url = doc.url!;
-                    try {
-                      if (await canLaunchUrlString(url)) {
-                        await launchUrlString(
-                          url,
-                          mode: LaunchMode.platformDefault,
-                        );
-                      } else {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.cannotOpenDocumentUrl),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${l10n.errorOpeningDocument}: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                : null,
-            icon: const Icon(Icons.open_in_browser),
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(brand.withOpacity(0.15)),
-              foregroundColor: WidgetStatePropertyAll(brand),
-            ),
+          ConsultationStickyFooter(
+            hasPatientSignature: _hasPatientSignature,
+            signatureRequested: _signatureRequested,
+            showRequestSignatureButton:
+                !_hasPatientSignature && !_signatureRequested,
+            isRequestingSignature: _isRequestingSignature,
+            onRequestSignature: _requestSignature,
+            isEndingAppointment: _isSaving,
+            onEndAppointment: _endAppointment,
           ),
         ],
       ),

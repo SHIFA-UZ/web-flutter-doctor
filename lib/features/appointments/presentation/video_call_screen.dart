@@ -17,15 +17,12 @@ import 'package:shifa_doc_app_v1/features/appointments/presentation/daily_video_
     if (dart.library.html) 'package:shifa_doc_app_v1/features/appointments/presentation/daily_video_embed_web.dart'
     as daily_embed;
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
-import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/services/daily_video_service.dart';
-import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_data.dart';
@@ -39,6 +36,10 @@ import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_documentation_widgets.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_document_upload_strip.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
+import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 
 // Provider to fetch patientId from appointment
 final _patientIdProvider = FutureProvider.family<String?, String>((
@@ -84,6 +85,10 @@ class VideoCallScreen extends ConsumerStatefulWidget {
 
 class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _soapSubjective = TextEditingController();
+  final TextEditingController _soapObjective = TextEditingController();
+  final TextEditingController _soapAssessment = TextEditingController();
+  final TextEditingController _soapPlan = TextEditingController();
   final List<XFile> _beforeTreatmentImages = [];
   final List<XFile> _afterTreatmentImages = [];
   bool _isSaving = false;
@@ -145,10 +150,82 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
   }
 
+  void _clearGeneralNoteFields() {
+    _notesController.clear();
+    _soapSubjective.clear();
+    _soapObjective.clear();
+    _soapAssessment.clear();
+    _soapPlan.clear();
+  }
+
+  Future<void> _openConsultationFocusMode() async {
+    if (_documentationType != 'general') return;
+    final l10n = AppLocalizations.of(context)!;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (ctx) => Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.consultationFocusModeTitle),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ConsultationSoapSection(
+                    l10n: l10n,
+                    subjective: _soapSubjective,
+                    objective: _soapObjective,
+                    assessment: _soapAssessment,
+                    plan: _soapPlan,
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9FAFB),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.07),
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _notesController,
+                        maxLines: null,
+                        expands: true,
+                        textAlignVertical: TextAlignVertical.top,
+                        style: const TextStyle(fontSize: 17, height: 1.45),
+                        decoration: InputDecoration(
+                          hintText: l10n.enterNotes,
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _notesController.addListener(_markUnsaved);
+    _soapSubjective.addListener(_markUnsaved);
+    _soapObjective.addListener(_markUnsaved);
+    _soapAssessment.addListener(_markUnsaved);
+    _soapPlan.addListener(_markUnsaved);
     // Check for chronic disease warning after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkChronicDiseaseWarning();
@@ -615,7 +692,15 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     _endVideoCall();
     _eventSubscription?.cancel();
     _notesController.removeListener(_markUnsaved);
+    _soapSubjective.removeListener(_markUnsaved);
+    _soapObjective.removeListener(_markUnsaved);
+    _soapAssessment.removeListener(_markUnsaved);
+    _soapPlan.removeListener(_markUnsaved);
     _notesController.dispose();
+    _soapSubjective.dispose();
+    _soapObjective.dispose();
+    _soapAssessment.dispose();
+    _soapPlan.dispose();
     super.dispose();
   }
 
@@ -761,8 +846,33 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           '${now.hour.toString().padLeft(2, '0')}:'
           '${now.minute.toString().padLeft(2, '0')}';
 
-      // Check if there's anything to save
-      final hasNotes = _notesController.text.trim().isNotEmpty;
+      List<ConsultationNoteDto> consultationNotes = [];
+      try {
+        consultationNotes = await ref.read(
+          consultationNotesForAppointmentProvider(widget.appointment.id).future,
+        );
+      } catch (_) {}
+
+      final l10nForPdf = AppLocalizations.of(context)!;
+      final consultationNotesBlock = consultationNotes.isEmpty
+          ? ''
+          : consultationNotes
+                .map((n) => '${l10nForPdf.fromShifaAi}:\n${n.displayText}')
+                .join('\n\n');
+      final structuredAndFree = composeConsultationNotesPdf(
+        l10n: l10nForPdf,
+        soapSubjective: _soapSubjective,
+        soapObjective: _soapObjective,
+        soapAssessment: _soapAssessment,
+        soapPlan: _soapPlan,
+        freeNotes: _notesController,
+      );
+      final combinedNotes = [
+        if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
+        if (structuredAndFree.isNotEmpty) structuredAndFree,
+      ].join('\n\n').trim();
+
+      final hasNotes = combinedNotes.isNotEmpty;
       final hasBeforeImages = _beforeTreatmentImages.isNotEmpty;
       final hasAfterImages = _afterTreatmentImages.isNotEmpty;
 
@@ -884,7 +994,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           dateStr: dateStr,
           timeStr: timeStr,
           appointmentDate: now,
-          notes: hasNotes ? _notesController.text.trim() : null,
+          notes: hasNotes ? combinedNotes : null,
           diagnosis: dxFreeText,
           diagnosisCode: dxCode,
           diagnosisDisplay: dxDisplay,
@@ -988,6 +1098,34 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     }
   }
 
+  Widget _documentsFinalizeHintRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            l10n.documentsFinalizeHint,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final brand = AppColors.primaryTeal;
@@ -1007,28 +1145,38 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         ? ref.watch(patientDocumentsProvider(patientId))
         : null;
 
+    final consultationUploadEnabled =
+        patientId != null &&
+        patientId.isNotEmpty &&
+        (patientIdAsync == null ||
+            (!patientIdAsync.isLoading && !patientIdAsync.hasError));
+
+    final patientProfileAsync =
+        patientId != null && patientId.isNotEmpty
+            ? ref.watch(patientByIdProvider(patientId))
+            : null;
+    final resolvedPatient = patientProfileAsync?.asData?.value;
+    final patientProfileLoading =
+        patientProfileAsync != null &&
+        patientProfileAsync.isLoading &&
+        !patientProfileAsync.hasValue;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          widget.appointment.patientName,
-          style: const TextStyle(color: Colors.black),
-        ),
-        centerTitle: false,
-      ),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Expanded(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppointmentConsultationHeader(
+                appointment: widget.appointment,
+                resolvedPatient: resolvedPatient,
+                patientLoading: patientProfileLoading,
+                onBack: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                   child: Row(
                     children: [
                       // Left: video canvas + controls
@@ -1039,6 +1187,16 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.black.withValues(alpha: 0.06),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1164,69 +1322,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                   ),
                                 ),
                               ),
-                              // Request Signature (MVP)
-                              if (_hasPatientSignature)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.patientSigned,
-                                          style: TextStyle(
-                                            color: Colors.green.shade700,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              else if (_signatureRequested)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.waitingForPatientSignature,
-                                    style: TextStyle(
-                                      color: Colors.orange.shade800,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                )
-                              else
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: ShifaSecondaryButton(
-                                    label: AppLocalizations.of(
-                                      context,
-                                    )!.requestSignature,
-                                    onPressed: _isRequestingSignature
-                                        ? null
-                                        : _requestSignature,
-                                    icon: Icons.draw,
-                                    width: ButtonWidth.fill,
-                                    isLoading: _isRequestingSignature,
-                                  ),
-                                ),
-                              ShifaPrimaryButton(
-                                label: AppLocalizations.of(
-                                  context,
-                                )!.endAppointment,
-                                onPressed: _isSaving ? null : _endAppointment,
-                                variant: ButtonVariant.destructive,
-                                width: ButtonWidth.fill,
-                                isLoading: _isSaving,
-                              ),
                             ],
                           ),
                         ),
@@ -1241,7 +1336,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                           children: [
                             // Documents
                             Expanded(
-                              child: _CardBox(
+                              child: DocumentationSectionCard(
                                 title: AppLocalizations.of(context)!.documents,
                                 child:
                                     patientIdAsync != null &&
@@ -1266,59 +1361,46 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                       )
                                     : documentsAsync.when(
                                         data: (docs) => Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
                                           children: [
                                             Expanded(
-                                              child: docs.isEmpty
-                                                  ? Center(
-                                                      child: Text(
-                                                        AppLocalizations.of(
-                                                          context,
-                                                        )!.noDocuments,
-                                                        style: TextStyle(
-                                                          color: Colors.grey,
-                                                        ),
-                                                      ),
-                                                    )
-                                                  : ListView.separated(
-                                                      itemCount: docs.length,
-                                                      separatorBuilder:
-                                                          (_, __) =>
-                                                              const SizedBox(
-                                                                height: 8,
-                                                              ),
-                                                      itemBuilder: (_, i) {
-                                                        final doc = docs[i];
-                                                        return _DocTile(
-                                                          doc,
-                                                          brand,
-                                                          patientId: patientId,
-                                                          onRequestAccess:
-                                                              (!doc.canView &&
-                                                                  patientId !=
-                                                                      null)
-                                                              ? () async {
-                                                                  final client =
-                                                                      ref.read(
-                                                                        apiClientProvider,
-                                                                      );
-                                                                  await requestDocumentAccessWithClient(
-                                                                    client:
-                                                                        client,
-                                                                    patientId:
-                                                                        patientId!,
-                                                                    documentId:
-                                                                        doc.id,
-                                                                  );
-                                                                  ref.refresh(
-                                                                    patientDocumentsProvider(
-                                                                      patientId!,
-                                                                    ),
-                                                                  );
-                                                                }
-                                                              : null,
-                                                        );
-                                                      },
-                                                    ),
+                                              child:
+                                                  GroupedPatientDocumentsList(
+                                                    documents: docs,
+                                                    brand: brand,
+                                                    patientId: patientId,
+                                                    onRequestAccess:
+                                                        (doc) async {
+                                                          final pid = patientId;
+                                                          if (pid == null ||
+                                                              pid.isEmpty) {
+                                                            return;
+                                                          }
+                                                          final client = ref.read(
+                                                            apiClientProvider,
+                                                          );
+                                                          await requestDocumentAccessWithClient(
+                                                            client: client,
+                                                            patientId: pid,
+                                                            documentId: doc.id,
+                                                          );
+                                                          ref.refresh(
+                                                            patientDocumentsProvider(
+                                                              pid,
+                                                            ),
+                                                          );
+                                                        },
+                                                  ),
+                                            ),
+                                            ConsultationDocumentUploadStrip(
+                                              patientId: patientId,
+                                              brand: brand,
+                                              enabled: consultationUploadEnabled,
+                                            ),
+                                            const SizedBox(height: 10),
+                                            _documentsFinalizeHintRow(
+                                              context,
                                             ),
                                           ],
                                         ),
@@ -1338,7 +1420,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                             Expanded(
                               child: _notesPanelFullScreen
                                   ? const SizedBox.shrink()
-                                  : _CardBox(
+                                  : DocumentationSectionCard(
                                       title: _documentationType == 'general'
                                           ? AppLocalizations.of(context)!.notes
                                           : AppLocalizations.of(
@@ -1347,6 +1429,17 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                       titleTrailing: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
+                                          if (_documentationType == 'general')
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.center_focus_strong,
+                                              ),
+                                              tooltip: AppLocalizations.of(
+                                                context,
+                                              )!.consultationFocusModeTooltip,
+                                              onPressed:
+                                                  _openConsultationFocusMode,
+                                            ),
                                           IconButton(
                                             icon: const Icon(Icons.fullscreen),
                                             onPressed: () => setState(
@@ -1528,7 +1621,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                     }
 
                                                     if (result == 'discard') {
-                                                      _notesController.clear();
+                                                      _clearGeneralNoteFields();
                                                       Future.microtask(() {
                                                         if (!mounted) return;
                                                         setState(() {
@@ -1643,8 +1736,18 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              ConsultationStickyFooter(
+                hasPatientSignature: _hasPatientSignature,
+                signatureRequested: _signatureRequested,
+                showRequestSignatureButton:
+                    !_hasPatientSignature && !_signatureRequested,
+                isRequestingSignature: _isRequestingSignature,
+                onRequestSignature: _requestSignature,
+                isEndingAppointment: _isSaving,
+                onEndAppointment: _endAppointment,
+              ),
+            ],
           ),
           if (_notesPanelFullScreen)
             Positioned.fill(
@@ -1689,6 +1792,12 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                     ),
                   ),
                   const Spacer(),
+                  if (_documentationType == 'general')
+                    IconButton(
+                      icon: const Icon(Icons.center_focus_strong),
+                      tooltip: l10n.consultationFocusModeTooltip,
+                      onPressed: _openConsultationFocusMode,
+                    ),
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     tooltip: AppLocalizations.of(context)!.notes,
@@ -1800,7 +1909,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                             }
 
                             if (result == 'discard') {
-                              _notesController.clear();
+                              _clearGeneralNoteFields();
                               setState(() {
                                 _beforeTreatmentImages.clear();
                                 _afterTreatmentImages.clear();
@@ -2511,13 +2620,30 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                       error: (_, __) => const SizedBox.shrink(),
                     ),
           ],
+          ConsultationSoapSection(
+            l10n: AppLocalizations.of(context)!,
+            subjective: _soapSubjective,
+            objective: _soapObjective,
+            assessment: _soapAssessment,
+            plan: _soapPlan,
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.07),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: TextField(
                 controller: _notesController,
@@ -2691,176 +2817,6 @@ class _RoundBtn extends StatelessWidget {
         radius: 22,
         backgroundColor: Colors.white,
         child: Icon(icon, color: color ?? Colors.black87),
-      ),
-    );
-  }
-}
-
-class _CardBox extends StatelessWidget {
-  const _CardBox({
-    required this.title,
-    required this.child,
-    this.titleTrailing,
-  });
-  final String title;
-  final Widget child;
-  final Widget? titleTrailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (titleTrailing != null) titleTrailing!,
-            ],
-          ),
-          const SizedBox(height: 12),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-}
-
-class _DocTile extends StatelessWidget {
-  const _DocTile(this.doc, this.brand, {this.patientId, this.onRequestAccess});
-  final PatientDocument doc;
-  final Color brand;
-  final String? patientId;
-  final Future<void> Function()? onRequestAccess;
-
-  @override
-  Widget build(BuildContext context) {
-    final date = doc.date;
-    final dateStr =
-        '${date.day.toString().padLeft(2, '0')}.'
-        '${date.month.toString().padLeft(2, '0')}.'
-        '${date.year}';
-    final l10n = AppLocalizations.of(context)!;
-    final isLocked = !doc.canView;
-    final canOpen = doc.canView && doc.url != null && doc.url!.isNotEmpty;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (isLocked)
-                      Icon(
-                        Icons.lock_outline,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    if (isLocked) const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        doc.title,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(dateStr, style: TextStyle(color: Colors.grey.shade600)),
-                if (isLocked && doc.creatorLabel.isNotEmpty)
-                  Text(
-                    '${l10n.uploadedBy} ${doc.creatorLabel == 'Unknown' ? (l10n.translate('anotherUser') ?? 'Another user') : doc.creatorLabel}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  ),
-              ],
-            ),
-          ),
-          if (isLocked && patientId != null && onRequestAccess != null)
-            TextButton.icon(
-              onPressed: () async {
-                try {
-                  await onRequestAccess?.call();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.requestAccessSent)),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${l10n.error}: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              icon: const Icon(Icons.lock_open, size: 18),
-              label: Text(l10n.requestAccess),
-            ),
-          IconButton.filledTonal(
-            onPressed: canOpen
-                ? () async {
-                    final url = doc.url!;
-                    try {
-                      if (await canLaunchUrlString(url)) {
-                        await launchUrlString(
-                          url,
-                          mode: LaunchMode.platformDefault,
-                        );
-                      } else {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.cannotOpenDocumentUrl),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${l10n.errorOpeningDocument}: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                : null,
-            icon: const Icon(Icons.open_in_browser),
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(brand.withOpacity(0.15)),
-              foregroundColor: WidgetStatePropertyAll(brand),
-            ),
-          ),
-        ],
       ),
     );
   }
