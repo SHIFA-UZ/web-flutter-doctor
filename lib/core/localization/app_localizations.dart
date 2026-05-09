@@ -950,11 +950,12 @@ class AppLocalizations {
       'docSectionOther': 'Other',
       'docSectionUncategorized': 'Uncategorized',
       'consultationDocumentsDropHint':
-          'Drop files here or tap to upload (shared as medical result)',
+          'Drop files here or tap to upload (saved as a medical document)',
       'consultationDocumentsUploading': 'Uploading…',
       'consultationUploadNoBytes':
           'Could not read file data. Try a smaller file or another format.',
       'consultationUploadFailed': 'Upload failed',
+      // Success snack uses [consultationUploadSuccess] (proper plurals); kept for reference tools.
       'consultationUploadSuccess': 'Uploaded {count} file(s).',
       'soapNotesSectionTitle': 'Structured notes (SOAP)',
       'soapNotesSectionSubtitle':
@@ -1996,15 +1997,16 @@ class AppLocalizations {
       'docSectionOther': 'Boshqa',
       'docSectionUncategorized': 'Toifalanmagan',
       'consultationDocumentsDropHint':
-          'Fayllarni shu yerga torting yoki yuklash uchun bosing (tibbiy natija sifatida)',
+          'Fayllarni shu yerga torting yoki yuklash uchun bosing (bemorning tibbiy hujjati sifatida saqlanadi)',
       'consultationDocumentsUploading': 'Yuklanmoqda…',
       'consultationUploadNoBytes':
           'Fayl o\'qilmadi. Kichikroq fayl yoki boshqa formatdan foydalaning.',
       'consultationUploadFailed': 'Yuklash amalga oshmadi',
-      'consultationUploadSuccess': '{count} ta fayl yuklandi.',
+      // Success snack uses [consultationUploadSuccess] method (full wording).
+      'consultationUploadSuccess': '{count} ta fayl muvaffaqiyatli yuklandi.',
       'soapNotesSectionTitle': 'Tuzilgan izohlar (SOAP)',
       'soapNotesSectionSubtitle':
-          'Ixtiyoriy bo\'limlar — saqlangan konsultatsiya PDF ga kiritiladi.',
+          'Ixtiyoriy maydonlar — yakuniy konsultatsiya PDF fayliga qo\'shiladi.',
       'soapSubjective': 'Subyektiv',
       'soapObjective': 'Obyektiv',
       'soapAssessment': 'Baholash',
@@ -2945,21 +2947,22 @@ class AppLocalizations {
       'docSectionOther': 'Прочее',
       'docSectionUncategorized': 'Без категории',
       'consultationDocumentsDropHint':
-          'Перетащите файлы сюда или нажмите для загрузки (как медицинский результат)',
+          'Перетащите файлы сюда или нажмите для загрузки (сохраняются как медицинский документ)',
       'consultationDocumentsUploading': 'Загрузка…',
       'consultationUploadNoBytes':
           'Не удалось прочитать файл. Попробуйте меньший файл или другой формат.',
       'consultationUploadFailed': 'Ошибка загрузки',
+      // Success snack uses [consultationUploadSuccess] (Russian plurals).
       'consultationUploadSuccess': 'Загружено файлов: {count}.',
       'soapNotesSectionTitle': 'Структурированные записи (SOAP)',
       'soapNotesSectionSubtitle':
-          'Необязательные блоки — попадают в сохранённый PDF приёма.',
+          'Необязательные поля — включаются в сохранённый PDF приёма.',
       'soapSubjective': 'Субъективно',
       'soapObjective': 'Объективно',
       'soapAssessment': 'Оценка',
       'soapPlan': 'План',
       'consultationFocusModeTooltip': 'Режим крупных записей',
-      'consultationFocusModeTitle': 'Записи консультации',
+      'consultationFocusModeTitle': 'Заметки приёма',
       'typeANote': 'Введите примечание',
       'appointmentDocumentation': 'Документация приема',
       'docModeGeneral': 'Общий документ приема',
@@ -3157,7 +3160,7 @@ class AppLocalizations {
       'scheduleIsClear': 'Ваше расписание свободно',
       'allPatients': 'Все пациенты',
       'askShifaAi': 'Спросить Shifa AI',
-      'fromShifaAi': 'От Shifa AI',
+      'fromShifaAi': 'Из Shifa AI',
       'previous': 'Назад',
       'next': 'Далее',
       'addToNotes': 'Добавить в заметки',
@@ -3801,9 +3804,33 @@ class AppLocalizations {
       translate('consultationUploadNoBytes');
   String get consultationUploadFailed => translate('consultationUploadFailed');
 
-  String consultationUploadSuccess(int count) => translate(
-        'consultationUploadSuccess',
-      ).replaceAll('{count}', count.toString());
+  /// Upload confirmation after consultation document upload (idiomatic per locale).
+  String consultationUploadSuccess(int count) {
+    switch (locale.languageCode) {
+      case 'ru':
+        return _ruConsultationUploadSuccess(count);
+      case 'uz':
+        return '$count ta fayl muvaffaqiyatli yuklandi.';
+      case 'en':
+        final noun = count == 1 ? 'file' : 'files';
+        return 'Uploaded $count $noun.';
+      default:
+        final noun = count == 1 ? 'file' : 'files';
+        return 'Uploaded $count $noun.';
+    }
+  }
+
+  String _ruConsultationUploadSuccess(int n) {
+    final mod10 = n % 10;
+    final mod100 = n % 100;
+    if (mod10 == 1 && mod100 != 11) {
+      return 'Загружен $n файл.';
+    }
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return 'Загружено $n файла.';
+    }
+    return 'Загружено $n файлов.';
+  }
 
   String get soapNotesSectionTitle => translate('soapNotesSectionTitle');
   String get soapNotesSectionSubtitle => translate('soapNotesSectionSubtitle');
