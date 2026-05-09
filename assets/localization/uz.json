@@ -744,5 +744,9 @@
   "addExpansion": "Kengaytirish qo'shish",
   "noDateSpecificRules": "Sana bo'yicha kengaytirishlar hali yo'q.",
   "expansionAdded": "Jadval kengaytmasi qo'shildi.",
-  "expandOnlyAfterExisting": "Boshlanish vaqti mavjud jadval tugash vaqtiga to'g'ri kelishi kerak. Faqat shundan keyin vaqt qo'shish mumkin."
+  "expandOnlyAfterExisting": "Boshlanish vaqti mavjud jadval tugash vaqtiga to'g'ri kelishi kerak. Faqat shundan keyin vaqt qo'shish mumkin.",
+  "appointmentPlaceLockedHint": "Band qilingan joy ma'lumot xarakterida va bu yerda o'zgartirib bo'lmaydi.",
+  "encouragePayment": "Bemorga to'lovni eslatish",
+  "paymentReminderSent": "Eslatma bemorga yuborildi",
+  "paymentReminderFailed": "Eslatma yuborilmadi: {{error}}"
 }

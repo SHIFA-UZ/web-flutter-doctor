@@ -489,6 +489,19 @@ class CalendarController
 
     throw Exception('Change slot failed: ${res.statusCode} ${res.body}');
   }
+
+  /// Ask backend to notify the patient to complete payment (video + pending only).
+  Future<void> notifyPaymentReminder({required int appointmentId}) async {
+    final client = ref.read(apiClientProvider);
+    final res = await client.post(
+      '/api/appointments/$appointmentId/notify-payment-reminder',
+      <String, dynamic>{},
+    );
+    if (res.statusCode == 200 || res.statusCode == 204) {
+      return;
+    }
+    throw Exception('Notify payment reminder failed: ${res.statusCode} ${res.body}');
+  }
 }
 
 /// Provider used by the screen.

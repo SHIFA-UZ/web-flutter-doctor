@@ -44,83 +44,106 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
       text: prices.isNotEmpty ? (((prices.first['amountMinor'] as num?)?.toDouble() ?? 0) / 100).toStringAsFixed(2) : '',
     );
     final currencyCtrl = TextEditingController(text: prices.isNotEmpty ? prices.first['currency'].toString() : 'EUR');
+    var isFreeConsultation = service?['isFreeConsultation'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) {
         final dl10n = AppLocalizations.of(ctx)!;
-        return AlertDialog(
-          title: Text(service == null
-              ? (dl10n.translate('newService') ?? 'New Service')
-              : (dl10n.translate('editService') ?? 'Edit Service')),
-          content: SizedBox(
-            width: 420,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: InputDecoration(
-                      labelText: dl10n.translate('serviceTitleLabel') ?? 'Title',
-                    ),
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return AlertDialog(
+              title: Text(service == null
+                  ? (dl10n.translate('newService') ?? 'New Service')
+                  : (dl10n.translate('editService') ?? 'Edit Service')),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: titleCtrl,
+                        decoration: InputDecoration(
+                          labelText: dl10n.translate('serviceTitleLabel') ?? 'Title',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: descCtrl,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          labelText: dl10n.translate('serviceDescriptionLabel') ??
+                              'Description',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(dl10n.translate('serviceFreeConsultation') ?? 'Free consultation (video)'),
+                        subtitle: Text(
+                          dl10n.translate('serviceFreeConsultationHint') ??
+                              '',
+                          style: Theme.of(ctx).textTheme.bodySmall,
+                        ),
+                        value: isFreeConsultation,
+                        onChanged: (v) => setLocal(() => isFreeConsultation = v),
+                      ),
+                      if (!isFreeConsultation) ...[
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: amountCtrl,
+                          decoration: InputDecoration(
+                            labelText: dl10n.translate('servicePriceLabel') ??
+                                'Price amount (e.g. 25.00)',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: currencyCtrl,
+                          decoration: InputDecoration(
+                            labelText: dl10n.translate('serviceCurrencyLabel') ??
+                                'Currency (EUR/UZS/USD)',
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: descCtrl,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: dl10n.translate('serviceDescriptionLabel') ??
-                          'Description',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: amountCtrl,
-                    decoration: InputDecoration(
-                      labelText: dl10n.translate('servicePriceLabel') ??
-                          'Price amount (e.g. 25.00)',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: currencyCtrl,
-                    decoration: InputDecoration(
-                      labelText: dl10n.translate('serviceCurrencyLabel') ??
-                          'Currency (EUR/UZS/USD)',
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(dl10n.translate('cancel') ?? 'Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(dl10n.translate('save') ?? 'Save'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(dl10n.translate('cancel') ?? 'Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(dl10n.translate('save') ?? 'Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
     if (confirmed != true) return;
 
     final amountMinor = ((double.tryParse(amountCtrl.text.trim()) ?? 0) * 100).round();
-    final body = {
+    final body = <String, dynamic>{
       'title': titleCtrl.text.trim(),
       'description': descCtrl.text.trim(),
-      'isActive': true,
-      'prices': [
-        {
-          'amountMinor': amountMinor,
-          'currency': currencyCtrl.text.trim().toUpperCase(),
-        }
-      ]
+      'isActive': service == null ? true : (service['isActive'] != false),
+      'isFreeConsultation': isFreeConsultation,
+      'prices': isFreeConsultation
+          ? <Map<String, dynamic>>[]
+          : [
+              {
+                'amountMinor': amountMinor,
+                'currency': currencyCtrl.text.trim().toUpperCase(),
+              }
+            ],
     };
     final api = ref.read(apiClientProvider);
     if (service == null) {
@@ -160,11 +183,15 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                 const SizedBox(height: 16),
                 ..._services.map((s) {
                   final prices = (s['prices'] as List? ?? const []);
+                  final isFree = s['isFreeConsultation'] == true;
+                  final priceLine = isFree
+                      ? (l10n.translate('serviceFreeConsultation') ?? 'Free consultation (video)')
+                      : prices.map((p) => '${((p['amountMinor'] as num?)?.toDouble() ?? 0) / 100} ${p['currency']}').join(', ');
                   return Card(
                     child: ListTile(
                       title: Text(s['title']?.toString() ?? ''),
                       subtitle: Text(
-                        '${s['description'] ?? ''}\n${prices.map((p) => '${((p['amountMinor'] as num?)?.toDouble() ?? 0) / 100} ${p['currency']}').join(', ')}',
+                        '${s['description'] ?? ''}\n$priceLine',
                       ),
                       isThreeLine: true,
                       trailing: Wrap(

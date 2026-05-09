@@ -90,6 +90,11 @@ class AppLocalizations {
       'paymentPending': 'Pending',
       'paymentFailed': 'Failed',
       'paymentNotRequired': 'Not required',
+      'appointmentPlaceLockedHint':
+          'Booked appointment location is informational and cannot be changed here.',
+      'encouragePayment': 'Remind patient to pay',
+      'paymentReminderSent': 'Reminder sent to the patient',
+      'paymentReminderFailed': 'Could not send reminder: {{error}}',
 
       // Navigation
       'chat': 'Chat',
@@ -206,6 +211,9 @@ class AppLocalizations {
       'serviceDescriptionLabel': 'Description',
       'servicePriceLabel': 'Price amount (e.g. 25.00)',
       'serviceCurrencyLabel': 'Currency (EUR/UZS/USD)',
+      'serviceFreeConsultation': 'Free consultation (video)',
+      'serviceFreeConsultationHint':
+          'Patients who choose this service for a video visit are confirmed immediately with no payment.',
       'profileInformation': 'Profile Information',
       'contactDetails': 'Contact Details',
       'paymentAndInvoicing': 'Payment and Invoicing',
@@ -1196,6 +1204,11 @@ class AppLocalizations {
       'paymentPending': 'Kutilmoqda',
       'paymentFailed': 'Xato',
       'paymentNotRequired': 'Talab qilinmaydi',
+      'appointmentPlaceLockedHint':
+          'Band qilingan joy ma\'lumot xarakterida va bu yerda o\'zgartirib bo\'lmaydi.',
+      'encouragePayment': 'Bemorga to\'lovni eslatish',
+      'paymentReminderSent': 'Eslatma bemorga yuborildi',
+      'paymentReminderFailed': 'Eslatma yuborilmadi: {{error}}',
 
       // Navigation
       'chat': 'Suhbat',
@@ -1314,6 +1327,9 @@ class AppLocalizations {
       'serviceDescriptionLabel': 'Tavsif',
       'servicePriceLabel': 'Narx miqdori (masalan, 25.00)',
       'serviceCurrencyLabel': 'Valyuta (EUR/UZS/USD)',
+      'serviceFreeConsultation': 'Bepul maslahat (video)',
+      'serviceFreeConsultationHint':
+          'Bemorlar ushbu xizmatni video qabul uchun tanlasalar, to\'lovsiz darhol tasdiqlanadi.',
       'profileInformation': 'Profil ma\'lumotlari',
       'contactDetails': 'Aloqa ma\'lumotlari',
       'paymentAndInvoicing': 'To\'lov va hisob-faktura',
@@ -2291,6 +2307,11 @@ class AppLocalizations {
       'paymentPending': 'Ожидает оплату',
       'paymentFailed': 'Ошибка',
       'paymentNotRequired': 'Не требуется',
+      'appointmentPlaceLockedHint':
+          'Место записи отображается только для информации и недоступно для изменения здесь.',
+      'encouragePayment': 'Напомнить об оплате',
+      'paymentReminderSent': 'Напоминание отправлено пациенту',
+      'paymentReminderFailed': 'Не удалось отправить напоминание: {{error}}',
 
       // Navigation
       'chat': 'Чат',
@@ -2412,6 +2433,9 @@ class AppLocalizations {
       'serviceDescriptionLabel': 'Описание',
       'servicePriceLabel': 'Стоимость (например, 25.00)',
       'serviceCurrencyLabel': 'Валюта (EUR/UZS/USD)',
+      'serviceFreeConsultation': 'Бесплатная консультация (видео)',
+      'serviceFreeConsultationHint':
+          'При выборе этой услуги для видеоприёма запись сразу подтверждается без оплаты.',
       'profileInformation': 'Личная информация',
       'contactDetails': 'Контактные данные',
       'paymentAndInvoicing': 'Оплата и выставление счетов',

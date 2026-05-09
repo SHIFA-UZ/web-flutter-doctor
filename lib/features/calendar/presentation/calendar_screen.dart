@@ -1081,6 +1081,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   bool _saving = false;
   bool _hasUnsavedChanges = false;
   bool _showAiSummary = true;
+  bool _sendingPaymentReminder = false;
   String _initialReason = '';
   String _initialPlace = '';
 
@@ -1093,10 +1094,23 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   String get _statusUpper => (widget.entry.status ?? '').trim().toUpperCase();
   bool get _isCompletedStatus => _statusUpper == 'COMPLETED';
   bool get _isCancelledStatus => _statusUpper == 'CANCELLED';
+  bool get _isInProgressStatus => _statusUpper == 'IN_PROGRESS';
   bool get _isVideoAppointment =>
       _isAppointment &&
       (widget.entry.isVideo ||
           widget.entry.location.toLowerCase().contains('video'));
+
+  bool get _paymentPending =>
+      (widget.entry.paymentStatus ?? '').trim().toUpperCase() == 'PENDING';
+
+  /// Video consult with unpaid balance — show "remind to pay" for the doctor.
+  bool get _shouldShowEncouragePayment =>
+      _isVideoAppointment &&
+      !_isPastAppointment &&
+      !_isCancelledStatus &&
+      !_isCompletedStatus &&
+      _paymentPending &&
+      widget.entry.appointmentId != null;
 
   Future<void> _openPatientProfileFromDetails() async {
     final patientId = widget.entry.patientId?.toString();
@@ -1112,8 +1126,6 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
       );
     });
   }
-
-  bool get _isInProgressStatus => _statusUpper == 'IN_PROGRESS';
 
   bool get _canStartVideoByTimeWindow {
     if (!_isVideoAppointment) return true;
@@ -1958,6 +1970,35 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     return '${dt.year}-${_two(dt.month)}-${_two(dt.day)} ${_two(dt.hour)}:${_two(dt.minute)}';
   }
 
+  Future<void> _encouragePayment() async {
+    final id = widget.entry.appointmentId;
+    if (id == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _sendingPaymentReminder = true);
+    try {
+      await ref
+          .read(calendarProvider.notifier)
+          .notifyPaymentReminder(appointmentId: id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.translate('paymentReminderSent'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n
+                .translate('paymentReminderFailed')
+                .replaceAll('{{error}}', '$e'),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _sendingPaymentReminder = false);
+    }
+  }
+
   Future<void> _copyDocText(String text, AppLocalizations l10n) async {
     if (text.trim().isEmpty) return;
     await Clipboard.setData(ClipboardData(text: text));
@@ -2619,6 +2660,28 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
                 const SizedBox(height: 10),
                 // Place (appointments only – dropdown: doctor's clinic address or VIDEO CONSULTATION)
                 _AppointmentPlaceDropdown(entry: widget.entry),
+                if (_shouldShowEncouragePayment) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _saving || _sendingPaymentReminder
+                          ? null
+                          : _encouragePayment,
+                      icon: _sendingPaymentReminder
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            )
+                          : const Icon(Icons.notifications_active_outlined),
+                      label: Text(l10n.translate('encouragePayment')),
+                    ),
+                  ),
+                ],
               ],
             ],
           ),

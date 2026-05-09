@@ -750,5 +750,9 @@
   "noDateSpecificRules": "No date-specific expansions yet.",
   "expansionAdded": "Schedule expansion added.",
   "expandOnlyAfterExisting": "Start time must match when your existing schedule ends. You can only add slots after that.",
-  "failedToLoadPatients": "Failed to load patients. Please try again."
+  "failedToLoadPatients": "Failed to load patients. Please try again.",
+  "appointmentPlaceLockedHint": "Booked appointment location is informational and cannot be changed here.",
+  "encouragePayment": "Remind patient to pay",
+  "paymentReminderSent": "Reminder sent to the patient",
+  "paymentReminderFailed": "Could not send reminder: {{error}}"
 }

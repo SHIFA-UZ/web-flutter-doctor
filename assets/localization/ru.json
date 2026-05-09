@@ -670,5 +670,9 @@
   "dealingWithChronicDiseasePatient": "Вы имеете дело с пациентом с хроническим заболеванием:",
   "takeExtraCareForChronicDiseasePatient": "Пожалуйста, будьте осторожны и дважды проверьте все процедуры, лекарства и методы лечения, которые вы планируете для этого пациента.",
   "iUnderstand": "Я понимаю",
-  "city": "Город"
+  "city": "Город",
+  "appointmentPlaceLockedHint": "Место записи отображается только для информации и недоступно для изменения здесь.",
+  "encouragePayment": "Напомнить об оплате",
+  "paymentReminderSent": "Напоминание отправлено пациенту",
+  "paymentReminderFailed": "Не удалось отправить напоминание: {{error}}"
 }
