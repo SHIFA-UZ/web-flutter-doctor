@@ -96,10 +96,24 @@ class _AppointmentItem extends ConsumerWidget {
     final isNext = !isCompleted && timeUntilAppointment.inMinutes >= 0 &&
                    timeUntilAppointment.inMinutes <= 20;
 
-    // Video call: Start button only clickable from 5 minutes before appointment onwards
+    final appointmentEndDateTime = timeOfDayToDateTimeInZone(
+      appointment.end,
+      nowInDoctorZone,
+      doctorTimeZone,
+    );
+    final videoColdJoinCutoff =
+        appointmentEndDateTime.add(const Duration(hours: 1));
+    final isVideoPastColdJoinGrace = appointment.isVideo &&
+        !appointment.isInProgress &&
+        !nowInDoctorZone.isBefore(videoColdJoinCutoff);
+
+    // Video call: Start button only clickable from 5 minutes before appointment onwards,
+    // and not more than 1 hour after scheduled end unless already in progress (doctor reopened).
     final joinAllowedFrom = appointmentDateTime.subtract(const Duration(minutes: 5));
     final canStartVideo = !appointment.isVideo ||
-        (nowInDoctorZone.isAfter(joinAllowedFrom) || nowInDoctorZone.isAtSameMomentAs(joinAllowedFrom));
+        ((nowInDoctorZone.isAfter(joinAllowedFrom) ||
+                nowInDoctorZone.isAtSameMomentAs(joinAllowedFrom)) &&
+            !isVideoPastColdJoinGrace);
     final startButtonEnabled = !isCompleted && canStartVideo;
 
     return InkWell(
@@ -290,7 +304,10 @@ class _AppointmentItem extends ConsumerWidget {
                       )
                     : Tooltip(
                         message: appointment.isVideo && !canStartVideo
-                            ? (l10n.translate('videoCallAvailableFiveMinBefore') ?? 'You can start 5 minutes before the appointment.')
+                            ? (isVideoPastColdJoinGrace
+                                ? l10n.videoCallTooLateAfterOneHour
+                                : (l10n.translate('videoCallAvailableFiveMinBefore') ??
+                                    'You can start 5 minutes before the appointment.'))
                             : '',
                         child: ShifaActionButton(
                           label: l10n.start,

@@ -145,6 +145,8 @@ Color appointmentStatusColor(AppointmentStatus? status) {
       return const Color(0xFFE65100);
     case AppointmentStatus.confirmed:
       return const Color(0xFF00897B);
+    case AppointmentStatus.inProgress:
+      return const Color(0xFF1565C0);
     default:
       return Colors.grey.shade700;
   }
@@ -160,6 +162,8 @@ String? appointmentStatusLabel(AppLocalizations l10n, AppointmentStatus? status)
       return l10n.appointmentStatusCancelled;
     case AppointmentStatus.completed:
       return l10n.appointmentStatusCompleted;
+    case AppointmentStatus.inProgress:
+      return l10n.appointmentStatusInProgress;
     default:
       return null;
   }

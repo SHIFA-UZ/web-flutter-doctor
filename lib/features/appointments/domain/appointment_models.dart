@@ -5,7 +5,8 @@ enum AppointmentStatus {
   requested,
   confirmed,
   cancelled,
-  completed;
+  completed,
+  inProgress;
 
   static AppointmentStatus? fromString(String? status) {
     if (status == null) return null;
@@ -18,6 +19,8 @@ enum AppointmentStatus {
         return AppointmentStatus.cancelled;
       case 'COMPLETED':
         return AppointmentStatus.completed;
+      case 'IN_PROGRESS':
+        return AppointmentStatus.inProgress;
       default:
         return null;
     }
@@ -49,4 +52,5 @@ class Appointment {
 
   bool get isVideo => location.toLowerCase().contains('video');
   bool get isCompleted => status == AppointmentStatus.completed;
+  bool get isInProgress => status == AppointmentStatus.inProgress;
 }

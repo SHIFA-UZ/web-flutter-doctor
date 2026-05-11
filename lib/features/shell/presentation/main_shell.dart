@@ -93,6 +93,15 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     return trimmed;
   }
 
+  /// Sidebar shows practice location OR today's contextual slot (may be video).
+  bool _sidebarLocationChipIsVideo(BuildContext context) {
+    final label = _activeLocationLabel;
+    if (label == null || label.trim().isEmpty) return false;
+    if (label.toLowerCase().contains('video')) return true;
+    final l10n = AppLocalizations.of(context);
+    return l10n != null && label == l10n.videoCall;
+  }
+
   Future<void> _loadActiveLocationLabel() async {
     try {
       final profile = ref.read(profileAllProvider).valueOrNull?.profile;
@@ -396,8 +405,10 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.location_on_outlined,
+                            Icon(
+                              _sidebarLocationChipIsVideo(context)
+                                  ? Icons.videocam_outlined
+                                  : Icons.location_on_outlined,
                               color: Colors.white,
                               size: 14,
                             ),

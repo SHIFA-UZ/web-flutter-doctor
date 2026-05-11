@@ -133,6 +133,7 @@ class AppLocalizations {
       'enterFirstName': 'Enter first name',
       'enterLastName': 'Enter last name',
       'enterPhoneNumber': 'Enter phone number',
+      'optional': 'Optional',
       'pleaseVerifyInvitationKeyFirst':
           'Please verify your invitation key first.',
       'accountInformation': 'Account Information',
@@ -602,11 +603,22 @@ class AppLocalizations {
       'failedToStartVideoCall': 'Failed to start video call',
       'videoCallAvailableFiveMinBefore':
           'You can start 5 minutes before the appointment.',
+      'videoCallTooLateAfterOneHour':
+          'This video appointment ended more than an hour ago. Open it only if the consultation is already in progress.',
       'videoCallEnded': 'Video call ended',
       'callErrorOccurred': 'Call error occurred',
       'waitingForParticipants': 'Waiting for participants...',
       'joinVideoCall': 'Join Video Call',
       'videoCallReady': 'Video call ready',
+      'videoCallErrorTitle': 'Video call error',
+      'videoCallConnecting': 'Connecting to video call...',
+      'videoCallNotAvailableShort': 'Video call not available',
+      'videoCallJoinWindowClosedMessage':
+          'Video call has ended. The join window closes 15 minutes after the appointment end.',
+      'videoCallNotYetAvailableMessage':
+          'Video call is not yet available. You can join 5 minutes before the appointment start.',
+      'videoCallPaymentRequiredMessage':
+          'Payment is required before joining this video consultation.',
       'clickBelowToJoinCall': 'Click below to join the call',
       'waitingRoom': 'Waiting Room',
       'isWaiting': 'is waiting',
@@ -950,6 +962,7 @@ class AppLocalizations {
       'appointmentStatusConfirmed': 'Confirmed',
       'appointmentStatusCancelled': 'Cancelled',
       'appointmentStatusCompleted': 'Completed',
+      'appointmentStatusInProgress': 'In progress',
       'docSectionLaboratory': 'Laboratory',
       'docSectionImaging': 'Imaging',
       'docSectionClinical': 'Clinical & prescriptions',
@@ -1247,6 +1260,7 @@ class AppLocalizations {
       'enterFirstName': 'Ismni kiriting',
       'enterLastName': 'Familiyani kiriting',
       'enterPhoneNumber': 'Telefon raqamini kiriting',
+      'optional': 'Ixtiyoriy',
       'pleaseVerifyInvitationKeyFirst':
           'Iltimos, avval taklifnoma kalitini tasdiqlang.',
       'accountInformation': 'Hisob ma\'lumotlari',
@@ -1700,11 +1714,22 @@ class AppLocalizations {
       'failedToStartVideoCall': 'Video qo\'ng\'iroqni boshlashda xatolik',
       'videoCallAvailableFiveMinBefore':
           'Uchrashuvdan 5 daqiqa oldin boshlashingiz mumkin.',
+      'videoCallTooLateAfterOneHour':
+          'Ushbu video uchrashuv tugaganiga bir soatdan ortiq vaqt o\'tdi. Faqat konsultatsiya allaqachon boshlangan bo\'lsa oching.',
       'videoCallEnded': 'Video qo\'ng\'iroq tugadi',
       'callErrorOccurred': 'Qo\'ng\'iroqda xatolik yuz berdi',
       'waitingForParticipants': 'Ishtirokchilar kutilmoqda...',
       'joinVideoCall': 'Video qo\'ng\'iroqqa qo\'shilish',
       'videoCallReady': 'Video qo\'ng\'iroq tayyor',
+      'videoCallErrorTitle': 'Video qo\'ng\'iroq xatosi',
+      'videoCallConnecting': 'Video qo\'ng\'iroqqa ulanmoqda...',
+      'videoCallNotAvailableShort': 'Video qo\'ng\'iroq mavjud emas',
+      'videoCallJoinWindowClosedMessage':
+          'Video qo\'ng\'iroq tugagan. Ulanish oynasi uchrashuv tugaganidan keyin 15 daqiqa ichida yopiladi.',
+      'videoCallNotYetAvailableMessage':
+          'Video qo\'ng\'iroq hali mavjud emas. Uchrashuv boshlanishidan 5 daqiqa oldin ulanishingiz mumkin.',
+      'videoCallPaymentRequiredMessage':
+          'Ushbu video konsultatsiyaga qo\'shilishdan oldin to\'lov talab qilinadi.',
       'clickBelowToJoinCall':
           'Qo\'ng\'iroqqa qo\'shilish uchun quyidagi tugmani bosing',
       'tokenRevoked': 'Token bekor qilindi',
@@ -2005,6 +2030,7 @@ class AppLocalizations {
       'appointmentStatusConfirmed': 'Tasdiqlangan',
       'appointmentStatusCancelled': 'Bekor qilingan',
       'appointmentStatusCompleted': 'Yakunlangan',
+      'appointmentStatusInProgress': 'Jarayonda',
       'docSectionLaboratory': 'Laboratoriya',
       'docSectionImaging': 'Tasvirlash',
       'docSectionClinical': 'Klinik va retseptlar',
@@ -2352,6 +2378,7 @@ class AppLocalizations {
       'enterFirstName': 'Введите имя',
       'enterLastName': 'Введите фамилию',
       'enterPhoneNumber': 'Введите номер телефона',
+      'optional': 'Необязательно',
       'pleaseVerifyInvitationKeyFirst': 'Сначала подтвердите ключ приглашения.',
       'accountInformation': 'Данные аккаунта',
       'dateOfBirth': 'Дата рождения',
@@ -2796,11 +2823,22 @@ class AppLocalizations {
       'failedToStartVideoCall': 'Не удалось начать видеозвонок',
       'videoCallAvailableFiveMinBefore':
           'Вы можете начать за 5 минут до приёма.',
+      'videoCallTooLateAfterOneHour':
+          'Видеоконсультация завершилась более часа назад. Открывайте только если приём уже идёт.',
       'videoCallEnded': 'Видеозвонок завершен',
       'callErrorOccurred': 'Произошла ошибка звонка',
       'waitingForParticipants': 'Ожидание участников...',
       'joinVideoCall': 'Присоединиться к видеозвонку',
       'videoCallReady': 'Видеозвонок готов',
+      'videoCallErrorTitle': 'Ошибка видеозвонка',
+      'videoCallConnecting': 'Подключение к видеозвонку...',
+      'videoCallNotAvailableShort': 'Видеозвонок недоступен',
+      'videoCallJoinWindowClosedMessage':
+          'Видеозвонок завершён. Окно подключения закрывается через 15 минут после окончания приёма.',
+      'videoCallNotYetAvailableMessage':
+          'Видеозвонок пока недоступен. Подключиться можно за 5 минут до начала приёма.',
+      'videoCallPaymentRequiredMessage':
+          'Перед подключением к видеоконсультации необходимо произвести оплату.',
       'clickBelowToJoinCall': 'Нажмите ниже, чтобы присоединиться к звонку',
       'tokenRevoked': 'Токен отозван',
       'tokenRegenerated': 'Токен перегенерирован',
@@ -2963,6 +3001,7 @@ class AppLocalizations {
       'appointmentStatusConfirmed': 'Подтверждён',
       'appointmentStatusCancelled': 'Отменён',
       'appointmentStatusCompleted': 'Завершён',
+      'appointmentStatusInProgress': 'Идёт приём',
       'docSectionLaboratory': 'Лаборатория',
       'docSectionImaging': 'Визуализация',
       'docSectionClinical': 'Клиника и назначения',
@@ -3474,6 +3513,7 @@ class AppLocalizations {
   String get startAppointment => translate('startAppointment');
   String get start => translate('start');
   String get phoneNumber => translate('phoneNumber');
+  String get optional => translate('optional');
   String get email => translate('email');
   String get address => translate('address');
   String get location => translate('location');
@@ -3811,6 +3851,8 @@ class AppLocalizations {
       translate('appointmentStatusCancelled');
   String get appointmentStatusCompleted =>
       translate('appointmentStatusCompleted');
+  String get appointmentStatusInProgress =>
+      translate('appointmentStatusInProgress');
 
   String get docSectionLaboratory => translate('docSectionLaboratory');
   String get docSectionImaging => translate('docSectionImaging');
@@ -4013,11 +4055,25 @@ class AppLocalizations {
       translate('failedToStartConversation');
   String get failedToSendMessage => translate('failedToSendMessage');
   String get failedToStartVideoCall => translate('failedToStartVideoCall');
+  String get videoCallAvailableFiveMinBefore =>
+      translate('videoCallAvailableFiveMinBefore');
+  String get videoCallTooLateAfterOneHour =>
+      translate('videoCallTooLateAfterOneHour');
   String get videoCallEnded => translate('videoCallEnded');
   String get callErrorOccurred => translate('callErrorOccurred');
   String get waitingForParticipants => translate('waitingForParticipants');
   String get joinVideoCall => translate('joinVideoCall');
   String get videoCallReady => translate('videoCallReady');
+  String get videoCallErrorTitle => translate('videoCallErrorTitle');
+  String get videoCallConnecting => translate('videoCallConnecting');
+  String get videoCallNotAvailableShort =>
+      translate('videoCallNotAvailableShort');
+  String get videoCallJoinWindowClosedMessage =>
+      translate('videoCallJoinWindowClosedMessage');
+  String get videoCallNotYetAvailableMessage =>
+      translate('videoCallNotYetAvailableMessage');
+  String get videoCallPaymentRequiredMessage =>
+      translate('videoCallPaymentRequiredMessage');
   String get clickBelowToJoinCall => translate('clickBelowToJoinCall');
   String get tokenRevoked => translate('tokenRevoked');
   String get tokenRegenerated => translate('tokenRegenerated');

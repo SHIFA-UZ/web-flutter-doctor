@@ -24,7 +24,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _emailController = TextEditingController(); // optional
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -84,14 +84,16 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
 
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
-    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
+    final phoneEff = _effectivePhone();
 
     setState(() => _isCheckingExisting = true);
     try {
       final result = await ref.read(registrationProvider.notifier).checkExistingPatient(
         firstName: firstName,
         lastName: lastName,
-        phone: phone,
+        email: email,
+        phone: phoneEff,
       );
       if (!mounted) return;
       if (result['found'] == true) {
@@ -100,7 +102,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
           _existingPatientPhotoUrl = result['photoUrl']?.toString();
           _existingFirstName = firstName;
           _existingLastName = lastName;
-          _existingPhone = phone;
+          _existingPhone = phoneEff ?? '';
           _existingPatientTimeZoneDetecting = true;
         });
         _detectTimeZoneForExistingPatient();
@@ -110,8 +112,8 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
       ref.read(registrationProvider.notifier).setBasicInfo(
         firstName: firstName,
         lastName: lastName,
-        phone: phone,
-        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+        email: email,
+        phone: phoneEff,
         password: _passwordController.text.trim(),
       );
       if (!mounted) return;
@@ -161,24 +163,25 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
       final timeZone = _existingPatientTimeZone?.trim().isNotEmpty == true
           ? _existingPatientTimeZone!.trim()
           : 'UTC';
+      final emailTrimmed = _emailController.text.trim();
+      if (emailTrimmed.isEmpty || !emailTrimmed.contains('@')) {
+        _snack(AppLocalizations.of(context)!.enterEmail);
+        return;
+      }
+
       ref.read(registrationProvider.notifier).setAccountInfo(timeZone: timeZone);
       ref.read(registrationProvider.notifier).setBasicInfo(
         firstName: _existingFirstName,
         lastName: _existingLastName,
-        phone: _existingPhone,
-        email: null,
+        email: emailTrimmed,
+        phone: _existingPhone.trim().isEmpty ? null : _existingPhone.trim(),
         password: _passwordController.text.trim(),
       );
 
-      final email = _emailController.text.trim();
-      if (email.isEmpty || !email.contains('@')) {
-        _snack(AppLocalizations.of(context)!.enterEmail);
-        return;
-      }
       final otpVerified = await runRegistrationEmailVerification(
         context: context,
         ref: ref,
-        email: email,
+        email: emailTrimmed,
       );
       if (!otpVerified) return;
 
@@ -187,8 +190,14 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
       if (token != null && token.isNotEmpty) {
         await ref.read(authProvider.notifier).setSessionFromToken(token);
       } else {
+        final username = regAfterSet.email?.trim().isNotEmpty == true
+            ? regAfterSet.email!.trim()
+            : regAfterSet.phone?.trim();
+        if (username == null || username.isEmpty) {
+          throw Exception(AppLocalizations.of(context)!.enterEmailOrPhone);
+        }
         await ref.read(authProvider.notifier).login(
-              regAfterSet.phone!.trim(),
+              username,
               regAfterSet.password!.trim(),
             );
       }
@@ -211,13 +220,30 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
           return AppLocalizations.of(context)!.enterFirstName;
         case 'last name':
           return AppLocalizations.of(context)!.enterLastName;
-        case 'phone number':
-          return AppLocalizations.of(context)!.enterPhoneNumber;
         default:
           return '${AppLocalizations.of(context)!.required}: $label';
       }
     }
     return null;
+  }
+
+  String? _validateOptionalPhone(String? v, BuildContext context) {
+    final raw = v?.trim() ?? '';
+    if (raw.isEmpty) return null;
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 10) {
+      return AppLocalizations.of(context)!.invalidPhone;
+    }
+    return null;
+  }
+
+  /// Non-empty trimmed phone suitable for API when the user entered enough digits.
+  String? _effectivePhone() {
+    final raw = _phoneController.text.trim();
+    if (raw.isEmpty) return null;
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 10) return null;
+    return raw;
   }
 
   void _snack(String msg) =>
@@ -474,15 +500,6 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      controller: _phoneController,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.phoneNumber,
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (v) => _nonEmpty(v, 'phone number', context),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
                       controller: _emailController,
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.email,
@@ -496,6 +513,16 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: InputDecoration(
+                        hintText:
+                            '${AppLocalizations.of(context)!.phoneNumber} (${AppLocalizations.of(context)!.optional})',
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) => _validateOptionalPhone(v, context),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

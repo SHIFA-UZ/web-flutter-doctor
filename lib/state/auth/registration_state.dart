@@ -13,8 +13,8 @@ class RegistrationData {
   final String? key; // invitation key (non-null at submit)
   final String? firstName; // required
   final String? lastName; // required
-  final String? phone; // required
-  final String? email; // optional
+  final String? phone; // optional
+  final String? email; // required
   final String? password; // required
 
   // Optional extras to apply later via /api/doctors/me/profile
@@ -128,18 +128,20 @@ class RegistrationController extends StateNotifier<RegistrationData> {
   // ----------------------------
   // Check existing patient (same phone => existing user with patient profile)
   // ----------------------------
-  /// POST /api/auth/check-existing-patient { firstName, lastName, phone }
+  /// POST /api/auth/check-existing-patient { firstName, lastName, phone?, email }
   /// Returns { found: bool, fullName?, photoUrl?, email? }.
   Future<Map<String, dynamic>> checkExistingPatient({
     required String firstName,
     required String lastName,
-    required String phone,
+    required String email,
+    String? phone,
   }) async {
     final api = ref.read(apiClientProvider);
     final res = await api.post('/api/auth/check-existing-patient', {
       'firstName': firstName.trim(),
       'lastName': lastName.trim(),
-      'phone': phone.trim(),
+      'email': email.trim(),
+      if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
     });
     if (res.statusCode != 200) {
       return {'found': false};
@@ -159,16 +161,23 @@ class RegistrationController extends StateNotifier<RegistrationData> {
   void setBasicInfo({
     required String firstName,
     required String lastName,
-    required String phone,
-    String? email,
+    required String email,
+    String? phone,
     required String password,
   }) {
-    state = state.copyWith(
+    state = RegistrationData(
+      key: state.key,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      phone: phone.trim(),
-      email: (email?.trim().isEmpty ?? true) ? null : email!.trim(),
+      phone: (phone == null || phone.trim().isEmpty) ? null : phone.trim(),
+      email: email.trim(),
       password: password.trim(),
+      dob: state.dob,
+      gender: state.gender,
+      address: state.address,
+      clinic: state.clinic,
+      profession: state.profession,
+      timeZone: state.timeZone,
     );
   }
 
@@ -209,8 +218,8 @@ class RegistrationController extends StateNotifier<RegistrationData> {
       missing.add('first name');
     if (state.lastName == null || state.lastName!.trim().isEmpty)
       missing.add('last name');
-    if (state.phone == null || state.phone!.trim().isEmpty)
-      missing.add('phone');
+    if (state.email == null || state.email!.trim().isEmpty)
+      missing.add('email');
     if (state.password == null || state.password!.trim().isEmpty)
       missing.add('password');
     if (missing.isNotEmpty) {
@@ -220,12 +229,11 @@ class RegistrationController extends StateNotifier<RegistrationData> {
     final payload = {
       'firstName': state.firstName!.trim(),
       'lastName': state.lastName!.trim(),
-      'phone': state.phone!.trim(),
-      'email': (state.email?.trim().isEmpty ?? true)
-          ? null
-          : state.email!.trim(),
+      'email': state.email!.trim(),
       'password': state.password!.trim(),
       'key': state.key!.trim(),
+      if (state.phone != null && state.phone!.trim().isNotEmpty)
+        'phone': state.phone!.trim(),
       if (state.timeZone != null && state.timeZone!.trim().isNotEmpty)
         'timeZone': state.timeZone!.trim(),
     };

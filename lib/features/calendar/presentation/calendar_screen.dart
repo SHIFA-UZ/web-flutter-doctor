@@ -1127,16 +1127,10 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     });
   }
 
-  bool get _canStartVideoByTimeWindow {
-    if (!_isVideoAppointment) return true;
-    if (_isInProgressStatus || _isCompletedStatus) return true;
-
+  DateTime _appointmentStartDateTimeInDoctorZone() {
     final doctorTimeZone =
         ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
             as String?;
-    final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
-
-    DateTime appointmentStartInDoctorZone;
     final startUtcRaw = widget.entry.startAtUtc;
     if (startUtcRaw != null && startUtcRaw.trim().isNotEmpty) {
       final parsed = DateTime.parse(startUtcRaw);
@@ -1152,20 +1146,81 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
               parsed.millisecond,
               parsed.microsecond,
             );
-      appointmentStartInDoctorZone = utcToTimezone(asUtc, doctorTimeZone);
-    } else {
-      appointmentStartInDoctorZone = timeOfDayToDateTimeInZone(
-        widget.entry.start,
-        widget.day,
-        doctorTimeZone,
-      );
+      return utcToTimezone(asUtc, doctorTimeZone);
     }
+    return timeOfDayToDateTimeInZone(
+      widget.entry.start,
+      widget.day,
+      doctorTimeZone,
+    );
+  }
 
+  DateTime _appointmentEndDateTimeInDoctorZone() {
+    final doctorTimeZone =
+        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
+            as String?;
+    final endUtcRaw = widget.entry.endAtUtc;
+    if (endUtcRaw != null && endUtcRaw.trim().isNotEmpty) {
+      final parsed = DateTime.parse(endUtcRaw);
+      final asUtc = parsed.isUtc
+          ? parsed
+          : DateTime.utc(
+              parsed.year,
+              parsed.month,
+              parsed.day,
+              parsed.hour,
+              parsed.minute,
+              parsed.second,
+              parsed.millisecond,
+              parsed.microsecond,
+            );
+      return utcToTimezone(asUtc, doctorTimeZone);
+    }
+    return timeOfDayToDateTimeInZone(
+      widget.entry.end,
+      widget.day,
+      doctorTimeZone,
+    );
+  }
+
+  bool get _canStartVideoByTimeWindow {
+    if (!_isVideoAppointment) return true;
+    if (_isInProgressStatus || _isCompletedStatus) return true;
+
+    final doctorTimeZone =
+        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
+            as String?;
+    final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
+
+    final appointmentStartInDoctorZone = _appointmentStartDateTimeInDoctorZone();
     final joinAllowedFrom = appointmentStartInDoctorZone.subtract(
       const Duration(minutes: 5),
     );
-    return nowInDoctorZone.isAfter(joinAllowedFrom) ||
-        nowInDoctorZone.isAtSameMomentAs(joinAllowedFrom);
+    if (nowInDoctorZone.isBefore(joinAllowedFrom)) return false;
+
+    final appointmentEndInDoctorZone = _appointmentEndDateTimeInDoctorZone();
+    final coldJoinCutoff = appointmentEndInDoctorZone.add(
+      const Duration(hours: 1),
+    );
+    if (!nowInDoctorZone.isBefore(coldJoinCutoff)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// For inline hint when video start is disabled: too early vs. too late (1h after end).
+  bool get _isVideoPastColdJoinGraceHint {
+    if (!_isVideoAppointment || _isInProgressStatus || _isCompletedStatus) {
+      return false;
+    }
+    final doctorTimeZone =
+        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
+            as String?;
+    final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
+    final coldJoinCutoff = _appointmentEndDateTimeInDoctorZone()
+        .add(const Duration(hours: 1));
+    return !nowInDoctorZone.isBefore(coldJoinCutoff);
   }
 
   void _seedStateFromEntry() {
@@ -2759,10 +2814,12 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Text(
-                      AppLocalizations.of(
-                            context,
-                          )!.translate('videoCallAvailableFiveMinBefore') ??
-                          'You can start 5 minutes before the appointment.',
+                      _isVideoPastColdJoinGraceHint
+                          ? AppLocalizations.of(context)!
+                              .videoCallTooLateAfterOneHour
+                          : (AppLocalizations.of(context)!
+                                  .translate('videoCallAvailableFiveMinBefore') ??
+                              'You can start 5 minutes before the appointment.'),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey.shade700,
                       ),

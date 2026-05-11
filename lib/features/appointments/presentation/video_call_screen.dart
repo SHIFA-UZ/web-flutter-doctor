@@ -41,6 +41,51 @@ import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/cons
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 
+/// Maps English video token errors from the backend / [DailyVideoService] to [AppLocalizations].
+String _localizeDoctorVideoError(BuildContext context, String errStr) {
+  final l10n = AppLocalizations.of(context)!;
+  var trimmed = errStr.trim();
+  for (var i = 0; i < 8; i++) {
+    final next = trimmed.replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
+    if (next == trimmed) break;
+    trimmed = next;
+  }
+  final lower = trimmed.toLowerCase();
+
+  const endedBackend =
+      'Video call has ended. The join window closes 15 minutes after the appointment end.';
+  const endedClient =
+      'Video call is not available. It may have ended, or the join window has closed (usually 15 minutes after the appointment end).';
+  const notYet =
+      'Video call is not yet available. You can join 5 minutes before the appointment start.';
+  const payment =
+      'Payment is required before joining this video consultation.';
+
+  if (trimmed == endedBackend ||
+      trimmed == endedClient ||
+      lower.contains('video call has ended') ||
+      (lower.contains('join window has closed') &&
+          lower.contains('15 minutes after')) ||
+      (lower.contains('join window closes') &&
+          lower.contains('15 minutes after'))) {
+    return l10n.videoCallJoinWindowClosedMessage;
+  }
+  if (trimmed == notYet ||
+      (lower.contains('not yet available') &&
+          lower.contains('5 minutes before'))) {
+    return l10n.videoCallNotYetAvailableMessage;
+  }
+  if (trimmed == payment ||
+      (lower.contains('payment is required') &&
+          lower.contains('video'))) {
+    return l10n.videoCallPaymentRequiredMessage;
+  }
+  if (trimmed == 'Call error occurred') {
+    return l10n.callErrorOccurred;
+  }
+  return trimmed;
+}
+
 // Provider to fetch patientId from appointment
 final _patientIdProvider = FutureProvider.family<String?, String>((
   ref,
@@ -128,7 +173,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   bool _isMuted = false;
   bool _isVideoOff = false;
   bool _isScreenSharing = false;
-  String? _videoError;
+  /// Raw English/technical message from the API or client; localized in [build] via [_localizeDoctorVideoError].
+  String? _videoErrorRaw;
   StreamSubscription? _eventSubscription; // CallEvent on mobile, null on web
   String? _roomUrl; // For web
   String? _token; // For web
@@ -273,7 +319,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     try {
       setState(() {
         _isVideoLoading = true;
-        _videoError = null;
+        _videoErrorRaw = null;
       });
 
       final api = ref.read(apiClientProvider);
@@ -332,25 +378,23 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     } catch (e) {
       debugPrint('Failed to initialize video call: $e');
       final errStr = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+      if (!mounted) return;
+      final localized = _localizeDoctorVideoError(context, errStr);
+      final wasKnownVideoMessage = localized != errStr.trim();
       setState(() {
-        _videoError = errStr;
+        _videoErrorRaw = errStr;
         _isVideoLoading = false;
         _isVideoInitialized = false;
       });
 
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        final isTimingError =
-            errStr.toLowerCase().contains('video call') &&
-            (errStr.contains('ended') ||
-                errStr.contains('window') ||
-                errStr.contains('15 minutes'));
-        final message = isTimingError
-            ? errStr
+        final snackMessage = wasKnownVideoMessage
+            ? localized
             : '${l10n.failedToStartVideoCall}: $errStr';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text(snackMessage),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 6),
           ),
@@ -379,7 +423,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       } else if (state == CallState.error) {
         if (mounted) {
           setState(() {
-            _videoError = 'Call error occurred';
+            _videoErrorRaw = 'Call error occurred';
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1161,7 +1205,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                 ),
                                                 const SizedBox(height: 16),
                                                 Text(
-                                                  'Connecting to video call...',
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.videoCallConnecting,
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 16,
@@ -1170,7 +1216,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                               ],
                                             ),
                                           )
-                                        : _videoError != null
+                                        : _videoErrorRaw != null
                                         ? Center(
                                             child: Column(
                                               mainAxisAlignment:
@@ -1183,7 +1229,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                 ),
                                                 const SizedBox(height: 16),
                                                 Text(
-                                                  'Video call error',
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.videoCallErrorTitle,
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 16,
@@ -1196,7 +1244,10 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                         horizontal: 16,
                                                       ),
                                                   child: Text(
-                                                    _videoError!,
+                                                    _localizeDoctorVideoError(
+                                                      context,
+                                                      _videoErrorRaw!,
+                                                    ),
                                                     style: TextStyle(
                                                       color: Colors.white70,
                                                       fontSize: 12,
@@ -1250,7 +1301,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                 ),
                                                 const SizedBox(height: 16),
                                                 Text(
-                                                  'Video call not available',
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.videoCallNotAvailableShort,
                                                   style: TextStyle(
                                                     color: Colors.grey.shade600,
                                                     fontSize: 18,

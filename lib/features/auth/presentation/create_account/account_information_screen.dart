@@ -104,8 +104,14 @@ class _AccountInformationScreenState
         await ref.read(authProvider.notifier).setSessionFromToken(token);
       } else {
         // Fallback (older backend): login with the same credentials used for registration.
+        final username = reg.email?.trim().isNotEmpty == true
+            ? reg.email!.trim()
+            : reg.phone?.trim();
+        if (username == null || username.isEmpty) {
+          throw Exception(AppLocalizations.of(context)!.enterEmailOrPhone);
+        }
         await ref.read(authProvider.notifier).login(
-              (reg.email?.isNotEmpty == true) ? reg.email!.trim() : reg.phone!.trim(),
+              username,
               reg.password!.trim(),
             );
       }
