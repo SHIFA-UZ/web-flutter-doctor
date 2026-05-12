@@ -34,13 +34,15 @@ class AiResponseText extends StatelessWidget {
 
     final lines = displayText.split('\n');
 
-    return Align(
-      alignment: Alignment.topLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: _buildLineWidgets(lines, baseStyle),
+    return SelectionArea(
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: _buildLineWidgets(lines, baseStyle),
+          ),
         ),
       ),
     );
@@ -65,16 +67,15 @@ class AiResponseText extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 1),
-                  child: Text(
+                  child: SelectableText(
                     bulletMatch.group(1) ?? '•',
                     style: baseStyle,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: SelectableText(
                     bulletMatch.group(2) ?? '',
-                    softWrap: true,
                     style: baseStyle,
                   ),
                 ),
@@ -86,9 +87,8 @@ class AiResponseText extends StatelessWidget {
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
+            child: SelectableText(
               trimmed,
-              softWrap: true,
               style: baseStyle,
             ),
           ),
