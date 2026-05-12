@@ -87,7 +87,6 @@ class _InPersonAppointmentScreenState
   final _soapObjective = TextEditingController();
   final _soapAssessment = TextEditingController();
   final _soapPlan = TextEditingController();
-  final _noteInputController = TextEditingController();
   final List<XFile> _beforeTreatmentImages = [];
   final List<XFile> _afterTreatmentImages = [];
   bool _isSaving = false;
@@ -335,7 +334,6 @@ class _InPersonAppointmentScreenState
     _signaturePollTimer?.cancel();
     _notesController.removeListener(_markUnsaved);
     _notesController.dispose();
-    _noteInputController.dispose();
     super.dispose();
   }
 
@@ -410,19 +408,6 @@ class _InPersonAppointmentScreenState
         );
       }
     }
-  }
-
-  Future<void> _addNote() async {
-    final note = _noteInputController.text.trim();
-    if (note.isEmpty) return;
-
-    setState(() {
-      if (_notesController.text.isNotEmpty) {
-        _notesController.text += '\n\n';
-      }
-      _notesController.text += note;
-      _noteInputController.clear();
-    });
   }
 
   Future<void> _startAiNotes() async {
@@ -2361,37 +2346,6 @@ class _InPersonAppointmentScreenState
                                       ],
                                     ),
                                   ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _noteInputController,
-                                        decoration: InputDecoration(
-                                          hintText: AppLocalizations.of(
-                                            context,
-                                          )!.typeANote,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            borderSide: BorderSide(
-                                              color: Colors.grey.shade300,
-                                            ),
-                                          ),
-                                          prefixIcon: const Icon(Icons.edit),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    ShifaIconButton(
-                                      icon: Icons.send,
-                                      onPressed: _addNote,
-                                      size: 44,
-                                      iconSize: 20,
-                                    ),
-                                  ],
-                                ),
                               ],
                             )
                           : _build0252Panel(brand, patientId, patientIdAsync),
