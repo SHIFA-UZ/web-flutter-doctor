@@ -1164,7 +1164,7 @@ class AppLocalizations {
       'no': 'Yo\'q',
       'ok': 'OK',
       'confirm': 'Tasdiqlash',
-      'discard': 'Bekor qilish',
+      'discard': 'Yopish',
       'search': 'Qidirish',
       'filter': 'Filtr',
       'apply': 'Qo\'llash',
@@ -2062,7 +2062,6 @@ class AppLocalizations {
       'unsavedChangesSwitch':
           'Saqlanmagan o\'zgarishlar bor. Almashishdan oldin saqlaysizmi?',
       'saveAndSwitch': 'Saqlash va almashtirish',
-      'discard': 'Bekor qilish',
       'discardAndSwitch': 'Tashlab, almashtirish',
       'openForm0252': '025-2 shaklini to\'ldirish',
       'errorOpeningDocument': 'Hujjatni ochishda xatolik',
