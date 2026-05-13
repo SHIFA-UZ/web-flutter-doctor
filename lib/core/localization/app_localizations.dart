@@ -1079,6 +1079,12 @@ class AppLocalizations {
       'saveForm': 'Save Form',
       'dentalChart': 'Dental Chart',
       'icd10SearchHint': 'Search ICD-10 code or title',
+      'speakToType': 'Speak to type',
+      'speechToTextRequiresPro':
+          'Speech-to-text requires a Pro subscription.',
+      'transcribing': 'Transcribing…',
+      'transcriptionAdded': 'Transcription added',
+      'noSpeechDetected': 'No speech detected',
       'dentalLegend':
           'Legend: K=caries, P=filling, pulpitis, periodontitis, crown, post, missing, prosthetic.',
       'toothMap': 'Tooth map',
@@ -2188,6 +2194,12 @@ class AppLocalizations {
       'saveForm': 'Saqlash',
       'dentalChart': 'Tish diagrammasi',
       'icd10SearchHint': 'ICD-10 kodi yoki nomi bo\'yicha qidiring',
+      'speakToType': 'Gapirish orqali yozish',
+      'speechToTextRequiresPro':
+          'Ovozdan matnga PRO obuna talab qilinadi.',
+      'transcribing': 'Matnga o\'girilmoqda…',
+      'transcriptionAdded': 'Matn qo\'shildi',
+      'noSpeechDetected': 'Ovoz aniqlanmadi',
       'dentalLegend':
           'Belgilanishlar: K=kariyes, P=plomba, pulpit, periodontit, koronka, shtift, yetishmaydigan, protez.',
       'toothMap': 'Tishlar holati',
@@ -3201,6 +3213,12 @@ class AppLocalizations {
       'saveForm': 'Сохранить форму',
       'dentalChart': 'Зубная карта',
       'icd10SearchHint': 'Поиск по коду или названию ICD-10',
+      'speakToType': 'Говорить для ввода текста',
+      'speechToTextRequiresPro':
+          'Преобразование речи в текст доступно с подпиской Pro.',
+      'transcribing': 'Распознавание…',
+      'transcriptionAdded': 'Текст добавлен',
+      'noSpeechDetected': 'Речь не распознана',
       'dentalLegend':
           'Легенда: K=кариес, P=пломба, пульпит, периодонтит, коронка, штифт, отсутствует, протез.',
       'toothMap': 'Карта зубов',

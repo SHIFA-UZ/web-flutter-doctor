@@ -16,6 +16,7 @@ import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
 
 /// Uzbek-only labels for Form 025-2 PDF (no English in output).
@@ -317,6 +318,16 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     _treatmentCtrl.addListener(notify);
     _treatmentResultCtrl.addListener(notify);
     _recommendationsCtrl.addListener(notify);
+  }
+
+  Widget _speechMic(TextEditingController c) {
+    return DoctorSpeechMicButton(
+      controller: c,
+      onTranscriptAppended: () {
+        widget.onUnsavedChange?.call(true);
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   /// Continuity: when creating a new 025-2 form, pre-fill ONLY the teeth diagram from the most recent
@@ -1047,6 +1058,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.address,
                   border: const OutlineInputBorder(),
+                  suffixIcon: _speechMic(_addressCtrl),
                 ),
                 maxLines: 2,
               ),
@@ -1056,6 +1068,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.job,
                   border: const OutlineInputBorder(),
+                  suffixIcon: _speechMic(_jobCtrl),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1064,6 +1077,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.diagnosis,
                   border: const OutlineInputBorder(),
+                  suffixIcon: _speechMic(_diagnosisCtrl),
                 ),
                 maxLines: 3,
               ),
@@ -1096,15 +1110,20 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         )
-                      : (_icdSearchCtrl.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: () => setState(() {
-                                _icdSearchCtrl.clear();
-                                _icdResults = const [];
-                              }),
-                            )
-                          : null),
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_icdSearchCtrl.text.isNotEmpty)
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () => setState(() {
+                                  _icdSearchCtrl.clear();
+                                  _icdResults = const [];
+                                }),
+                              ),
+                            _speechMic(_icdSearchCtrl),
+                          ],
+                        ),
                 ),
                 onChanged: (v) {
                   _icdDebounce?.cancel();
@@ -1154,6 +1173,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.complaints,
                   border: const OutlineInputBorder(),
+                  suffixIcon: _speechMic(_complaintsCtrl),
                 ),
                 maxLines: 3,
               ),
@@ -1163,6 +1183,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.otherIllnessesAndComplications,
                   border: const OutlineInputBorder(),
+                  suffixIcon: _speechMic(_otherIllnessesCtrl),
                 ),
                 maxLines: 3,
               ),
@@ -1172,6 +1193,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.moreDetailsOnAbove,
                   border: const OutlineInputBorder(),
+                  suffixIcon: _speechMic(_moreDetailsCtrl),
                 ),
                 maxLines: 4,
               ),
@@ -1181,6 +1203,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.visualCheckup,
                   border: const OutlineInputBorder(),
+                  suffixIcon: _speechMic(_visualCheckupCtrl),
                 ),
                 maxLines: 3,
               ),
@@ -1216,6 +1239,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.occlusionBiteType,
                     border: const OutlineInputBorder(),
+                    suffixIcon: _speechMic(_occlusionCtrl),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1224,6 +1248,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.oralCavityCondition,
                     border: const OutlineInputBorder(),
+                    suffixIcon: _speechMic(_oralCavityCtrl),
                   ),
                   maxLines: 3,
                 ),
@@ -1233,6 +1258,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.xrayLabExaminationData,
                     border: const OutlineInputBorder(),
+                    suffixIcon: _speechMic(_xrayLabCtrl),
                   ),
                   maxLines: 3,
                 ),
@@ -1242,6 +1268,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.treatment,
                     border: const OutlineInputBorder(),
+                    suffixIcon: _speechMic(_treatmentCtrl),
                   ),
                   maxLines: 3,
                 ),
@@ -1251,6 +1278,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.treatmentResultProgress,
                     border: const OutlineInputBorder(),
+                    suffixIcon: _speechMic(_treatmentResultCtrl),
                   ),
                   maxLines: 3,
                 ),
@@ -1260,6 +1288,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   decoration: InputDecoration(
                     labelText: l10n.recommendationsInstructions,
                     border: const OutlineInputBorder(),
+                    suffixIcon: _speechMic(_recommendationsCtrl),
                   ),
                   maxLines: 3,
                 ),
@@ -1285,6 +1314,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                     setState(() => _followups = next);
                     widget.onUnsavedChange?.call(true);
                   },
+                  markUnsaved: () => widget.onUnsavedChange?.call(true),
                 ),
               ],
 
@@ -2037,10 +2067,12 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
 class _FollowupsTable extends StatelessWidget {
   final List<PatientFormFollowup> followups;
   final ValueChanged<List<PatientFormFollowup>> onChanged;
+  final VoidCallback? markUnsaved;
 
   const _FollowupsTable({
     required this.followups,
     required this.onChanged,
+    this.markUnsaved,
   });
 
   @override
@@ -2068,50 +2100,67 @@ class _FollowupsTable extends StatelessWidget {
       final res = await showDialog<bool>(
         context: context,
         builder: (ctx) {
-          final l10n = AppLocalizations.of(ctx)!;
-          return AlertDialog(
-            title: Text(l10n.returnVisits),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+          final l10nDialog = AppLocalizations.of(ctx)!;
+          return Consumer(
+            builder: (ctx, ref, _) {
+              return AlertDialog(
+                title: Text(l10nDialog.returnVisits),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${l10n.date}:'),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: ctx,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                          initialDate: date,
-                        );
-                        if (picked != null) {
-                          date = picked;
-                          (ctx as Element).markNeedsBuild();
-                        }
-                      },
-                      child: Text(
-                        '${date.year.toString().padLeft(4, '0')}-'
-                        '${date.month.toString().padLeft(2, '0')}-'
-                        '${date.day.toString().padLeft(2, '0')}',
+                    Row(
+                      children: [
+                        Text('${l10nDialog.date}:'),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: ctx,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                              initialDate: date,
+                            );
+                            if (picked != null) {
+                              date = picked;
+                              (ctx as Element).markNeedsBuild();
+                            }
+                          },
+                          child: Text(
+                            '${date.year.toString().padLeft(4, '0')}-'
+                            '${date.month.toString().padLeft(2, '0')}-'
+                            '${date.day.toString().padLeft(2, '0')}',
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextField(
+                      controller: ctrl,
+                      decoration: InputDecoration(
+                        labelText: l10nDialog.clinicalFindingsConclusion,
+                        suffixIcon: DoctorSpeechMicButton(
+                          controller: ctrl,
+                          onTranscriptAppended: () {
+                            markUnsaved?.call();
+                            (ctx as Element).markNeedsBuild();
+                          },
+                        ),
                       ),
+                      maxLines: 4,
                     ),
                   ],
                 ),
-                TextField(
-                  controller: ctrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.clinicalFindingsConclusion,
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: Text(l10nDialog.cancel),
                   ),
-                  maxLines: 4,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
-              ShifaPrimaryButton(onPressed: () => Navigator.pop(ctx, true), label: l10n.save),
-            ],
+                  ShifaPrimaryButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    label: l10nDialog.save,
+                  ),
+                ],
+              );
+            },
           );
         },
       );

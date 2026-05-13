@@ -39,6 +39,7 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_documentation_widgets.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_document_upload_strip.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_documentation_professions.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_visit_documentation_panel.dart';
@@ -208,6 +209,21 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     _soapObjective.clear();
     _soapAssessment.clear();
     _soapPlan.clear();
+  }
+
+  /// [ref.listen] does not fire when [profileAllProvider] is already loaded; sync from [ref.watch] instead.
+  void _applyProfessionDocumentationDefaultIfReady(Map<String, dynamic> profile) {
+    if (_documentationProfessionDefaultApplied) return;
+    final prof = profile['profession'] as String?;
+    if (prof == null || prof.trim().isEmpty) return;
+    _documentationProfessionDefaultApplied = true;
+    if (_userSelectedDocumentationType) return;
+    final mode = isDentalDocumentationProfession(prof) ? 'dental' : 'general';
+    if (_documentationType == mode) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _documentationType = mode);
+    });
   }
 
   @override
@@ -1132,9 +1148,12 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   @override
   Widget build(BuildContext context) {
     final brand = AppColors.primaryTeal;
-    final profession =
-        ref.watch(profileAllProvider).valueOrNull?.profile['profession']
-            as String?;
+    final profileAllAsync = ref.watch(profileAllProvider);
+    final profileAll = profileAllAsync.valueOrNull;
+    if (profileAll != null) {
+      _applyProfessionDocumentationDefaultIfReady(profileAll.profile);
+    }
+    final profession = profileAll?.profile['profession'] as String?;
     final showDentalDoc = isDentalDocumentationProfession(profession);
     final initialPatientId = widget.appointment.patientId;
 
@@ -1167,21 +1186,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         patientProfileAsync != null &&
         patientProfileAsync.isLoading &&
         !patientProfileAsync.hasValue;
-
-    ref.listen(profileAllProvider, (prev, next) {
-      next.whenData((all) {
-        if (_documentationProfessionDefaultApplied) return;
-        final prof = all.profile['profession'] as String?;
-        if (prof == null || prof.trim().isEmpty) return;
-        _documentationProfessionDefaultApplied = true;
-        if (_userSelectedDocumentationType) return;
-        final mode =
-            isDentalDocumentationProfession(prof) ? 'dental' : 'general';
-        if (_documentationType != mode) {
-          setState(() => _documentationType = mode);
-        }
-      });
-    });
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -2783,6 +2787,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
             objective: _soapObjective,
             assessment: _soapAssessment,
             plan: _soapPlan,
+            onTranscriptAppended: _markUnsaved,
           ),
           const SizedBox(height: 8),
           Expanded(
@@ -2802,15 +2807,28 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                   ),
                 ],
               ),
-              child: TextField(
-                controller: _notesController,
-                maxLines: null,
-                expands: true,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.enterNotes,
-                  border: InputBorder.none,
-                ),
-                textAlignVertical: TextAlignVertical.top,
+              child: Stack(
+                children: [
+                  TextField(
+                    controller: _notesController,
+                    maxLines: null,
+                    expands: true,
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context)!.enterNotes,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.fromLTRB(4, 8, 44, 8),
+                    ),
+                    textAlignVertical: TextAlignVertical.top,
+                  ),
+                  Positioned(
+                    top: 2,
+                    right: 0,
+                    child: DoctorSpeechMicButton(
+                      controller: _notesController,
+                      onTranscriptAppended: _markUnsaved,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

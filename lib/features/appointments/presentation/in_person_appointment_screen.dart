@@ -29,6 +29,7 @@ import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/voice_recording_dialog.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
 import 'package:http/http.dart' as http;
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
@@ -154,6 +155,26 @@ class _InPersonAppointmentScreenState
     _soapPlan.clear();
   }
 
+  /// [ref.listen] does not fire when [profileAllProvider] is already loaded; sync from [ref.watch] instead.
+  void _applyProfessionDocumentationDefaultIfReady(Map<String, dynamic> profile) {
+    if (_documentationProfessionDefaultApplied) return;
+    final prof = profile['profession'] as String?;
+    if (prof == null || prof.trim().isEmpty) return;
+    _documentationProfessionDefaultApplied = true;
+    if (_userSelectedDocumentationType) return;
+    final mode = isDentalDocumentationProfession(prof) ? 'dental' : 'general';
+    if (_documentationType == mode) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _documentationType = mode;
+        if (mode != 'dental') {
+          _dentalDocumentationFullScreen = false;
+        }
+      });
+    });
+  }
+
   Future<void> _openConsultationFocusMode() async {
     if (_documentationType != 'general') return;
     final l10n = AppLocalizations.of(context)!;
@@ -180,6 +201,7 @@ class _InPersonAppointmentScreenState
                     objective: _soapObjective,
                     assessment: _soapAssessment,
                     plan: _soapPlan,
+                    onTranscriptAppended: _markUnsaved,
                   ),
                   const SizedBox(height: 12),
                   Expanded(
@@ -192,16 +214,34 @@ class _InPersonAppointmentScreenState
                           color: Colors.black.withValues(alpha: 0.07),
                         ),
                       ),
-                      child: TextField(
-                        controller: _notesController,
-                        maxLines: null,
-                        expands: true,
-                        textAlignVertical: TextAlignVertical.top,
-                        style: const TextStyle(fontSize: 17, height: 1.45),
-                        decoration: InputDecoration(
-                          hintText: l10n.enterNotes,
-                          border: InputBorder.none,
-                        ),
+                      child: Stack(
+                        children: [
+                          TextField(
+                            controller: _notesController,
+                            maxLines: null,
+                            expands: true,
+                            textAlignVertical: TextAlignVertical.top,
+                            style: const TextStyle(fontSize: 17, height: 1.45),
+                            decoration: InputDecoration(
+                              hintText: l10n.enterNotes,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.fromLTRB(
+                                4,
+                                8,
+                                44,
+                                8,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 0,
+                            child: DoctorSpeechMicButton(
+                              controller: _notesController,
+                              onTranscriptAppended: _markUnsaved,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -937,8 +977,12 @@ class _InPersonAppointmentScreenState
   @override
   Widget build(BuildContext context) {
     final brand = AppColors.primaryTeal;
-    final profession =
-        ref.watch(profileAllProvider).valueOrNull?.profile['profession'] as String?;
+    final profileAllAsync = ref.watch(profileAllProvider);
+    final profileAll = profileAllAsync.valueOrNull;
+    if (profileAll != null) {
+      _applyProfessionDocumentationDefaultIfReady(profileAll.profile);
+    }
+    final profession = profileAll?.profile['profession'] as String?;
     final showDentalDoc = isDentalDocumentationProfession(profession);
     final initialPatientId = widget.appointment.patientId;
 
@@ -980,26 +1024,6 @@ class _InPersonAppointmentScreenState
         patientProfileAsync != null &&
         patientProfileAsync.isLoading &&
         !patientProfileAsync.hasValue;
-
-    ref.listen(profileAllProvider, (prev, next) {
-      next.whenData((all) {
-        if (_documentationProfessionDefaultApplied) return;
-        final prof = all.profile['profession'] as String?;
-        if (prof == null || prof.trim().isEmpty) return;
-        _documentationProfessionDefaultApplied = true;
-        if (_userSelectedDocumentationType) return;
-        final mode =
-            isDentalDocumentationProfession(prof) ? 'dental' : 'general';
-        if (_documentationType != mode) {
-          setState(() {
-            _documentationType = mode;
-            if (mode != 'dental') {
-              _dentalDocumentationFullScreen = false;
-            }
-          });
-        }
-      });
-    });
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -2323,6 +2347,7 @@ class _InPersonAppointmentScreenState
                                   objective: _soapObjective,
                                   assessment: _soapAssessment,
                                   plan: _soapPlan,
+                                  onTranscriptAppended: _markUnsaved,
                                 ),
                                 const SizedBox(height: 8),
                                 Expanded(
@@ -2346,17 +2371,37 @@ class _InPersonAppointmentScreenState
                                         ),
                                       ],
                                     ),
-                                    child: TextField(
-                                      controller: _notesController,
-                                      maxLines: null,
-                                      expands: true,
-                                      textAlignVertical: TextAlignVertical.top,
-                                      decoration: InputDecoration(
-                                        hintText: AppLocalizations.of(
-                                          context,
-                                        )!.enterNotes,
-                                        border: InputBorder.none,
-                                      ),
+                                    child: Stack(
+                                      children: [
+                                        TextField(
+                                          controller: _notesController,
+                                          maxLines: null,
+                                          expands: true,
+                                          textAlignVertical:
+                                              TextAlignVertical.top,
+                                          decoration: InputDecoration(
+                                            hintText: AppLocalizations.of(
+                                              context,
+                                            )!.enterNotes,
+                                            border: InputBorder.none,
+                                            contentPadding:
+                                                const EdgeInsets.fromLTRB(
+                                              4,
+                                              8,
+                                              44,
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 2,
+                                          right: 0,
+                                          child: DoctorSpeechMicButton(
+                                            controller: _notesController,
+                                            onTranscriptAppended: _markUnsaved,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),

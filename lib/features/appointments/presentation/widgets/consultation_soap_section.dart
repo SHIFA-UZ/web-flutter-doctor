@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
 
 /// Expanding SOAP fields; content is merged into the PDF via [composeConsultationNotesPdf].
-class ConsultationSoapSection extends StatelessWidget {
+class ConsultationSoapSection extends ConsumerWidget {
   const ConsultationSoapSection({
     super.key,
     required this.l10n,
@@ -10,6 +12,7 @@ class ConsultationSoapSection extends StatelessWidget {
     required this.objective,
     required this.assessment,
     required this.plan,
+    this.onTranscriptAppended,
   });
 
   final AppLocalizations l10n;
@@ -17,9 +20,10 @@ class ConsultationSoapSection extends StatelessWidget {
   final TextEditingController objective;
   final TextEditingController assessment;
   final TextEditingController plan;
+  final VoidCallback? onTranscriptAppended;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.only(bottom: 4),
@@ -33,15 +37,15 @@ class ConsultationSoapSection extends StatelessWidget {
         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
       ),
       children: [
-        _soapField(l10n.soapSubjective, subjective),
-        _soapField(l10n.soapObjective, objective),
-        _soapField(l10n.soapAssessment, assessment),
-        _soapField(l10n.soapPlan, plan),
+        _soapField(context, l10n.soapSubjective, subjective),
+        _soapField(context, l10n.soapObjective, objective),
+        _soapField(context, l10n.soapAssessment, assessment),
+        _soapField(context, l10n.soapPlan, plan),
       ],
     );
   }
 
-  Widget _soapField(String label, TextEditingController c) {
+  Widget _soapField(BuildContext context, String label, TextEditingController c) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
@@ -54,6 +58,10 @@ class ConsultationSoapSection extends StatelessWidget {
           alignLabelWithHint: true,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           isDense: true,
+          suffixIcon: DoctorSpeechMicButton(
+            controller: c,
+            onTranscriptAppended: onTranscriptAppended,
+          ),
         ),
       ),
     );
