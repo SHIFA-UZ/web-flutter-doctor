@@ -2,9 +2,11 @@
 bool isDentalDocumentationProfession(String? profession) {
   if (profession == null || profession.trim().isEmpty) return false;
   final p = profession.trim().toLowerCase();
+  if (p.contains('dental')) return true;
   const keys = <String>{
     'dentist',
     'orthodontist',
+    'endodontist',
     'pediatric dentist',
     'periodontist',
     'prosthodontist',

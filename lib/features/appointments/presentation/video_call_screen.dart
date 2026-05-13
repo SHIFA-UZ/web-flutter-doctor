@@ -142,6 +142,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   bool _warningShown = false;
   String _documentationType = 'general';
   bool _hasUnsavedChanges = false;
+  bool _documentationProfessionDefaultApplied = false;
+  bool _userSelectedDocumentationType = false;
 
   /// When false, "From Shifa AI" and "From last 025-2 form" are hidden; expand via ⋮ → Show.
   bool _notesSectionsExpanded = false;
@@ -1166,6 +1168,21 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         patientProfileAsync.isLoading &&
         !patientProfileAsync.hasValue;
 
+    ref.listen(profileAllProvider, (prev, next) {
+      next.whenData((all) {
+        if (_documentationProfessionDefaultApplied) return;
+        final prof = all.profile['profession'] as String?;
+        if (prof == null || prof.trim().isEmpty) return;
+        _documentationProfessionDefaultApplied = true;
+        if (_userSelectedDocumentationType) return;
+        final mode =
+            isDentalDocumentationProfession(prof) ? 'dental' : 'general';
+        if (_documentationType != mode) {
+          setState(() => _documentationType = mode);
+        }
+      });
+    });
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: Stack(
@@ -1437,9 +1454,13 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                   : DocumentationSectionCard(
                                       title: _documentationType == 'general'
                                           ? AppLocalizations.of(context)!.notes
-                                          : AppLocalizations.of(
-                                              context,
-                                            )!.docMode0252,
+                                          : _documentationType == 'dental'
+                                              ? AppLocalizations.of(
+                                                  context,
+                                                )!.docModeDental
+                                              : AppLocalizations.of(
+                                                  context,
+                                                )!.docMode0252,
                                       titleTrailing: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -1635,6 +1656,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                       Future.microtask(() {
                                                         if (!mounted) return;
                                                         setState(() {
+                                                          _userSelectedDocumentationType =
+                                                              true;
                                                           _hasUnsavedChanges =
                                                               false;
                                                           _documentationType =
@@ -1649,6 +1672,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                       Future.microtask(() {
                                                         if (!mounted) return;
                                                         setState(() {
+                                                          _userSelectedDocumentationType =
+                                                              true;
                                                           _beforeTreatmentImages
                                                               .clear();
                                                           _afterTreatmentImages
@@ -1661,10 +1686,12 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                       });
                                                     }
                                                   } else {
-                                                    setState(
-                                                      () => _documentationType =
-                                                          newType,
-                                                    );
+                                                    setState(() {
+                                                      _userSelectedDocumentationType =
+                                                          true;
+                                                      _documentationType =
+                                                          newType;
+                                                    });
                                                   }
                                                 }); // Close Future.microtask for entire switch
                                               }
@@ -1989,6 +2016,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                 if (!ok || !mounted) return;
                               }
                               setState(() {
+                                _userSelectedDocumentationType = true;
                                 _hasUnsavedChanges = false;
                                 _documentationType = newType;
                               });
@@ -1998,6 +2026,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                             if (result == 'discard') {
                               _clearGeneralNoteFields();
                               setState(() {
+                                _userSelectedDocumentationType = true;
                                 _beforeTreatmentImages.clear();
                                 _afterTreatmentImages.clear();
                                 _hasUnsavedChanges = false;
@@ -2005,7 +2034,10 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                               });
                             }
                           } else {
-                            setState(() => _documentationType = newType);
+                            setState(() {
+                              _userSelectedDocumentationType = true;
+                              _documentationType = newType;
+                            });
                           }
                         });
                       }
@@ -2287,8 +2319,12 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                               if (_documentationType !=
                                                   '025-2') {
                                                 setState(() {
-                                                  _documentationType = '025-2';
-                                                  _notesSectionsExpanded = true;
+                                                  _userSelectedDocumentationType =
+                                                      true;
+                                                  _documentationType =
+                                                      '025-2';
+                                                  _notesSectionsExpanded =
+                                                      true;
                                                 });
                                               }
                                               WidgetsBinding.instance

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
 
 /// FDI-style quadrant codes in the same order as form 025-2 (patient-facing chart).
 const List<String> kFdiTeethOrder = [
@@ -58,6 +59,9 @@ class _ServiceOption {
     required this.amountMinor,
     required this.currency,
     required this.isFreeConsultation,
+    required this.groupId,
+    required this.groupName,
+    required this.groupSortOrder,
   });
 
   final int id;
@@ -65,6 +69,32 @@ class _ServiceOption {
   final int amountMinor;
   final String currency;
   final bool isFreeConsultation;
+  final int? groupId;
+  final String? groupName;
+  final int groupSortOrder;
+}
+
+class _AggregatedServiceGroup {
+  const _AggregatedServiceGroup({
+    required this.groupId,
+    required this.sortOrder,
+    required this.groupName,
+    required this.services,
+  });
+
+  final int? groupId;
+  final int sortOrder;
+  final String? groupName;
+  final List<_ServiceOption> services;
+
+  String label(AppLocalizations l10n) {
+    if (groupId == null) {
+      return l10n.translate('serviceGroupNone');
+    }
+    final n = groupName?.trim();
+    if (n == null || n.isEmpty) return l10n.translate('serviceGroupNone');
+    return n;
+  }
 }
 
 class DentalVisitDocumentationPanel extends ConsumerStatefulWidget {
@@ -91,6 +121,7 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
   final TextEditingController _discountCtrl = TextEditingController(text: '0');
   final TextEditingController _notesCtrl = TextEditingController();
   List<_ServiceOption> _catalog = [];
+  List<_AggregatedServiceGroup> _serviceGroups = [];
   bool _loading = true;
   bool _saving = false;
 
@@ -134,6 +165,10 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
         final title = raw['title']?.toString() ?? '';
         if (id == null || title.isEmpty) continue;
         final isFree = raw['isFreeConsultation'] == true;
+        final gid = (raw['groupId'] as num?)?.toInt();
+        final gname = raw['groupName']?.toString();
+        final gsort =
+            (raw['groupSortOrder'] as num?)?.toInt() ?? 2147483647;
         final prices = (raw['prices'] as List?) ?? const [];
         var amount = 0;
         var ccy = 'UZS';
@@ -161,11 +196,55 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
             amountMinor: amount,
             currency: ccy.isEmpty ? 'UZS' : ccy,
             isFreeConsultation: isFree,
+            groupId: gid,
+            groupName: gname,
+            groupSortOrder: gsort,
           ),
         );
       }
-      if (mounted) setState(() => _catalog = opts);
+      final grouped = _aggregateServiceGroups(opts);
+      if (mounted) {
+        setState(() {
+          _catalog = opts;
+          _serviceGroups = grouped;
+        });
+      }
     } catch (_) {}
+  }
+
+  List<_AggregatedServiceGroup> _aggregateServiceGroups(
+    List<_ServiceOption> opts,
+  ) {
+    final buckets = <int?, List<_ServiceOption>>{};
+    for (final o in opts) {
+      buckets.putIfAbsent(o.groupId, () => []).add(o);
+    }
+    final out = <_AggregatedServiceGroup>[];
+    buckets.forEach((gid, services) {
+      if (services.isEmpty) return;
+      final sort = services
+          .map((s) => s.groupSortOrder)
+          .reduce((a, b) => a < b ? a : b);
+      final name = gid == null ? null : services.first.groupName;
+      out.add(
+        _AggregatedServiceGroup(
+          groupId: gid,
+          sortOrder: sort,
+          groupName: name,
+          services: services,
+        ),
+      );
+    });
+    out.sort((a, b) {
+      final c = a.sortOrder.compareTo(b.sortOrder);
+      if (c != 0) return c;
+      return a
+          .groupName
+          .toString()
+          .toLowerCase()
+          .compareTo(b.groupName.toString().toLowerCase());
+    });
+    return out;
   }
 
   Future<void> _loadSaved() async {
@@ -356,6 +435,9 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
+        var activeGroupIndex = 0;
+        final maxH =
+            (MediaQuery.sizeOf(ctx).height * 0.5).clamp(260.0, 480.0);
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
@@ -379,38 +461,141 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
                           l10n.translate('dentalNoServices'),
                           style: TextStyle(color: Colors.grey.shade700),
                         )
-                      else
-                        DropdownButtonFormField<int>(
-                          decoration: InputDecoration(
-                            labelText: l10n.translate('dentalAddService'),
-                          ),
-                          items: _catalog
-                              .map(
-                                (s) => DropdownMenuItem(
-                                  value: s.id,
-                                  child: Text(
-                                    s.isFreeConsultation
-                                        ? '${s.title} (0 ${s.currency})'
-                                        : '${s.title} (${(s.amountMinor / 100).toStringAsFixed(2)} ${s.currency})',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (id) {
-                            if (id == null) return;
-                            final s = _catalog.firstWhere((e) => e.id == id);
-                            setLocal(() {
-                              list.add({
-                                'serviceId': s.id,
-                                'title': s.title,
-                                'amountMinor': s.isFreeConsultation ? 0 : s.amountMinor,
-                                'currency': s.currency,
-                              });
-                              _touch();
-                            });
-                          },
+                      else ...[
+                        Text(
+                          l10n.translate('dentalAddService'),
+                          style: Theme.of(ctx).textTheme.labelLarge,
                         ),
+                        const SizedBox(height: 8),
+                        if (_serviceGroups.isEmpty)
+                          const SizedBox.shrink()
+                        else
+                          SizedBox(
+                            height: maxH,
+                            child: Builder(
+                              builder: (context) {
+                                final n = _serviceGroups.length;
+                                activeGroupIndex =
+                                    activeGroupIndex.clamp(0, n - 1);
+                                final g = _serviceGroups[activeGroupIndex];
+                                return Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade50,
+                                          borderRadius:
+                                              const BorderRadius.only(
+                                            topLeft: Radius.circular(8),
+                                            bottomLeft: Radius.circular(8),
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              const BorderRadius.only(
+                                            topLeft: Radius.circular(8),
+                                            bottomLeft: Radius.circular(8),
+                                          ),
+                                          child: ListView.builder(
+                                            itemCount: n,
+                                            itemBuilder: (c, i) {
+                                              final grp = _serviceGroups[i];
+                                              final selected =
+                                                  i == activeGroupIndex;
+                                              return InkWell(
+                                                onTap: () => setLocal(
+                                                  () => activeGroupIndex = i,
+                                                ),
+                                                child: MouseRegion(
+                                                  onEnter: (_) => setLocal(
+                                                    () => activeGroupIndex = i,
+                                                  ),
+                                                  child: Container(
+                                                    width: double.infinity,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 14,
+                                                    ),
+                                                    color: selected
+                                                        ? widget.brand
+                                                            .withValues(
+                                                            alpha: 0.14,
+                                                          )
+                                                        : null,
+                                                    child: Text(
+                                                      grp.label(l10n),
+                                                      style: TextStyle(
+                                                        fontWeight: selected
+                                                            ? FontWeight.w700
+                                                            : FontWeight.w500,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    VerticalDivider(
+                                      width: 1,
+                                      thickness: 1,
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    Expanded(
+                                      flex: 3,
+                                      child: ClipRRect(
+                                        borderRadius: const BorderRadius.only(
+                                          topRight: Radius.circular(8),
+                                          bottomRight: Radius.circular(8),
+                                        ),
+                                        child: ListView.builder(
+                                          itemCount: g.services.length,
+                                          itemBuilder: (c, j) {
+                                            final s = g.services[j];
+                                            final priceLine =
+                                                s.isFreeConsultation
+                                                    ? '0 ${s.currency}'
+                                                    : '${(s.amountMinor / 100).toStringAsFixed(2)} ${s.currency}';
+                                            return ListTile(
+                                              dense: true,
+                                              title: Text(
+                                                s.title,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              subtitle: Text(priceLine),
+                                              onTap: () {
+                                                setLocal(() {
+                                                  list.add({
+                                                    'serviceId': s.id,
+                                                    'title': s.title,
+                                                    'amountMinor': s
+                                                            .isFreeConsultation
+                                                        ? 0
+                                                        : s.amountMinor,
+                                                    'currency': s.currency,
+                                                  });
+                                                  _touch();
+                                                });
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                      ],
                       const SizedBox(height: 12),
                       Flexible(
                         child: ListView.builder(
@@ -484,19 +669,15 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
-              Text(
-                l10n.translate('dentalUpperJaw'),
-                style: const TextStyle(fontWeight: FontWeight.w700),
+              DentalFdiChart(
+                brand: widget.brand,
+                toothServiceCounts: {
+                  for (final e in _teeth.entries)
+                    if (e.value.isNotEmpty) e.key: e.value.length,
+                },
+                onToothTap: _openToothEditor,
+                showTitle: false,
               ),
-              const SizedBox(height: 6),
-              _toothRow(kFdiTeethOrder.sublist(0, 16)),
-              const SizedBox(height: 12),
-              Text(
-                l10n.translate('dentalLowerJaw'),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              _toothRow(kFdiTeethOrder.sublist(16, 32)),
               const SizedBox(height: 16),
               TextField(
                 controller: _discountCtrl,
@@ -563,47 +744,6 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     );
   }
 
-  Widget _toothRow(List<String> order) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: order.map((spaced) {
-        final c = toothKeyCompact(spaced);
-        final n = (_teeth[c] ?? const []).length;
-        final has = n > 0;
-        return Material(
-          color: has ? widget.brand.withValues(alpha: 0.15) : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => _openToothEditor(c),
-            child: SizedBox(
-              width: 40,
-              height: 44,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    c,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: has ? widget.brand : Colors.black87,
-                    ),
-                  ),
-                  if (has)
-                    Text(
-                      '$n',
-                      style: TextStyle(fontSize: 10, color: widget.brand),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 }
 
 String? _extractApiMessage(String body) {

@@ -104,6 +104,11 @@ class _InPersonAppointmentScreenState
   /// 'general' = notes + images; '025-2' = structured dental form
   String _documentationType = 'general';
   bool _hasUnsavedChanges = false;
+  /// One-shot: apply [profileAllProvider] default mode when profile first loads.
+  bool _documentationProfessionDefaultApplied = false;
+  /// After the doctor explicitly picks a mode, do not override from profile.
+  bool _userSelectedDocumentationType = false;
+  bool _dentalDocumentationFullScreen = false;
   final GlobalKey<DentalVisitDocumentationPanelState> _dentalDocPanelKey =
       GlobalKey<DentalVisitDocumentationPanelState>();
 
@@ -976,22 +981,44 @@ class _InPersonAppointmentScreenState
         patientProfileAsync.isLoading &&
         !patientProfileAsync.hasValue;
 
+    ref.listen(profileAllProvider, (prev, next) {
+      next.whenData((all) {
+        if (_documentationProfessionDefaultApplied) return;
+        final prof = all.profile['profession'] as String?;
+        if (prof == null || prof.trim().isEmpty) return;
+        _documentationProfessionDefaultApplied = true;
+        if (_userSelectedDocumentationType) return;
+        final mode =
+            isDentalDocumentationProfession(prof) ? 'dental' : 'general';
+        if (_documentationType != mode) {
+          setState(() {
+            _documentationType = mode;
+            if (mode != 'dental') {
+              _dentalDocumentationFullScreen = false;
+            }
+          });
+        }
+      });
+    });
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Stack(
         children: [
-          AppointmentConsultationHeader(
-            appointment: widget.appointment,
-            resolvedPatient: resolvedPatient,
-            patientLoading: patientProfileLoading,
-            onBack: () => Navigator.pop(context),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Row(
-                children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppointmentConsultationHeader(
+                appointment: widget.appointment,
+                resolvedPatient: resolvedPatient,
+                patientLoading: patientProfileLoading,
+                onBack: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: Row(
+                    children: [
                   // Documents (collapsible)
                   _docPanelCollapsed
                       ? Container(
@@ -1190,6 +1217,15 @@ class _InPersonAppointmentScreenState
                               )!.consultationFocusModeTooltip,
                               onPressed: _openConsultationFocusMode,
                             ),
+                          if (_documentationType == 'dental' &&
+                              !_dentalDocumentationFullScreen)
+                            IconButton(
+                              icon: const Icon(Icons.fullscreen),
+                              tooltip: AppLocalizations.of(context)!.expand,
+                              onPressed: () => setState(
+                                () => _dentalDocumentationFullScreen = true,
+                              ),
+                            ),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.more_vert),
                             tooltip: AppLocalizations.of(context)!.notes,
@@ -1251,6 +1287,15 @@ class _InPersonAppointmentScreenState
 
                               // Mode switching (general vs 025-2) with unsaved-changes protection.
                               if (_documentationType == value) return;
+                              if (value != 'general' &&
+                                  value != 'dental' &&
+                                  value != '025-2') {
+                                return;
+                              }
+                              _userSelectedDocumentationType = true;
+                              if (value != 'dental') {
+                                _dentalDocumentationFullScreen = false;
+                              }
                               if (_hasUnsavedChanges) {
                                 final result = await showDialog<String>(
                                   context: context,
@@ -1598,6 +1643,8 @@ class _InPersonAppointmentScreenState
                                                                     // Never auto-apply: doctor must click Apply.
                                                                     if (_documentationType !=
                                                                         '025-2') {
+                                                                      _userSelectedDocumentationType =
+                                                                          true;
                                                                       setState(() {
                                                                         _documentationType =
                                                                             '025-2';
@@ -2381,13 +2428,17 @@ class _InPersonAppointmentScreenState
                               ],
                             )
                           : _documentationType == 'dental'
-                              ? DentalVisitDocumentationPanel(
-                                  key: _dentalDocPanelKey,
-                                  appointmentId: widget.appointment.id,
-                                  brand: brand,
-                                  onUnsavedChanged: (v) =>
-                                      setState(() => _hasUnsavedChanges = v),
-                                )
+                              ? (_dentalDocumentationFullScreen
+                                  ? const SizedBox.shrink()
+                                  : DentalVisitDocumentationPanel(
+                                      key: _dentalDocPanelKey,
+                                      appointmentId: widget.appointment.id,
+                                      brand: brand,
+                                      onUnsavedChanged: (v) =>
+                                          setState(
+                                            () => _hasUnsavedChanges = v,
+                                          ),
+                                    ))
                               : _build0252Panel(brand, patientId, patientIdAsync),
                     ),
                   ),
@@ -2405,7 +2456,78 @@ class _InPersonAppointmentScreenState
             isEndingAppointment: _isSaving,
             onEndAppointment: _endAppointment,
           ),
+            ],
+          ),
+          if (_documentationType == 'dental' &&
+              _dentalDocumentationFullScreen)
+            Positioned.fill(
+              child: _buildDentalDocumentationFullScreenOverlay(brand),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDentalDocumentationFullScreenOverlay(Color brand) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: Colors.black54,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        l10n.docModeDental,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.fullscreen_exit),
+                        tooltip: l10n.collapse,
+                        onPressed: () => setState(
+                          () => _dentalDocumentationFullScreen = false,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: DentalVisitDocumentationPanel(
+                      key: _dentalDocPanelKey,
+                      appointmentId: widget.appointment.id,
+                      brand: brand,
+                      onUnsavedChanged: (v) =>
+                          setState(() => _hasUnsavedChanges = v),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

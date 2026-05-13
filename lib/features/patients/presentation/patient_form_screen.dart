@@ -16,6 +16,7 @@ import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
 
 /// Uzbek-only labels for Form 025-2 PDF (no English in output).
 abstract class _Form0252PdfUz {
@@ -1579,7 +1580,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
               // Tooth visual representation
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _ToothPainter(
+                  painter: DentalToothPainter(
                     isIncisor: isIncisor,
                     isCanine: isCanine,
                     isPremolar: isPremolar,
@@ -2031,156 +2032,6 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
     );
   }
 
-}
-
-class _ToothPainter extends CustomPainter {
-  final bool isIncisor;
-  final bool isCanine;
-  final bool isPremolar;
-  final bool isMolar;
-  final bool isUpper;
-  final bool hasCondition;
-  final Color color;
-
-  _ToothPainter({
-    required this.isIncisor,
-    required this.isCanine,
-    required this.isPremolar,
-    required this.isMolar,
-    required this.isUpper,
-    required this.hasCondition,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = hasCondition ? color.withOpacity(0.2) : Colors.grey.shade200
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = hasCondition ? color : Colors.grey.shade300
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    final path = Path();
-    
-    // Draw tooth shape based on type
-    if (isIncisor) {
-      // Rectangular shape for incisors
-      path.addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.2, size.height * 0.1, size.width * 0.6, size.height * 0.8),
-        const Radius.circular(4),
-      ));
-    } else if (isCanine) {
-      // Pointed shape for canines
-      path.moveTo(size.width * 0.5, size.height * 0.1);
-      path.lineTo(size.width * 0.3, size.height * 0.5);
-      path.lineTo(size.width * 0.2, size.height * 0.9);
-      path.lineTo(size.width * 0.8, size.height * 0.9);
-      path.lineTo(size.width * 0.7, size.height * 0.5);
-      path.close();
-    } else if (isPremolar) {
-      // Rounded rectangular for premolars
-      path.addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.15, size.height * 0.1, size.width * 0.7, size.height * 0.8),
-        const Radius.circular(6),
-      ));
-    } else {
-      // Wider, more rounded for molars
-      path.addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.1, size.height * 0.1, size.width * 0.8, size.height * 0.8),
-        const Radius.circular(8),
-      ));
-    }
-
-    canvas.drawPath(path, paint);
-    canvas.drawPath(path, borderPaint);
-
-    // Draw root lines
-    if (isUpper) {
-      // Roots at bottom for upper teeth
-      final rootPaint = Paint()
-        ..color = Colors.grey.shade400
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1;
-      
-      if (isMolar) {
-        // Multiple roots for molars
-        canvas.drawLine(
-          Offset(size.width * 0.3, size.height * 0.9),
-          Offset(size.width * 0.3, size.height),
-          rootPaint,
-        );
-        canvas.drawLine(
-          Offset(size.width * 0.5, size.height * 0.9),
-          Offset(size.width * 0.5, size.height),
-          rootPaint,
-        );
-        canvas.drawLine(
-          Offset(size.width * 0.7, size.height * 0.9),
-          Offset(size.width * 0.7, size.height),
-          rootPaint,
-        );
-      } else {
-        // Single or double root for others
-        canvas.drawLine(
-          Offset(size.width * 0.4, size.height * 0.9),
-          Offset(size.width * 0.4, size.height),
-          rootPaint,
-        );
-        if (isPremolar) {
-          canvas.drawLine(
-            Offset(size.width * 0.6, size.height * 0.9),
-            Offset(size.width * 0.6, size.height),
-            rootPaint,
-          );
-        }
-      }
-    } else {
-      // Roots at top for lower teeth
-      final rootPaint = Paint()
-        ..color = Colors.grey.shade400
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1;
-      
-      if (isMolar) {
-        // Multiple roots for molars
-        canvas.drawLine(
-          Offset(size.width * 0.3, size.height * 0.1),
-          Offset(size.width * 0.3, 0),
-          rootPaint,
-        );
-        canvas.drawLine(
-          Offset(size.width * 0.5, size.height * 0.1),
-          Offset(size.width * 0.5, 0),
-          rootPaint,
-        );
-        canvas.drawLine(
-          Offset(size.width * 0.7, size.height * 0.1),
-          Offset(size.width * 0.7, 0),
-          rootPaint,
-        );
-      } else {
-        // Single or double root for others
-        canvas.drawLine(
-          Offset(size.width * 0.4, size.height * 0.1),
-          Offset(size.width * 0.4, 0),
-          rootPaint,
-        );
-        if (isPremolar) {
-          canvas.drawLine(
-            Offset(size.width * 0.6, size.height * 0.1),
-            Offset(size.width * 0.6, 0),
-            rootPaint,
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class _FollowupsTable extends StatelessWidget {
