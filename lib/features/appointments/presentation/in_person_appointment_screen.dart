@@ -36,6 +36,8 @@ import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_documentation_widgets.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_document_upload_strip.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_documentation_professions.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_visit_documentation_panel.dart';
 
 // Provider to fetch patientId from appointment
 final _patientIdProvider = FutureProvider.family<String?, String>((
@@ -102,6 +104,8 @@ class _InPersonAppointmentScreenState
   /// 'general' = notes + images; '025-2' = structured dental form
   String _documentationType = 'general';
   bool _hasUnsavedChanges = false;
+  final GlobalKey<DentalVisitDocumentationPanelState> _dentalDocPanelKey =
+      GlobalKey<DentalVisitDocumentationPanelState>();
 
   /// When true, helper sections inside Notes are visible.
   bool _notesSectionsExpanded = false;
@@ -602,24 +606,36 @@ class _InPersonAppointmentScreenState
           : consultationNotes
                 .map((n) => '${l10nForPdf.fromShifaAi}:\n${n.displayText}')
                 .join('\n\n');
-      final structuredAndFree = composeConsultationNotesPdf(
-        l10n: l10nForPdf,
-        soapSubjective: _soapSubjective,
-        soapObjective: _soapObjective,
-        soapAssessment: _soapAssessment,
-        soapPlan: _soapPlan,
-        freeNotes: _notesController,
-      );
+      final structuredAndFree = _documentationType == 'general'
+          ? composeConsultationNotesPdf(
+              l10n: l10nForPdf,
+              soapSubjective: _soapSubjective,
+              soapObjective: _soapObjective,
+              soapAssessment: _soapAssessment,
+              soapPlan: _soapPlan,
+              freeNotes: _notesController,
+            )
+          : '';
+
+      var dentalPdfBlock = '';
+      if (_documentationType == 'dental') {
+        dentalPdfBlock =
+            await _dentalDocPanelKey.currentState?.persistForPdfAndSave() ?? '';
+      }
+
       final combinedNotes = [
         if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
         if (structuredAndFree.isNotEmpty) structuredAndFree,
+        if (dentalPdfBlock.isNotEmpty) dentalPdfBlock,
       ].join('\n\n').trim();
 
       final hasNotes = combinedNotes.isNotEmpty;
       final hasBeforeImages = _beforeTreatmentImages.isNotEmpty;
       final hasAfterImages = _afterTreatmentImages.isNotEmpty;
+      final dentalHasWork = _documentationType == 'dental' &&
+          (_dentalDocPanelKey.currentState?.hasBillableContent ?? false);
 
-      if (!hasNotes && !hasBeforeImages && !hasAfterImages) {
+      if (!hasNotes && !hasBeforeImages && !hasAfterImages && !dentalHasWork) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -916,6 +932,9 @@ class _InPersonAppointmentScreenState
   @override
   Widget build(BuildContext context) {
     final brand = AppColors.primaryTeal;
+    final profession =
+        ref.watch(profileAllProvider).valueOrNull?.profile['profession'] as String?;
+    final showDentalDoc = isDentalDocumentationProfession(profession);
     final initialPatientId = widget.appointment.patientId;
 
     // If patientId is not available, try to fetch it from calendar
@@ -1157,7 +1176,9 @@ class _InPersonAppointmentScreenState
                     child: DocumentationSectionCard(
                       title: _documentationType == 'general'
                           ? AppLocalizations.of(context)!.notes
-                          : AppLocalizations.of(context)!.docMode0252,
+                          : _documentationType == 'dental'
+                              ? AppLocalizations.of(context)!.docModeDental
+                              : AppLocalizations.of(context)!.docMode0252,
                       titleTrailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1264,6 +1285,12 @@ class _InPersonAppointmentScreenState
                                             ?.requestSave() ??
                                         false;
                                     if (!ok || !mounted) return;
+                                  } else if (_documentationType == 'dental') {
+                                    final ok =
+                                        await _dentalDocPanelKey.currentState
+                                            ?.requestSave() ??
+                                        false;
+                                    if (!ok || !mounted) return;
                                   }
                                   setState(() {
                                     _hasUnsavedChanges = false;
@@ -1333,6 +1360,11 @@ class _InPersonAppointmentScreenState
                                   value: 'general',
                                   child: Text(l10n.docModeGeneral),
                                 ),
+                                if (showDentalDoc)
+                                  PopupMenuItem(
+                                    value: 'dental',
+                                    child: Text(l10n.docModeDental),
+                                  ),
                                 PopupMenuItem(
                                   value: '025-2',
                                   child: Text(l10n.docMode0252),
@@ -2348,7 +2380,15 @@ class _InPersonAppointmentScreenState
                                   ),
                               ],
                             )
-                          : _build0252Panel(brand, patientId, patientIdAsync),
+                          : _documentationType == 'dental'
+                              ? DentalVisitDocumentationPanel(
+                                  key: _dentalDocPanelKey,
+                                  appointmentId: widget.appointment.id,
+                                  brand: brand,
+                                  onUnsavedChanged: (v) =>
+                                      setState(() => _hasUnsavedChanges = v),
+                                )
+                              : _build0252Panel(brand, patientId, patientIdAsync),
                     ),
                   ),
                 ],

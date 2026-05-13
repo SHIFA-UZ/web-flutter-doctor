@@ -749,6 +749,23 @@ class AppLocalizations {
           'PDF generated. Printing not yet implemented.',
       'docMode0252': 'Form 025-2',
       'docModeGeneral': 'General Form',
+      'docModeDental': 'Dental visit record',
+      'dentalDocIntro':
+          'Tap a tooth (FDI-style quadrants), add your catalog services, then set discount if needed. Totals use the first currency found on priced lines.',
+      'dentalUpperJaw': 'Upper jaw',
+      'dentalLowerJaw': 'Lower jaw',
+      'dentalDiscountPercent': 'Discount',
+      'dentalClinicalNotes': 'Clinical notes',
+      'dentalSubtotal': 'Subtotal',
+      'dentalDiscount': 'Discount',
+      'dentalTotal': 'Total due',
+      'dentalLineItems': 'line items',
+      'dentalToothServices': 'Services for tooth',
+      'dentalAddService': 'Add service',
+      'dentalNoServices': 'Define services under Services & Pricing first.',
+      'dentalDocSaved': 'Dental visit documentation saved',
+      'dentalDocSaveFailed': 'Could not save dental documentation',
+      'dentalPdfHeader': 'DENTAL VISIT — Procedures by tooth',
       'openForm0252': 'Open Form 025-2',
       'fileAttachmentComingSoon': 'File attachment coming soon',
 
@@ -2090,6 +2107,23 @@ class AppLocalizations {
       'appointmentDocumentation': 'Uchrashuv hujjatlari',
       'docModeGeneral': 'Umumiy uchrashuv hujjati',
       'docMode0252': '025-2 Stomatologik karta',
+      'docModeDental': 'Stomatologik qabul yozuvi',
+      'dentalDocIntro':
+          'Tishni bosing (FDI), xizmatlarni qo\'shing, kerak bo\'lsa chegirma kiriting. Jami bir xil valyutadagi narx qatorlari yig\'indisidan hisoblanadi.',
+      'dentalUpperJaw': 'Yuquna jag\'',
+      'dentalLowerJaw': 'Pastki jag\'',
+      'dentalDiscountPercent': 'Chegirma',
+      'dentalClinicalNotes': 'Klinik izohlar',
+      'dentalSubtotal': 'Oraliq jami',
+      'dentalDiscount': 'Chegirma',
+      'dentalTotal': 'To\'lov',
+      'dentalLineItems': 'qatorma-qator',
+      'dentalToothServices': 'Tish uchun xizmatlar',
+      'dentalAddService': 'Xizmat qo\'shish',
+      'dentalNoServices': 'Avvalo «Xizmatlar va narxlar»da xizmatlarni kiriting.',
+      'dentalDocSaved': 'Stomatologik hujjat saqlandi',
+      'dentalDocSaveFailed': 'Stomatologik hujjatni saqlab bo\'lmadi',
+      'dentalPdfHeader': 'STOMATOLOGIK QABUL — tishlar bo\'yicha',
       'unsavedChangesSwitch':
           'Saqlanmagan o\'zgarishlar bor. Almashishdan oldin saqlaysizmi?',
       'saveAndSwitch': 'Saqlash va almashtirish',
@@ -3076,6 +3110,23 @@ class AppLocalizations {
       'appointmentDocumentation': 'Документация приема',
       'docModeGeneral': 'Общий документ приема',
       'docMode0252': '025-2 Стоматологическая карта',
+      'docModeDental': 'Запись стоматологического приёма',
+      'dentalDocIntro':
+          'Нажмите зуб (код FDI), добавьте услуги из каталога, при необходимости укажите скидку. Итог считается по строкам в одной валюте.',
+      'dentalUpperJaw': 'Верхняя челюсть',
+      'dentalLowerJaw': 'Нижняя челюсть',
+      'dentalDiscountPercent': 'Скидка',
+      'dentalClinicalNotes': 'Клинические заметки',
+      'dentalSubtotal': 'Промежуточный итог',
+      'dentalDiscount': 'Скидка',
+      'dentalTotal': 'К оплате',
+      'dentalLineItems': 'поз.',
+      'dentalToothServices': 'Услуги для зуба',
+      'dentalAddService': 'Добавить услугу',
+      'dentalNoServices': 'Сначала задайте услуги в разделе «Услуги и цены».',
+      'dentalDocSaved': 'Стоматологическая документация сохранена',
+      'dentalDocSaveFailed': 'Не удалось сохранить стоматологическую документацию',
+      'dentalPdfHeader': 'СТОМАТОЛОГИЧЕСКИЙ ПРИЁМ — по зубам',
       'unsavedChangesSwitch':
           'У вас есть несохраненные изменения. Сохранить перед переключением?',
       'saveAndSwitch': 'Сохранить и переключить',
@@ -3960,6 +4011,7 @@ class AppLocalizations {
   String get appointmentDocumentation => translate('appointmentDocumentation');
   String get docModeGeneral => translate('docModeGeneral');
   String get docMode0252 => translate('docMode0252');
+  String get docModeDental => translate('docModeDental');
   String get unsavedChangesSwitch => translate('unsavedChangesSwitch');
   String get saveAndSwitch => translate('saveAndSwitch');
   String get discardAndSwitch => translate('discardAndSwitch');

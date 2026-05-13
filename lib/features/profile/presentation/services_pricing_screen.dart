@@ -9,15 +9,35 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 
+/// Allowed currencies for service price rows (doctor UI).
+const List<String> _servicePriceCurrencies = ['UZS', 'USD', 'EUR', 'RUB'];
+
+String _normalizeServiceCurrency(String? raw) {
+  final c = raw?.trim().toUpperCase() ?? '';
+  if (_servicePriceCurrencies.contains(c)) return c;
+  return 'UZS';
+}
+
+/// Dropdown choices: fixed list plus current unknown code so existing data is not lost on edit.
+List<String> _currencyDropdownCodes(String currentUppercase) {
+  final set = Set<String>.from(_servicePriceCurrencies);
+  if (currentUppercase.isNotEmpty && !set.contains(currentUppercase)) {
+    set.add(currentUppercase);
+  }
+  final list = set.toList();
+  list.sort();
+  return list;
+}
+
 class _PriceRow {
   _PriceRow({
     required this.amount,
-    required this.currency,
+    required this.currencyCode,
     this.locationId,
   });
 
   final TextEditingController amount;
-  final TextEditingController currency;
+  String currencyCode;
   int? locationId;
 }
 
@@ -92,7 +112,7 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
       priceRows.add(
         _PriceRow(
           amount: TextEditingController(),
-          currency: TextEditingController(text: 'EUR'),
+          currencyCode: 'UZS',
           locationId: null,
         ),
       );
@@ -103,7 +123,7 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
             amount: TextEditingController(
               text: (((p['amountMinor'] as num?)?.toDouble() ?? 0) / 100).toStringAsFixed(2),
             ),
-            currency: TextEditingController(text: p['currency']?.toString()),
+            currencyCode: _normalizeServiceCurrency(p['currency']?.toString()),
             locationId: (p['locationId'] as num?)?.toInt(),
           ),
         );
@@ -197,6 +217,7 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: TextField(
@@ -212,13 +233,26 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         SizedBox(
-                                          width: 90,
-                                          child: TextField(
-                                            controller: row.currency,
+                                          width: 104,
+                                          child: DropdownButtonFormField<String>(
+                                            value: row.currencyCode,
                                             decoration: InputDecoration(
-                                              labelText: 'CCY',
+                                              labelText: dl10n.translate('serviceCurrencyLabel'),
                                               isDense: true,
                                             ),
+                                            items: _currencyDropdownCodes(row.currencyCode)
+                                                .map(
+                                                  (code) => DropdownMenuItem(
+                                                    value: code,
+                                                    child: Text(code),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onChanged: (v) {
+                                              if (v != null) {
+                                                setLocal(() => row.currencyCode = v);
+                                              }
+                                            },
                                           ),
                                         ),
                                         if (priceRows.length > 1)
@@ -226,7 +260,6 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                                             icon: const Icon(Icons.close),
                                             onPressed: () {
                                               row.amount.dispose();
-                                              row.currency.dispose();
                                               setLocal(() => priceRows.removeAt(i));
                                             },
                                           ),
@@ -273,7 +306,7 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                               priceRows.add(
                                 _PriceRow(
                                   amount: TextEditingController(),
-                                  currency: TextEditingController(text: 'EUR'),
+                                  currencyCode: 'UZS',
                                   locationId: null,
                                 ),
                               );
@@ -292,7 +325,6 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                   onPressed: () {
                     for (final r in priceRows) {
                       r.amount.dispose();
-                      r.currency.dispose();
                     }
                     Navigator.pop(ctx, false);
                   },
@@ -312,7 +344,6 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
     if (confirmed != true) {
       for (final r in priceRows) {
         r.amount.dispose();
-        r.currency.dispose();
       }
       return;
     }
@@ -322,13 +353,12 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
       final seen = <String>{};
       for (final r in priceRows) {
         final amountMinor = ((double.tryParse(r.amount.text.trim()) ?? 0) * 100).round();
-        final cur = r.currency.text.trim().toUpperCase();
+        final cur = r.currencyCode.trim().toUpperCase();
         if (amountMinor <= 0 || cur.isEmpty) continue;
         final key = '${cur}_${r.locationId ?? 'global'}';
         if (seen.contains(key)) {
           for (final x in priceRows) {
             x.amount.dispose();
-            x.currency.dispose();
           }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -347,7 +377,6 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
       if (builtPrices.isEmpty) {
         for (final r in priceRows) {
           r.amount.dispose();
-          r.currency.dispose();
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -360,7 +389,6 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
 
     for (final r in priceRows) {
       r.amount.dispose();
-      r.currency.dispose();
     }
 
     final body = <String, dynamic>{
@@ -387,6 +415,29 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
     await _load();
   }
 
+  DoctorLocationDto? _locationById(int id) {
+    for (final l in _locations) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  String _locationLabelForSummary(int? locationId) {
+    final l10n = AppLocalizations.of(context)!;
+    if (locationId == null) {
+      return l10n.translate('priceScopeAllLocations');
+    }
+    final loc = _locationById(locationId);
+    if (loc != null) {
+      final city = loc.locationCity;
+      if (city != null && city.isNotEmpty) {
+        return '${loc.label} — $city';
+      }
+      return loc.label;
+    }
+    return '${l10n.translate('location')} #$locationId';
+  }
+
   String _priceSummary(Map<String, dynamic> s) {
     final l10n = AppLocalizations.of(context)!;
     if (s['isFreeConsultation'] == true) {
@@ -395,10 +446,8 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
     final prices = (s['prices'] as List? ?? const []);
     if (prices.isEmpty) return '—';
     return prices.map((p) {
-      final loc = p['locationId'];
-      final locHint = loc == null
-          ? (l10n.translate('priceScopeAllLocations'))
-          : '${l10n.translate('location')} #$loc';
+      final locId = (p['locationId'] as num?)?.toInt();
+      final locHint = _locationLabelForSummary(locId);
       return '${((p['amountMinor'] as num?)?.toDouble() ?? 0) / 100} ${p['currency']} ($locHint)';
     }).join('\n');
   }

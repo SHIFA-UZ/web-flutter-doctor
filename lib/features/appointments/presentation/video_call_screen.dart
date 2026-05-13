@@ -40,6 +40,8 @@ import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/cons
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_document_upload_strip.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_documentation_professions.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_visit_documentation_panel.dart';
 
 /// Maps English video token errors from the backend / [DailyVideoService] to [AppLocalizations].
 String _localizeDoctorVideoError(BuildContext context, String errStr) {
@@ -148,6 +150,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   String? _expandedNoteSource;
   final GlobalKey<AppointmentForm0252PanelState> _form0252PanelKey =
       GlobalKey<AppointmentForm0252PanelState>();
+  final GlobalKey<DentalVisitDocumentationPanelState> _dentalDocPanelKey =
+      GlobalKey<DentalVisitDocumentationPanelState>();
   bool _notesPanelFullScreen = false;
   int _consultationNoteIndex = 0;
 
@@ -843,24 +847,37 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           : consultationNotes
                 .map((n) => '${l10nForPdf.fromShifaAi}:\n${n.displayText}')
                 .join('\n\n');
-      final structuredAndFree = composeConsultationNotesPdf(
-        l10n: l10nForPdf,
-        soapSubjective: _soapSubjective,
-        soapObjective: _soapObjective,
-        soapAssessment: _soapAssessment,
-        soapPlan: _soapPlan,
-        freeNotes: _notesController,
-      );
+      final structuredAndFree = _documentationType == 'general'
+          ? composeConsultationNotesPdf(
+              l10n: l10nForPdf,
+              soapSubjective: _soapSubjective,
+              soapObjective: _soapObjective,
+              soapAssessment: _soapAssessment,
+              soapPlan: _soapPlan,
+              freeNotes: _notesController,
+            )
+          : '';
+
+      var dentalPdfBlock = '';
+      if (_documentationType == 'dental') {
+        dentalPdfBlock =
+            await _dentalDocPanelKey.currentState?.persistForPdfAndSave() ??
+                '';
+      }
+
       final combinedNotes = [
         if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
         if (structuredAndFree.isNotEmpty) structuredAndFree,
+        if (dentalPdfBlock.isNotEmpty) dentalPdfBlock,
       ].join('\n\n').trim();
 
       final hasNotes = combinedNotes.isNotEmpty;
       final hasBeforeImages = _beforeTreatmentImages.isNotEmpty;
       final hasAfterImages = _afterTreatmentImages.isNotEmpty;
+      final dentalHasWork = _documentationType == 'dental' &&
+          (_dentalDocPanelKey.currentState?.hasBillableContent ?? false);
 
-      if (!hasNotes && !hasBeforeImages && !hasAfterImages) {
+      if (!hasNotes && !hasBeforeImages && !hasAfterImages && !dentalHasWork) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1113,6 +1130,10 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   @override
   Widget build(BuildContext context) {
     final brand = AppColors.primaryTeal;
+    final profession =
+        ref.watch(profileAllProvider).valueOrNull?.profile['profession']
+            as String?;
+    final showDentalDoc = isDentalDocumentationProfession(profession);
     final initialPatientId = widget.appointment.patientId;
 
     // If patientId is not available, try to fetch it from calendar
@@ -1532,10 +1553,13 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
 
                                               // Switch documentation type (defer entire logic to avoid build errors)
                                               if (value == 'switch_general' ||
-                                                  value == 'switch_0252') {
+                                                  value == 'switch_0252' ||
+                                                  value == 'switch_dental') {
                                                 final newType =
                                                     value == 'switch_general'
                                                     ? 'general'
+                                                    : value == 'switch_dental'
+                                                    ? 'dental'
                                                     : '025-2';
                                                 Future.microtask(() async {
                                                   if (!mounted) return;
@@ -1593,6 +1617,15 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                           '025-2') {
                                                         final ok =
                                                             await _form0252PanelKey
+                                                                .currentState
+                                                                ?.requestSave() ??
+                                                            false;
+                                                        if (!ok || !mounted)
+                                                          return;
+                                                      } else if (_documentationType ==
+                                                          'dental') {
+                                                        final ok =
+                                                            await _dentalDocPanelKey
                                                                 .currentState
                                                                 ?.requestSave() ??
                                                             false;
@@ -1723,6 +1756,22 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                       ],
                                                     ),
                                                   ),
+                                                if (showDentalDoc &&
+                                                    _documentationType !=
+                                                        'dental')
+                                                  PopupMenuItem(
+                                                    value: 'switch_dental',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.medical_services_outlined,
+                                                          size: 18,
+                                                        ),
+                                                        SizedBox(width: 12),
+                                                        Text(l10n.docModeDental),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 if (_documentationType !=
                                                     '025-2')
                                                   PopupMenuItem(
@@ -1779,8 +1828,14 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
 
   Widget _buildNotesFullScreenOverlay(Color brand, String? patientId) {
     final l10n = AppLocalizations.of(context)!;
+    final profession =
+        ref.watch(profileAllProvider).valueOrNull?.profile['profession']
+            as String?;
+    final showDentalDoc = isDentalDocumentationProfession(profession);
     final notesTitle = _documentationType == 'general'
         ? l10n.notes
+        : _documentationType == 'dental'
+        ? l10n.docModeDental
         : l10n.docMode0252;
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -1880,9 +1935,13 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                       }
 
                       // Switch documentation type
-                      if (value == 'switch_general' || value == 'switch_0252') {
+                      if (value == 'switch_general' ||
+                          value == 'switch_0252' ||
+                          value == 'switch_dental') {
                         final newType = value == 'switch_general'
                             ? 'general'
+                            : value == 'switch_dental'
+                            ? 'dental'
                             : '025-2';
                         Future.microtask(() async {
                           if (!mounted) return;
@@ -1919,6 +1978,12 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                               if (_documentationType == '025-2') {
                                 final ok =
                                     await _form0252PanelKey.currentState
+                                        ?.requestSave() ??
+                                    false;
+                                if (!ok || !mounted) return;
+                              } else if (_documentationType == 'dental') {
+                                final ok =
+                                    await _dentalDocPanelKey.currentState
                                         ?.requestSave() ??
                                     false;
                                 if (!ok || !mounted) return;
@@ -2018,6 +2083,20 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                 Icon(Icons.notes, size: 18),
                                 SizedBox(width: 12),
                                 Text(l10n.docModeGeneral),
+                              ],
+                            ),
+                          ),
+                        if (showDentalDoc && _documentationType != 'dental')
+                          PopupMenuItem(
+                            value: 'switch_dental',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.medical_services_outlined,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 12),
+                                Text(l10n.docModeDental),
                               ],
                             ),
                           ),
@@ -2742,6 +2821,14 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
             ),
           ],
         ],
+      );
+    }
+    if (_documentationType == 'dental') {
+      return DentalVisitDocumentationPanel(
+        key: _dentalDocPanelKey,
+        appointmentId: widget.appointment.id,
+        brand: brand,
+        onUnsavedChanged: (v) => setState(() => _hasUnsavedChanges = v),
       );
     }
     if (patientId == null || patientId.isEmpty) {
