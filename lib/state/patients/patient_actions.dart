@@ -490,6 +490,29 @@ Future<PatientForm> updatePatientFormWithClient({
   }
 }
 
+/// Request patient signature on form **025-2** (notifies patient app).
+Future<PatientForm> requestPatientFormSignatureWithClient({
+  required ApiClient client,
+  required String patientId,
+  required String formId,
+}) async {
+  final res = await client.put(
+    '/api/patients/$patientId/forms/$formId/request-signature',
+    <String, dynamic>{},
+  );
+
+  if (res.statusCode >= 200 && res.statusCode < 300) {
+    final Map<String, dynamic> j = jsonDecode(utf8.decode(res.bodyBytes));
+    return PatientForm.fromJson(j);
+  } else if (res.statusCode == 401) {
+    throw Exception('Unauthorized: please login again.');
+  } else {
+    throw Exception(
+      'Failed to request patient signature: ${res.statusCode} ${res.body}',
+    );
+  }
+}
+
 /// Link a document to a form.
 Future<PatientForm> linkDocumentToFormWithClient({
   required ApiClient client,

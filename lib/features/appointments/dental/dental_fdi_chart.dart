@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 
 /// Same FDI tooth diagram as form 025-2 (Roman quadrants I–IV, anatomy labels, [DentalToothPainter] shapes).
@@ -23,19 +24,20 @@ class DentalFdiChart extends StatelessWidget {
     final paintBrand = brand;
 
     Widget buildTooth(String quadrant, int toothNum, {required bool isUpper}) {
-      final key = '$quadrant$toothNum';
-      final count = toothServiceCounts[key] ?? 0;
+      final legacy = '$quadrant$toothNum';
+      final fdi = DentalChartCodec.fdiKey(quadrant, toothNum);
+      final count = toothServiceCounts[fdi] ?? toothServiceCounts[legacy] ?? 0;
       final has = count > 0;
       final isIncisor = toothNum == 1 || toothNum == 2;
       final isCanine = toothNum == 3;
       final isPremolar = toothNum == 4 || toothNum == 5;
       final isMolar = toothNum >= 6;
 
-      final toothLabel = key;
+      final toothLabel = fdi;
       return Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => onToothTap(key),
+          onTap: () => onToothTap(legacy),
           borderRadius: BorderRadius.only(
             topLeft: isUpper ? const Radius.circular(20) : const Radius.circular(4),
             topRight: isUpper ? const Radius.circular(20) : const Radius.circular(4),

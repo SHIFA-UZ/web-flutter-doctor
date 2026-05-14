@@ -25,11 +25,14 @@ class PatientForm {
   final String? doctorName;
   final String? doctorClinic;
   final int? formNumber;
-  /// Dental chart mapping per tooth: UR1..UR8, UL1..UL8, LL1..LL8, LR1..LR8
-  /// Value is a short code like K, P, R, O, C, A, crown, post, missing, prosthetic...
+  /// Dental chart: per-tooth codes use ISO 3950 keys ("11"…"48") plus optional legacy UR/UL/LR/LL keys;
+  /// jaw rows use TOP_{row}_{cell}, BOTTOM_{row}_{cell}; past visits use TOP_HIST_*, BOTTOM_HIST_* with _date/_doctor.
   final Map<String, String> dentalChart;
   final List<PatientFormFollowup> followups;
   final String? documentId; // Link to PDF document if exists
+  final bool signatureRequested;
+  final String? patientSignedAt;
+  final String? patientSignatureImageBase64;
 
   PatientForm({
     this.id,
@@ -61,6 +64,9 @@ class PatientForm {
     Map<String, String>? dentalChart,
     List<PatientFormFollowup>? followups,
     this.documentId,
+    this.signatureRequested = false,
+    this.patientSignedAt,
+    this.patientSignatureImageBase64,
   })  : dentalChart = dentalChart ?? const {},
         followups = followups ?? const [];
 
@@ -94,6 +100,9 @@ class PatientForm {
     Map<String, String>? dentalChart,
     List<PatientFormFollowup>? followups,
     String? documentId,
+    bool? signatureRequested,
+    String? patientSignedAt,
+    String? patientSignatureImageBase64,
   }) {
     return PatientForm(
       id: id ?? this.id,
@@ -125,6 +134,10 @@ class PatientForm {
       dentalChart: dentalChart ?? this.dentalChart,
       followups: followups ?? this.followups,
       documentId: documentId ?? this.documentId,
+      signatureRequested: signatureRequested ?? this.signatureRequested,
+      patientSignedAt: patientSignedAt ?? this.patientSignedAt,
+      patientSignatureImageBase64:
+          patientSignatureImageBase64 ?? this.patientSignatureImageBase64,
     );
   }
 
@@ -242,6 +255,9 @@ class PatientForm {
       dentalChart: parsedDentalChart,
       followups: parsedFollowups,
       documentId: json['documentId']?.toString(),
+      signatureRequested: json['signatureRequested'] == true,
+      patientSignedAt: json['patientSignedAt']?.toString(),
+      patientSignatureImageBase64: json['patientSignatureImageBase64']?.toString(),
     );
   }
 }

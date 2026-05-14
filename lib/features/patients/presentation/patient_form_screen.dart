@@ -14,9 +14,9 @@ import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart'
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
-import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
 
 /// Uzbek-only labels for Form 025-2 PDF (no English in output).
@@ -43,6 +43,7 @@ abstract class _Form0252PdfUz {
   static const String sectionTreatmentResult = "DAVOLANISH NATIJASI (EPIKRIZ)";
   static const String sectionRecommendations = "KO'RSATMALAR";
   static const String sectionReturnVisits = "QAYTA TASHRIFLAR";
+  static const String sectionPatientSignature = 'BEMOR IMZOSI';
 }
 
 class _IcdSearchItem {
@@ -102,6 +103,10 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
 
   bool _isSaving = false;
   bool _warningShown = false;
+  bool _requestingSignature = false;
+  late bool _signatureRequested;
+  String? _patientSignedAt;
+  String? _patientSignatureImageBase64;
 
   // ---- ICD-10 structured diagnosis (optional) ----
   String? _diagnosisCode;
@@ -197,8 +202,14 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     _visualCheckupCtrl =
         TextEditingController(text: widget.existingForm?.visualCheckup ?? '');
 
-    _dentalChart = Map<String, String>.from(widget.existingForm?.dentalChart ?? const {});
+    _dentalChart = DentalChartCodec.migrateLegacyToothKeys(
+      Map<String, String>.from(widget.existingForm?.dentalChart ?? const {}),
+    );
     _followups = List<PatientFormFollowup>.from(widget.existingForm?.followups ?? const []);
+
+    _signatureRequested = widget.existingForm?.signatureRequested ?? false;
+    _patientSignedAt = widget.existingForm?.patientSignedAt;
+    _patientSignatureImageBase64 = widget.existingForm?.patientSignatureImageBase64;
 
     // Pre-fill dental diagram from latest 025-2 for this patient when creating NEW form (continuity).
     if (widget.existingForm == null && widget.templateId == '025-2') {
@@ -325,34 +336,31 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     if (mounted) setState(() {});
   }
 
-  /// Continuity: when creating a new 025-2 form, pre-fill ONLY the teeth diagram from the most recent
-  /// 025-2 form created by the same doctor for this patient. No other fields are copied. If none exists, leave diagram empty.
+  /// Continuity: when creating a new 025-2 form, pre-fill the teeth diagram from the **most recent**
+  /// 025-2 for this patient (any doctor). Prior rows are merged into read-only history (`TOP_HIST` / `BOTTOM_HIST`)
+  /// with that form’s date and doctor name. No other fields are copied. If none exists, leave diagram empty.
   Future<void> _prefillDentalChartFromLatest0252() async {
     try {
-      final profile = await ref.read(profileAllProvider.future);
-      final p = profile.profile;
-      final currentDoctorName = '${p['lastName'] ?? ''} ${p['firstName'] ?? ''}'.trim();
-
       ref.invalidate(patientFormsProvider(_patientId));
       final forms = await ref.read(patientFormsProvider(_patientId).future);
 
-      final list0252BySameDoctor = forms
-          .where((f) =>
-              f.templateId == '025-2' &&
-              currentDoctorName.isNotEmpty &&
-              (f.doctorName ?? '').trim() == currentDoctorName)
-          .toList();
-      // Backend orders by date desc only; same-day forms need ordering by id desc (latest created = highest id).
-      list0252BySameDoctor.sort((a, b) {
+      final list0252 = forms.where((f) => f.templateId == '025-2').toList();
+      list0252.sort((a, b) {
+        final byDate = b.date.compareTo(a.date);
+        if (byDate != 0) return byDate;
         final idA = int.tryParse(a.id ?? '0') ?? 0;
         final idB = int.tryParse(b.id ?? '0') ?? 0;
         return idB.compareTo(idA);
       });
-      final latest0252 = list0252BySameDoctor.isNotEmpty ? list0252BySameDoctor.first : null;
+      final latest0252 = list0252.isNotEmpty ? list0252.first : null;
 
       if (latest0252 != null && latest0252.dentalChart.isNotEmpty && mounted) {
         setState(() {
-          _dentalChart = Map<String, String>.from(latest0252.dentalChart);
+          _dentalChart = DentalChartCodec.prefillFromLatest0252(
+            latestChart: latest0252.dentalChart,
+            visitDate: latest0252.date,
+            visitDoctor: (latest0252.doctorName ?? '').trim(),
+          );
         });
       }
     } catch (_) {
@@ -422,6 +430,10 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
             _recommendationsCtrl.text.trim().isEmpty ? null : _recommendationsCtrl.text.trim(),
         dentalChart: widget.templateId == '025-2' ? _dentalChart : const {},
         followups: widget.templateId == '025-2' ? _followups : const [],
+        documentId: widget.existingForm?.documentId,
+        signatureRequested: _signatureRequested,
+        patientSignedAt: _patientSignedAt,
+        patientSignatureImageBase64: _patientSignatureImageBase64,
       );
 
       // Save form data to backend (create or update)
@@ -494,6 +506,13 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       ref.invalidate(patientFormsProvider(_patientId));
 
       if (!mounted) return false;
+      setState(() {
+        _signatureRequested = savedForm.signatureRequested;
+        _patientSignedAt = savedForm.patientSignedAt;
+        _patientSignatureImageBase64 = savedForm.patientSignatureImageBase64;
+      });
+
+      if (!mounted) return false;
       if (widget.isEmbedded) {
         widget.onUnsavedChange?.call(false);
         widget.onSaved?.call();
@@ -520,6 +539,44 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
       }
+    }
+  }
+
+  Future<void> _requestPatientSignature() async {
+    final formId = widget.existingForm?.id;
+    if (formId == null || widget.templateId != '025-2') return;
+    if ((_patientSignatureImageBase64 ?? '').trim().isNotEmpty) return;
+
+    setState(() => _requestingSignature = true);
+    try {
+      final client = ref.read(apiClientProvider);
+      final updated = await requestPatientFormSignatureWithClient(
+        client: client,
+        patientId: _patientId,
+        formId: formId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _signatureRequested = updated.signatureRequested;
+        _patientSignedAt = updated.patientSignedAt;
+        _patientSignatureImageBase64 = updated.patientSignatureImageBase64;
+      });
+      ref.invalidate(patientFormsProvider(_patientId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.translate('patientSignatureRequestSent')),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context)!.error}: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _requestingSignature = false);
     }
   }
 
@@ -654,7 +711,48 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
         _buildFollowupsPdf(form.followups, l10n, font),
       ]);
     }
+    list.addAll(_patientSignaturePdfWidgets(form, font));
     return list;
+  }
+
+  Uint8List? _decodeBase64ImageBytes(String raw) {
+    var s = raw.trim();
+    final commaIdx = s.indexOf(',');
+    if (s.startsWith('data:') && commaIdx != -1) {
+      s = s.substring(commaIdx + 1);
+    }
+    try {
+      return base64Decode(s.trim());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<pw.Widget> _patientSignaturePdfWidgets(PatientForm form, pw.Font? font) {
+    final raw = form.patientSignatureImageBase64?.trim();
+    if (raw == null || raw.isEmpty) return [];
+    final bytes = _decodeBase64ImageBytes(raw);
+    if (bytes == null || bytes.isEmpty) return [];
+    late final pw.ImageProvider img;
+    try {
+      img = pw.MemoryImage(bytes);
+    } catch (_) {
+      return [];
+    }
+    return [
+      pw.SizedBox(height: 16),
+      _build0252SectionHeader(_Form0252PdfUz.sectionPatientSignature, font),
+      pw.SizedBox(height: 8),
+      pw.Center(child: pw.Image(img, height: 72, fit: pw.BoxFit.contain)),
+      if (form.patientSignedAt != null && form.patientSignedAt!.trim().isNotEmpty)
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 8),
+          child: pw.Text(
+            'Sana: ${form.patientSignedAt!.trim()}',
+            style: pw.TextStyle(fontSize: 10, font: font),
+          ),
+        ),
+    ];
   }
 
   pw.Widget _build0252HeaderPortraitPdf(PatientForm form, pw.Font? font) {
@@ -744,43 +842,31 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     );
   }
 
-  /// Parses UI dental chart (TOP_*_*, BOTTOM_*_*) into rows of 16 values each. Each value gets its own cell in the PDF.
-  /// Returns (topRows, bottomRows). Each row is List<String> of 16 cells (indices 0–7 = right 8→1, 8–15 = left 1→8).
-  static (List<List<String>> top, List<List<String>> bottom) _dentalChartRowsForPdf(Map<String, String> chart) {
-    const cellsPerRow = 16;
-    final topByRow = <int, List<String>>{};
-    final bottomByRow = <int, List<String>>{};
-    for (final entry in chart.entries) {
-      final key = entry.key;
-      final value = entry.value;
-      if (key.startsWith('TOP_')) {
-        final parts = key.split('_');
-        if (parts.length >= 3) {
-          final rowIndex = int.tryParse(parts[1]) ?? 0;
-          final cellIndex = int.tryParse(parts[2]) ?? 0;
-          if (cellIndex >= 0 && cellIndex < cellsPerRow) {
-            topByRow.putIfAbsent(rowIndex, () => List.filled(cellsPerRow, ''));
-            topByRow[rowIndex]![cellIndex] = value;
-          }
-        }
-      } else if (key.startsWith('BOTTOM_')) {
-        final parts = key.split('_');
-        if (parts.length >= 3) {
-          final rowIndex = int.tryParse(parts[1]) ?? 0;
-          final cellIndex = int.tryParse(parts[2]) ?? 0;
-          if (cellIndex >= 0 && cellIndex < cellsPerRow) {
-            bottomByRow.putIfAbsent(rowIndex, () => List.filled(cellsPerRow, ''));
-            bottomByRow[rowIndex]![cellIndex] = value;
-          }
-        }
-      }
+  /// Parses UI dental chart rows for PDF: history rows (with note) then current editable rows.
+  static (List<(List<String> cells, String? note)> top, List<(List<String> cells, String? note)> bottom)
+      _dentalChartPdfRows(Map<String, String> chart) {
+    String histNote(DentalHistRowSnapshot h) {
+      final d = DentalChartCodec.formatHistDateForDisplay(h.dateIso);
+      final doc = (h.doctor ?? '').trim();
+      if (d.isEmpty && doc.isEmpty) return '';
+      if (d.isEmpty) return doc;
+      if (doc.isEmpty) return d;
+      return '$d · $doc';
     }
-    final topRows = topByRow.keys.toList()..sort();
-    final bottomRows = bottomByRow.keys.toList()..sort();
-    return (
-      topRows.map((i) => List<String>.from(topByRow[i]!)).toList(),
-      bottomRows.map((i) => List<String>.from(bottomByRow[i]!)).toList(),
-    );
+
+    final histTop = DentalChartCodec.parseHistRows(chart, isTop: true);
+    final histBottom = DentalChartCodec.parseHistRows(chart, isTop: false);
+    final topE = DentalChartCodec.parseEditableRows(chart, 'TOP');
+    final bottomE = DentalChartCodec.parseEditableRows(chart, 'BOTTOM');
+    final top = <(List<String>, String?)>[
+      ...histTop.map((h) => (h.cells, histNote(h))),
+      ...topE.map((r) => (r, null)),
+    ];
+    final bottom = <(List<String>, String?)>[
+      ...histBottom.map((h) => (h.cells, histNote(h))),
+      ...bottomE.map((r) => (r, null)),
+    ];
+    return (top, bottom);
   }
 
   /// Converts UR/UL/LR/LL single-value chart to one row per jaw for PDF (legacy format).
@@ -838,47 +924,75 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     }
 
     pw.Widget rowOfCellsFromChart(Map<String, String> pdfChart, String rightQuad, String leftQuad) {
+      String toothCode(String quad, String nStr) {
+        final n = int.tryParse(nStr) ?? 0;
+        if (n < 1 || n > 8) return '';
+        return DentalChartCodec.toothValue(pdfChart, quad, n);
+      }
+
       return pw.Row(
         mainAxisSize: pw.MainAxisSize.min,
         mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
-          ...rightNums.map((n) => cell(pdfChart['$rightQuad$n'])),
+          ...rightNums.map((n) => cell(toothCode(rightQuad, n))),
           pw.SizedBox(width: 4),
           pw.Container(width: 2, height: boxSize, color: PdfColors.grey400),
           pw.SizedBox(width: 4),
-          ...leftNums.map((n) => cell(pdfChart['$leftQuad$n'])),
+          ...leftNums.map((n) => cell(toothCode(leftQuad, n))),
         ],
       );
     }
 
-    pw.Widget numberRow() {
+    const upperRightFdi = ['18', '17', '16', '15', '14', '13', '12', '11'];
+    const upperLeftFdi = ['21', '22', '23', '24', '25', '26', '27', '28'];
+    const lowerRightFdi = ['48', '47', '46', '45', '44', '43', '42', '41'];
+    const lowerLeftFdi = ['31', '32', '33', '34', '35', '36', '37', '38'];
+
+    pw.Widget fdiNumberRow(List<String> right, List<String> left) {
       return pw.Row(
         mainAxisSize: pw.MainAxisSize.min,
         mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
-          ...rightNums.map((n) => numberCell(n)),
+          ...right.map(numberCell),
           pw.SizedBox(width: 4),
           pw.SizedBox(width: 2),
           pw.SizedBox(width: 4),
-          ...leftNums.map((n) => numberCell(n)),
+          ...left.map(numberCell),
         ],
       );
     }
 
-    final hasUiKeys = chart.keys.any((k) => k.startsWith('TOP_') || k.startsWith('BOTTOM_'));
+    final hasUiKeys =
+        chart.keys.any((k) => k.startsWith('TOP_') || k.startsWith('BOTTOM_'));
     if (hasUiKeys) {
-      final (topRows, bottomRows) = _dentalChartRowsForPdf(chart);
+      final (topRows, bottomRows) = _dentalChartPdfRows(chart);
       return pw.Column(
         mainAxisSize: pw.MainAxisSize.min,
         children: [
           for (final row in topRows) ...[
-            rowOfCellsFromList(row),
+            rowOfCellsFromList(row.$1),
+            if (row.$2 != null && row.$2!.trim().isNotEmpty)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 2),
+                child: pw.Text(
+                  row.$2!.trim(),
+                  style: pw.TextStyle(fontSize: 7, font: font, color: PdfColors.grey700),
+                ),
+              ),
             pw.SizedBox(height: 2),
           ],
-          numberRow(),
+          fdiNumberRow(upperRightFdi, upperLeftFdi),
           pw.SizedBox(height: 2),
           for (final row in bottomRows) ...[
-            rowOfCellsFromList(row),
+            rowOfCellsFromList(row.$1),
+            if (row.$2 != null && row.$2!.trim().isNotEmpty)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 2),
+                child: pw.Text(
+                  row.$2!.trim(),
+                  style: pw.TextStyle(fontSize: 7, font: font, color: PdfColors.grey700),
+                ),
+              ),
             pw.SizedBox(height: 2),
           ],
         ],
@@ -891,9 +1005,11 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       children: [
         rowOfCellsFromChart(pdfChart, 'UR', 'UL'),
         pw.SizedBox(height: 2),
-        numberRow(),
+        fdiNumberRow(upperRightFdi, upperLeftFdi),
         pw.SizedBox(height: 2),
         rowOfCellsFromChart(pdfChart, 'LR', 'LL'),
+        pw.SizedBox(height: 2),
+        fdiNumberRow(lowerRightFdi, lowerLeftFdi),
       ],
     );
   }
@@ -1019,6 +1135,10 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   formNumber: widget.existingForm!.formNumber,
                   dentalChart: widget.templateId == '025-2' ? _dentalChart : const {},
                   followups: widget.templateId == '025-2' ? _followups : const [],
+                  documentId: widget.existingForm!.documentId,
+                  signatureRequested: _signatureRequested,
+                  patientSignedAt: _patientSignedAt,
+                  patientSignatureImageBase64: _patientSignatureImageBase64,
                       );
                       final l10n = AppLocalizations.of(context)!;
                       await _generatePdf(form, l10n);
@@ -1311,6 +1431,50 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 ),
               ],
 
+              if (widget.templateId == '025-2' && widget.existingForm?.id != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.translate('patientFormSignatureSectionTitle'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: brand,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if ((_patientSignatureImageBase64 ?? '').trim().isNotEmpty) ...[
+                  Text(
+                    l10n.translate('patientFormSignatureReceived'),
+                    style: TextStyle(color: Colors.green.shade800),
+                  ),
+                  if ((_patientSignedAt ?? '').trim().isNotEmpty)
+                    Text(
+                      '${l10n.translate('patientFormSignedAtPrefix')}: ${_patientSignedAt!.trim()}',
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                    ),
+                  Text(
+                    l10n.translate('patientFormSaveAgainToRefreshPdf'),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  ),
+                ] else ...[
+                  if (_signatureRequested)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        l10n.translate('patientSignaturePending'),
+                        style: TextStyle(color: Colors.orange.shade900),
+                      ),
+                    ),
+                  ShifaSecondaryButton(
+                    width: ButtonWidth.fill,
+                    icon: Icons.draw_outlined,
+                    label: l10n.translate('requestPatientFormSignature'),
+                    isLoading: _requestingSignature,
+                    onPressed: (_requestingSignature || _isSaving) ? null : _requestPatientSignature,
+                  ),
+                ],
+              ],
+
               const SizedBox(height: 32),
               ShifaPrimaryButton(
                 width: ButtonWidth.fill,
@@ -1375,12 +1539,21 @@ class _DentalChartGrid extends StatefulWidget {
 }
 
 class _DentalChartGridState extends State<_DentalChartGrid> {
-  // Additional input cells above and below the tooth map
-  // Each row contains 16 cells (8 teeth per quadrant, 2 quadrants per jaw)
   final List<List<String>> _topInputRows = [];
   final List<List<String>> _bottomInputRows = [];
-  
-  static const int _cellsPerRow = 16; // 8 UR + 8 UL for upper, 8 LR + 8 LL for lower
+  List<DentalHistRowSnapshot> _histTopRows = [];
+  List<DentalHistRowSnapshot> _histBottomRows = [];
+
+  static const int _cellsPerRow = DentalChartCodec.cellsPerJawRow;
+
+  String _histMetaText(DentalHistRowSnapshot h) {
+    final d = DentalChartCodec.formatHistDateForDisplay(h.dateIso);
+    final doc = (h.doctor ?? '').trim();
+    if (d.isEmpty && doc.isEmpty) return '';
+    if (doc.isEmpty) return d;
+    if (d.isEmpty) return doc;
+    return '$d\n$doc';
+  }
 
   @override
   void initState() {
@@ -1392,10 +1565,8 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
   void didUpdateWidget(covariant _DentalChartGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value == widget.value) return;
-    // Only reload from value when it has *more* rows than we have (e.g. pre-fill from previous form).
-    // If we have more rows locally (e.g. user just added an empty row), don't wipe - empty rows aren't persisted.
     final topRowIndices = widget.value.keys
-        .where((k) => k.startsWith('TOP_'))
+        .where((k) => DentalChartCodec.isEditableRowDataKey(k) && k.startsWith('TOP_'))
         .map((k) {
           final parts = k.split('_');
           return parts.length >= 2 ? int.tryParse(parts[1]) ?? -1 : -1;
@@ -1403,16 +1574,25 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
         .where((i) => i >= 0)
         .toSet();
     final bottomRowIndices = widget.value.keys
-        .where((k) => k.startsWith('BOTTOM_'))
+        .where((k) => DentalChartCodec.isEditableRowDataKey(k) && k.startsWith('BOTTOM_'))
         .map((k) {
           final parts = k.split('_');
           return parts.length >= 2 ? int.tryParse(parts[1]) ?? -1 : -1;
         })
         .where((i) => i >= 0)
         .toSet();
-    final valueTopCount = topRowIndices.isEmpty ? 0 : (topRowIndices.reduce((a, b) => a > b ? a : b) + 1);
-    final valueBottomCount = bottomRowIndices.isEmpty ? 0 : (bottomRowIndices.reduce((a, b) => a > b ? a : b) + 1);
-    if (valueTopCount > _topInputRows.length || valueBottomCount > _bottomInputRows.length) {
+    final valueTopCount =
+        topRowIndices.isEmpty ? 0 : (topRowIndices.reduce((a, b) => a > b ? a : b) + 1);
+    final valueBottomCount =
+        bottomRowIndices.isEmpty ? 0 : (bottomRowIndices.reduce((a, b) => a > b ? a : b) + 1);
+    final histTopCount = DentalChartCodec.parseHistRows(widget.value, isTop: true).length;
+    final histBottomCount = DentalChartCodec.parseHistRows(widget.value, isTop: false).length;
+    final oldHistTop = DentalChartCodec.parseHistRows(oldWidget.value, isTop: true).length;
+    final oldHistBottom = DentalChartCodec.parseHistRows(oldWidget.value, isTop: false).length;
+    if (valueTopCount > _topInputRows.length ||
+        valueBottomCount > _bottomInputRows.length ||
+        histTopCount != oldHistTop ||
+        histBottomCount != oldHistBottom) {
       _topInputRows.clear();
       _bottomInputRows.clear();
       _loadInputs();
@@ -1420,55 +1600,14 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
   }
 
   void _loadInputs() {
-    // Load top rows (sort by row index so order is consistent)
-    final topEntries = widget.value.entries
-        .where((e) => e.key.startsWith('TOP_'))
-        .toList();
-    if (topEntries.isNotEmpty) {
-      final rowMap = <int, List<String>>{};
-      for (final entry in topEntries) {
-        final parts = entry.key.split('_');
-        if (parts.length >= 3) {
-          final rowIndex = int.tryParse(parts[1]) ?? 0;
-          final cellIndex = int.tryParse(parts[2]) ?? 0;
-          if (!rowMap.containsKey(rowIndex)) {
-            rowMap[rowIndex] = List.filled(_cellsPerRow, '');
-          }
-          if (cellIndex < _cellsPerRow) {
-            rowMap[rowIndex]![cellIndex] = entry.value;
-          }
-        }
-      }
-      final sortedTop = rowMap.keys.toList()..sort();
-      for (final i in sortedTop) {
-        _topInputRows.add(List<String>.from(rowMap[i]!));
-      }
-    }
-
-    // Load bottom rows
-    final bottomEntries = widget.value.entries
-        .where((e) => e.key.startsWith('BOTTOM_'))
-        .toList();
-    if (bottomEntries.isNotEmpty) {
-      final rowMap = <int, List<String>>{};
-      for (final entry in bottomEntries) {
-        final parts = entry.key.split('_');
-        if (parts.length >= 3) {
-          final rowIndex = int.tryParse(parts[1]) ?? 0;
-          final cellIndex = int.tryParse(parts[2]) ?? 0;
-          if (!rowMap.containsKey(rowIndex)) {
-            rowMap[rowIndex] = List.filled(_cellsPerRow, '');
-          }
-          if (cellIndex < _cellsPerRow) {
-            rowMap[rowIndex]![cellIndex] = entry.value;
-          }
-        }
-      }
-      final sortedBottom = rowMap.keys.toList()..sort();
-      for (final i in sortedBottom) {
-        _bottomInputRows.add(List<String>.from(rowMap[i]!));
-      }
-    }
+    _histTopRows = DentalChartCodec.parseHistRows(widget.value, isTop: true);
+    _histBottomRows = DentalChartCodec.parseHistRows(widget.value, isTop: false);
+    _topInputRows
+      ..clear()
+      ..addAll(DentalChartCodec.parseEditableRows(widget.value, 'TOP'));
+    _bottomInputRows
+      ..clear()
+      ..addAll(DentalChartCodec.parseEditableRows(widget.value, 'BOTTOM'));
   }
 
   void _addTopRow() {
@@ -1519,9 +1658,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
 
   void _saveInputs() {
     final updated = Map<String, String>.from(widget.value);
-    // Clear old top/bottom entries
-    updated.removeWhere((key, value) => key.startsWith('TOP_') || key.startsWith('BOTTOM_'));
-    // Add new entries
+    updated.removeWhere((k, _) => DentalChartCodec.isEditableRowDataKey(k));
     for (int rowIndex = 0; rowIndex < _topInputRows.length; rowIndex++) {
       for (int cellIndex = 0; cellIndex < _topInputRows[rowIndex].length; cellIndex++) {
         final value = _topInputRows[rowIndex][cellIndex];
@@ -1562,16 +1699,11 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
 
     String labelFor(String v) => codeLabel[v] ?? v;
 
-    // Tooth notation: UR1-UR8, UL1-UL8, LL1-LL8, LR1-LR8
-    // Upper Right: UR8 to UR1 (right to left from patient's perspective)
-    // Upper Left: UL1 to UL8 (left to right from patient's perspective)
-    // Lower Right: LR8 to LR1 (right to left from patient's perspective)
-    // Lower Left: LL1 to LL8 (left to right from patient's perspective)
+    // FDI tooth labels: 11–18, 21–28, 41–48, 31–38 (display); map supports legacy UR/UL keys.
 
     Widget buildTooth(String quadrant, int toothNum, {bool isUpper = true}) {
-      final key = '$quadrant$toothNum';
-      final current = widget.value[key] ?? '';
-      final toothLabel = '$quadrant$toothNum';
+      final current = DentalChartCodec.toothValue(widget.value, quadrant, toothNum);
+      final toothLabel = DentalChartCodec.fdiKey(quadrant, toothNum);
 
       // Determine tooth shape based on type
       bool isIncisor = toothNum == 1 || toothNum == 2;
@@ -1656,7 +1788,29 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
       required Function(String?) onChanged,
       required VoidCallback? onRemove,
       required bool showRemove,
+      bool readOnly = false,
     }) {
+      if (readOnly) {
+        final display = labelFor(value ?? '');
+        return Container(
+          width: 45,
+          height: 40,
+          margin: const EdgeInsets.all(2),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey.shade100,
+          ),
+          child: Text(
+            display,
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade800),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }
       return Container(
         width: 45, // Match tooth width exactly
         height: 40,
@@ -1755,6 +1909,93 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     ],
                   ),
                   const SizedBox(height: 4),
+                  for (final hist in _histTopRows) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ...([8, 7, 6, 5, 4, 3, 2, 1].asMap().entries.map((entry) {
+                            final urIndex = entry.key;
+                            return buildInputCell(
+                              value: hist.cells[urIndex],
+                              onAdd: _addTopRow,
+                              onChanged: (_) {},
+                              onRemove: null,
+                              showRemove: false,
+                              readOnly: true,
+                            );
+                          })),
+                          const SizedBox(width: 16),
+                          ...([1, 2, 3, 4, 5, 6, 7, 8].asMap().entries.map((entry) {
+                            final ulIndex = entry.key + 8;
+                            return buildInputCell(
+                              value: hist.cells[ulIndex],
+                              onAdd: _addTopRow,
+                              onChanged: (_) {},
+                              onRemove: null,
+                              showRemove: false,
+                              readOnly: true,
+                            );
+                          })),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 132,
+                            child: Text(
+                              _histMetaText(hist),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade700,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ...DentalChartCodec.fdiUpperRightDisplay.map(
+                          (n) => SizedBox(
+                            width: 49,
+                            child: Text(
+                              n,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        ...DentalChartCodec.fdiUpperLeftDisplay.map(
+                          (n) => SizedBox(
+                            width: 49,
+                            child: Text(
+                              n,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_histTopRows.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(width: 132),
+                        ],
+                      ],
+                    ),
+                  ),
                   // Top input rows (stacked above teeth)
                   ..._topInputRows.asMap().entries.map((rowEntry) {
                     final rowIndex = rowEntry.key;
@@ -1953,6 +2194,93 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ...DentalChartCodec.fdiLowerRightDisplay.map(
+                          (n) => SizedBox(
+                            width: 49,
+                            child: Text(
+                              n,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        ...DentalChartCodec.fdiLowerLeftDisplay.map(
+                          (n) => SizedBox(
+                            width: 49,
+                            child: Text(
+                              n,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_histBottomRows.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(width: 132),
+                        ],
+                      ],
+                    ),
+                  ),
+                  for (final hist in _histBottomRows) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ...([8, 7, 6, 5, 4, 3, 2, 1].asMap().entries.map((entry) {
+                            final lrIndex = entry.key;
+                            return buildInputCell(
+                              value: hist.cells[lrIndex],
+                              onAdd: _addBottomRow,
+                              onChanged: (_) {},
+                              onRemove: null,
+                              showRemove: false,
+                              readOnly: true,
+                            );
+                          })),
+                          const SizedBox(width: 16),
+                          ...([1, 2, 3, 4, 5, 6, 7, 8].asMap().entries.map((entry) {
+                            final llIndex = entry.key + 8;
+                            return buildInputCell(
+                              value: hist.cells[llIndex],
+                              onAdd: _addBottomRow,
+                              onChanged: (_) {},
+                              onRemove: null,
+                              showRemove: false,
+                              readOnly: true,
+                            );
+                          })),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 132,
+                            child: Text(
+                              _histMetaText(hist),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade700,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   // Bottom input rows (stacked below teeth)
                   ..._bottomInputRows.asMap().entries.map((rowEntry) {
                     final rowIndex = rowEntry.key;

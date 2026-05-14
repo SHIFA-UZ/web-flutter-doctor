@@ -1079,6 +1079,15 @@ class AppLocalizations {
       'noReturnVisitsAddedYet': 'No return visits added yet',
       'addReturnVisit': 'Add return visit',
       'saveForm': 'Save Form',
+      'patientFormSignatureSectionTitle': 'Patient signature (form 025-2)',
+      'requestPatientFormSignature': 'Request patient signature',
+      'patientSignaturePending':
+          'A signature request was sent. The patient is notified in the mobile app.',
+      'patientSignatureRequestSent': 'The patient has been notified to review and sign the form.',
+      'patientFormSignatureReceived': 'Patient signature received.',
+      'patientFormSignedAtPrefix': 'Signed at',
+      'patientFormSaveAgainToRefreshPdf':
+          'Save the form again to refresh the PDF so it includes the patient signature.',
       'dentalChart': 'Dental Chart',
       'icd10SearchHint': 'Search ICD-10 code or title',
       'speakToType': 'Speak to type',
@@ -2196,6 +2205,16 @@ class AppLocalizations {
       'noReturnVisitsAddedYet': 'Qayta tashrif mavjud emas',
       'addReturnVisit': 'Tashrif qo\'shish',
       'saveForm': 'Saqlash',
+      'patientFormSignatureSectionTitle': 'Bemor imzosi (025-2 shakl)',
+      'requestPatientFormSignature': 'Bemordan imzo so\'rash',
+      'patientSignaturePending':
+          'Imzo so\'rovi yuborildi. Bemorga mobil ilovada bildirishnoma boradi.',
+      'patientSignatureRequestSent':
+          'Bemor formani ko\'rib chiqish va imzolash uchun xabardor qilindi.',
+      'patientFormSignatureReceived': 'Bemor imzosi qabul qilindi.',
+      'patientFormSignedAtPrefix': 'Imzolangan sana',
+      'patientFormSaveAgainToRefreshPdf':
+          'PDF faylida imzo bo\'lishi uchun formani qayta saqlang.',
       'dentalChart': 'Tish diagrammasi',
       'icd10SearchHint': 'ICD-10 kodi yoki nomi bo\'yicha qidiring',
       'speakToType': 'Gapirish orqali yozish',
@@ -3217,6 +3236,16 @@ class AppLocalizations {
       'noReturnVisitsAddedYet': 'Пока нет повторных визитов',
       'addReturnVisit': 'Добавить повторный визит',
       'saveForm': 'Сохранить форму',
+      'patientFormSignatureSectionTitle': 'Подпись пациента (форма 025-2)',
+      'requestPatientFormSignature': 'Запросить подпись пациента',
+      'patientSignaturePending':
+          'Запрос подписи отправлен. Пациент получит уведомление в приложении.',
+      'patientSignatureRequestSent':
+          'Пациент уведомлён: нужно просмотреть и подписать форму.',
+      'patientFormSignatureReceived': 'Подпись пациента получена.',
+      'patientFormSignedAtPrefix': 'Дата подписи',
+      'patientFormSaveAgainToRefreshPdf':
+          'Сохраните форму ещё раз, чтобы обновить PDF с подписью пациента.',
       'dentalChart': 'Зубная карта',
       'icd10SearchHint': 'Поиск по коду или названию ICD-10',
       'speakToType': 'Говорить для ввода текста',
