@@ -781,6 +781,7 @@ class _InPersonAppointmentScreenState
           followUpDate: null,
           patientSignatureImageBytes: signatureBytes,
           patientSignedAt: signedAt,
+          isDentalDocumentation: _documentationType == 'dental',
         );
 
         final combinedPdf = await generateAppointmentPdf(

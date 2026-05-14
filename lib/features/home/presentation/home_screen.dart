@@ -17,6 +17,7 @@ import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart' show patientByIdProvider, patientsProvider;
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_message.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -378,8 +379,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const String _conversationStoragePrefix = 'ask_shifa_ai_conversation_v1';
   String? _lastConversationStorageKey;
 
+  static const String _aiLangUzbekCyrillic = 'UZ_CYRL';
+
+  /// Backend [AiApi.streamAi] expects EN/UZ/RU/DE; Cyrillic Uzbek maps to UZ.
+  String _aiLanguageBackendCode(String selected) {
+    final u = selected.toUpperCase();
+    if (u == _aiLangUzbekCyrillic) return 'UZ';
+    return u;
+  }
+
   String _assistantSystemPromptForLanguage() {
     final lang = _selectedLanguage.toUpperCase();
+    final backendLang = _aiLanguageBackendCode(_selectedLanguage);
     String assessment = 'Assessment';
     String causes = 'Possible Causes';
     String redFlags = 'Red Flags';
@@ -389,7 +400,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String redFlagsRule =
         'In structured mode only: include at least one concrete $redFlags item when clinically meaningful; if escalation risk is truly negligible, state that plainly in one line instead of inventing artificial emergencies.';
 
-    if (lang == 'UZ') {
+    if (lang == 'UZ' || lang == _aiLangUzbekCyrillic) {
       assessment = 'Baholash';
       causes = 'Mumkin bo\'lgan sabablar';
       redFlags = 'Xavfli belgilar';
@@ -398,6 +409,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           'Tuzilgan javobda $assessment ichida qisqa noaniqlik / cheklov yozing.';
       redFlagsRule =
           'Faqat tuzilgan rejimda: klinik jihatdan asos bo\'lsa, kamida bitta aniq $redFlags bandi bo\'lsin; agar shoshilinch xavf haqiqatan yo\'q bo\'lsa, sun\'iy favqulodda holat ixtiro qilmang — bitta qator bilan past ekanini yozing.';
+      if (lang == _aiLangUzbekCyrillic) {
+        final uncertaintyLatin =
+            'Tuzilgan javobda $assessment ichida qisqa noaniqlik / cheklov yozing.';
+        final redFlagsLatin =
+            'Faqat tuzilgan rejimda: klinik jihatdan asos bo\'lsa, kamida bitta aniq $redFlags bandi bo\'lsin; agar shoshilinch xavf haqiqatan yo\'q bo\'lsa, sun\'iy favqulodda holat ixtiro qilmang — bitta qator bilan past ekanini yozing.';
+        assessment = transliterateUzbekLatinToCyrillicUi(assessment);
+        causes = transliterateUzbekLatinToCyrillicUi(causes);
+        redFlags = transliterateUzbekLatinToCyrillicUi(redFlags);
+        recommendations = transliterateUzbekLatinToCyrillicUi(recommendations);
+        uncertaintyRule = transliterateUzbekLatinToCyrillicUi(uncertaintyLatin);
+        redFlagsRule = transliterateUzbekLatinToCyrillicUi(redFlagsLatin);
+      }
     } else if (lang == 'RU') {
       assessment = 'Оценка';
       causes = 'Возможные причины';
@@ -418,8 +441,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           'Nur im strukturierten Modus: bei klinischer Relevanz mindestens einen konkreten Punkt unter "$redFlags"; wenn das Notfallrisiko wirklich vernachlässigbar ist, keine künstliche Eskalation erfinden — in einer Zeile festhalten.';
     }
 
+    final cyrillicUzNote = lang == _aiLangUzbekCyrillic
+        ? ' Use the Uzbek Cyrillic alphabet for all Uzbek words (do not use Latin letters). '
+        : ' ';
+
     return 'You are Shifa AI, a clinical decision support assistant for licensed doctors. '
-        'Always write in the doctor\'s selected UI language (language code: $lang); keep tone professional and concise.\n\n'
+        'Always write in the doctor\'s selected UI language (language code: $backendLang); keep tone professional and concise.'
+        '$cyrillicUzNote'
+        '\n\n'
         'RESPONSE SHAPE — pick ONE approach per answer (do not force clinical sections onto factual questions):\n\n'
         '(A) DIRECT ANSWER — use by default for reference, education, coding/classification (e.g. ICD-10 examples), definitions, '
         'literature-oriented summaries, generic protocols, administrative/medico-legal generalities, or when the doctor asks for lists, '
@@ -446,6 +475,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     switch (_selectedLanguage.toUpperCase()) {
       case 'UZ':
         return 'Bemor tanlanmagan.';
+      case _aiLangUzbekCyrillic:
+        return transliterateUzbekLatinToCyrillicUi('Bemor tanlanmagan.');
       case 'RU':
         return 'Пациент не выбран.';
       case 'DE':
@@ -459,6 +490,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     switch (_selectedLanguage.toUpperCase()) {
       case 'UZ':
         return 'Tibbiy tarix brifingi mavjud emas (zarur bo‘lsa, uchrashuvlar bo‘yicha brifing yarating).';
+      case _aiLangUzbekCyrillic:
+        return transliterateUzbekLatinToCyrillicUi(
+          'Tibbiy tarix brifingi mavjud emas (zarur bo‘lsa, uchrashuvlar bo‘yicha brifing yarating).',
+        );
       case 'RU':
         return 'Брифинг по медицинскому анамнезу недоступен (при необходимости сгенерируйте брифинг по приёмам).';
       case 'DE':
@@ -570,7 +605,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .streamAi(
           messages: payloadMessages,
           question: question,
-          language: _selectedLanguage,
+          language: _aiLanguageBackendCode(_selectedLanguage),
           patientId: _selectedPatientId == null ? null : int.tryParse(_selectedPatientId!),
           consultationId: _selectedAppointmentId != null ? int.tryParse(_selectedAppointmentId!) : null,
         )
@@ -1090,7 +1125,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      _selectedLanguage,
+                                      _selectedLanguage.toUpperCase() == _aiLangUzbekCyrillic
+                                          ? 'ЎЗ'
+                                          : _selectedLanguage,
                                       style: const TextStyle(fontSize: 11),
                                     ),
                                     const SizedBox(width: 2),
@@ -1106,6 +1143,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 PopupMenuItem(
                                   value: 'UZ',
                                   child: Text(AppLocalizations.of(context)!.uzbek),
+                                ),
+                                PopupMenuItem(
+                                  value: _aiLangUzbekCyrillic,
+                                  child: const Text('ЎЗ'),
                                 ),
                                 PopupMenuItem(
                                   value: 'DE',

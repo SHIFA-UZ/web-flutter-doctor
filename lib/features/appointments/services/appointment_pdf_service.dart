@@ -108,6 +108,10 @@ Future<Uint8List> generateAppointmentPdf({
 /// Max lines per chunk so each widget fits on one page (~35 lines ≈ 400pt at 11pt font).
 const int _maxLinesPerChunk = 35;
 
+/// Uzbek regulatory line for dental documentation (sterilized instruments).
+const String _uzDentalSterilizationAttestation =
+    "Zararsizlantirilgan asboblar (instrumentlar) ishlatilganligi to'g'ri";
+
 List<pw.Widget> _buildReportContentAsList({
   required AppointmentPdfData data,
   required AppointmentPdfTranslations t,
@@ -184,8 +188,58 @@ List<pw.Widget> _buildReportContentAsList({
   }
 
   children.add(pw.SizedBox(height: 80));
+  if (data.isDentalDocumentation) {
+    children.add(_buildDentalSterilizationAttestation(data, font));
+    children.add(pw.SizedBox(height: 20));
+  }
   children.add(_buildSignatureSection(data, t, font));
   return children;
+}
+
+/// Patient signature (when present) placed to the left of the sterilization attestation line.
+pw.Widget _buildDentalSterilizationAttestation(
+  AppointmentPdfData data,
+  pw.Font font,
+) {
+  final hasImg = data.patientSignatureImageBytes != null &&
+      data.patientSignatureImageBytes!.isNotEmpty;
+
+  return pw.Container(
+    width: double.infinity,
+    padding: const pw.EdgeInsets.all(12),
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.grey500, width: 0.5),
+      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      color: PdfColors.grey100,
+    ),
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        if (hasImg) ...[
+          pw.Container(
+            width: 100,
+            height: 52,
+            alignment: pw.Alignment.center,
+            child: pw.Image(
+              pw.MemoryImage(data.patientSignatureImageBytes!),
+              fit: pw.BoxFit.contain,
+            ),
+          ),
+          pw.SizedBox(width: 14),
+        ],
+        pw.Expanded(
+          child: pw.Text(
+            _uzDentalSterilizationAttestation,
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 11,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Splits text into chunks of at most [maxLines] lines so each chunk fits on one PDF page.
@@ -407,15 +461,18 @@ pw.Widget _buildSignatureSection(
             ),
             pw.SizedBox(height: 2),
             if (hasPatientSignatureImage) ...[
-              pw.Container(
-                width: 180,
-                height: 48,
-                child: pw.Image(
-                  pw.MemoryImage(data.patientSignatureImageBytes!),
-                  fit: pw.BoxFit.contain,
+              // Dental docs: signature image is shown beside sterilization attestation above.
+              if (!data.isDentalDocumentation) ...[
+                pw.Container(
+                  width: 180,
+                  height: 48,
+                  child: pw.Image(
+                    pw.MemoryImage(data.patientSignatureImageBytes!),
+                    fit: pw.BoxFit.contain,
+                  ),
                 ),
-              ),
-              pw.SizedBox(height: 4),
+                pw.SizedBox(height: 4),
+              ],
               if (data.patientSignedAt != null)
                 pw.Text(
                   _formatSignedAt(data.patientSignedAt!, t.signedElectronicallyOn),

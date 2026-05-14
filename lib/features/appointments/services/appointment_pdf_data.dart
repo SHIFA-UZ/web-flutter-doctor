@@ -39,6 +39,10 @@ class AppointmentPdfData {
   final Uint8List? patientSignatureImageBytes;
   final DateTime? patientSignedAt;
 
+  /// When true (dental documentation mode), PDF includes Uzbek sterilization attestation
+  /// beside the patient signature.
+  final bool isDentalDocumentation;
+
   const AppointmentPdfData({
     required this.appointmentId,
     required this.patientName,
@@ -63,5 +67,6 @@ class AppointmentPdfData {
     this.followUpDate,
     this.patientSignatureImageBytes,
     this.patientSignedAt,
+    this.isDentalDocumentation = false,
   });
 }

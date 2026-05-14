@@ -339,7 +339,8 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
         locale: languageState.locale,
         supportedLocales: const [
           Locale('en'), // English
-          Locale('uz'), // Uzbek
+          Locale('uz'), // Uzbek (Latin)
+          Locale.fromSubtags(languageCode: 'uz', scriptCode: 'Cyrl'), // Uzbek (Cyrillic)
           Locale('ru'), // Russian
         ],
         localizationsDelegates: const [

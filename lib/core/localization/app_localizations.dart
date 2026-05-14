@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart';
+
 class AppLocalizations {
   final Locale locale;
 
@@ -187,6 +189,7 @@ class AppLocalizations {
       'settings': 'Settings',
       'english': 'English',
       'uzbek': 'Uzbek',
+      'uzbekCyrillicMenu': 'Uzbek (Cyrillic)',
       'selectLanguage': 'Select Language',
       'languageChanged': 'Language changed successfully',
       'biography': 'Biography',
@@ -1366,6 +1369,7 @@ class AppLocalizations {
       'settings': 'Sozlamalar',
       'english': 'Inglizcha',
       'uzbek': 'O\'zbekcha',
+      'uzbekCyrillicMenu': 'Ўзбекча (кирилл)',
       'selectLanguage': 'Tilni tanlash',
       'languageChanged': 'Til muvaffaqiyatli o\'zgartirildi',
       'biography': 'Biografiya',
@@ -2533,6 +2537,7 @@ class AppLocalizations {
       'settings': 'Настройки',
       'english': 'Английский',
       'uzbek': 'Узбекский',
+      'uzbekCyrillicMenu': 'Узбекский (кириллица)',
       'russian': 'Русский',
       'german': 'Немецкий',
       'selectLanguage': 'Выбрать язык',
@@ -3434,9 +3439,13 @@ class AppLocalizations {
   };
 
   String translate(String key) {
-    return _localizedValues[locale.languageCode]?[key] ??
-        _localizedValues['en']?[key] ??
-        key;
+    final lc = locale.languageCode;
+    if (lc == 'uz' && (locale.scriptCode ?? '') == 'Cyrl') {
+      final uzVal = _localizedValues['uz']?[key];
+      if (uzVal != null) return transliterateUzbekLatinToCyrillicUi(uzVal);
+      return _localizedValues['en']?[key] ?? key;
+    }
+    return _localizedValues[lc]?[key] ?? _localizedValues['en']?[key] ?? key;
   }
 
   /// Localized month name (1 = January, 12 = December).

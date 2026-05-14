@@ -1,4 +1,9 @@
 // Profession model with English and Uzbek translations
+
+import 'dart:ui' show Locale;
+
+import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart';
+
 class ProfessionModel {
   final String english;
   final String uzbek;
@@ -9,11 +14,13 @@ class ProfessionModel {
   });
 
   // Get display text based on language - show only one language
-  String getDisplayText(String? language) {
-    if (language == 'uz' || language == 'uz_UZ') {
-      return uzbek; // Show only Uzbek when language is UZ
+  String getDisplayText(Locale? locale) {
+    if (locale == null) return english;
+    if (locale.languageCode != 'uz') return english;
+    if ((locale.scriptCode ?? '') == 'Cyrl') {
+      return transliterateUzbekLatinToCyrillicUi(uzbek);
     }
-    return english; // Show only English when language is EN
+    return uzbek;
   }
 
   // Search helper - checks both English and Uzbek

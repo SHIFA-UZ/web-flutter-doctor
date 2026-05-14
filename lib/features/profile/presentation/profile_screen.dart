@@ -1711,7 +1711,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         {
           final l10n = AppLocalizations.of(context)!;
           final languageState = ref.watch(languageProvider);
-          final currentLanguage = languageState.locale.languageCode;
+          final appLocale = languageState.locale;
+          final currentLanguageTag = appLocale.persistenceTag;
           final country = (settings['country'] as String?) ?? 'Uzbekistan';
           final twoFA = (settings['twoFA'] == true);
           final encDocs = (settings['encryptedDocs'] != false);
@@ -1747,13 +1748,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                   onChanged: (v) {
-                    patchSettings(ref, {'country': v, 'language': currentLanguage, 'twoFA': twoFA, 'encryptedDocs': encDocs});
+                    patchSettings(ref, {'country': v, 'language': currentLanguageTag, 'twoFA': twoFA, 'encryptedDocs': encDocs});
                   },
                   decoration: InputDecoration(hintText: l10n.translate('country') ?? 'Country'),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: currentLanguage,
+                  value: currentLanguageTag,
                   items: [
                     DropdownMenuItem(
                       value: 'en',
@@ -1761,7 +1762,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     DropdownMenuItem(
                       value: 'uz',
-                      child: Text(l10n.uzbek),
+                      child: Text('${l10n.uzbek} (UZ)'),
+                    ),
+                    DropdownMenuItem(
+                      value: kUzbekCyrillicLocaleTag,
+                      child: Text(l10n.translate('uzbekCyrillicMenu')),
                     ),
                     DropdownMenuItem(
                       value: 'ru',
@@ -1770,8 +1775,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                   onChanged: (v) async {
                     if (v != null) {
-                      final newLocale = Locale(v);
-                      await ref.read(languageProvider.notifier).setLanguage(newLocale);
+                      await ref.read(languageProvider.notifier).setLanguage(localeFromPersistenceTag(v));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(l10n.languageChanged)),
                       );
@@ -1786,7 +1790,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   value: twoFA,
                   activeColor: brand,
                   onChanged: (v) {
-                    patchSettings(ref, {'country': country, 'language': currentLanguage, 'twoFA': v, 'encryptedDocs': encDocs});
+                    patchSettings(ref, {'country': country, 'language': currentLanguageTag, 'twoFA': v, 'encryptedDocs': encDocs});
                   },
                 ),
                 SwitchListTile(
@@ -1795,7 +1799,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   value: encDocs,
                   activeColor: brand,
                   onChanged: (v) {
-                    patchSettings(ref, {'country': country, 'language': currentLanguage, 'twoFA': twoFA, 'encryptedDocs': v});
+                    patchSettings(ref, {'country': country, 'language': currentLanguageTag, 'twoFA': twoFA, 'encryptedDocs': v});
                   },
                 ),
               ],

@@ -43,9 +43,9 @@ class _SearchableProfessionDropdownState
   Future<void> _loadProfessions() async {
     setState(() => _isLoading = true);
     try {
-      final language = ref.read(languageProvider).locale.languageCode;
+      final locale = ref.read(languageProvider).locale;
       final professions = await ProfessionService.getProfessions(
-        language: language,
+        language: locale.backendLanguageCode,
         useBackend: widget.useBackend,
         ref: ref,
       );
@@ -94,9 +94,9 @@ class _SearchableProfessionDropdownState
     // Also try backend search if enabled
     if (widget.useBackend && query.isNotEmpty) {
       try {
-        final language = ref.read(languageProvider).locale.languageCode;
+        final locale = ref.read(languageProvider).locale;
         final backendResults = await ProfessionService.fetchFromBackend(
-          language: language,
+          language: locale.backendLanguageCode,
           search: query,
           ref: ref,
         );
@@ -121,7 +121,7 @@ class _SearchableProfessionDropdownState
         searchController: _searchController,
         initialFilteredProfessions: _filteredProfessions,
         selectedValue: _selectedValue,
-        language: ref.read(languageProvider).locale.languageCode,
+        locale: ref.read(languageProvider).locale,
         useBackend: widget.useBackend,
       ),
     );
@@ -136,8 +136,7 @@ class _SearchableProfessionDropdownState
 
   @override
   Widget build(BuildContext context) {
-    final languageState = ref.watch(languageProvider);
-    final language = languageState.locale.languageCode;
+    final locale = ref.watch(languageProvider).locale;
     
     // Find selected profession in current list
     ProfessionModel? selectedProfession;
@@ -172,7 +171,7 @@ class _SearchableProfessionDropdownState
         ),
         child: Text(
           selectedProfession != null
-              ? selectedProfession.getDisplayText(language)
+              ? selectedProfession.getDisplayText(locale)
               : widget.hintText ?? 'Select Profession',
           style: TextStyle(
             color: selectedProfession != null
@@ -189,7 +188,7 @@ class _SearchDialog extends StatefulWidget {
   final TextEditingController searchController;
   final List<ProfessionModel> initialFilteredProfessions;
   final String? selectedValue;
-  final String? language;
+  final Locale locale;
   final bool useBackend;
 
   const _SearchDialog({
@@ -197,7 +196,7 @@ class _SearchDialog extends StatefulWidget {
     required this.searchController,
     required this.initialFilteredProfessions,
     required this.selectedValue,
-    required this.language,
+    required this.locale,
     required this.useBackend,
   }) : super(key: key);
 
@@ -298,7 +297,7 @@ class _SearchDialogState extends State<_SearchDialog> {
 
                         return ListTile(
                           title: Text(
-                            profession.getDisplayText(widget.language),
+                            profession.getDisplayText(widget.locale),
                             style: TextStyle(
                               fontWeight: isSelected
                                   ? FontWeight.bold

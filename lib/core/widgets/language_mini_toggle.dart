@@ -4,7 +4,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/app/app.dart';
 
 /// Small, unobtrusive language dropdown used across the app.
-/// Shows "EN", "UZ", and "RU" and updates the app locale immediately.
+/// Shows EN / UZ / ЎЗ / RU and updates the app locale immediately.
 class LanguageMiniToggle extends ConsumerStatefulWidget {
   const LanguageMiniToggle({super.key});
 
@@ -17,7 +17,8 @@ class _LanguageMiniToggleState extends ConsumerState<LanguageMiniToggle> {
 
   @override
   Widget build(BuildContext context) {
-    final lang = ref.watch(languageProvider).locale.languageCode;
+    final locale = ref.watch(languageProvider).locale;
+    final lang = locale.languageCode;
     final brand = Theme.of(context).colorScheme.primary;
 
     // Get the Navigator's context for showing the popup menu
@@ -45,7 +46,13 @@ class _LanguageMiniToggleState extends ConsumerState<LanguageMiniToggle> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              (lang == 'uz') ? 'UZ' : (lang == 'ru') ? 'RU' : 'EN',
+              locale.isUzbekCyrillic
+                  ? 'ЎЗ'
+                  : (lang == 'uz')
+                      ? 'UZ'
+                      : (lang == 'ru')
+                          ? 'RU'
+                          : 'EN',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -97,6 +104,10 @@ class _LanguageMiniToggleState extends ConsumerState<LanguageMiniToggle> {
                 child: Text('UZ'),
               ),
               PopupMenuItem(
+                value: kUzbekCyrillicLocaleTag,
+                child: Text('ЎЗ'),
+              ),
+              PopupMenuItem(
                 value: 'ru',
                 child: Text('RU'),
               ),
@@ -104,7 +115,7 @@ class _LanguageMiniToggleState extends ConsumerState<LanguageMiniToggle> {
           );
 
           if (selected != null) {
-            ref.read(languageProvider.notifier).setLanguage(Locale(selected));
+            ref.read(languageProvider.notifier).setLanguage(localeFromPersistenceTag(selected));
           }
         },
         child: Container(
@@ -126,7 +137,13 @@ class _LanguageMiniToggleState extends ConsumerState<LanguageMiniToggle> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                (lang == 'uz') ? 'UZ' : (lang == 'ru') ? 'RU' : 'EN',
+                locale.isUzbekCyrillic
+                    ? 'ЎЗ'
+                    : (lang == 'uz')
+                        ? 'UZ'
+                        : (lang == 'ru')
+                            ? 'RU'
+                            : 'EN',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
