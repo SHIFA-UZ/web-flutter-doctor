@@ -824,7 +824,7 @@ class _InPersonAppointmentScreenState
         }
 
         // Refresh appointments and analytics
-        invalidateAppointmentRelatedProviders(ref);
+        await invalidateAppointmentRelatedProviders(ref);
 
         // Refresh documents
         ref.invalidate(patientDocumentsProvider(patientId));

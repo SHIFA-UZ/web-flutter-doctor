@@ -105,7 +105,7 @@ Future<void> _openCalendarToAppointment(WidgetRef ref, int id) async {
     if (day != null) {
       ref.read(calendarGoToAppointmentDayProvider.notifier).state = day;
       ref.read(calendarGoToAppointmentIdProvider.notifier).state = id;
-      invalidateAppointmentRelatedProviders(ref);
+      await invalidateAppointmentRelatedProviders(ref);
       ref.read(shellProvider.notifier).setTab(2);
       navigatorKey.currentState?.pushNamedAndRemoveUntil(
         AppRoutes.shell,

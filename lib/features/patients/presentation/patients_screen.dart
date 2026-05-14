@@ -1577,7 +1577,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                                 reason: 'Check Up',
                                 isVideo: isVideo,
                               );
-                          invalidateAppointmentRelatedProviders(ref);
+                          await invalidateAppointmentRelatedProviders(ref);
                           await refreshCalendarDay(
                             ref,
                             selectedDate!,

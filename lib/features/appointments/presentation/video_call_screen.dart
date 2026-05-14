@@ -1066,7 +1066,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         }
 
         // Refresh appointments and analytics
-        invalidateAppointmentRelatedProviders(ref);
+        await invalidateAppointmentRelatedProviders(ref);
 
         // Refresh documents
         ref.invalidate(patientDocumentsProvider(patientId));

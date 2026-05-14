@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -365,7 +366,7 @@ class AuthController extends StateNotifier<AuthState> {
     _clearTokenFromStorage(adminOnly: adminOnly);
     // Clear doctor-scoped cached data so next login never sees stale data.
     ref.invalidate(profileAllProvider);
-    invalidateAppointmentRelatedProviders(ref);
+    unawaited(invalidateAppointmentRelatedProviders(ref));
     ref.invalidate(patientsProvider);
     ref.invalidate(patientByIdProvider);
     ref.invalidate(patientsForAssignmentProvider);

@@ -1584,7 +1584,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
               doctorTimeZone: doctorTimeZone,
             );
         // Refresh Home's "Today" list and this day in calendar
-        invalidateAppointmentRelatedProviders(ref);
+        await invalidateAppointmentRelatedProviders(ref);
         await refreshCalendarDay(ref, widget.day, doctorTimeZone);
         await widget.onSavedSuccessfully();
         if (mounted) {
@@ -1708,7 +1708,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
           );
 
       // Refresh Home's "Today" list and this day in calendar
-      invalidateAppointmentRelatedProviders(ref);
+      await invalidateAppointmentRelatedProviders(ref);
       await refreshCalendarDay(ref, widget.day, doctorTimeZone);
 
       // Inform parent to reload list and close panel
@@ -2897,7 +2897,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
                                           doctorTimeZone: doctorTimeZone,
                                         );
                                     // Refresh Home's "Today" list and both old and new days in calendar
-                                    invalidateAppointmentRelatedProviders(ref);
+                                    await invalidateAppointmentRelatedProviders(ref);
                                     await refreshCalendarDay(
                                       ref,
                                       widget.day,

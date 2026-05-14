@@ -190,7 +190,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       // and notifications screen stay in sync with backend state.
       ref.invalidate(doctorNotificationsProvider);
       ref.invalidate(doctorNotificationsUnreadCountProvider);
-      invalidateAppointmentRelatedProviders(ref);
+      unawaited(invalidateAppointmentRelatedProviders(ref));
       _loadActiveLocationLabel();
     }
   }
@@ -714,7 +714,7 @@ class _LogoutButton extends ConsumerWidget {
                       ref.invalidate(profileAllProvider);
                       ref.invalidate(shellProvider);
                       // Clear doctor-scoped data so next login never sees stale appointments/patients
-                      invalidateAppointmentRelatedProviders(ref);
+                      unawaited(invalidateAppointmentRelatedProviders(ref));
                       ref.invalidate(patientsProvider);
                       Navigator.pushNamedAndRemoveUntil(
                         context,

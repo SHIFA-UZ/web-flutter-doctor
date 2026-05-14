@@ -1,22 +1,41 @@
 // Centralized invalidation for appointment-related providers.
-// Call after: appointment create, update, delete, or calendar modification.
+// Call after: appointment create, update, delete, complete, or calendar modification.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/today_appointments_provider.dart';
 import 'package:shifa_doc_app_v1/features/home/application/home_analytics_providers.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
+import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
-/// Invalidates today appointments and doctor analytics.
-/// Use after creating, updating, or deleting an appointment.
+/// Refreshes **today** in [calendarProvider], then invalidates today list + analytics.
 ///
-/// NOTE: Does NOT invalidate calendarProvider (StateNotifier) because that would
-/// wipe all cached calendar data. Calendar screen manages its own refresh via loadDay().
-/// Accepts [Ref] or [WidgetRef] so it can be called from controllers or widgets.
-void invalidateAppointmentRelatedProviders(dynamic ref) {
+/// Home "Bugun" uses [todayAppointmentsProvider], which reads cached calendar
+/// entries without refetching when the day was already loaded. After completing
+/// an appointment, we must [refreshCalendarDay] for today so status updates appear.
+///
+/// Accepts [Ref] or [WidgetRef]. Safe to call without `await` (e.g. logout);
+/// use `await` when you need the home list updated before navigating away.
+Future<void> invalidateAppointmentRelatedProviders(dynamic ref) async {
+  try {
+    final profile = await ref.read(profileAllProvider.future);
+    final doctorTimeZone = profile.profile['timeZone'] as String?;
+    if (doctorTimeZone != null && doctorTimeZone.isNotEmpty) {
+      final todayInDoctorZone = getTodayInTimezone(doctorTimeZone);
+      final todayKey = DateTime(
+        todayInDoctorZone.year,
+        todayInDoctorZone.month,
+        todayInDoctorZone.day,
+      );
+      await refreshCalendarDay(ref, todayKey, doctorTimeZone);
+    }
+  } catch (e) {
+    debugPrint('invalidateAppointmentRelatedProviders: $e');
+  }
   ref.invalidate(todayAppointmentsProvider);
-  // DON'T invalidate calendarProvider - it's a StateNotifier with cached data
-  // Calendar screen will refresh via its own lifecycle hooks and loadDay() calls
   ref.invalidate(doctorAnalyticsOverviewProvider);
 }
 
