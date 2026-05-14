@@ -128,7 +128,7 @@ class RegistrationController extends StateNotifier<RegistrationData> {
   // ----------------------------
   // Check existing patient (same phone => existing user with patient profile)
   // ----------------------------
-  /// POST /api/auth/check-existing-patient { firstName, lastName, phone?, email }
+  /// POST /api/auth/check-existing-patient { firstName, lastName, email, phone? }
   /// Returns { found: bool, fullName?, photoUrl?, email? }.
   Future<Map<String, dynamic>> checkExistingPatient({
     required String firstName,
