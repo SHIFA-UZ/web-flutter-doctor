@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 
 const String kNoSpeechTranscriptPlaceholder = '(No speech detected)';
@@ -84,4 +85,55 @@ void appendTranscribedText(TextEditingController c, String text) {
       : ' ';
   c.text = '$v$sep$t';
   c.selection = TextSelection.collapsed(offset: c.text.length);
+}
+
+/// Upload + append flow for doctor STT ([/api/ai/transcribe]); used by inline speech fields.
+Future<void> completeDoctorTranscriptionFromRecording({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String filePath,
+  required TextEditingController controller,
+  VoidCallback? onTranscriptAppended,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.translate('transcribing'))),
+    );
+    final bytes = await readVoiceRecordingFileBytes(filePath);
+    final name = voiceRecordingUploadFileName(filePath);
+    final text = await postDoctorTranscription(
+      ref: ref,
+      fileBytes: bytes,
+      fileName: name,
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (text.isEmpty || text == kNoSpeechTranscriptPlaceholder) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.translate('noSpeechDetected'))),
+      );
+      return;
+    }
+    appendTranscribedText(controller, text);
+    onTranscriptAppended?.call();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.translate('transcriptionAdded')),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final msg = e.toString();
+    final clean = msg.startsWith('Exception: ') ? msg.substring(11) : msg;
+    final localized = clean == 'speechToTextRequiresPro'
+        ? l10n.translate('speechToTextRequiresPro')
+        : '${l10n.error}: $clean';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(localized), backgroundColor: Colors.red),
+    );
+  }
 }

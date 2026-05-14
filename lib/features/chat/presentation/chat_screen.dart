@@ -15,14 +15,12 @@ import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/image_messag
 import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/voice_message_bubble.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/document_message_bubble.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/typing_indicator.dart';
-import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/voice_recording_dialog.dart';
+import 'package:shifa_doc_app_v1/core/widgets/inline_voice_recorder_bar.dart';
 import 'package:shifa_doc_app_v1/features/chat/services/image_compression_service.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:record/record.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -52,10 +50,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   _ChatListFilter _chatFilter = _ChatListFilter.newestFirst;
   bool _isTyping = false;
   String? _typingSenderRole;
-  final AudioRecorder _audioRecorder = AudioRecorder();
-  bool _isRecording = false;
-  String? _recordingPath;
-  Duration _recordingDuration = Duration.zero;
+  bool _chatVoiceCaptureOpen = false;
 
   @override
   void initState() {
@@ -75,7 +70,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     _searchCtrl.dispose();
     _messageCtrl.dispose();
     _chatScroll.dispose();
-    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -259,7 +253,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         await _pickAndSendDocument();
         break;
       case 'voice':
-        await _showVoiceRecordingDialog();
+        setState(() => _chatVoiceCaptureOpen = true);
         break;
     }
   }
@@ -425,28 +419,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         ),
       );
     }
-  }
-
-  Future<void> _showVoiceRecordingDialog() async {
-    OverlayEntry? overlay;
-    overlay = OverlayEntry(
-      builder: (ctx) => Positioned(
-        right: 24,
-        bottom: 24,
-        child: VoiceRecordingDialog(
-          onRecordingComplete: (filePath, duration) async {
-            overlay?.remove();
-            await _sendVoiceMessage(filePath, duration);
-          },
-          onCancel: () {
-            overlay?.remove();
-          },
-        ),
-      ),
-    );
-
-    final overlayState = Overlay.of(context, rootOverlay: true);
-    overlayState.insert(overlay);
   }
 
   Future<void> _sendVoiceMessage(String filePath, int durationSeconds) async {
@@ -846,49 +818,59 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.attach_file),
-                      color: brand,
-                      onPressed: _attachFile,
-                      tooltip: AppLocalizations.of(context)!.translate('attachFile') ?? 'Attach file',
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: TextField(
-                        controller: _messageCtrl,
-                        minLines: 1,
-                        maxLines: 4,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendMessage(),
-                        decoration: InputDecoration(
-                          hintText: AppLocalizations.of(context)!.typeMessage,
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                child: _chatVoiceCaptureOpen
+                    ? InlineVoiceRecorderBar(
+                        onRecordingComplete: (filePath, duration) async {
+                          setState(() => _chatVoiceCaptureOpen = false);
+                          await _sendVoiceMessage(filePath, duration);
+                        },
+                        onCancel: () {
+                          setState(() => _chatVoiceCaptureOpen = false);
+                        },
+                      )
+                    : Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.attach_file),
+                            color: brand,
+                            onPressed: _attachFile,
+                            tooltip: AppLocalizations.of(context)!.translate('attachFile') ?? 'Attach file',
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(color: brand, width: 2),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: TextField(
+                              controller: _messageCtrl,
+                              minLines: 1,
+                              maxLines: 4,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _sendMessage(),
+                              decoration: InputDecoration(
+                                hintText: AppLocalizations.of(context)!.typeMessage,
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide: BorderSide(color: brand, width: 2),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                          const SizedBox(width: 8),
+                          ShifaPrimaryButton(
+                            onPressed: () => _sendMessage(),
+                            icon: Icons.send,
+                            label: AppLocalizations.of(context)!.send,
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    ShifaPrimaryButton(
-                      onPressed: () => _sendMessage(),
-                      icon: Icons.send,
-                      label: AppLocalizations.of(context)!.send,
-                    ),
-                  ],
-                ),
               ),
             ),
           ],

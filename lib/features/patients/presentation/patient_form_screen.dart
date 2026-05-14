@@ -16,7 +16,7 @@ import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
-import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
 
 /// Uzbek-only labels for Form 025-2 PDF (no English in output).
@@ -320,14 +320,9 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     _recommendationsCtrl.addListener(notify);
   }
 
-  Widget _speechMic(TextEditingController c) {
-    return DoctorSpeechMicButton(
-      controller: c,
-      onTranscriptAppended: () {
-        widget.onUnsavedChange?.call(true);
-        if (mounted) setState(() {});
-      },
-    );
+  void _onDoctorSpeechAppended() {
+    widget.onUnsavedChange?.call(true);
+    if (mounted) setState(() {});
   }
 
   /// Continuity: when creating a new 025-2 form, pre-fill ONLY the teeth diagram from the most recent
@@ -1053,31 +1048,31 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
               const SizedBox(height: 24),
 
               // Editable fields
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _addressCtrl,
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 decoration: InputDecoration(
                   labelText: l10n.address,
                   border: const OutlineInputBorder(),
-                  suffixIcon: _speechMic(_addressCtrl),
                 ),
                 maxLines: 2,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _jobCtrl,
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 decoration: InputDecoration(
                   labelText: l10n.job,
                   border: const OutlineInputBorder(),
-                  suffixIcon: _speechMic(_jobCtrl),
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _diagnosisCtrl,
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 decoration: InputDecoration(
                   labelText: l10n.diagnosis,
                   border: const OutlineInputBorder(),
-                  suffixIcon: _speechMic(_diagnosisCtrl),
                 ),
                 maxLines: 3,
               ),
@@ -1093,7 +1088,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _icdSearchCtrl,
                 focusNode: _icdSearchFocus,
                 decoration: InputDecoration(
@@ -1110,21 +1105,19 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_icdSearchCtrl.text.isNotEmpty)
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () => setState(() {
-                                  _icdSearchCtrl.clear();
-                                  _icdResults = const [];
-                                }),
-                              ),
-                            _speechMic(_icdSearchCtrl),
-                          ],
-                        ),
+                      : null,
                 ),
+                suffixBeforeMicBuilder: (context) => [
+                  if (_icdSearchCtrl.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(() {
+                        _icdSearchCtrl.clear();
+                        _icdResults = const [];
+                      }),
+                    ),
+                ],
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 onChanged: (v) {
                   _icdDebounce?.cancel();
                   _icdDebounce = Timer(const Duration(milliseconds: 250), () {
@@ -1168,42 +1161,42 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 const SizedBox(height: 16),
               ] else
                 const SizedBox(height: 16),
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _complaintsCtrl,
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 decoration: InputDecoration(
                   labelText: l10n.complaints,
                   border: const OutlineInputBorder(),
-                  suffixIcon: _speechMic(_complaintsCtrl),
                 ),
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _otherIllnessesCtrl,
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 decoration: InputDecoration(
                   labelText: l10n.otherIllnessesAndComplications,
                   border: const OutlineInputBorder(),
-                  suffixIcon: _speechMic(_otherIllnessesCtrl),
                 ),
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _moreDetailsCtrl,
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 decoration: InputDecoration(
                   labelText: l10n.moreDetailsOnAbove,
                   border: const OutlineInputBorder(),
-                  suffixIcon: _speechMic(_moreDetailsCtrl),
                 ),
                 maxLines: 4,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              DoctorSpeechTextField(
                 controller: _visualCheckupCtrl,
+                onTranscriptAppended: _onDoctorSpeechAppended,
                 decoration: InputDecoration(
                   labelText: l10n.visualCheckup,
                   border: const OutlineInputBorder(),
-                  suffixIcon: _speechMic(_visualCheckupCtrl),
                 ),
                 maxLines: 3,
               ),
@@ -1234,61 +1227,61 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 ),
 
                 const SizedBox(height: 24),
-                TextFormField(
+                DoctorSpeechTextField(
                   controller: _occlusionCtrl,
+                  onTranscriptAppended: _onDoctorSpeechAppended,
                   decoration: InputDecoration(
                     labelText: l10n.occlusionBiteType,
                     border: const OutlineInputBorder(),
-                    suffixIcon: _speechMic(_occlusionCtrl),
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                DoctorSpeechTextField(
                   controller: _oralCavityCtrl,
+                  onTranscriptAppended: _onDoctorSpeechAppended,
                   decoration: InputDecoration(
                     labelText: l10n.oralCavityCondition,
                     border: const OutlineInputBorder(),
-                    suffixIcon: _speechMic(_oralCavityCtrl),
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                DoctorSpeechTextField(
                   controller: _xrayLabCtrl,
+                  onTranscriptAppended: _onDoctorSpeechAppended,
                   decoration: InputDecoration(
                     labelText: l10n.xrayLabExaminationData,
                     border: const OutlineInputBorder(),
-                    suffixIcon: _speechMic(_xrayLabCtrl),
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                DoctorSpeechTextField(
                   controller: _treatmentCtrl,
+                  onTranscriptAppended: _onDoctorSpeechAppended,
                   decoration: InputDecoration(
                     labelText: l10n.treatment,
                     border: const OutlineInputBorder(),
-                    suffixIcon: _speechMic(_treatmentCtrl),
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                DoctorSpeechTextField(
                   controller: _treatmentResultCtrl,
+                  onTranscriptAppended: _onDoctorSpeechAppended,
                   decoration: InputDecoration(
                     labelText: l10n.treatmentResultProgress,
                     border: const OutlineInputBorder(),
-                    suffixIcon: _speechMic(_treatmentResultCtrl),
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                DoctorSpeechTextField(
                   controller: _recommendationsCtrl,
+                  onTranscriptAppended: _onDoctorSpeechAppended,
                   decoration: InputDecoration(
                     labelText: l10n.recommendationsInstructions,
                     border: const OutlineInputBorder(),
-                    suffixIcon: _speechMic(_recommendationsCtrl),
                   ),
                   maxLines: 3,
                 ),
@@ -2133,17 +2126,14 @@ class _FollowupsTable extends StatelessWidget {
                         ),
                       ],
                     ),
-                    TextField(
+                    DoctorSpeechTextField(
                       controller: ctrl,
+                      onTranscriptAppended: () {
+                        markUnsaved?.call();
+                        (ctx as Element).markNeedsBuild();
+                      },
                       decoration: InputDecoration(
                         labelText: l10nDialog.clinicalFindingsConclusion,
-                        suffixIcon: DoctorSpeechMicButton(
-                          controller: ctrl,
-                          onTranscriptAppended: () {
-                            markUnsaved?.call();
-                            (ctx as Element).markNeedsBuild();
-                          },
-                        ),
                       ),
                       maxLines: 4,
                     ),

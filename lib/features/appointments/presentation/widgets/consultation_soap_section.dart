@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
-import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 
 /// Expanding SOAP fields; content is merged into the PDF via [composeConsultationNotesPdf].
 class ConsultationSoapSection extends ConsumerWidget {
@@ -48,20 +48,17 @@ class ConsultationSoapSection extends ConsumerWidget {
   Widget _soapField(BuildContext context, String label, TextEditingController c) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: TextField(
+      child: DoctorSpeechTextField(
         controller: c,
         maxLines: 3,
         minLines: 1,
         textCapitalization: TextCapitalization.sentences,
+        onTranscriptAppended: onTranscriptAppended,
         decoration: InputDecoration(
           labelText: label,
           alignLabelWithHint: true,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           isDense: true,
-          suffixIcon: DoctorSpeechMicButton(
-            controller: c,
-            onTranscriptAppended: onTranscriptAppended,
-          ),
         ),
       ),
     );

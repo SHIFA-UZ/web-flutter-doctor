@@ -39,7 +39,7 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_documentation_widgets.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_document_upload_strip.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
-import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_documentation_professions.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_visit_documentation_panel.dart';
@@ -2807,28 +2807,19 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                   ),
                 ],
               ),
-              child: Stack(
-                children: [
-                  TextField(
-                    controller: _notesController,
-                    maxLines: null,
-                    expands: true,
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.enterNotes,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.fromLTRB(4, 8, 44, 8),
-                    ),
-                    textAlignVertical: TextAlignVertical.top,
-                  ),
-                  Positioned(
-                    top: 2,
-                    right: 0,
-                    child: DoctorSpeechMicButton(
-                      controller: _notesController,
-                      onTranscriptAppended: _markUnsaved,
-                    ),
-                  ),
-                ],
+              child: DoctorSpeechTextField(
+                controller: _notesController,
+                style: DoctorSpeechInputStyle.borderlessExpanding,
+                expands: true,
+                maxLines: null,
+                textAlignVertical: TextAlignVertical.top,
+                textStyle: const TextStyle(fontSize: 17, height: 1.45),
+                onTranscriptAppended: _markUnsaved,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.enterNotes,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.fromLTRB(4, 8, 44, 8),
+                ),
               ),
             ),
           ),

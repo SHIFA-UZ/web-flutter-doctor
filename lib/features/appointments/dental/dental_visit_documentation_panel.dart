@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
-import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
 
 /// FDI-style quadrant codes in the same order as form 025-2 (patient-facing chart).
@@ -690,17 +690,14 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
-              TextField(
+              DoctorSpeechTextField(
                 controller: _notesCtrl,
                 minLines: 2,
                 maxLines: 5,
+                onTranscriptAppended: _touch,
                 decoration: InputDecoration(
                   labelText: l10n.translate('dentalClinicalNotes'),
                   alignLabelWithHint: true,
-                  suffixIcon: DoctorSpeechMicButton(
-                    controller: _notesCtrl,
-                    onTranscriptAppended: _touch,
-                  ),
                 ),
               ),
               const SizedBox(height: 16),

@@ -28,8 +28,8 @@ import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
-import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/voice_recording_dialog.dart';
-import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_mic_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/inline_voice_recorder_bar.dart';
+import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:http/http.dart' as http;
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
@@ -118,6 +118,9 @@ class _InPersonAppointmentScreenState
 
   /// Which helper source to show: 'ai' for Shifa AI, '0252' for last 025-2 form, or null for none.
   String? _expandedNoteSource;
+
+  /// When true, inline AI scribe recorder is shown instead of the Start AI Notes button.
+  bool _aiInlineVoiceCapture = false;
   final _form0252PanelKey = GlobalKey<AppointmentForm0252PanelState>();
   bool _docPanelCollapsed = false;
 
@@ -214,34 +217,24 @@ class _InPersonAppointmentScreenState
                           color: Colors.black.withValues(alpha: 0.07),
                         ),
                       ),
-                      child: Stack(
-                        children: [
-                          TextField(
-                            controller: _notesController,
-                            maxLines: null,
-                            expands: true,
-                            textAlignVertical: TextAlignVertical.top,
-                            style: const TextStyle(fontSize: 17, height: 1.45),
-                            decoration: InputDecoration(
-                              hintText: l10n.enterNotes,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.fromLTRB(
-                                4,
-                                8,
-                                44,
-                                8,
-                              ),
-                            ),
+                      child: DoctorSpeechTextField(
+                        controller: _notesController,
+                        style: DoctorSpeechInputStyle.borderlessExpanding,
+                        expands: true,
+                        maxLines: null,
+                        textAlignVertical: TextAlignVertical.top,
+                        textStyle: const TextStyle(fontSize: 17, height: 1.45),
+                        onTranscriptAppended: _markUnsaved,
+                        decoration: InputDecoration(
+                          hintText: l10n.enterNotes,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            4,
+                            8,
+                            44,
+                            8,
                           ),
-                          Positioned(
-                            top: 2,
-                            right: 0,
-                            child: DoctorSpeechMicButton(
-                              controller: _notesController,
-                              onTranscriptAppended: _markUnsaved,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -459,29 +452,8 @@ class _InPersonAppointmentScreenState
     }
   }
 
-  Future<void> _startAiNotes() async {
-    final l10n = AppLocalizations.of(context)!;
-    OverlayEntry? overlay;
-    overlay = OverlayEntry(
-      builder: (ctx) => Positioned(
-        right: 24,
-        bottom: 24,
-        child: VoiceRecordingDialog(
-          titleLabel: l10n.recordingForAiNotes,
-          sendButtonLabel: l10n.processRecording,
-          onRecordingComplete: (filePath, _) async {
-            overlay?.remove();
-            await _uploadScribeRecording(filePath);
-          },
-          onCancel: () {
-            overlay?.remove();
-          },
-        ),
-      ),
-    );
-
-    final overlayState = Overlay.of(context, rootOverlay: true);
-    overlayState.insert(overlay);
+  void _startAiNotes() {
+    setState(() => _aiInlineVoiceCapture = true);
   }
 
   Future<void> _uploadScribeRecording(String filePath) async {
@@ -2371,37 +2343,32 @@ class _InPersonAppointmentScreenState
                                         ),
                                       ],
                                     ),
-                                    child: Stack(
-                                      children: [
-                                        TextField(
-                                          controller: _notesController,
-                                          maxLines: null,
-                                          expands: true,
-                                          textAlignVertical:
-                                              TextAlignVertical.top,
-                                          decoration: InputDecoration(
-                                            hintText: AppLocalizations.of(
-                                              context,
-                                            )!.enterNotes,
-                                            border: InputBorder.none,
-                                            contentPadding:
-                                                const EdgeInsets.fromLTRB(
-                                              4,
-                                              8,
-                                              44,
-                                              8,
-                                            ),
-                                          ),
+                                    child: DoctorSpeechTextField(
+                                      controller: _notesController,
+                                      style:
+                                          DoctorSpeechInputStyle.borderlessExpanding,
+                                      expands: true,
+                                      maxLines: null,
+                                      textAlignVertical:
+                                          TextAlignVertical.top,
+                                      textStyle: const TextStyle(
+                                        fontSize: 17,
+                                        height: 1.45,
+                                      ),
+                                      onTranscriptAppended: _markUnsaved,
+                                      decoration: InputDecoration(
+                                        hintText: AppLocalizations.of(
+                                          context,
+                                        )!.enterNotes,
+                                        border: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.fromLTRB(
+                                          4,
+                                          8,
+                                          44,
+                                          8,
                                         ),
-                                        Positioned(
-                                          top: 2,
-                                          right: 0,
-                                          child: DoctorSpeechMicButton(
-                                            controller: _notesController,
-                                            onTranscriptAppended: _markUnsaved,
-                                          ),
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -2409,14 +2376,33 @@ class _InPersonAppointmentScreenState
                                 // Before/after photos: ⋮ → Before treatment / After treatment
                                 // Start AI Notes button — PRO+ feature.
                                 if (ref.watch(doctorFeatureProvider(DoctorFeature.aiNotes)))
-                                  ShifaSecondaryButton(
-                                    label: AppLocalizations.of(
-                                      context,
-                                    )!.startAiNotes,
-                                    onPressed: _startAiNotes,
-                                    icon: Icons.mic,
-                                    width: ButtonWidth.fill,
-                                  ),
+                                  _aiInlineVoiceCapture
+                                      ? Padding(
+                                          padding: const EdgeInsets.only(bottom: 8),
+                                          child: InlineVoiceRecorderBar(
+                                            titleLabel: AppLocalizations.of(
+                                              context,
+                                            )!.recordingForAiNotes,
+                                            confirmButtonLabel: AppLocalizations.of(
+                                              context,
+                                            )!.processRecording,
+                                            onRecordingComplete: (filePath, _) async {
+                                              setState(() => _aiInlineVoiceCapture = false);
+                                              await _uploadScribeRecording(filePath);
+                                            },
+                                            onCancel: () {
+                                              setState(() => _aiInlineVoiceCapture = false);
+                                            },
+                                          ),
+                                        )
+                                      : ShifaSecondaryButton(
+                                          label: AppLocalizations.of(
+                                            context,
+                                          )!.startAiNotes,
+                                          onPressed: _startAiNotes,
+                                          icon: Icons.mic,
+                                          width: ButtonWidth.fill,
+                                        ),
                                 if (_beforeTreatmentImages.isNotEmpty ||
                                     _afterTreatmentImages.isNotEmpty)
                                   Padding(
