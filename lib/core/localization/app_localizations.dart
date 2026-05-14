@@ -601,6 +601,8 @@ class AppLocalizations {
       'chooseFromGallery': 'Choose from Gallery',
       'recordVoice': 'Record Voice Message',
       'voiceMessage': 'Voice Message',
+      'voiceRecordingFinishHint':
+          'Stop when you are done — pauses and filler words are fine.',
       'cancel': 'Cancel',
       'sendVoice': 'Send Voice',
       'selectDocument': 'Select Document',
@@ -1753,6 +1755,8 @@ class AppLocalizations {
       'chooseFromGallery': 'Galereyadan tanlash',
       'recordVoice': 'Ovozli xabar yozish',
       'voiceMessage': 'Ovozli xabar',
+      'voiceRecordingFinishHint':
+          'Tugatgach to\'xtating — pauzalar va to\'ldiruvchi so\'zlar mumkin.',
       'cancel': 'Bekor qilish',
       'sendVoice': 'Ovozli xabarni yuborish',
       'compressingImage': 'Rasm siqilmoqda...',
@@ -2900,6 +2904,8 @@ class AppLocalizations {
       'chooseFromGallery': 'Выбрать из галереи',
       'recordVoice': 'Записать голосовое сообщение',
       'voiceMessage': 'Голосовое сообщение',
+      'voiceRecordingFinishHint':
+          'Нажмите «Отправить», когда закончите — паузы и слова-паразиты допустимы.',
       'cancel': 'Отмена',
       'sendVoice': 'Отправить голосовое',
       'compressingImage': 'Сжатие изображения...',
