@@ -18,11 +18,28 @@ import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
+
+/// Latin Uzbek fallback strings rendered for Cyrillic locale (`uz` + Cyrl).
+String _latinUzbekForDisplay(BuildContext context, String latinUzbek) {
+  final loc = Localizations.localeOf(context);
+  if (!loc.isUzbekCyrillic) return latinUzbek;
+  return transliterateUzbekLatinToCyrillicUi(latinUzbek);
+}
+
+/// `intl` / [TableCalendar] only loads `en`, `uz`, `ru` in [main] — avoid invalid tags.
+String _tableCalendarIntlLocale(BuildContext context) {
+  final lc = Localizations.localeOf(context).languageCode.toLowerCase();
+  if (lc == 'uz') return 'uz';
+  if (lc == 'ru') return 'ru';
+  return 'en';
+}
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -207,9 +224,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   }) {
     final localeCode = Localizations.localeOf(context).languageCode.toLowerCase();
     if (localeCode == 'uz') {
-      return 'Joriy qurilma vaqt zonasi ($scheduleTimeZone bilan) mos emas. '
-          'Siz slotlarni bir vaqt zonasida belgilagansiz, hozir esa boshqa vaqt zonasidasiz. '
-          'Iltimos, uchrashuvlar bilan ishlaganda buni inobatga oling.';
+      return _latinUzbekForDisplay(
+        context,
+        'Joriy qurilma vaqt zonasi ($scheduleTimeZone bilan) mos emas. '
+            'Siz slotlarni bir vaqt zonasida belgilagansiz, hozir esa boshqa vaqt zonasidasiz. '
+            'Iltimos, uchrashuvlar bilan ishlaganda buni inobatga oling.',
+      );
     }
     if (localeCode == 'ru') {
       return 'Текущий часовой пояс устройства не совпадает с часовым поясом расписания ($scheduleTimeZone). '
@@ -346,6 +366,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                           onTap: () async {
                             final picked = await showDatePicker(
                               context: context,
+                              locale: localeForMaterialIntl(
+                                Localizations.localeOf(context),
+                              ),
                               initialDate: _selectedDay ?? DateTime.now(),
                               firstDate: DateTime(2020),
                               lastDate: DateTime(2030),
@@ -828,6 +851,29 @@ class _CalendarPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brand = Theme.of(context).colorScheme.primary;
+    final intlLocale = _tableCalendarIntlLocale(context);
+
+    final headerStyle = HeaderStyle(
+      formatButtonVisible: false,
+      titleCentered: true,
+      leftChevronIcon: const Icon(Icons.chevron_left),
+      rightChevronIcon: const Icon(Icons.chevron_right),
+      headerPadding: const EdgeInsets.symmetric(vertical: 8),
+      titleTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final daysOfWeekStyle = DaysOfWeekStyle(
+      weekdayStyle: TextStyle(
+        color: Colors.grey.shade700,
+        fontWeight: FontWeight.w600,
+      ),
+      weekendStyle: TextStyle(
+        color: Colors.grey.shade700,
+        fontWeight: FontWeight.w600,
+      ),
+    );
 
     return Column(
       key: key,
@@ -856,7 +902,7 @@ class _CalendarPanel extends StatelessWidget {
             ),
             padding: const EdgeInsets.all(8),
             child: TableCalendar(
-              locale: Localizations.localeOf(context).toString(),
+              locale: intlLocale,
               firstDay: DateTime(2020),
               lastDay: DateTime(2030),
               focusedDay: focusedDay,
@@ -891,26 +937,45 @@ class _CalendarPanel extends StatelessWidget {
                 outsideTextStyle: TextStyle(color: Colors.grey.shade400),
                 markerDecoration: const BoxDecoration(shape: BoxShape.circle),
               ),
-              headerStyle: HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-                leftChevronIcon: const Icon(Icons.chevron_left),
-                rightChevronIcon: const Icon(Icons.chevron_right),
-                headerPadding: const EdgeInsets.symmetric(vertical: 8),
-                titleTextStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              daysOfWeekStyle: DaysOfWeekStyle(
-                weekdayStyle: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-                weekendStyle: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
+              headerStyle: headerStyle,
+              daysOfWeekStyle: daysOfWeekStyle,
+              calendarBuilders: CalendarBuilders(
+                dowBuilder: (ctx, day) {
+                  final l10n = AppLocalizations.of(ctx)!;
+                  final wd = day.weekday;
+                  final label = switch (wd) {
+                    DateTime.monday => l10n.monday,
+                    DateTime.tuesday => l10n.tuesday,
+                    DateTime.wednesday => l10n.wednesday,
+                    DateTime.thursday => l10n.thursday,
+                    DateTime.friday => l10n.friday,
+                    DateTime.saturday => l10n.saturday,
+                    DateTime.sunday => l10n.sunday,
+                    _ => '',
+                  };
+                  final isWeekend =
+                      wd == DateTime.saturday || wd == DateTime.sunday;
+                  return Center(
+                    child: ExcludeSemantics(
+                      child: Text(
+                        label,
+                        style: isWeekend
+                            ? daysOfWeekStyle.weekendStyle
+                            : daysOfWeekStyle.weekdayStyle,
+                      ),
+                    ),
+                  );
+                },
+                headerTitleBuilder: (ctx, focusedMonth) {
+                  final l10n = AppLocalizations.of(ctx)!;
+                  return Text(
+                    '${l10n.monthName(focusedMonth.month)} ${focusedMonth.year}',
+                    style: headerStyle.titleTextStyle,
+                    textAlign: headerStyle.titleCentered
+                        ? TextAlign.center
+                        : TextAlign.start,
+                  );
+                },
               ),
             ),
           ),
@@ -1433,6 +1498,9 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
                       final todayInDoctorZone = getTodayInTimezone(doctorTz);
                       final picked = await showDatePicker(
                         context: context,
+                        locale: localeForMaterialIntl(
+                          Localizations.localeOf(context),
+                        ),
                         initialDate: selectedDate ?? todayInDoctorZone,
                         firstDate: todayInDoctorZone,
                         lastDate: DateTime(2030),
@@ -1925,7 +1993,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
       bg = Colors.amber.shade50;
       fg = Colors.amber.shade800;
       final confirmedFallback = lang == 'uz'
-          ? 'Tasdiqlangan'
+          ? _latinUzbekForDisplay(context, 'Tasdiqlangan')
           : (lang == 'ru' ? 'Подтверждено' : 'Confirmed');
       label = t('confirmed', confirmedFallback);
     }
@@ -2128,13 +2196,13 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     final subtleText = Colors.grey.shade600;
     final lang = Localizations.localeOf(context).languageCode.toLowerCase();
     final aiDocsFallback = lang == 'uz'
-        ? 'Uchrashuv hujjatlari'
+        ? _latinUzbekForDisplay(context, 'Uchrashuv hujjatlari')
         : (lang == 'ru' ? 'Документация приема' : 'Appointment Documentation');
     final notesTabFallback = lang == 'uz'
-        ? 'Uchrashuv yozuvlari'
+        ? _latinUzbekForDisplay(context, 'Uchrashuv yozuvlari')
         : (lang == 'ru' ? 'Записи приема' : 'Appointment Notes');
     final summaryPdfTabFallback = lang == 'uz'
-        ? 'Xulosa PDF'
+        ? _latinUzbekForDisplay(context, 'Xulosa PDF')
         : (lang == 'ru' ? 'PDF сводка' : 'Summary PDF');
     String t(String key, String fallback) {
       final v = l10n.translate(key);

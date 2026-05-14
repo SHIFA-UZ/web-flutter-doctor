@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
 /// Schedule mode for the create-task form.
@@ -538,6 +539,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 onTap: () async {
                   final date = await showDatePicker(
                     context: context,
+                    locale: localeForMaterialIntl(Localizations.localeOf(context)),
                     initialDate: _startDate,
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
@@ -570,6 +572,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                   onTap: () async {
                     final date = await showDatePicker(
                       context: context,
+                      locale: localeForMaterialIntl(Localizations.localeOf(context)),
                       initialDate: _endDate ?? _startDate.add(const Duration(days: 30)),
                       firstDate: _startDate,
                       lastDate: DateTime.now().add(const Duration(days: 365)),

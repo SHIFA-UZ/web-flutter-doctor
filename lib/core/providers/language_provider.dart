@@ -38,6 +38,9 @@ Locale localeFromPersistenceTag(String raw) {
   return Locale(primary);
 }
 
+/// Material [showDatePicker] / `intl` use language-only locales (`uz`, not `uz`/Cyrl).
+Locale localeForMaterialIntl(Locale locale) => Locale(locale.languageCode);
+
 class LanguageState {
   final Locale locale;
 

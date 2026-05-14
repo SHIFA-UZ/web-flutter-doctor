@@ -34,6 +34,7 @@ import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_form_models.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
@@ -846,6 +847,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: ctx,
+                        locale: localeForMaterialIntl(Localizations.localeOf(ctx)),
                         firstDate: DateTime(1900),
                         lastDate: DateTime.now(),
                         initialDate: DateTime(1990),
@@ -1417,6 +1419,9 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                         final todayInDoctorZone = getTodayInTimezone(doctorTz);
                         final picked = await showDatePicker(
                           context: context,
+                          locale: localeForMaterialIntl(
+                            Localizations.localeOf(context),
+                          ),
                           initialDate: selectedDate ?? todayInDoctorZone,
                           firstDate: todayInDoctorZone,
                           lastDate: DateTime(2030),

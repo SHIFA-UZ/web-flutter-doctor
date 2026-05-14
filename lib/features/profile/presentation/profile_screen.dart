@@ -394,6 +394,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             DateTime(1990, 1, 1);
                         final picked = await showDatePicker(
                           context: context,
+                          locale: localeForMaterialIntl(
+                            Localizations.localeOf(context),
+                          ),
                           initialDate: initial,
                           firstDate: DateTime(1900),
                           lastDate: DateTime.now(),
@@ -1370,6 +1373,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             DateTime(1990, 1, 1);
                         final picked = await showDatePicker(
                           context: context,
+                          locale: localeForMaterialIntl(
+                            Localizations.localeOf(context),
+                          ),
                           initialDate: initial,
                           firstDate: DateTime(1900),
                           lastDate: DateTime.now(),

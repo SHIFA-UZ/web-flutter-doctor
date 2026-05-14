@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/services/timezone_service.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
@@ -62,6 +63,7 @@ class _AccountInformationScreenState
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
+      locale: localeForMaterialIntl(Localizations.localeOf(context)),
       initialDate: _dob ?? DateTime(now.year - 25, now.month, now.day),
       firstDate: DateTime(1900),
       lastDate: now,

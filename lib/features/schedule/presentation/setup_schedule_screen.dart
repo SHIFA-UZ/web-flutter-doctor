@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/features/schedule/presentation/doctor_locations_screen.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
@@ -357,6 +358,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final initial = state.startDate ?? today;
     final picked = await showDatePicker(
       context: context,
+      locale: localeForMaterialIntl(Localizations.localeOf(context)),
       initialDate: initial,
       firstDate: today,
       lastDate: state.endDate,
@@ -377,6 +379,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final minDate = state.startDate ?? today;
     final picked = await showDatePicker(
       context: context,
+      locale: localeForMaterialIntl(Localizations.localeOf(context)),
       initialDate: state.endDate.isAfter(minDate) ? state.endDate : minDate,
       firstDate: minDate,
       lastDate: today.add(const Duration(days: 365)),
@@ -396,6 +399,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final today = getTodayInTimezone(doctorTz);
     final from = await showDatePicker(
       context: context,
+      locale: localeForMaterialIntl(Localizations.localeOf(context)),
       initialDate: today,
       firstDate: today,
       lastDate: today.add(const Duration(days: 365)),
@@ -404,6 +408,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     if (from == null || !mounted) return;
     final to = await showDatePicker(
       context: context,
+      locale: localeForMaterialIntl(Localizations.localeOf(context)),
       initialDate: from.isBefore(today) ? today : from,
       firstDate: from,
       lastDate: from.add(const Duration(days: 365)),

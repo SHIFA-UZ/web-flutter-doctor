@@ -1083,6 +1083,8 @@ class AppLocalizations {
       'addReturnVisit': 'Add return visit',
       'saveForm': 'Save Form',
       'patientFormSignatureSectionTitle': 'Patient signature (form 025-2)',
+      'patientFormSignatureRequestRequiresSaveHint':
+          'Unsaved changes are saved automatically when you send the request.',
       'requestPatientFormSignature': 'Request patient signature',
       'patientSignaturePending':
           'A signature request was sent. The patient is notified in the mobile app.',
@@ -2210,6 +2212,8 @@ class AppLocalizations {
       'addReturnVisit': 'Tashrif qo\'shish',
       'saveForm': 'Saqlash',
       'patientFormSignatureSectionTitle': 'Bemor imzosi (025-2 shakl)',
+      'patientFormSignatureRequestRequiresSaveHint':
+          'Saqlanmagan o\'zgarishlar so\'rov yuborilganda avtomatik saqlanadi.',
       'requestPatientFormSignature': 'Bemordan imzo so\'rash',
       'patientSignaturePending':
           'Imzo so\'rovi yuborildi. Bemorga mobil ilovada bildirishnoma boradi.',
@@ -3242,6 +3246,8 @@ class AppLocalizations {
       'addReturnVisit': 'Добавить повторный визит',
       'saveForm': 'Сохранить форму',
       'patientFormSignatureSectionTitle': 'Подпись пациента (форма 025-2)',
+      'patientFormSignatureRequestRequiresSaveHint':
+          'Несохранённые изменения будут сохранены автоматически при отправке запроса.',
       'requestPatientFormSignature': 'Запросить подпись пациента',
       'patientSignaturePending':
           'Запрос подписи отправлен. Пациент получит уведомление в приложении.',

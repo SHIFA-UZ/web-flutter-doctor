@@ -14,6 +14,7 @@ import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart'
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
@@ -107,6 +108,14 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
   late bool _signatureRequested;
   String? _patientSignedAt;
   String? _patientSignatureImageBase64;
+
+  /// After first save, [widget.existingForm] may still be null; persisted ids are cached here.
+  String? _cachedFormId;
+  String? _cachedDocumentId;
+
+  String? get _effectiveFormId => widget.existingForm?.id ?? _cachedFormId;
+  String? get _effectiveDocumentId =>
+      widget.existingForm?.documentId ?? _cachedDocumentId;
 
   // ---- ICD-10 structured diagnosis (optional) ----
   String? _diagnosisCode;
@@ -210,6 +219,8 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     _signatureRequested = widget.existingForm?.signatureRequested ?? false;
     _patientSignedAt = widget.existingForm?.patientSignedAt;
     _patientSignatureImageBase64 = widget.existingForm?.patientSignatureImageBase64;
+    _cachedFormId = widget.existingForm?.id;
+    _cachedDocumentId = widget.existingForm?.documentId;
 
     // Pre-fill dental diagram from latest 025-2 for this patient when creating NEW form (continuity).
     if (widget.existingForm == null && widget.templateId == '025-2') {
@@ -389,8 +400,15 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     super.dispose();
   }
 
-  /// Returns true if save succeeded, false otherwise. When [widget.isEmbedded], does not pop; calls [widget.onSaved] on success.
-  Future<bool> _saveForm() async {
+  /// Returns true if save succeeded, false otherwise. When [widget.isEmbedded], does not pop;
+  /// calls [widget.onSaved] on success.
+  ///
+  /// [popOnSuccess]: when false, the screen is not popped after save (e.g. silent save before signature).
+  /// [showSuccessSnackBar]: when false, omits the "saved" snackbar (paired with signature request).
+  Future<bool> _saveForm({
+    bool popOnSuccess = true,
+    bool showSuccessSnackBar = true,
+  }) async {
     if (!_formKey.currentState!.validate()) return false;
 
     setState(() => _isSaving = true);
@@ -400,7 +418,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       
       // Build form data
       final form = PatientForm(
-        id: widget.existingForm?.id,
+        id: _effectiveFormId,
         patientId: _patientId,
         templateId: widget.templateId,
         date: _date,
@@ -430,7 +448,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
             _recommendationsCtrl.text.trim().isEmpty ? null : _recommendationsCtrl.text.trim(),
         dentalChart: widget.templateId == '025-2' ? _dentalChart : const {},
         followups: widget.templateId == '025-2' ? _followups : const [],
-        documentId: widget.existingForm?.documentId,
+        documentId: _effectiveDocumentId,
         signatureRequested: _signatureRequested,
         patientSignedAt: _patientSignedAt,
         patientSignatureImageBase64: _patientSignatureImageBase64,
@@ -438,12 +456,12 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
 
       // Save form data to backend (create or update)
       PatientForm savedForm;
-      if (widget.existingForm?.id != null) {
-        // Update existing form
+      if (_effectiveFormId != null) {
+        // Update existing form (includes first saved draft tracked via [_cachedFormId])
         savedForm = await updatePatientFormWithClient(
           client: client,
           patientId: _patientId,
-          formId: widget.existingForm!.id!,
+          formId: _effectiveFormId!,
           form: form,
         );
       } else {
@@ -454,6 +472,8 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
           form: form,
         );
       }
+      _cachedFormId = savedForm.id ?? _cachedFormId;
+      _cachedDocumentId = savedForm.documentId ?? _cachedDocumentId;
 
       // Generate PDF using in-memory _dentalChart so entered values are always shown (backend response may omit or alter dentalChart).
       final l10n = AppLocalizations.of(context)!;
@@ -467,12 +487,12 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       PatientDocument? document;
       
       // Check if form already has a linked document (editing existing form)
-      if (widget.existingForm?.documentId != null) {
+      if (_effectiveDocumentId != null) {
         // Update existing document
         document = await updatePatientDocumentWithClient(
           client: client,
           patientId: _patientId,
-          documentId: widget.existingForm!.documentId!,
+          documentId: _effectiveDocumentId!,
           fileBytes: pdfBytes,
           fileName: fileName,
         );
@@ -507,6 +527,8 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
 
       if (!mounted) return false;
       setState(() {
+        _cachedFormId = savedForm.id ?? _cachedFormId;
+        _cachedDocumentId = savedForm.documentId ?? _cachedDocumentId;
         _signatureRequested = savedForm.signatureRequested;
         _patientSignedAt = savedForm.patientSignedAt;
         _patientSignatureImageBase64 = savedForm.patientSignatureImageBase64;
@@ -516,15 +538,21 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       if (widget.isEmbedded) {
         widget.onUnsavedChange?.call(false);
         widget.onSaved?.call();
+        if (showSuccessSnackBar) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.formSavedSuccessfully)),
+          );
+        }
+        return true;
+      }
+      if (popOnSuccess) {
+        Navigator.pop(context);
+      }
+      if (showSuccessSnackBar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.formSavedSuccessfully)),
         );
-        return true;
       }
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.formSavedSuccessfully)),
-      );
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -543,12 +571,23 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
   }
 
   Future<void> _requestPatientSignature() async {
-    final formId = widget.existingForm?.id;
-    if (formId == null || widget.templateId != '025-2') return;
+    if (widget.templateId != '025-2') return;
     if ((_patientSignatureImageBase64 ?? '').trim().isNotEmpty) return;
 
     setState(() => _requestingSignature = true);
     try {
+      var formId = _effectiveFormId;
+      if (formId == null) {
+        final ok = await _saveForm(
+          popOnSuccess: false,
+          showSuccessSnackBar: false,
+        );
+        if (!mounted) return;
+        if (!ok) return;
+        formId = _effectiveFormId;
+        if (formId == null) return;
+      }
+
       final client = ref.read(apiClientProvider);
       final updated = await requestPatientFormSignatureWithClient(
         client: client,
@@ -1431,7 +1470,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 ),
               ],
 
-              if (widget.templateId == '025-2' && widget.existingForm?.id != null) ...[
+              if (widget.templateId == '025-2') ...[
                 const SizedBox(height: 8),
                 Text(
                   l10n.translate('patientFormSignatureSectionTitle'),
@@ -1440,6 +1479,11 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                     fontWeight: FontWeight.w700,
                     color: brand,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.translate('patientFormSignatureRequestRequiresSaveHint'),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                 ),
                 const SizedBox(height: 8),
                 if ((_patientSignatureImageBase64 ?? '').trim().isNotEmpty) ...[
@@ -2437,6 +2481,7 @@ class _FollowupsTable extends StatelessWidget {
                           onPressed: () async {
                             final picked = await showDatePicker(
                               context: ctx,
+                              locale: localeForMaterialIntl(Localizations.localeOf(ctx)),
                               firstDate: DateTime(2000),
                               lastDate: DateTime(2100),
                               initialDate: date,
