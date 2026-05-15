@@ -285,11 +285,11 @@ Future<List<PatientDocument>> fetchPatientDocumentsWithClient({
   }
 }
 
-/// Create a new patient via POST /api/patients. Phone is required (one patient per phone).
+/// Create a new patient via POST /api/patients. Phone is optional (uniqueness applies when set).
 Future<Patient> createPatientWithClient({
   required ApiClient client,
   required String name,
-  required String phone,
+  String? phone,
   String? email,
   String? address,
   DateTime? birthDate,
@@ -299,7 +299,7 @@ Future<Patient> createPatientWithClient({
 }) async {
   final res = await client.post('/api/patients', {
     'name': name,
-    'phone': phone,
+    if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
     'email': email,
     'address': address,
     'birthDate': birthDate == null

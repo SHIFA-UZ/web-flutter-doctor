@@ -802,7 +802,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                   TextField(
                     controller: phoneCtrl,
                     decoration: InputDecoration(
-                      labelText: '${l10n.phoneNumber} *',
+                      labelText: '${l10n.phoneNumber} (${l10n.optional})',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -872,23 +872,12 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     width: ButtonWidth.fill,
                     onPressed: () async {
                       final name = nameCtrl.text.trim();
-                      final phone = phoneCtrl.text.trim();
+                      final phoneRaw = phoneCtrl.text.trim();
                       if (name.isEmpty) return;
-                      if (phone.isEmpty) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              l10n.translate('phoneNumberRequired') ??
-                                  'Phone number is required',
-                            ),
-                          ),
-                        );
-                        return;
-                      }
                       Navigator.pop(ctx);
                       await _createPatientExtended(
                         name: name,
-                        phone: phone,
+                        phone: phoneRaw.isEmpty ? null : phoneRaw,
                         email: emailCtrl.text.trim(),
                         address: addressCtrl.text.trim(),
                         birthDate: birthDate,
@@ -908,7 +897,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
   Future<void> _createPatientExtended({
     required String name,
-    required String phone,
+    String? phone,
     String? email,
     String? address,
     DateTime? birthDate,
