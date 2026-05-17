@@ -21,6 +21,7 @@ import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart'
 import 'package:shifa_doc_app_v1/core/api/ai_message.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_context_provider.dart';
@@ -374,12 +375,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _draftLabel;
 
   String? _selectedPatientId;
-  String _selectedLanguage = 'EN';
   static const int _maxConversationMessages = 15;
   static const String _conversationStoragePrefix = 'ask_shifa_ai_conversation_v1';
   String? _lastConversationStorageKey;
 
   static const String _aiLangUzbekCyrillic = 'UZ_CYRL';
+
+  /// Maps sidebar / [languageProvider] locale to the UI language codes used by prompts (EN/UZ/UZ_CYRL/RU).
+  String _aiUiLanguageFromLocale(Locale locale) {
+    switch (locale.languageCode) {
+      case 'uz':
+        return locale.isUzbekCyrillic ? _aiLangUzbekCyrillic : 'UZ';
+      case 'ru':
+        return 'RU';
+      default:
+        return 'EN';
+    }
+  }
 
   /// Backend [AiApi.streamAi] expects EN/UZ/RU/DE; Cyrillic Uzbek maps to UZ.
   String _aiLanguageBackendCode(String selected) {
@@ -389,8 +401,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _assistantSystemPromptForLanguage() {
-    final lang = _selectedLanguage.toUpperCase();
-    final backendLang = _aiLanguageBackendCode(_selectedLanguage);
+    final uiLang = _aiUiLanguageFromLocale(ref.read(languageProvider).locale);
+    final lang = uiLang.toUpperCase();
+    final backendLang = _aiLanguageBackendCode(uiLang);
     String assessment = 'Assessment';
     String causes = 'Possible Causes';
     String redFlags = 'Red Flags';
@@ -472,7 +485,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _promptNoPatientSelected() {
-    switch (_selectedLanguage.toUpperCase()) {
+    switch (_aiUiLanguageFromLocale(ref.read(languageProvider).locale).toUpperCase()) {
       case 'UZ':
         return 'Bemor tanlanmagan.';
       case _aiLangUzbekCyrillic:
@@ -487,7 +500,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _promptMedicalHistoryUnavailable() {
-    switch (_selectedLanguage.toUpperCase()) {
+    switch (_aiUiLanguageFromLocale(ref.read(languageProvider).locale).toUpperCase()) {
       case 'UZ':
         return 'Tibbiy tarix brifingi mavjud emas (zarur bo‘lsa, uchrashuvlar bo‘yicha brifing yarating).';
       case _aiLangUzbekCyrillic:
@@ -605,7 +618,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .streamAi(
           messages: payloadMessages,
           question: question,
-          language: _aiLanguageBackendCode(_selectedLanguage),
+          language: _aiLanguageBackendCode(_aiUiLanguageFromLocale(ref.read(languageProvider).locale)),
           patientId: _selectedPatientId == null ? null : int.tryParse(_selectedPatientId!),
           consultationId: _selectedAppointmentId != null ? int.tryParse(_selectedAppointmentId!) : null,
         )
@@ -1099,67 +1112,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                         const SizedBox(height: 12),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            TextButton.icon(
-                              onPressed: _aiLoading ? null : _startNewSession,
-                              icon: const Icon(Icons.refresh, size: 15),
-                              label: Text(AppLocalizations.of(context)!.translate('newSession')),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.grey.shade700,
-                                visualDensity: VisualDensity.compact,
-                              ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: _aiLoading ? null : _startNewSession,
+                            icon: const Icon(Icons.refresh, size: 15),
+                            label: Text(AppLocalizations.of(context)!.translate('newSession')),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade700,
+                              visualDensity: VisualDensity.compact,
                             ),
-                            PopupMenuButton<String>(
-                              initialValue: _selectedLanguage,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 44, minHeight: 28),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _selectedLanguage.toUpperCase() == _aiLangUzbekCyrillic
-                                          ? 'ЎЗ'
-                                          : _selectedLanguage,
-                                      style: const TextStyle(fontSize: 11),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    const Icon(Icons.arrow_drop_down, size: 14),
-                                  ],
-                                ),
-                              ),
-                              itemBuilder: (context) => [
-                                PopupMenuItem(
-                                  value: 'EN',
-                                  child: Text(AppLocalizations.of(context)!.english),
-                                ),
-                                PopupMenuItem(
-                                  value: 'UZ',
-                                  child: Text(AppLocalizations.of(context)!.uzbek),
-                                ),
-                                PopupMenuItem(
-                                  value: _aiLangUzbekCyrillic,
-                                  child: const Text('ЎЗ'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'DE',
-                                  child: Text(AppLocalizations.of(context)!.translate('german') ?? 'German'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'RU',
-                                  child: Text(AppLocalizations.of(context)!.translate('russian') ?? 'Russian'),
-                                ),
-                              ],
-                              onSelected: (v) => setState(() => _selectedLanguage = v),
-                            ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 10),
                         // ---------- CONVERSATION AREA ----------

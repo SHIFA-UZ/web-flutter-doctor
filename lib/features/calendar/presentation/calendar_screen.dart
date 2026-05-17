@@ -12,6 +12,7 @@ import 'package:shifa_doc_app_v1/features/appointments/application/consultation_
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
+import 'package:shifa_doc_app_v1/state/practice/practice_session_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
@@ -241,6 +242,66 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         'Please keep this in mind while managing appointments.';
   }
 
+  Widget _buildColleaguePicker(BuildContext context, String? profileTimeZone) {
+    final l10n = AppLocalizations.of(context)!;
+    final practiceAsync = ref.watch(practiceSessionProvider);
+    return practiceAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (session) {
+        if (session == null || session.colleagues.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final effectiveTz = (profileTimeZone != null && profileTimeZone.trim().isNotEmpty)
+            ? profileTimeZone.trim()
+            : 'UTC';
+        final current = ref.read(calendarProvider.notifier).resourceDoctorId;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(Icons.groups_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: DropdownButtonFormField<int?>(
+                  value: current,
+                  decoration: InputDecoration(
+                    labelText: l10n.calendarForDoctor,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: [
+                    DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text(l10n.mySchedule),
+                    ),
+                    ...session.colleagues.map(
+                      (c) => DropdownMenuItem<int?>(
+                        value: c.doctorId,
+                        child: Text(
+                          c.displayName.isEmpty
+                              ? l10n.calendarColleagueDoctorFallback(c.doctorId)
+                              : c.displayName,
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) async {
+                    ref.read(calendarProvider.notifier).setResourceDoctorId(v);
+                    if (_selectedDay != null) {
+                      await _loadDay(_selectedDay!, effectiveTz);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Go-to-appointment: day already set in initState from calendarGoToAppointmentDayProvider.
@@ -350,6 +411,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                         ),
                       ),
                     ),
+                  _buildColleaguePicker(context, profileTimeZone),
                   // Top bar
                   Row(
                     children: [

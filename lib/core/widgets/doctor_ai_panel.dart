@@ -6,6 +6,7 @@ import '../../core/api/ai_api.dart';
 import '../../core/api/ai_message.dart';
 import '../../core/api/ai_api_provider.dart';
 import '../../core/widgets/ai_response_text.dart';
+import '../../core/providers/language_provider.dart';
 
 class DoctorAiPanel extends ConsumerStatefulWidget {
   const DoctorAiPanel({super.key});
@@ -77,8 +78,9 @@ class _DoctorAiPanelState extends ConsumerState<DoctorAiPanel> {
     _controller.clear();
 
     _sub?.cancel();
+    final streamLang = ref.read(languageProvider).locale.backendLanguageCode.toUpperCase();
     _sub = aiApi
-        .streamAi(messages: payloadMessages, question: question, language: 'EN', patientId: null)
+        .streamAi(messages: payloadMessages, question: question, language: streamLang, patientId: null)
         .listen(
           (event) {
             if (event is AiTokenEvent) {

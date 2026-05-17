@@ -235,6 +235,7 @@ class CalendarController
     ref.listen<String?>(authTokenProvider, (previous, next) {
       if (previous == next) return;
       _lastLoadTime.clear();
+      _resourceDoctorId = null;
       state = <DateTime, List<CalendarEntry>>{};
     });
   }
@@ -242,6 +243,18 @@ class CalendarController
   final Ref ref;
 
   final Map<DateTime, DateTime> _lastLoadTime = {};
+
+  /// When set, calendar GET / book POST target this doctor profile (same clinic / receptionist view).
+  int? _resourceDoctorId;
+
+  int? get resourceDoctorId => _resourceDoctorId;
+
+  void setResourceDoctorId(int? doctorProfileId) {
+    if (_resourceDoctorId == doctorProfileId) return;
+    _resourceDoctorId = doctorProfileId;
+    _lastLoadTime.clear();
+    state = <DateTime, List<CalendarEntry>>{};
+  }
 
   DateTime _dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -299,7 +312,11 @@ class CalendarController
 
     // BACKEND CONTRACT: All datetimes must be ISO-8601 UTC with "Z". We defensively normalize naive timestamps.
     final client = ref.read(apiClientProvider);
-    final resp = await client.get('/api/calendar', params: {'day': _ymd(day)});
+    final params = <String, String>{'day': _ymd(day)};
+    if (_resourceDoctorId != null) {
+      params['doctorId'] = _resourceDoctorId.toString();
+    }
+    final resp = await client.get('/api/calendar', params: params);
     if (resp.statusCode == 200) {
       List<CalendarEntry> entries;
       try {
@@ -396,7 +413,7 @@ class CalendarController
     final client = ref.read(apiClientProvider);
     final slotMinutes = _durationMinutes(slot.start, slot.end);
 
-    final body = {
+    final body = <String, dynamic>{
       'startAt': startAtUtc,
       'slotMinutes': slotMinutes,
       'patientId': patientId,
@@ -404,6 +421,9 @@ class CalendarController
       'reason': reason,
       'isVideo': isVideo,
     };
+    if (_resourceDoctorId != null) {
+      body['resourceDoctorId'] = _resourceDoctorId;
+    }
 
     final res = await client.post('/api/schedule/book', body);
 

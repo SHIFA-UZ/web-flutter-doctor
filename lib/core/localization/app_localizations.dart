@@ -102,6 +102,9 @@ class AppLocalizations {
       'chat': 'Chat',
       'home': 'Home',
       'calendar': 'Calendar',
+      'calendarForDoctor': 'Calendar for',
+      'mySchedule': 'My schedule',
+      'calendarColleagueDoctorFallback': 'Doctor #{{id}}',
       'patients': 'Patients',
       'tasks': 'Tasks',
       'profile': 'Profile',
@@ -1282,6 +1285,9 @@ class AppLocalizations {
       'chat': 'Suhbat',
       'home': 'Bosh sahifa',
       'calendar': 'Taqvim',
+      'calendarForDoctor': 'Shifokor taqvimi',
+      'mySchedule': 'Mening taqvimim',
+      'calendarColleagueDoctorFallback': 'Shifokor №{{id}}',
       'patients': 'Bemorlar',
       'tasks': 'Vazifalar',
       'profile': 'Profil',
@@ -2451,6 +2457,9 @@ class AppLocalizations {
       'chat': 'Чат',
       'home': 'Главная',
       'calendar': 'Календарь',
+      'calendarForDoctor': 'Календарь врача',
+      'mySchedule': 'Моё расписание',
+      'calendarColleagueDoctorFallback': 'Врач №{{id}}',
       'patients': 'Пациенты',
       'tasks': 'Задачи',
       'profile': 'Профиль',
@@ -3536,6 +3545,10 @@ class AppLocalizations {
   String get chat => translate('chat');
   String get home => translate('home');
   String get calendar => translate('calendar');
+  String get calendarForDoctor => translate('calendarForDoctor');
+  String get mySchedule => translate('mySchedule');
+  String calendarColleagueDoctorFallback(int id) =>
+      translate('calendarColleagueDoctorFallback').replaceAll('{{id}}', '$id');
   String get patients => translate('patients');
   String get tasks => translate('tasks');
   String get profile => translate('profile');
