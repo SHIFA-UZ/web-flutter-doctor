@@ -828,7 +828,7 @@ class _InPersonAppointmentScreenState
         await invalidateAppointmentRelatedProviders(ref);
 
         // Refresh documents
-        ref.invalidate(patientDocumentsProvider(patientId));
+        ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -880,7 +880,7 @@ class _InPersonAppointmentScreenState
               patientId: resolvedId,
               brand: brand,
               onDocumentsChanged: () {
-                ref.invalidate(patientDocumentsProvider(resolvedId));
+                ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: resolvedId)));
                 ref.refresh(patientFormsProvider(resolvedId));
               },
               onHasUnsavedChanges: (v) =>
@@ -908,7 +908,7 @@ class _InPersonAppointmentScreenState
         patientId: patientId,
         brand: brand,
         onDocumentsChanged: () {
-          ref.invalidate(patientDocumentsProvider(patientId));
+          ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));
           ref.refresh(patientFormsProvider(patientId));
         },
         onHasUnsavedChanges: (v) => setState(() => _hasUnsavedChanges = v),
@@ -970,7 +970,7 @@ class _InPersonAppointmentScreenState
 
     // Fetch patient documents
     final documentsAsync = patientId != null && patientId.isNotEmpty
-        ? ref.watch(patientDocumentsProvider(patientId))
+        ? ref.watch(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)))
         : null;
 
     final consultationUploadEnabled =
@@ -1093,7 +1093,7 @@ class _InPersonAppointmentScreenState
                                             );
                                           }
                                           final docsAsync = ref.watch(
-                                            patientDocumentsProvider(id),
+                                            patientDocumentsProvider(PatientDocumentsKey(patientId: id)),
                                           );
                                           return docsAsync.when(
                                             data: (docs) =>
@@ -1112,7 +1112,7 @@ class _InPersonAppointmentScreenState
                                                     );
                                                     ref.refresh(
                                                       patientDocumentsProvider(
-                                                        id,
+                                                        PatientDocumentsKey(patientId: id),
                                                       ),
                                                     );
                                                   },
@@ -1166,7 +1166,7 @@ class _InPersonAppointmentScreenState
                                               );
                                               ref.refresh(
                                                 patientDocumentsProvider(
-                                                  pid,
+                                                  PatientDocumentsKey(patientId: pid),
                                                 ),
                                               );
                                             },

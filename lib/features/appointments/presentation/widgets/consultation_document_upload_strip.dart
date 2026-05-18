@@ -107,7 +107,7 @@ class _ConsultationDocumentUploadStripState
           }
         }
       }
-      ref.invalidate(patientDocumentsProvider(pid));
+      ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: pid)));
       if (mounted && ok > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.consultationUploadSuccess(ok))),

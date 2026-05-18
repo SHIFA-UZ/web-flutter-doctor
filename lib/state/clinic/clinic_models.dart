@@ -116,6 +116,8 @@ class ClinicCatalogItem {
   final String currency;
   final bool active;
   final int sortOrder;
+  final bool appliesToAllDoctors;
+  final List<int> assignedDoctorProfileIds;
 
   const ClinicCatalogItem({
     required this.id,
@@ -126,9 +128,18 @@ class ClinicCatalogItem {
     required this.currency,
     required this.active,
     required this.sortOrder,
+    required this.appliesToAllDoctors,
+    required this.assignedDoctorProfileIds,
   });
 
   factory ClinicCatalogItem.fromJson(Map<String, dynamic> json) {
+    final rawAssigned = json['assignedDoctorProfileIds'];
+    final assigned = <int>[];
+    if (rawAssigned is List) {
+      for (final e in rawAssigned) {
+        if (e is num) assigned.add(e.toInt());
+      }
+    }
     return ClinicCatalogItem(
       id: (json['id'] as num).toInt(),
       clinicId: (json['clinicId'] as num).toInt(),
@@ -138,6 +149,8 @@ class ClinicCatalogItem {
       currency: json['currency'] as String? ?? 'UZS',
       active: json['active'] as bool? ?? true,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      appliesToAllDoctors: json['appliesToAllDoctors'] as bool? ?? true,
+      assignedDoctorProfileIds: assigned,
     );
   }
 }

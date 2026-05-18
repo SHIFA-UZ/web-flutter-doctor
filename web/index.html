@@ -21,6 +21,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Shifa Doctor - Professional medical practice management platform">
 
+  <!-- Extra hint for proxies/browsers that respect html-level hints -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -34,19 +37,90 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
-
-  <!-- Firebase Messaging Service Worker -->
+  <!--
+    Legacy Flutter web used an offline-first service worker that cache-first'd
+    main.dart.js; that keeps stale bundles in normal browsers while incognito looks fine.
+    Builds use --pwa-strategy=none; clear old SW + Cache Storage before loading the app.
+  -->
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/firebase-messaging-sw.js')
-        .then(function(registration) {
-          console.log('Service Worker registered:', registration);
-        })
-        .catch(function(err) {
-          console.log('Service Worker registration failed:', err);
+    (function () {
+      function clearLegacyFlutterPwa() {
+        var cachePromise = ('caches' in window)
+          ? caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (key) {
+                if (key.indexOf('flutter-app') === 0 || key.indexOf('flutter-temp') === 0) {
+                  return caches.delete(key);
+                }
+                return Promise.resolve();
+              }));
+            })
+          : Promise.resolve();
+
+        if (!('serviceWorker' in navigator)) {
+          return cachePromise.then(function () {
+            return false;
+          });
+        }
+
+        var regPromise = navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          var flutterRegs = registrations.filter(function (registration) {
+            var script = registration.installing || registration.waiting || registration.active;
+            var url = script ? script.scriptURL : '';
+            return url.indexOf('flutter_service_worker') !== -1;
+          });
+          return Promise.all(flutterRegs.map(function (registration) {
+            return registration.unregister();
+          })).then(function () {
+            return flutterRegs.length > 0;
+          });
         });
-    }
+
+        return Promise.all([regPromise, cachePromise]).then(function (results) {
+          return results[0];
+        });
+      }
+
+      function loadFlutterBootstrap() {
+        var s = document.createElement('script');
+        s.src = 'flutter_bootstrap.js';
+        s.async = true;
+        document.body.appendChild(s);
+      }
+
+      function registerFirebaseMessagingSw() {
+        if (!('serviceWorker' in navigator)) {
+          return;
+        }
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then(function (registration) {
+            console.log('Service Worker registered:', registration);
+          })
+          .catch(function (err) {
+            console.log('Service Worker registration failed:', err);
+          });
+      }
+
+      clearLegacyFlutterPwa()
+        .then(function (unregisteredFlutterSw) {
+          var k = 'shifa_sw_purge_reload';
+          if (unregisteredFlutterSw) {
+            var count = parseInt(sessionStorage.getItem(k) || '0', 10);
+            if (count < 2) {
+              sessionStorage.setItem(k, String(count + 1));
+              window.location.reload();
+              return;
+            }
+          }
+          sessionStorage.removeItem(k);
+          loadFlutterBootstrap();
+          registerFirebaseMessagingSw();
+        })
+        .catch(function () {
+          sessionStorage.removeItem('shifa_sw_purge_reload');
+          loadFlutterBootstrap();
+          registerFirebaseMessagingSw();
+        });
+    })();
   </script>
 </body>
 </html>

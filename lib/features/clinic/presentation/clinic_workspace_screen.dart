@@ -9,6 +9,21 @@ import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
+import 'package:shifa_doc_app_v1/app/router.dart';
+import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
+
+void openClinicPatientFromWorkspace(WidgetRef ref, int patientId, int clinicId) {
+  ref.read(shellProvider.notifier).setTab(3);
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    shellNavigatorKey.currentState?.pushNamed(
+      AppRoutes.patientsWithSelection,
+      arguments: <String, dynamic>{
+        'patientId': patientId.toString(),
+        'clinicId': clinicId,
+      },
+    );
+  });
+}
 
 class ClinicWorkspaceScreen extends ConsumerStatefulWidget {
   const ClinicWorkspaceScreen({super.key});
@@ -468,6 +483,7 @@ class _PatientsTab extends ConsumerWidget {
                   return ListTile(
                     title: Text(p.fullName),
                     subtitle: Text(parts.isEmpty ? '—' : parts.join(' · ')),
+                    onTap: () => openClinicPatientFromWorkspace(ref, p.patientId, clinicId),
                   );
                 },
               ),
@@ -483,29 +499,287 @@ class _ServicesTab extends ConsumerWidget {
   const _ServicesTab({required this.clinicId});
   final int clinicId;
 
+  static const _currencies = ['UZS', 'USD', 'EUR', 'RUB'];
+
+  String _assignmentSubtitle(AppLocalizations l10n, List<ClinicMember> members, ClinicCatalogItem it) {
+    if (it.appliesToAllDoctors) return l10n.translate('clinicServicesAssignmentAll');
+    if (it.assignedDoctorProfileIds.isEmpty) return l10n.translate('clinicServicesAssignmentNone');
+    final names = <String>[];
+    for (final id in it.assignedDoctorProfileIds) {
+      String? label;
+      for (final m in members) {
+        if (m.doctorProfileId == id) {
+          label = m.displayName;
+          break;
+        }
+      }
+      names.add(label ?? '#$id');
+    }
+    return names.join(', ');
+  }
+
+  Future<void> _openEditor(BuildContext context, WidgetRef ref, ClinicCatalogItem? existing) async {
+    final l10n = AppLocalizations.of(context)!;
+    List<ClinicMember> members = <ClinicMember>[];
+    try {
+      members = await ref.read(clinicMembersProvider(clinicId).future);
+    } catch (_) {
+      members = ref.read(clinicMembersProvider(clinicId)).valueOrNull ?? <ClinicMember>[];
+    }
+
+    if (!context.mounted) return;
+
+    final titleCtrl = TextEditingController(text: existing?.title ?? '');
+    final codeCtrl = TextEditingController(text: existing?.code ?? '');
+    final priceCtrl = TextEditingController(
+      text: existing != null ? (existing.defaultPriceMinor / 100).toStringAsFixed(2) : '',
+    );
+    var currency = existing?.currency ?? 'UZS';
+    if (!_currencies.contains(currency)) currency = 'UZS';
+    var appliesToAll = existing?.appliesToAllDoctors ?? true;
+    final selected = <int>{if (existing != null) ...existing.assignedDoctorProfileIds};
+
+    Future<void> submit(void Function(void Function()) setLocal, NavigatorState nav) async {
+      final title = titleCtrl.text.trim();
+      if (title.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.translate('clinicServiceTitleLabel'))),
+        );
+        return;
+      }
+      final priceMinor = ((double.tryParse(priceCtrl.text.trim()) ?? 0) * 100).round();
+      if (priceMinor < 0) return;
+      if (!appliesToAll && selected.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.translate('clinicServicePickDoctors'))),
+        );
+        return;
+      }
+      try {
+        if (existing == null) {
+          await createClinicCatalogItem(
+            ref,
+            clinicId: clinicId,
+            code: codeCtrl.text.trim().isEmpty ? null : codeCtrl.text.trim(),
+            title: title,
+            defaultPriceMinor: priceMinor,
+            currency: currency,
+            active: true,
+            appliesToAllDoctors: appliesToAll,
+            assignedDoctorProfileIds: appliesToAll ? <int>[] : selected.toList(),
+          );
+        } else {
+          await patchClinicCatalogItem(
+            ref,
+            clinicId: clinicId,
+            catalogItemId: existing.id,
+            code: codeCtrl.text.trim().isEmpty ? '' : codeCtrl.text.trim(),
+            title: title,
+            defaultPriceMinor: priceMinor,
+            currency: currency,
+            appliesToAllDoctors: appliesToAll,
+            assignedDoctorProfileIds: appliesToAll ? null : selected.toList(),
+          );
+        }
+        if (context.mounted) nav.pop(true);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        }
+      }
+    }
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return AlertDialog(
+              title: Text(
+                existing == null ? l10n.translate('clinicServiceAddTitle') : l10n.translate('clinicServiceEditTitle'),
+              ),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: titleCtrl,
+                        decoration: InputDecoration(labelText: l10n.translate('clinicServiceTitleLabel')),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: codeCtrl,
+                        decoration: InputDecoration(labelText: l10n.translate('clinicServiceCodeLabel')),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: priceCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: InputDecoration(labelText: l10n.translate('clinicServicePriceLabel')),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 100,
+                            child: DropdownButtonFormField<String>(
+                              value: currency,
+                              decoration: InputDecoration(labelText: l10n.translate('clinicServiceCurrencyLabel')),
+                              items: _currencies
+                                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                  .toList(),
+                              onChanged: (v) {
+                                if (v != null) setLocal(() => currency = v);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.translate('clinicServiceAllDoctorsToggle')),
+                        value: appliesToAll,
+                        onChanged: (v) => setLocal(() => appliesToAll = v),
+                      ),
+                      if (!appliesToAll) ...[
+                        Text(l10n.translate('clinicServicePickDoctors'), style: Theme.of(ctx).textTheme.titleSmall),
+                        const SizedBox(height: 8),
+                        if (members.isEmpty)
+                          Text(l10n.translate('clinicWorkspaceNoDoctors'), style: Theme.of(ctx).textTheme.bodySmall)
+                        else
+                          ...members.map((m) {
+                            return CheckboxListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(m.displayName),
+                              subtitle: Text(m.membershipRole),
+                              value: selected.contains(m.doctorProfileId),
+                              onChanged: (on) {
+                                setLocal(() {
+                                  if (on == true) {
+                                    selected.add(m.doctorProfileId);
+                                  } else {
+                                    selected.remove(m.doctorProfileId);
+                                  }
+                                });
+                              },
+                            );
+                          }),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.translate('cancel'))),
+                TextButton(
+                  onPressed: () => submit(setLocal, Navigator.of(ctx)),
+                  child: Text(l10n.translate('clinicServiceSave')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    titleCtrl.dispose();
+    codeCtrl.dispose();
+    priceCtrl.dispose();
+    if (ok == true && context.mounted) {
+      ref.invalidate(clinicCatalogProvider(clinicId));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(clinicCatalogProvider(clinicId));
+    final membersAsync = ref.watch(clinicMembersProvider(clinicId));
+    final members = membersAsync.valueOrNull ?? <ClinicMember>[];
+
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
       data: (items) {
-        if (items.isEmpty) {
-          return Center(child: Text(l10n.translate('clinicServicesEmpty')));
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (_, i) {
-            final it = items[i];
-            final price = (it.defaultPriceMinor / 100).toStringAsFixed(2);
-            return ListTile(
-              title: Text(it.title),
-              subtitle: Text('${it.currency} $price · ${it.code ?? '—'}'),
-            );
-          },
+        return Scaffold(
+          body: items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      l10n.translate('clinicServicesEmpty'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final it = items[i];
+                    final price = (it.defaultPriceMinor / 100).toStringAsFixed(2);
+                    return ListTile(
+                      title: Text(
+                        it.title,
+                        style: TextStyle(
+                          color: it.active ? null : Colors.grey,
+                          fontStyle: it.active ? null : FontStyle.italic,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${it.currency} $price · ${it.code ?? '—'}\n${_assignmentSubtitle(l10n, members, it)}'
+                        '${it.active ? '' : '\n${l10n.translate('clinicServiceInactiveBadge')}'}',
+                      ),
+                      isThreeLine: true,
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (v) async {
+                          if (v == 'edit') {
+                            await _openEditor(context, ref, it);
+                          } else if (v == 'toggle') {
+                            try {
+                              await patchClinicCatalogItem(
+                                ref,
+                                clinicId: clinicId,
+                                catalogItemId: it.id,
+                                active: !it.active,
+                              );
+                              if (context.mounted) ref.invalidate(clinicCatalogProvider(clinicId));
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                              }
+                            }
+                          }
+                        },
+                        itemBuilder: (ctx) => [
+                          PopupMenuItem(value: 'edit', child: Text(l10n.translate('edit'))),
+                          PopupMenuItem(
+                            value: 'toggle',
+                            child: Text(
+                              it.active ? l10n.translate('clinicServiceDeactivate') : l10n.translate('clinicServiceActivate'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              await _openEditor(context, ref, null);
+            },
+            child: const Icon(Icons.add),
+          ),
         );
       },
     );

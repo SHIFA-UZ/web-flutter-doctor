@@ -158,6 +158,77 @@ final clinicCatalogProvider =
       .toList();
 });
 
+Future<ClinicCatalogItem> createClinicCatalogItem(
+  WidgetRef ref, {
+  required int clinicId,
+  String? code,
+  required String title,
+  required int defaultPriceMinor,
+  required String currency,
+  required bool active,
+  int sortOrder = 0,
+  required bool appliesToAllDoctors,
+  required List<int> assignedDoctorProfileIds,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.post('/api/treatment-plans/catalog-items', {
+    'clinicId': clinicId,
+    if (code != null && code.isNotEmpty) 'code': code,
+    'title': title,
+    'defaultPriceMinor': defaultPriceMinor,
+    'currency': currency,
+    'active': active,
+    'sortOrder': sortOrder,
+    'appliesToAllDoctors': appliesToAllDoctors,
+    'assignedDoctorProfileIds': assignedDoctorProfileIds,
+  });
+  if (res.statusCode != 200) {
+    throw Exception('catalog create ${res.statusCode}: ${res.body}');
+  }
+  final m = json.decode(utf8.decode(res.bodyBytes));
+  if (m is! Map) throw Exception('Invalid catalog JSON');
+  ref.invalidate(clinicCatalogProvider(clinicId));
+  return ClinicCatalogItem.fromJson(Map<String, dynamic>.from(m));
+}
+
+Future<ClinicCatalogItem> patchClinicCatalogItem(
+  WidgetRef ref, {
+  required int clinicId,
+  required int catalogItemId,
+  String? code,
+  String? title,
+  int? defaultPriceMinor,
+  String? currency,
+  bool? active,
+  int? sortOrder,
+  bool? appliesToAllDoctors,
+  List<int>? assignedDoctorProfileIds,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final body = <String, dynamic>{};
+  if (code != null) body['code'] = code;
+  if (title != null) body['title'] = title;
+  if (defaultPriceMinor != null) body['defaultPriceMinor'] = defaultPriceMinor;
+  if (currency != null) body['currency'] = currency;
+  if (active != null) body['active'] = active;
+  if (sortOrder != null) body['sortOrder'] = sortOrder;
+  if (appliesToAllDoctors != null) body['appliesToAllDoctors'] = appliesToAllDoctors;
+  if (assignedDoctorProfileIds != null) {
+    body['assignedDoctorProfileIds'] = assignedDoctorProfileIds;
+  }
+  final res = await api.patch(
+    '/api/treatment-plans/catalog-items/$catalogItemId',
+    body,
+  );
+  if (res.statusCode != 200) {
+    throw Exception('catalog patch ${res.statusCode}: ${res.body}');
+  }
+  final m = json.decode(utf8.decode(res.bodyBytes));
+  if (m is! Map) throw Exception('Invalid catalog JSON');
+  ref.invalidate(clinicCatalogProvider(clinicId));
+  return ClinicCatalogItem.fromJson(Map<String, dynamic>.from(m));
+}
+
 class ClinicPatientsPage {
   final List<ClinicPatientRow> content;
   final int totalElements;

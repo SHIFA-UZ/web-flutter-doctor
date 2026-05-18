@@ -121,11 +121,18 @@ class AppRouter {
         String? rootDocumentId;
         String? rootDocumentTitle;
         bool rootOpenDocumentViewer = false;
+        int? rootClinicId;
         if (rootArgs is Map) {
           rootPatientId = rootArgs['patientId']?.toString();
           rootDocumentId = rootArgs['documentId']?.toString();
           rootDocumentTitle = rootArgs['documentTitle'] as String?;
           rootOpenDocumentViewer = rootArgs['openDocumentViewer'] == true;
+          final c = rootArgs['clinicId'];
+          if (c is int) {
+            rootClinicId = c;
+          } else {
+            rootClinicId = int.tryParse(c?.toString() ?? '');
+          }
         } else if (rootArgs is String) {
           rootPatientId = rootArgs;
         }
@@ -135,6 +142,7 @@ class AppRouter {
             initialDocumentIdToSelect: rootDocumentId,
             initialDocumentTitle: rootDocumentTitle,
             initialOpenDocumentViewer: rootOpenDocumentViewer,
+            clinicWorkspaceId: rootClinicId,
           ),
         );
 
@@ -227,11 +235,18 @@ class AppRouter {
         String? documentId;
         String? documentTitle;
         bool openDocumentViewer = false;
+        int? clinicWorkspaceId;
         if (args is Map) {
           patientId = args['patientId']?.toString();
           documentId = args['documentId']?.toString();
           documentTitle = args['documentTitle'] as String?;
           openDocumentViewer = args['openDocumentViewer'] == true;
+          final c = args['clinicId'];
+          if (c is int) {
+            clinicWorkspaceId = c;
+          } else {
+            clinicWorkspaceId = int.tryParse(c?.toString() ?? '');
+          }
         } else if (args is String) {
           patientId = args;
         }
@@ -241,6 +256,7 @@ class AppRouter {
             initialDocumentIdToSelect: documentId,
             initialDocumentTitle: documentTitle,
             initialOpenDocumentViewer: openDocumentViewer,
+            clinicWorkspaceId: clinicWorkspaceId,
           ),
         );
       default:

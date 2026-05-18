@@ -21,7 +21,10 @@ import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
         requestDocumentAccessWithClient,
         updatePatientWithClient,
         createPatientWithClient,
-        createPatientAccountWithClient;
+        createPatientAccountWithClient,
+        fetchPatientWithClient,
+        fetchProphylaxisSettingsWithClient,
+        upsertProphylaxisSettingsWithClient;
 import 'package:shifa_doc_app_v1/features/patients/presentation/document_viewer_screen.dart';
 import 'package:flutter/services.dart'; // ✅ for Clipboard
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
@@ -51,6 +54,7 @@ class PatientsScreen extends ConsumerStatefulWidget {
     this.initialDocumentIdToSelect,
     this.initialDocumentTitle,
     this.initialOpenDocumentViewer = false,
+    this.clinicWorkspaceId,
   }) : super(key: key);
 
   /// When set (e.g. from chat header tap), this patient is selected when the screen loads.
@@ -65,6 +69,9 @@ class PatientsScreen extends ConsumerStatefulWidget {
   /// When true with [initialDocumentIdToSelect], open the document in PDF viewer after loading.
   final bool initialOpenDocumentViewer;
 
+  /// When set (e.g. opened from clinic workspace roster), loads patient/documents/prophylaxis with clinic scope.
+  final int? clinicWorkspaceId;
+
   @override
   ConsumerState<PatientsScreen> createState() => _PatientsScreenState();
 }
@@ -73,6 +80,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _query = '';
   String? _selectedId;
+  Patient? _overlayPatient;
 
   @override
   void initState() {
@@ -85,8 +93,12 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
     final patients = ref.read(patientsProvider);
     final initialId = widget.initialSelectedId;
+    final clinicWs = widget.clinicWorkspaceId;
     if (initialId != null && patients.any((p) => p.id == initialId)) {
       _selectedId = initialId;
+    } else if (initialId != null && clinicWs != null) {
+      _selectedId = initialId;
+      _loadClinicOverlayPatient(initialId, clinicWs);
     } else if (patients.isNotEmpty) {
       _selectedId = patients.first.id;
     }
@@ -95,6 +107,27 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
       setState(() => _query = _searchCtrl.text.trim());
     });
   }
+
+  Future<void> _loadClinicOverlayPatient(String patientId, int clinicId) async {
+    try {
+      final client = ref.read(apiClientProvider);
+      final p = await fetchPatientWithClient(
+        client: client,
+        patientId: patientId,
+        clinicId: clinicId,
+      );
+      if (mounted) {
+        setState(() => _overlayPatient = p);
+      }
+    } catch (_) {
+      // Leave overlay null; detail panel may stay empty until list refresh includes patient.
+    }
+  }
+
+  PatientDocumentsKey _docKey(String patientId) => PatientDocumentsKey(
+        patientId: patientId,
+        clinicId: widget.clinicWorkspaceId,
+      );
 
   @override
   void dispose() {
@@ -109,16 +142,33 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     return patients.where((p) => p.name.toLowerCase().contains(q)).toList();
   }
 
+  /// Sidebar list: includes clinic overlay patient when they are not in the doctor directory.
+  List<Patient> get _sidebarPatients {
+    final base = _filtered;
+    final o = _overlayPatient;
+    if (o == null || base.any((p) => p.id == o.id)) return base;
+    if (_query.isNotEmpty) {
+      final q = _query.toLowerCase();
+      if (!o.name.toLowerCase().contains(q)) return base;
+    }
+    return [o, ...base];
+  }
+
   Future<void> _handlePatientSelection(String id) async {
     setState(() => _selectedId = id);
     // Refresh document list so new uploads and access approvals from patient app are visible
-    ref.refresh(patientDocumentsProvider(id));
+    ref.refresh(patientDocumentsProvider(_docKey(id)));
     // Show warning if patient has chronic disease
-    final patient = _filtered.firstWhere(
-      (p) => p.id == id,
-      orElse: () => _filtered.first,
-    );
-    if (patient.general.chronicDisease != null &&
+    Patient? patient;
+    for (final p in _sidebarPatients) {
+      if (p.id == id) {
+        patient = p;
+        break;
+      }
+    }
+    patient ??= _overlayPatient?.id == id ? _overlayPatient : null;
+    if (patient != null &&
+        patient.general.chronicDisease != null &&
         patient.general.chronicDisease!.isNotEmpty &&
         patient.general.chronicDisease != 'None') {
       await showChronicDiseaseWarning(
@@ -130,12 +180,14 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   }
 
   Patient? get _selected {
+    final id = _selectedId;
+    if (id == null) return null;
+    if (_overlayPatient?.id == id) return _overlayPatient;
     final patients = ref.watch(patientsProvider);
-    if (patients.isEmpty) return null;
-    return patients.firstWhere(
-      (p) => p.id == _selectedId,
-      orElse: () => patients.first,
-    );
+    for (final p in patients) {
+      if (p.id == id) return p;
+    }
+    return _overlayPatient?.id == id ? _overlayPatient : null;
   }
 
   String _formatDate(DateTime d) {
@@ -414,11 +466,12 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
         fileName: f.name,
         title: title.isEmpty ? f.name : title,
         category: category,
+        clinicId: widget.clinicWorkspaceId,
       );
 
       if (!mounted) return;
       if (newDoc != null) {
-        ref.refresh(patientDocumentsProvider(patient.id));
+        ref.refresh(patientDocumentsProvider(_docKey(patient.id)));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -534,9 +587,10 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
         fileName: 'scanned_document.pdf',
         title: title.isEmpty ? defaultTitle : title,
         category: category,
+        clinicId: widget.clinicWorkspaceId,
       );
 
-      ref.refresh(patientDocumentsProvider(patient.id));
+      ref.refresh(patientDocumentsProvider(_docKey(patient.id)));
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -703,7 +757,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     const SizedBox(height: 16),
                     Expanded(
                       child: _PatientsList(
-                        patients: _filtered,
+                        patients: _sidebarPatients,
                         selectedId: _selectedId,
                         onSelect: _handlePatientSelection,
                       ),
@@ -718,6 +772,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
               child: _PatientDetailsCard(
                 patient: _selected,
                 brand: brand,
+                clinicWorkspaceId: widget.clinicWorkspaceId,
                 onUploadOptions: (p) => _showUploadOptions(context, p),
                 onCreateForm: (p) => _showFormTemplateDialog(context, p),
                 formatDate: _formatDate,
@@ -1267,6 +1322,7 @@ class _PatientsList extends StatelessWidget {
 class _PatientDetailsCard extends ConsumerStatefulWidget {
   final Patient? patient;
   final Color brand;
+  final int? clinicWorkspaceId;
   final void Function(Patient) onUploadOptions;
   final void Function(Patient) onCreateForm;
   final String Function(DateTime) formatDate;
@@ -1278,6 +1334,7 @@ class _PatientDetailsCard extends ConsumerStatefulWidget {
     Key? key,
     required this.patient,
     required this.brand,
+    this.clinicWorkspaceId,
     required this.onUploadOptions,
     required this.onCreateForm,
     required this.formatDate,
@@ -1297,6 +1354,11 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
   String _documentSearchQuery = '';
   bool _documentViewerOpenedFromDeepLink = false;
 
+  PatientDocumentsKey _docKey(String patientId) => PatientDocumentsKey(
+        patientId: patientId,
+        clinicId: widget.clinicWorkspaceId,
+      );
+
   @override
   void initState() {
     super.initState();
@@ -1307,7 +1369,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
     });
     // Fetch fresh document list when detail panel is first shown (e.g. new uploads by patient, access approvals)
     if (widget.patient != null) {
-      ref.refresh(patientDocumentsProvider(widget.patient!.id));
+      ref.refresh(patientDocumentsProvider(_docKey(widget.patient!.id)));
     }
   }
 
@@ -1316,7 +1378,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
     super.didUpdateWidget(oldWidget);
     // When selected patient changes, refresh that patient's documents
     if (widget.patient != null && oldWidget.patient?.id != widget.patient?.id) {
-      ref.refresh(patientDocumentsProvider(widget.patient!.id));
+      ref.refresh(patientDocumentsProvider(_docKey(widget.patient!.id)));
     }
   }
 
@@ -1621,7 +1683,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
     final p = patient;
 
     // Backend-backed document list for this patient
-    final docsAsync = ref.watch(patientDocumentsProvider(p.id));
+    final docsAsync = ref.watch(patientDocumentsProvider(_docKey(p.id)));
     final formsAsync = ref.watch(patientFormsProvider(p.id));
 
     return Container(
@@ -1791,6 +1853,21 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
           ),
           const SizedBox(height: 12),
 
+          if (widget.clinicWorkspaceId != null) ...[
+            _CollapsibleCard(
+              title: AppLocalizations.of(context)!.translate('prophylaxisRemindersTitle') ??
+                  'Prophylaxis reminders',
+              icon: Icons.event_repeat,
+              brand: brand,
+              child: _ClinicProphylaxisEditor(
+                patientId: p.id,
+                clinicId: widget.clinicWorkspaceId!,
+                brand: brand,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // Document History with search
           Row(
             children: [
@@ -1809,7 +1886,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
               IconButton(
                 icon: const Icon(Icons.refresh, size: 20),
                 onPressed: () {
-                  ref.refresh(patientDocumentsProvider(p.id));
+                  ref.refresh(patientDocumentsProvider(_docKey(p.id)));
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -1942,7 +2019,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                         ),
                         const SizedBox(height: 8),
                         TextButton.icon(
-                          onPressed: () => ref.refresh(patientDocumentsProvider(p.id)),
+                          onPressed: () => ref.refresh(patientDocumentsProvider(_docKey(p.id))),
                           icon: const Icon(Icons.refresh, size: 16),
                           label: Text(l10n.retry),
                         ),
@@ -2242,7 +2319,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                         },
                       ).then((_) {
                         ref.refresh(patientFormsProvider(patient.id));
-                        ref.refresh(patientDocumentsProvider(patient.id));
+                        ref.refresh(patientDocumentsProvider(_docKey(patient.id)));
                       });
                     },
                     icon: const Icon(Icons.edit, size: 20),
@@ -2261,12 +2338,13 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                           client: client,
                           patientId: patient.id,
                           documentId: d.id,
+                          clinicId: widget.clinicWorkspaceId,
                         );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(l10n.requestAccessSent)),
                           );
-                          ref.refresh(patientDocumentsProvider(patient.id));
+                          ref.refresh(patientDocumentsProvider(_docKey(patient.id)));
                         }
                       } catch (e) {
                         if (context.mounted) {
@@ -2303,6 +2381,7 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
                         documentId: d.id,
                         title: d.title,
                         l10n: l10n,
+                        clinicWorkspaceId: widget.clinicWorkspaceId,
                       )
                     : null,
                 icon: const Icon(Icons.picture_as_pdf, size: 20),
@@ -2326,6 +2405,172 @@ class _PatientDetailsCardState extends ConsumerState<_PatientDetailsCard> {
   }
 }
 
+class _ClinicProphylaxisEditor extends ConsumerStatefulWidget {
+  const _ClinicProphylaxisEditor({
+    required this.patientId,
+    required this.clinicId,
+    required this.brand,
+  });
+
+  final String patientId;
+  final int clinicId;
+  final Color brand;
+
+  @override
+  ConsumerState<_ClinicProphylaxisEditor> createState() =>
+      _ClinicProphylaxisEditorState();
+}
+
+class _ClinicProphylaxisEditorState
+    extends ConsumerState<_ClinicProphylaxisEditor> {
+  bool _loading = true;
+  bool _saving = false;
+  int _intervalMonths = 12;
+  bool _enabled = true;
+  String? _lastSentAt;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_load);
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    try {
+      final client = ref.read(apiClientProvider);
+      final s = await fetchProphylaxisSettingsWithClient(
+        client: client,
+        patientId: widget.patientId,
+        clinicId: widget.clinicId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        if (s != null) {
+          _intervalMonths = s.intervalMonths.clamp(1, 60);
+          _enabled = s.enabled;
+          _lastSentAt = s.lastSentAt;
+        }
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _saving = true);
+    try {
+      final client = ref.read(apiClientProvider);
+      await upsertProphylaxisSettingsWithClient(
+        client: client,
+        patientId: widget.patientId,
+        clinicId: widget.clinicId,
+        intervalMonths: _intervalMonths.clamp(1, 60),
+        enabled: _enabled,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.translate('prophylaxisSaved') ?? 'Saved',
+            ),
+          ),
+        );
+        await _load();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.error}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final intervalItems = List<int>.generate(60, (i) => i + 1);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.translate('prophylaxisIntervalMonths') ?? 'Interval (months)',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<int>(
+          value: _intervalMonths.clamp(1, 60),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          items: intervalItems
+              .map(
+                (m) => DropdownMenuItem<int>(
+                  value: m,
+                  child: Text('$m'),
+                ),
+              )
+              .toList(),
+          onChanged: (v) {
+            if (v != null) setState(() => _intervalMonths = v);
+          },
+        ),
+        const SizedBox(height: 12),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            l10n.translate('prophylaxisEnabled') ?? 'Enabled',
+            style: const TextStyle(fontSize: 14),
+          ),
+          value: _enabled,
+          activeColor: widget.brand,
+          onChanged: (v) => setState(() => _enabled = v),
+        ),
+        if (_lastSentAt != null && _lastSentAt!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            (l10n.translate('prophylaxisLastSent') ?? 'Last sent: {{date}}')
+                .replaceAll('{{date}}', _lastSentAt!),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+        const SizedBox(height: 12),
+        ShifaPrimaryButton(
+          width: ButtonWidth.fill,
+          isLoading: _saving,
+          onPressed: _saving ? null : _save,
+          label: l10n.translate('prophylaxisSave') ?? 'Save',
+          icon: Icons.save_outlined,
+        ),
+      ],
+    );
+  }
+}
+
 /// Open document in the in-app viewer (browser-like window). No download, no external app.
 void _openDocument(
   BuildContext context, {
@@ -2334,6 +2579,7 @@ void _openDocument(
   required String documentId,
   required String title,
   required AppLocalizations l10n,
+  int? clinicWorkspaceId,
 }) {
   ShellScope.push(
     context,
@@ -2342,11 +2588,15 @@ void _openDocument(
         patientId: patientId,
         documentId: documentId,
         title: title,
+        clinicWorkspaceId: clinicWorkspaceId,
       ),
     ),
   ).then((_) {
     // Refresh document list when returning (e.g. after patient approved access in another tab)
-    ref.refresh(patientDocumentsProvider(patientId));
+    ref.refresh(patientDocumentsProvider(PatientDocumentsKey(
+      patientId: patientId,
+      clinicId: clinicWorkspaceId,
+    )));
   });
 }
 

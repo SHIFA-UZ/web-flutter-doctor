@@ -21,11 +21,13 @@ class DocumentViewerScreen extends ConsumerStatefulWidget {
     required this.patientId,
     required this.documentId,
     required this.title,
+    this.clinicWorkspaceId,
   });
 
   final String patientId;
   final String documentId;
   final String title;
+  final int? clinicWorkspaceId;
 
   @override
   ConsumerState<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
@@ -50,6 +52,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       client: client,
       patientId: widget.patientId,
       documentId: widget.documentId,
+      clinicId: widget.clinicWorkspaceId,
     );
     if (!mounted) return;
     setState(() {

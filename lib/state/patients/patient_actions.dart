@@ -7,6 +7,9 @@ import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_form_models.dart';
 
+String _optionalClinicQuery(int? clinicId) =>
+    clinicId == null ? '' : '?clinicId=$clinicId';
+
 /// Upload a document and get the created document JSON from the backend.
 ///
 /// Pass [category] to tag the upload with a [PatientDocumentCategory] code.
@@ -20,6 +23,7 @@ Future<PatientDocument?> uploadPatientDocumentWithClient({
   required String fileName,
   required String title,
   String? category,
+  int? clinicId,
 }) async {
   final lowerName = fileName.toLowerCase();
   // Use the actual MIME type when we can detect it from the filename so the
@@ -54,7 +58,7 @@ Future<PatientDocument?> uploadPatientDocumentWithClient({
   }
 
   final streamed = await client.postMultipart(
-    '/api/patients/$patientId/documents',
+    '/api/patients/$patientId/documents${_optionalClinicQuery(clinicId)}',
     files: files,
     fields: fields,
   );
@@ -85,6 +89,7 @@ Future<PatientDocument?> updatePatientDocumentWithClient({
   required String documentId,
   required Uint8List fileBytes,
   required String fileName,
+  int? clinicId,
 }) async {
   final files = <http.MultipartFile>[
     http.MultipartFile.fromBytes(
@@ -95,7 +100,7 @@ Future<PatientDocument?> updatePatientDocumentWithClient({
     ),
   ];
 
-  final uri = Uri.parse('${client.baseUrl}/api/patients/$patientId/documents/$documentId');
+  final uri = Uri.parse('${client.baseUrl}/api/patients/$patientId/documents/$documentId${_optionalClinicQuery(clinicId)}');
   final headers = client.buildHeaders();
   
   final req = http.MultipartRequest('PUT', uri);
@@ -128,9 +133,10 @@ Future<void> requestDocumentAccessWithClient({
   required ApiClient client,
   required String patientId,
   required String documentId,
+  int? clinicId,
 }) async {
   final res = await client.post(
-    '/api/patients/$patientId/documents/$documentId/request-access',
+    '/api/patients/$patientId/documents/$documentId/request-access${_optionalClinicQuery(clinicId)}',
     <String, dynamic>{},
   );
   if (res.statusCode >= 200 && res.statusCode < 300) return;
@@ -164,9 +170,11 @@ Future<DocumentDownloadResult?> fetchDocumentDownloadWithClient({
   required ApiClient client,
   required String patientId,
   required String documentId,
+  int? clinicId,
 }) async {
   final res = await client.get(
     '/api/patients/$patientId/documents/$documentId/download',
+    params: clinicId == null ? null : {'clinicId': '$clinicId'},
   );
   if (res.statusCode != 200) return null;
   final filename = _filenameFromContentDisposition(res.headers['content-disposition']);
@@ -258,8 +266,12 @@ String? detectMimeFromBytes(Uint8List bytes) {
 Future<List<PatientDocument>> fetchPatientDocumentsWithClient({
   required ApiClient client,
   required String patientId,
+  int? clinicId,
 }) async {
-  final res = await client.get('/api/patients/$patientId/documents');
+  final res = await client.get(
+    '/api/patients/$patientId/documents',
+    params: clinicId == null ? null : {'clinicId': '$clinicId'},
+  );
 
   if (res.statusCode >= 200 && res.statusCode < 300) {
     final List data = jsonDecode(utf8.decode(res.bodyBytes)) as List;
@@ -393,8 +405,12 @@ Future<Patient> updatePatientWithClient({
 Future<Patient> fetchPatientWithClient({
   required ApiClient client,
   required String patientId,
+  int? clinicId,
 }) async {
-  final res = await client.get('/api/patients/$patientId');
+  final res = await client.get(
+    '/api/patients/$patientId',
+    params: clinicId == null ? null : {'clinicId': '$clinicId'},
+  );
 
   if (res.statusCode >= 200 && res.statusCode < 300) {
     final Map<String, dynamic> j = jsonDecode(utf8.decode(res.bodyBytes));
@@ -602,4 +618,84 @@ Future<Map<String, dynamic>> createPatientAccountWithClient({
   } else {
     throw Exception('Failed to create patient account: ${res.statusCode} ${res.body}');
   }
+}
+
+/// Hygiene recall / prophylaxis reminders (per patient and clinic).
+class ProphylaxisSetting {
+  const ProphylaxisSetting({
+    required this.patientId,
+    required this.clinicId,
+    required this.intervalMonths,
+    required this.enabled,
+    this.lastSentAt,
+  });
+
+  final int patientId;
+  final int clinicId;
+  final int intervalMonths;
+  final bool enabled;
+  final String? lastSentAt;
+
+  static ProphylaxisSetting? fromJsonMap(Map<String, dynamic> j) {
+    final pid = j['patientId'];
+    final cid = j['clinicId'];
+    if (pid == null || cid == null) return null;
+    return ProphylaxisSetting(
+      patientId: (pid as num).toInt(),
+      clinicId: (cid as num).toInt(),
+      intervalMonths: (j['intervalMonths'] as num?)?.toInt() ?? 12,
+      enabled: j['enabled'] as bool? ?? true,
+      lastSentAt: j['lastSentAt'] as String?,
+    );
+  }
+}
+
+/// GET returns null when no row exists yet.
+Future<ProphylaxisSetting?> fetchProphylaxisSettingsWithClient({
+  required ApiClient client,
+  required String patientId,
+  required int clinicId,
+}) async {
+  final res = await client.get(
+    '/api/prophylaxis/settings',
+    params: {'patientId': patientId, 'clinicId': '$clinicId'},
+  );
+  if (res.statusCode == 200) {
+    final raw = utf8.decode(res.bodyBytes).trim();
+    if (raw.isEmpty || raw == 'null') return null;
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map<String, dynamic>) return null;
+    return ProphylaxisSetting.fromJsonMap(decoded);
+  }
+  if (res.statusCode == 401) {
+    throw Exception('Unauthorized: please login again.');
+  }
+  throw Exception('Failed to load prophylaxis: ${res.statusCode} ${res.body}');
+}
+
+Future<ProphylaxisSetting> upsertProphylaxisSettingsWithClient({
+  required ApiClient client,
+  required String patientId,
+  required int clinicId,
+  required int intervalMonths,
+  required bool enabled,
+}) async {
+  final res = await client.put('/api/prophylaxis/settings', {
+    'patientId': int.parse(patientId),
+    'clinicId': clinicId,
+    'intervalMonths': intervalMonths,
+    'enabled': enabled,
+  });
+  if (res.statusCode >= 200 && res.statusCode < 300) {
+    final j = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    final parsed = ProphylaxisSetting.fromJsonMap(j);
+    if (parsed == null) {
+      throw Exception('Invalid prophylaxis response');
+    }
+    return parsed;
+  }
+  if (res.statusCode == 401) {
+    throw Exception('Unauthorized: please login again.');
+  }
+  throw Exception('Failed to save prophylaxis: ${res.statusCode} ${res.body}');
 }

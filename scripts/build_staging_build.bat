@@ -13,9 +13,9 @@ call flutter pub get
 
 echo Building web release...
 if "%GOOGLE_MAPS_API_KEY%"=="" (
-    call flutter build web --release --dart-define=API_BASE_URL=%API_BASE_URL% --dart-define=ENVIRONMENT=staging --base-href=/
+    call flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=%API_BASE_URL% --dart-define=ENVIRONMENT=staging --base-href=/
 ) else (
-    call flutter build web --release --dart-define=API_BASE_URL=%API_BASE_URL% --dart-define=ENVIRONMENT=staging --dart-define=GOOGLE_MAPS_API_KEY=%GOOGLE_MAPS_API_KEY% --base-href=/
+    call flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=%API_BASE_URL% --dart-define=ENVIRONMENT=staging --dart-define=GOOGLE_MAPS_API_KEY=%GOOGLE_MAPS_API_KEY% --base-href=/
 )
 if errorlevel 1 (
     echo Build failed.

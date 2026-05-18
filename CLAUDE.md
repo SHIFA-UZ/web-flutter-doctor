@@ -78,7 +78,8 @@ flutter run -d android                                                   # Andro
 
 ```bash
 flutter build web                         # Dev build
-flutter build web --release \             # Production build
+flutter build web --release \             # Production build (--pwa-strategy=none: no stale SW cache on deploy)
+  --pwa-strategy=none \
   --dart-define=API_BASE_URL=https://api.example.com \
   --dart-define=ENVIRONMENT=production \
   --dart-define=GOOGLE_MAPS_API_KEY=your_key_here
@@ -97,7 +98,7 @@ flutter analyze             # Static analysis
 ### Firebase Deployment
 
 ```bash
-flutter build web --release
+flutter build web --release --pwa-strategy=none
 firebase deploy --only hosting:doctor --project staging   # Doctor app
 firebase deploy --only hosting:admin --project staging    # Admin panel
 ```

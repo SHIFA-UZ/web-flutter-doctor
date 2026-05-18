@@ -1070,7 +1070,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         await invalidateAppointmentRelatedProviders(ref);
 
         // Refresh documents
-        ref.invalidate(patientDocumentsProvider(patientId));
+        ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1169,7 +1169,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
 
     // Fetch patient documents
     final documentsAsync = patientId != null && patientId.isNotEmpty
-        ? ref.watch(patientDocumentsProvider(patientId))
+        ? ref.watch(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)))
         : null;
 
     final consultationUploadEnabled =
@@ -1423,7 +1423,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                           );
                                                           ref.refresh(
                                                             patientDocumentsProvider(
-                                                              pid,
+                                                              PatientDocumentsKey(patientId: pid),
                                                             ),
                                                           );
                                                         },
@@ -2887,7 +2887,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       patientId: patientId,
       brand: brand,
       onDocumentsChanged: () {
-        ref.invalidate(patientDocumentsProvider(patientId));
+        ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));
         ref.refresh(patientFormsProvider(patientId));
       },
       onHasUnsavedChanges: (v) => setState(() => _hasUnsavedChanges = v),

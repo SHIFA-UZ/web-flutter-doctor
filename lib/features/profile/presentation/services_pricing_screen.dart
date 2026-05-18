@@ -99,6 +99,14 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
 
   Future<void> _editService([Map<String, dynamic>? service]) async {
     final dl10n = AppLocalizations.of(context)!;
+    if (service != null && service['clinicManaged'] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(dl10n.translate('serviceManagedByClinic'))),
+        );
+      }
+      return;
+    }
     final titleCtrl = TextEditingController(text: service?['title']?.toString());
     final descCtrl = TextEditingController(text: service?['description']?.toString());
     var isFreeConsultation = service?['isFreeConsultation'] == true;
@@ -409,9 +417,18 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
     await _load();
   }
 
-  Future<void> _deleteService(int id) async {
+  Future<void> _deleteService(Map<String, dynamic> s) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (s['clinicManaged'] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.translate('serviceManagedByClinic'))),
+        );
+      }
+      return;
+    }
     final api = ref.read(apiClientProvider);
-    await api.delete('/api/doctors/me/services/$id');
+    await api.delete('/api/doctors/me/services/${(s['id'] as num).toInt()}');
     await _load();
   }
 
@@ -485,14 +502,18 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                           s['groupName'].toString().trim().isNotEmpty)
                       ? '${s['groupName']}\n'
                       : '';
+                  final managed = s['clinicManaged'] == true;
+                  final managedLine = managed ? '${l10n.translate('serviceManagedByClinicShort')}\n' : '';
                   return Card(
                     child: ListTile(
                       title: Text(s['title']?.toString() ?? ''),
                       subtitle: Text(
-                        '$groupLine${s['description'] ?? ''}\n${_priceSummary(s)}',
+                        '$managedLine$groupLine${s['description'] ?? ''}\n${_priceSummary(s)}',
                       ),
                       isThreeLine: true,
-                      trailing: Wrap(
+                      trailing: managed
+                          ? null
+                          : Wrap(
                         spacing: 8,
                         children: [
                           IconButton(
@@ -501,7 +522,7 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _deleteService((s['id'] as num).toInt()),
+                            onPressed: () => _deleteService(s),
                           ),
                         ],
                       ),

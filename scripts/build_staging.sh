@@ -27,6 +27,7 @@ flutter pub get
 # Build for web with staging configuration
 echo "🔨 Building web release..."
 flutter build web --release \
+  --pwa-strategy=none \
   --dart-define=API_BASE_URL="$API_BASE_URL" \
   --dart-define=ENVIRONMENT=staging \
   --base-href="/"

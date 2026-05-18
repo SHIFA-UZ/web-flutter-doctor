@@ -1957,8 +1957,8 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     }
 
     try {
-      ref.invalidate(patientDocumentsProvider(patientId));
-      final docs = await ref.read(patientDocumentsProvider(patientId).future);
+      ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));
+      final docs = await ref.read(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)).future);
       final doc = _pickSavedAppointmentSummaryDoc(docs, l10n);
 
       if (doc == null) {
@@ -2279,7 +2279,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     final patientId = widget.entry.patientId?.toString();
     final patientDocsAsync = patientId == null
         ? const AsyncValue.data(<PatientDocument>[])
-        : ref.watch(patientDocumentsProvider(patientId));
+        : ref.watch(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));
 
     // Build Dropdown items for place selection
     final placeOptions = <String>{

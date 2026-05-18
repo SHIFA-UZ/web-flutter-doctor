@@ -522,7 +522,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       }
 
       // Refresh documents and forms so appointment notes "From last 025-2" updates
-      ref.invalidate(patientDocumentsProvider(_patientId));
+      ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: _patientId)));
       ref.invalidate(patientFormsProvider(_patientId));
 
       if (!mounted) return false;

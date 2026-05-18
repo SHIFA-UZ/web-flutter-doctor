@@ -74,8 +74,9 @@ Set via `--dart-define` at build time:
 # Development
 flutter build web
 
-# Production
+# Production (--pwa-strategy=none avoids stale JS from Flutter’s default offline-first service worker)
 flutter build web --release \
+  --pwa-strategy=none \
   --dart-define=API_BASE_URL=https://api.example.com \
   --dart-define=ENVIRONMENT=production \
   --dart-define=GOOGLE_MAPS_API_KEY=your_key
@@ -94,7 +95,7 @@ The app is deployed to Firebase Hosting with two targets from the same build:
 
 ```bash
 # Build
-flutter build web --release --dart-define=API_BASE_URL=https://api.example.com
+flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=https://api.example.com
 
 # Deploy doctor app
 firebase deploy --only hosting:doctor --project staging
