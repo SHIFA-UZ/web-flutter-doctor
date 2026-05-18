@@ -176,6 +176,9 @@ class AppLocalizations {
       'prophylaxisSave': 'Save',
       'prophylaxisLastSent': 'Last sent: {{date}}',
       'prophylaxisSaved': 'Prophylaxis settings saved',
+      'patientDetailTabProfile': 'Profile',
+      'patientDetailTabDocuments': 'Documents',
+      'patientDetailTabProphylaxis': 'Prophylaxis',
       'clinicServicesEmpty':
           'No services yet. Use the button below to add a clinic service and assign it to one or more doctors (or all).',
       'clinicServicesAssignmentAll': 'All doctors at this clinic',
@@ -1430,6 +1433,9 @@ class AppLocalizations {
       'prophylaxisSave': 'Saqlash',
       'prophylaxisLastSent': 'Oxirgi yuborilgan: {{date}}',
       'prophylaxisSaved': 'Profilaktika sozlamalari saqlandi',
+      'patientDetailTabProfile': 'Profil',
+      'patientDetailTabDocuments': 'Hujjatlar',
+      'patientDetailTabProphylaxis': 'Profilaktika',
       'clinicServicesEmpty':
           'Hali xizmat yo\'q. Pastdagi tugma orqali klinika xizmatini qo\'shing va bitta yoki bir nechta shifokorga (yoki hammaga) biriktiring.',
       'clinicServicesAssignmentAll': 'Bu klinikadagi barcha shifokorlar',
@@ -2676,6 +2682,9 @@ class AppLocalizations {
       'prophylaxisSave': 'Сохранить',
       'prophylaxisLastSent': 'Последняя отправка: {{date}}',
       'prophylaxisSaved': 'Настройки профилактики сохранены',
+      'patientDetailTabProfile': 'Профиль',
+      'patientDetailTabDocuments': 'Документы',
+      'patientDetailTabProphylaxis': 'Профилактика',
       'clinicServicesEmpty':
           'Услуг пока нет. Нажмите кнопку ниже, чтобы добавить услугу клиники и назначить её врачам (или всем).',
       'clinicServicesAssignmentAll': 'Все врачи этой клиники',

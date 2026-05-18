@@ -9,21 +9,15 @@ import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
-import 'package:shifa_doc_app_v1/app/router.dart';
-import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
-
-void openClinicPatientFromWorkspace(WidgetRef ref, int patientId, int clinicId) {
-  ref.read(shellProvider.notifier).setTab(3);
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    shellNavigatorKey.currentState?.pushNamed(
-      AppRoutes.patientsWithSelection,
-      arguments: <String, dynamic>{
-        'patientId': patientId.toString(),
-        'clinicId': clinicId,
-      },
-    );
-  });
-}
+import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
+import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart'
+    show
+        PatientDetailPanel,
+        showPatientDocumentUploadOptions,
+        showPatientFormTemplateSheet;
+import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
+    show fetchPatientWithClient;
 
 class ClinicWorkspaceScreen extends ConsumerStatefulWidget {
   const ClinicWorkspaceScreen({super.key});
@@ -443,14 +437,60 @@ class _CalendarTab extends ConsumerWidget {
   }
 }
 
-class _PatientsTab extends ConsumerWidget {
+class _PatientsTab extends ConsumerStatefulWidget {
   const _PatientsTab({required this.clinicId});
   final int clinicId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PatientsTab> createState() => _PatientsTabState();
+}
+
+class _PatientsTabState extends ConsumerState<_PatientsTab> {
+  int? _selectedPatientId;
+  Patient? _selectedPatient;
+  bool _loadingPatient = false;
+  String? _patientError;
+
+  Future<void> _loadPatient(int patientId) async {
+    setState(() {
+      _selectedPatientId = patientId;
+      _loadingPatient = true;
+      _patientError = null;
+      _selectedPatient = null;
+    });
+    try {
+      final client = ref.read(apiClientProvider);
+      final p = await fetchPatientWithClient(
+        client: client,
+        patientId: patientId.toString(),
+        clinicId: widget.clinicId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _selectedPatient = p;
+        _loadingPatient = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _patientError = '$e';
+        _loadingPatient = false;
+      });
+    }
+  }
+
+  void _refreshSelectedPatient() {
+    final id = _selectedPatientId;
+    if (id != null) {
+      _loadPatient(id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(clinicPatientsFirstPageProvider(clinicId));
+    final brand = Theme.of(context).colorScheme.primary;
+    final async = ref.watch(clinicPatientsFirstPageProvider(widget.clinicId));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
@@ -458,41 +498,119 @@ class _PatientsTab extends ConsumerWidget {
         if (page.content.isEmpty) {
           return Center(child: Text(l10n.translate('clinicPatientsEmpty')));
         }
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  l10n.translate('clinicPatientsTotal').replaceAll('{{count}}', '${page.totalElements}'),
-                  style: Theme.of(context).textTheme.bodySmall,
+
+        void ensureSelection() {
+          if (_selectedPatientId != null) return;
+          final first = page.content.first;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _loadPatient(first.patientId);
+          });
+        }
+
+        ensureSelection();
+
+        Widget listPane() {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n
+                        .translate('clinicPatientsTotal')
+                        .replaceAll('{{count}}', '${page.totalElements}'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                itemCount: page.content.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (_, i) {
-                  final p = page.content[i];
-                  final parts = <String>[
-                    if (p.phone != null && p.phone!.trim().isNotEmpty) p.phone!.trim(),
-                    if (p.email != null && p.email!.trim().isNotEmpty) p.email!.trim(),
-                  ];
-                  return ListTile(
-                    title: Text(p.fullName),
-                    subtitle: Text(parts.isEmpty ? '—' : parts.join(' · ')),
-                    onTap: () => openClinicPatientFromWorkspace(ref, p.patientId, clinicId),
-                  );
-                },
+              Expanded(
+                child: ListView.separated(
+                  itemCount: page.content.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final p = page.content[i];
+                    final parts = <String>[
+                      if (p.phone != null && p.phone!.trim().isNotEmpty)
+                        p.phone!.trim(),
+                      if (p.email != null && p.email!.trim().isNotEmpty)
+                        p.email!.trim(),
+                    ];
+                    final selected = _selectedPatientId == p.patientId;
+                    return ListTile(
+                      selected: selected,
+                      title: Text(p.fullName),
+                      subtitle: Text(parts.isEmpty ? '—' : parts.join(' · ')),
+                      onTap: () => _loadPatient(p.patientId),
+                    );
+                  },
+                ),
               ),
+            ],
+          );
+        }
+
+        Widget detailPane() {
+          if (_loadingPatient) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (_patientError != null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(_patientError!, textAlign: TextAlign.center),
+              ),
+            );
+          }
+          return PatientDetailPanel(
+            patient: _selectedPatient,
+            brand: brand,
+            clinicWorkspaceId: widget.clinicId,
+            onUploadOptions: (p) => showPatientDocumentUploadOptions(
+              context,
+              ref,
+              p,
+              clinicWorkspaceId: widget.clinicId,
+              onAfterUpload: _refreshSelectedPatient,
             ),
-          ],
+            onCreateForm: (p) => showPatientFormTemplateSheet(context, p),
+            formatDate: _formatClinicDate,
+            onPatientDataRefresh: _refreshSelectedPatient,
+          );
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 900;
+            if (wide) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(flex: 2, child: listPane()),
+                  const VerticalDivider(width: 1),
+                  Expanded(flex: 3, child: detailPane()),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(flex: 2, child: listPane()),
+                const Divider(height: 1),
+                Expanded(flex: 3, child: detailPane()),
+              ],
+            );
+          },
         );
       },
     );
   }
+}
+
+String _formatClinicDate(DateTime d) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(d.day)}.${two(d.month)}.${d.year}';
 }
 
 class _ServicesTab extends ConsumerWidget {
