@@ -15,6 +15,7 @@ import 'admin_create_admin_screen.dart';
 import 'admin_audit_logs_screen.dart';
 import 'admin_config_screen.dart';
 import 'admin_deleted_patients_screen.dart';
+import 'admin_clinics_screen.dart';
 
 class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key});
@@ -66,6 +67,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     AdminPaymentsScreen(),
     AdminTokensScreen(),
     AdminUsersScreen(),
+    AdminClinicsScreen(),
     AdminCreateAdminScreen(),
     AdminAuditLogsScreen(),
     AdminConfigScreen(),
@@ -77,10 +79,11 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     _AdminNavItem(icon: Icons.payments_outlined, label: 'Payments Ops', index: 1),
     _AdminNavItem(icon: Icons.vpn_key, label: 'Tokens', index: 2),
     _AdminNavItem(icon: Icons.people, label: 'Users', index: 3),
-    _AdminNavItem(icon: Icons.person_add, label: 'Create admin', index: 4),
-    _AdminNavItem(icon: Icons.history, label: 'Audit Logs', index: 5),
-    _AdminNavItem(icon: Icons.settings, label: 'Settings', index: 6),
-    _AdminNavItem(icon: Icons.privacy_tip, label: 'Deleted Patients', index: 7),
+    _AdminNavItem(icon: Icons.local_hospital_outlined, label: 'Clinics', index: 4),
+    _AdminNavItem(icon: Icons.person_add, label: 'Create admin', index: 5),
+    _AdminNavItem(icon: Icons.history, label: 'Audit Logs', index: 6),
+    _AdminNavItem(icon: Icons.settings, label: 'Settings', index: 7),
+    _AdminNavItem(icon: Icons.privacy_tip, label: 'Deleted Patients', index: 8),
   ];
 
   @override

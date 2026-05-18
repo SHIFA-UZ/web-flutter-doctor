@@ -287,7 +287,7 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
             if (tid != null && tid > 0) {
               debugPrint('→ Opening task $tid');
               ref.read(notificationPendingTaskIdProvider.notifier).state = tid;
-              ref.read(shellProvider.notifier).setTab(4);
+              ref.read(shellProvider.notifier).setTab(5);
               navigatorKey.currentState?.pushNamedAndRemoveUntil(
                 AppRoutes.shell,
                 (route) => false,

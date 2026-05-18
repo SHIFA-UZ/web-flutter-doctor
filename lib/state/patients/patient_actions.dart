@@ -406,31 +406,85 @@ Future<Patient> fetchPatientWithClient({
   }
 }
 
-/// Fetch patients for calendar assignment (id + name only). GET /api/patients/for-assignment.
+List<PatientAssignmentItem> _patientAssignmentItemsFromDecoded(dynamic decoded) {
+  if (decoded is List) {
+    return decoded
+        .whereType<Map>()
+        .map((e) => PatientAssignmentItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+  if (decoded is Map) {
+    final raw = decoded['content'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => PatientAssignmentItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+  return [];
+}
+
+int? _totalPagesFromDecoded(dynamic decoded) {
+  if (decoded is Map) {
+    return (decoded['totalPages'] as num?)?.toInt();
+  }
+  return null;
+}
+
+/// Fetch patients for calendar assignment (id + name). GET /api/patients/for-assignment — full profile directory (paginated).
 Future<List<PatientAssignmentItem>> fetchPatientsForAssignmentWithClient({
   required ApiClient client,
 }) async {
-  final res = await client.get('/api/patients/for-assignment');
+  const pageSize = 500;
+  final byId = <String, PatientAssignmentItem>{};
 
-  if (res.statusCode >= 200 && res.statusCode < 300) {
-    final body = utf8.decode(res.bodyBytes);
-    if (body.trim().isEmpty) return [];
-    final decoded = jsonDecode(body);
-    if (decoded is! List) {
-      throw Exception('Patients list expected, got: ${decoded.runtimeType}');
+  var page = 0;
+  while (true) {
+    final res = await client.get('/api/patients/for-assignment', params: {
+      'page': '$page',
+      'size': '$pageSize',
+      'sort': 'fullName,asc',
+    });
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final body = utf8.decode(res.bodyBytes);
+      if (body.trim().isEmpty) {
+        break;
+      }
+      final decoded = jsonDecode(body);
+      if (decoded is! List && decoded is! Map) {
+        throw Exception('Patients response expected list or page JSON, got: ${decoded.runtimeType}');
+      }
+
+      final batch = _patientAssignmentItemsFromDecoded(decoded);
+      final totalPages = _totalPagesFromDecoded(decoded);
+
+      for (final p in batch) {
+        byId.putIfAbsent(p.id, () => p);
+      }
+
+      if (decoded is List) {
+        break;
+      }
+
+      page++;
+      final doneByMeta = totalPages != null && page >= totalPages;
+      if (batch.isEmpty || doneByMeta || batch.length < pageSize) {
+        break;
+      }
+    } else if (res.statusCode == 401) {
+      throw Exception('Unauthorized (401): please sign in again.');
+    } else if (res.statusCode == 403) {
+      throw Exception('Forbidden (403): access denied.');
+    } else {
+      final preview = res.body.length > 200 ? '${res.body.substring(0, 200)}...' : res.body;
+      throw Exception('Failed to load patients: ${res.statusCode} $preview');
     }
-    final List data = decoded;
-    return data
-        .map((e) => PatientAssignmentItem.fromJson(e as Map<String, dynamic>))
-        .toList();
-  } else if (res.statusCode == 401) {
-    throw Exception('Unauthorized (401): please sign in again.');
-  } else if (res.statusCode == 403) {
-    throw Exception('Forbidden (403): access denied.');
-  } else {
-    final preview = res.body.length > 200 ? '${res.body.substring(0, 200)}...' : res.body;
-    throw Exception('Failed to load patients: ${res.statusCode} $preview');
   }
+
+  final list = byId.values.toList()
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return list;
 }
 
 /// Fetch list of forms for a patient.

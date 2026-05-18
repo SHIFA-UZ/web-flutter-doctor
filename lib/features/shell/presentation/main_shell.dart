@@ -12,7 +12,9 @@ import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.
 import 'package:shifa_doc_app_v1/features/profile/presentation/profile_screen.dart';
 import 'package:shifa_doc_app_v1/features/tasks/presentation/tasks_screen.dart';
 import 'package:shifa_doc_app_v1/features/notifications/presentation/notifications_screen.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_workspace_screen.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
@@ -234,7 +236,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final brand = Theme.of(context).colorScheme.primary;
     var selectedIndex = ref.watch(shellProvider);
     final canUseTasks = ref.watch(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
-    if (selectedIndex == 4 && !canUseTasks) {
+    if (selectedIndex == 5 && !canUseTasks) {
       // Doctor was on Tasks but tier no longer permits it — bounce to Home.
       Future.microtask(() {
         if (mounted) ref.read(shellProvider.notifier).setTab(1);
@@ -242,11 +244,14 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       selectedIndex = 1;
     }
 
+    final hasClinicWorkspace = ref.watch(hasClinicWorkspaceProvider);
+
     final screens = const [
       _KeepAlive(child: ChatScreen()),
       _KeepAlive(child: HomeScreen()),
       _KeepAlive(child: CalendarScreen()),
       _KeepAlive(child: PatientsScreen()),
+      _KeepAlive(child: ClinicWorkspaceScreen()),
       _KeepAlive(child: TasksScreen()),
       _KeepAlive(child: NotificationsScreen()),
       _KeepAlive(child: ProfileScreen()),
@@ -352,12 +357,25 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                 ),
                     const SizedBox(height: 20),
 
+                if (hasClinicWorkspace) ...[
+                  _buildNavItem(
+                    context,
+                    ref,
+                    Icons.local_hospital_outlined,
+                    4,
+                    brand,
+                    selectedIndex,
+                    tooltip: AppLocalizations.of(context)!.translate('clinicNavClinic'),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
                 if (canUseTasks) ...[
                   _buildNavItem(
                     context,
                     ref,
                     Icons.task_alt,
-                    4,
+                    5,
                     brand,
                     selectedIndex,
                   ),
@@ -367,7 +385,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     _buildNotificationsNavItem(
                   context,
                   ref,
-                  5,
+                  6,
                   brand,
                   selectedIndex,
                 ),
@@ -384,7 +402,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                       context,
                       ref,
                       avatarUrl,
-                      6,
+                      7,
                       brand,
                       selectedIndex,
                     ),
@@ -483,10 +501,11 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     IconData icon,
     int index,
     Color brand,
-    int selectedIndex,
-  ) {
+    int selectedIndex, {
+    String? tooltip,
+  }) {
     final isSelected = selectedIndex == index;
-    return InkWell(
+    final child = InkWell(
       onTap: () => _goToTab(index),
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -500,6 +519,10 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
         child: Icon(icon, color: isSelected ? brand : Colors.white, size: 28),
       ),
     );
+    if (tooltip != null && tooltip.isNotEmpty) {
+      return Tooltip(message: tooltip, child: child);
+    }
+    return child;
   }
 
   Widget _buildChatNavItem(

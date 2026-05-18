@@ -36,6 +36,16 @@ final adminUsersProvider = FutureProvider.family<Map<String, dynamic>, UsersProv
   );
 });
 
+final adminClinicsProvider = FutureProvider.family<Map<String, dynamic>, ClinicsListParams>((ref, params) async {
+  final actions = ref.watch(adminActionsProvider);
+  return actions.listClinics(page: params.page, size: params.size);
+});
+
+final adminClinicDetailProvider = FutureProvider.family<AdminClinicDetail, int>((ref, clinicId) async {
+  final actions = ref.watch(adminActionsProvider);
+  return actions.getClinic(clinicId);
+});
+
 final auditLogsProvider = FutureProvider.family<Map<String, dynamic>, AuditLogsProviderParams>((ref, params) async {
   final actions = ref.watch(adminActionsProvider);
   return actions.getAuditLogs(

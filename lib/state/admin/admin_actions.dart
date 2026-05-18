@@ -366,6 +366,103 @@ class AdminActions {
     return response.bodyBytes;
   }
 
+  // ==================== CLINICS ====================
+
+  Future<Map<String, dynamic>> listClinics({int page = 0, int size = 50}) async {
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      'size': size.toString(),
+      'sort': 'name',
+    };
+    final response = await apiClient.get('/api/admin/clinics', params: queryParams);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to list clinics: ${response.body}');
+    }
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final contentRaw = json['content'] as List?;
+    final content = contentRaw ?? const [];
+    return {
+      'content': content
+          .map((e) => AdminClinicSummary.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      'totalElements': json['totalElements'] as int? ?? 0,
+      'totalPages': json['totalPages'] as int? ?? 0,
+      'number': json['number'] as int? ?? 0,
+    };
+  }
+
+  Future<AdminClinicDetail> getClinic(int clinicId) async {
+    final response = await apiClient.get('/api/admin/clinics/$clinicId');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load clinic: ${response.body}');
+    }
+    return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<AdminClinicDetail> createClinic({
+    required String name,
+    String? phone,
+    String? email,
+    String? address,
+    String? timeZone,
+  }) async {
+    final response = await apiClient.post('/api/admin/clinics', {
+      'name': name,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (address != null && address.isNotEmpty) 'address': address,
+      if (timeZone != null && timeZone.trim().isNotEmpty) 'timeZone': timeZone.trim(),
+    });
+    if (response.statusCode != 200) {
+      throw Exception('Failed to create clinic: ${response.body}');
+    }
+    return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<AdminClinicDetail> updateClinic({
+    required int clinicId,
+    required String name,
+    String? phone,
+    String? email,
+    String? address,
+    String? timeZone,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (address != null && address.isNotEmpty) 'address': address,
+      if (timeZone != null && timeZone.trim().isNotEmpty) 'timeZone': timeZone.trim(),
+    };
+    final response = await apiClient.put('/api/admin/clinics/$clinicId', body);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update clinic: ${response.body}');
+    }
+    return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<AdminClinicDetail> assignDoctorToClinic({
+    required int clinicId,
+    required int doctorProfileId,
+  }) async {
+    final response = await apiClient.post('/api/admin/clinics/$clinicId/doctors/$doctorProfileId', {});
+    if (response.statusCode != 200) {
+      throw Exception('Failed to assign doctor: ${response.body}');
+    }
+    return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<AdminClinicDetail> removeDoctorFromClinic({
+    required int clinicId,
+    required int doctorProfileId,
+  }) async {
+    final response = await apiClient.delete('/api/admin/clinics/$clinicId/doctors/$doctorProfileId');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to remove doctor: ${response.body}');
+    }
+    return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
   // ==================== AUDIT LOGS ====================
 
   Future<Map<String, dynamic>> getAuditLogs({

@@ -109,6 +109,137 @@ class AdminUser {
     }
     return email ?? phone ?? 'User $id';
   }
+
+  int? doctorProfileId() {
+    final p = profile;
+    if (p == null) return null;
+    final v = p['doctorId'];
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+}
+
+class AdminClinicSummary {
+  final int id;
+  final String name;
+  final String? phone;
+  final String? email;
+  final String? address;
+  final String timeZone;
+  final int doctorCount;
+  final String updatedAt;
+
+  AdminClinicSummary({
+    required this.id,
+    required this.name,
+    this.phone,
+    this.email,
+    this.address,
+    required this.timeZone,
+    required this.doctorCount,
+    required this.updatedAt,
+  });
+
+  factory AdminClinicSummary.fromJson(Map<String, dynamic> json) {
+    int toInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString()) ?? 0;
+    }
+
+    return AdminClinicSummary(
+      id: toInt(json['id']),
+      name: json['name']?.toString() ?? '',
+      phone: json['phone']?.toString(),
+      email: json['email']?.toString(),
+      address: json['address']?.toString(),
+      timeZone: json['timeZone']?.toString() ?? 'Asia/Tashkent',
+      doctorCount: toInt(json['doctorCount']),
+      updatedAt: json['updatedAt']?.toString() ?? '',
+    );
+  }
+}
+
+class AdminClinicDoctorMember {
+  final int doctorProfileId;
+  final int userId;
+  final String displayName;
+  final String membershipRole;
+
+  AdminClinicDoctorMember({
+    required this.doctorProfileId,
+    required this.userId,
+    required this.displayName,
+    required this.membershipRole,
+  });
+
+  factory AdminClinicDoctorMember.fromJson(Map<String, dynamic> json) {
+    int toInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString()) ?? 0;
+    }
+
+    return AdminClinicDoctorMember(
+      doctorProfileId: toInt(json['doctorProfileId']),
+      userId: toInt(json['userId']),
+      displayName: json['displayName']?.toString() ?? '',
+      membershipRole: json['membershipRole']?.toString() ?? 'DOCTOR',
+    );
+  }
+}
+
+class AdminClinicDetail {
+  final int id;
+  final String name;
+  final String? phone;
+  final String? email;
+  final String? address;
+  final String timeZone;
+  final String createdAt;
+  final String updatedAt;
+  final List<AdminClinicDoctorMember> doctors;
+
+  AdminClinicDetail({
+    required this.id,
+    required this.name,
+    this.phone,
+    this.email,
+    this.address,
+    required this.timeZone,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.doctors,
+  });
+
+  factory AdminClinicDetail.fromJson(Map<String, dynamic> json) {
+    int toInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString()) ?? 0;
+    }
+
+    final docList = (json['doctors'] as List?) ?? const [];
+    return AdminClinicDetail(
+      id: toInt(json['id']),
+      name: json['name']?.toString() ?? '',
+      phone: json['phone']?.toString(),
+      email: json['email']?.toString(),
+      address: json['address']?.toString(),
+      timeZone: json['timeZone']?.toString() ?? 'Asia/Tashkent',
+      createdAt: json['createdAt']?.toString() ?? '',
+      updatedAt: json['updatedAt']?.toString() ?? '',
+      doctors: docList
+          .map((e) => AdminClinicDoctorMember.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }
 
 class AuditLogEntry {

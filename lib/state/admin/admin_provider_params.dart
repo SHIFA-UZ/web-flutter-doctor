@@ -123,3 +123,21 @@ class ActivityLogsProviderParams {
   @override
   int get hashCode => userId.hashCode ^ activityType.hashCode ^ page.hashCode ^ size.hashCode;
 }
+
+class ClinicsListParams {
+  final int page;
+  final int size;
+
+  ClinicsListParams({this.page = 0, this.size = 50});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClinicsListParams &&
+          runtimeType == other.runtimeType &&
+          page == other.page &&
+          size == other.size;
+
+  @override
+  int get hashCode => page.hashCode ^ size.hashCode;
+}
