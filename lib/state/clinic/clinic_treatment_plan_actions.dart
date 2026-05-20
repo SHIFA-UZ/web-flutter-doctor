@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
 
@@ -14,6 +12,36 @@ Future<List<TreatmentPlanSummaryDto>> fetchTreatmentPlansForPatient(
   final res = await api.get(
     '/api/treatment-plans?clinicId=$clinicId&patientId=$patientId',
   );
+  if (res.statusCode != 200) {
+    throw Exception('Plans ${res.statusCode}');
+  }
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => TreatmentPlanSummaryDto.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
+
+/// Clinic-wide treatment plan list with optional status / free-text filters.
+/// Mirrors `GET /api/treatment-plans?clinicId=...&status=...&q=...` and is
+/// used by the doctor "Treatment plans" tab so the doctor can see every plan
+/// (with patient + doctor names + totals) without picking a patient first.
+Future<List<TreatmentPlanSummaryDto>> fetchTreatmentPlansForClinic(
+  dynamic ref, {
+  required int clinicId,
+  String? status,
+  String? query,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final parts = <String>['clinicId=$clinicId'];
+  if (status != null && status.isNotEmpty) {
+    parts.add('status=${Uri.encodeQueryComponent(status)}');
+  }
+  if (query != null && query.trim().isNotEmpty) {
+    parts.add('q=${Uri.encodeQueryComponent(query.trim())}');
+  }
+  final res = await api.get('/api/treatment-plans?${parts.join('&')}');
   if (res.statusCode != 200) {
     throw Exception('Plans ${res.statusCode}');
   }
@@ -57,7 +85,7 @@ Future<TreatmentPlanSummaryDto?> createTreatmentPlan(
   if (attendingDoctorId != null) body['attendingDoctorId'] = attendingDoctorId;
   if (symptoms != null && symptoms.isNotEmpty) body['symptoms'] = symptoms;
 
-  final res = await api.post('/api/treatment-plans', json.encode(body));
+  final res = await api.post('/api/treatment-plans', body);
   if (res.statusCode != 200) return null;
   final m = json.decode(utf8.decode(res.bodyBytes));
   if (m is! Map) return null;
@@ -83,7 +111,7 @@ Future<TreatmentPlanSummaryDto?> patchTreatmentPlan(
   if (attendingDoctorId != null) body['attendingDoctorId'] = attendingDoctorId;
   if (symptoms != null) body['symptoms'] = symptoms;
 
-  final res = await api.patch('/api/treatment-plans/$planId', json.encode(body));
+  final res = await api.patch('/api/treatment-plans/$planId', body);
   if (res.statusCode != 200) return null;
   final m = json.decode(utf8.decode(res.bodyBytes));
   if (m is! Map) return null;
@@ -98,7 +126,7 @@ Future<TreatmentPlanSummaryDto?> replaceTreatmentPlanLines(
   final api = ref.read(doctorApiClientProvider);
   final res = await api.post(
     '/api/treatment-plans/$planId/lines',
-    json.encode(lines),
+    lines,
   );
   if (res.statusCode != 200) return null;
   final m = json.decode(utf8.decode(res.bodyBytes));
@@ -114,7 +142,7 @@ Future<TreatmentPlanDetailDto?> linkTreatmentPlanAppointments(
   final api = ref.read(doctorApiClientProvider);
   final res = await api.post(
     '/api/treatment-plans/$planId/link-appointments',
-    json.encode(pairs),
+    pairs,
   );
   if (res.statusCode != 200) return null;
   final m = json.decode(utf8.decode(res.bodyBytes));
@@ -130,7 +158,7 @@ Future<TreatmentPlanSummaryDto?> patchTreatmentPlanStatus(
   final api = ref.read(doctorApiClientProvider);
   final res = await api.patch(
     '/api/treatment-plans/$planId/status',
-    json.encode({'status': status}),
+    {'status': status},
   );
   if (res.statusCode != 200) return null;
   final m = json.decode(utf8.decode(res.bodyBytes));

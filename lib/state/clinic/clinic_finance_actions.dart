@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 
@@ -27,7 +25,7 @@ Future<PaymentHistoryItem?> recordClinicPayment(
 
   final res = await api.post(
     '/api/clinics/$clinicId/finance/payments',
-    json.encode(body),
+    body,
   );
   if (res.statusCode != 200) return null;
   final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -64,7 +62,7 @@ Future<FinancialRecordRow?> createFinancialRecord(
 
   final res = await api.post(
     '/api/clinics/$clinicId/finance/records',
-    json.encode(body),
+    body,
   );
   if (res.statusCode != 200) return null;
   final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -99,7 +97,7 @@ Future<InstallmentPlanSummary?> createInstallmentPlan(
 
   final res = await api.post(
     '/api/clinics/$clinicId/finance/installment-plans',
-    json.encode(body),
+    body,
   );
   if (res.statusCode != 200) return null;
   final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
@@ -118,7 +116,7 @@ Future<bool> markInstallmentItemPaid(
   if (memo != null && memo.isNotEmpty) body['memo'] = memo;
   final res = await api.post(
     '/api/clinics/$clinicId/finance/installment-items/$itemId/mark-paid',
-    json.encode(body),
+    body,
   );
   return res.statusCode == 200;
 }
@@ -136,7 +134,7 @@ Future<bool> patchInstallmentItem(
   if (dueDate != null) body['dueDate'] = dueDate;
   final res = await api.patch(
     '/api/clinics/$clinicId/finance/installment-items/$itemId',
-    json.encode(body),
+    body,
   );
   return res.statusCode == 200;
 }
@@ -145,7 +143,7 @@ Future<bool> notifyInstallmentItem(dynamic ref, {required int clinicId, required
   final api = ref.read(doctorApiClientProvider);
   final res = await api.post(
     '/api/clinics/$clinicId/finance/installment-items/$itemId/notify',
-    '{}',
+    <String, dynamic>{},
   );
   return res.statusCode == 200;
 }

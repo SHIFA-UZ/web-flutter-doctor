@@ -4,6 +4,9 @@ class TreatmentPlanSummaryDto {
   final int id;
   final int clinicId;
   final int? patientId;
+  final String? patientName;
+  final int? attendingDoctorId;
+  final String? attendingDoctorName;
   final String? title;
   final String? diagnosis;
   final String status;
@@ -16,11 +19,16 @@ class TreatmentPlanSummaryDto {
   final int owedMinor;
   final String currency;
   final String planPaymentStatus;
+  final String? createdAt;
+  final String? updatedAt;
 
   TreatmentPlanSummaryDto({
     required this.id,
     required this.clinicId,
     this.patientId,
+    this.patientName,
+    this.attendingDoctorId,
+    this.attendingDoctorName,
     this.title,
     this.diagnosis,
     required this.status,
@@ -33,6 +41,8 @@ class TreatmentPlanSummaryDto {
     required this.owedMinor,
     required this.currency,
     required this.planPaymentStatus,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory TreatmentPlanSummaryDto.fromJson(Map<String, dynamic> json) {
@@ -41,6 +51,9 @@ class TreatmentPlanSummaryDto {
       id: (json['id'] as num?)?.toInt() ?? 0,
       clinicId: (json['clinicId'] as num?)?.toInt() ?? 0,
       patientId: (json['patientId'] as num?)?.toInt(),
+      patientName: json['patientName'] as String?,
+      attendingDoctorId: (json['attendingDoctorId'] as num?)?.toInt(),
+      attendingDoctorName: json['attendingDoctorName'] as String?,
       title: json['title'] as String?,
       diagnosis: json['diagnosis'] as String?,
       status: json['status']?.toString() ?? '',
@@ -53,6 +66,8 @@ class TreatmentPlanSummaryDto {
       owedMinor: (json['owedMinor'] as num?)?.toInt() ?? 0,
       currency: json['currency']?.toString() ?? 'UZS',
       planPaymentStatus: json['planPaymentStatus']?.toString() ?? '',
+      createdAt: json['createdAt'] as String?,
+      updatedAt: json['updatedAt'] as String?,
     );
   }
 }

@@ -21,7 +21,6 @@ import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
-import 'package:shifa_doc_app_v1/features/clinic/presentation/visit_charges_catalog_dialog.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/appointment_form_0252_panel.dart';
@@ -812,45 +811,18 @@ class _InPersonAppointmentScreenState
 
         debugPrint('Combined PDF saved successfully');
 
-        // Mark appointment as completed in backend
+        // Mark appointment as completed in backend.
+        // Always pass the active clinic id so the backend can auto-derive
+        // visit charges from the saved dental documentation (per-teeth
+        // services) without prompting the doctor again.
         try {
-          Map<String, dynamic>? completePayload;
           final cid = ref.read(selectedClinicIdProvider);
-          if (cid != null && mounted) {
-            final l10n = AppLocalizations.of(context)!;
-            final want = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: Text(l10n.translate('visitChargesOnCompleteTitle')),
-                content: Text(l10n.translate('visitChargesOnCompleteSubtitle')),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(l10n.translate('visitChargesSkip')),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text(l10n.translate('visitChargesOpenPicker')),
-                  ),
-                ],
-              ),
-            );
-            if (want == true && mounted) {
-              final lines = await showDialog<List<Map<String, dynamic>>>(
-                context: context,
-                builder: (ctx2) => VisitChargesCatalogDialog(clinicId: cid),
-              );
-              if (lines != null && lines.isNotEmpty) {
-                completePayload = {
-                  'clinicId': cid,
-                  'visitCharges': lines,
-                };
-              }
-            }
-          }
+          final completePayload = cid != null
+              ? <String, dynamic>{'clinicId': cid}
+              : <String, dynamic>{};
           await api.put(
             '/api/appointments/${widget.appointment.id}/complete',
-            jsonEncode(completePayload ?? {}),
+            completePayload,
           );
           debugPrint(
             'Appointment ${widget.appointment.id} marked as completed',
