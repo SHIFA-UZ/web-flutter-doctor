@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -15,7 +16,10 @@ import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.da
 
 enum _WizardPayMode { unpaid, full, installments }
 
-/// Full-screen wizard: create plan, lines, optional appointment links, payment / installments.
+/// Two-step wizard:
+/// 1. live-search a patient (skipped when [initialPatientId] is provided)
+/// 2. single combined form: title + diagnosis + notes + attending doctor +
+///    services (with per-line appointment link) + payment.
 class TreatmentPlanWizardSheet {
   static Future<void> show(
     BuildContext context,
@@ -48,25 +52,29 @@ class _TreatmentPlanWizardDialog extends ConsumerStatefulWidget {
       _TreatmentPlanWizardDialogState();
 }
 
-class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizardDialog> {
-  /// 0 patient, 1 basics, 2 services, 3 appointments, 4 payment
+class _TreatmentPlanWizardDialogState
+    extends ConsumerState<_TreatmentPlanWizardDialog> {
+  /// 0 = patient picker, 1 = combined form.
   int _phase = 0;
   int? _patientId;
-  int? _planId;
 
+  // Basics
   final _titleCtrl = TextEditingController();
-  final _symptomsCtrl = TextEditingController();
   final _diagnosisCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   final _reminderDaysCtrl = TextEditingController(text: '3');
   int? _attendingDoctorId;
 
-  final Map<int, int> _catalogQty = {};
+  // Services + per-line appointment link
   final Map<int, bool> _catalogPick = {};
+  final Map<int, int> _catalogQty = {};
+  final Map<int, int?> _catalogAppt = {};
 
-  List<LineDetailDto> _linesForLink = [];
-  final Map<int, int?> _lineAppointment = {};
+  // Cached list of appointments for the chosen patient (for per-line linking).
+  List<ClinicPatientAppointmentDto> _patientAppts = [];
+  bool _loadingAppts = false;
 
+  // Payment
   _WizardPayMode _payMode = _WizardPayMode.unpaid;
   String _payMethod = 'CASH';
   final _payMemoCtrl = TextEditingController();
@@ -79,9 +87,12 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
     TextEditingController(),
   ];
 
-  String _patientSearch = '';
+  // Patient search
+  final _searchCtrl = TextEditingController();
+  Timer? _searchDebounce;
   List<ClinicPatientRow> _patientHits = [];
-  bool _loadingPatients = false;
+  bool _searchingPatients = false;
+
   bool _busy = false;
 
   @override
@@ -91,17 +102,19 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
     if (pid != null) {
       _patientId = pid;
       _phase = 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadAppointments());
     }
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _titleCtrl.dispose();
-    _symptomsCtrl.dispose();
     _diagnosisCtrl.dispose();
     _notesCtrl.dispose();
     _reminderDaysCtrl.dispose();
     _payMemoCtrl.dispose();
+    _searchCtrl.dispose();
     for (final c in _instDueCtrls) {
       c.dispose();
     }
@@ -117,17 +130,40 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
     return s;
   }
 
-  Future<void> _searchPatients() async {
-    if (_patientSearch.trim().length < 2) return;
-    setState(() => _loadingPatients = true);
+  // --- Patient live search ---------------------------------------------------
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    final q = value.trim();
+    if (q.isEmpty) {
+      setState(() {
+        _patientHits = [];
+        _searchingPatients = false;
+      });
+      return;
+    }
+    if (q.length < 2) {
+      setState(() {
+        _patientHits = [];
+      });
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      _runSearch(q);
+    });
+  }
+
+  Future<void> _runSearch(String q) async {
+    setState(() => _searchingPatients = true);
     try {
       final api = ref.read(doctorApiClientProvider);
-      final q = Uri.encodeQueryComponent(_patientSearch.trim());
+      final enc = Uri.encodeQueryComponent(q);
       final res = await api.get(
-        '/api/clinics/${widget.clinicId}/patients?page=0&size=40&q=$q',
+        '/api/clinics/${widget.clinicId}/patients?page=0&size=40&q=$enc',
       );
-      if (res.statusCode != 200 || !mounted) return;
-      final body = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      if (!mounted || res.statusCode != 200) return;
+      final body =
+          json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
       final content = body['content'] as List<dynamic>? ?? [];
       setState(() {
         _patientHits = content
@@ -136,57 +172,40 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
             .toList();
       });
     } finally {
-      if (mounted) setState(() => _loadingPatients = false);
+      if (mounted) setState(() => _searchingPatients = false);
     }
   }
 
-  List<String> _parseSymptoms() {
-    return _symptomsCtrl.text
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
+  Future<void> _selectPatient(ClinicPatientRow row) async {
+    setState(() {
+      _patientId = row.patientId;
+      _phase = 1;
+      _patientHits = [];
+      _searchCtrl.text = row.fullName;
+    });
+    await _loadAppointments();
   }
 
-  Future<bool> _ensurePlanBasics() async {
-    final title = _titleCtrl.text.trim();
-    if (title.isEmpty) return false;
-    final reminder = int.tryParse(_reminderDaysCtrl.text.trim());
-    if (_planId == null) {
-      final pid = _patientId;
-      if (pid == null) return false;
-      final created = await createTreatmentPlan(
+  Future<void> _loadAppointments() async {
+    final pid = _patientId;
+    if (pid == null) return;
+    setState(() => _loadingAppts = true);
+    try {
+      final list = await fetchPatientAppointments(
         ref,
         clinicId: widget.clinicId,
         patientId: pid,
-        title: title,
-        diagnosis: _diagnosisCtrl.text.trim().isEmpty ? null : _diagnosisCtrl.text.trim(),
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-        paymentReminderDays: reminder,
-        attendingDoctorId: _attendingDoctorId,
-        symptoms: _parseSymptoms().isEmpty ? null : _parseSymptoms(),
       );
-      if (created == null) return false;
-      _planId = created.id;
-    } else {
-      await patchTreatmentPlan(
-        ref,
-        planId: _planId!,
-        title: title,
-        diagnosis: _diagnosisCtrl.text.trim().isEmpty ? null : _diagnosisCtrl.text.trim(),
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-        paymentReminderDays: reminder,
-        attendingDoctorId: _attendingDoctorId,
-        symptoms: _parseSymptoms(),
-      );
+      if (!mounted) return;
+      setState(() => _patientAppts = list);
+    } finally {
+      if (mounted) setState(() => _loadingAppts = false);
     }
-    return true;
   }
 
-  Future<bool> _saveLines() async {
-    final planId = _planId;
-    if (planId == null) return false;
-    final cat = ref.read(clinicCatalogProvider(widget.clinicId)).valueOrNull ?? [];
+  // --- Save -----------------------------------------------------------------
+
+  List<Map<String, dynamic>> _buildLineRequests(List<ClinicCatalogItem> cat) {
     final lines = <Map<String, dynamic>>[];
     var order = 0;
     for (final id in _catalogPick.keys.where((k) => _catalogPick[k] == true)) {
@@ -200,6 +219,7 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
       if (item == null) continue;
       final qty = _catalogQty[id] ?? 1;
       if (qty < 1) continue;
+      final apptId = _catalogAppt[id];
       lines.add({
         'catalogItemId': item.id,
         'title': item.title,
@@ -208,42 +228,113 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
         'discountMinor': 0,
         'currency': item.currency,
         'sortOrder': order++,
+        if (apptId != null) 'linkedAppointmentId': apptId,
       });
     }
-    if (lines.isEmpty) return false;
-    final summary = await replaceTreatmentPlanLines(ref, planId: planId, lines: lines);
-    if (summary == null) return false;
-    final detail = await fetchTreatmentPlanDetail(ref, planId);
-    if (detail == null) return false;
-    setState(() {
-      _linesForLink = detail.lines;
-      _lineAppointment.clear();
-      for (final l in _linesForLink) {
-        _lineAppointment[l.id] = l.linkedAppointment?.id;
-      }
-    });
-    return true;
+    return lines;
   }
 
-  Future<bool> _saveLinks() async {
-    final planId = _planId;
-    if (planId == null) return true;
-    final pairs = <Map<String, dynamic>>[];
-    for (final line in _linesForLink) {
-      pairs.add({'lineId': line.id, 'appointmentId': _lineAppointment[line.id]});
+  Future<void> _save() async {
+    final pid = _patientId;
+    if (pid == null) return;
+
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            tr(context, 'treatmentPlanWizardFillBasics', 'Enter a plan title'),
+          ),
+        ),
+      );
+      return;
     }
-    await linkTreatmentPlanAppointments(ref, planId: planId, pairs: pairs);
-    return true;
-  }
 
-  Future<void> _finish() async {
-    final planId = _planId;
-    if (planId == null) return;
+    final cat = ref.read(clinicCatalogProvider(widget.clinicId)).valueOrNull ?? [];
+    final lineReqs = _buildLineRequests(cat);
+    if (lineReqs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            tr(context, 'treatmentPlanWizardPickServices',
+                'Select at least one catalog service'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Pre-validate installments before we mutate any data.
+    List<Map<String, dynamic>>? installmentRows;
+    if (_payMode == _WizardPayMode.installments) {
+      installmentRows = <Map<String, dynamic>>[];
+      for (var i = 0; i < _instDueCtrls.length && i < _instAmtCtrls.length; i++) {
+        final d = _instDueCtrls[i].text.trim();
+        final a = double.tryParse(
+          _instAmtCtrls[i].text.trim().replaceAll(',', '.'),
+        );
+        if (d.isEmpty || a == null || a <= 0) continue;
+        installmentRows.add({
+          'dueDate': d,
+          'amountMinor': (a * 100).round(),
+        });
+      }
+      if (installmentRows.length < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              tr(context, 'treatmentPlanWizardNeedTwoInstallments',
+                  'Add at least 2 installments with valid date and amount'),
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _busy = true);
     try {
+      final reminder = int.tryParse(_reminderDaysCtrl.text.trim());
+      final created = await createTreatmentPlan(
+        ref,
+        clinicId: widget.clinicId,
+        patientId: pid,
+        title: title,
+        diagnosis:
+            _diagnosisCtrl.text.trim().isEmpty ? null : _diagnosisCtrl.text.trim(),
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        paymentReminderDays: reminder,
+        attendingDoctorId: _attendingDoctorId,
+      );
+      if (created == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(tr(context, 'error', 'Could not create plan')),
+            ),
+          );
+        }
+        return;
+      }
+      final planId = created.id;
+
+      final summary = await replaceTreatmentPlanLines(
+        ref,
+        planId: planId,
+        lines: lineReqs,
+      );
+      if (summary == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr(context, 'error', 'Could not save services'))),
+          );
+        }
+        return;
+      }
+
       final detail = await fetchTreatmentPlanDetail(ref, planId);
-      final owed = detail?.summary.owedMinor ?? 0;
-      final currency = detail?.summary.currency ?? 'UZS';
+      final owed = detail?.summary.owedMinor ?? summary.owedMinor;
+      final currency = detail?.summary.currency ?? summary.currency;
 
       if (_payMode == _WizardPayMode.full && owed > 0) {
         await recordClinicPayment(
@@ -253,52 +344,36 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
           amountMinor: owed,
           currency: currency,
           method: _payMethod,
-          memo: _payMemoCtrl.text.trim().isEmpty ? null : _payMemoCtrl.text.trim(),
+          memo: _payMemoCtrl.text.trim().isEmpty
+              ? null
+              : _payMemoCtrl.text.trim(),
         );
-      } else if (_payMode == _WizardPayMode.installments && owed > 0) {
-        final rows = <Map<String, dynamic>>[];
-        for (var i = 0; i < _instDueCtrls.length && i < _instAmtCtrls.length; i++) {
-          final d = _instDueCtrls[i].text.trim();
-          final a = double.tryParse(_instAmtCtrls[i].text.trim().replaceAll(',', '.'));
-          if (d.isEmpty || a == null || a <= 0) continue;
-          rows.add({
-            'dueDate': d,
-            'amountMinor': (a * 100).round(),
-          });
-        }
-        if (rows.length < 2) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  tr(context, 'treatmentPlanWizardNeedTwoInstallments', 'Add at least 2 installments'),
-                ),
-              ),
-            );
-          }
-          return;
-        }
-        final start = rows.first['dueDate'] as String;
+      } else if (_payMode == _WizardPayMode.installments &&
+          installmentRows != null &&
+          owed > 0) {
+        final start = installmentRows.first['dueDate'] as String;
         await createInstallmentPlan(
           ref,
           clinicId: widget.clinicId,
           treatmentPlanId: planId,
           totalAmountMinor: owed,
           currency: currency,
-          numInstallments: rows.length,
+          numInstallments: installmentRows.length,
           frequency: 'MONTHLY',
           startDate: start,
-          scheduleItems: rows,
+          scheduleItems: installmentRows,
         );
       }
 
       await patchTreatmentPlanStatus(ref, planId: planId, status: 'ACTIVE');
-      if (_patientId != null) {
-        ref.invalidate(treatmentPlansForPatientProvider([widget.clinicId, _patientId!]));
-      }
+      ref.invalidate(treatmentPlansForPatientProvider([widget.clinicId, pid]));
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr(context, 'treatmentPlanWizardDone', 'Treatment plan saved'))),
+          SnackBar(
+            content: Text(tr(context, 'treatmentPlanWizardDone',
+                'Treatment plan saved')),
+          ),
         );
         Navigator.of(context).pop();
       }
@@ -307,69 +382,18 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
     }
   }
 
-  Future<void> _onNext() async {
-    setState(() => _busy = true);
-    try {
-      if (_phase == 0) {
-        if (_patientId == null) return;
-        setState(() => _phase = 1);
-        return;
-      }
-      if (_phase == 1) {
-        final ok = await _ensurePlanBasics();
-        if (!ok) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(tr(context, 'treatmentPlanWizardFillBasics', 'Enter a title'))),
-            );
-          }
-          return;
-        }
-        setState(() => _phase = 2);
-        return;
-      }
-      if (_phase == 2) {
-        final ok = await _saveLines();
-        if (!ok) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(tr(context, 'treatmentPlanWizardPickServices', 'Select at least one service')),
-              ),
-            );
-          }
-          return;
-        }
-        setState(() => _phase = 3);
-        return;
-      }
-      if (_phase == 3) {
-        await _saveLinks();
-        setState(() => _phase = 4);
-        return;
-      }
-      if (_phase == 4) {
-        await _finish();
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
+  void _onBack() {
+    if (_phase == 1 && widget.initialPatientId == null) {
+      setState(() {
+        _phase = 0;
+        _patientId = null;
+      });
+      return;
     }
+    Navigator.of(context).pop();
   }
 
-  void _onBack() {
-    if (_phase <= 1 && widget.initialPatientId != null) {
-      Navigator.of(context).pop();
-      return;
-    }
-    if (_phase <= 0) {
-      Navigator.of(context).pop();
-      return;
-    }
-    setState(() {
-      _phase--;
-      if (_phase < 1 && widget.initialPatientId != null) _phase = 1;
-    });
-  }
+  // --- Build ----------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -391,21 +415,29 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Step ${_phase + 1}/5', style: const TextStyle(color: Colors.black54)),
+              Text(
+                'Step ${_phase + 1}/2',
+                style: const TextStyle(color: Colors.black54),
+              ),
               const SizedBox(height: 12),
-              Expanded(child: _buildPhaseBody(context, l10n, membersAsync, catalogAsync)),
+              Expanded(
+                child: _phase == 0
+                    ? _buildPatientPicker(context)
+                    : _buildPlanForm(context, l10n, membersAsync, catalogAsync),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  TextButton(onPressed: _busy ? null : _onBack, child: Text(l10n.translate('back'))),
+                  TextButton(
+                    onPressed: _busy ? null : _onBack,
+                    child: Text(l10n.translate('back')),
+                  ),
                   const Spacer(),
-                  if (_phase > 0)
+                  if (_phase == 1)
                     ShifaPrimaryButton(
-                      label: _phase == 4
-                          ? tr(context, 'treatmentPlanWizardFinish', 'Finish')
-                          : l10n.translate('continue'),
+                      label: tr(context, 'treatmentPlanWizardFinish', 'Save'),
                       isLoading: _busy,
-                      onPressed: _busy ? null : _onNext,
+                      onPressed: _busy ? null : _save,
                     ),
                 ],
               ),
@@ -416,251 +448,422 @@ class _TreatmentPlanWizardDialogState extends ConsumerState<_TreatmentPlanWizard
     );
   }
 
-  Widget _buildPhaseBody(
+  // ---- Phase 0: live patient search ----------------------------------------
+
+  Widget _buildPatientPicker(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _searchCtrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: tr(context, 'treatmentPlanWizardSearchPatient',
+                'Search patient (type to filter)'),
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchCtrl.text.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      _onSearchChanged('');
+                    },
+                  ),
+          ),
+          onChanged: _onSearchChanged,
+        ),
+        const SizedBox(height: 8),
+        if (_searchingPatients) const LinearProgressIndicator(minHeight: 2),
+        if (!_searchingPatients &&
+            _patientHits.isEmpty &&
+            _searchCtrl.text.trim().length >= 2)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              tr(context, 'treatmentPlanWizardNoPatients', 'No matching patients.'),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _patientHits.length,
+            itemBuilder: (ctx, i) {
+              final p = _patientHits[i];
+              return ListTile(
+                leading: CircleAvatar(
+                  child: Text(
+                    p.fullName.isEmpty ? '?' : p.fullName[0].toUpperCase(),
+                  ),
+                ),
+                title: Text(p.fullName),
+                subtitle: Text(p.phone ?? p.email ?? ''),
+                onTap: () => _selectPatient(p),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---- Phase 1: combined form ----------------------------------------------
+
+  Widget _buildPlanForm(
     BuildContext context,
     AppLocalizations l10n,
     AsyncValue<List<ClinicMember>> membersAsync,
     AsyncValue<List<ClinicCatalogItem>> catalogAsync,
   ) {
-    if (_phase == 0) {
-      return Column(
+    return SingleChildScrollView(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
-            decoration: InputDecoration(
-              labelText: tr(context, 'treatmentPlanWizardSearchPatient', 'Search patient'),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: _loadingPatients ? null : _searchPatients,
+          // Basics ------------------------------------------------------------
+          _Section(
+            title: tr(context, 'treatmentPlanWizardSectionBasics', 'Plan basics'),
+            children: [
+              TextField(
+                controller: _titleCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.translate('treatmentPlanTitle'),
+                ),
               ),
-            ),
-            onChanged: (v) => _patientSearch = v,
-            onSubmitted: (_) => _searchPatients(),
-          ),
-          const SizedBox(height: 8),
-          if (_loadingPatients) const LinearProgressIndicator(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _patientHits.length,
-              itemBuilder: (ctx, i) {
-                final p = _patientHits[i];
-                return ListTile(
-                  title: Text(p.fullName),
-                  subtitle: Text(p.phone ?? p.email ?? ''),
-                  onTap: () => setState(() {
-                    _patientId = p.patientId;
-                    _phase = 1;
-                  }),
-                );
-              },
-            ),
-          ),
-        ],
-      );
-    }
-
-    if (_phase == 1) {
-      return SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _titleCtrl,
-              decoration: InputDecoration(labelText: l10n.translate('treatmentPlanTitle')),
-            ),
-            TextField(
-              controller: _symptomsCtrl,
-              decoration: InputDecoration(
-                labelText: tr(context, 'treatmentPlanWizardSymptoms', 'Symptoms (comma separated)'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _diagnosisCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.translate('treatmentPlanDiagnosis'),
+                ),
+                maxLines: 2,
               ),
-            ),
-            TextField(
-              controller: _diagnosisCtrl,
-              decoration: InputDecoration(labelText: l10n.translate('treatmentPlanDiagnosis')),
-            ),
-            TextField(
-              controller: _notesCtrl,
-              decoration: InputDecoration(labelText: l10n.translate('treatmentPlanNotes')),
-              maxLines: 2,
-            ),
-            TextField(
-              controller: _reminderDaysCtrl,
-              decoration: InputDecoration(
-                labelText: tr(context, 'treatmentPlanWizardReminderDays', 'Payment reminder (days)'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _notesCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.translate('treatmentPlanNotes'),
+                ),
+                maxLines: 2,
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 8),
-            membersAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (members) {
-                return DropdownButtonFormField<int?>(
-                  value: _attendingDoctorId,
-                  decoration: InputDecoration(
-                    labelText: tr(context, 'treatmentPlanWizardAttending', 'Attending doctor'),
-                  ),
-                  items: [
-                    const DropdownMenuItem<int?>(value: null, child: Text('—')),
-                    ...members.map(
-                      (m) => DropdownMenuItem<int?>(
-                        value: m.doctorProfileId,
-                        child: Text(m.displayName),
-                      ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _reminderDaysCtrl,
+                decoration: InputDecoration(
+                  labelText: tr(context, 'treatmentPlanWizardReminderDays',
+                      'Payment reminder (days)'),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+              membersAsync.when(
+                loading: () => const LinearProgressIndicator(minHeight: 2),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (members) {
+                  return DropdownButtonFormField<int?>(
+                    initialValue: _attendingDoctorId,
+                    decoration: InputDecoration(
+                      labelText: tr(context, 'treatmentPlanWizardAttending',
+                          'Attending doctor'),
                     ),
-                  ],
-                  onChanged: (v) => setState(() => _attendingDoctorId = v),
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    }
+                    items: [
+                      const DropdownMenuItem<int?>(value: null, child: Text('—')),
+                      ...members.map(
+                        (m) => DropdownMenuItem<int?>(
+                          value: m.doctorProfileId,
+                          child: Text(m.displayName),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => _attendingDoctorId = v),
+                  );
+                },
+              ),
+            ],
+          ),
 
-    if (_phase == 2) {
-      return catalogAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
-        data: (items) {
-          return ListView(
-            children: items.where((c) => c.active).map((c) {
-              final picked = _catalogPick[c.id] ?? false;
-              final qty = _catalogQty[c.id] ?? 1;
-              return CheckboxListTile(
+          // Services + per-line appointment -----------------------------------
+          _Section(
+            title: tr(context, 'treatmentPlanWizardSectionServices',
+                'Treatments / services'),
+            subtitle: tr(
+              context,
+              'treatmentPlanWizardSectionServicesHint',
+              'Pick from clinic catalog. Optionally assign each line to a visit.',
+            ),
+            children: [
+              if (_loadingAppts)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: LinearProgressIndicator(minHeight: 2),
+                ),
+              catalogAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Text('$e'),
+                data: (items) {
+                  final active = items.where((c) => c.active).toList();
+                  if (active.isEmpty) {
+                    return Text(
+                      tr(context, 'treatmentPlanWizardNoCatalog',
+                          'No catalog items in this clinic yet.'),
+                      style: TextStyle(color: Colors.grey.shade600),
+                    );
+                  }
+                  return Column(
+                    children: active.map(_buildCatalogRow).toList(),
+                  );
+                },
+              ),
+            ],
+          ),
+
+          // Payment -----------------------------------------------------------
+          _Section(
+            title: tr(context, 'treatmentPlanWizardSectionPayment', 'Payment'),
+            children: [
+              _payRadio(
+                _WizardPayMode.unpaid,
+                tr(context, 'treatmentPlanWizardPayUnpaid', 'Leave unpaid'),
+              ),
+              _payRadio(
+                _WizardPayMode.full,
+                tr(context, 'treatmentPlanWizardPayFull',
+                    'Pay in full now (clinic payment)'),
+              ),
+              _payRadio(
+                _WizardPayMode.installments,
+                tr(context, 'treatmentPlanWizardPayInstallments',
+                    'Installments (custom schedule)'),
+              ),
+              if (_payMode == _WizardPayMode.full) ...[
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _payMethod,
+                  decoration: InputDecoration(
+                    labelText: tr(
+                        context, 'treatmentPlanWizardMethod', 'Payment method'),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'CASH', child: Text('CASH')),
+                    DropdownMenuItem(value: 'TRANSFER', child: Text('TRANSFER')),
+                    DropdownMenuItem(
+                        value: 'CARD_EXTERNAL', child: Text('CARD')),
+                  ],
+                  onChanged: (v) => setState(() => _payMethod = v ?? 'CASH'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _payMemoCtrl,
+                  decoration: InputDecoration(
+                    labelText:
+                        tr(context, 'treatmentPlanWizardMemo', 'Memo'),
+                  ),
+                ),
+              ],
+              if (_payMode == _WizardPayMode.installments) ...[
+                const SizedBox(height: 8),
+                Text(
+                  tr(context, 'treatmentPlanWizardInstallHint',
+                      'Due date YYYY-MM-DD, amount in major currency units'),
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 6),
+                ...List.generate(_instDueCtrls.length, (i) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _instDueCtrls[i],
+                            decoration: const InputDecoration(
+                              labelText: 'Due (YYYY-MM-DD)',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _instAmtCtrls[i],
+                            decoration:
+                                const InputDecoration(labelText: 'Amount'),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setState(() {
+                      _instDueCtrls.add(TextEditingController());
+                      _instAmtCtrls.add(TextEditingController());
+                    }),
+                    icon: const Icon(Icons.add),
+                    label: Text(tr(context, 'treatmentPlanWizardAddRow',
+                        'Add installment row')),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _payRadio(_WizardPayMode value, String label) {
+    return RadioListTile<_WizardPayMode>(
+      title: Text(label),
+      value: value,
+      // ignore: deprecated_member_use
+      groupValue: _payMode,
+      // ignore: deprecated_member_use
+      onChanged: (v) => setState(() => _payMode = v ?? _WizardPayMode.unpaid),
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+    );
+  }
+
+  Widget _buildCatalogRow(ClinicCatalogItem c) {
+    final picked = _catalogPick[c.id] ?? false;
+    final qty = _catalogQty[c.id] ?? 1;
+    final apptId = _catalogAppt[c.id];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Checkbox(
                 value: picked,
                 onChanged: (v) => setState(() {
                   _catalogPick[c.id] = v ?? false;
                   _catalogQty[c.id] = qty;
                 }),
-                title: Text(c.title),
-                subtitle: Text('${(c.defaultPriceMinor / 100).toStringAsFixed(0)} ${c.currency}'),
-                secondary: SizedBox(
-                  width: 72,
-                  child: TextFormField(
-                    initialValue: '$qty',
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Qty'),
-                    onChanged: (s) => _catalogQty[c.id] = int.tryParse(s) ?? 1,
-                  ),
-                ),
-              );
-            }).toList(),
-          );
-        },
-      );
-    }
-
-    if (_phase == 3) {
-      final planId = _planId;
-      if (planId == null || _patientId == null) return const SizedBox.shrink();
-      return FutureBuilder<List<ClinicPatientAppointmentDto>>(
-        future: fetchPatientAppointments(ref, clinicId: widget.clinicId, patientId: _patientId!),
-        builder: (ctx, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final appts = snap.data!;
-          return ListView(
-            children: _linesForLink.map((line) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text(line.title, maxLines: 2, overflow: TextOverflow.ellipsis)),
-                    DropdownButton<int?>(
-                      value: _lineAppointment[line.id],
-                      items: [
-                        const DropdownMenuItem<int?>(value: null, child: Text('—')),
-                        ...appts.map(
-                          (a) => DropdownMenuItem<int?>(
-                            value: a.id,
-                            child: Text('${a.startAt} · ${a.doctorName}'),
-                          ),
-                        ),
-                      ],
-                      onChanged: (v) => setState(() => _lineAppointment[line.id] = v),
+                    Text(c.title,
+                        style: const TextStyle(fontWeight: FontWeight.w500)),
+                    Text(
+                      '${(c.defaultPriceMinor / 100).toStringAsFixed(0)} ${c.currency}',
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade700),
                     ),
                   ],
                 ),
-              );
-            }).toList(),
-          );
-        },
-      );
-    }
+              ),
+              SizedBox(
+                width: 72,
+                child: TextFormField(
+                  initialValue: '$qty',
+                  enabled: picked,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'Qty', isDense: true),
+                  onChanged: (s) =>
+                      _catalogQty[c.id] = int.tryParse(s) ?? 1,
+                ),
+              ),
+            ],
+          ),
+          if (picked)
+            Padding(
+              padding: const EdgeInsets.only(left: 48, top: 4, bottom: 4),
+              child: DropdownButtonFormField<int?>(
+                initialValue: apptId,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: tr(context, 'treatmentPlanWizardLineAppt',
+                      'Link to visit (optional)'),
+                  isDense: true,
+                ),
+                items: [
+                  DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text(tr(context, 'treatmentPlanWizardLineApptNone',
+                        '— no visit —')),
+                  ),
+                  ..._patientAppts.map(
+                    (a) => DropdownMenuItem<int?>(
+                      value: a.id,
+                      child: Text(
+                        '${_shortDate(a.startAt)} · ${a.doctorName}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _catalogAppt[c.id] = v),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
-    return SingleChildScrollView(
+  String _shortDate(String iso) {
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final mm = dt.month.toString().padLeft(2, '0');
+      final dd = dt.day.toString().padLeft(2, '0');
+      final hh = dt.hour.toString().padLeft(2, '0');
+      final mi = dt.minute.toString().padLeft(2, '0');
+      return '${dt.year}-$mm-$dd $hh:$mi';
+    } catch (_) {
+      return iso;
+    }
+  }
+}
+
+class _Section extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final List<Widget> children;
+
+  const _Section({
+    required this.title,
+    this.subtitle,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          RadioListTile<_WizardPayMode>(
-            title: Text(tr(context, 'treatmentPlanWizardPayUnpaid', 'Leave unpaid')),
-            value: _WizardPayMode.unpaid,
-            groupValue: _payMode,
-            onChanged: (v) => setState(() => _payMode = v!),
+          Text(
+            title,
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
-          RadioListTile<_WizardPayMode>(
-            title: Text(tr(context, 'treatmentPlanWizardPayFull', 'Pay in full now (clinic payment)')),
-            value: _WizardPayMode.full,
-            groupValue: _payMode,
-            onChanged: (v) => setState(() => _payMode = v!),
-          ),
-          RadioListTile<_WizardPayMode>(
-            title: Text(tr(context, 'treatmentPlanWizardPayInstallments', 'Installments')),
-            value: _WizardPayMode.installments,
-            groupValue: _payMode,
-            onChanged: (v) => setState(() => _payMode = v!),
-          ),
-          if (_payMode == _WizardPayMode.full) ...[
-            DropdownButtonFormField<String>(
-              value: _payMethod,
-              decoration: InputDecoration(labelText: tr(context, 'treatmentPlanWizardMethod', 'Method')),
-              items: const [
-                DropdownMenuItem(value: 'CASH', child: Text('CASH')),
-                DropdownMenuItem(value: 'TRANSFER', child: Text('TRANSFER')),
-                DropdownMenuItem(value: 'CARD_EXTERNAL', child: Text('CARD')),
-              ],
-              onChanged: (v) => setState(() => _payMethod = v ?? 'CASH'),
-            ),
-            TextField(
-              controller: _payMemoCtrl,
-              decoration: InputDecoration(labelText: tr(context, 'treatmentPlanWizardMemo', 'Memo')),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle!,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
-          if (_payMode == _WizardPayMode.installments) ...[
-            Text(tr(context, 'treatmentPlanWizardInstallHint', 'Due date YYYY-MM-DD, amount in major units')),
-            ...List.generate(_instDueCtrls.length, (i) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _instDueCtrls[i],
-                        decoration: const InputDecoration(labelText: 'Due'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _instAmtCtrls[i],
-                        decoration: const InputDecoration(labelText: 'Amount'),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            TextButton(
-              onPressed: () => setState(() {
-                _instDueCtrls.add(TextEditingController());
-                _instAmtCtrls.add(TextEditingController());
-              }),
-              child: Text(tr(context, 'treatmentPlanWizardAddRow', 'Add row')),
-            ),
-          ],
+          const SizedBox(height: 8),
+          ...children,
         ],
       ),
     );
