@@ -71,6 +71,7 @@ Future<TreatmentPlanSummaryDto?> createTreatmentPlan(
   String? notes,
   int? paymentReminderDays,
   int? attendingDoctorId,
+  List<int>? attendingDoctorIds,
   List<String>? symptoms,
 }) async {
   final api = ref.read(doctorApiClientProvider);
@@ -83,6 +84,9 @@ Future<TreatmentPlanSummaryDto?> createTreatmentPlan(
   if (notes != null && notes.isNotEmpty) body['notes'] = notes;
   if (paymentReminderDays != null) body['paymentReminderDays'] = paymentReminderDays;
   if (attendingDoctorId != null) body['attendingDoctorId'] = attendingDoctorId;
+  if (attendingDoctorIds != null && attendingDoctorIds.isNotEmpty) {
+    body['attendingDoctorIds'] = attendingDoctorIds;
+  }
   if (symptoms != null && symptoms.isNotEmpty) body['symptoms'] = symptoms;
 
   final res = await api.post('/api/treatment-plans', body);
@@ -164,6 +168,67 @@ Future<TreatmentPlanSummaryDto?> patchTreatmentPlanStatus(
   final m = json.decode(utf8.decode(res.bodyBytes));
   if (m is! Map) return null;
   return TreatmentPlanSummaryDto.fromJson(Map<String, dynamic>.from(m));
+}
+
+/// Locations for a clinic doctor (multi-site slot picker).
+Future<List<PlanDoctorLocationDto>> fetchTreatmentPlanDoctorLocations(
+  dynamic ref, {
+  required int clinicId,
+  required int doctorId,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.get(
+    '/api/treatment-plans/doctor-locations?clinicId=$clinicId&doctorId=$doctorId',
+  );
+  if (res.statusCode != 200) return [];
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => PlanDoctorLocationDto.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
+
+/// Free slots for a doctor on a given calendar day. Used by the wizard's
+/// "Schedule visits" section to surface availability when picking new times.
+Future<List<FreeSlotDto>> fetchTreatmentPlanFreeSlots(
+  dynamic ref, {
+  required int clinicId,
+  required int doctorId,
+  required String dayIso, // YYYY-MM-DD
+  int? locationId,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final parts = <String>[
+    'clinicId=$clinicId',
+    'doctorId=$doctorId',
+    'day=$dayIso',
+  ];
+  if (locationId != null) parts.add('locationId=$locationId');
+  final res = await api.get('/api/treatment-plans/free-slots?${parts.join('&')}');
+  if (res.statusCode != 200) return [];
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => FreeSlotDto.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
+
+/// Books a batch of free slots against a treatment plan. The backend
+/// validates each one for doctor + patient conflict and creates a
+/// confirmed appointment per slot, optionally linking it to a plan line.
+Future<TreatmentPlanDetailDto?> bookTreatmentPlanSlots(
+  dynamic ref, {
+  required int planId,
+  required List<Map<String, dynamic>> slots,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.post('/api/treatment-plans/$planId/book-slots', slots);
+  if (res.statusCode != 200) return null;
+  final m = json.decode(utf8.decode(res.bodyBytes));
+  if (m is! Map) return null;
+  return TreatmentPlanDetailDto.fromJson(Map<String, dynamic>.from(m));
 }
 
 Future<List<ClinicPatientAppointmentDto>> fetchPatientAppointments(

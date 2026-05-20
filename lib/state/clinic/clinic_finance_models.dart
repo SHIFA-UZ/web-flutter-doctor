@@ -211,6 +211,57 @@ class InstallmentPlanSummary {
   }
 }
 
+/// Installment row for the clinic finance Installments tab (with patient/plan).
+class InstallmentItemListRow {
+  final int id;
+  final int sequenceNumber;
+  final String dueDate;
+  final int amountMinor;
+  final String currency;
+  final String status;
+  final String? paidAt;
+  final String? notes;
+  final int installmentPlanId;
+  final int treatmentPlanId;
+  final String? treatmentPlanTitle;
+  final int patientId;
+  final String patientName;
+
+  InstallmentItemListRow({
+    required this.id,
+    required this.sequenceNumber,
+    required this.dueDate,
+    required this.amountMinor,
+    required this.currency,
+    required this.status,
+    this.paidAt,
+    this.notes,
+    required this.installmentPlanId,
+    required this.treatmentPlanId,
+    this.treatmentPlanTitle,
+    required this.patientId,
+    required this.patientName,
+  });
+
+  factory InstallmentItemListRow.fromJson(Map<String, dynamic> json) {
+    return InstallmentItemListRow(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      sequenceNumber: (json['sequenceNumber'] as num?)?.toInt() ?? 0,
+      dueDate: json['dueDate']?.toString() ?? '',
+      amountMinor: (json['amountMinor'] as num?)?.toInt() ?? 0,
+      currency: json['currency']?.toString() ?? 'UZS',
+      status: json['status']?.toString() ?? '',
+      paidAt: json['paidAt']?.toString(),
+      notes: json['notes'] as String?,
+      installmentPlanId: (json['installmentPlanId'] as num?)?.toInt() ?? 0,
+      treatmentPlanId: (json['treatmentPlanId'] as num?)?.toInt() ?? 0,
+      treatmentPlanTitle: json['treatmentPlanTitle'] as String?,
+      patientId: (json['patientId'] as num?)?.toInt() ?? 0,
+      patientName: json['patientName']?.toString() ?? '',
+    );
+  }
+}
+
 class InstallmentItemRow {
   final int id;
   final int sequenceNumber;

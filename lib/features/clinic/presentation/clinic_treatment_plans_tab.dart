@@ -232,9 +232,14 @@ class _PlanRow extends StatelessWidget {
         : l10n.translate('clinicTreatmentPlansUntitled');
     final patient =
         plan.patientName?.trim().isNotEmpty == true ? plan.patientName! : '—';
-    final doctor = plan.attendingDoctorName?.trim().isNotEmpty == true
-        ? plan.attendingDoctorName!
-        : '—';
+    // Show every doctor attached to the plan; long-running plans frequently
+    // involve multiple specialists. Fallback to the legacy primary if the
+    // multi-doctor list is empty (older plans created before V86).
+    final doctor = plan.attendingDoctors.isNotEmpty
+        ? plan.attendingDoctors.map((d) => d.name).join(', ')
+        : (plan.attendingDoctorName?.trim().isNotEmpty == true
+            ? plan.attendingDoctorName!
+            : '—');
     final theme = Theme.of(context);
 
     return InkWell(

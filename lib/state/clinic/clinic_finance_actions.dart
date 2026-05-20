@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:http/http.dart' as http;
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 
@@ -99,7 +100,20 @@ Future<InstallmentPlanSummary?> createInstallmentPlan(
     '/api/clinics/$clinicId/finance/installment-plans',
     body,
   );
-  if (res.statusCode != 200) return null;
+  if (res.statusCode != 200) {
+    // Surface the server-side message so the wizard can show a useful
+    // snackbar (e.g. "Installment amounts sum to X but plan total is Y").
+    String message = 'HTTP ${res.statusCode}';
+    try {
+      final body = json.decode(utf8.decode(res.bodyBytes));
+      if (body is Map && body['message'] != null) {
+        message = body['message'].toString();
+      }
+    } catch (_) {
+      // Fall through with the generic HTTP code.
+    }
+    throw Exception(message);
+  }
   final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
   return InstallmentPlanSummary.fromJson(data);
 }
@@ -118,7 +132,10 @@ Future<bool> markInstallmentItemPaid(
     '/api/clinics/$clinicId/finance/installment-items/$itemId/mark-paid',
     body,
   );
-  return res.statusCode == 200;
+  if (res.statusCode != 200) {
+    throw Exception(_extractServerMessage(res));
+  }
+  return true;
 }
 
 Future<bool> patchInstallmentItem(
@@ -136,7 +153,20 @@ Future<bool> patchInstallmentItem(
     '/api/clinics/$clinicId/finance/installment-items/$itemId',
     body,
   );
-  return res.statusCode == 200;
+  if (res.statusCode != 200) {
+    throw Exception(_extractServerMessage(res));
+  }
+  return true;
+}
+
+String _extractServerMessage(http.Response res) {
+  try {
+    final body = json.decode(utf8.decode(res.bodyBytes));
+    if (body is Map && body['message'] != null) {
+      return body['message'].toString();
+    }
+  } catch (_) {}
+  return 'HTTP ${res.statusCode}';
 }
 
 Future<bool> notifyInstallmentItem(dynamic ref, {required int clinicId, required int itemId}) async {
@@ -200,4 +230,26 @@ Future<Map<String, dynamic>> fetchFinanceAudit(
     throw Exception('Audit ${res.statusCode}');
   }
   return json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+}
+
+/// Clinic-wide installment rows for the Finance → Installments tab.
+/// [filter]: `all`, `pending`, `overdue`, or `paid`.
+Future<List<InstallmentItemListRow>> fetchClinicInstallmentItems(
+  dynamic ref, {
+  required int clinicId,
+  String filter = 'all',
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.get(
+    '/api/clinics/$clinicId/finance/installment-items?filter=${Uri.encodeQueryComponent(filter)}',
+  );
+  if (res.statusCode != 200) {
+    throw Exception('Installments ${res.statusCode}');
+  }
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => InstallmentItemListRow.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
 }

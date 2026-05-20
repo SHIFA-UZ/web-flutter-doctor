@@ -1,5 +1,76 @@
 // Treatment plan DTOs (doctor API: /api/treatment-plans)
 
+/// Doctor practice location for the treatment-plan slot picker.
+class PlanDoctorLocationDto {
+  final int id;
+  final String label;
+  final String? clinic;
+  final String? address;
+  final bool isPrimary;
+
+  const PlanDoctorLocationDto({
+    required this.id,
+    required this.label,
+    this.clinic,
+    this.address,
+    this.isPrimary = false,
+  });
+
+  /// True when this is a legacy synthetic row (no structured location id).
+  bool get isLegacySynthetic => id <= 0;
+
+  String get displayLabel {
+    final c = clinic?.trim();
+    if (c != null && c.isNotEmpty) return '$label · $c';
+    return label;
+  }
+
+  factory PlanDoctorLocationDto.fromJson(Map<String, dynamic> json) =>
+      PlanDoctorLocationDto(
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        label: json['label']?.toString() ?? '',
+        clinic: json['clinic'] as String?,
+        address: json['address'] as String?,
+        isPrimary: json['isPrimary'] == true,
+      );
+}
+
+class FreeSlotDto {
+  final String startAt;
+  final String endAt;
+  final int slotMinutes;
+  final int? locationId;
+  final String? locationLabel;
+
+  const FreeSlotDto({
+    required this.startAt,
+    required this.endAt,
+    required this.slotMinutes,
+    this.locationId,
+    this.locationLabel,
+  });
+
+  factory FreeSlotDto.fromJson(Map<String, dynamic> json) => FreeSlotDto(
+        startAt: json['startAt']?.toString() ?? '',
+        endAt: json['endAt']?.toString() ?? '',
+        slotMinutes: (json['slotMinutes'] as num?)?.toInt() ?? 30,
+        locationId: (json['locationId'] as num?)?.toInt(),
+        locationLabel: json['locationLabel'] as String?,
+      );
+}
+
+class TreatmentPlanDoctorRef {
+  final int id;
+  final String name;
+  const TreatmentPlanDoctorRef({required this.id, required this.name});
+
+  factory TreatmentPlanDoctorRef.fromJson(Map<String, dynamic> json) =>
+      TreatmentPlanDoctorRef(
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        name: json['name']?.toString() ?? '',
+      );
+}
+
 class TreatmentPlanSummaryDto {
   final int id;
   final int clinicId;
@@ -7,6 +78,7 @@ class TreatmentPlanSummaryDto {
   final String? patientName;
   final int? attendingDoctorId;
   final String? attendingDoctorName;
+  final List<TreatmentPlanDoctorRef> attendingDoctors;
   final String? title;
   final String? diagnosis;
   final String status;
@@ -29,6 +101,7 @@ class TreatmentPlanSummaryDto {
     this.patientName,
     this.attendingDoctorId,
     this.attendingDoctorName,
+    this.attendingDoctors = const [],
     this.title,
     this.diagnosis,
     required this.status,
@@ -54,6 +127,12 @@ class TreatmentPlanSummaryDto {
       patientName: json['patientName'] as String?,
       attendingDoctorId: (json['attendingDoctorId'] as num?)?.toInt(),
       attendingDoctorName: json['attendingDoctorName'] as String?,
+      attendingDoctors: (json['attendingDoctors'] as List?)
+              ?.whereType<Map>()
+              .map((e) =>
+                  TreatmentPlanDoctorRef.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          const [],
       title: json['title'] as String?,
       diagnosis: json['diagnosis'] as String?,
       status: json['status']?.toString() ?? '',

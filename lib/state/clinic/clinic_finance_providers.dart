@@ -60,6 +60,16 @@ final clinicOverdueProvider =
   return json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
 });
 
+/// (clinicId, filter) where filter is `all` | `pending` | `overdue` | `paid`.
+final clinicInstallmentItemsProvider = FutureProvider.autoDispose
+    .family<List<InstallmentItemListRow>, (int, String)>((ref, key) async {
+  return fetchClinicInstallmentItems(
+    ref,
+    clinicId: key.$1,
+    filter: key.$2,
+  );
+});
+
 final clinicAppointmentLedgerProvider =
     FutureProvider.family<Map<String, dynamic>, int>((ref, clinicId) {
   return fetchAppointmentLedgerPage(ref, clinicId: clinicId);
