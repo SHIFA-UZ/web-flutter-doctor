@@ -63,6 +63,6 @@ final clinicOverdueProvider =
 final canViewFinanceProvider = Provider<bool>((ref) {
   final clinic = ref.watch(selectedClinicProvider);
   if (clinic == null) return false;
-  const financeRoles = ['OWNER', 'CLINIC_ADMIN', 'RECEPTIONIST'];
+  const financeRoles = ['OWNER', 'CLINIC_ADMIN', 'RECEPTIONIST', 'DOCTOR', 'NURSE'];
   return financeRoles.contains(clinic.membershipRole);
 });
