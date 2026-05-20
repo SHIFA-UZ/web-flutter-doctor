@@ -1323,9 +1323,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           final addressCtrl = TextEditingController(
             text: (profile['address'] ?? '') as String,
           );
-          final clinicCtrl = TextEditingController(
-            text: (profile['clinic'] ?? '') as String,
-          );
 
           return _panelWrapper(
             profile: profile,
@@ -1409,21 +1406,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // ──────────── SECTION 2: Workplace Information ────────────
                 _sectionHeader(AppLocalizations.of(context)!.translate('workplaceInformation') ?? 'Workplace Information'),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: clinicCtrl,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.translate('clinicOrWorkplaceName') ?? 'Clinic / Workplace Name',
-                    border: const OutlineInputBorder(),
-                    helperText: AppLocalizations.of(context)!.translate('enterClinicOrWorkplaceName') ?? 'Enter your clinic or workplace name',
-                  ),
-                  onChanged: (v) {
-                    _debounceTimer?.cancel();
-                    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
-                      patchProfile(ref, {'clinic': clinicCtrl.text.trim()});
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
                 SearchableTimezoneDropdown(
                   value: profile['timeZone'] as String?,
                   hintText: 'Practice timezone (e.g. Europe/Berlin)',

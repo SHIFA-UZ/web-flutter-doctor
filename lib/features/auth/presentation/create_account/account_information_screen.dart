@@ -9,6 +9,7 @@ import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/create_account/registration_email_verification.dart';
+import 'package:shifa_doc_app_v1/features/auth/presentation/create_account/searchable_clinic_dropdown.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/features/profile/presentation/searchable_profession_dropdown.dart';
 import 'package:shifa_doc_app_v1/features/profile/presentation/searchable_timezone_dropdown.dart';
@@ -27,8 +28,9 @@ class _AccountInformationScreenState
   String? _selectedGender;
   String? _selectedProfession;
   String? _selectedTimeZone; // IANA e.g. Europe/Berlin; detected on init, editable
+  int? _selectedClinicId;
+  String? _selectedClinicName;
   final _addressCtrl = TextEditingController();
-  final _clinicCtrl = TextEditingController();
   bool _isSubmitting = false;
   bool _timeZoneDetecting = true;
 
@@ -55,7 +57,6 @@ class _AccountInformationScreenState
   @override
   void dispose() {
     _addressCtrl.dispose();
-    _clinicCtrl.dispose();
     super.dispose();
   }
 
@@ -79,7 +80,8 @@ class _AccountInformationScreenState
           dob: _dob,
           gender: _selectedGender,
           address: _addressCtrl.text.trim(),
-          clinic: _clinicCtrl.text.trim(),
+          clinic: _selectedClinicName,
+          clinicId: _selectedClinicId,
           profession: _selectedProfession,
           timeZone: _selectedTimeZone?.trim().isNotEmpty == true
               ? _selectedTimeZone!.trim()
@@ -207,11 +209,16 @@ class _AccountInformationScreenState
                 ),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _clinicCtrl,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.clinic,
-                ),
+              SearchableClinicDropdown(
+                value: _selectedClinicId,
+                hintText: AppLocalizations.of(context)!.clinic,
+                labelText: AppLocalizations.of(context)!.clinic,
+                onChanged: (clinic) {
+                  setState(() {
+                    _selectedClinicId = clinic?.id;
+                    _selectedClinicName = clinic?.name;
+                  });
+                },
               ),
               const SizedBox(height: 16),
               SearchableProfessionDropdown(
@@ -223,10 +230,10 @@ class _AccountInformationScreenState
               const SizedBox(height: 16),
               _timeZoneDetecting
                   ? InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Practice timezone',
-                        border: OutlineInputBorder(),
-                        suffixIcon: SizedBox(
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.practiceTimezone,
+                        border: const OutlineInputBorder(),
+                        suffixIcon: const SizedBox(
                           width: 20,
                           height: 20,
                           child: Padding(
@@ -240,7 +247,7 @@ class _AccountInformationScreenState
                   : SearchableTimezoneDropdown(
                       value: _selectedTimeZone,
                       hintText: AppLocalizations.of(context)!.practiceTimezonePlaceholder,
-                      labelText: 'Practice timezone',
+                      labelText: AppLocalizations.of(context)!.practiceTimezone,
                       onChanged: (v) => setState(() => _selectedTimeZone = v),
                     ),
               const SizedBox(height: 24),

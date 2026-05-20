@@ -259,6 +259,7 @@ class AppLocalizations {
       'otpResendHint': 'To get a new code, go back and tap Continue again.',
       'detecting': 'Detecting…',
       'practiceTimezonePlaceholder': 'Practice timezone (e.g. Europe/Berlin)',
+      'practiceTimezone': 'Practice timezone',
 
       // Profile
       'editProfile': 'Edit Profile',
@@ -1519,6 +1520,7 @@ class AppLocalizations {
       'detecting': 'Aniqlanmoqda…',
       'practiceTimezonePlaceholder':
           'Amaliyot vaqt zonasi (masalan, Europe/Berlin)',
+      'practiceTimezone': 'Amaliyot vaqt zonasi',
 
       // Profile
       'editProfile': 'Profilni tahrirlash',
@@ -2767,6 +2769,7 @@ class AppLocalizations {
       'detecting': 'Определение…',
       'practiceTimezonePlaceholder':
           'Часовой пояс практики (например, Europe/Berlin)',
+      'practiceTimezone': 'Часовой пояс практики',
 
       // Profile
       'editProfile': 'Редактировать профиль',
@@ -3848,6 +3851,7 @@ class AppLocalizations {
   String get detecting => translate('detecting');
   String get practiceTimezonePlaceholder =>
       translate('practiceTimezonePlaceholder');
+  String get practiceTimezone => translate('practiceTimezone');
 
   // Profile
   String get editProfile => translate('editProfile');

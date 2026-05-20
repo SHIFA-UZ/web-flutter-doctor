@@ -106,6 +106,7 @@
   "otpResendHint": "Чтобы получить новый код, вернитесь назад и нажмите «Продолжить».",
   "detecting": "Определение…",
   "practiceTimezonePlaceholder": "Часовой пояс практики (например, Europe/Berlin)",
+  "practiceTimezone": "Часовой пояс практики",
   "editProfile": "Редактировать профиль",
   "language": "Язык",
   "settings": "Настройки",

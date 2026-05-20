@@ -336,7 +336,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                   onChanged: (v) =>
                       setState(() => _existingPatientTimeZone = v),
                   hintText: AppLocalizations.of(context)!.practiceTimezonePlaceholder,
-                  labelText: 'Practice timezone',
+                  labelText: AppLocalizations.of(context)!.practiceTimezone,
                 ),
               const SizedBox(height: 16),
               Form(

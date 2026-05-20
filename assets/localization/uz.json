@@ -102,6 +102,7 @@
   "otpResendHint": "Yangi kod olish uchun orqaga qayting va Davom etishni bosing.",
   "detecting": "Aniqlanmoqda…",
   "practiceTimezonePlaceholder": "Amaliyot vaqt zonasi (masalan, Europe/Berlin)",
+  "practiceTimezone": "Amaliyot vaqt zonasi",
   "editProfile": "Profilni tahrirlash",
   "language": "Til",
   "settings": "Sozlamalar",

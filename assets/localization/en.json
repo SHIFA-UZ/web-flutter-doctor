@@ -106,6 +106,7 @@
   "otpResendHint": "To get a new code, go back and tap Continue again.",
   "detecting": "Detecting…",
   "practiceTimezonePlaceholder": "Practice timezone (e.g. Europe/Berlin)",
+  "practiceTimezone": "Practice timezone",
   "editProfile": "Edit Profile",
   "language": "Language",
   "settings": "Settings",

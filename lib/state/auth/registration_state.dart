@@ -22,6 +22,7 @@ class RegistrationData {
   final String? gender;
   final String? address;
   final String? clinic;
+  final int? clinicId;
   final String? profession;
   /// IANA time zone (e.g. Europe/Berlin) for practice; set during onboarding.
   final String? timeZone;
@@ -37,6 +38,7 @@ class RegistrationData {
     this.gender,
     this.address,
     this.clinic,
+    this.clinicId,
     this.profession,
     this.timeZone,
   });
@@ -52,6 +54,7 @@ class RegistrationData {
     String? gender,
     String? address,
     String? clinic,
+    int? clinicId,
     String? profession,
     String? timeZone,
   }) {
@@ -66,6 +69,7 @@ class RegistrationData {
       gender: gender ?? this.gender,
       address: address ?? this.address,
       clinic: clinic ?? this.clinic,
+      clinicId: clinicId ?? this.clinicId,
       profession: profession ?? this.profession,
       timeZone: timeZone ?? this.timeZone,
     );
@@ -176,6 +180,7 @@ class RegistrationController extends StateNotifier<RegistrationData> {
       gender: state.gender,
       address: state.address,
       clinic: state.clinic,
+      clinicId: state.clinicId,
       profession: state.profession,
       timeZone: state.timeZone,
     );
@@ -189,6 +194,7 @@ class RegistrationController extends StateNotifier<RegistrationData> {
     String? gender,
     String? address,
     String? clinic,
+    int? clinicId,
     String? profession,
     String? timeZone,
   }) {
@@ -197,6 +203,7 @@ class RegistrationController extends StateNotifier<RegistrationData> {
       gender: gender,
       address: address,
       clinic: clinic,
+      clinicId: clinicId,
       profession: profession,
       timeZone: timeZone,
     );
@@ -274,8 +281,11 @@ class RegistrationController extends StateNotifier<RegistrationData> {
       payload['gender'] = state.gender;
     if (state.address != null && state.address!.isNotEmpty)
       payload['address'] = state.address;
-    if (state.clinic != null && state.clinic!.isNotEmpty)
+    if (state.clinicId != null) {
+      payload['clinicId'] = state.clinicId;
+    } else if (state.clinic != null && state.clinic!.isNotEmpty) {
       payload['clinic'] = state.clinic;
+    }
     if (state.profession != null && state.profession!.isNotEmpty)
       payload['profession'] = state.profession;
     if (state.timeZone != null && state.timeZone!.trim().isNotEmpty)
@@ -294,6 +304,7 @@ class RegistrationController extends StateNotifier<RegistrationData> {
       gender: null,
       address: null,
       clinic: null,
+      clinicId: null,
       profession: null,
       timeZone: null,
     );
