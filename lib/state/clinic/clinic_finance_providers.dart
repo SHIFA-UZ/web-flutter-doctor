@@ -1,0 +1,68 @@
+import 'dart:convert';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
+
+final clinicFinanceDashboardProvider =
+    FutureProvider.family<FinanceDashboardStats, int>((ref, clinicId) async {
+  final api = ref.watch(doctorApiClientProvider);
+  final res = await api.get('/api/clinics/$clinicId/finance/dashboard');
+  if (res.statusCode != 200) {
+    throw Exception('Failed to load finance dashboard (${res.statusCode})');
+  }
+  final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+  return FinanceDashboardStats.fromJson(data);
+});
+
+final clinicFinancialRecordsProvider =
+    FutureProvider.family<List<FinancialRecordRow>, int>((ref, clinicId) async {
+  final api = ref.watch(doctorApiClientProvider);
+  final res =
+      await api.get('/api/clinics/$clinicId/finance/records?page=0&size=50');
+  if (res.statusCode != 200) {
+    throw Exception('Failed to load financial records (${res.statusCode})');
+  }
+  final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+  final content = data['content'] as List<dynamic>? ?? [];
+  return content
+      .whereType<Map>()
+      .map((e) => FinancialRecordRow.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+});
+
+final clinicPaymentHistoryProvider =
+    FutureProvider.family<List<PaymentHistoryItem>, int>((ref, clinicId) async {
+  final api = ref.watch(doctorApiClientProvider);
+  final res =
+      await api.get('/api/clinics/$clinicId/finance/payments?page=0&size=50');
+  if (res.statusCode != 200) {
+    throw Exception('Failed to load payment history (${res.statusCode})');
+  }
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => PaymentHistoryItem.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+});
+
+final clinicOverdueProvider =
+    FutureProvider.family<Map<String, dynamic>, int>((ref, clinicId) async {
+  final api = ref.watch(doctorApiClientProvider);
+  final res = await api.get('/api/clinics/$clinicId/finance/overdue');
+  if (res.statusCode != 200) {
+    throw Exception('Failed to load overdue data (${res.statusCode})');
+  }
+  return json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+});
+
+/// Whether current user can view finance tab based on membership role.
+final canViewFinanceProvider = Provider<bool>((ref) {
+  final clinic = ref.watch(selectedClinicProvider);
+  if (clinic == null) return false;
+  const financeRoles = ['OWNER', 'CLINIC_ADMIN', 'RECEPTIONIST'];
+  return financeRoles.contains(clinic.membershipRole);
+});
