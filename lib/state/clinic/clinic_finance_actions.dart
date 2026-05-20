@@ -6,7 +6,7 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 
 Future<PaymentHistoryItem?> recordClinicPayment(
-  Ref ref, {
+  dynamic ref, {
   required int clinicId,
   required int treatmentPlanId,
   required int amountMinor,
@@ -35,7 +35,7 @@ Future<PaymentHistoryItem?> recordClinicPayment(
 }
 
 Future<FinancialRecordRow?> createFinancialRecord(
-  Ref ref, {
+  dynamic ref, {
   required int clinicId,
   required int patientId,
   int? treatmentPlanId,
@@ -72,7 +72,7 @@ Future<FinancialRecordRow?> createFinancialRecord(
 }
 
 Future<InstallmentPlanSummary?> createInstallmentPlan(
-  Ref ref, {
+  dynamic ref, {
   required int clinicId,
   required int treatmentPlanId,
   required int totalAmountMinor,
@@ -81,6 +81,7 @@ Future<InstallmentPlanSummary?> createInstallmentPlan(
   String frequency = 'MONTHLY',
   required String startDate,
   String? notes,
+  List<Map<String, dynamic>>? scheduleItems,
 }) async {
   final api = ref.read(doctorApiClientProvider);
   final body = <String, dynamic>{
@@ -92,6 +93,9 @@ Future<InstallmentPlanSummary?> createInstallmentPlan(
     'startDate': startDate,
   };
   if (notes != null) body['notes'] = notes;
+  if (scheduleItems != null && scheduleItems.isNotEmpty) {
+    body['scheduleItems'] = scheduleItems;
+  }
 
   final res = await api.post(
     '/api/clinics/$clinicId/finance/installment-plans',
@@ -100,4 +104,102 @@ Future<InstallmentPlanSummary?> createInstallmentPlan(
   if (res.statusCode != 200) return null;
   final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
   return InstallmentPlanSummary.fromJson(data);
+}
+
+Future<bool> markInstallmentItemPaid(
+  dynamic ref, {
+  required int clinicId,
+  required int itemId,
+  required String method,
+  String? memo,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final body = <String, dynamic>{'method': method};
+  if (memo != null && memo.isNotEmpty) body['memo'] = memo;
+  final res = await api.post(
+    '/api/clinics/$clinicId/finance/installment-items/$itemId/mark-paid',
+    json.encode(body),
+  );
+  return res.statusCode == 200;
+}
+
+Future<bool> patchInstallmentItem(
+  dynamic ref, {
+  required int clinicId,
+  required int itemId,
+  String? status,
+  String? dueDate,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final body = <String, dynamic>{};
+  if (status != null) body['status'] = status;
+  if (dueDate != null) body['dueDate'] = dueDate;
+  final res = await api.patch(
+    '/api/clinics/$clinicId/finance/installment-items/$itemId',
+    json.encode(body),
+  );
+  return res.statusCode == 200;
+}
+
+Future<bool> notifyInstallmentItem(dynamic ref, {required int clinicId, required int itemId}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.post(
+    '/api/clinics/$clinicId/finance/installment-items/$itemId/notify',
+    '{}',
+  );
+  return res.statusCode == 200;
+}
+
+Future<Map<String, dynamic>> fetchAppointmentLedgerPage(
+  dynamic ref, {
+  required int clinicId,
+  int page = 0,
+  int size = 20,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.get(
+    '/api/clinics/$clinicId/finance/appointment-ledger?page=$page&size=$size',
+  );
+  if (res.statusCode != 200) {
+    throw Exception('Ledger ${res.statusCode}');
+  }
+  return json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+}
+
+Future<List<DoctorEarningRow>> fetchDoctorEarnings(
+  dynamic ref, {
+  required int clinicId,
+  String? fromIso,
+  String? toIso,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final q = <String>[];
+  if (fromIso != null) q.add('from=$fromIso');
+  if (toIso != null) q.add('to=$toIso');
+  final qs = q.isEmpty ? '' : '?${q.join('&')}';
+  final res = await api.get('/api/clinics/$clinicId/finance/doctor-earnings$qs');
+  if (res.statusCode != 200) return [];
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => DoctorEarningRow.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
+
+Future<Map<String, dynamic>> fetchFinanceAudit(
+  dynamic ref, {
+  required int clinicId,
+  int? recordId,
+  int page = 0,
+  int size = 50,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final q = <String>['page=$page', 'size=$size'];
+  if (recordId != null) q.add('recordId=$recordId');
+  final res = await api.get('/api/clinics/$clinicId/finance/audit?${q.join('&')}');
+  if (res.statusCode != 200) {
+    throw Exception('Audit ${res.statusCode}');
+  }
+  return json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
 }

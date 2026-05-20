@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 
@@ -57,6 +58,24 @@ final clinicOverdueProvider =
     throw Exception('Failed to load overdue data (${res.statusCode})');
   }
   return json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+});
+
+final clinicAppointmentLedgerProvider =
+    FutureProvider.family<Map<String, dynamic>, int>((ref, clinicId) {
+  return fetchAppointmentLedgerPage(ref, clinicId: clinicId);
+});
+
+final clinicDoctorEarningsProvider =
+    FutureProvider.family<List<DoctorEarningRow>, int>((ref, clinicId) {
+  return fetchDoctorEarnings(ref, clinicId: clinicId);
+});
+
+/// Whether user may record payments, installments, etc. (patient-scoped on server).
+final canManageFinanceProvider = Provider<bool>((ref) {
+  final clinic = ref.watch(selectedClinicProvider);
+  if (clinic == null) return false;
+  const roles = ['OWNER', 'CLINIC_ADMIN', 'RECEPTIONIST', 'DOCTOR'];
+  return roles.contains(clinic.membershipRole);
 });
 
 /// Whether current user can view finance tab based on membership role.

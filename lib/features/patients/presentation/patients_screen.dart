@@ -38,6 +38,7 @@ import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_form_models.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/treatment_plan_wizard_sheet.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
 
 class ClinicFinanceTab extends ConsumerStatefulWidget {
   final int clinicId;
@@ -23,48 +25,51 @@ class _ClinicFinanceTabState extends ConsumerState<ClinicFinanceTab> {
     final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _buildSubTabBar(l10n),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: List.generate(6, (i) {
+              final tabs = [
+                l10n.translate('clinicFinanceDashboard'),
+                l10n.translate('clinicFinanceByAppointment'),
+                l10n.translate('clinicFinanceInstallments'),
+                l10n.translate('clinicFinanceDoctorEarnings'),
+                l10n.translate('clinicFinanceRecords'),
+                l10n.translate('clinicFinancePayments'),
+              ];
+              final selected = _selectedSubTab == i;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(
+                  label: Text(tabs[i], overflow: TextOverflow.ellipsis),
+                  selected: selected,
+                  onSelected: (_) => setState(() => _selectedSubTab = i),
+                  selectedColor: AppColors.primaryTeal.withValues(alpha: 0.15),
+                  labelStyle: TextStyle(
+                    color: selected ? AppColors.primaryTeal : Colors.grey.shade700,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
         const Divider(height: 1),
         Expanded(
           child: IndexedStack(
             index: _selectedSubTab,
             children: [
               _DashboardView(clinicId: widget.clinicId),
+              _AppointmentLedgerView(clinicId: widget.clinicId),
+              _InstallmentsFinanceView(clinicId: widget.clinicId),
+              _DoctorEarningsPane(clinicId: widget.clinicId),
               _RecordsView(clinicId: widget.clinicId),
               _PaymentsView(clinicId: widget.clinicId),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSubTabBar(AppLocalizations l10n) {
-    final tabs = [
-      l10n.translate('clinicFinanceDashboard'),
-      l10n.translate('clinicFinanceRecords'),
-      l10n.translate('clinicFinancePayments'),
-    ];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: List.generate(tabs.length, (i) {
-          final selected = _selectedSubTab == i;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(tabs[i]),
-              selected: selected,
-              onSelected: (_) => setState(() => _selectedSubTab = i),
-              selectedColor: AppColors.primaryTeal.withValues(alpha: 0.15),
-              labelStyle: TextStyle(
-                color: selected ? AppColors.primaryTeal : Colors.grey.shade700,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          );
-        }),
-      ),
     );
   }
 }
@@ -117,9 +122,196 @@ class _DashboardView extends ConsumerWidget {
                 ),
               ],
             ),
+            if (stats.doctorEarningsTop.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text(
+                l10n.translate('clinicFinanceDoctorEarnings'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              ...stats.doctorEarningsTop.map((d) {
+                return ListTile(
+                  dense: true,
+                  title: Text('#${d.doctorProfileId}'),
+                  subtitle: Text(l10n.translate('clinicFinanceDoctorEarningsHint')),
+                  trailing: Text(
+                    '${_formatMoney(d.grossMinor, stats.currency)} / '
+                    '${_formatMoney(d.collectedMinor, stats.currency)}',
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AppointmentLedgerView extends ConsumerWidget {
+  final int clinicId;
+  const _AppointmentLedgerView({required this.clinicId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final async = ref.watch(clinicAppointmentLedgerProvider(clinicId));
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (page) {
+        final content = page['content'] as List<dynamic>? ?? [];
+        if (content.isEmpty) {
+          return Center(child: Text(l10n.translate('clinicFinanceNoLedgerRows')));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: content.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (ctx, i) {
+            final row = AppointmentLedgerRowDto.fromJson(
+              Map<String, dynamic>.from(content[i] as Map),
+            );
+            return ExpansionTile(
+              title: Text('${row.patientName} · ${_formatDate(row.startAt)}'),
+              subtitle: Text(
+                '${row.planSimplePaymentStatus} · ${_formatMoney(row.visitTotalMinor, row.currency)}',
+              ),
+              children: [
+                ListTile(
+                  dense: true,
+                  title: Text('${l10n.translate('clinicFinanceVisitServices')} · '
+                      '${row.doctorName}'),
+                ),
+                ...row.services.map(
+                  (s) => ListTile(
+                    dense: true,
+                    title: Text(s.title),
+                    trailing: Text(_formatMoney(s.lineTotalMinor, row.currency)),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _InstallmentsFinanceView extends ConsumerWidget {
+  final int clinicId;
+  const _InstallmentsFinanceView({required this.clinicId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final canAct = ref.watch(canManageFinanceProvider);
+    final overdueAsync = ref.watch(clinicOverdueProvider(clinicId));
+    return overdueAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (data) {
+        final list = data['overdueInstallments'] as List<dynamic>? ?? [];
+        if (list.isEmpty) {
+          return Center(child: Text(l10n.translate('clinicFinanceNoInstallments')));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (ctx, i) {
+            final m = Map<String, dynamic>.from(list[i] as Map);
+            final id = (m['id'] as num?)?.toInt() ?? 0;
+            final amt = (m['amountMinor'] as num?)?.toInt() ?? 0;
+            final cur = m['currency']?.toString() ?? 'UZS';
+            final due = m['dueDate']?.toString() ?? '';
+            final st = m['status']?.toString() ?? '';
+            return ListTile(
+              title: Text('#$id · $st'),
+              subtitle: Text(due),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(_formatMoney(amt, cur)),
+                  ),
+                  if (canAct && st == 'PENDING') ...[
+                    IconButton(
+                      tooltip: l10n.translate('clinicFinanceMarkInstallmentPaid'),
+                      icon: const Icon(Icons.check_circle_outline),
+                      onPressed: () async {
+                        final ok = await markInstallmentItemPaid(
+                          ref,
+                          clinicId: clinicId,
+                          itemId: id,
+                          method: 'CASH',
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(ok ? 'OK' : 'Failed')),
+                          );
+                          if (ok) ref.invalidate(clinicOverdueProvider(clinicId));
+                        }
+                      },
+                    ),
+                    IconButton(
+                      tooltip: l10n.translate('clinicFinanceNotifyInstallment'),
+                      icon: const Icon(Icons.notifications_active_outlined),
+                      onPressed: () async {
+                        final ok = await notifyInstallmentItem(ref, clinicId: clinicId, itemId: id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(ok ? 'OK' : 'Failed')),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _DoctorEarningsPane extends ConsumerWidget {
+  final int clinicId;
+  const _DoctorEarningsPane({required this.clinicId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final async = ref.watch(clinicDoctorEarningsProvider(clinicId));
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (rows) {
+        if (rows.isEmpty) {
+          return Center(child: Text(l10n.translate('clinicFinanceNoLedgerRows')));
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: rows.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (ctx, i) {
+            final d = rows[i];
+            return ListTile(
+              title: Text('Doctor #${d.doctorProfileId}'),
+              subtitle: Text(
+                '${l10n.translate('clinicFinanceDoctorEarningsHint')} · visits ${d.visitCount}',
+              ),
+              trailing: Text(
+                '${_formatMoney(d.grossMinor, 'UZS')} / ${_formatMoney(d.collectedMinor, 'UZS')}',
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -226,6 +418,7 @@ class _FinancialRecordTile extends StatelessWidget {
       ),
       subtitle: Text(
         '${_formatMoney(record.totalMinor, record.currency)} • '
+        '${record.uiPaymentStatus.isNotEmpty ? record.uiPaymentStatus : record.status} • '
         'Paid: ${_formatMoney(record.paidMinor, record.currency)}',
       ),
       trailing: record.remainingMinor > 0

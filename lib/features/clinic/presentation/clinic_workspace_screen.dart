@@ -8,7 +8,6 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
-import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
@@ -20,6 +19,7 @@ import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
     show fetchPatientWithClient;
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_finance_tab.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_treatment_plans_tab.dart';
 
 class ClinicWorkspaceScreen extends ConsumerStatefulWidget {
   const ClinicWorkspaceScreen({super.key});
@@ -97,7 +97,7 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
                   Tab(text: l10n.translate('clinicWorkspaceCalendar')),
                   Tab(text: l10n.translate('clinicWorkspacePatients')),
                   Tab(text: l10n.translate('clinicWorkspaceServices')),
-                  Tab(text: l10n.translate('clinicWorkspaceDocuments')),
+                  Tab(text: l10n.translate('clinicWorkspaceTreatmentPlans')),
                   Tab(text: l10n.translate('clinicWorkspaceFinance')),
                   Tab(text: l10n.translate('clinicWorkspaceSettings')),
                 ],
@@ -118,7 +118,7 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
                   ),
                   _PatientsTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
                   _ServicesTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
-                  _PlaceholderTab(message: l10n.translate('clinicPlaceholderDocuments')),
+                  ClinicTreatmentPlansTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
                   ClinicFinanceTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
                   _SettingsTab(clinic: clinic ?? clinics.first),
                 ],
@@ -902,21 +902,6 @@ class _ServicesTab extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  const _PlaceholderTab({required this.message});
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(message, textAlign: TextAlign.center),
-      ),
     );
   }
 }

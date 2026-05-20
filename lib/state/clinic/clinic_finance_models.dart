@@ -1,9 +1,36 @@
+class DoctorEarningRow {
+  final int doctorProfileId;
+  final int visitCount;
+  final int grossMinor;
+  final int collectedMinor;
+  final int outstandingMinor;
+
+  DoctorEarningRow({
+    required this.doctorProfileId,
+    required this.visitCount,
+    required this.grossMinor,
+    required this.collectedMinor,
+    required this.outstandingMinor,
+  });
+
+  factory DoctorEarningRow.fromJson(Map<String, dynamic> json) {
+    return DoctorEarningRow(
+      doctorProfileId: (json['doctorProfileId'] as num?)?.toInt() ?? 0,
+      visitCount: (json['visitCount'] as num?)?.toInt() ?? 0,
+      grossMinor: (json['grossMinor'] as num?)?.toInt() ?? 0,
+      collectedMinor: (json['collectedMinor'] as num?)?.toInt() ?? 0,
+      outstandingMinor: (json['outstandingMinor'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class FinanceDashboardStats {
   final int totalRevenueMinor;
   final int outstandingMinor;
   final int overdueCount;
   final double collectionRate;
   final String currency;
+  final List<DoctorEarningRow> doctorEarningsTop;
 
   FinanceDashboardStats({
     required this.totalRevenueMinor,
@@ -11,15 +38,23 @@ class FinanceDashboardStats {
     required this.overdueCount,
     required this.collectionRate,
     required this.currency,
+    this.doctorEarningsTop = const [],
   });
 
   factory FinanceDashboardStats.fromJson(Map<String, dynamic> json) {
+    final top = json['doctorEarningsTop'];
     return FinanceDashboardStats(
-      totalRevenueMinor: (json['totalRevenueMinor'] ?? 0) as int,
-      outstandingMinor: (json['outstandingMinor'] ?? 0) as int,
-      overdueCount: (json['overdueCount'] ?? 0) as int,
+      totalRevenueMinor: (json['totalRevenueMinor'] as num?)?.toInt() ?? 0,
+      outstandingMinor: (json['outstandingMinor'] as num?)?.toInt() ?? 0,
+      overdueCount: (json['overdueCount'] as num?)?.toInt() ?? 0,
       collectionRate: ((json['collectionRate'] ?? 0) as num).toDouble(),
       currency: (json['currency'] ?? 'UZS') as String,
+      doctorEarningsTop: top is List
+          ? top
+              .whereType<Map>()
+              .map((e) => DoctorEarningRow.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+          : const [],
     );
   }
 }
@@ -32,6 +67,8 @@ class FinancialRecordRow {
   final String recordType;
   final String? recordNumber;
   final String status;
+  /// Simplified UNPAID | PARTIAL | PAID | NONE for clinic UI.
+  final String uiPaymentStatus;
   final int subtotalMinor;
   final int discountMinor;
   final int taxMinor;
@@ -52,6 +89,7 @@ class FinancialRecordRow {
     required this.recordType,
     this.recordNumber,
     required this.status,
+    this.uiPaymentStatus = '',
     required this.subtotalMinor,
     required this.discountMinor,
     required this.taxMinor,
@@ -74,12 +112,13 @@ class FinancialRecordRow {
       recordType: (json['recordType'] ?? '') as String,
       recordNumber: json['recordNumber'] as String?,
       status: (json['status'] ?? '') as String,
-      subtotalMinor: (json['subtotalMinor'] ?? 0) as int,
-      discountMinor: (json['discountMinor'] ?? 0) as int,
-      taxMinor: (json['taxMinor'] ?? 0) as int,
-      totalMinor: (json['totalMinor'] ?? 0) as int,
-      paidMinor: (json['paidMinor'] ?? 0) as int,
-      remainingMinor: (json['remainingMinor'] ?? 0) as int,
+      uiPaymentStatus: json['uiPaymentStatus']?.toString() ?? '',
+      subtotalMinor: (json['subtotalMinor'] as num?)?.toInt() ?? 0,
+      discountMinor: (json['discountMinor'] as num?)?.toInt() ?? 0,
+      taxMinor: (json['taxMinor'] as num?)?.toInt() ?? 0,
+      totalMinor: (json['totalMinor'] as num?)?.toInt() ?? 0,
+      paidMinor: (json['paidMinor'] as num?)?.toInt() ?? 0,
+      remainingMinor: (json['remainingMinor'] as num?)?.toInt() ?? 0,
       currency: (json['currency'] ?? 'UZS') as String,
       issuedAt: json['issuedAt'] as String?,
       dueDate: json['dueDate'] as String?,

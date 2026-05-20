@@ -375,141 +375,6 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     );
   }
 
-  Future<void> _showCreateTreatmentPlanDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Patient p,
-    Color brand,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final titleController = TextEditingController();
-    final diagnosisController = TextEditingController();
-    final notesController = TextEditingController();
-    bool saving = false;
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text(
-              l10n.translate('createTreatmentPlan') ?? 'Create treatment plan',
-            ),
-            content: SingleChildScrollView(
-              child: SizedBox(
-                width: 400,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        labelText: l10n.translate('treatmentPlanTitle') ?? 'Title',
-                        hintText: l10n.translate('treatmentPlanTitleHint') ?? 'e.g. Dental restoration',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: diagnosisController,
-                      decoration: InputDecoration(
-                        labelText: l10n.translate('treatmentPlanDiagnosis') ?? 'Diagnosis',
-                        hintText: l10n.translate('treatmentPlanDiagnosisHint') ?? 'e.g. Caries on teeth 14, 15',
-                      ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: notesController,
-                      decoration: InputDecoration(
-                        labelText: l10n.translate('treatmentPlanNotes') ?? 'Notes',
-                        hintText: l10n.translate('treatmentPlanNotesHint') ?? 'Additional notes (optional)',
-                      ),
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: saving ? null : () => Navigator.of(ctx).pop(),
-                child: Text(l10n.cancel),
-              ),
-              ShifaPrimaryButton(
-                isLoading: saving,
-                onPressed: saving
-                    ? null
-                    : () async {
-                        final title = titleController.text.trim();
-                        if (title.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                l10n.translate('treatmentPlanTitleRequired') ??
-                                    'Title is required',
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-                        setDialogState(() => saving = true);
-                        try {
-                          final api = ref.read(apiClientProvider);
-                          final clinicId = widget.clinicWorkspaceId;
-                          final patientId = int.parse(p.id);
-                          final body = <String, dynamic>{
-                            'clinicId': clinicId,
-                            'patientId': patientId,
-                            'title': title,
-                          };
-                          final diagnosis = diagnosisController.text.trim();
-                          if (diagnosis.isNotEmpty) body['diagnosis'] = diagnosis;
-                          final notes = notesController.text.trim();
-                          if (notes.isNotEmpty) body['notes'] = notes;
-
-                          final res = await api.post(
-                            '/api/treatment-plans',
-                            jsonEncode(body),
-                          );
-                          if (res.statusCode == 200 && ctx.mounted) {
-                            Navigator.of(ctx).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.translate('treatmentPlanCreated') ??
-                                      'Treatment plan created',
-                                ),
-                              ),
-                            );
-                          } else if (ctx.mounted) {
-                            setDialogState(() => saving = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${l10n.translate('error') ?? 'Error'}: ${res.statusCode}',
-                                ),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (ctx.mounted) {
-                            setDialogState(() => saving = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('$e')),
-                            );
-                          }
-                        }
-                      },
-                label: l10n.translate('create') ?? 'Create',
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final patient = widget.patient;
@@ -576,7 +441,12 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                       if (value == 'make_appointment') {
                         _showMakeAppointmentDialog(context, ref, p, brand);
                       } else if (value == 'create_treatment_plan') {
-                        _showCreateTreatmentPlanDialog(context, ref, p, brand);
+                        TreatmentPlanWizardSheet.show(
+                          context,
+                          ref,
+                          clinicId: widget.clinicWorkspaceId!,
+                          initialPatientId: int.parse(p.id),
+                        );
                       } else if (value == 'briefing') {
                         ref
                             .read(patientBriefingProvider.notifier)
