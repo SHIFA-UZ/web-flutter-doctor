@@ -82,7 +82,7 @@ class PatientBriefingNotifier extends StateNotifier<PatientBriefingState> {
         patientId: patientId,
         patientName: patientName,
         status: BriefingStatus.error,
-        errorMessage: e.message,
+        errorMessage: e.userFacingMessage,
       );
     } catch (e) {
       state = PatientBriefingState(

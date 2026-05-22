@@ -77,3 +77,26 @@ final failedStripeWebhooksProvider = FutureProvider<List<FailedWebhookEvent>>((r
   final actions = ref.watch(adminActionsProvider);
   return actions.listFailedStripeWebhooks();
 });
+
+final adminDoctorActivityProvider = FutureProvider.family<Map<String, dynamic>, DoctorActivityParams>((ref, params) async {
+  final actions = ref.watch(adminActionsProvider);
+  return actions.listDoctorActivity(
+    fromIso: params.fromIso,
+    toIso: params.toIso,
+    search: params.search,
+    sort: params.sort,
+    dir: params.dir,
+    page: params.page,
+    size: params.size,
+  );
+});
+
+final adminDoctorActivityDetailProvider =
+    FutureProvider.family<AdminDoctorActivityDetail, DoctorActivityDetailParams>((ref, params) async {
+  final actions = ref.watch(adminActionsProvider);
+  return actions.getDoctorActivityDetail(
+    doctorId: params.doctorId,
+    fromIso: params.fromIso,
+    toIso: params.toIso,
+  );
+});

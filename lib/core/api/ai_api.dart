@@ -15,6 +15,14 @@ class AiStreamException implements Exception {
   @override
   String toString() => message;
 
+  /// Human-readable body for banners/snackbars (maps known codes).
+  String get userFacingMessage {
+    if (code == 'RATE_LIMIT') {
+      return "You've reached your daily AI usage limit. Try again tomorrow.";
+    }
+    return message;
+  }
+
   /// User-friendly short label for the error type.
   String get displayLabel {
     switch (code) {
@@ -225,7 +233,12 @@ class AiApi {
       headers: _api.buildHeaders(),
       body: jsonEncode({'language': language}),
     );
-    if (response.statusCode == 400 || response.statusCode == 404 || response.statusCode == 403) {
+    final sc = response.statusCode;
+    if (sc == 200) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+      return AiApi.parseBriefingResponse(json);
+    }
+    if (sc == 400 || sc == 404 || sc == 403) {
       final body = response.body;
       try {
         final json = jsonDecode(body) as Map<String, dynamic>?;
@@ -236,14 +249,18 @@ class AiApi {
         throw AiStreamException('BRIEFING_ERROR', response.body);
       }
     }
-    if (response.statusCode != 200) {
-      throw AiStreamException(
-        'AI_UNAVAILABLE',
-        'Briefing failed: HTTP ${response.statusCode}',
-      );
+    if (sc == 429) {
+      var message = 'Briefing failed: HTTP 429';
+      try {
+        final json = jsonDecode(response.body) as Map<String, dynamic>?;
+        message = json?['message'] as String? ?? message;
+      } catch (_) {}
+      throw AiStreamException('RATE_LIMIT', message);
     }
-    final json = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
-    return AiApi.parseBriefingResponse(json);
+    throw AiStreamException(
+      'AI_UNAVAILABLE',
+      'Briefing failed: HTTP $sc',
+    );
   }
 }
 

@@ -95,3 +95,16 @@ final canViewFinanceProvider = Provider<bool>((ref) {
   const financeRoles = ['OWNER', 'CLINIC_ADMIN', 'RECEPTIONIST', 'DOCTOR', 'NURSE'];
   return financeRoles.contains(clinic.membershipRole);
 });
+
+/// Refresh all cached endpoints used by Clinic → Finance (any sub-tab).
+void invalidateClinicFinanceTabDataForClinic(Ref ref, int clinicId) {
+  ref.invalidate(clinicFinanceDashboardProvider(clinicId));
+  ref.invalidate(clinicFinancialRecordsProvider(clinicId));
+  ref.invalidate(clinicPaymentHistoryProvider(clinicId));
+  ref.invalidate(clinicOverdueProvider(clinicId));
+  ref.invalidate(clinicAppointmentLedgerProvider(clinicId));
+  ref.invalidate(clinicDoctorEarningsProvider(clinicId));
+  for (final f in ['all', 'pending', 'overdue', 'paid']) {
+    ref.invalidate(clinicInstallmentItemsProvider((clinicId, f)));
+  }
+}

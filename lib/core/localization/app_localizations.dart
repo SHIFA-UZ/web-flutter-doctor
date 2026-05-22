@@ -104,7 +104,10 @@ class AppLocalizations {
       'calendar': 'Calendar',
       'calendarForDoctor': 'Calendar for',
       'mySchedule': 'My schedule',
-      'calendarColleagueDoctorFallback': 'Doctor #{{id}}',
+      'tapSlotOrManageHint':
+          'First pick an entry in the schedule list above — then book, reschedule, or cancel here.',
+      'clinicDoctorDayListSubtitle':
+          'Times and free slots for this day (scroll if there are many):',
       'patients': 'Patients',
       'tasks': 'Tasks',
       'profile': 'Profile',
@@ -228,7 +231,7 @@ class AppLocalizations {
       'clinicFinanceByAppointment': 'By appointment',
       'clinicFinanceInstallments': 'Installments',
       'clinicFinanceDoctorEarnings': 'Doctor earnings',
-      'clinicFinanceDoctorEarningsHint': 'Gross / collected / outstanding (selected period)',
+      'clinicFinanceDoctorEarningsHint': 'Gross / collected / outstanding · current calendar month (UTC)',
       'clinicFinanceNoLedgerRows': 'No linked visit charges yet.',
       'clinicFinanceVisitServices': 'Services on visit',
       'clinicFinanceMarkInstallmentPaid': 'Mark paid',
@@ -420,10 +423,13 @@ class AppLocalizations {
       'treatmentPlanNotesHint': 'Additional notes (optional)',
       'treatmentPlanTitleRequired': 'Title is required',
       'treatmentPlanCreated': 'Treatment plan created',
-      'clinicDoctorOpenSchedule': 'Open this doctor\'s schedule in Calendar',
+      'clinicDoctorOpenSchedule':
+          'Open this doctor\'s schedule',
+      'clinicSchedulePreviewHint':
+          'Book and manage this doctor\'s appointments. Times use this clinic timezone.',
       'clinicWorkspaceNoDoctors': 'No doctors listed for this clinic.',
       'clinicCalendarMvpHint':
-          'Choose a doctor to review their schedule in the main Calendar tab. Shared multi-doctor views will expand here later.',
+          'Use My schedule for your own calendar (main Calendar tab). Tap a colleague to open their schedule and book in the clinic timezone.',
       'clinicPatientsEmpty': 'No patients match this clinic roster for your access level.',
       'clinicPatientsTotal': 'Total: {{count}}',
       'prophylaxisRemindersTitle': 'Prophylaxis reminders',
@@ -1434,6 +1440,10 @@ class AppLocalizations {
           'Speech-to-text requires a Pro subscription.',
       'transcribing': 'Transcribing…',
       'transcriptionAdded': 'Transcription added',
+      'transcriptionReportHint':
+          'If the text looks wrong, tap Report to send it for QA (optional audio).',
+      'transcriptionReportAction': 'Report',
+      'transcriptionReportThanks': 'Thank you — saved for QA.',
       'noSpeechDetected': 'No speech detected',
       'dentalLegend':
           'Legend: K=caries, P=filling, pulpitis, periodontitis, crown, post, missing, prosthetic.',
@@ -1618,6 +1628,10 @@ class AppLocalizations {
       'calendar': 'Taqvim',
       'calendarForDoctor': 'Shifokor taqvimi',
       'mySchedule': 'Mening taqvimim',
+      'tapSlotOrManageHint':
+          'Avval yuqoridagi jadvaldan band yoki bo\'sh slotni tanlang — keyin shu yerda amalni yakunlang.',
+      'clinicDoctorDayListSubtitle':
+          'Tanlangan kun uchun vaqtlar va bo\'sh slotlar (ko\'plab bo\'lsa, aylantiring):',
       'calendarColleagueDoctorFallback': 'Shifokor №{{id}}',
       'patients': 'Bemorlar',
       'tasks': 'Vazifalar',
@@ -1762,7 +1776,8 @@ class AppLocalizations {
       'clinicFinanceByAppointment': 'Qabul bo\'yicha',
       'clinicFinanceInstallments': 'Bo\'lib-to\'lash',
       'clinicFinanceDoctorEarnings': 'Shifokor daromadi',
-      'clinicFinanceDoctorEarningsHint': 'Yig\'ma / yig\'ilgan / qoldiq',
+      'clinicFinanceDoctorEarningsHint':
+          'Yig\'ma / yig\'ilgan / qoldiq · joriy oy (UTC)',
       'clinicFinanceNoLedgerRows': 'Ulangan tashrif yo\'qlari yo\'q.',
       'clinicFinanceVisitServices': 'Xizmatlar',
       'clinicFinanceMarkInstallmentPaid': 'To\'langan',
@@ -1930,10 +1945,12 @@ class AppLocalizations {
       'treatmentPlanNotesHint': 'Qo\'shimcha izohlar (ixtiyoriy)',
       'treatmentPlanTitleRequired': 'Sarlavha kiritilishi shart',
       'treatmentPlanCreated': 'Davolash rejasi yaratildi',
-      'clinicDoctorOpenSchedule': 'Ushbu shifokor jadvalini Taqvimda ochish',
+      'clinicDoctorOpenSchedule': 'Ushbu shifokor jadvalini ochish',
+      'clinicSchedulePreviewHint':
+          'Bu shifokorning bandlarini shu sahifadan boshqaring. Vaqlar klinikaning vaqt zonasi bo\'yicha.',
       'clinicWorkspaceNoDoctors': 'Bu klinika uchun shifokorlar ro\'yxati bo\'sh.',
       'clinicCalendarMvpHint':
-          'Taqvimni ko\'rish uchun shifokorni tanlang — asosiy Taqvim varag\'ida ochiladi. Umumiy ko\'rinish keyinroq kengaytiriladi.',
+          '«Mening jadvalim» — asosiy Taqvim (o\'zingizning bandlaringiz). Hamkasbni tanlang — klinika vaqt zonasida yozish va boshqarish oynasi ochiladi.',
       'clinicPatientsEmpty': 'Sizning huquqingiz darajasida bu klinika ro\'yxati bo\'sh.',
       'clinicPatientsTotal': 'Jami: {{count}}',
       'prophylaxisRemindersTitle': 'Profilaktika eslatmalari',
@@ -2895,6 +2912,10 @@ class AppLocalizations {
           'Ovozdan matnga PRO obuna talab qilinadi.',
       'transcribing': 'Matnga o\'girilmoqda…',
       'transcriptionAdded': 'Matn qo\'shildi',
+      'transcriptionReportHint':
+          'Matn xato bo\'lsa “Xabar berish” orqali QA uchun yuboring (audio ixtiyoriy).',
+      'transcriptionReportAction': 'Xabar berish',
+      'transcriptionReportThanks': 'Rahmat — QA uchun saqlandi.',
       'noSpeechDetected': 'Ovoz aniqlanmadi',
       'dentalLegend':
           'Belgilanishlar: K=kariyes, P=plomba, pulpit, periodontit, koronka, shtift, yetishmaydigan, protez.',
@@ -3118,6 +3139,10 @@ class AppLocalizations {
       'calendar': 'Календарь',
       'calendarForDoctor': 'Календарь врача',
       'mySchedule': 'Моё расписание',
+      'tapSlotOrManageHint':
+          'Сначала выберите строку в списке расписания выше — здесь завершите запись или изменение.',
+      'clinicDoctorDayListSubtitle':
+          'Время записей и свободные окна за этот день (при большом количестве — прокрутите список):',
       'calendarColleagueDoctorFallback': 'Врач №{{id}}',
       'patients': 'Пациенты',
       'tasks': 'Задачи',
@@ -3264,7 +3289,8 @@ class AppLocalizations {
       'clinicFinanceByAppointment': 'По приёму',
       'clinicFinanceInstallments': 'Рассрочка',
       'clinicFinanceDoctorEarnings': 'Доход врачей',
-      'clinicFinanceDoctorEarningsHint': 'Всего / собрано / долг',
+      'clinicFinanceDoctorEarningsHint':
+          'Всего / собрано / долг · текущий календарный месяц (UTC)',
       'clinicFinanceNoLedgerRows': 'Нет привязанных услуг к визитам.',
       'clinicFinanceVisitServices': 'Услуги визита',
       'clinicFinanceMarkInstallmentPaid': 'Оплачено',
@@ -3436,10 +3462,12 @@ class AppLocalizations {
       'treatmentPlanNotesHint': 'Дополнительные заметки (необязательно)',
       'treatmentPlanTitleRequired': 'Название обязательно',
       'treatmentPlanCreated': 'План лечения создан',
-      'clinicDoctorOpenSchedule': 'Открыть расписание этого врача в Календаре',
+      'clinicDoctorOpenSchedule': 'Открыть расписание этого врача',
+      'clinicSchedulePreviewHint':
+          'Запись и управление расписанием этого врача. Время — часовой пояс клиники.',
       'clinicWorkspaceNoDoctors': 'Для этой клиники врачи не указаны.',
       'clinicCalendarMvpHint':
-          'Выберите врача, чтобы просмотреть расписание на основной вкладке «Календарь». Общий вид на всех врачей будет позже.',
+          '«Моё расписание» — основная вкладка «Календарь» (ваши записи). Коллега — отдельное окно записи в часовом поясе клиники.',
       'clinicPatientsEmpty': 'Нет пациентов в списке клиники для вашего уровня доступа.',
       'clinicPatientsTotal': 'Всего: {{count}}',
       'prophylaxisRemindersTitle': 'Напоминания о профилактике',
@@ -4264,6 +4292,10 @@ class AppLocalizations {
           'Преобразование речи в текст доступно с подпиской Pro.',
       'transcribing': 'Распознавание…',
       'transcriptionAdded': 'Текст добавлен',
+      'transcriptionReportHint':
+          'Если текст неверный — нажмите «Сообщить» для QA (аудио по желанию).',
+      'transcriptionReportAction': 'Сообщить',
+      'transcriptionReportThanks': 'Спасибо — сохранено для QA.',
       'noSpeechDetected': 'Речь не распознана',
       'dentalLegend':
           'Легенда: K=кариес, P=пломба, пульпит, периодонтит, коронка, штифт, отсутствует, протез.',

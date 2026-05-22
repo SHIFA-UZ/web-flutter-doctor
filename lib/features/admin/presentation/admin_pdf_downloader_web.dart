@@ -2,8 +2,15 @@
 import 'dart:html' as html;
 import 'dart:typed_data';
 
-Future<void> downloadPdfBytes(Uint8List bytes, {required String filename}) async {
-  final blob = html.Blob([bytes], 'application/pdf');
+Future<void> downloadPdfBytes(Uint8List bytes, {required String filename}) async =>
+    downloadBytes(bytes, filename: filename, mimeType: 'application/pdf');
+
+Future<void> downloadBytes(
+  Uint8List bytes, {
+  required String filename,
+  String mimeType = 'application/octet-stream',
+}) async {
+  final blob = html.Blob([bytes], mimeType);
   final url = html.Url.createObjectUrlFromBlob(blob);
 
   final anchor = html.AnchorElement(href: url)
@@ -14,7 +21,5 @@ Future<void> downloadPdfBytes(Uint8List bytes, {required String filename}) async
   anchor.click();
   anchor.remove();
 
-  // Cleanup blob URL
   html.Url.revokeObjectUrl(url);
 }
-

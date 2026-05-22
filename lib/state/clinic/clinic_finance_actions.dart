@@ -13,6 +13,7 @@ Future<PaymentHistoryItem> recordClinicPayment(
   required String method,
   String? memo,
   int? financialRecordId,
+  int? linkedAppointmentId,
 }) async {
   final api = ref.read(doctorApiClientProvider);
   final body = <String, dynamic>{
@@ -23,6 +24,9 @@ Future<PaymentHistoryItem> recordClinicPayment(
   };
   if (memo != null && memo.isNotEmpty) body['memo'] = memo;
   if (financialRecordId != null) body['financialRecordId'] = financialRecordId;
+  if (linkedAppointmentId != null) {
+    body['linkedAppointmentId'] = linkedAppointmentId;
+  }
 
   final res = await api.post(
     '/api/clinics/$clinicId/finance/payments',

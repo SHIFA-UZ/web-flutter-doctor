@@ -12,7 +12,6 @@ import 'package:shifa_doc_app_v1/features/appointments/application/consultation_
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
-import 'package:shifa_doc_app_v1/state/practice/practice_session_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
@@ -133,6 +132,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       _focusedDay = _selectedDay!;
     }
 
+    // Main shell Calendar is always the logged-in doctor. Clinic workspace has
+    // its own calendar tab for other doctors.
+    ref.read(calendarProvider.notifier).setResourceDoctorId(null);
+
     // Reactive: load calendar when profile is available (use UTC if timezone missing so calendar still loads)
     ref.listenManual(profileAllProvider, (previous, next) {
       if (_skipInitialProfileLoad) return;
@@ -151,6 +154,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         debugPrint('CalendarScreen: Profile load failed: ${next.error}');
       }
     }, fireImmediately: true);
+
+    /// Index of [CalendarScreen] in [MainShell] `screens` (0=Chat, 1=Home, 2=Calendar, …).
+    const calendarShellTabIndex = 2;
+    ref.listenManual(shellProvider, (previous, next) {
+      if (next == calendarShellTabIndex &&
+          previous != calendarShellTabIndex) {
+        ref.read(calendarProvider.notifier).setResourceDoctorId(null);
+        if (_selectedDay != null && mounted) {
+          final tz =
+              ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
+                  as String?;
+          final effectiveTz =
+              (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
+          _loadDay(_selectedDay!, effectiveTz);
+        }
+      }
+    });
   }
 
   @override
@@ -240,66 +260,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     return 'Your current device timezone does not match the calendar schedule timezone ($scheduleTimeZone). '
         'Your slots were defined in one timezone, but you are currently in another. '
         'Please keep this in mind while managing appointments.';
-  }
-
-  Widget _buildColleaguePicker(BuildContext context, String? profileTimeZone) {
-    final l10n = AppLocalizations.of(context)!;
-    final practiceAsync = ref.watch(practiceSessionProvider);
-    return practiceAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (session) {
-        if (session == null || session.colleagues.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        final effectiveTz = (profileTimeZone != null && profileTimeZone.trim().isNotEmpty)
-            ? profileTimeZone.trim()
-            : 'UTC';
-        final current = ref.read(calendarProvider.notifier).resourceDoctorId;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(Icons.groups_outlined, size: 22, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: DropdownButtonFormField<int?>(
-                  value: current,
-                  decoration: InputDecoration(
-                    labelText: l10n.calendarForDoctor,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  items: [
-                    DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text(l10n.mySchedule),
-                    ),
-                    ...session.colleagues.map(
-                      (c) => DropdownMenuItem<int?>(
-                        value: c.doctorId,
-                        child: Text(
-                          c.displayName.isEmpty
-                              ? l10n.calendarColleagueDoctorFallback(c.doctorId)
-                              : c.displayName,
-                        ),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) async {
-                    ref.read(calendarProvider.notifier).setResourceDoctorId(v);
-                    if (_selectedDay != null) {
-                      await _loadDay(_selectedDay!, effectiveTz);
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -411,7 +371,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                         ),
                       ),
                     ),
-                  _buildColleaguePicker(context, profileTimeZone),
                   // Top bar
                   Row(
                     children: [
@@ -598,7 +557,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                   Expanded(
                     child: _selectedDay == null
                         ? _EmptyCalendarHint(brand: brand)
-                        : _DayEntriesList(
+                        : CalendarDayEntriesList(
                             entries: _entriesFor(_selectedDay),
                             onTap: (entry) {
                               setState(() => _selectedEntry = entry);
@@ -622,7 +581,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 switchInCurve: Curves.easeOut,
                 switchOutCurve: Curves.easeIn,
                 child: _selectedEntry == null
-                    ? _CalendarPanel(
+                    ? CalendarMonthPanel(
                         key: ValueKey(
                           'calendar_${_selectedDay?.year ?? _focusedDay.year}_${_selectedDay?.month ?? _focusedDay.month}_${_selectedDay?.day ?? _focusedDay.day}',
                         ),
@@ -655,7 +614,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                           );
                         },
                       )
-                    : _SlotDetailsPanel(
+                    : CalendarSlotDetailsPanel(
                         key: const ValueKey('details'),
                         entry: _selectedEntry!,
                         day: _selectedDay!,
@@ -723,8 +682,8 @@ class _EmptyCalendarHint extends StatelessWidget {
 }
 
 /// ---- Left: Day entries list ----
-class _DayEntriesList extends StatelessWidget {
-  const _DayEntriesList({
+class CalendarDayEntriesList extends StatelessWidget {
+  const CalendarDayEntriesList({
     Key? key,
     required this.entries,
     required this.onTap,
@@ -892,15 +851,17 @@ class _DayEntriesList extends StatelessWidget {
 }
 
 /// ---- Right: Calendar panel (customizable table_calendar) ----
-class _CalendarPanel extends StatelessWidget {
-  const _CalendarPanel({
+///
+/// Shared by [CalendarScreen] and flows that need the same month grid (e.g. clinic scheduling).
+class CalendarMonthPanel extends StatelessWidget {
+  const CalendarMonthPanel({
     Key? key,
     required this.focusedDay,
     required this.selectedDay,
     required this.onChanged,
     this.onFocusedDayChanged,
     required this.showUpdateCard,
-    required this.onGoToSchedule,
+    this.onGoToSchedule,
   }) : super(key: key);
 
   final DateTime focusedDay;
@@ -908,7 +869,9 @@ class _CalendarPanel extends StatelessWidget {
   final ValueChanged<DateTime> onChanged;
   final ValueChanged<DateTime>? onFocusedDayChanged;
   final bool showUpdateCard;
-  final VoidCallback onGoToSchedule;
+
+  /// Used when [showUpdateCard] is true; optional otherwise.
+  final VoidCallback? onGoToSchedule;
 
   @override
   Widget build(BuildContext context) {
@@ -1077,7 +1040,7 @@ class _CalendarPanel extends StatelessWidget {
           ShifaPrimaryButton(
             label: AppLocalizations.of(context)!.translate('goToSchedule') ??
                 'Go To Schedule',
-            onPressed: onGoToSchedule,
+            onPressed: onGoToSchedule ?? () {},
             width: ButtonWidth.fill,
           ),
         ],
@@ -1087,23 +1050,36 @@ class _CalendarPanel extends StatelessWidget {
 }
 
 /// Read-only place field for already booked appointments.
-class _AppointmentPlaceDropdown extends ConsumerWidget {
-  const _AppointmentPlaceDropdown({Key? key, required this.entry})
-    : super(key: key);
+class AppointmentPlaceDropdown extends ConsumerWidget {
+  const AppointmentPlaceDropdown({
+    Key? key,
+    required this.entry,
+    this.clinicVenueLabelOverride,
+  }) : super(key: key);
   final CalendarEntry entry;
+
+  /// When scheduling on behalf of another doctor, show clinic street rather than logged-in doctor.
+  final String? clinicVenueLabelOverride;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final profileAsync = ref.watch(profileAllProvider);
     final profile = profileAsync.valueOrNull?.profile;
+
+    final override =
+        clinicVenueLabelOverride?.trim().isNotEmpty == true
+            ? clinicVenueLabelOverride!.trim()
+            : null;
+
     final doctorAddress =
-        (profile != null
-                ? ((profile['address'] as String?)?.trim().isNotEmpty == true
-                      ? (profile['address'] as String).trim()
-                      : (profile['locationStreetAddress'] as String?)?.trim())
-                : null)
-            ?.trim();
+        override ??
+            (profile != null
+                    ? ((profile['address'] as String?)?.trim().isNotEmpty == true
+                          ? (profile['address'] as String).trim()
+                          : (profile['locationStreetAddress'] as String?)?.trim())
+                    : null)
+                ?.trim();
     final clinicOption = (doctorAddress != null && doctorAddress.isNotEmpty)
         ? doctorAddress
         : (l10n.translate('clinicAddress') ?? 'Clinic Address');
@@ -1174,17 +1150,25 @@ class _AppointmentPlaceDropdown extends ConsumerWidget {
 /// ---- Right: Slot details panel (booking) ----
 /// Now stateful so we can hold selected patient & selected place,
 /// and perform booking ONLY when "Save" is pressed.
-class _SlotDetailsPanel extends ConsumerStatefulWidget {
-  const _SlotDetailsPanel({
+class CalendarSlotDetailsPanel extends ConsumerStatefulWidget {
+  const CalendarSlotDetailsPanel({
     Key? key,
     required this.entry,
     required this.day,
+    this.scheduleTimeZone,
+    this.primaryClinicVenueLabel,
     required this.onSavedSuccessfully,
     required this.onClose,
   }) : super(key: key);
 
   final CalendarEntry entry;
   final DateTime day;
+
+  /// When scheduling for another doctor, use this IANA TZ for semantics instead of logged-in profile.
+  final String? scheduleTimeZone;
+
+  /// Fallback label for clinic/in-person bookings (typically selected clinic street).
+  final String? primaryClinicVenueLabel;
 
   /// Called by panel when save succeeds (to reload list / close panel).
   final Future<void> Function() onSavedSuccessfully;
@@ -1193,10 +1177,10 @@ class _SlotDetailsPanel extends ConsumerStatefulWidget {
   final VoidCallback onClose;
 
   @override
-  ConsumerState<_SlotDetailsPanel> createState() => _SlotDetailsPanelState();
+  ConsumerState<CalendarSlotDetailsPanel> createState() => CalendarSlotDetailsPanelState();
 }
 
-class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
+class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPanel> {
   // Selection state for assignment
   int? _selectedPatientId;
   String? _selectedPatientName;
@@ -1216,6 +1200,17 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   String _fmtDate(BuildContext context, DateTime d) =>
       '${_two(d.day)} ${AppLocalizations.of(context)!.monthName(d.month)} ${d.year}';
   String _fmtTime(TimeOfDay t) => '${_two(t.hour)}:${_two(t.minute)}';
+
+  /// TZ used for interpreting schedule times, bookings, cancellations, etc.
+  String _calendarTz() {
+    final o = widget.scheduleTimeZone?.trim();
+    if (o != null && o.isNotEmpty) return o;
+    final tz =
+        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
+            as String?;
+    if (tz != null && tz.trim().isNotEmpty) return tz.trim();
+    return 'UTC';
+  }
 
   bool get _isAppointment => widget.entry.type == EntryType.appointment;
   String get _statusUpper => (widget.entry.status ?? '').trim().toUpperCase();
@@ -1255,9 +1250,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   }
 
   DateTime _appointmentStartDateTimeInDoctorZone() {
-    final doctorTimeZone =
-        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-            as String?;
+    final doctorTimeZone = _calendarTz();
     final startUtcRaw = widget.entry.startAtUtc;
     if (startUtcRaw != null && startUtcRaw.trim().isNotEmpty) {
       final parsed = DateTime.parse(startUtcRaw);
@@ -1283,9 +1276,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   }
 
   DateTime _appointmentEndDateTimeInDoctorZone() {
-    final doctorTimeZone =
-        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-            as String?;
+    final doctorTimeZone = _calendarTz();
     final endUtcRaw = widget.entry.endAtUtc;
     if (endUtcRaw != null && endUtcRaw.trim().isNotEmpty) {
       final parsed = DateTime.parse(endUtcRaw);
@@ -1314,9 +1305,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     if (!_isVideoAppointment) return true;
     if (_isInProgressStatus || _isCompletedStatus) return true;
 
-    final doctorTimeZone =
-        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-            as String?;
+    final doctorTimeZone = _calendarTz();
     final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
 
     final appointmentStartInDoctorZone = _appointmentStartDateTimeInDoctorZone();
@@ -1341,9 +1330,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     if (!_isVideoAppointment || _isInProgressStatus || _isCompletedStatus) {
       return false;
     }
-    final doctorTimeZone =
-        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-            as String?;
+    final doctorTimeZone = _calendarTz();
     final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
     final coldJoinCutoff = _appointmentEndDateTimeInDoctorZone()
         .add(const Duration(hours: 1));
@@ -1374,7 +1361,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   }
 
   @override
-  void didUpdateWidget(covariant _SlotDetailsPanel oldWidget) {
+  void didUpdateWidget(covariant CalendarSlotDetailsPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     final changed =
         oldWidget.entry.type != widget.entry.type ||
@@ -1504,9 +1491,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
             endUtc.millisecond,
           );
     // Use doctor's timezone for "now" to match all other appointment timing
-    final doctorTimeZone =
-        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-            as String?;
+    final doctorTimeZone = _calendarTz();
     final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
     return endInstant.isBefore(nowInDoctorZone.toUtc());
   }
@@ -1516,9 +1501,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   /// CRITICAL: Uses doctor's timezone to determine "today" vs "past day"
   bool get _isPastFreeSlot {
     if (widget.entry.type != EntryType.freeSlot) return false;
-    final doctorTimeZone =
-        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-            as String?;
+    final doctorTimeZone = _calendarTz();
     final todayInDoctorZone = getTodayInTimezone(doctorTimeZone);
     final slotDay = DateTime(widget.day.year, widget.day.month, widget.day.day);
     return slotDay.isBefore(todayInDoctorZone);
@@ -1551,12 +1534,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
                     trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
                       // Use doctor's timezone to prevent booking past days in doctor's calendar
-                      final doctorTz =
-                          ref
-                                  .read(profileAllProvider)
-                                  .valueOrNull
-                                  ?.profile['timeZone']
-                              as String?;
+                      final doctorTz = _calendarTz();
                       final todayInDoctorZone = getTodayInTimezone(doctorTz);
                       final picked = await showDatePicker(
                         context: context,
@@ -1681,22 +1659,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
         selectedDate != null &&
         selectedSlot != null &&
         widget.entry.appointmentId != null) {
-      final doctorTimeZone =
-          ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-              as String?;
-      if (doctorTimeZone == null || doctorTimeZone.trim().isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('failedToChangeSlot') ??
-                    'Profile timezone not available.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
+      final doctorTimeZone = _calendarTz();
       try {
         setState(() => _saving = true);
         final slotMinutes = _durationMinutes(
@@ -1741,10 +1704,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
   }
 
   Future<List<CalendarEntry>> _loadAvailableSlots(DateTime day) async {
-    final tz =
-        ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-            as String?;
-    if (tz == null || tz.trim().isEmpty) return [];
+    final tz = _calendarTz();
     try {
       await ref
           .read(calendarProvider.notifier)
@@ -1819,12 +1779,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
     try {
       setState(() => _saving = true);
 
-      final doctorTimeZone =
-          ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
-              as String?;
-      if (doctorTimeZone == null || doctorTimeZone.trim().isEmpty) {
-        throw Exception('Profile timezone not available. Please try again.');
-      }
+      final doctorTimeZone = _calendarTz();
       await ref
           .read(calendarProvider.notifier)
           .bookFreeSlotRemote(
@@ -2844,7 +2799,10 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
               if (widget.entry.type == EntryType.appointment) ...[
                 const SizedBox(height: 10),
                 // Place (appointments only – dropdown: doctor's clinic address or VIDEO CONSULTATION)
-                _AppointmentPlaceDropdown(entry: widget.entry),
+                AppointmentPlaceDropdown(
+                  entry: widget.entry,
+                  clinicVenueLabelOverride: widget.primaryClinicVenueLabel,
+                ),
                 if (_shouldShowEncouragePayment) ...[
                   const SizedBox(height: 12),
                   SizedBox(
@@ -2994,28 +2952,7 @@ class _SlotDetailsPanelState extends ConsumerState<_SlotDetailsPanel> {
 
                                 if (confirmed == true &&
                                     widget.entry.appointmentId != null) {
-                                  final doctorTimeZone =
-                                      ref
-                                              .read(profileAllProvider)
-                                              .valueOrNull
-                                              ?.profile['timeZone']
-                                          as String?;
-                                  if (doctorTimeZone == null ||
-                                      doctorTimeZone.trim().isEmpty) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            l10n.translate('failedToCancel') ??
-                                                'Profile timezone not available.',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                    return;
-                                  }
+                                  final doctorTimeZone = _calendarTz();
                                   try {
                                     setState(() => _saving = true);
                                     await ref

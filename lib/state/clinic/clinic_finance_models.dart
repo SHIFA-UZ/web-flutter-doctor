@@ -141,6 +141,7 @@ class PaymentHistoryItem {
   final String method;
   final String? memo;
   final int? financialRecordId;
+  final int? linkedAppointmentId;
   final String recordedAt;
 
   PaymentHistoryItem({
@@ -156,6 +157,7 @@ class PaymentHistoryItem {
     required this.method,
     this.memo,
     this.financialRecordId,
+    this.linkedAppointmentId,
     required this.recordedAt,
   });
 
@@ -173,6 +175,7 @@ class PaymentHistoryItem {
       method: (json['method'] ?? '') as String,
       memo: json['memo'] as String?,
       financialRecordId: json['financialRecordId'] as int?,
+      linkedAppointmentId: (json['linkedAppointmentId'] as num?)?.toInt(),
       recordedAt: (json['recordedAt'] ?? '') as String,
     );
   }

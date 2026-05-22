@@ -433,3 +433,121 @@ class FailedWebhookEvent {
     );
   }
 }
+
+class AdminDoctorActivityDailyPoint {
+  final String date;
+  final int count;
+
+  const AdminDoctorActivityDailyPoint({
+    required this.date,
+    required this.count,
+  });
+
+  factory AdminDoctorActivityDailyPoint.fromJson(Map<String, dynamic> json) {
+    return AdminDoctorActivityDailyPoint(
+      date: json['date']?.toString() ?? '',
+      count: (json['count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class AdminDoctorActivityRow {
+  final int doctorId;
+  final String doctorName;
+  final String? email;
+  final int? clinicId;
+  final String? clinicName;
+  final int appointmentsBooked;
+  final int appointmentsCompleted;
+  final int appointmentsCancelled;
+  final double cancellationRate;
+  final int videoAppointments;
+  final int activePatients;
+  final int patientsCreated;
+  final int documentsUploaded;
+  final int treatmentPlans;
+  final int remoteTasks;
+  final int consultationNotes;
+  final int patientForms;
+  final int aiRequests;
+  final int aiDraftNotes;
+  final String? lastActiveAt;
+
+  AdminDoctorActivityRow({
+    required this.doctorId,
+    required this.doctorName,
+    this.email,
+    this.clinicId,
+    this.clinicName,
+    required this.appointmentsBooked,
+    required this.appointmentsCompleted,
+    required this.appointmentsCancelled,
+    required this.cancellationRate,
+    required this.videoAppointments,
+    required this.activePatients,
+    required this.patientsCreated,
+    required this.documentsUploaded,
+    required this.treatmentPlans,
+    required this.remoteTasks,
+    required this.consultationNotes,
+    required this.patientForms,
+    required this.aiRequests,
+    required this.aiDraftNotes,
+    this.lastActiveAt,
+  });
+
+  factory AdminDoctorActivityRow.fromJson(Map<String, dynamic> json) {
+    return AdminDoctorActivityRow(
+      doctorId: (json['doctorId'] as num).toInt(),
+      doctorName: json['doctorName']?.toString() ?? '',
+      email: json['email'] as String?,
+      clinicId: (json['clinicId'] as num?)?.toInt(),
+      clinicName: json['clinicName'] as String?,
+      appointmentsBooked: (json['appointmentsBooked'] as num?)?.toInt() ?? 0,
+      appointmentsCompleted: (json['appointmentsCompleted'] as num?)?.toInt() ?? 0,
+      appointmentsCancelled: (json['appointmentsCancelled'] as num?)?.toInt() ?? 0,
+      cancellationRate: (json['cancellationRate'] as num?)?.toDouble() ?? 0,
+      videoAppointments: (json['videoAppointments'] as num?)?.toInt() ?? 0,
+      activePatients: (json['activePatients'] as num?)?.toInt() ?? 0,
+      patientsCreated: (json['patientsCreated'] as num?)?.toInt() ?? 0,
+      documentsUploaded: (json['documentsUploaded'] as num?)?.toInt() ?? 0,
+      treatmentPlans: (json['treatmentPlans'] as num?)?.toInt() ?? 0,
+      remoteTasks: (json['remoteTasks'] as num?)?.toInt() ?? 0,
+      consultationNotes: (json['consultationNotes'] as num?)?.toInt() ?? 0,
+      patientForms: (json['patientForms'] as num?)?.toInt() ?? 0,
+      aiRequests: (json['aiRequests'] as num?)?.toInt() ?? 0,
+      aiDraftNotes: (json['aiDraftNotes'] as num?)?.toInt() ?? 0,
+      lastActiveAt: json['lastActiveAt'] as String?,
+    );
+  }
+}
+
+class AdminDoctorActivityDetail {
+  final AdminDoctorActivityRow row;
+  final Map<String, List<AdminDoctorActivityDailyPoint>> dailySeries;
+
+  AdminDoctorActivityDetail({
+    required this.row,
+    required this.dailySeries,
+  });
+
+  factory AdminDoctorActivityDetail.fromJson(Map<String, dynamic> json) {
+    final seriesRaw = json['dailySeries'];
+    final series = <String, List<AdminDoctorActivityDailyPoint>>{};
+    if (seriesRaw is Map) {
+      for (final e in seriesRaw.entries) {
+        final key = e.key.toString();
+        final list = e.value;
+        if (list is List) {
+          series[key] = list
+              .map((p) => AdminDoctorActivityDailyPoint.fromJson(Map<String, dynamic>.from(p as Map)))
+              .toList(growable: false);
+        }
+      }
+    }
+    return AdminDoctorActivityDetail(
+      row: AdminDoctorActivityRow.fromJson(Map<String, dynamic>.from(json['row'] as Map)),
+      dailySeries: series,
+    );
+  }
+}

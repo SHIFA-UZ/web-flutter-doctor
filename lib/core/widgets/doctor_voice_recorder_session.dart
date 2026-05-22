@@ -56,8 +56,9 @@ class DoctorVoiceRecorderSession {
         await _recorder.start(
           const RecordConfig(
             encoder: AudioEncoder.aacLc,
-            bitRate: 128000,
-            sampleRate: 44100,
+            bitRate: 32000,
+            sampleRate: 16000,
+            numChannels: 1,
           ),
           path: _nativePath!,
         );

@@ -6,8 +6,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/network/public_backend_config.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 
 const String kNoSpeechTranscriptPlaceholder = '(No speech detected)';
@@ -67,11 +69,57 @@ Future<String> postDoctorTranscription({
   if (response.statusCode == 403) {
     throw Exception('speechToTextRequiresPro');
   }
+  if (response.statusCode == 429) {
+    var message = 'HTTP 429';
+    try {
+      final json = jsonDecode(response.body) as Map<String, dynamic>?;
+      message = json?['message'] as String? ?? message;
+    } catch (_) {}
+    throw AiStreamException('RATE_LIMIT', message);
+  }
   if (response.statusCode < 200 || response.statusCode >= 300) {
     throw Exception(response.body.isNotEmpty ? response.body : 'HTTP ${response.statusCode}');
   }
   final json = jsonDecode(response.body) as Map<String, dynamic>;
   return ((json['text'] as String?) ?? '').trim();
+}
+
+Future<void> postDoctorTranscriptionFeedback({
+  required WidgetRef ref,
+  required String transcript,
+  required String localeHint,
+  Uint8List? audioBytes,
+  String? audioFileName,
+}) async {
+  final client = ref.read(apiClientProvider);
+  final files = <http.MultipartFile>[];
+  if (audioBytes != null && audioBytes.isNotEmpty) {
+    final name = audioFileName?.trim().isNotEmpty == true ? audioFileName!.trim() : 'speech.m4a';
+    files.add(http.MultipartFile.fromBytes('file', audioBytes, filename: name));
+  }
+  final streamed = await client.postMultipart(
+    '/api/ai/transcription-feedback',
+    files: files,
+    fields: {
+      'transcript': transcript,
+      'locale': localeHint,
+    },
+  );
+  final response = await http.Response.fromStream(streamed);
+  if (response.statusCode == 404) {
+    throw Exception('transcription_feedback_disabled');
+  }
+  if (response.statusCode == 429) {
+    var message = 'HTTP 429';
+    try {
+      final json = jsonDecode(response.body) as Map<String, dynamic>?;
+      message = json?['message'] as String? ?? message;
+    } catch (_) {}
+    throw AiStreamException('RATE_LIMIT', message);
+  }
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw Exception(response.body.isNotEmpty ? response.body : 'HTTP ${response.statusCode}');
+  }
 }
 
 void appendTranscribedText(TextEditingController c, String text) {
@@ -118,15 +166,71 @@ Future<void> completeDoctorTranscriptionFromRecording({
     }
     appendTranscribedText(controller, text);
     onTranscriptAppended?.call();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.translate('transcriptionAdded')),
-        backgroundColor: Colors.green,
-      ),
-    );
+
+    var feedbackEnabled = false;
+    try {
+      feedbackEnabled = await PublicBackendConfig.transcriptionFeedbackEnabled();
+    } catch (_) {}
+    if (!context.mounted) return;
+
+    final hintLang = normalizedTranscriptionLanguageHint(ref);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final addedLine = l10n.translate('transcriptionAdded');
+
+    if (feedbackEnabled && text.trim().isNotEmpty) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '$addedLine\n${l10n.translate('transcriptionReportHint')}',
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 10),
+          action: SnackBarAction(
+            label: l10n.translate('transcriptionReportAction'),
+            onPressed: () async {
+              try {
+                await postDoctorTranscriptionFeedback(
+                  ref: ref,
+                  transcript: text,
+                  localeHint: hintLang,
+                  audioBytes: bytes,
+                  audioFileName: name,
+                );
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.translate('transcriptionReportThanks'))),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${l10n.error}: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(addedLine),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   } catch (e) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (e is AiStreamException && e.code == 'RATE_LIMIT') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.userFacingMessage), backgroundColor: Colors.red),
+      );
+      return;
+    }
     final msg = e.toString();
     final clean = msg.startsWith('Exception: ') ? msg.substring(11) : msg;
     final localized = clean == 'speechToTextRequiresPro'

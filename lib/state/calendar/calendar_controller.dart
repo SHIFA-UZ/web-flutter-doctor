@@ -224,13 +224,25 @@ import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+/// Response body could not be decoded into calendar rows ([loadDay] clears that day).
+class CalendarDecodeFailure implements Exception {
+  CalendarDecodeFailure(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 /// Throttle: avoid refetching the same day within this duration (reduces 429 rate-limit errors).
 const _calendarThrottleDuration = Duration(seconds: 60);
 
 /// Holds a map keyed by day (00:00 local), with list of entries for that day.
 class CalendarController
     extends StateNotifier<Map<DateTime, List<CalendarEntry>>> {
-  CalendarController(this.ref) : super(<DateTime, List<CalendarEntry>>{}) {
+  CalendarController(this.ref, {int? initialResourceDoctorId})
+    : super(<DateTime, List<CalendarEntry>>{}) {
+    if (initialResourceDoctorId != null) {
+      _resourceDoctorId = initialResourceDoctorId;
+    }
     // When auth token changes (logout or another doctor logs in), clear all cached days.
     ref.listen<String?>(authTokenProvider, (previous, next) {
       if (previous == next) return;
@@ -310,55 +322,89 @@ class CalendarController
     }
     _lastLoadTime[key] = now;
 
-    // BACKEND CONTRACT: All datetimes must be ISO-8601 UTC with "Z". We defensively normalize naive timestamps.
-    final client = ref.read(apiClientProvider);
-    final params = <String, String>{'day': _ymd(day)};
-    if (_resourceDoctorId != null) {
-      params['doctorId'] = _resourceDoctorId.toString();
-    }
-    final resp = await client.get('/api/calendar', params: params);
-    if (resp.statusCode == 200) {
-      List<CalendarEntry> entries;
-      try {
-        final body = utf8.decode(resp.bodyBytes);
-        if (body.trim().isEmpty) {
-          entries = [];
-        } else {
-          final decoded = json.decode(body);
-          final List list = _extractCalendarList(decoded);
-          entries = [];
-          for (final item in list) {
-            try {
-              final map = item is Map<String, dynamic>
-                  ? item
-                  : Map<String, dynamic>.from(item as Map);
-              final sa = map['startAt'] as String?;
-              final ea = map['endAt'] as String?;
-              if (sa == null || sa.isEmpty || ea == null || ea.isEmpty)
-                continue;
-              entries.add(
-                CalendarEntry.fromApi(map, doctorTimeZone: doctorTimeZone),
-              );
-            } catch (e) {
-              debugPrint('Calendar skip bad entry: $e');
-            }
-          }
-          entries.sort(_byStartTime);
-        }
-      } catch (e, st) {
-        debugPrint('Calendar parse error for day $_ymd(day): $e');
-        debugPrint('$st');
-        // Store empty list so UI leaves loading state and shows empty/error
-        final next = Map<DateTime, List<CalendarEntry>>.from(state);
-        next[key] = [];
-        state = next;
-        throw Exception('Calendar response invalid: $e');
-      }
-
+    try {
+      final entries = await fetchCalendarDayFromApi(
+        day: day,
+        doctorTimeZone: doctorTimeZone,
+        doctorProfileIdQuery: _resourceDoctorId,
+      );
       final next = Map<DateTime, List<CalendarEntry>>.from(state);
       next[key] = entries;
       state = next;
-      return;
+    } on CalendarDecodeFailure catch (e, st) {
+      debugPrint('Calendar decode error for day $_ymd(day): $e');
+      debugPrint('$st');
+      final next = Map<DateTime, List<CalendarEntry>>.from(state);
+      next[key] = [];
+      state = next;
+      throw Exception('Calendar response invalid: $e');
+    }
+  }
+
+  /// Read-only GET for one day ([doctorProfileId] as `doctorId` query).
+  ///
+  /// Does not write [state], [_resourceDoctorId], or throttle maps — safe for dialogs.
+  Future<List<CalendarEntry>> previewDayForDoctorProfile({
+    required DateTime day,
+    required String doctorTimeZone,
+    required int doctorProfileId,
+  }) async {
+    if (ref.read(authTokenProvider) == null ||
+        ref.read(authTokenProvider)!.isEmpty) {
+      throw Exception('Not logged in.');
+    }
+    return fetchCalendarDayFromApi(
+      day: day,
+      doctorTimeZone: doctorTimeZone,
+      doctorProfileIdQuery: doctorProfileId,
+    );
+  }
+
+  /// Low-level GET + parse — no notifier cache side effects except calling [ref.read].
+  Future<List<CalendarEntry>> fetchCalendarDayFromApi({
+    required DateTime day,
+    required String doctorTimeZone,
+    int? doctorProfileIdQuery,
+  }) async {
+    // BACKEND CONTRACT: All datetimes must be ISO-8601 UTC with "Z".
+    final client = ref.read(apiClientProvider);
+    final params = <String, String>{'day': _ymd(day)};
+    if (doctorProfileIdQuery != null) {
+      params['doctorId'] = doctorProfileIdQuery.toString();
+    }
+    final resp = await client.get('/api/calendar', params: params);
+    if (resp.statusCode == 200) {
+      try {
+        final body = utf8.decode(resp.bodyBytes);
+        if (body.trim().isEmpty) {
+          return [];
+        }
+        final decoded = json.decode(body);
+        final List list = _extractCalendarList(decoded);
+        final entries = <CalendarEntry>[];
+        for (final item in list) {
+          try {
+            final map = item is Map<String, dynamic>
+                ? item
+                : Map<String, dynamic>.from(item as Map);
+            final sa = map['startAt'] as String?;
+            final ea = map['endAt'] as String?;
+            if (sa == null || sa.isEmpty || ea == null || ea.isEmpty)
+              continue;
+            entries.add(
+              CalendarEntry.fromApi(map, doctorTimeZone: doctorTimeZone),
+            );
+          } catch (e) {
+            debugPrint('Calendar skip bad entry: $e');
+          }
+        }
+        entries.sort(_byStartTime);
+        return entries;
+      } catch (e, st) {
+        debugPrint('Calendar parse error for day $_ymd(day): $e');
+        debugPrint('$st');
+        throw CalendarDecodeFailure('$e');
+      }
     }
     if (resp.statusCode == 401) {
       throw Exception('Unauthorized: please login again.');

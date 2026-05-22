@@ -650,7 +650,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           onError: (e) => setState(() {
             _aiLoading = false;
-            _aiError = e is AiStreamException ? e.message : e.toString();
+            _aiError = e is AiStreamException ? e.userFacingMessage : e.toString();
           }),
         );
     _persistConversation();

@@ -27,6 +27,7 @@ import 'package:shifa_doc_app_v1/features/appointments/presentation/appointment_
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
+import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/inline_voice_recorder_bar.dart';
@@ -525,6 +526,24 @@ class _InPersonAppointmentScreenState
             backgroundColor: Colors.green,
           ),
         );
+      } else if (response.statusCode == 429) {
+        var backendMsg = '';
+        try {
+          final j = jsonDecode(response.body);
+          if (j is Map<String, dynamic> && j['message'] is String) {
+            backendMsg = j['message'] as String;
+          }
+        } catch (_) {}
+        final friendly = AiStreamException(
+          'RATE_LIMIT',
+          backendMsg.isEmpty ? 'Too many requests' : backendMsg,
+        ).userFacingMessage;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(friendly),
+            backgroundColor: Colors.red,
+          ),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -815,10 +834,10 @@ class _InPersonAppointmentScreenState
         // Always pass the active clinic id so the backend can auto-derive
         // visit charges from the saved dental documentation (per-teeth
         // services) without prompting the doctor again.
+        final cidForComplete = ref.read(selectedClinicIdProvider);
         try {
-          final cid = ref.read(selectedClinicIdProvider);
-          final completePayload = cid != null
-              ? <String, dynamic>{'clinicId': cid}
+          final completePayload = cidForComplete != null
+              ? <String, dynamic>{'clinicId': cidForComplete}
               : <String, dynamic>{};
           await api.put(
             '/api/appointments/${widget.appointment.id}/complete',
@@ -833,7 +852,10 @@ class _InPersonAppointmentScreenState
         }
 
         // Refresh appointments and analytics
-        await invalidateAppointmentRelatedProviders(ref);
+        await invalidateAppointmentRelatedProviders(
+          ref,
+          clinicWorkspaceId: cidForComplete,
+        );
 
         // Refresh documents
         ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));

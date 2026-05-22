@@ -10,6 +10,7 @@ import 'package:shifa_doc_app_v1/features/appointments/application/today_appoint
 import 'package:shifa_doc_app_v1/features/home/application/home_analytics_providers.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
@@ -21,7 +22,12 @@ import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 ///
 /// Accepts [Ref] or [WidgetRef]. Safe to call without `await` (e.g. logout);
 /// use `await` when you need the home list updated before navigating away.
-Future<void> invalidateAppointmentRelatedProviders(dynamic ref) async {
+/// [clinicWorkspaceId] when known (e.g. visit completion payload) avoids missing refresh
+/// when [selectedClinicIdProvider] has not been synced yet.
+Future<void> invalidateAppointmentRelatedProviders(
+  dynamic ref, {
+  int? clinicWorkspaceId,
+}) async {
   try {
     final profile = await ref.read(profileAllProvider.future);
     final doctorTimeZone = profile.profile['timeZone'] as String?;
@@ -46,7 +52,10 @@ Future<void> invalidateAppointmentRelatedProviders(dynamic ref) async {
   // requiring a manual refresh.
   ref.invalidate(treatmentPlansForClinicProvider);
   ref.invalidate(treatmentPlansForPatientProvider);
-  ref.invalidate(clinicFinanceDashboardProvider);
+  final clinicId = clinicWorkspaceId ?? ref.read(selectedClinicIdProvider);
+  if (clinicId != null) {
+    invalidateClinicFinanceTabDataForClinic(ref, clinicId);
+  }
 }
 
 /// Refresh a specific day in the calendar without wiping all cached data.

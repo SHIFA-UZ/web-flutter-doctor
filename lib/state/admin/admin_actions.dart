@@ -463,6 +463,63 @@ class AdminActions {
     return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  // ==================== DOCTOR ACTIVITY ====================
+
+  Future<Map<String, dynamic>> listDoctorActivity({
+    String? fromIso,
+    String? toIso,
+    String? search,
+    String sort = 'appointments',
+    String dir = 'desc',
+    int page = 0,
+    int size = 25,
+  }) async {
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      'size': size.toString(),
+      'sort': sort,
+      'dir': dir,
+    };
+    if (fromIso != null && fromIso.isNotEmpty) queryParams['from'] = fromIso;
+    if (toIso != null && toIso.isNotEmpty) queryParams['to'] = toIso;
+    if (search != null && search.trim().isNotEmpty) queryParams['search'] = search.trim();
+
+    final response = await apiClient.get('/api/admin/doctors/activity', params: queryParams);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load doctor activity: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final contentRaw = json['content'];
+    final rawList = contentRaw is List ? contentRaw : const [];
+    final rows = rawList.map((e) => AdminDoctorActivityRow.fromJson(e as Map<String, dynamic>)).toList(growable: false);
+    return {
+      'content': rows,
+      'totalElements': (json['totalElements'] as num?)?.toInt() ?? rows.length,
+      'totalPages': (json['totalPages'] as num?)?.toInt() ?? 1,
+      'number': (json['number'] as num?)?.toInt() ?? 0,
+    };
+  }
+
+  Future<AdminDoctorActivityDetail> getDoctorActivityDetail({
+    required int doctorId,
+    String? fromIso,
+    String? toIso,
+  }) async {
+    final queryParams = <String, String>{};
+    if (fromIso != null && fromIso.isNotEmpty) queryParams['from'] = fromIso;
+    if (toIso != null && toIso.isNotEmpty) queryParams['to'] = toIso;
+
+    final response = await apiClient.get('/api/admin/doctors/$doctorId/activity', params: queryParams);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load doctor activity detail: ${response.body}');
+    }
+
+    return AdminDoctorActivityDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
   // ==================== AUDIT LOGS ====================
 
   Future<Map<String, dynamic>> getAuditLogs({

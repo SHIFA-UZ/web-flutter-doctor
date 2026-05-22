@@ -16,6 +16,7 @@ import 'admin_audit_logs_screen.dart';
 import 'admin_config_screen.dart';
 import 'admin_deleted_patients_screen.dart';
 import 'admin_clinics_screen.dart';
+import 'admin_doctor_activity_screen.dart';
 
 class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key});
@@ -64,6 +65,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
 
   final _screens = const [
     AdminDashboardScreen(),
+    AdminDoctorActivityScreen(),
     AdminPaymentsScreen(),
     AdminTokensScreen(),
     AdminUsersScreen(),
@@ -76,14 +78,15 @@ class _AdminShellState extends ConsumerState<AdminShell> {
 
   final List<_AdminNavItem> _navItems = const [
     _AdminNavItem(icon: Icons.dashboard, label: 'Dashboard', index: 0),
-    _AdminNavItem(icon: Icons.payments_outlined, label: 'Payments Ops', index: 1),
-    _AdminNavItem(icon: Icons.vpn_key, label: 'Tokens', index: 2),
-    _AdminNavItem(icon: Icons.people, label: 'Users', index: 3),
-    _AdminNavItem(icon: Icons.local_hospital_outlined, label: 'Clinics', index: 4),
-    _AdminNavItem(icon: Icons.person_add, label: 'Create admin', index: 5),
-    _AdminNavItem(icon: Icons.history, label: 'Audit Logs', index: 6),
-    _AdminNavItem(icon: Icons.settings, label: 'Settings', index: 7),
-    _AdminNavItem(icon: Icons.privacy_tip, label: 'Deleted Patients', index: 8),
+    _AdminNavItem(icon: Icons.monitor_heart_outlined, label: 'Doctor Activity', index: 1),
+    _AdminNavItem(icon: Icons.payments_outlined, label: 'Payments Ops', index: 2),
+    _AdminNavItem(icon: Icons.vpn_key, label: 'Tokens', index: 3),
+    _AdminNavItem(icon: Icons.people, label: 'Users', index: 4),
+    _AdminNavItem(icon: Icons.local_hospital_outlined, label: 'Clinics', index: 5),
+    _AdminNavItem(icon: Icons.person_add, label: 'Create admin', index: 6),
+    _AdminNavItem(icon: Icons.history, label: 'Audit Logs', index: 7),
+    _AdminNavItem(icon: Icons.settings, label: 'Settings', index: 8),
+    _AdminNavItem(icon: Icons.privacy_tip, label: 'Deleted Patients', index: 9),
   ];
 
   @override

@@ -18,9 +18,39 @@ import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.
         showPatientFormTemplateSheet;
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
     show fetchPatientWithClient;
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_doctor_schedule_page.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_finance_tab.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_treatment_plans_tab.dart';
+
+/// Full booking UI for another clinic doctor ([ClinicDoctorScheduleRoute]).
+///
+/// Prefer this over `[calendarProvider]` + shell Calendar for colleagues: entering
+/// the shell Calendar tab clears `resourceDoctorId`, which would drop the intent.
+void pushClinicDoctorScheduleForMember(
+  BuildContext context,
+  WidgetRef ref,
+  ClinicMember member,
+) {
+  final c = ref.read(selectedClinicProvider);
+  final tz = (c?.timeZone.trim().isNotEmpty == true)
+      ? c!.timeZone.trim()
+      : 'UTC';
+  final street = (c?.address?.trim().isNotEmpty == true)
+      ? c!.address!.trim()
+      : null;
+  Navigator.of(context, rootNavigator: true).push(
+    MaterialPageRoute<void>(
+      fullscreenDialog: true,
+      builder: (ctx) => ClinicDoctorScheduleRoute(
+        doctorProfileId: member.doctorProfileId,
+        doctorDisplayName: member.displayName,
+        clinicScheduleTimeZone: tz,
+        clinicStreetAddress: street,
+      ),
+    ),
+  );
+}
 
 class ClinicWorkspaceScreen extends ConsumerStatefulWidget {
   const ClinicWorkspaceScreen({super.key});
@@ -45,9 +75,25 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
     super.dispose();
   }
 
-  void _jumpToCalendarForDoctor(int? doctorProfileId) {
-    ref.read(calendarProvider.notifier).setResourceDoctorId(doctorProfileId);
+  /// Logged-in doctor only (shell Calendar clears `resourceDoctorId` on entry).
+  void _openMyScheduleInShellCalendar() {
+    ref.read(calendarProvider.notifier).setResourceDoctorId(null);
     ref.read(shellProvider.notifier).setTab(2);
+  }
+
+  /// [MainShell] clinic workspace index (`IndexedStack`; see `main_shell.dart`).
+  static const int _clinicWorkspaceShellTabIndex = 4;
+
+  /// Opens the clinic workspace in the shell and selects one of its [TabBar] tabs.
+  void _jumpToClinicWorkspaceSubTab(int clinicTabIndex) {
+    ref.read(shellProvider.notifier).setTab(_clinicWorkspaceShellTabIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (clinicTabIndex >= 0 &&
+          clinicTabIndex < _tabController.length) {
+        _tabController.animateTo(clinicTabIndex);
+      }
+    });
   }
 
   @override
@@ -108,14 +154,16 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _OverviewTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
+                  _OverviewTab(
+                    clinicId: clinic?.clinicId ?? clinics.first.clinicId,
+                    onOpenClinicSubTab: _jumpToClinicWorkspaceSubTab,
+                  ),
                   _DoctorsTab(
                     clinicId: clinic?.clinicId ?? clinics.first.clinicId,
-                    onOpenCalendar: _jumpToCalendarForDoctor,
                   ),
                   _CalendarTab(
                     clinicId: clinic?.clinicId ?? clinics.first.clinicId,
-                    onOpenMainCalendar: _jumpToCalendarForDoctor,
+                    onOpenMySchedule: _openMyScheduleInShellCalendar,
                   ),
                   _PatientsTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
                   _ServicesTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
@@ -212,8 +260,13 @@ class _ClinicIdentityBar extends StatelessWidget {
 }
 
 class _OverviewTab extends ConsumerWidget {
-  const _OverviewTab({required this.clinicId});
+  const _OverviewTab({
+    required this.clinicId,
+    required this.onOpenClinicSubTab,
+  });
   final int clinicId;
+  /// Clinic inner tab indices: Overview=0, Doctors=1, Calendar=2, Patients=3, …
+  final void Function(int clinicTabIndex) onOpenClinicSubTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -286,16 +339,12 @@ class _OverviewTab extends ConsumerWidget {
               ShifaSecondaryButton(
                 label: l10n.calendar,
                 icon: Icons.event_available_outlined,
-                onPressed: () {
-                  ref.read(shellProvider.notifier).setTab(2);
-                },
+                onPressed: () => onOpenClinicSubTab(2),
               ),
               ShifaSecondaryButton(
                 label: l10n.patients,
                 icon: Icons.people_outline,
-                onPressed: () {
-                  ref.read(shellProvider.notifier).setTab(3);
-                },
+                onPressed: () => onOpenClinicSubTab(3),
               ),
             ],
           ),
@@ -342,10 +391,8 @@ class _MetricCard extends StatelessWidget {
 class _DoctorsTab extends ConsumerStatefulWidget {
   const _DoctorsTab({
     required this.clinicId,
-    required this.onOpenCalendar,
   });
   final int clinicId;
-  final void Function(int?) onOpenCalendar;
 
   @override
   ConsumerState<_DoctorsTab> createState() => _DoctorsTabState();
@@ -514,8 +561,11 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                             Icons.calendar_month_outlined,
                             size: 20,
                           ),
-                          onPressed: () =>
-                              widget.onOpenCalendar(m.doctorProfileId),
+                          onPressed: () => pushClinicDoctorScheduleForMember(
+                            context,
+                            ref,
+                            m,
+                          ),
                         ),
                       ),
                     ],
@@ -532,10 +582,10 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
 class _CalendarTab extends ConsumerWidget {
   const _CalendarTab({
     required this.clinicId,
-    required this.onOpenMainCalendar,
+    required this.onOpenMySchedule,
   });
   final int clinicId;
-  final void Function(int?) onOpenMainCalendar;
+  final VoidCallback onOpenMySchedule;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -562,7 +612,7 @@ class _CalendarTab extends ConsumerWidget {
                       label: l10n.mySchedule,
                       icon: Icons.person_outline,
                       width: ButtonWidth.fill,
-                      onPressed: () => onOpenMainCalendar(null),
+                      onPressed: onOpenMySchedule,
                     ),
                     const SizedBox(height: 12),
                     ...members.map(
@@ -572,7 +622,8 @@ class _CalendarTab extends ConsumerWidget {
                           label: '${l10n.calendarForDoctor}: ${m.displayName}',
                           icon: Icons.calendar_today_outlined,
                           width: ButtonWidth.fill,
-                          onPressed: () => onOpenMainCalendar(m.doctorProfileId),
+                          onPressed: () =>
+                              pushClinicDoctorScheduleForMember(context, ref, m),
                         ),
                       ),
                     ),

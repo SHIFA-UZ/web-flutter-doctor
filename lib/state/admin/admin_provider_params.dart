@@ -141,3 +141,70 @@ class ClinicsListParams {
   @override
   int get hashCode => page.hashCode ^ size.hashCode;
 }
+
+class DoctorActivityParams {
+  final String? fromIso;
+  final String? toIso;
+  final String? search;
+  final String sort;
+  final String dir;
+  final int page;
+  final int size;
+
+  DoctorActivityParams({
+    this.fromIso,
+    this.toIso,
+    this.search,
+    this.sort = 'appointments',
+    this.dir = 'desc',
+    this.page = 0,
+    this.size = 25,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DoctorActivityParams &&
+          runtimeType == other.runtimeType &&
+          fromIso == other.fromIso &&
+          toIso == other.toIso &&
+          search == other.search &&
+          sort == other.sort &&
+          dir == other.dir &&
+          page == other.page &&
+          size == other.size;
+
+  @override
+  int get hashCode =>
+      fromIso.hashCode ^
+      toIso.hashCode ^
+      search.hashCode ^
+      sort.hashCode ^
+      dir.hashCode ^
+      page.hashCode ^
+      size.hashCode;
+}
+
+class DoctorActivityDetailParams {
+  final int doctorId;
+  final String? fromIso;
+  final String? toIso;
+
+  DoctorActivityDetailParams({
+    required this.doctorId,
+    this.fromIso,
+    this.toIso,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DoctorActivityDetailParams &&
+          runtimeType == other.runtimeType &&
+          doctorId == other.doctorId &&
+          fromIso == other.fromIso &&
+          toIso == other.toIso;
+
+  @override
+  int get hashCode => doctorId.hashCode ^ fromIso.hashCode ^ toIso.hashCode;
+}

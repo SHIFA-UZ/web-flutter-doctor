@@ -141,7 +141,8 @@ class _DashboardView extends ConsumerWidget {
                   subtitle: Text(l10n.translate('clinicFinanceDoctorEarningsHint')),
                   trailing: Text(
                     '${_formatMoney(d.grossMinor, stats.currency)} / '
-                    '${_formatMoney(d.collectedMinor, stats.currency)}',
+                    '${_formatMoney(d.collectedMinor, stats.currency)} / '
+                    '${_formatMoney(d.outstandingMinor, stats.currency)}',
                   ),
                 );
               }),
@@ -323,6 +324,7 @@ class _AppointmentLedgerViewState
         amountMinor: row.visitTotalMinor,
         currency: row.currency,
         method: method,
+        linkedAppointmentId: row.appointmentId,
       );
       if (!mounted) return;
       _invalidateFinanceAfterPayment();
@@ -457,6 +459,7 @@ class _AppointmentLedgerViewState
                         memo: memoCtrl.text.trim().isEmpty
                             ? null
                             : memoCtrl.text.trim(),
+                        linkedAppointmentId: row.appointmentId,
                       );
                       if (!mounted) return;
                       _invalidateFinanceAfterPayment();
