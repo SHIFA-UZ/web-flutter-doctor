@@ -19,6 +19,7 @@ import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
     show fetchPatientWithClient;
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_finance_tab.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_treatment_plans_tab.dart';
 
 class ClinicWorkspaceScreen extends ConsumerStatefulWidget {
@@ -333,7 +334,12 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _DoctorsTab extends ConsumerWidget {
+/// Sortable, filterable spreadsheet of clinic doctors and admins.
+///
+/// Columns: avatar + name (sortable), role (sortable + filterable via chips),
+/// doctor profile id (numeric, sortable), user id (numeric, sortable), and an
+/// action button to jump to that doctor's calendar.
+class _DoctorsTab extends ConsumerStatefulWidget {
   const _DoctorsTab({
     required this.clinicId,
     required this.onOpenCalendar,
@@ -342,40 +348,182 @@ class _DoctorsTab extends ConsumerWidget {
   final void Function(int?) onOpenCalendar;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DoctorsTab> createState() => _DoctorsTabState();
+}
+
+class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _search = '';
+  String _roleFilter = 'ALL';
+  int _sortIdx = 0;
+  bool _sortAsc = true;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
+  List<ClinicMember> _apply(List<ClinicMember> members) {
+    Iterable<ClinicMember> out = members;
+    if (_search.trim().isNotEmpty) {
+      final s = _search.trim().toLowerCase();
+      out = out.where((m) =>
+          m.displayName.toLowerCase().contains(s) ||
+          m.membershipRole.toLowerCase().contains(s) ||
+          m.doctorProfileId.toString().contains(s));
+    }
+    if (_roleFilter != 'ALL') {
+      out = out.where((m) => m.membershipRole == _roleFilter);
+    }
+    final list = out.toList();
+    int cmp(ClinicMember a, ClinicMember b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+          break;
+        case 1:
+          c = a.membershipRole.compareTo(b.membershipRole);
+          break;
+        case 2:
+          c = a.doctorProfileId.compareTo(b.doctorProfileId);
+          break;
+        case 3:
+          c = a.userId.compareTo(b.userId);
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(clinicMembersProvider(clinicId));
+    final async = ref.watch(clinicMembersProvider(widget.clinicId));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
       data: (members) {
-        if (members.isEmpty) {
-          return Center(child: Text(l10n.translate('clinicWorkspaceNoDoctors')));
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: members.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (_, i) {
-            final m = members[i];
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: AppColors.primaryTeal.withValues(alpha: 0.15),
-                child: Text(
-                  m.displayName.isNotEmpty ? m.displayName[0].toUpperCase() : '?',
-                  style: const TextStyle(color: AppColors.primaryTeal, fontWeight: FontWeight.bold),
+        // Build the set of roles present in the dataset so the filter chips
+        // only offer values that can actually match.
+        final roles = {
+          for (final m in members) m.membershipRole,
+        }.toList()
+          ..sort();
+        final filtered = _apply(members);
+
+        final toolbar = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClinicTableSearchField(
+              controller: _searchCtrl,
+              hint: l10n.translate('clinicDoctorsSearchHint'),
+              onChanged: (v) => setState(() => _search = v),
+            ),
+            const SizedBox(height: 8),
+            ClinicFilterChips<String>(
+              selected: _roleFilter,
+              onSelected: (v) => setState(() => _roleFilter = v),
+              options: [
+                (
+                  value: 'ALL',
+                  label: l10n.translate('clinicTreatmentPlansAll'),
                 ),
-              ),
-              title: Text(m.displayName),
-              subtitle: Text('${m.membershipRole} · id ${m.doctorProfileId}'),
-              trailing: IconButton(
-                tooltip: l10n.translate('clinicDoctorOpenSchedule'),
-                icon: const Icon(Icons.calendar_month_outlined),
-                onPressed: () => onOpenCalendar(m.doctorProfileId),
-              ),
-            );
-          },
+                for (final r in roles) (value: r, label: r),
+              ],
+            ),
+          ],
         );
+
+        final Widget body = members.isEmpty || filtered.isEmpty
+            ? ClinicTableEmpty(l10n.translate('clinicWorkspaceNoDoctors'))
+            : clinicDataTable(
+                context: context,
+                sortColumnIndex: _sortIdx,
+                sortAscending: _sortAsc,
+                columns: [
+                  DataColumn(
+                    label: Text(l10n.translate('clinicDoctorsColName')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicDoctorsColRole')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicDoctorsColProfileId')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicDoctorsColUserId')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicDoctorsColActions')),
+                  ),
+                ],
+                rows: filtered.map((m) {
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: AppColors.primaryTeal
+                                  .withValues(alpha: 0.15),
+                              child: Text(
+                                m.displayName.isNotEmpty
+                                    ? m.displayName[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: AppColors.primaryTeal,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              m.displayName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      DataCell(Text(m.membershipRole)),
+                      DataCell(Text('#${m.doctorProfileId}')),
+                      DataCell(Text('#${m.userId}')),
+                      DataCell(
+                        IconButton(
+                          tooltip: l10n.translate('clinicDoctorOpenSchedule'),
+                          icon: const Icon(
+                            Icons.calendar_month_outlined,
+                            size: 20,
+                          ),
+                          onPressed: () =>
+                              widget.onOpenCalendar(m.doctorProfileId),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              );
+
+        return ClinicTableShell(toolbar: toolbar, body: body);
       },
     );
   }
@@ -453,6 +601,58 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
   bool _loadingPatient = false;
   String? _patientError;
 
+  /// Client-side filter applied to the loaded patient page. The provider
+  /// only loads the first page so we don't bother paginating, but search
+  /// scans every loaded patient name / phone / email.
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _search = '';
+  int _sortIdx = 1; // Default: sort by Full name asc.
+  bool _sortAsc = true;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
+  List<ClinicPatientRow> _apply(List<ClinicPatientRow> patients) {
+    Iterable<ClinicPatientRow> out = patients;
+    if (_search.trim().isNotEmpty) {
+      final s = _search.trim().toLowerCase();
+      out = out.where((p) =>
+          p.fullName.toLowerCase().contains(s) ||
+          (p.phone ?? '').toLowerCase().contains(s) ||
+          (p.email ?? '').toLowerCase().contains(s) ||
+          p.patientId.toString().contains(s));
+    }
+    final list = out.toList();
+    int cmp(ClinicPatientRow a, ClinicPatientRow b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = a.patientId.compareTo(b.patientId);
+          break;
+        case 1:
+          c = a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase());
+          break;
+        case 2:
+          c = (a.phone ?? '').compareTo(b.phone ?? '');
+          break;
+        case 3:
+          c = (a.email ?? '').compareTo(b.email ?? '');
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
+  }
+
   Future<void> _loadPatient(int patientId) async {
     setState(() {
       _selectedPatientId = patientId;
@@ -512,45 +712,86 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
         ensureSelection();
 
         Widget listPane() {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          final filtered = _apply(page.content);
+          final toolbar = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n
-                        .translate('clinicPatientsTotal')
-                        .replaceAll('{{count}}', '${page.totalElements}'),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
+              ClinicTableSearchField(
+                controller: _searchCtrl,
+                hint: l10n.translate('clinicPatientsSearchHint'),
+                onChanged: (v) => setState(() => _search = v),
               ),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: page.content.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (_, i) {
-                    final p = page.content[i];
-                    final parts = <String>[
-                      if (p.phone != null && p.phone!.trim().isNotEmpty)
-                        p.phone!.trim(),
-                      if (p.email != null && p.email!.trim().isNotEmpty)
-                        p.email!.trim(),
-                    ];
-                    final selected = _selectedPatientId == p.patientId;
-                    return ListTile(
-                      selected: selected,
-                      title: Text(p.fullName),
-                      subtitle: Text(parts.isEmpty ? '—' : parts.join(' · ')),
-                      onTap: () => _loadPatient(p.patientId),
-                    );
-                  },
-                ),
+              const SizedBox(height: 4),
+              Text(
+                l10n
+                    .translate('clinicPatientsTotal')
+                    .replaceAll('{{count}}', '${page.totalElements}'),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           );
+
+          final Widget body = filtered.isEmpty
+              ? ClinicTableEmpty(l10n.translate('clinicPatientsEmpty'))
+              : clinicDataTable(
+                  context: context,
+                  sortColumnIndex: _sortIdx,
+                  sortAscending: _sortAsc,
+                  columns: [
+                    DataColumn(
+                      label: Text(l10n.translate('clinicPatientsColId')),
+                      numeric: true,
+                      onSort: _onSort,
+                    ),
+                    DataColumn(
+                      label: Text(l10n.translate('clinicPatientsColName')),
+                      onSort: _onSort,
+                    ),
+                    DataColumn(
+                      label: Text(l10n.translate('clinicPatientsColPhone')),
+                      onSort: _onSort,
+                    ),
+                    DataColumn(
+                      label: Text(l10n.translate('clinicPatientsColEmail')),
+                      onSort: _onSort,
+                    ),
+                    DataColumn(
+                      label: Text(l10n.translate('clinicPatientsColActions')),
+                    ),
+                  ],
+                  rows: filtered.map((p) {
+                    final selected = _selectedPatientId == p.patientId;
+                    return DataRow(
+                      selected: selected,
+                      onSelectChanged: (_) => _loadPatient(p.patientId),
+                      cells: [
+                        DataCell(Text('#${p.patientId}')),
+                        DataCell(Text(
+                          p.fullName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        )),
+                        DataCell(Text(p.phone?.trim().isNotEmpty == true
+                            ? p.phone!.trim()
+                            : '—')),
+                        DataCell(Text(p.email?.trim().isNotEmpty == true
+                            ? p.email!.trim()
+                            : '—')),
+                        DataCell(
+                          IconButton(
+                            tooltip:
+                                l10n.translate('clinicPatientsOpenTooltip'),
+                            icon: const Icon(Icons.open_in_new, size: 20),
+                            onPressed: () => _loadPatient(p.patientId),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                );
+
+          return ClinicTableShell(toolbar: toolbar, body: body);
         }
 
         Widget detailPane() {
@@ -615,11 +856,77 @@ String _formatClinicDate(DateTime d) {
   return '${two(d.day)}.${two(d.month)}.${d.year}';
 }
 
-class _ServicesTab extends ConsumerWidget {
+class _ServicesTab extends ConsumerStatefulWidget {
   const _ServicesTab({required this.clinicId});
   final int clinicId;
 
   static const _currencies = ['UZS', 'USD', 'EUR', 'RUB'];
+
+  @override
+  ConsumerState<_ServicesTab> createState() => _ServicesTabState();
+}
+
+class _ServicesTabState extends ConsumerState<_ServicesTab> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _search = '';
+  String _statusFilter = 'ALL'; // ALL, ACTIVE, INACTIVE
+  int _sortIdx = 1; // Default: sort by Title asc.
+  bool _sortAsc = true;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
+  List<ClinicCatalogItem> _apply(List<ClinicCatalogItem> items) {
+    Iterable<ClinicCatalogItem> out = items;
+    if (_search.trim().isNotEmpty) {
+      final s = _search.trim().toLowerCase();
+      out = out.where((it) =>
+          it.title.toLowerCase().contains(s) ||
+          (it.code ?? '').toLowerCase().contains(s) ||
+          it.id.toString().contains(s));
+    }
+    if (_statusFilter == 'ACTIVE') {
+      out = out.where((it) => it.active);
+    } else if (_statusFilter == 'INACTIVE') {
+      out = out.where((it) => !it.active);
+    }
+    final list = out.toList();
+    int cmp(ClinicCatalogItem a, ClinicCatalogItem b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = a.id.compareTo(b.id);
+          break;
+        case 1:
+          c = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+          break;
+        case 2:
+          c = (a.code ?? '').compareTo(b.code ?? '');
+          break;
+        case 3:
+          c = a.defaultPriceMinor.compareTo(b.defaultPriceMinor);
+          break;
+        case 4:
+          c = a.currency.compareTo(b.currency);
+          break;
+        case 5:
+          // Active first when asc.
+          c = (a.active ? 0 : 1).compareTo(b.active ? 0 : 1);
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
+  }
 
   String _assignmentSubtitle(AppLocalizations l10n, List<ClinicMember> members, ClinicCatalogItem it) {
     if (it.appliesToAllDoctors) return l10n.translate('clinicServicesAssignmentAll');
@@ -640,6 +947,7 @@ class _ServicesTab extends ConsumerWidget {
 
   Future<void> _openEditor(BuildContext context, WidgetRef ref, ClinicCatalogItem? existing) async {
     final l10n = AppLocalizations.of(context)!;
+    final clinicId = widget.clinicId;
     List<ClinicMember> members = <ClinicMember>[];
     try {
       members = await ref.read(clinicMembersProvider(clinicId).future);
@@ -655,7 +963,7 @@ class _ServicesTab extends ConsumerWidget {
       text: existing != null ? (existing.defaultPriceMinor / 100).toStringAsFixed(2) : '',
     );
     var currency = existing?.currency ?? 'UZS';
-    if (!_currencies.contains(currency)) currency = 'UZS';
+    if (!_ServicesTab._currencies.contains(currency)) currency = 'UZS';
     var appliesToAll = existing?.appliesToAllDoctors ?? true;
     final selected = <int>{if (existing != null) ...existing.assignedDoctorProfileIds};
 
@@ -749,9 +1057,9 @@ class _ServicesTab extends ConsumerWidget {
                           SizedBox(
                             width: 100,
                             child: DropdownButtonFormField<String>(
-                              value: currency,
+                              initialValue: currency,
                               decoration: InputDecoration(labelText: l10n.translate('clinicServiceCurrencyLabel')),
-                              items: _currencies
+                              items: _ServicesTab._currencies
                                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                                   .toList(),
                               onChanged: (v) {
@@ -819,88 +1127,213 @@ class _ServicesTab extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(clinicCatalogProvider(clinicId));
-    final membersAsync = ref.watch(clinicMembersProvider(clinicId));
+    final async = ref.watch(clinicCatalogProvider(widget.clinicId));
+    final membersAsync = ref.watch(clinicMembersProvider(widget.clinicId));
     final members = membersAsync.valueOrNull ?? <ClinicMember>[];
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('$e')),
       data: (items) {
-        return Scaffold(
-          body: items.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      l10n.translate('clinicServicesEmpty'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey.shade700),
-                    ),
+        final filtered = _apply(items);
+
+        final toolbar = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: ClinicTableSearchField(
+                    controller: _searchCtrl,
+                    hint: l10n.translate('clinicServicesSearchHint'),
+                    onChanged: (v) => setState(() => _search = v),
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (_, i) {
-                    final it = items[i];
-                    final price = (it.defaultPriceMinor / 100).toStringAsFixed(2);
-                    return ListTile(
-                      title: Text(
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () => _openEditor(context, ref, null),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.translate('clinicServiceAddTitle')),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClinicFilterChips<String>(
+              selected: _statusFilter,
+              onSelected: (v) => setState(() => _statusFilter = v),
+              options: [
+                (
+                  value: 'ALL',
+                  label: l10n.translate('clinicTreatmentPlansAll'),
+                ),
+                (
+                  value: 'ACTIVE',
+                  label: l10n.translate('clinicServiceActive'),
+                ),
+                (
+                  value: 'INACTIVE',
+                  label: l10n.translate('clinicServiceInactiveBadge'),
+                ),
+              ],
+            ),
+          ],
+        );
+
+        final Widget body = items.isEmpty || filtered.isEmpty
+            ? ClinicTableEmpty(l10n.translate('clinicServicesEmpty'))
+            : clinicDataTable(
+                context: context,
+                sortColumnIndex: _sortIdx,
+                sortAscending: _sortAsc,
+                columns: [
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColId')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColTitle')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColCode')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColPrice')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColCurrency')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColStatus')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColDoctors')),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicServicesColActions')),
+                  ),
+                ],
+                rows: filtered.map((it) {
+                  final price =
+                      (it.defaultPriceMinor / 100).toStringAsFixed(2);
+                  return DataRow(
+                    cells: [
+                      DataCell(Text('#${it.id}')),
+                      DataCell(Text(
                         it.title,
                         style: TextStyle(
                           color: it.active ? null : Colors.grey,
-                          fontStyle: it.active ? null : FontStyle.italic,
+                          fontStyle:
+                              it.active ? null : FontStyle.italic,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-                      subtitle: Text(
-                        '${it.currency} $price · ${it.code ?? '—'}\n${_assignmentSubtitle(l10n, members, it)}'
-                        '${it.active ? '' : '\n${l10n.translate('clinicServiceInactiveBadge')}'}',
-                      ),
-                      isThreeLine: true,
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (v) async {
-                          if (v == 'edit') {
-                            await _openEditor(context, ref, it);
-                          } else if (v == 'toggle') {
-                            try {
-                              await patchClinicCatalogItem(
-                                ref,
-                                clinicId: clinicId,
-                                catalogItemId: it.id,
-                                active: !it.active,
-                              );
-                              if (context.mounted) ref.invalidate(clinicCatalogProvider(clinicId));
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
-                              }
-                            }
-                          }
-                        },
-                        itemBuilder: (ctx) => [
-                          PopupMenuItem(value: 'edit', child: Text(l10n.translate('edit'))),
-                          PopupMenuItem(
-                            value: 'toggle',
-                            child: Text(
-                              it.active ? l10n.translate('clinicServiceDeactivate') : l10n.translate('clinicServiceActivate'),
+                      )),
+                      DataCell(Text(it.code ?? '—')),
+                      DataCell(Text(
+                        price,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )),
+                      DataCell(Text(it.currency)),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (it.active
+                                    ? Colors.green
+                                    : Colors.grey)
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            it.active
+                                ? l10n.translate('clinicServiceActive')
+                                : l10n
+                                    .translate('clinicServiceInactiveBadge'),
+                            style: TextStyle(
+                              color: it.active
+                                  ? Colors.green.shade800
+                                  : Colors.grey.shade700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    );
-                  },
-                ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () async {
-              await _openEditor(context, ref, null);
-            },
-            child: const Icon(Icons.add),
-          ),
-        );
+                      DataCell(
+                        ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(maxWidth: 240),
+                          child: Text(
+                            _assignmentSubtitle(l10n, members, it),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 20),
+                          onSelected: (v) async {
+                            if (v == 'edit') {
+                              await _openEditor(context, ref, it);
+                            } else if (v == 'toggle') {
+                              try {
+                                await patchClinicCatalogItem(
+                                  ref,
+                                  clinicId: widget.clinicId,
+                                  catalogItemId: it.id,
+                                  active: !it.active,
+                                );
+                                if (context.mounted) {
+                                  ref.invalidate(clinicCatalogProvider(
+                                      widget.clinicId));
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                          content: Text('$e')));
+                                }
+                              }
+                            }
+                          },
+                          itemBuilder: (ctx) => [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text(l10n.translate('edit')),
+                            ),
+                            PopupMenuItem(
+                              value: 'toggle',
+                              child: Text(
+                                it.active
+                                    ? l10n.translate(
+                                        'clinicServiceDeactivate')
+                                    : l10n.translate(
+                                        'clinicServiceActivate'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              );
+
+        return ClinicTableShell(toolbar: toolbar, body: body);
       },
     );
   }

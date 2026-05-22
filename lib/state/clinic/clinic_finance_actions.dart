@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 
-Future<PaymentHistoryItem?> recordClinicPayment(
+Future<PaymentHistoryItem> recordClinicPayment(
   dynamic ref, {
   required int clinicId,
   required int treatmentPlanId,
@@ -28,12 +28,12 @@ Future<PaymentHistoryItem?> recordClinicPayment(
     '/api/clinics/$clinicId/finance/payments',
     body,
   );
-  if (res.statusCode != 200) return null;
+  if (res.statusCode != 200) throw Exception(_extractServerMessage(res));
   final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
   return PaymentHistoryItem.fromJson(data);
 }
 
-Future<FinancialRecordRow?> createFinancialRecord(
+Future<FinancialRecordRow> createFinancialRecord(
   dynamic ref, {
   required int clinicId,
   required int patientId,
@@ -65,7 +65,9 @@ Future<FinancialRecordRow?> createFinancialRecord(
     '/api/clinics/$clinicId/finance/records',
     body,
   );
-  if (res.statusCode != 200) return null;
+  if (res.statusCode != 200) {
+    throw Exception(_extractServerMessage(res));
+  }
   final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
   return FinancialRecordRow.fromJson(data);
 }

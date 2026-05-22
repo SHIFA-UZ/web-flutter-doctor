@@ -9,6 +9,8 @@ import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/today_appointments_provider.dart';
 import 'package:shifa_doc_app_v1/features/home/application/home_analytics_providers.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
 /// Refreshes **today** in [calendarProvider], then invalidates today list + analytics.
@@ -37,6 +39,14 @@ Future<void> invalidateAppointmentRelatedProviders(dynamic ref) async {
   }
   ref.invalidate(todayAppointmentsProvider);
   ref.invalidate(doctorAnalyticsOverviewProvider);
+  // Treatment plan auto-completion runs server-side when an appointment is
+  // completed (see TreatmentPlanStatusService), so the list of plans + the
+  // finance dashboards may have moved. Invalidate them here so the next
+  // navigation to the Clinic workspace shows the up-to-date status without
+  // requiring a manual refresh.
+  ref.invalidate(treatmentPlansForClinicProvider);
+  ref.invalidate(treatmentPlansForPatientProvider);
+  ref.invalidate(clinicFinanceDashboardProvider);
 }
 
 /// Refresh a specific day in the calendar without wiping all cached data.

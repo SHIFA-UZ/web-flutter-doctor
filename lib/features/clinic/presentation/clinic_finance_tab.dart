@@ -3,10 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
+
+import 'clinic_finance_record_dialog.dart';
 
 class ClinicFinanceTab extends ConsumerStatefulWidget {
   final int clinicId;
@@ -148,52 +153,566 @@ class _DashboardView extends ConsumerWidget {
   }
 }
 
-class _AppointmentLedgerView extends ConsumerWidget {
+class _AppointmentLedgerView extends ConsumerStatefulWidget {
   final int clinicId;
   const _AppointmentLedgerView({required this.clinicId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AppointmentLedgerView> createState() =>
+      _AppointmentLedgerViewState();
+}
+
+class _AppointmentLedgerViewState
+    extends ConsumerState<_AppointmentLedgerView> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _search = '';
+  String _statusFilter = 'ALL'; // matches planSimplePaymentStatus
+  int _sortIdx = 0; // Default: most recent visits first.
+  bool _sortAsc = false;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
+  List<AppointmentLedgerRowDto> _apply(List<AppointmentLedgerRowDto> rows) {
+    Iterable<AppointmentLedgerRowDto> out = rows;
+    if (_search.trim().isNotEmpty) {
+      final s = _search.trim().toLowerCase();
+      out = out.where((r) =>
+          r.patientName.toLowerCase().contains(s) ||
+          r.doctorName.toLowerCase().contains(s) ||
+          r.appointmentId.toString().contains(s) ||
+          r.treatmentPlanId.toString().contains(s));
+    }
+    if (_statusFilter != 'ALL') {
+      out = out.where((r) => r.planSimplePaymentStatus == _statusFilter);
+    }
+    final list = out.toList();
+    int cmp(AppointmentLedgerRowDto a, AppointmentLedgerRowDto b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = a.startAt.compareTo(b.startAt);
+          break;
+        case 1:
+          c = a.patientName
+              .toLowerCase()
+              .compareTo(b.patientName.toLowerCase());
+          break;
+        case 2:
+          c = a.doctorName
+              .toLowerCase()
+              .compareTo(b.doctorName.toLowerCase());
+          break;
+        case 3:
+          c = a.treatmentPlanId.compareTo(b.treatmentPlanId);
+          break;
+        case 4:
+          c = a.services.length.compareTo(b.services.length);
+          break;
+        case 5:
+          c = a.visitTotalMinor.compareTo(b.visitTotalMinor);
+          break;
+        case 6:
+          c = a.planSimplePaymentStatus
+              .compareTo(b.planSimplePaymentStatus);
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
+  }
+
+  Color _statusColor(String s) {
+    switch (s.toUpperCase()) {
+      case 'PAID':
+        return Colors.green.shade700;
+      case 'PARTIAL':
+        return Colors.orange.shade700;
+      case 'UNPAID':
+        return Colors.red.shade700;
+      default:
+        return Colors.grey.shade600;
+    }
+  }
+
+  void _showServices(AppointmentLedgerRowDto row) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(clinicAppointmentLedgerProvider(clinicId));
-    return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
-      data: (page) {
-        final content = page['content'] as List<dynamic>? ?? [];
-        if (content.isEmpty) {
-          return Center(child: Text(l10n.translate('clinicFinanceNoLedgerRows')));
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: content.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (ctx, i) {
-            final row = AppointmentLedgerRowDto.fromJson(
-              Map<String, dynamic>.from(content[i] as Map),
-            );
-            return ExpansionTile(
-              title: Text('${row.patientName} · ${_formatDate(row.startAt)}'),
-              subtitle: Text(
-                '${row.planSimplePaymentStatus} · ${_formatMoney(row.visitTotalMinor, row.currency)}',
-              ),
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${row.patientName} · ${_formatDate(row.startAt)}'),
+        content: SizedBox(
+          width: 480,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ListTile(
-                  dense: true,
-                  title: Text('${l10n.translate('clinicFinanceVisitServices')} · '
-                      '${row.doctorName}'),
+                Text(
+                  '${l10n.translate('clinicFinanceVisitServices')} · '
+                  '${row.doctorName}',
+                  style: Theme.of(ctx).textTheme.titleSmall,
                 ),
+                const SizedBox(height: 8),
                 ...row.services.map(
                   (s) => ListTile(
                     dense: true,
+                    contentPadding: EdgeInsets.zero,
                     title: Text(s.title),
-                    trailing: Text(_formatMoney(s.lineTotalMinor, row.currency)),
+                    trailing: Text(
+                      _formatMoney(s.lineTotalMinor, row.currency),
+                    ),
                   ),
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l10n.translate('clinicTreatmentPlansTotal'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600)),
+                      Text(
+                        _formatMoney(row.visitTotalMinor, row.currency),
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _invalidateFinanceAfterPayment() {
+    ref.invalidate(clinicAppointmentLedgerProvider(widget.clinicId));
+    ref.invalidate(clinicPaymentHistoryProvider(widget.clinicId));
+    ref.invalidate(clinicDoctorEarningsProvider(widget.clinicId));
+    ref.invalidate(clinicFinanceDashboardProvider(widget.clinicId));
+    ref.invalidate(clinicFinancialRecordsProvider(widget.clinicId));
+  }
+
+  Future<void> _quickPayRow(AppointmentLedgerRowDto row, String method) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (row.visitTotalMinor <= 0) return;
+    try {
+      await recordClinicPayment(
+        ref,
+        clinicId: widget.clinicId,
+        treatmentPlanId: row.treatmentPlanId,
+        amountMinor: row.visitTotalMinor,
+        currency: row.currency,
+        method: method,
+      );
+      if (!mounted) return;
+      _invalidateFinanceAfterPayment();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.translate('clinicFinancePaymentRecorded'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content:
+              Text('${l10n.translate('clinicFinancePaymentFailed')}: $e'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showCustomPayDialog(AppointmentLedgerRowDto row) async {
+    final l10n = AppLocalizations.of(context)!;
+    final major = row.visitTotalMinor / 100.0;
+    final ctrl = TextEditingController(
+      text: major == major.roundToDouble()
+          ? '${major.round()}'
+          : major.toStringAsFixed(2),
+    );
+    final memoCtrl = TextEditingController();
+    String method = 'CASH';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSt) {
+            return AlertDialog(
+              title: Text(l10n.translate('clinicFinancePaymentDialogTitle')),
+              content: SizedBox(
+                width: 360,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: ctrl,
+                        decoration: InputDecoration(
+                          labelText:
+                              l10n.translate('clinicFinancePaymentAmountLabel'),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.translate('clinicPaymentsColMethod'),
+                        style: Theme.of(ctx).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          (
+                            'CASH',
+                            l10n.translate('clinicFinancePayByCash'),
+                          ),
+                          (
+                            'CARD_EXTERNAL',
+                            l10n.translate('clinicFinancePayByCard'),
+                          ),
+                          (
+                            'TRANSFER',
+                            l10n.translate('clinicFinancePayByTransfer'),
+                          ),
+                          (
+                            'OTHER',
+                            l10n.translate('clinicFinancePayByOther'),
+                          ),
+                        ]
+                            .map(
+                              (e) => ChoiceChip(
+                                label: Text(e.$2),
+                                selected: method == e.$1,
+                                onSelected: (_) =>
+                                    setSt(() => method = e.$1),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      TextField(
+                        controller: memoCtrl,
+                        decoration: InputDecoration(
+                          labelText: l10n
+                              .translate('clinicFinancePaymentMemoLabel'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(l10n.cancel),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final parsed = double.tryParse(
+                      ctrl.text.replaceAll(' ', '').replaceAll(',', '.').trim(),
+                    );
+                    if (parsed == null || parsed <= 0) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.translate('clinicFinanceInvalidAmount'),
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    final minor = (parsed * 100).round();
+                    Navigator.pop(ctx);
+                    try {
+                      await recordClinicPayment(
+                        ref,
+                        clinicId: widget.clinicId,
+                        treatmentPlanId: row.treatmentPlanId,
+                        amountMinor: minor,
+                        currency: row.currency,
+                        method: method,
+                        memo: memoCtrl.text.trim().isEmpty
+                            ? null
+                            : memoCtrl.text.trim(),
+                      );
+                      if (!mounted) return;
+                      _invalidateFinanceAfterPayment();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.translate('clinicFinancePaymentRecorded'),
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.red,
+                          content: Text(
+                            '${l10n.translate('clinicFinancePaymentFailed')}: $e',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(l10n.translate('clinicFinancePaymentConfirm')),
                 ),
               ],
             );
           },
         );
+      },
+    );
+  }
+
+  Widget _appointmentPaymentStatusCell(
+    BuildContext context,
+    AppointmentLedgerRowDto row,
+    Color color,
+    bool canAct,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final label = row.planSimplePaymentStatus;
+    final fullyPaidPlan = row.planSimplePaymentStatus == 'PAID';
+    final payable = row.visitTotalMinor > 0 &&
+        row.planSimplePaymentStatus != 'NONE' &&
+        !fullyPaidPlan;
+    final enabled = canAct && payable;
+
+    final pill = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          if (enabled) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.arrow_drop_down, size: 18, color: color),
+          ],
+        ],
+      ),
+    );
+
+    if (!enabled) return pill;
+
+    return PopupMenuButton<String>(
+      tooltip: l10n.translate('clinicLedgerPayMenu'),
+      onSelected: (key) {
+        if (key == 'CUSTOM') {
+          _showCustomPayDialog(row);
+        } else {
+          _quickPayRow(row, key);
+        }
+      },
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'CASH',
+          child: Text(l10n.translate('clinicFinancePayByCash')),
+        ),
+        PopupMenuItem(
+          value: 'CARD_EXTERNAL',
+          child: Text(l10n.translate('clinicFinancePayByCard')),
+        ),
+        PopupMenuItem(
+          value: 'TRANSFER',
+          child: Text(l10n.translate('clinicFinancePayByTransfer')),
+        ),
+        PopupMenuItem(
+          value: 'OTHER',
+          child: Text(l10n.translate('clinicFinancePayByOther')),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'CUSTOM',
+          child: Text(l10n.translate('clinicFinancePayCustomAmount')),
+        ),
+      ],
+      child: pill,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final canAct = ref.watch(canManageFinanceProvider);
+    final async =
+        ref.watch(clinicAppointmentLedgerProvider(widget.clinicId));
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (page) {
+        final content = page['content'] as List<dynamic>? ?? [];
+        final rows = content
+            .map((r) => AppointmentLedgerRowDto.fromJson(
+                Map<String, dynamic>.from(r as Map)))
+            .toList();
+        final filtered = _apply(rows);
+
+        final toolbar = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClinicTableSearchField(
+              controller: _searchCtrl,
+              hint: l10n.translate('clinicLedgerSearchHint'),
+              onChanged: (v) => setState(() => _search = v),
+            ),
+            const SizedBox(height: 8),
+            ClinicFilterChips<String>(
+              selected: _statusFilter,
+              onSelected: (v) => setState(() => _statusFilter = v),
+              options: [
+                (
+                  value: 'ALL',
+                  label: l10n.translate('clinicTreatmentPlansAll'),
+                ),
+                (value: 'PAID', label: 'PAID'),
+                (value: 'PARTIAL', label: 'PARTIAL'),
+                (value: 'UNPAID', label: 'UNPAID'),
+              ],
+            ),
+          ],
+        );
+
+        final Widget body = rows.isEmpty || filtered.isEmpty
+            ? ClinicTableEmpty(l10n.translate('clinicFinanceNoLedgerRows'))
+            : clinicDataTable(
+                context: context,
+                sortColumnIndex: _sortIdx,
+                sortAscending: _sortAsc,
+                columns: [
+                  DataColumn(
+                    label: Text(l10n.translate('clinicLedgerColDate')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicLedgerColPatient')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicLedgerColDoctor')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Tooltip(
+                      message: l10n.translate('clinicLedgerColPlanTooltip'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 14, color: Colors.grey.shade600),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              l10n.translate('clinicLedgerColPlanId'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicLedgerColServices')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicLedgerColTotal')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicLedgerColStatus')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicLedgerColActions')),
+                  ),
+                ],
+                rows: filtered.map((row) {
+                  final color =
+                      _statusColor(row.planSimplePaymentStatus);
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(_formatDate(row.startAt))),
+                      DataCell(Text(
+                        row.patientName,
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w500),
+                      )),
+                      DataCell(Text(row.doctorName)),
+                      DataCell(
+                        Tooltip(
+                          message: '#${row.treatmentPlanId}',
+                          child: Text('#${row.treatmentPlanId}'),
+                        ),
+                      ),
+                      DataCell(Text('${row.services.length}')),
+                      DataCell(Text(
+                        _formatMoney(row.visitTotalMinor, row.currency),
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w600),
+                      )),
+                      DataCell(
+                        _appointmentPaymentStatusCell(
+                          context,
+                          row,
+                          color,
+                          canAct,
+                        ),
+                      ),
+                      DataCell(
+                        IconButton(
+                          tooltip: l10n
+                              .translate('clinicLedgerViewServices'),
+                          icon: const Icon(
+                              Icons.medical_information_outlined,
+                              size: 20),
+                          onPressed: () => _showServices(row),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              );
+
+        return ClinicTableShell(toolbar: toolbar, body: body);
       },
     );
   }
@@ -514,14 +1033,69 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (list) {
               final filtered = _applyClientFilters(list);
+              final itemCount = filtered.length;
+              final scheduled =
+                  filtered.fold<int>(0, (a, r) => a + r.amountMinor);
+              final paidSum = filtered.fold<int>(
+                0,
+                (a, r) =>
+                    r.status == 'PAID' ? a + r.amountMinor : a,
+              );
+              final outstanding = scheduled - paidSum;
+              final cur = filtered.isEmpty ? 'UZS' : filtered.first.currency;
+
+              Widget totalsStrip() => Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        Chip(
+                          label: Text(
+                            '${l10n.translate('clinicFinanceInstallTotalsItems')}: $itemCount',
+                          ),
+                        ),
+                        Chip(
+                          label: Text(
+                            '${l10n.translate('clinicFinanceInstallTotalsScheduled')}: ${_formatMoney(scheduled, cur)}',
+                          ),
+                        ),
+                        Chip(
+                          label: Text(
+                            '${l10n.translate('clinicFinanceInstallTotalsPaidSum')}: ${_formatMoney(paidSum, cur)}',
+                          ),
+                        ),
+                        Chip(
+                          label: Text(
+                            '${l10n.translate('clinicFinanceInstallTotalsOutstanding')}: ${_formatMoney(outstanding, cur)}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
               if (filtered.isEmpty) {
-                return Center(
-                  child: Text(
-                    l10n.translate('clinicFinanceNoInstallments'),
-                  ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    totalsStrip(),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          l10n.translate('clinicFinanceNoInstallments'),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               }
-              return RefreshIndicator(
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  totalsStrip(),
+                  Expanded(
+                    child: RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(
                     clinicInstallmentItemsProvider((widget.clinicId, _filter)),
@@ -546,47 +1120,137 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
                         showCheckboxColumn: false,
                         columns: [
                           DataColumn(
-                            label: Text(l10n.translate(
-                                'clinicFinanceInstallColSeq')),
+                            label: Tooltip(
+                              message: l10n.translate(
+                                'clinicFinanceInstallHintSeq',
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text(l10n.translate(
+                                      'clinicFinanceInstallColSeq')),
+                                ],
+                              ),
+                            ),
                             numeric: true,
                             onSort: _onSort,
                           ),
                           DataColumn(
-                            label: Text(l10n.translate(
-                                'clinicFinanceInstallColPatient')),
+                            label: Tooltip(
+                              message: l10n.translate(
+                                'clinicFinanceInstallHintPatient',
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(l10n.translate(
+                                        'clinicFinanceInstallColPatient')),
+                                  ),
+                                ],
+                              ),
+                            ),
                             onSort: _onSort,
                           ),
                           DataColumn(
-                            label: Text(l10n.translate(
-                                'clinicFinanceInstallColPlan')),
+                            label: Tooltip(
+                              message: l10n.translate(
+                                'clinicFinanceInstallHintPlan',
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(l10n.translate(
+                                        'clinicFinanceInstallColPlan')),
+                                  ),
+                                ],
+                              ),
+                            ),
                             onSort: _onSort,
                           ),
                           DataColumn(
-                            label: Text(l10n.translate(
-                                'clinicFinanceInstallColDue')),
+                            label: Tooltip(
+                              message: l10n.translate(
+                                'clinicFinanceInstallHintDue',
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text(l10n.translate(
+                                      'clinicFinanceInstallColDue')),
+                                ],
+                              ),
+                            ),
                             onSort: _onSort,
                           ),
                           DataColumn(
-                            label: Text(l10n.translate(
-                                'clinicFinanceInstallColAmount')),
+                            label: Tooltip(
+                              message: l10n.translate(
+                                'clinicFinanceInstallHintAmount',
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text(l10n.translate(
+                                      'clinicFinanceInstallColAmount')),
+                                ],
+                              ),
+                            ),
                             numeric: true,
                             onSort: _onSort,
                           ),
                           DataColumn(
-                            label: Text(l10n.translate(
-                                'clinicFinanceInstallColStatus')),
+                            label: Tooltip(
+                              message: l10n.translate(
+                                'clinicFinanceInstallHintStatus',
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(l10n.translate(
+                                        'clinicFinanceInstallColStatus')),
+                                  ),
+                                ],
+                              ),
+                            ),
                             onSort: _onSort,
                           ),
                           DataColumn(
-                            label: Text(l10n.translate(
-                                'clinicFinanceInstallColActions')),
+                            label: Tooltip(
+                              message: l10n.translate(
+                                'clinicFinanceInstallHintActions',
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text(l10n.translate(
+                                      'clinicFinanceInstallColActions')),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                         rows: filtered.map((row) {
                           final planTitle = row.treatmentPlanTitle?.trim();
                           final plan = planTitle != null && planTitle.isNotEmpty
                               ? planTitle
-                              : 'Plan #${row.treatmentPlanId}';
+                              : '#${row.treatmentPlanId}';
                           final canEditStatus =
                               canAct && row.status != 'PAID';
                           return DataRow(
@@ -666,7 +1330,10 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
                     ),
                   ),
                 ),
-              );
+              ),
+            ),
+          ],
+        );
             },
           ),
         ),
@@ -692,179 +1359,821 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
   }
 }
 
-class _DoctorEarningsPane extends ConsumerWidget {
+class _DoctorEarningsPane extends ConsumerStatefulWidget {
   final int clinicId;
   const _DoctorEarningsPane({required this.clinicId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DoctorEarningsPane> createState() =>
+      _DoctorEarningsPaneState();
+}
+
+class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _search = '';
+  int _sortIdx = 2; // Default: highest gross first.
+  bool _sortAsc = false;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
+  String _doctorName(int profileId, List<ClinicMember> members) {
+    for (final m in members) {
+      if (m.doctorProfileId == profileId) return m.displayName;
+    }
+    return '#$profileId';
+  }
+
+  List<DoctorEarningRow> _apply(
+    List<DoctorEarningRow> rows,
+    List<ClinicMember> members,
+  ) {
+    Iterable<DoctorEarningRow> out = rows;
+    if (_search.trim().isNotEmpty) {
+      final s = _search.trim().toLowerCase();
+      out = out.where((d) {
+        final name = _doctorName(d.doctorProfileId, members).toLowerCase();
+        return name.contains(s) || d.doctorProfileId.toString().contains(s);
+      });
+    }
+    final list = out.toList();
+    int cmp(DoctorEarningRow a, DoctorEarningRow b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = _doctorName(a.doctorProfileId, members)
+              .toLowerCase()
+              .compareTo(
+                  _doctorName(b.doctorProfileId, members).toLowerCase());
+          break;
+        case 1:
+          c = a.visitCount.compareTo(b.visitCount);
+          break;
+        case 2:
+          c = a.grossMinor.compareTo(b.grossMinor);
+          break;
+        case 3:
+          c = a.collectedMinor.compareTo(b.collectedMinor);
+          break;
+        case 4:
+          c = a.outstandingMinor.compareTo(b.outstandingMinor);
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(clinicDoctorEarningsProvider(clinicId));
+    final async = ref.watch(clinicDoctorEarningsProvider(widget.clinicId));
+    final members =
+        ref.watch(clinicMembersProvider(widget.clinicId)).valueOrNull ??
+            <ClinicMember>[];
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (rows) {
-        if (rows.isEmpty) {
-          return Center(child: Text(l10n.translate('clinicFinanceNoLedgerRows')));
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: rows.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (ctx, i) {
-            final d = rows[i];
-            return ListTile(
-              title: Text('Doctor #${d.doctorProfileId}'),
-              subtitle: Text(
-                '${l10n.translate('clinicFinanceDoctorEarningsHint')} · visits ${d.visitCount}',
-              ),
-              trailing: Text(
-                '${_formatMoney(d.grossMinor, 'UZS')} / ${_formatMoney(d.collectedMinor, 'UZS')}',
-              ),
-            );
-          },
+        final filtered = _apply(rows, members);
+        final toolbar = ClinicTableSearchField(
+          controller: _searchCtrl,
+          hint: l10n.translate('clinicEarningsSearchHint'),
+          onChanged: (v) => setState(() => _search = v),
         );
+
+        final Widget body = rows.isEmpty || filtered.isEmpty
+            ? ClinicTableEmpty(
+                l10n.translate('clinicFinanceNoLedgerRows'))
+            : clinicDataTable(
+                context: context,
+                sortColumnIndex: _sortIdx,
+                sortAscending: _sortAsc,
+                columns: [
+                  DataColumn(
+                    label: Text(l10n.translate('clinicEarningsColDoctor')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicEarningsColVisits')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicEarningsColGross')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label:
+                        Text(l10n.translate('clinicEarningsColCollected')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(
+                        l10n.translate('clinicEarningsColOutstanding')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                ],
+                rows: filtered.map((d) {
+                  final name = _doctorName(d.doctorProfileId, members);
+                  return DataRow(
+                    cells: [
+                      DataCell(Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: AppColors.primaryTeal
+                                .withValues(alpha: 0.15),
+                            child: Text(
+                              name.isNotEmpty
+                                  ? name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: AppColors.primaryTeal,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '#${d.doctorProfileId}',
+                            style: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 12),
+                          ),
+                        ],
+                      )),
+                      DataCell(Text('${d.visitCount}')),
+                      DataCell(Text(
+                        _formatMoney(d.grossMinor, 'UZS'),
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w600),
+                      )),
+                      DataCell(Text(
+                        _formatMoney(d.collectedMinor, 'UZS'),
+                        style: TextStyle(color: Colors.green.shade700),
+                      )),
+                      DataCell(Text(
+                        _formatMoney(d.outstandingMinor, 'UZS'),
+                        style: TextStyle(
+                          color: d.outstandingMinor > 0
+                              ? Colors.red.shade700
+                              : Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )),
+                    ],
+                  );
+                }).toList(),
+              );
+
+        return ClinicTableShell(toolbar: toolbar, body: body);
       },
     );
   }
 }
 
-class _RecordsView extends ConsumerWidget {
+class _RecordsView extends ConsumerStatefulWidget {
   final int clinicId;
   const _RecordsView({required this.clinicId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RecordsView> createState() => _RecordsViewState();
+}
+
+class _RecordsViewState extends ConsumerState<_RecordsView> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _search = '';
+  String _statusFilter = 'ALL'; // ALL | ISSUED | PAID | PARTIALLY_PAID | OVERDUE | VOID
+  int _sortIdx = 0;
+  bool _sortAsc = false;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'PAID':
+        return Colors.green.shade700;
+      case 'OVERDUE':
+        return Colors.red.shade700;
+      case 'PARTIALLY_PAID':
+        return Colors.orange.shade700;
+      case 'ISSUED':
+        return Colors.blue.shade700;
+      default:
+        return Colors.grey.shade700;
+    }
+  }
+
+  List<FinancialRecordRow> _apply(List<FinancialRecordRow> rows) {
+    Iterable<FinancialRecordRow> out = rows;
+    if (_search.trim().isNotEmpty) {
+      final s = _search.trim().toLowerCase();
+      out = out.where((r) =>
+          r.id.toString().contains(s) ||
+          (r.recordNumber ?? '').toLowerCase().contains(s) ||
+          r.recordType.toLowerCase().contains(s) ||
+          (r.notes ?? '').toLowerCase().contains(s));
+    }
+    if (_statusFilter != 'ALL') {
+      out = out.where((r) => r.status == _statusFilter);
+    }
+    final list = out.toList();
+    int cmp(FinancialRecordRow a, FinancialRecordRow b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = a.createdAt.compareTo(b.createdAt);
+          break;
+        case 1:
+          c = a.recordType.compareTo(b.recordType);
+          break;
+        case 2:
+          c = (a.recordNumber ?? '').compareTo(b.recordNumber ?? '');
+          break;
+        case 3:
+          c = a.totalMinor.compareTo(b.totalMinor);
+          break;
+        case 4:
+          c = a.paidMinor.compareTo(b.paidMinor);
+          break;
+        case 5:
+          c = a.remainingMinor.compareTo(b.remainingMinor);
+          break;
+        case 6:
+          c = a.status.compareTo(b.status);
+          break;
+        case 7:
+          c = (a.dueDate ?? '').compareTo(b.dueDate ?? '');
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final recordsAsync = ref.watch(clinicFinancialRecordsProvider(clinicId));
+    final recordsAsync =
+        ref.watch(clinicFinancialRecordsProvider(widget.clinicId));
 
     return recordsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (records) {
-        if (records.isEmpty) {
-          return Center(
-            child: Text(l10n.translate('clinicFinanceNoRecords')),
-          );
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: records.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final r = records[index];
-            return _FinancialRecordTile(record: r);
-          },
+        final filtered = _apply(records);
+        final canManage = ref.watch(canManageFinanceProvider);
+        final toolbar = Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClinicTableSearchField(
+                    controller: _searchCtrl,
+                    hint: l10n.translate('clinicRecordsSearchHint'),
+                    onChanged: (v) => setState(() => _search = v),
+                  ),
+                  const SizedBox(height: 8),
+                  ClinicFilterChips<String>(
+                    selected: _statusFilter,
+                    onSelected: (v) => setState(() => _statusFilter = v),
+                    options: const [
+                      (value: 'ALL', label: 'All'),
+                      (value: 'ISSUED', label: 'Issued'),
+                      (value: 'PAID', label: 'Paid'),
+                      (value: 'PARTIALLY_PAID', label: 'Partial'),
+                      (value: 'OVERDUE', label: 'Overdue'),
+                      (value: 'VOID', label: 'Void'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (canManage) ...[
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.add, size: 20),
+                  onPressed: () {
+                    showClinicFinanceRecordDialog(
+                      context: context,
+                      ref: ref,
+                      clinicId: widget.clinicId,
+                    );
+                  },
+                  label: Text(l10n.translate('clinicRecordsNewRecord')),
+                ),
+              ),
+            ],
+          ],
         );
+
+        Widget body;
+        if (records.isEmpty) {
+          body = Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Icon(
+                      Icons.receipt_long_outlined,
+                      size: 52,
+                      color: Colors.grey.shade500,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.translate('clinicRecordsEmptyTitle'),
+                      textAlign: TextAlign.center,
+                      style:
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.translate('clinicRecordsEmptyBody'),
+                      textAlign: TextAlign.center,
+                      style:
+                          Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey.shade700,
+                                height: 1.35,
+                              ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else if (filtered.isEmpty) {
+          body = Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                l10n.translate('clinicTableNoFilteredResults'),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          );
+        } else {
+          body = clinicDataTable(
+                context: context,
+                sortColumnIndex: _sortIdx,
+                sortAscending: _sortAsc,
+                columns: [
+                  DataColumn(
+                    label: Text(l10n.translate('clinicRecordsColCreated')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicRecordsColType')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicRecordsColNumber')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicRecordsColTotal')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicRecordsColPaid')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label:
+                        Text(l10n.translate('clinicRecordsColRemaining')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicRecordsColStatus')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicRecordsColDue')),
+                    onSort: _onSort,
+                  ),
+                ],
+                rows: filtered.map((r) {
+                  final color = _statusColor(r.status);
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(_formatDate(r.createdAt))),
+                      DataCell(Text(r.recordType)),
+                      DataCell(Text(r.recordNumber ?? '#${r.id}')),
+                      DataCell(Text(
+                        _formatMoney(r.totalMinor, r.currency),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600),
+                      )),
+                      DataCell(Text(
+                        _formatMoney(r.paidMinor, r.currency),
+                        style: TextStyle(color: Colors.green.shade700),
+                      )),
+                      DataCell(Text(
+                        _formatMoney(r.remainingMinor, r.currency),
+                        style: TextStyle(
+                          color: r.remainingMinor > 0
+                              ? Colors.red.shade700
+                              : Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )),
+                      DataCell(Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                              color: color.withValues(alpha: 0.6)),
+                        ),
+                        child: Text(
+                          r.uiPaymentStatus.isNotEmpty
+                              ? r.uiPaymentStatus
+                              : r.status,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )),
+                      DataCell(Text(
+                          r.dueDate != null ? _formatDate(r.dueDate!) : '—')),
+                    ],
+                  );
+                }).toList(),
+              );
+        }
+
+        return ClinicTableShell(toolbar: toolbar, body: body);
       },
     );
   }
 }
 
-class _PaymentsView extends ConsumerWidget {
+class _PaymentsView extends ConsumerStatefulWidget {
   final int clinicId;
   const _PaymentsView({required this.clinicId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PaymentsView> createState() => _PaymentsViewState();
+}
+
+class _PaymentsViewState extends ConsumerState<_PaymentsView> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _search = '';
+  String _methodFilter = 'ALL';
+  int _sortIdx = 1; // Default: most recent payments first.
+  bool _sortAsc = false;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
+  Color _methodColor(String method) {
+    switch (method) {
+      case 'CASH':
+        return Colors.green;
+      case 'CARD_EXTERNAL':
+        return Colors.blue;
+      case 'TRANSFER':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _methodIcon(String method) {
+    switch (method) {
+      case 'CASH':
+        return Icons.payments_outlined;
+      case 'CARD_EXTERNAL':
+        return Icons.credit_card;
+      case 'TRANSFER':
+        return Icons.account_balance;
+      default:
+        return Icons.receipt_long;
+    }
+  }
+
+  List<PaymentHistoryItem> _apply(List<PaymentHistoryItem> rows) {
+    Iterable<PaymentHistoryItem> out = rows;
+    if (_search.trim().isNotEmpty) {
+      final s = _search.trim().toLowerCase();
+      out = out.where((p) {
+        final pid = (p.patientId != null ? '#${p.patientId}' : '');
+        final did = (p.doctorProfileId != null ? '#${p.doctorProfileId}' : '');
+        final planTitle =
+            '${(p.treatmentPlanTitle ?? '').toLowerCase()} #${p.treatmentPlanId}';
+        final patientName = (p.patientName ?? '').toLowerCase();
+        final doctorName = (p.doctorName ?? '').toLowerCase();
+        return p.method.toLowerCase().contains(s) ||
+            (p.memo ?? '').toLowerCase().contains(s) ||
+            p.id.toString().contains(s) ||
+            p.treatmentPlanId.toString().contains(s) ||
+            patientName.contains(s) ||
+            doctorName.contains(s) ||
+            planTitle.contains(s) ||
+            pid.contains(s) ||
+            did.contains(s);
+      });
+    }
+    if (_methodFilter != 'ALL') {
+      out = out.where((p) => p.method == _methodFilter);
+    }
+    final list = out.toList();
+    String planSort(PaymentHistoryItem p) {
+      final t = (p.treatmentPlanTitle ?? '').trim().toLowerCase();
+      final key = t.isNotEmpty ? t : '${p.treatmentPlanId}';
+      return '$key:${p.treatmentPlanId}';
+    }
+
+    int cmp(PaymentHistoryItem a, PaymentHistoryItem b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = a.id.compareTo(b.id);
+          break;
+        case 1:
+          c = a.recordedAt.compareTo(b.recordedAt);
+          break;
+        case 2:
+          c = ((a.patientName ?? '').toLowerCase())
+              .compareTo((b.patientName ?? '').toLowerCase());
+          break;
+        case 3:
+          c = ((a.doctorName ?? '').toLowerCase())
+              .compareTo((b.doctorName ?? '').toLowerCase());
+          break;
+        case 4:
+          c = planSort(a).compareTo(planSort(b));
+          break;
+        case 5:
+          c = a.method.compareTo(b.method);
+          break;
+        case 6:
+          c = a.amountMinor.compareTo(b.amountMinor);
+          break;
+        case 7:
+          c = (a.memo ?? '').compareTo(b.memo ?? '');
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
+  }
+
+  String _paymentPlanCellLabel(PaymentHistoryItem p) {
+    final t = p.treatmentPlanTitle?.trim();
+    if (t != null && t.isNotEmpty) {
+      return '${p.treatmentPlanTitle!.trim()} (#${p.treatmentPlanId})';
+    }
+    return '#${p.treatmentPlanId}';
+  }
+
+  String _paymentPatientLabel(PaymentHistoryItem p, AppLocalizations l10n) {
+    final n = p.patientName?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    final id = p.patientId;
+    if (id != null && id != 0) {
+      return '${l10n.translate('patient')} #$id';
+    }
+    return '—';
+  }
+
+  String _paymentDoctorLabel(PaymentHistoryItem p, AppLocalizations l10n) {
+    final n = p.doctorName?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    final id = p.doctorProfileId;
+    if (id != null && id != 0) {
+      return '${l10n.translate('doctor')} #$id';
+    }
+    return '—';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final paymentsAsync = ref.watch(clinicPaymentHistoryProvider(clinicId));
+    final paymentsAsync =
+        ref.watch(clinicPaymentHistoryProvider(widget.clinicId));
 
     return paymentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (payments) {
-        if (payments.isEmpty) {
-          return Center(
-            child: Text(l10n.translate('clinicFinanceNoPayments')),
-          );
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: payments.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final p = payments[index];
-            return ListTile(
-              leading: _methodIcon(p.method),
-              title: Text(_formatMoney(p.amountMinor, p.currency)),
-              subtitle: Text('${p.method} • ${_formatDate(p.recordedAt)}'),
-              trailing: p.memo != null
-                  ? Text(
-                      p.memo!,
-                      style: TextStyle(
-                          color: Colors.grey.shade600, fontSize: 12),
-                    )
-                  : null,
-            );
-          },
+        final filtered = _apply(payments);
+        final totalsMinor =
+            filtered.fold<int>(0, (a, PaymentHistoryItem p) => a + p.amountMinor);
+        final currency = filtered.isEmpty
+            ? (payments.isEmpty ? 'UZS' : payments.first.currency)
+            : filtered.first.currency;
+
+        final toolbar = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ClinicTableSearchField(
+                    controller: _searchCtrl,
+                    hint: l10n.translate('clinicPaymentsSearchHint'),
+                    onChanged: (v) => setState(() => _search = v),
+                  ),
+                ),
+                if (filtered.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Tooltip(
+                      message: l10n.translate('clinicPaymentsTotals'),
+                      child: Chip(
+                        avatar:
+                            Icon(Icons.summarize_outlined, size: 18, color: Colors.grey.shade700),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        labelPadding: EdgeInsets.zero,
+                        label: Text(
+                          '${filtered.length} · ${_formatMoney(totalsMinor, currency)}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClinicFilterChips<String>(
+              selected: _methodFilter,
+              onSelected: (v) => setState(() => _methodFilter = v),
+              options: const [
+                (value: 'ALL', label: 'All'),
+                (value: 'CASH', label: 'Cash'),
+                (value: 'CARD_EXTERNAL', label: 'Card'),
+                (value: 'TRANSFER', label: 'Transfer'),
+                (value: 'OTHER', label: 'Other'),
+              ],
+            ),
+          ],
         );
+
+        final Widget body;
+        if (payments.isEmpty) {
+          body =
+              ClinicTableEmpty(l10n.translate('clinicFinanceNoPayments'));
+        } else if (filtered.isEmpty) {
+          body = Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                l10n.translate('clinicTableNoFilteredResults'),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          );
+        } else {
+          body = clinicDataTable(
+                context: context,
+                sortColumnIndex: _sortIdx,
+                sortAscending: _sortAsc,
+                columns: [
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColId')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColDate')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColPatient')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColDoctor')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColPlan')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColMethod')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColAmount')),
+                    numeric: true,
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
+                    label: Text(l10n.translate('clinicPaymentsColMemo')),
+                    onSort: _onSort,
+                  ),
+                ],
+                rows: filtered.map((p) {
+                  final color = _methodColor(p.method);
+                  final planText = _paymentPlanCellLabel(p);
+                  final patientText = _paymentPatientLabel(p, l10n);
+                  final doctorText = _paymentDoctorLabel(p, l10n);
+                  return DataRow(
+                    cells: [
+                      DataCell(Text('#${p.id}')),
+                      DataCell(Text(_formatDate(p.recordedAt))),
+                      DataCell(Text(
+                        patientText,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      )),
+                      DataCell(Text(doctorText)),
+                      DataCell(Text(planText)),
+                      DataCell(Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_methodIcon(p.method),
+                              size: 16, color: color),
+                          const SizedBox(width: 6),
+                          Text(p.method),
+                        ],
+                      )),
+                      DataCell(Text(
+                        _formatMoney(p.amountMinor, p.currency),
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )),
+                      DataCell(
+                        ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(maxWidth: 280),
+                          child: Text(
+                            p.memo ?? '—',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              );
+        }
+
+        return ClinicTableShell(toolbar: toolbar, body: body);
       },
-    );
-  }
-
-  Widget _methodIcon(String method) {
-    switch (method) {
-      case 'CASH':
-        return const Icon(Icons.payments_outlined, color: Colors.green);
-      case 'CARD_EXTERNAL':
-        return const Icon(Icons.credit_card, color: Colors.blue);
-      case 'TRANSFER':
-        return const Icon(Icons.account_balance, color: Colors.purple);
-      default:
-        return const Icon(Icons.receipt_long, color: Colors.grey);
-    }
-  }
-}
-
-class _FinancialRecordTile extends StatelessWidget {
-  final FinancialRecordRow record;
-  const _FinancialRecordTile({required this.record});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: _statusBadge(record.status),
-      title: Text(
-        '${record.recordType} ${record.recordNumber ?? '#${record.id}'}',
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Text(
-        '${_formatMoney(record.totalMinor, record.currency)} • '
-        '${record.uiPaymentStatus.isNotEmpty ? record.uiPaymentStatus : record.status} • '
-        'Paid: ${_formatMoney(record.paidMinor, record.currency)}',
-      ),
-      trailing: record.remainingMinor > 0
-          ? Text(
-              _formatMoney(record.remainingMinor, record.currency),
-              style: const TextStyle(
-                  color: Colors.red, fontWeight: FontWeight.w600),
-            )
-          : const Icon(Icons.check_circle, color: Colors.green, size: 20),
-    );
-  }
-
-  Widget _statusBadge(String status) {
-    Color color;
-    switch (status) {
-      case 'PAID':
-        color = Colors.green;
-        break;
-      case 'OVERDUE':
-        color = Colors.red;
-        break;
-      case 'PARTIALLY_PAID':
-        color = Colors.orange;
-        break;
-      case 'ISSUED':
-        color = Colors.blue;
-        break;
-      default:
-        color = Colors.grey;
-    }
-    return CircleAvatar(
-      radius: 6,
-      backgroundColor: color,
     );
   }
 }

@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/treatment_plan_wizard_sheet.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 
@@ -31,6 +34,11 @@ class _ClinicTreatmentPlansTabState
   String _query = '';
   String? _statusFilter;
 
+  /// Sort state for the DataTable. Default: most recently updated first
+  /// (column index 9 = "updated", descending).
+  int _sortIdx = 9;
+  bool _sortAsc = false;
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -38,12 +46,67 @@ class _ClinicTreatmentPlansTabState
     super.dispose();
   }
 
+  void _onSort(int i, bool asc) =>
+      setState(() => (_sortIdx = i, _sortAsc = asc));
+
   void _onSearchChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       setState(() => _query = value.trim());
     });
+  }
+
+  List<TreatmentPlanSummaryDto> _sort(List<TreatmentPlanSummaryDto> plans) {
+    final list = [...plans];
+    int cmp(TreatmentPlanSummaryDto a, TreatmentPlanSummaryDto b) {
+      int c;
+      switch (_sortIdx) {
+        case 0:
+          c = a.id.compareTo(b.id);
+          break;
+        case 1:
+          c = (a.title ?? '').toLowerCase().compareTo(
+              (b.title ?? '').toLowerCase());
+          break;
+        case 2:
+          c = (a.patientName ?? '').toLowerCase().compareTo(
+              (b.patientName ?? '').toLowerCase());
+          break;
+        case 3:
+          final ad = a.attendingDoctors.isNotEmpty
+              ? a.attendingDoctors.map((d) => d.name).join(',')
+              : (a.attendingDoctorName ?? '');
+          final bd = b.attendingDoctors.isNotEmpty
+              ? b.attendingDoctors.map((d) => d.name).join(',')
+              : (b.attendingDoctorName ?? '');
+          c = ad.toLowerCase().compareTo(bd.toLowerCase());
+          break;
+        case 4:
+          c = a.totalMinor.compareTo(b.totalMinor);
+          break;
+        case 5:
+          c = a.paidMinor.compareTo(b.paidMinor);
+          break;
+        case 6:
+          c = a.owedMinor.compareTo(b.owedMinor);
+          break;
+        case 7:
+          c = a.status.compareTo(b.status);
+          break;
+        case 8:
+          c = a.planPaymentStatus.compareTo(b.planPaymentStatus);
+          break;
+        case 9:
+          c = (a.updatedAt ?? '').compareTo(b.updatedAt ?? '');
+          break;
+        default:
+          c = 0;
+      }
+      return _sortAsc ? c : -c;
+    }
+    list.sort(cmp);
+    return list;
   }
 
   String _money(int minor, String currency) =>
@@ -65,6 +128,10 @@ class _ClinicTreatmentPlansTabState
     switch (status.toUpperCase()) {
       case 'ACTIVE':
         return Colors.blue.shade600;
+      case 'IN_PROGRESS':
+        return Colors.indigo.shade600;
+      case 'ON_HOLD':
+        return Colors.amber.shade800;
       case 'COMPLETED':
         return Colors.green.shade700;
       case 'CANCELLED':
@@ -72,6 +139,127 @@ class _ClinicTreatmentPlansTabState
       case 'DRAFT':
       default:
         return scheme.outline;
+    }
+  }
+
+  /// Localized human label for a [TreatmentPlan.Status] enum string. Falls
+  /// back to the raw enum name if no translation is registered.
+  String _statusLabel(BuildContext context, String status) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (status.toUpperCase()) {
+      case 'DRAFT':
+        return l10n.translate('clinicPlanStatusDraft');
+      case 'ACTIVE':
+        return l10n.translate('clinicPlanStatusActive');
+      case 'ON_HOLD':
+        return l10n.translate('clinicPlanStatusOnHold');
+      case 'IN_PROGRESS':
+        return l10n.translate('clinicPlanStatusInProgress');
+      case 'COMPLETED':
+        return l10n.translate('clinicPlanStatusCompleted');
+      case 'CANCELLED':
+        return l10n.translate('clinicPlanStatusCancelled');
+      default:
+        return status;
+    }
+  }
+
+  /// Full enum used by the popup menu. ACTIVE / IN_PROGRESS / ON_HOLD /
+  /// COMPLETED are the "operational" states a doctor toggles between;
+  /// CANCELLED is exposed unconditionally because product rule states that
+  /// any doctor may cancel a plan from any other status. DRAFT is included
+  /// for symmetry so doctors can revert an accidental promotion.
+  static const List<String> _selectableStatuses = [
+    'ACTIVE',
+    'IN_PROGRESS',
+    'ON_HOLD',
+    'COMPLETED',
+    'DRAFT',
+    'CANCELLED',
+  ];
+
+  Future<void> _changeStatus(
+    BuildContext context,
+    TreatmentPlanSummaryDto plan,
+    String newStatus,
+  ) async {
+    if (newStatus == plan.status) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    // Cancellation is irreversible from the patient's POV (records
+    // installments / payments stay), so require an explicit confirmation
+    // before firing the PATCH.
+    if (newStatus == 'CANCELLED') {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.translate('clinicPlanCancelConfirmTitle')),
+          content: Text(
+            l10n
+                .translate('clinicPlanCancelConfirmBody')
+                .replaceAll(
+                    '{{title}}',
+                    plan.title?.trim().isNotEmpty == true
+                        ? plan.title!.trim()
+                        : '#${plan.id}'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.translate('cancel')),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.translate('clinicPlanCancelConfirm')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+
+    try {
+      final res = await patchTreatmentPlanStatus(
+        ref,
+        planId: plan.id,
+        status: newStatus,
+      );
+      if (!context.mounted) return;
+      if (res == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.translate('clinicPlanStatusUpdateFailed'),
+            ),
+          ),
+        );
+        return;
+      }
+      // Force the table + finance widgets to re-pull so the new status
+      // (and any downstream payment-status / outstanding changes) become
+      // visible immediately.
+      ref.invalidate(treatmentPlansForClinicProvider);
+      ref.invalidate(clinicFinanceDashboardProvider(widget.clinicId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${l10n.translate('clinicPlanStatusUpdated')}: '
+            '${_statusLabel(context, newStatus)}',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${l10n.translate('clinicPlanStatusUpdateFailed')}: $e',
+          ),
+        ),
+      );
     }
   }
 
@@ -99,302 +287,258 @@ class _ClinicTreatmentPlansTabState
     );
     final plansAsync = ref.watch(treatmentPlansForClinicProvider(filter));
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // --- Toolbar -----------------------------------------------------
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _filterCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.translate('clinicTreatmentPlansFilter'),
-                    hintText: l10n
-                        .translate('clinicTreatmentPlansFilterHint'),
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _filterCtrl.text.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              _filterCtrl.clear();
-                              _onSearchChanged('');
-                            },
-                          ),
-                    isDense: true,
-                  ),
-                  onChanged: _onSearchChanged,
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed: () => TreatmentPlanWizardSheet.show(
-                  context,
-                  ref,
-                  clinicId: widget.clinicId,
-                ),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.translate('clinicTreatmentPlansNew')),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // --- Status filter chips ----------------------------------------
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _statusChip(null, l10n.translate('clinicTreatmentPlansAll')),
-                _statusChip('ACTIVE', 'ACTIVE'),
-                _statusChip('DRAFT', 'DRAFT'),
-                _statusChip('COMPLETED', 'COMPLETED'),
-                _statusChip('CANCELLED', 'CANCELLED'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // --- Body --------------------------------------------------------
-          Expanded(
-            child: plansAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Text('${l10n.translate('error')}: $e'),
-              ),
-              data: (plans) {
-                if (plans.isEmpty) {
-                  return Center(
-                    child: Text(l10n.translate('clinicTreatmentPlansEmpty')),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(treatmentPlansForClinicProvider(filter));
-                  },
-                  child: ListView.separated(
-                    itemCount: plans.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (ctx, i) => _PlanRow(
-                      plan: plans[i],
-                      moneyOf: _money,
-                      shortDateOf: _shortDate,
-                      statusColorOf: (s) =>
-                          _statusColor(s, Theme.of(ctx).colorScheme),
-                      paymentColorOf: _paymentColor,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statusChip(String? value, String label) {
-    final selected = _statusFilter == value;
-    return Padding(
-      padding: const EdgeInsets.only(right: 6),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => setState(() => _statusFilter = value),
-      ),
-    );
-  }
-}
-
-class _PlanRow extends StatelessWidget {
-  final TreatmentPlanSummaryDto plan;
-  final String Function(int minor, String currency) moneyOf;
-  final String Function(String? iso) shortDateOf;
-  final Color Function(String status) statusColorOf;
-  final Color Function(String paymentStatus) paymentColorOf;
-
-  const _PlanRow({
-    required this.plan,
-    required this.moneyOf,
-    required this.shortDateOf,
-    required this.statusColorOf,
-    required this.paymentColorOf,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final title = plan.title?.trim().isNotEmpty == true
-        ? plan.title!.trim()
-        : l10n.translate('clinicTreatmentPlansUntitled');
-    final patient =
-        plan.patientName?.trim().isNotEmpty == true ? plan.patientName! : '—';
-    // Show every doctor attached to the plan; long-running plans frequently
-    // involve multiple specialists. Fallback to the legacy primary if the
-    // multi-doctor list is empty (older plans created before V86).
-    final doctor = plan.attendingDoctors.isNotEmpty
-        ? plan.attendingDoctors.map((d) => d.name).join(', ')
-        : (plan.attendingDoctorName?.trim().isNotEmpty == true
-            ? plan.attendingDoctorName!
-            : '—');
-    final theme = Theme.of(context);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () {
-        // For now opens a simple read-only details dialog; the wizard handles
-        // creation only. Editing can be re-introduced later by switching to
-        // a "edit existing plan" flow.
-        showDialog<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text('#${plan.id} · $title'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _kv(l10n.translate('clinicTreatmentPlansPatient'), patient),
-                  _kv(l10n.translate('clinicTreatmentPlansDoctor'), doctor),
-                  _kv(l10n.translate('treatmentPlanDiagnosis'),
-                      plan.diagnosis ?? '—'),
-                  _kv(l10n.translate('treatmentPlanNotes'),
-                      plan.notes ?? '—'),
-                  _kv(l10n.translate('clinicTreatmentPlansTotal'),
-                      moneyOf(plan.totalMinor, plan.currency)),
-                  _kv(l10n.translate('clinicTreatmentPlansPaid'),
-                      moneyOf(plan.paidMinor, plan.currency)),
-                  _kv(l10n.translate('clinicTreatmentPlansOutstanding'),
-                      moneyOf(plan.owedMinor, plan.currency)),
-                  _kv(l10n.translate('clinicTreatmentPlansStatus'), plan.status),
-                  _kv(l10n.translate('clinicTreatmentPlansPaymentStatus'),
-                      plan.planPaymentStatus),
-                  _kv(l10n.translate('clinicTreatmentPlansUpdated'),
-                      shortDateOf(plan.updatedAt)),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(l10n.close),
-              ),
-            ],
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border.all(color: Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final toolbar = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            // Header: id + title + status pill
-            Row(
-              children: [
-                Text(
-                  '#${plan.id}',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 15),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                _pill(plan.status, statusColorOf(plan.status)),
-              ],
+            Expanded(
+              child: ClinicTableSearchField(
+                controller: _filterCtrl,
+                hint: l10n.translate('clinicTreatmentPlansFilterHint'),
+                onChanged: _onSearchChanged,
+              ),
             ),
-            const SizedBox(height: 4),
-
-            // Patient · Doctor
-            Wrap(
-              spacing: 16,
-              runSpacing: 2,
-              children: [
-                _iconText(Icons.person_outline, patient),
-                _iconText(Icons.medical_services_outlined, doctor),
-                _iconText(
-                  Icons.update,
-                  '${l10n.translate('clinicTreatmentPlansUpdated')}: ${shortDateOf(plan.updatedAt)}',
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-
-            // Money row
-            Row(
-              children: [
-                Expanded(
-                  child: _money3(
-                    l10n.translate('clinicTreatmentPlansTotal'),
-                    moneyOf(plan.totalMinor, plan.currency),
-                  ),
-                ),
-                Expanded(
-                  child: _money3(
-                    l10n.translate('clinicTreatmentPlansPaid'),
-                    moneyOf(plan.paidMinor, plan.currency),
-                    color: Colors.green.shade700,
-                  ),
-                ),
-                Expanded(
-                  child: _money3(
-                    l10n.translate('clinicTreatmentPlansOutstanding'),
-                    moneyOf(plan.owedMinor, plan.currency),
-                    color: plan.owedMinor > 0
-                        ? Colors.red.shade700
-                        : Colors.grey.shade600,
-                  ),
-                ),
-                _pill(plan.planPaymentStatus, paymentColorOf(plan.planPaymentStatus)),
-              ],
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              onPressed: () => TreatmentPlanWizardSheet.show(
+                context,
+                ref,
+                clinicId: widget.clinicId,
+              ),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.translate('clinicTreatmentPlansNew')),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  static Widget _iconText(IconData ic, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(ic, size: 14, color: Colors.grey.shade600),
-        const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontSize: 12.5)),
-      ],
-    );
-  }
-
-  static Widget _money3(String label, String value, {Color? color}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: color,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+        const SizedBox(height: 8),
+        ClinicFilterChips<String?>(
+          selected: _statusFilter,
+          onSelected: (v) => setState(() => _statusFilter = v),
+          options: [
+            (
+              value: null,
+              label: l10n.translate('clinicTreatmentPlansAll'),
+            ),
+            (value: 'ACTIVE', label: 'ACTIVE'),
+            (value: 'DRAFT', label: 'DRAFT'),
+            (value: 'COMPLETED', label: 'COMPLETED'),
+            (value: 'CANCELLED', label: 'CANCELLED'),
+          ],
         ),
       ],
+    );
+
+    Widget body = plansAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) =>
+          Center(child: Text('${l10n.translate('error')}: $e')),
+      data: (plans) {
+        if (plans.isEmpty) {
+          return ClinicTableEmpty(
+            l10n.translate('clinicTreatmentPlansEmpty'),
+          );
+        }
+        final sorted = _sort(plans);
+        final scheme = Theme.of(context).colorScheme;
+        return clinicDataTable(
+          context: context,
+          sortColumnIndex: _sortIdx,
+          sortAscending: _sortAsc,
+          columns: [
+            DataColumn(
+              label: Text(l10n.translate('clinicPlansColId')),
+              numeric: true,
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicPlansColTitle')),
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicTreatmentPlansPatient')),
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicTreatmentPlansDoctor')),
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicTreatmentPlansTotal')),
+              numeric: true,
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicTreatmentPlansPaid')),
+              numeric: true,
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label:
+                  Text(l10n.translate('clinicTreatmentPlansOutstanding')),
+              numeric: true,
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicTreatmentPlansStatus')),
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(
+                  l10n.translate('clinicTreatmentPlansPaymentStatus')),
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicTreatmentPlansUpdated')),
+              onSort: _onSort,
+            ),
+            DataColumn(
+              label: Text(l10n.translate('clinicPlansColActions')),
+            ),
+          ],
+          rows: sorted.map((p) {
+            final title = p.title?.trim().isNotEmpty == true
+                ? p.title!.trim()
+                : l10n.translate('clinicTreatmentPlansUntitled');
+            final patient = p.patientName?.trim().isNotEmpty == true
+                ? p.patientName!
+                : '—';
+            final doctor = p.attendingDoctors.isNotEmpty
+                ? p.attendingDoctors.map((d) => d.name).join(', ')
+                : (p.attendingDoctorName?.trim().isNotEmpty == true
+                    ? p.attendingDoctorName!
+                    : '—');
+            return DataRow(
+              cells: [
+                DataCell(Text('#${p.id}')),
+                DataCell(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 220),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                DataCell(Text(patient)),
+                DataCell(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 200),
+                    child: Text(
+                      doctor,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ),
+                ),
+                DataCell(Text(_money(p.totalMinor, p.currency))),
+                DataCell(Text(
+                  _money(p.paidMinor, p.currency),
+                  style: TextStyle(color: Colors.green.shade700),
+                )),
+                DataCell(Text(
+                  _money(p.owedMinor, p.currency),
+                  style: TextStyle(
+                    color: p.owedMinor > 0
+                        ? Colors.red.shade700
+                        : Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )),
+                DataCell(_StatusPill(
+                  status: p.status,
+                  color: _statusColor(p.status, scheme),
+                  label: _statusLabel(context, p.status),
+                  entries: [
+                    for (final s in _selectableStatuses)
+                      if (s != p.status)
+                        PopupMenuItem<String>(
+                          value: s,
+                          child: Row(
+                            children: [
+                              Icon(Icons.circle,
+                                  size: 10, color: _statusColor(s, scheme)),
+                              const SizedBox(width: 8),
+                              Text(_statusLabel(context, s)),
+                            ],
+                          ),
+                        ),
+                  ],
+                  onSelected: (s) => _changeStatus(context, p, s),
+                )),
+                DataCell(_pill(
+                  p.planPaymentStatus,
+                  _paymentColor(p.planPaymentStatus),
+                )),
+                DataCell(Text(_shortDate(p.updatedAt))),
+                DataCell(
+                  IconButton(
+                    tooltip: l10n.translate('clinicPlansViewTooltip'),
+                    icon: const Icon(Icons.open_in_new, size: 20),
+                    onPressed: () => _openPlanDialog(context, p),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        );
+      },
+    );
+
+    return ClinicTableShell(toolbar: toolbar, body: body);
+  }
+
+  void _openPlanDialog(BuildContext context, TreatmentPlanSummaryDto p) {
+    final l10n = AppLocalizations.of(context)!;
+    final title = p.title?.trim().isNotEmpty == true
+        ? p.title!.trim()
+        : l10n.translate('clinicTreatmentPlansUntitled');
+    final patient = p.patientName?.trim().isNotEmpty == true
+        ? p.patientName!
+        : '—';
+    final doctor = p.attendingDoctors.isNotEmpty
+        ? p.attendingDoctors.map((d) => d.name).join(', ')
+        : (p.attendingDoctorName?.trim().isNotEmpty == true
+            ? p.attendingDoctorName!
+            : '—');
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('#${p.id} · $title'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _kv(l10n.translate('clinicTreatmentPlansPatient'), patient),
+              _kv(l10n.translate('clinicTreatmentPlansDoctor'), doctor),
+              _kv(l10n.translate('treatmentPlanDiagnosis'),
+                  p.diagnosis ?? '—'),
+              _kv(l10n.translate('treatmentPlanNotes'), p.notes ?? '—'),
+              _kv(l10n.translate('clinicTreatmentPlansTotal'),
+                  _money(p.totalMinor, p.currency)),
+              _kv(l10n.translate('clinicTreatmentPlansPaid'),
+                  _money(p.paidMinor, p.currency)),
+              _kv(l10n.translate('clinicTreatmentPlansOutstanding'),
+                  _money(p.owedMinor, p.currency)),
+              _kv(l10n.translate('clinicTreatmentPlansStatus'), p.status),
+              _kv(l10n.translate('clinicTreatmentPlansPaymentStatus'),
+                  p.planPaymentStatus),
+              _kv(l10n.translate('clinicTreatmentPlansUpdated'),
+                  _shortDate(p.updatedAt)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.close),
+          ),
+        ],
+      ),
     );
   }
 
@@ -435,3 +579,56 @@ class _PlanRow extends StatelessWidget {
     );
   }
 }
+
+/// Interactive treatment-plan status pill. Renders the same rounded "tag"
+/// look as the read-only payment pill but is wrapped in a [PopupMenuButton]
+/// so any clinic doctor can transition to any other status (in particular,
+/// CANCELLED is always reachable per the product rule).
+class _StatusPill extends StatelessWidget {
+  final String status;
+  final String label;
+  final Color color;
+  final List<PopupMenuEntry<String>> entries;
+  final ValueChanged<String> onSelected;
+
+  const _StatusPill({
+    required this.status,
+    required this.label,
+    required this.color,
+    required this.entries,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: '',
+      onSelected: onSelected,
+      itemBuilder: (_) => entries,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.6)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.arrow_drop_down, size: 14, color: color),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

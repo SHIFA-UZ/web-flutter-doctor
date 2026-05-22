@@ -531,17 +531,30 @@ class _TreatmentPlanWizardDialogState
       final currency = detail?.summary.currency ?? summary.currency;
 
       if (_payMode == _WizardPayMode.full && owed > 0) {
-        await recordClinicPayment(
-          ref,
-          clinicId: widget.clinicId,
-          treatmentPlanId: planId,
-          amountMinor: owed,
-          currency: currency,
-          method: _payMethod,
-          memo: _payMemoCtrl.text.trim().isEmpty
-              ? null
-              : _payMemoCtrl.text.trim(),
-        );
+        try {
+          await recordClinicPayment(
+            ref,
+            clinicId: widget.clinicId,
+            treatmentPlanId: planId,
+            amountMinor: owed,
+            currency: currency,
+            method: _payMethod,
+            memo: _payMemoCtrl.text.trim().isEmpty
+                ? null
+                : _payMemoCtrl.text.trim(),
+          );
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${tr(context, 'treatmentPlanWizardPaymentFailed', 'Could not record payment')}: $e',
+                ),
+                backgroundColor: Colors.red.shade800,
+              ),
+            );
+          }
+        }
       } else if (_payMode == _WizardPayMode.installments &&
           installmentRows != null &&
           owed > 0) {

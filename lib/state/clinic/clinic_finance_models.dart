@@ -131,6 +131,11 @@ class FinancialRecordRow {
 class PaymentHistoryItem {
   final int id;
   final int treatmentPlanId;
+  final int? patientId;
+  final String? patientName;
+  final int? doctorProfileId;
+  final String? doctorName;
+  final String? treatmentPlanTitle;
   final int amountMinor;
   final String currency;
   final String method;
@@ -141,6 +146,11 @@ class PaymentHistoryItem {
   PaymentHistoryItem({
     required this.id,
     required this.treatmentPlanId,
+    this.patientId,
+    this.patientName,
+    this.doctorProfileId,
+    this.doctorName,
+    this.treatmentPlanTitle,
     required this.amountMinor,
     required this.currency,
     required this.method,
@@ -153,6 +163,11 @@ class PaymentHistoryItem {
     return PaymentHistoryItem(
       id: (json['id'] ?? 0) as int,
       treatmentPlanId: (json['treatmentPlanId'] ?? 0) as int,
+      patientId: (json['patientId'] as num?)?.toInt(),
+      patientName: json['patientName']?.toString(),
+      doctorProfileId: (json['doctorProfileId'] as num?)?.toInt(),
+      doctorName: json['doctorName']?.toString(),
+      treatmentPlanTitle: json['treatmentPlanTitle']?.toString(),
       amountMinor: (json['amountMinor'] ?? 0) as int,
       currency: (json['currency'] ?? 'UZS') as String,
       method: (json['method'] ?? '') as String,
