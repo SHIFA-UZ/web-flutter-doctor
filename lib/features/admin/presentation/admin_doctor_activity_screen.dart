@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
@@ -15,6 +16,17 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
 enum _PresetRange { last7, last30, last90, custom, all }
 
+/// Allows horizontal drag-scroll with mouse / trackpad (important on Flutter web/desktop).
+class _DoctorActivityTableScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+      };
+}
+
 class AdminDoctorActivityScreen extends ConsumerStatefulWidget {
   const AdminDoctorActivityScreen({super.key});
 
@@ -24,6 +36,8 @@ class AdminDoctorActivityScreen extends ConsumerStatefulWidget {
 
 class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _tableHorizontalCtrl = ScrollController();
+  final _tableVerticalCtrl = ScrollController();
   final _searchCtrl = TextEditingController();
   Timer? _debounce;
   int _page = 0;
@@ -50,6 +64,8 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
   void dispose() {
     _debounce?.cancel();
     _searchCtrl.dispose();
+    _tableHorizontalCtrl.dispose();
+    _tableVerticalCtrl.dispose();
     super.dispose();
   }
 
@@ -297,10 +313,34 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                   final rows = data['content'] as List<AdminDoctorActivityRow>;
                   final totalPages = ((data['totalPages'] as num?)?.toInt() ?? 1).clamp(1, 100000);
 
-                  final table = SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                      child: DataTable(
+                  final table = ScrollConfiguration(
+                    behavior: _DoctorActivityTableScrollBehavior(),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Scrollbar(
+                          controller: _tableHorizontalCtrl,
+                          thumbVisibility: true,
+                          scrollbarOrientation: ScrollbarOrientation.bottom,
+                          child: Scrollbar(
+                            controller: _tableVerticalCtrl,
+                            thumbVisibility: true,
+                            scrollbarOrientation: ScrollbarOrientation.right,
+                            child: SingleChildScrollView(
+                              controller: _tableHorizontalCtrl,
+                              scrollDirection: Axis.horizontal,
+                              primary: false,
+                              physics: const ClampingScrollPhysics(),
+                              child: SingleChildScrollView(
+                                controller: _tableVerticalCtrl,
+                                primary: false,
+                                physics: const ClampingScrollPhysics(),
+                                child: DataTable(
                         headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
                         columns: [
                           _sortCol('Doctor', 'name'),
@@ -350,6 +390,11 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                             },
                           );
                         }).toList(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   );
