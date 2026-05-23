@@ -162,6 +162,58 @@ final clinicCatalogProvider =
       .toList();
 });
 
+/// Family key for [planServicesProvider]. The doctor id list is normalized to
+/// a sorted, deduplicated immutable list so that two callers with the same
+/// (clinic, doctorIds set) hit the same cache slot regardless of selection
+/// order.
+class PlanServicesKey {
+  final int clinicId;
+  final List<int> doctorIds;
+
+  PlanServicesKey({required this.clinicId, List<int> doctorIds = const []})
+      : doctorIds = List<int>.unmodifiable({...doctorIds}.toList()..sort());
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! PlanServicesKey) return false;
+    if (other.clinicId != clinicId) return false;
+    if (other.doctorIds.length != doctorIds.length) return false;
+    for (var i = 0; i < doctorIds.length; i++) {
+      if (doctorIds[i] != other.doctorIds[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => Object.hash(clinicId, Object.hashAll(doctorIds));
+}
+
+/// Unified service catalog for the clinic Services tab and the treatment-plan
+/// wizard. Returns clinic catalog items + doctor-defined profile services
+/// (each tagged with the doctors that offer it).
+///
+/// Pass empty [PlanServicesKey.doctorIds] to get the full clinic view
+/// (Services tab). Pass the wizard's selected attending doctor ids to filter.
+final planServicesProvider = FutureProvider.autoDispose
+    .family<List<PlanServiceOption>, PlanServicesKey>((ref, key) async {
+  final api = ref.watch(doctorApiClientProvider);
+  final params = <String, String>{'clinicId': key.clinicId.toString()};
+  if (key.doctorIds.isNotEmpty) {
+    params['doctorIds'] = key.doctorIds.join(',');
+  }
+  final res = await api.get('/api/treatment-plans/plan-services', params: params);
+  if (res.statusCode != 200) {
+    throw Exception('plan-services ${res.statusCode}');
+  }
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return const <PlanServiceOption>[];
+  return list
+      .whereType<Map>()
+      .map((e) => PlanServiceOption.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+});
+
 Future<ClinicCatalogItem> createClinicCatalogItem(
   WidgetRef ref, {
   required int clinicId,

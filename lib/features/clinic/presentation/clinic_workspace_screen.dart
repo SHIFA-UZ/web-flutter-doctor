@@ -945,14 +945,29 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
   void _onSort(int i, bool asc) =>
       setState(() => (_sortIdx = i, _sortAsc = asc));
 
-  List<ClinicCatalogItem> _apply(List<ClinicCatalogItem> items) {
-    Iterable<ClinicCatalogItem> out = items;
+  /// Catalog item ↔ unified plan-service row (paired by `catalogItemId`).
+  /// Returns null when the [option] is a doctor-only service (no catalog row).
+  ClinicCatalogItem? _catalogFor(
+    PlanServiceOption option,
+    List<ClinicCatalogItem> catalog,
+  ) {
+    final cid = option.catalogItemId;
+    if (cid == null) return null;
+    for (final c in catalog) {
+      if (c.id == cid) return c;
+    }
+    return null;
+  }
+
+  List<PlanServiceOption> _apply(List<PlanServiceOption> items) {
+    Iterable<PlanServiceOption> out = items;
     if (_search.trim().isNotEmpty) {
       final s = _search.trim().toLowerCase();
       out = out.where((it) =>
           it.title.toLowerCase().contains(s) ||
           (it.code ?? '').toLowerCase().contains(s) ||
-          it.id.toString().contains(s));
+          (it.catalogItemId?.toString() ?? '').contains(s) ||
+          it.offeredByDoctorNames.any((n) => n.toLowerCase().contains(s)));
     }
     if (_statusFilter == 'ACTIVE') {
       out = out.where((it) => it.active);
@@ -960,11 +975,12 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
       out = out.where((it) => !it.active);
     }
     final list = out.toList();
-    int cmp(ClinicCatalogItem a, ClinicCatalogItem b) {
+    int cmp(PlanServiceOption a, PlanServiceOption b) {
       int c;
       switch (_sortIdx) {
         case 0:
-          c = a.id.compareTo(b.id);
+          c = (a.catalogItemId ?? a.doctorServiceId ?? 0)
+              .compareTo(b.catalogItemId ?? b.doctorServiceId ?? 0);
           break;
         case 1:
           c = a.title.toLowerCase().compareTo(b.title.toLowerCase());
@@ -979,8 +995,12 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
           c = a.currency.compareTo(b.currency);
           break;
         case 5:
-          // Active first when asc.
           c = (a.active ? 0 : 1).compareTo(b.active ? 0 : 1);
+          break;
+        case 6:
+          // Source: clinic first (kindClinicCatalog) when ascending.
+          c = (a.isClinicCatalog ? 0 : 1)
+              .compareTo(b.isClinicCatalog ? 0 : 1);
           break;
         default:
           c = 0;
@@ -991,21 +1011,26 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
     return list;
   }
 
-  String _assignmentSubtitle(AppLocalizations l10n, List<ClinicMember> members, ClinicCatalogItem it) {
-    if (it.appliesToAllDoctors) return l10n.translate('clinicServicesAssignmentAll');
-    if (it.assignedDoctorProfileIds.isEmpty) return l10n.translate('clinicServicesAssignmentNone');
-    final names = <String>[];
-    for (final id in it.assignedDoctorProfileIds) {
-      String? label;
-      for (final m in members) {
-        if (m.doctorProfileId == id) {
-          label = m.displayName;
-          break;
-        }
-      }
-      names.add(label ?? '#$id');
+  /// "Doctors" column subtitle. For clinic-managed rows this preserves the
+  /// previous text ("All doctors at this clinic" / explicit list). For
+  /// doctor-only rows it shows the single owning doctor's name.
+  String _doctorsColumnText(
+    AppLocalizations l10n,
+    PlanServiceOption option,
+    ClinicCatalogItem? catalogRow,
+  ) {
+    if (option.isDoctorService) {
+      return option.offeredByDoctorNames.isEmpty
+          ? '#${option.offeredByDoctorIds.firstOrNull ?? '?'}'
+          : option.offeredByDoctorNames.join(', ');
     }
-    return names.join(', ');
+    if (catalogRow != null && catalogRow.appliesToAllDoctors) {
+      return l10n.translate('clinicServicesAssignmentAll');
+    }
+    if (option.offeredByDoctorNames.isEmpty) {
+      return l10n.translate('clinicServicesAssignmentNone');
+    }
+    return option.offeredByDoctorNames.join(', ');
   }
 
   Future<void> _openEditor(BuildContext context, WidgetRef ref, ClinicCatalogItem? existing) async {
@@ -1186,15 +1211,25 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
     priceCtrl.dispose();
     if (ok == true && context.mounted) {
       ref.invalidate(clinicCatalogProvider(clinicId));
+      // Plan-services view (Services tab + wizard) is a superset of the
+      // catalog; keep it in sync after any clinic catalog edit.
+      ref.invalidate(planServicesProvider(PlanServicesKey(clinicId: clinicId)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(clinicCatalogProvider(widget.clinicId));
-    final membersAsync = ref.watch(clinicMembersProvider(widget.clinicId));
-    final members = membersAsync.valueOrNull ?? <ClinicMember>[];
+    // Unified service catalog: clinic-managed items + doctor-defined services
+    // from every doctor practising at this clinic (each row tagged with the
+    // owning doctor so the table can render a source/doctor chip).
+    final async = ref.watch(
+      planServicesProvider(PlanServicesKey(clinicId: widget.clinicId)),
+    );
+    // Clinic catalog rows are still needed for editing actions (toggle/edit
+    // wired to /catalog-items), so keep this side query.
+    final catalogAsync = ref.watch(clinicCatalogProvider(widget.clinicId));
+    final catalog = catalogAsync.valueOrNull ?? const <ClinicCatalogItem>[];
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -1278,6 +1313,10 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
                     onSort: _onSort,
                   ),
                   DataColumn(
+                    label: Text(l10n.translate('clinicServicesColSource')),
+                    onSort: _onSort,
+                  ),
+                  DataColumn(
                     label: Text(l10n.translate('clinicServicesColDoctors')),
                   ),
                   DataColumn(
@@ -1287,9 +1326,13 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
                 rows: filtered.map((it) {
                   final price =
                       (it.defaultPriceMinor / 100).toStringAsFixed(2);
+                  final catalogRow = _catalogFor(it, catalog);
+                  final idLabel = it.catalogItemId != null
+                      ? '#${it.catalogItemId}'
+                      : '·'; // doctor-only services don't have a stable clinic id
                   return DataRow(
                     cells: [
-                      DataCell(Text('#${it.id}')),
+                      DataCell(Text(idLabel)),
                       DataCell(Text(
                         it.title,
                         style: TextStyle(
@@ -1335,61 +1378,20 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
                           ),
                         ),
                       ),
+                      DataCell(_sourceChip(context, l10n, it)),
                       DataCell(
                         ConstrainedBox(
                           constraints:
                               const BoxConstraints(maxWidth: 240),
                           child: Text(
-                            _assignmentSubtitle(l10n, members, it),
+                            _doctorsColumnText(l10n, it, catalogRow),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                           ),
                         ),
                       ),
                       DataCell(
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert, size: 20),
-                          onSelected: (v) async {
-                            if (v == 'edit') {
-                              await _openEditor(context, ref, it);
-                            } else if (v == 'toggle') {
-                              try {
-                                await patchClinicCatalogItem(
-                                  ref,
-                                  clinicId: widget.clinicId,
-                                  catalogItemId: it.id,
-                                  active: !it.active,
-                                );
-                                if (context.mounted) {
-                                  ref.invalidate(clinicCatalogProvider(
-                                      widget.clinicId));
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(SnackBar(
-                                          content: Text('$e')));
-                                }
-                              }
-                            }
-                          },
-                          itemBuilder: (ctx) => [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Text(l10n.translate('edit')),
-                            ),
-                            PopupMenuItem(
-                              value: 'toggle',
-                              child: Text(
-                                it.active
-                                    ? l10n.translate(
-                                        'clinicServiceDeactivate')
-                                    : l10n.translate(
-                                        'clinicServiceActivate'),
-                              ),
-                            ),
-                          ],
-                        ),
+                        _actionsCell(context, l10n, it, catalogRow),
                       ),
                     ],
                   );
@@ -1398,6 +1400,108 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
 
         return ClinicTableShell(toolbar: toolbar, body: body);
       },
+    );
+  }
+
+  /// Source badge — green for clinic-managed, blue for doctor-owned. Helps the
+  /// reader scan which rows can be edited inline (clinic) versus those that
+  /// must be edited from the doctor's profile.
+  Widget _sourceChip(
+    BuildContext context,
+    AppLocalizations l10n,
+    PlanServiceOption option,
+  ) {
+    final clinic = option.isClinicCatalog;
+    final color = clinic ? Colors.teal : Colors.indigo;
+    final label = clinic
+        ? l10n.translate('clinicServicesSourceClinic')
+        : l10n.translate('clinicServicesSourceDoctor');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.30), width: 0.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            clinic ? Icons.business : Icons.person,
+            size: 12,
+            color: color.shade700,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color.shade800,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionsCell(
+    BuildContext context,
+    AppLocalizations l10n,
+    PlanServiceOption option,
+    ClinicCatalogItem? catalogRow,
+  ) {
+    // Doctor-defined services live in the doctor's profile. Editing them here
+    // would touch a different ownership boundary; explain that and offer no
+    // mutation actions. The doctor can still edit them under Profile →
+    // Services & Pricing.
+    if (option.isDoctorService || catalogRow == null) {
+      return Tooltip(
+        message: l10n.translate('clinicServicesDoctorOnlyHint'),
+        child: const Icon(Icons.info_outline,
+            size: 18, color: Colors.grey),
+      );
+    }
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, size: 20),
+      onSelected: (v) async {
+        if (v == 'edit') {
+          await _openEditor(context, ref, catalogRow);
+        } else if (v == 'toggle') {
+          try {
+            await patchClinicCatalogItem(
+              ref,
+              clinicId: widget.clinicId,
+              catalogItemId: catalogRow.id,
+              active: !catalogRow.active,
+            );
+            if (context.mounted) {
+              ref.invalidate(clinicCatalogProvider(widget.clinicId));
+              ref.invalidate(planServicesProvider(
+                  PlanServicesKey(clinicId: widget.clinicId)));
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text('$e')));
+            }
+          }
+        }
+      },
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Text(l10n.translate('edit')),
+        ),
+        PopupMenuItem(
+          value: 'toggle',
+          child: Text(
+            catalogRow.active
+                ? l10n.translate('clinicServiceDeactivate')
+                : l10n.translate('clinicServiceActivate'),
+          ),
+        ),
+      ],
     );
   }
 }

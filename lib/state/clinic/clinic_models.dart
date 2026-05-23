@@ -154,3 +154,75 @@ class ClinicCatalogItem {
     );
   }
 }
+
+/// Unified service option served by `GET /api/treatment-plans/plan-services`.
+///
+/// Powers the Clinic → Services tab (full view) and the treatment-plan wizard
+/// (filtered by selected attending doctors). Each row is either a clinic
+/// catalog item ([kindClinicCatalog]) or a doctor's profile service
+/// ([kindDoctorService]); the [key] is unique across both kinds so widgets can
+/// use it directly as a map/selection identifier.
+class PlanServiceOption {
+  static const String kindClinicCatalog = 'CLINIC_CATALOG';
+  static const String kindDoctorService = 'DOCTOR_SERVICE';
+
+  /// Stable unique id across kinds, e.g. `catalog:42` or `doctor:7:service:123`.
+  final String key;
+  final String kind;
+  final int? catalogItemId;
+  final int? doctorServiceId;
+  final String title;
+  final String? code;
+  final int defaultPriceMinor;
+  final String currency;
+  final bool active;
+  final List<int> offeredByDoctorIds;
+  final List<String> offeredByDoctorNames;
+
+  const PlanServiceOption({
+    required this.key,
+    required this.kind,
+    required this.catalogItemId,
+    required this.doctorServiceId,
+    required this.title,
+    required this.code,
+    required this.defaultPriceMinor,
+    required this.currency,
+    required this.active,
+    required this.offeredByDoctorIds,
+    required this.offeredByDoctorNames,
+  });
+
+  bool get isClinicCatalog => kind == kindClinicCatalog;
+  bool get isDoctorService => kind == kindDoctorService;
+
+  factory PlanServiceOption.fromJson(Map<String, dynamic> json) {
+    List<int> intList(dynamic raw) {
+      if (raw is! List) return const <int>[];
+      final out = <int>[];
+      for (final e in raw) {
+        if (e is num) out.add(e.toInt());
+      }
+      return out;
+    }
+
+    List<String> stringList(dynamic raw) {
+      if (raw is! List) return const <String>[];
+      return raw.map((e) => e?.toString() ?? '').toList();
+    }
+
+    return PlanServiceOption(
+      key: json['key'] as String? ?? '',
+      kind: json['kind'] as String? ?? kindClinicCatalog,
+      catalogItemId: (json['catalogItemId'] as num?)?.toInt(),
+      doctorServiceId: (json['doctorServiceId'] as num?)?.toInt(),
+      title: json['title'] as String? ?? '',
+      code: json['code'] as String?,
+      defaultPriceMinor: (json['defaultPriceMinor'] as num?)?.toInt() ?? 0,
+      currency: json['currency'] as String? ?? 'UZS',
+      active: json['active'] as bool? ?? true,
+      offeredByDoctorIds: intList(json['offeredByDoctorIds']),
+      offeredByDoctorNames: stringList(json['offeredByDoctorNames']),
+    );
+  }
+}

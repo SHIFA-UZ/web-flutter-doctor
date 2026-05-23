@@ -77,12 +77,16 @@ class _TreatmentPlanWizardDialogState
   final Map<int, List<_PickedSlot>> _doctorSlots = {};
 
   // Services + per-line appointment link.
-  final Map<int, bool> _catalogPick = {};
-  final Map<int, int> _catalogQty = {};
-  /// Per-catalog "Link to visit" selection. Either an existing appointment id
+  //
+  // Keyed by [PlanServiceOption.key] so the picker can hold both clinic
+  // catalog rows (`catalog:<id>`) and doctor-only profile services
+  // (`doctor:<docId>:service:<svcId>`) in the same state without colliding.
+  final Map<String, bool> _servicePick = {};
+  final Map<String, int> _serviceQty = {};
+  /// Per-service "Link to visit" selection. Either an existing appointment id
   /// (kind = `existing`) or a tentative tempId pointing at a [_PickedSlot]
   /// from [_doctorSlots] (kind = `tentative`).
-  final Map<int, _LineLinkRef?> _catalogLink = {};
+  final Map<String, _LineLinkRef?> _serviceLink = {};
 
   // Cached list of appointments for the chosen patient (for per-line linking).
   List<ClinicPatientAppointmentDto> _patientAppts = [];
@@ -218,34 +222,53 @@ class _TreatmentPlanWizardDialogState
 
   // --- Save -----------------------------------------------------------------
 
+  /// Stable family key for plan services that honours the current attending
+  /// doctor selection. When no doctors are picked the wizard shows the full
+  /// clinic catalog (helpful before the care team is filled in).
+  PlanServicesKey get _planServicesKey =>
+      PlanServicesKey(clinicId: widget.clinicId, doctorIds: _selectedDoctorIds);
+
+  /// Synchronously read the current plan-services list from the provider
+  /// cache. Returns an empty list when not yet loaded; callers either await
+  /// the future or fall back to an empty result.
+  List<PlanServiceOption> _readPlanServices() {
+    return ref.read(planServicesProvider(_planServicesKey)).valueOrNull ??
+        const <PlanServiceOption>[];
+  }
+
   /// Builds the line payload for `POST /api/treatment-plans/{id}/lines`.
   ///
-  /// Returns `(requests, catalogIdByOrder)` so the save flow can later map a
-  /// catalog id → freshly-created line id after re-fetching the plan detail.
-  /// Lines linked to a tentative slot leave `linkedAppointmentId` unset; the
-  /// link is established afterwards via `/book-slots` with `lineId`.
-  (List<Map<String, dynamic>>, List<int>) _buildLineRequests(
-    List<ClinicCatalogItem> cat,
+  /// Returns `(requests, serviceKeyByOrder)` so the save flow can later map a
+  /// picked service key → freshly-created line id after re-fetching the plan
+  /// detail. Lines linked to a tentative slot leave `linkedAppointmentId`
+  /// unset; the link is established afterwards via `/book-slots` with
+  /// `lineId`.
+  ///
+  /// Doctor-only services have no clinic catalog id; for those we omit
+  /// `catalogItemId` from the payload (backend already accepts a null
+  /// `catalogItemId` and stores the line with its denormalised title/price).
+  (List<Map<String, dynamic>>, List<String>) _buildLineRequests(
+    List<PlanServiceOption> services,
   ) {
     final lines = <Map<String, dynamic>>[];
-    final catalogIdByOrder = <int>[];
+    final serviceKeyByOrder = <String>[];
     var order = 0;
-    for (final id in _catalogPick.keys.where((k) => _catalogPick[k] == true)) {
-      ClinicCatalogItem? item;
-      for (final c in cat) {
-        if (c.id == id) {
-          item = c;
+    for (final key in _servicePick.keys.where((k) => _servicePick[k] == true)) {
+      PlanServiceOption? item;
+      for (final s in services) {
+        if (s.key == key) {
+          item = s;
           break;
         }
       }
       if (item == null) continue;
-      final qty = _catalogQty[id] ?? 1;
+      final qty = _serviceQty[key] ?? 1;
       if (qty < 1) continue;
-      final ref = _catalogLink[id];
+      final ref = _serviceLink[key];
       final existingApptId =
           (ref != null && ref.existing) ? ref.appointmentId : null;
       lines.add({
-        'catalogItemId': item.id,
+        if (item.catalogItemId != null) 'catalogItemId': item.catalogItemId,
         'title': item.title,
         'quantity': qty,
         'unitPriceMinor': item.defaultPriceMinor,
@@ -254,28 +277,28 @@ class _TreatmentPlanWizardDialogState
         'sortOrder': order,
         if (existingApptId != null) 'linkedAppointmentId': existingApptId,
       });
-      catalogIdByOrder.add(item.id);
+      serviceKeyByOrder.add(key);
       order += 1;
     }
-    return (lines, catalogIdByOrder);
+    return (lines, serviceKeyByOrder);
   }
 
   /// Live total (minor units) for the currently picked services. Used by the
   /// installment editor so amounts can be checked against the plan total
   /// without having to first save the plan.
   int _liveTotalMinor() {
-    final cat = ref.read(clinicCatalogProvider(widget.clinicId)).valueOrNull ?? [];
+    final services = _readPlanServices();
     var total = 0;
-    for (final id in _catalogPick.keys.where((k) => _catalogPick[k] == true)) {
-      ClinicCatalogItem? item;
-      for (final c in cat) {
-        if (c.id == id) {
-          item = c;
+    for (final key in _servicePick.keys.where((k) => _servicePick[k] == true)) {
+      PlanServiceOption? item;
+      for (final s in services) {
+        if (s.key == key) {
+          item = s;
           break;
         }
       }
       if (item == null) continue;
-      final qty = _catalogQty[id] ?? 1;
+      final qty = _serviceQty[key] ?? 1;
       if (qty < 1) continue;
       total += item.defaultPriceMinor * qty;
     }
@@ -283,10 +306,10 @@ class _TreatmentPlanWizardDialogState
   }
 
   String _liveCurrency() {
-    final cat = ref.read(clinicCatalogProvider(widget.clinicId)).valueOrNull ?? [];
-    for (final id in _catalogPick.keys.where((k) => _catalogPick[k] == true)) {
-      for (final c in cat) {
-        if (c.id == id) return c.currency;
+    final services = _readPlanServices();
+    for (final key in _servicePick.keys.where((k) => _servicePick[k] == true)) {
+      for (final s in services) {
+        if (s.key == key) return s.currency;
       }
     }
     return 'UZS';
@@ -379,9 +402,21 @@ class _TreatmentPlanWizardDialogState
       return;
     }
 
-    final cat = ref.read(clinicCatalogProvider(widget.clinicId)).valueOrNull ?? [];
-    final (lineReqs, catalogIdsByOrder) = _buildLineRequests(cat);
+    // Snapshot the current visible plan-services list. If it isn't loaded
+    // yet (user clicked Save before the provider resolved) await it so we
+    // don't silently drop selected lines.
+    var services = _readPlanServices();
+    if (services.isEmpty) {
+      try {
+        services =
+            await ref.read(planServicesProvider(_planServicesKey).future);
+      } catch (_) {
+        services = const <PlanServiceOption>[];
+      }
+    }
+    final (lineReqs, serviceKeysByOrder) = _buildLineRequests(services);
     if (lineReqs.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -409,6 +444,7 @@ class _TreatmentPlanWizardDialogState
         });
       }
       if (installmentRows.length < 2) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -470,32 +506,32 @@ class _TreatmentPlanWizardDialogState
       // line points at one) link the new appointment back to its line.
       final allPicked = _allPickedSlots();
       if (allPicked.isNotEmpty) {
-        // Map catalogId -> created lineId (matching the order we sent in).
+        // Map picked-service-key -> created lineId. The backend appends rows
+        // in `sortOrder`, mirroring the order we sent them in (and therefore
+        // `serviceKeysByOrder`), so the i-th picked service maps to the i-th
+        // line. This works for both clinic catalog rows and doctor-only
+        // services (which have no catalogItemId).
         var detailForLines = await fetchTreatmentPlanDetail(ref, planId);
-        final lineIdByCatalog = <int, int>{};
+        final lineIdByServiceKey = <String, int>{};
         if (detailForLines != null) {
-          // The backend appends rows in `sortOrder`, mirroring `catalogIdsByOrder`.
-          final lines = detailForLines.lines
-              .where((l) => l.catalogItemId != null)
-              .toList();
-          for (var i = 0; i < catalogIdsByOrder.length && i < lines.length; i++) {
-            final lineCatId = lines[i].catalogItemId;
-            if (lineCatId == catalogIdsByOrder[i]) {
-              lineIdByCatalog[lineCatId!] = lines[i].id;
-            }
+          final lines = detailForLines.lines;
+          for (var i = 0;
+              i < serviceKeysByOrder.length && i < lines.length;
+              i++) {
+            lineIdByServiceKey[serviceKeysByOrder[i]] = lines[i].id;
           }
         }
-        // Catalog id that points at each slot tempId (one slot can power
-        // at most one service line).
-        final catalogForSlot = <String, int>{};
-        for (final entry in _catalogLink.entries) {
+        // Picked service key per slot tempId (one slot can power at most one
+        // service line).
+        final serviceKeyForSlot = <String, String>{};
+        for (final entry in _serviceLink.entries) {
           final v = entry.value;
           if (v == null || v.existing || v.slotTempId == null) continue;
-          catalogForSlot[v.slotTempId!] = entry.key;
+          serviceKeyForSlot[v.slotTempId!] = entry.key;
         }
         final slotRequests = allPicked.map((s) {
-          final catId = catalogForSlot[s.tempId];
-          final lineId = catId == null ? null : lineIdByCatalog[catId];
+          final svcKey = serviceKeyForSlot[s.tempId];
+          final lineId = svcKey == null ? null : lineIdByServiceKey[svcKey];
           return <String, dynamic>{
             'doctorId': s.doctorId,
             'startAt': s.startAt,
@@ -642,7 +678,12 @@ class _TreatmentPlanWizardDialogState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final membersAsync = ref.watch(clinicMembersProvider(widget.clinicId));
-    final catalogAsync = ref.watch(clinicCatalogProvider(widget.clinicId));
+    // Unified service catalog (clinic catalog + doctor-only profile services)
+    // filtered by the currently selected attending doctors. When no doctors
+    // are selected the picker shows the full clinic catalog so users can
+    // start picking services before naming the care team.
+    final planServicesAsync =
+        ref.watch(planServicesProvider(_planServicesKey));
 
     return Dialog.fullscreen(
       child: Scaffold(
@@ -666,7 +707,12 @@ class _TreatmentPlanWizardDialogState
               Expanded(
                 child: _phase == 0
                     ? _buildPatientPicker(context)
-                    : _buildPlanForm(context, l10n, membersAsync, catalogAsync),
+                    : _buildPlanForm(
+                        context,
+                        l10n,
+                        membersAsync,
+                        planServicesAsync,
+                      ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -757,7 +803,7 @@ class _TreatmentPlanWizardDialogState
     BuildContext context,
     AppLocalizations l10n,
     AsyncValue<List<ClinicMember>> membersAsync,
-    AsyncValue<List<ClinicCatalogItem>> catalogAsync,
+    AsyncValue<List<PlanServiceOption>> planServicesAsync,
   ) {
     return SingleChildScrollView(
       child: Column(
@@ -855,20 +901,35 @@ class _TreatmentPlanWizardDialogState
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: LinearProgressIndicator(minHeight: 2),
                 ),
-              catalogAsync.when(
+              planServicesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Text('$e'),
                 data: (items) {
                   final active = items.where((c) => c.active).toList();
                   if (active.isEmpty) {
+                    // Distinguish "clinic has nothing" from "filtered set is
+                    // empty"; if the user has chosen attending doctors but
+                    // none of them offers any service, that's actionable
+                    // feedback ("pick more doctors or add services").
+                    final filteredByDoctors = _selectedDoctorIds.isNotEmpty;
                     return Text(
-                      tr(context, 'treatmentPlanWizardNoCatalog',
-                          'No catalog items in this clinic yet.'),
+                      filteredByDoctors
+                          ? tr(
+                              context,
+                              'treatmentPlanWizardNoServicesForDoctors',
+                              'No services available for the selected '
+                              'doctor(s). Pick more doctors or add services '
+                              'in Clinic → Services or in the doctor\'s '
+                              'profile.',
+                            )
+                          : tr(context, 'treatmentPlanWizardNoCatalog',
+                              'No catalog items in this clinic yet.'),
                       style: TextStyle(color: Colors.grey.shade600),
                     );
                   }
                   return Column(
-                    children: active.map(_buildCatalogRow).toList(),
+                    children:
+                        active.map(_buildPlanServiceRow).toList(),
                   );
                 },
               ),
@@ -1145,7 +1206,7 @@ class _TreatmentPlanWizardDialogState
                         final removedSlots = _doctorSlots.remove(m.doctorProfileId);
                         if (removedSlots != null) {
                           final removedIds = removedSlots.map((s) => s.tempId).toSet();
-                          _catalogLink.updateAll((_, ref) {
+                          _serviceLink.updateAll((_, ref) {
                             if (ref != null &&
                                 !ref.existing &&
                                 removedIds.contains(ref.slotTempId)) {
@@ -1156,6 +1217,12 @@ class _TreatmentPlanWizardDialogState
                         }
                       }
                     });
+                    // Doctor set changed → the visible plan-services list
+                    // about to be loaded may no longer contain some picks
+                    // (e.g. doctor-only services from a removed doctor).
+                    // Prune those picks once the next snapshot arrives so the
+                    // user never silently saves an invisible line.
+                    _pruneStalePicks();
                   },
                 );
               }).toList(),
@@ -1231,12 +1298,43 @@ class _TreatmentPlanWizardDialogState
   void _removePickedSlot(int doctorId, String tempId) {
     setState(() {
       _doctorSlots[doctorId]?.removeWhere((s) => s.tempId == tempId);
-      _catalogLink.updateAll((_, ref) {
+      _serviceLink.updateAll((_, ref) {
         if (ref != null && !ref.existing && ref.slotTempId == tempId) {
           return null;
         }
         return ref;
       });
+    });
+  }
+
+  /// Drops picks/qty/links for services that are no longer in the visible
+  /// plan-services list. Called after the attending doctor set changes; the
+  /// new plan-services snapshot may not contain doctor-only services that
+  /// belonged to a doctor the user just removed.
+  ///
+  /// Awaits the next snapshot (rather than reading the stale one) so a fresh
+  /// fetch triggered by the doctor change has a chance to land first.
+  void _pruneStalePicks() {
+    // Use the future so we wait for the new (filtered) snapshot to land.
+    ref
+        .read(planServicesProvider(_planServicesKey).future)
+        .then((services) {
+      if (!mounted) return;
+      final visibleKeys = services.map((s) => s.key).toSet();
+      final stale = _servicePick.keys
+          .where((k) => !visibleKeys.contains(k))
+          .toList();
+      if (stale.isEmpty) return;
+      setState(() {
+        for (final k in stale) {
+          _servicePick.remove(k);
+          _serviceQty.remove(k);
+          _serviceLink.remove(k);
+        }
+      });
+    }).catchError((_) {
+      // Failed snapshot doesn't justify dropping user picks; just leave the
+      // state untouched and let the next successful load handle it.
     });
   }
 
@@ -1262,10 +1360,10 @@ class _TreatmentPlanWizardDialogState
     );
   }
 
-  Widget _buildCatalogRow(ClinicCatalogItem c) {
-    final picked = _catalogPick[c.id] ?? false;
-    final qty = _catalogQty[c.id] ?? 1;
-    final link = _catalogLink[c.id];
+  Widget _buildPlanServiceRow(PlanServiceOption c) {
+    final picked = _servicePick[c.key] ?? false;
+    final qty = _serviceQty[c.key] ?? 1;
+    final link = _serviceLink[c.key];
 
     // Build a unified key for the dropdown's `value`. Existing appointment
     // = 'a:<id>'. Tentative slot = 's:<tempId>'. null = "no visit".
@@ -1290,8 +1388,8 @@ class _TreatmentPlanWizardDialogState
               Checkbox(
                 value: picked,
                 onChanged: (v) => setState(() {
-                  _catalogPick[c.id] = v ?? false;
-                  _catalogQty[c.id] = qty;
+                  _servicePick[c.key] = v ?? false;
+                  _serviceQty[c.key] = qty;
                 }),
               ),
               Expanded(
@@ -1305,6 +1403,14 @@ class _TreatmentPlanWizardDialogState
                       style: TextStyle(
                           fontSize: 12, color: Colors.grey.shade700),
                     ),
+                    // Doctor-attribution chips — let the user see which doctor
+                    // this service comes from (especially useful when several
+                    // attending doctors are picked and each has their own
+                    // catalog).
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: _serviceSourceChips(context, c),
+                    ),
                   ],
                 ),
               ),
@@ -1317,7 +1423,7 @@ class _TreatmentPlanWizardDialogState
                   decoration: const InputDecoration(
                       labelText: 'Qty', isDense: true),
                   onChanged: (s) =>
-                      _catalogQty[c.id] = int.tryParse(s) ?? 1,
+                      _serviceQty[c.key] = int.tryParse(s) ?? 1,
                 ),
               ),
             ],
@@ -1365,22 +1471,76 @@ class _TreatmentPlanWizardDialogState
                 ],
                 onChanged: (v) => setState(() {
                   if (v == null) {
-                    _catalogLink[c.id] = null;
+                    _serviceLink[c.key] = null;
                     return;
                   }
                   if (v.startsWith('a:')) {
                     final id = int.tryParse(v.substring(2));
-                    _catalogLink[c.id] = id == null
+                    _serviceLink[c.key] = id == null
                         ? null
                         : _LineLinkRef.existing(id);
                   } else if (v.startsWith('s:')) {
-                    _catalogLink[c.id] = _LineLinkRef.tentative(v.substring(2));
+                    _serviceLink[c.key] = _LineLinkRef.tentative(v.substring(2));
                   }
                 }),
               ),
             ),
         ],
       ),
+    );
+  }
+
+  /// Source/owner chips below a service line. A doctor-owned service shows a
+  /// single chip with the doctor name. A clinic catalog row applicable to a
+  /// limited doctor subset shows one chip per offering doctor (so the user
+  /// understands which selected attending doctors can actually deliver it);
+  /// when the row applies to everyone we show a single "Clinic catalog" chip
+  /// instead to avoid noisy "all doctors" lists.
+  Widget _serviceSourceChips(BuildContext context, PlanServiceOption c) {
+    final isDoctorOwned = c.isDoctorService;
+    // When clinic catalog row offers to every clinic doctor we treat the chip
+    // as a single neutral "Clinic catalog" marker — listing every doctor name
+    // is just visual noise in that case.
+    final allClinicWide = !isDoctorOwned &&
+        c.offeredByDoctorIds.length >= 2 &&
+        _selectedDoctorIds.isEmpty;
+    final tags = (isDoctorOwned || !allClinicWide) && c.offeredByDoctorNames.isNotEmpty
+        ? c.offeredByDoctorNames
+            .map((n) => tr(context, 'treatmentPlanWizardServiceFromDoctor',
+                    'From {{name}}')
+                .replaceAll('{{name}}', n))
+            .toList()
+        : <String>[
+            tr(context, 'treatmentPlanWizardServiceFromClinic',
+                'Clinic catalog'),
+          ];
+    final color = isDoctorOwned ? Colors.indigo : Colors.teal;
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: tags
+          .map(
+            (label) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.30),
+                  width: 0.5,
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color.shade800,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 

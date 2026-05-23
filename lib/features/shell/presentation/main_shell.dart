@@ -519,7 +519,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     return MaterialPageRoute<void>(
                       builder: (_) => _ShellTabContent(
                         screens: screens,
-                        selectedIndex: selectedIndex,
+                        isClinicStaff: isClinicStaff,
                       ),
                     );
                   }
@@ -528,7 +528,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                   return MaterialPageRoute<void>(
                     builder: (_) => _ShellTabContent(
                       screens: screens,
-                      selectedIndex: selectedIndex,
+                      isClinicStaff: isClinicStaff,
                     ),
                   );
                 },
@@ -825,18 +825,31 @@ class _LogoutButton extends ConsumerWidget {
   }
 }
 
-/// Default shell content: tab body ([selectedIndex] is already coerced for clinic staff shells).
-class _ShellTabContent extends StatelessWidget {
+/// Default shell content: tab body. Reads [shellProvider] directly so tab changes
+/// are not lost when this widget is built inside a nested Navigator route.
+class _ShellTabContent extends ConsumerWidget {
   const _ShellTabContent({
     required this.screens,
-    required this.selectedIndex,
+    required this.isClinicStaff,
   });
 
   final List<Widget> screens;
-  final int selectedIndex;
+  final bool isClinicStaff;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    var selectedIndex = ref.watch(shellProvider);
+    if (isClinicStaff) {
+      if (selectedIndex < 0 || selectedIndex > 3) {
+        selectedIndex = 1;
+      }
+    } else {
+      final canUseTasks =
+          ref.watch(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
+      if (selectedIndex == 5 && !canUseTasks) {
+        selectedIndex = 1;
+      }
+    }
     return IndexedStack(index: selectedIndex, children: screens);
   }
 }
