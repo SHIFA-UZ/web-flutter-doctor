@@ -33,6 +33,17 @@ class AppointmentPdfTranslations {
   final String signedElectronicallyOn;
   final String viaShifaPatientApp;
 
+  /// Section headers / dental billing columns
+  final String clinic;
+  final String signaturesSection;
+  final String servicesProvided;
+  final String toothColumn;
+  final String serviceColumn;
+  final String amountColumn;
+  final String subtotalRow;
+  final String discountRow;
+  final String totalRow;
+
   const AppointmentPdfTranslations({
     required this.appointmentSummary,
     required this.patientName,
@@ -63,6 +74,15 @@ class AppointmentPdfTranslations {
     required this.imageLabel,
     required this.signedElectronicallyOn,
     required this.viaShifaPatientApp,
+    required this.clinic,
+    required this.signaturesSection,
+    required this.servicesProvided,
+    required this.toothColumn,
+    required this.serviceColumn,
+    required this.amountColumn,
+    required this.subtotalRow,
+    required this.discountRow,
+    required this.totalRow,
   });
 
   static const Map<String, AppointmentPdfTranslations> _byLocale = {
@@ -96,6 +116,15 @@ class AppointmentPdfTranslations {
       imageLabel: 'Image',
       signedElectronicallyOn: 'Signed electronically on',
       viaShifaPatientApp: 'via SHIFA Patient App',
+      clinic: 'Clinic',
+      signaturesSection: 'Signatures',
+      servicesProvided: 'Services provided',
+      toothColumn: 'Tooth',
+      serviceColumn: 'Service',
+      amountColumn: 'Amount',
+      subtotalRow: 'Subtotal',
+      discountRow: 'Discount',
+      totalRow: 'Total payment',
     ),
     'uz': AppointmentPdfTranslations(
       appointmentSummary: 'Qabul Xulosasi',
@@ -127,6 +156,15 @@ class AppointmentPdfTranslations {
       imageLabel: 'Rasm',
       signedElectronicallyOn: 'Elektron imzo sanasi',
       viaShifaPatientApp: 'SHIFA Bemor ilovasi orqali',
+      clinic: 'Klinika',
+      signaturesSection: 'Imzolar',
+      servicesProvided: 'Ko\'rsatilgan xizmatlar',
+      toothColumn: 'Tish',
+      serviceColumn: 'Xizmat',
+      amountColumn: 'Summa',
+      subtotalRow: 'Oraliq jami',
+      discountRow: 'Chegirma',
+      totalRow: 'To\'lov',
     ),
   };
 

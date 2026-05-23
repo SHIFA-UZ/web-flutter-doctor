@@ -654,16 +654,21 @@ class _InPersonAppointmentScreenState
             )
           : '';
 
-      var dentalPdfBlock = '';
+      var dentalNotesForPdf = '';
+      AppointmentPdfDentalBilling? dentalBilling;
       if (_documentationType == 'dental') {
-        dentalPdfBlock =
-            await _dentalDocPanelKey.currentState?.persistForPdfAndSave() ?? '';
+        await _dentalDocPanelKey.currentState?.persistForPdf();
+        dentalNotesForPdf =
+            _dentalDocPanelKey.currentState?.dentalClinicalNotesPdfText ??
+                '';
+        dentalBilling =
+            _dentalDocPanelKey.currentState?.buildDentalPdfBilling(l10nForPdf);
       }
 
       final combinedNotes = [
         if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
         if (structuredAndFree.isNotEmpty) structuredAndFree,
-        if (dentalPdfBlock.isNotEmpty) dentalPdfBlock,
+        if (dentalNotesForPdf.isNotEmpty) dentalNotesForPdf,
       ].join('\n\n').trim();
 
       final hasNotes = combinedNotes.isNotEmpty;
@@ -777,6 +782,11 @@ class _InPersonAppointmentScreenState
 
         final pdfData = AppointmentPdfData(
           appointmentId: widget.appointment.id,
+          clinicName: widget.appointment.isVideo
+              ? null
+              : widget.appointment.location.trim().isEmpty
+                  ? null
+                  : widget.appointment.location.trim(),
           patientName: widget.appointment.patientName,
           patientId: widget.appointment.patientId,
           dateOfBirth: null,
@@ -792,6 +802,7 @@ class _InPersonAppointmentScreenState
           timeStr: timeStr,
           appointmentDate: now,
           notes: hasNotes ? combinedNotes : null,
+          dentalBilling: dentalBilling,
           diagnosis: dxFreeText,
           diagnosisCode: dxCode,
           diagnosisDisplay: dxDisplay,

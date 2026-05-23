@@ -1,17 +1,18 @@
 // lib/features/appointments/services/appointment_pdf_service.dart
 
-import 'dart:typed_data';
-
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:image_picker/image_picker.dart';
 
 import 'appointment_pdf_data.dart';
 import 'appointment_pdf_translations.dart';
 
 /// Margin in points (1/72 inch). ~40px at 96 DPI ≈ 30pt; spec says 40px min.
 const double _marginPt = 40;
+
+/// Matches [AppColors.primaryTeal] (#00BBB0) for print-safe accent.
+PdfColor get _brandTeal => PdfColor(0 / 255, 187 / 255, 176 / 255);
 
 /// A4 with margins applied (content area).
 PdfPageFormat get _pageFormat => PdfPageFormat.a4.copyWith(
@@ -25,7 +26,7 @@ PdfPageFormat get _pageFormat => PdfPageFormat.a4.copyWith(
 /// [data] – appointment and patient/doctor info.
 /// [languageCode] – 'en' or 'uz' for localization.
 /// [beforeImages] / [afterImages] – optional treatment images (appended after report).
-/// Returns PDF bytes. Uses A4, UTF-8 font (DejaVu Sans), watermark, header, signatures, footer.
+/// Returns PDF bytes. Uses A4, UTF-8 font (DejaVu Sans), header, signatures, footer.
 Future<Uint8List> generateAppointmentPdf({
   required AppointmentPdfData data,
   required String languageCode,
@@ -45,7 +46,8 @@ Future<Uint8List> generateAppointmentPdf({
   }
 
   final pdf = pw.Document();
-  final int imagePageCount = (beforeImages?.length ?? 0) + (afterImages?.length ?? 0);
+  final int imagePageCount =
+      (beforeImages?.length ?? 0) + (afterImages?.length ?? 0);
   final int totalPages = 1 + imagePageCount;
 
   final dayNames = AppointmentPdfTranslations.dayNames(languageCode);
@@ -54,14 +56,13 @@ Future<Uint8List> generateAppointmentPdf({
   final dayOfWeek = dayNames[d.weekday - 1];
   final fullDate = '${monthNames[d.month]} ${d.day}, ${d.year}';
 
-  // —— Report: use Column as SpanningWidget so content can flow across pages (avoids "Widget won't fit into the page").
   pdf.addPage(
     pw.MultiPage(
       pageFormat: _pageFormat,
       theme: pw.ThemeData.withFont(base: font),
       build: (pw.Context context) => [
         pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: _buildReportContentAsList(
             data: data,
             t: t,
@@ -81,14 +82,14 @@ Future<Uint8List> generateAppointmentPdf({
     ),
   );
 
-  // —— Image pages ——
   int pageIndex = 2;
   if (beforeImages != null) {
     for (int i = 0; i < beforeImages.length; i++) {
       final label = beforeImages.length > 1
           ? '${t.beforeTreatment} - ${t.imageLabel} ${i + 1}'
           : t.beforeTreatment;
-      await _addImagePage(pdf, beforeImages[i], label, font, t, pageIndex, totalPages);
+      await _addImagePage(
+          pdf, beforeImages[i], label, font, t, pageIndex, totalPages);
       pageIndex++;
     }
   }
@@ -97,7 +98,8 @@ Future<Uint8List> generateAppointmentPdf({
       final label = afterImages.length > 1
           ? '${t.afterTreatment} - ${t.imageLabel} ${i + 1}'
           : t.afterTreatment;
-      await _addImagePage(pdf, afterImages[i], label, font, t, pageIndex, totalPages);
+      await _addImagePage(
+          pdf, afterImages[i], label, font, t, pageIndex, totalPages);
       pageIndex++;
     }
   }
@@ -122,78 +124,345 @@ List<pw.Widget> _buildReportContentAsList({
 }) {
   final children = <pw.Widget>[
     _buildHeader(data, t, font, logoImage, dayOfWeek, fullDate),
+    pw.SizedBox(height: 14),
+    _buildTitleBand(t, font),
     pw.SizedBox(height: 16),
-    _buildDivider(),
-    pw.SizedBox(height: 20),
-    _buildTitle(t, font),
-    pw.SizedBox(height: 20),
-    _buildAppointmentInfo(data, t, font),
-    pw.SizedBox(height: 20),
+    _buildAppointmentMetadataCard(data, t, font),
+    pw.SizedBox(height: 18),
   ];
 
+  // Clinical narrative first (plan order), then dental services table when present.
   if (data.notes != null && data.notes!.trim().isNotEmpty) {
-    children.add(_buildSectionTitle(t.clinicalNotes, font));
-    children.add(pw.SizedBox(height: 8));
-    for (final chunk in _textChunks(data.notes!.trim(), _maxLinesPerChunk)) {
-      children.add(_buildNotes(chunk, font));
-      children.add(pw.SizedBox(height: 6));
-    }
+    children.add(_buildFormalSectionBar(t.clinicalNotes, font));
+    children.add(_sectionBodyBox(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          for (final chunk in _textChunks(data.notes!.trim(), _maxLinesPerChunk)) ...[
+            _buildBodyParagraph(chunk, font),
+            pw.SizedBox(height: 6),
+          ],
+        ],
+      ),
+    ));
     children.add(pw.SizedBox(height: 16));
   }
+
+  final billing = data.dentalBilling;
+  if (billing != null && billing.lines.isNotEmpty) {
+    children.add(_buildFormalSectionBar(t.servicesProvided, font));
+    children.add(_sectionBodyBox(
+      child: _buildDentalBillingContent(billing, t, font),
+    ));
+    children.add(pw.SizedBox(height: 16));
+  }
+
   final hasIcd = (data.diagnosisCode != null &&
       data.diagnosisCode!.trim().isNotEmpty &&
       data.diagnosisDisplay != null &&
       data.diagnosisDisplay!.trim().isNotEmpty);
-  final hasFreeTextDx = (data.diagnosis != null && data.diagnosis!.trim().isNotEmpty);
+  final hasFreeTextDx =
+      (data.diagnosis != null && data.diagnosis!.trim().isNotEmpty);
 
   if (hasIcd || hasFreeTextDx) {
-    children.add(_buildSectionTitle(t.diagnosis, font));
-    children.add(pw.SizedBox(height: 4));
-    if (hasIcd) {
-      final line = '${data.diagnosisCode!.trim()} — ${data.diagnosisDisplay!.trim()}';
-      children.add(_buildBodyText(line, font));
-      children.add(pw.SizedBox(height: 4));
-    }
-    if (hasFreeTextDx) {
-      for (final chunk in _textChunks(data.diagnosis!.trim(), _maxLinesPerChunk)) {
-        children.add(_buildBodyText(chunk, font));
-        children.add(pw.SizedBox(height: 4));
-      }
-    }
-    children.add(pw.SizedBox(height: 12));
-  }
-  if (data.prescriptions != null && data.prescriptions!.trim().isNotEmpty) {
-    children.add(_buildSectionTitle(t.prescriptions, font));
-    children.add(pw.SizedBox(height: 4));
-    for (final chunk in _textChunks(data.prescriptions!.trim(), _maxLinesPerChunk)) {
-      children.add(_buildBodyText(chunk, font));
-      children.add(pw.SizedBox(height: 4));
-    }
-    children.add(pw.SizedBox(height: 12));
-  }
-  if (data.recommendations != null && data.recommendations!.trim().isNotEmpty) {
-    children.add(_buildSectionTitle(t.recommendations, font));
-    children.add(pw.SizedBox(height: 4));
-    for (final chunk in _textChunks(data.recommendations!.trim(), _maxLinesPerChunk)) {
-      children.add(_buildBodyText(chunk, font));
-      children.add(pw.SizedBox(height: 4));
-    }
-    children.add(pw.SizedBox(height: 12));
-  }
-  if (data.followUpDate != null && data.followUpDate!.trim().isNotEmpty) {
-    children.add(_buildSectionTitle(t.followUpDate, font));
-    children.add(pw.SizedBox(height: 4));
-    children.add(_buildBodyText(data.followUpDate!, font));
+    children.add(_buildFormalSectionBar(t.diagnosis, font));
+    children.add(_sectionBodyBox(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          if (hasIcd) ...[
+            _buildBodyParagraph(
+              '${data.diagnosisCode!.trim()} — ${data.diagnosisDisplay!.trim()}',
+              font,
+            ),
+            pw.SizedBox(height: 6),
+          ],
+          if (hasFreeTextDx)
+            for (final chunk in _textChunks(data.diagnosis!.trim(), _maxLinesPerChunk)) ...[
+              _buildBodyParagraph(chunk, font),
+              pw.SizedBox(height: 4),
+            ],
+        ],
+      ),
+    ));
     children.add(pw.SizedBox(height: 16));
   }
 
-  children.add(pw.SizedBox(height: 80));
+  if (data.prescriptions != null && data.prescriptions!.trim().isNotEmpty) {
+    children.add(_buildFormalSectionBar(t.prescriptions, font));
+    children.add(_sectionBodyBox(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          for (final chunk in _textChunks(data.prescriptions!.trim(), _maxLinesPerChunk)) ...[
+            _buildBodyParagraph(chunk, font),
+            pw.SizedBox(height: 4),
+          ],
+        ],
+      ),
+    ));
+    children.add(pw.SizedBox(height: 16));
+  }
+
+  if (data.recommendations != null && data.recommendations!.trim().isNotEmpty) {
+    children.add(_buildFormalSectionBar(t.recommendations, font));
+    children.add(_sectionBodyBox(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          for (final chunk in _textChunks(data.recommendations!.trim(), _maxLinesPerChunk)) ...[
+            _buildBodyParagraph(chunk, font),
+            pw.SizedBox(height: 4),
+          ],
+        ],
+      ),
+    ));
+    children.add(pw.SizedBox(height: 16));
+  }
+
+  if (data.followUpDate != null && data.followUpDate!.trim().isNotEmpty) {
+    children.add(_buildFormalSectionBar(t.followUpDate, font));
+    children.add(_sectionBodyBox(
+      child: _buildBodyParagraph(data.followUpDate!, font),
+    ));
+    children.add(pw.SizedBox(height: 16));
+  }
+
+  children.add(pw.SizedBox(height: 24));
+
   if (data.isDentalDocumentation) {
     children.add(_buildDentalSterilizationAttestation(data, font));
-    children.add(pw.SizedBox(height: 20));
+    children.add(pw.SizedBox(height: 16));
   }
-  children.add(_buildSignatureSection(data, t, font));
+
+  children.add(_buildFormalSectionBar(t.signaturesSection, font));
+  children.add(_sectionBodyBox(
+    child: _buildSignatureInner(data, t, font),
+  ));
+
   return children;
+}
+
+pw.Widget _buildDentalBillingContent(
+  AppointmentPdfDentalBilling billing,
+  AppointmentPdfTranslations t,
+  pw.Font font,
+) {
+  final amtStyle = pw.TextStyle(font: font, fontSize: 10);
+
+  pw.Widget hdrCell(String s) => pw.Container(
+        color: PdfColors.grey300,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        child: pw.Text(
+          s,
+          style: pw.TextStyle(font: font, fontSize: 10, fontWeight: pw.FontWeight.bold),
+        ),
+      );
+
+  pw.Widget cell(
+    String s, {
+    pw.TextAlign align = pw.TextAlign.left,
+    PdfColor? bg,
+    bool bold = false,
+  }) =>
+      pw.Container(
+        color: bg,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        alignment: align == pw.TextAlign.right
+            ? pw.Alignment.centerRight
+            : pw.Alignment.centerLeft,
+        child: pw.Text(
+          s,
+          style: pw.TextStyle(
+            font: font,
+            fontSize: 10,
+            fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+          ),
+          textAlign: align,
+        ),
+      );
+
+  final tableRows = <pw.TableRow>[
+    pw.TableRow(
+      decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+      children: [
+        hdrCell(t.toothColumn),
+        hdrCell(t.serviceColumn),
+        hdrCell(t.amountColumn),
+      ],
+    ),
+  ];
+
+  for (var i = 0; i < billing.lines.length; i++) {
+    final line = billing.lines[i];
+    final zebra = i.isOdd ? PdfColors.grey100 : null;
+    final label =
+        '${(line.amountMinor / 100).toStringAsFixed(2)} ${line.currency}';
+    tableRows.add(
+      pw.TableRow(
+        children: [
+          cell(line.tooth, bg: zebra),
+          cell(line.serviceTitle, bg: zebra),
+          cell(label, align: pw.TextAlign.right, bg: zebra),
+        ],
+      ),
+    );
+  }
+
+  final subLabel =
+      '${(billing.subtotalMinor / 100).toStringAsFixed(2)} ${billing.currency}';
+  final totLabel =
+      '${(billing.totalMinor / 100).toStringAsFixed(2)} ${billing.currency}';
+
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: [
+      pw.Text(
+        billing.header,
+        style: pw.TextStyle(
+          font: font,
+          fontSize: 11,
+          fontWeight: pw.FontWeight.bold,
+        ),
+      ),
+      pw.SizedBox(height: 10),
+      pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey500, width: 0.5),
+        columnWidths: const {
+          0: pw.FlexColumnWidth(1.25),
+          1: pw.FlexColumnWidth(2.9),
+          2: pw.FlexColumnWidth(1.35),
+        },
+        children: tableRows,
+      ),
+      pw.SizedBox(height: 10),
+      pw.Align(
+        alignment: pw.Alignment.centerRight,
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Row(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.SizedBox(
+                  width: 140,
+                  child: pw.Text(
+                    '${t.subtotalRow}:',
+                    style: amtStyle,
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+                pw.SizedBox(width: 12),
+                pw.SizedBox(
+                  width: 100,
+                  child: pw.Text(
+                    subLabel,
+                    style: amtStyle,
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+            if (billing.discountPercent != null && billing.discountPercent! > 0) ...[
+              pw.SizedBox(height: 4),
+              pw.Row(
+                mainAxisSize: pw.MainAxisSize.min,
+                children: [
+                  pw.SizedBox(
+                    width: 140,
+                    child: pw.Text(
+                      '${t.discountRow}:',
+                      style: amtStyle,
+                      textAlign: pw.TextAlign.right,
+                    ),
+                  ),
+                  pw.SizedBox(width: 12),
+                  pw.SizedBox(
+                    width: 100,
+                    child: pw.Text(
+                      '${billing.discountPercent!.toStringAsFixed(1)}%',
+                      style: amtStyle,
+                      textAlign: pw.TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            pw.SizedBox(height: 6),
+            pw.Container(width: 252, height: 1, color: PdfColors.grey600),
+            pw.SizedBox(height: 6),
+            pw.Row(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.SizedBox(
+                  width: 140,
+                  child: pw.Text(
+                    '${t.totalRow}:',
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+                pw.SizedBox(width: 12),
+                pw.SizedBox(
+                  width: 100,
+                  child: pw.Text(
+                    totLabel,
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+pw.Widget _buildFormalSectionBar(String title, pw.Font font) {
+  return pw.Container(
+    margin: const pw.EdgeInsets.only(top: 2),
+    width: double.infinity,
+    padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+    color: PdfColors.grey300,
+    child: pw.Text(
+      title.toUpperCase(),
+      style: pw.TextStyle(
+        font: font,
+        fontSize: 12,
+        fontWeight: pw.FontWeight.bold,
+      ),
+    ),
+  );
+}
+
+pw.Widget _sectionBodyBox({required pw.Widget child}) {
+  return pw.Container(
+    width: double.infinity,
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.grey600, width: 0.75),
+      color: PdfColors.grey50,
+    ),
+    padding: const pw.EdgeInsets.all(12),
+    child: child,
+  );
+}
+
+pw.Widget _buildBodyParagraph(String text, pw.Font font) {
+  return pw.Paragraph(
+    text: text,
+    style: pw.TextStyle(font: font, fontSize: 11),
+    margin: pw.EdgeInsets.zero,
+  );
 }
 
 /// Patient signature (when present) placed to the left of the sterilization attestation line.
@@ -206,7 +475,7 @@ pw.Widget _buildDentalSterilizationAttestation(
 
   return pw.Container(
     width: double.infinity,
-    padding: const pw.EdgeInsets.all(12),
+    padding: const pw.EdgeInsets.all(10),
     decoration: pw.BoxDecoration(
       border: pw.Border.all(color: PdfColors.grey500, width: 0.5),
       borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
@@ -225,7 +494,7 @@ pw.Widget _buildDentalSterilizationAttestation(
               fit: pw.BoxFit.contain,
             ),
           ),
-          pw.SizedBox(width: 14),
+          pw.SizedBox(width: 12),
         ],
         pw.Expanded(
           child: pw.Text(
@@ -242,7 +511,6 @@ pw.Widget _buildDentalSterilizationAttestation(
   );
 }
 
-/// Splits text into chunks of at most [maxLines] lines so each chunk fits on one PDF page.
 List<String> _textChunks(String text, int maxLines) {
   final lines = text.split('\n');
   if (lines.length <= maxLines) return [text];
@@ -262,167 +530,193 @@ pw.Widget _buildHeader(
   String dayOfWeek,
   String fullDate,
 ) {
-  return pw.Row(
-    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
+  final clinic = data.clinicName?.trim();
+  final hasClinic = clinic != null && clinic.isNotEmpty;
+
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
     children: [
       pw.Row(
-        mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          if (logoImage != null)
-            pw.Container(
-              width: 48,
-              height: 48,
-              child: pw.Image(logoImage, fit: pw.BoxFit.contain),
-            ),
-          if (logoImage != null) pw.SizedBox(width: 12),
-          pw.Text(
-            'SHIFA',
-            style: pw.TextStyle(
-              font: font,
-              fontSize: 18,
-              fontWeight: pw.FontWeight.bold,
+          pw.Row(
+            mainAxisSize: pw.MainAxisSize.min,
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              if (logoImage != null)
+                pw.Container(
+                  width: 48,
+                  height: 48,
+                  child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+                ),
+              if (logoImage != null) pw.SizedBox(width: 12),
+              pw.Text(
+                'SHIFA',
+                style: pw.TextStyle(
+                  font: font,
+                  fontSize: 20,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                if (hasClinic) ...[
+                  pw.Text(
+                    '${t.clinic}:',
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 9,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                  pw.Text(
+                    clinic,
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                  pw.SizedBox(height: 6),
+                ],
+                pw.Text(dayOfWeek, style: pw.TextStyle(font: font, fontSize: 11)),
+                pw.Text(fullDate, style: pw.TextStyle(font: font, fontSize: 11)),
+                pw.Text(data.timeStr, style: pw.TextStyle(font: font, fontSize: 11)),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  '${t.appointmentIdLabel}: ${data.appointmentId}',
+                  style: pw.TextStyle(
+                    font: font,
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-      pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.end,
-        children: [
-          pw.Text(dayOfWeek, style: pw.TextStyle(font: font, fontSize: 11)),
-          pw.Text(fullDate, style: pw.TextStyle(font: font, fontSize: 11)),
-          pw.Text(data.timeStr, style: pw.TextStyle(font: font, fontSize: 11)),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            '${t.appointmentIdLabel}: ${data.appointmentId}',
-            style: pw.TextStyle(font: font, fontSize: 10, color: PdfColors.grey700),
-          ),
-        ],
-      ),
+      pw.SizedBox(height: 10),
+      pw.Container(height: 2, color: _brandTeal),
     ],
   );
 }
 
-pw.Widget _buildDivider() {
-  return pw.Container(
-    height: 1,
-    color: PdfColors.grey400,
-  );
-}
-
-pw.Widget _buildTitle(AppointmentPdfTranslations t, pw.Font font) {
-  return pw.Center(
-    child: pw.Text(
-      t.appointmentSummary,
-      style: pw.TextStyle(
-        font: font,
-        fontSize: 16,
-        fontWeight: pw.FontWeight.bold,
-      ),
-    ),
-  );
-}
-
-pw.Widget _buildAppointmentInfo(
-  AppointmentPdfData data,
-  AppointmentPdfTranslations t,
-  pw.Font font,
-) {
-  return pw.Row(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
+pw.Widget _buildTitleBand(AppointmentPdfTranslations t, pw.Font font) {
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
     children: [
-      pw.Expanded(
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            _infoRow(t.patientName, data.patientName, font),
-            if (data.patientId != null && data.patientId!.isNotEmpty)
-              _infoRow(t.patientId, data.patientId!, font),
-            if (data.dateOfBirth != null && data.dateOfBirth!.isNotEmpty)
-              _infoRow(t.dateOfBirth, data.dateOfBirth!, font),
-            if (data.gender != null && data.gender!.isNotEmpty)
-              _infoRow(t.gender, data.gender!, font),
-          ],
+      pw.Center(
+        child: pw.Text(
+          t.appointmentSummary,
+          style: pw.TextStyle(
+            font: font,
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+          ),
         ),
       ),
-      pw.SizedBox(width: 32),
-      pw.Expanded(
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            if (data.doctorName != null && data.doctorName!.isNotEmpty)
-              _infoRow(t.doctorName, data.doctorName!, font),
-            if (data.specialization != null && data.specialization!.isNotEmpty)
-              _infoRow(t.specialization, data.specialization!, font),
-            if (data.licenseNumber != null && data.licenseNumber!.isNotEmpty)
-              _infoRow(t.licenseNumber, data.licenseNumber!, font),
-            _infoRow(t.appointmentType, data.appointmentType, font),
-            if (data.duration != null && data.duration!.isNotEmpty)
-              _infoRow(t.duration, data.duration!, font),
-          ],
-        ),
-      ),
+      pw.SizedBox(height: 10),
+      pw.Container(height: 1, color: PdfColors.grey400),
     ],
   );
 }
 
-pw.Widget _infoRow(String label, String value, pw.Font font) {
-  return pw.Padding(
-    padding: const pw.EdgeInsets.only(bottom: 6),
-    child: pw.RichText(
-      text: pw.TextSpan(
-        children: [
-          pw.TextSpan(
-            text: '$label: ',
-            style: pw.TextStyle(font: font, fontSize: 11, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.TextSpan(
-            text: value,
-            style: pw.TextStyle(font: font, fontSize: 11),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-pw.Widget _buildSectionTitle(String title, pw.Font font) {
-  return pw.Text(
-    title,
-    style: pw.TextStyle(
-      font: font,
-      fontSize: 13,
-      fontWeight: pw.FontWeight.bold,
-    ),
-  );
-}
-
-pw.Widget _buildBodyText(String text, pw.Font font) {
-  return pw.Text(
-    text,
-    style: pw.TextStyle(font: font, fontSize: 11),
-  );
-}
-
-pw.Widget _buildNotes(String notes, pw.Font font) {
-  return pw.Text(
-    notes,
-    style: pw.TextStyle(font: font, fontSize: 11),
-  );
-}
-
-pw.Widget _buildSignatureSection(
+pw.Widget _buildAppointmentMetadataCard(
   AppointmentPdfData data,
   AppointmentPdfTranslations t,
   pw.Font font,
 ) {
-  // Patient side: show signature image when present; show date line only if patientSignedAt is set
+  pw.Widget labelled(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.RichText(
+        text: pw.TextSpan(
+          children: [
+            pw.TextSpan(
+              text: '$label: ',
+              style: pw.TextStyle(
+                font: font,
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.TextSpan(
+              text: value,
+              style: pw.TextStyle(font: font, fontSize: 11),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  final leftKids = <pw.Widget>[
+    labelled(t.patientName, data.patientName),
+    if (data.patientId != null && data.patientId!.trim().isNotEmpty)
+      labelled(t.patientId, data.patientId!),
+    if (data.dateOfBirth != null && data.dateOfBirth!.trim().isNotEmpty)
+      labelled(t.dateOfBirth, data.dateOfBirth!),
+    if (data.gender != null && data.gender!.trim().isNotEmpty)
+      labelled(t.gender, data.gender!),
+  ];
+
+  final rightKids = <pw.Widget>[
+    if (data.doctorName != null && data.doctorName!.trim().isNotEmpty)
+      labelled(t.doctorName, data.doctorName!),
+    if (data.specialization != null && data.specialization!.trim().isNotEmpty)
+      labelled(t.specialization, data.specialization!),
+    if (data.licenseNumber != null && data.licenseNumber!.trim().isNotEmpty)
+      labelled(t.licenseNumber, data.licenseNumber!),
+    labelled(t.appointmentType, data.appointmentType),
+    if (data.duration != null && data.duration!.trim().isNotEmpty)
+      labelled(t.duration, data.duration!),
+  ];
+
+  return pw.Container(
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.grey600, width: 1),
+    ),
+    padding: const pw.EdgeInsets.all(14),
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: leftKids,
+          ),
+        ),
+        pw.SizedBox(width: 24),
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: rightKids,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+pw.Widget _buildSignatureInner(
+  AppointmentPdfData data,
+  AppointmentPdfTranslations t,
+  pw.Font font,
+) {
   final hasPatientSignatureImage = data.patientSignatureImageBytes != null &&
       data.patientSignatureImageBytes!.isNotEmpty;
 
   return pw.Row(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-    crossAxisAlignment: pw.CrossAxisAlignment.end,
     children: [
       pw.Expanded(
         child: pw.Column(
@@ -430,65 +724,88 @@ pw.Widget _buildSignatureSection(
           children: [
             pw.Text(
               '${t.doctorSignature}:',
-              style: pw.TextStyle(font: font, fontSize: 10, fontWeight: pw.FontWeight.bold),
+              style: pw.TextStyle(
+                font: font,
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+              ),
             ),
-            pw.SizedBox(height: 2),
+            pw.SizedBox(height: 4),
             pw.Container(
-              width: 180,
+              width: double.infinity,
+              constraints: const pw.BoxConstraints(maxWidth: 220),
               height: 1,
               color: PdfColors.grey800,
             ),
-            pw.SizedBox(height: 4),
+            pw.SizedBox(height: 6),
             pw.Text(
               data.doctorName ?? '—',
               style: pw.TextStyle(font: font, fontSize: 9),
             ),
-            if (data.licenseNumber != null && data.licenseNumber!.isNotEmpty)
+            if (data.licenseNumber != null && data.licenseNumber!.trim().isNotEmpty)
               pw.Text(
                 data.licenseNumber!,
-                style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700),
+                style: pw.TextStyle(
+                  font: font,
+                  fontSize: 8,
+                  color: PdfColors.grey700,
+                ),
               ),
           ],
         ),
       ),
+      pw.SizedBox(width: 24),
       pw.Expanded(
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text(
               '${t.patientSignature}:',
-              style: pw.TextStyle(font: font, fontSize: 10, fontWeight: pw.FontWeight.bold),
+              style: pw.TextStyle(
+                font: font,
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+              ),
             ),
-            pw.SizedBox(height: 2),
+            pw.SizedBox(height: 4),
             if (hasPatientSignatureImage) ...[
-              // Dental docs: signature image is shown beside sterilization attestation above.
               if (!data.isDentalDocumentation) ...[
                 pw.Container(
-                  width: 180,
+                  width: double.infinity,
+                  constraints: const pw.BoxConstraints(maxWidth: 220),
                   height: 48,
                   child: pw.Image(
                     pw.MemoryImage(data.patientSignatureImageBytes!),
                     fit: pw.BoxFit.contain,
                   ),
                 ),
-                pw.SizedBox(height: 4),
+                pw.SizedBox(height: 6),
               ],
               if (data.patientSignedAt != null)
                 pw.Text(
                   _formatSignedAt(data.patientSignedAt!, t.signedElectronicallyOn),
-                  style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700),
+                  style: pw.TextStyle(
+                    font: font,
+                    fontSize: 8,
+                    color: PdfColors.grey700,
+                  ),
                 ),
               pw.Text(
                 t.viaShifaPatientApp,
-                style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700),
+                style: pw.TextStyle(
+                  font: font,
+                  fontSize: 8,
+                  color: PdfColors.grey700,
+                ),
               ),
             ] else ...[
               pw.Container(
-                width: 180,
+                width: double.infinity,
+                constraints: const pw.BoxConstraints(maxWidth: 220),
                 height: 1,
                 color: PdfColors.grey800,
               ),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: 6),
               pw.Text(
                 data.patientName,
                 style: pw.TextStyle(font: font, fontSize: 9),
@@ -516,29 +833,40 @@ pw.Widget _buildFooter(
   int pageNumber,
   int totalPages,
 ) {
-  return pw.Column(
-    children: [
-      pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            t.generatedByShifa,
-            style: pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700),
-          ),
-          pw.Text(
-            '${t.pageOf} $pageNumber / $totalPages',
-            style: pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700),
-          ),
-        ],
-      ),
-      pw.SizedBox(height: 6),
-      pw.Center(
-        child: pw.Text(
-          t.confidentialMedicalDocument,
-          style: pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey600),
+  return pw.Container(
+    decoration: const pw.BoxDecoration(
+      border: pw.Border(top: pw.BorderSide(color: PdfColors.grey400, width: 0.75)),
+    ),
+    padding: const pw.EdgeInsets.only(top: 8),
+    child: pw.Column(
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Expanded(
+              child: pw.Text(
+                t.generatedByShifa,
+                style:
+                    pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700),
+              ),
+            ),
+            pw.Text(
+              '${t.pageOf} $pageNumber / $totalPages',
+              style:
+                  pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700),
+            ),
+          ],
         ),
-      ),
-    ],
+        pw.SizedBox(height: 6),
+        pw.Center(
+          child: pw.Text(
+            t.confidentialMedicalDocument,
+            style:
+                pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey600),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
@@ -578,20 +906,33 @@ Future<void> _addImagePage(
               ),
             ),
             pw.SizedBox(height: 16),
-            _buildDivider(),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  t.generatedByShifa,
-                  style: pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700),
-                ),
-                pw.Text(
-                  '${t.pageOf} $pageNumber / $totalPages',
-                  style: pw.TextStyle(font: font, fontSize: 9, color: PdfColors.grey700),
-                ),
-              ],
+            pw.Container(
+              decoration: const pw.BoxDecoration(
+                border:
+                    pw.Border(top: pw.BorderSide(color: PdfColors.grey400, width: 1)),
+              ),
+              padding: const pw.EdgeInsets.only(top: 8),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    t.generatedByShifa,
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 9,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                  pw.Text(
+                    '${t.pageOf} $pageNumber / $totalPages',
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 9,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         );

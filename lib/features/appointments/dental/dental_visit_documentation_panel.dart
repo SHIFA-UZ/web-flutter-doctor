@@ -6,6 +6,7 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
+import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_data.dart';
 
 /// FDI-style quadrant codes in the same order as form 025-2 (patient-facing chart).
 const List<String> kFdiTeethOrder = [
@@ -370,8 +371,8 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     }
   }
 
-  /// Persist then return plain-text block for the appointment PDF.
-  Future<String> persistForPdfAndSave() async {
+  /// Persist dental chart to backend before generating the PDF (same payload as Save).
+  Future<void> persistForPdf() async {
     final api = ref.read(apiClientProvider);
     final res = await api.put(
       '/api/appointments/${widget.appointmentId}/dental-documentation',
@@ -386,45 +387,46 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
         ),
       );
     }
-    if (!mounted) return '';
-    return _buildPdfText(AppLocalizations.of(context)!);
   }
 
-  String _buildPdfText(AppLocalizations l10n) {
-    final buf = StringBuffer();
-    buf.writeln(l10n.translate('dentalPdfHeader'));
+  /// Free-text notes for PDF only (rendered under [Clinical Notes]; no billing).
+  String get dentalClinicalNotesPdfText => _notesCtrl.text.trim();
+
+  /// Builds structured billing for the PDF; `null` when no per-tooth rows.
+  AppointmentPdfDentalBilling? buildDentalPdfBilling(AppLocalizations l10n) {
     final (sub, ccy, _) = _computeSubtotal();
+    final lines = <AppointmentPdfDentalLine>[];
     for (final key in kFdiTeethOrder) {
       final c = toothKeyCompact(key);
       final list = _teeth[c] ?? const [];
       if (list.isEmpty) continue;
-      buf.writeln('${toothKeyDisplay(c)}:');
+      final toothLabel = toothKeyDisplay(c);
       for (final line in list) {
         final title = line['title']?.toString() ?? '';
         final am = (line['amountMinor'] as num?)?.toInt() ?? 0;
-        final cur = line['currency']?.toString() ?? ccy;
-        buf.writeln(
-          '  — $title: ${(am / 100).toStringAsFixed(2)} $cur',
+        final rawCur = line['currency']?.toString().toUpperCase();
+        lines.add(
+          AppointmentPdfDentalLine(
+            tooth: toothLabel,
+            serviceTitle: title,
+            amountMinor: am,
+            currency: rawCur != null && rawCur.isNotEmpty ? rawCur : ccy,
+          ),
         );
       }
     }
-    final d = _discountValue();
+    if (lines.isEmpty) return null;
+
+    final dVal = _discountValue();
     final total = _totalAfterDiscount(sub);
-    buf.writeln();
-    buf.writeln('${l10n.translate('dentalSubtotal')}: ${(sub / 100).toStringAsFixed(2)} $ccy');
-    if (d > 0) {
-      buf.writeln(
-        '${l10n.translate('dentalDiscount')}: ${d.toStringAsFixed(1)}%',
-      );
-    }
-    buf.writeln('${l10n.translate('dentalTotal')}: ${(total / 100).toStringAsFixed(2)} $ccy');
-    final notes = _notesCtrl.text.trim();
-    if (notes.isNotEmpty) {
-      buf.writeln();
-      buf.writeln('${l10n.translate('dentalClinicalNotes')}:');
-      buf.writeln(notes);
-    }
-    return buf.toString().trim();
+    return AppointmentPdfDentalBilling(
+      header: l10n.translate('dentalPdfHeader'),
+      lines: lines,
+      subtotalMinor: sub,
+      discountPercent: dVal > 0 ? dVal : null,
+      totalMinor: total,
+      currency: ccy,
+    );
   }
 
   Future<void> _openToothEditor(String compactKey) async {

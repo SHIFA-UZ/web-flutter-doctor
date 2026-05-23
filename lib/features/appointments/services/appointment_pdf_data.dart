@@ -2,10 +2,47 @@
 
 import 'dart:typed_data';
 
+/// One dental service line row for PDF rendering.
+class AppointmentPdfDentalLine {
+  final String tooth;
+  final String serviceTitle;
+  final int amountMinor;
+  final String currency;
+
+  const AppointmentPdfDentalLine({
+    required this.tooth,
+    required this.serviceTitle,
+    required this.amountMinor,
+    required this.currency,
+  });
+}
+
+/// Structured stomatological billing section (replaces embedding plain text in notes).
+class AppointmentPdfDentalBilling {
+  final String header;
+  final List<AppointmentPdfDentalLine> lines;
+  final int subtotalMinor;
+  final double? discountPercent;
+  final int totalMinor;
+  final String currency;
+
+  const AppointmentPdfDentalBilling({
+    required this.header,
+    required this.lines,
+    required this.subtotalMinor,
+    this.discountPercent,
+    required this.totalMinor,
+    required this.currency,
+  });
+}
+
 /// Input data for generating the appointment summary PDF.
 /// All fields used in the report; optional fields can be null/empty.
 class AppointmentPdfData {
   final String appointmentId;
+  /// In-person clinic or location label (omit for video consultations).
+  final String? clinicName;
+
   final String patientName;
   final String? patientId;
   final String? dateOfBirth;
@@ -26,6 +63,9 @@ class AppointmentPdfData {
   /// Doctor's clinical notes (do NOT translate).
   final String? notes;
 
+  /// Optional structured dental billing table (shown when non-null with lines).
+  final AppointmentPdfDentalBilling? dentalBilling;
+
   /// Optional sections (render only if non-empty).
   final String? diagnosis;
   final String? diagnosisCode;
@@ -45,6 +85,7 @@ class AppointmentPdfData {
 
   const AppointmentPdfData({
     required this.appointmentId,
+    this.clinicName,
     required this.patientName,
     this.patientId,
     this.dateOfBirth,
@@ -58,6 +99,7 @@ class AppointmentPdfData {
     required this.timeStr,
     required this.appointmentDate,
     this.notes,
+    this.dentalBilling,
     this.diagnosis,
     this.diagnosisCode,
     this.diagnosisDisplay,
