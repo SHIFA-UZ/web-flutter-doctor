@@ -827,6 +827,7 @@ import 'package:image_picker/image_picker.dart';
 
 // Providers (you already use them)
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/state/auth/doctor_jwt_role_provider.dart';
 
 // Existing schedule screen
 import 'package:shifa_doc_app_v1/features/schedule/presentation/setup_schedule_screen.dart';
@@ -1052,6 +1053,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final brand = Theme.of(context).colorScheme.primary;
+    if (ref.watch(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
+      return const _ClinicStaffProfileShell();
+    }
     final allAsync = ref.watch(profileAllProvider);
 
     return allAsync.when(
@@ -2103,6 +2107,214 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         );
     }
+  }
+}
+
+class _ClinicStaffProfileShell extends ConsumerStatefulWidget {
+  const _ClinicStaffProfileShell();
+
+  @override
+  ConsumerState<_ClinicStaffProfileShell> createState() =>
+      _ClinicStaffProfileShellState();
+}
+
+class _ClinicStaffProfileShellState
+    extends ConsumerState<_ClinicStaffProfileShell> {
+  final GlobalKey<FormState> _passwordFormKey = GlobalKey<FormState>();
+  final _currentPassCtrl = TextEditingController();
+  final _newPassCtrl = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _currentPassCtrl.dispose();
+    _newPassCtrl.dispose();
+    _confirmPassCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _savePassword(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!(_passwordFormKey.currentState?.validate() ?? false)) return;
+    if (_newPassCtrl.text.trim() != _confirmPassCtrl.text.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.newPasswordConfirmationMismatchError),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    try {
+      await changePassword(
+        ref,
+        currentPassword: _currentPassCtrl.text.trim(),
+        newPassword: _newPassCtrl.text,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.passwordUpdatedSuccessfully)),
+      );
+      _currentPassCtrl.clear();
+      _newPassCtrl.clear();
+      _confirmPassCtrl.clear();
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final asyncMe = ref.watch(meProfileProvider);
+    final bust = ref.watch(photoCacheBusterProvider);
+
+    return asyncMe.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(body: Center(child: Text('$e'))),
+      data: (me) {
+        final rawPhoto = me.photoUrl;
+        final photoUrl = (rawPhoto != null && rawPhoto.isNotEmpty)
+            ? '$rawPhoto${rawPhoto.contains('?') ? '&' : '?'}t=$bust'
+            : null;
+        final name = '${me.firstName} ${me.lastName}'.trim();
+        final tzLabel = me.timeZone?.trim().isNotEmpty == true
+            ? me.timeZone!.trim()
+            : '—';
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ListView(
+              children: [
+                Text(
+                  l10n.profile,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 42,
+                          backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                              ? NetworkImage(photoUrl)
+                              : null,
+                          child:
+                              photoUrl == null ? const Icon(Icons.person, size: 48) : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          name.isEmpty ? '—' : name,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.email_outlined),
+                        title: Text(l10n.enterEmail),
+                        subtitle: Text(
+                          me.email ?? '—',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                        ),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.phone_outlined),
+                        title: Text(l10n.phoneNumber),
+                        subtitle: Text(me.phone ?? '—'),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.language_outlined),
+                        title:
+                            Text(l10n.translate('practiceTimezone')),
+                        subtitle: Text(tzLabel),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _sectionHeader(l10n.password),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: _passwordFormKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextFormField(
+                            controller: _currentPassCtrl,
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              hintText: l10n.currentPassword,
+                            ),
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? l10n.currentPasswordIsRequired
+                                : null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _newPassCtrl,
+                            obscureText: true,
+                            decoration: InputDecoration(hintText: l10n.newPassword),
+                            validator: (v) => (v == null || v.length < 6)
+                                ? 'Minimum 6 characters'
+                                : null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _confirmPassCtrl,
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              hintText: l10n.confirmNewPassword,
+                            ),
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? l10n.pleaseConfirmNewPasswordError
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          ShifaPrimaryButton(
+                            label: AppLocalizations.of(context)!.save,
+                            onPressed: () => _savePassword(context),
+                            icon: Icons.lock_outline,
+                            width: ButtonWidth.fill,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

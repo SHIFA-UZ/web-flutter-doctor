@@ -9,6 +9,8 @@ import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
+import 'package:shifa_doc_app_v1/state/auth/doctor_jwt_role_provider.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_invitations_tab.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart'
@@ -66,7 +68,7 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this);
+    _tabController = TabController(length: 9, vsync: this);
   }
 
   @override
@@ -77,16 +79,20 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
 
   /// Logged-in doctor only (shell Calendar clears `resourceDoctorId` on entry).
   void _openMyScheduleInShellCalendar() {
+    if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
+      return;
+    }
     ref.read(calendarProvider.notifier).setResourceDoctorId(null);
     ref.read(shellProvider.notifier).setTab(2);
   }
 
   /// [MainShell] clinic workspace index (`IndexedStack`; see `main_shell.dart`).
-  static const int _clinicWorkspaceShellTabIndex = 4;
+  int _clinicWorkspaceShellTabIndex() =>
+      ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff ? 1 : 4;
 
   /// Opens the clinic workspace in the shell and selects one of its [TabBar] tabs.
   void _jumpToClinicWorkspaceSubTab(int clinicTabIndex) {
-    ref.read(shellProvider.notifier).setTab(_clinicWorkspaceShellTabIndex);
+    ref.read(shellProvider.notifier).setTab(_clinicWorkspaceShellTabIndex());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (clinicTabIndex >= 0 &&
@@ -146,6 +152,7 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
                   Tab(text: l10n.translate('clinicWorkspaceServices')),
                   Tab(text: l10n.translate('clinicWorkspaceTreatmentPlans')),
                   Tab(text: l10n.translate('clinicWorkspaceFinance')),
+                  Tab(text: l10n.translate('clinicWorkspaceInvitations')),
                   Tab(text: l10n.translate('clinicWorkspaceSettings')),
                 ],
               ),
@@ -169,6 +176,7 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
                   _ServicesTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
                   ClinicTreatmentPlansTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
                   ClinicFinanceTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
+                  ClinicInvitationsTab(clinicId: clinic?.clinicId ?? clinics.first.clinicId),
                   _SettingsTab(clinic: clinic ?? clinics.first),
                 ],
               ),
@@ -333,7 +341,11 @@ class _OverviewTab extends ConsumerWidget {
                 icon: Icons.calendar_today_outlined,
                 onPressed: () {
                   ref.read(calendarProvider.notifier).setResourceDoctorId(null);
-                  ref.read(shellProvider.notifier).setTab(2);
+                  if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
+                    onOpenClinicSubTab(2);
+                  } else {
+                    ref.read(shellProvider.notifier).setTab(2);
+                  }
                 },
               ),
               ShifaSecondaryButton(

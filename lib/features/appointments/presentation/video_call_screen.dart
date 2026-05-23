@@ -1066,11 +1066,22 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           // Continue even if status update fails
         }
 
-        // Refresh appointments and analytics
-        await invalidateAppointmentRelatedProviders(ref);
-
-        // Refresh documents
-        ref.invalidate(patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)));
+        // Refresh appointments, analytics, and documents. These are best-effort
+        // side effects — the appointment has already been completed on the
+        // backend and the PDF uploaded, so a stale-cache refresh failure must
+        // not surface as a user-facing error.
+        try {
+          await invalidateAppointmentRelatedProviders(ref);
+        } catch (e) {
+          debugPrint('Post-complete provider refresh failed (ignored): $e');
+        }
+        try {
+          ref.invalidate(
+            patientDocumentsProvider(PatientDocumentsKey(patientId: patientId)),
+          );
+        } catch (e) {
+          debugPrint('Post-complete documents invalidate failed (ignored): $e');
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

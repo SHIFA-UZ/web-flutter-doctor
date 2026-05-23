@@ -60,6 +60,7 @@ class _EmailResetPasswordScreenState extends ConsumerState<EmailResetPasswordScr
             newPassword,
           );
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.passwordUpdatedSuccessfully)),

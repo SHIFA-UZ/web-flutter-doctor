@@ -14,6 +14,7 @@ import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 // Optional: to force a fresh profile fetch after login if your controller
 // doesn't already invalidate it.
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/state/auth/doctor_jwt_role_provider.dart';
 
 // ✅ NEW: to auto-apply optional extras after login
 import 'package:shifa_doc_app_v1/state/auth/registration_state.dart';
@@ -48,16 +49,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .read(authProvider.notifier)
           .login(_userCtrl.text.trim(), _passCtrl.text.trim());
 
-      // 2) Ensure fresh profile load
+      // 2) Ensure fresh identity / profile loads
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
 
-      // 3) ✅ Auto-apply optional profile extras gathered during registration
+      // 3) Auto-apply optional profile extras gathered during registration (doctors only)
       try {
-        await ref
-            .read(registrationProvider.notifier)
-            .applyOptionalProfileExtrasAfterLogin();
-        // Extras may have updated profile -> invalidate again to refresh data in shell
-        ref.invalidate(profileAllProvider);
+        if (ref.read(doctorAppJwtRoleProvider) != DoctorAppJwtRole.clinicStaff) {
+          await ref
+              .read(registrationProvider.notifier)
+              .applyOptionalProfileExtrasAfterLogin();
+          ref.invalidate(profileAllProvider);
+          ref.invalidate(meProfileProvider);
+        }
       } catch (_) {
         // Non-blocking: ignore if nothing to apply or if patch failed
       }

@@ -17,6 +17,7 @@ import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/state/auth/doctor_jwt_role_provider.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/chat/chat_providers.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
@@ -105,6 +106,13 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   }
 
   Future<void> _loadActiveLocationLabel() async {
+    if (!mounted) return;
+    if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
+      if (mounted) {
+        setState(() => _activeLocationLabel = null);
+      }
+      return;
+    }
     try {
       final profile = ref.read(profileAllProvider).valueOrNull?.profile;
       final doctorTimeZone = profile?['timeZone'] as String?;
@@ -170,11 +178,19 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Future.microtask(_loadActiveLocationLabel);
-    _sidebarLocationTicker = Timer.periodic(
-      const Duration(minutes: 1),
-      (_) => _loadActiveLocationLabel(),
-    );
+    Future.microtask(() {
+      if (!mounted) return;
+      if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
+        return;
+      }
+      _loadActiveLocationLabel();
+    });
+    _sidebarLocationTicker = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
+        return;
+      }
+      _loadActiveLocationLabel();
+    });
   }
 
   @override
@@ -193,7 +209,9 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       ref.invalidate(doctorNotificationsProvider);
       ref.invalidate(doctorNotificationsUnreadCountProvider);
       unawaited(invalidateAppointmentRelatedProviders(ref));
-      _loadActiveLocationLabel();
+      if (ref.read(doctorAppJwtRoleProvider) != DoctorAppJwtRole.clinicStaff) {
+        _loadActiveLocationLabel();
+      }
     }
   }
 
@@ -201,15 +219,23 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   void _goToTab(int index) {
     _shellNavKey.currentState?.popUntil((route) => route.isFirst);
     ref.read(shellProvider.notifier).setTab(index);
-    if (index == 1 || index == 2) {
+    if (ref.read(doctorAppJwtRoleProvider) != DoctorAppJwtRole.clinicStaff &&
+        (index == 1 || index == 2)) {
       _loadActiveLocationLabel();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isClinicStaff =
+        ref.watch(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff;
+
     ref.listen<int?>(notificationPendingTaskIdProvider, (prev, next) {
       if (next == null || next <= 0) return;
+      if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
+        ref.read(notificationPendingTaskIdProvider.notifier).state = null;
+        return;
+      }
       final taskId = next;
       ref.read(notificationPendingTaskIdProvider.notifier).state = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -223,7 +249,9 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     // When shell is built with a pending task id already set (e.g. from notification tap),
     // ref.listen may not fire for that initial value — push task details once.
     final pendingTaskId = ref.watch(notificationPendingTaskIdProvider);
-    if (pendingTaskId != null && pendingTaskId > 0) {
+    if (!isClinicStaff &&
+        pendingTaskId != null &&
+        pendingTaskId > 0) {
       ref.read(notificationPendingTaskIdProvider.notifier).state = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _shellNavKey.currentState?.pushNamed(
@@ -235,8 +263,18 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
     final brand = Theme.of(context).colorScheme.primary;
     var selectedIndex = ref.watch(shellProvider);
-    final canUseTasks = ref.watch(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
-    if (selectedIndex == 5 && !canUseTasks) {
+    final canUseTasks = isClinicStaff
+        ? false
+        : ref.watch(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
+
+    if (isClinicStaff) {
+      if (selectedIndex < 0 || selectedIndex > 3) {
+        Future.microtask(() {
+          if (mounted) ref.read(shellProvider.notifier).setTab(1);
+        });
+        selectedIndex = 1;
+      }
+    } else if (selectedIndex == 5 && !canUseTasks) {
       // Doctor was on Tasks but tier no longer permits it — bounce to Home.
       Future.microtask(() {
         if (mounted) ref.read(shellProvider.notifier).setTab(1);
@@ -246,30 +284,51 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
     final hasClinicWorkspace = ref.watch(hasClinicWorkspaceProvider);
 
-    final screens = const [
-      _KeepAlive(child: ChatScreen()),
-      _KeepAlive(child: HomeScreen()),
-      _KeepAlive(child: CalendarScreen()),
-      _KeepAlive(child: PatientsScreen()),
-      _KeepAlive(child: ClinicWorkspaceScreen()),
-      _KeepAlive(child: TasksScreen()),
-      _KeepAlive(child: NotificationsScreen()),
-      _KeepAlive(child: ProfileScreen()),
-    ];
+    final screens = isClinicStaff
+        ? const [
+            _KeepAlive(child: ChatScreen()),
+            _KeepAlive(child: ClinicWorkspaceScreen()),
+            _KeepAlive(child: NotificationsScreen()),
+            _KeepAlive(child: ProfileScreen()),
+          ]
+        : const [
+            _KeepAlive(child: ChatScreen()),
+            _KeepAlive(child: HomeScreen()),
+            _KeepAlive(child: CalendarScreen()),
+            _KeepAlive(child: PatientsScreen()),
+            _KeepAlive(child: ClinicWorkspaceScreen()),
+            _KeepAlive(child: TasksScreen()),
+            _KeepAlive(child: NotificationsScreen()),
+            _KeepAlive(child: ProfileScreen()),
+          ];
 
-    final allAsync = ref.watch(profileAllProvider);
     final photoCacheBuster = ref.watch(photoCacheBusterProvider);
     String? avatarUrl;
-    allAsync.when(
-      data: (all) {
-        final raw = all.profile['photoUrl'] as String?;
-        avatarUrl = (raw != null && raw.isNotEmpty)
-            ? '$raw${raw.contains('?') ? '&' : '?'}t=$photoCacheBuster'
-            : null;
-      },
-      loading: () {},
-      error: (_, __) {},
-    );
+    if (isClinicStaff) {
+      final meAsync = ref.watch(meProfileProvider);
+      meAsync.when(
+        data: (me) {
+          final raw = me.photoUrl;
+          avatarUrl = (raw != null && raw.isNotEmpty)
+              ? '$raw${raw.contains('?') ? '&' : '?'}t=$photoCacheBuster'
+              : null;
+        },
+        loading: () {},
+        error: (_, __) {},
+      );
+    } else {
+      final allAsync = ref.watch(profileAllProvider);
+      allAsync.when(
+        data: (all) {
+          final raw = all.profile['photoUrl'] as String?;
+          avatarUrl = (raw != null && raw.isNotEmpty)
+              ? '$raw${raw.contains('?') ? '&' : '?'}t=$photoCacheBuster'
+              : null;
+        },
+        loading: () {},
+        error: (_, __) {},
+      );
+    }
 
     return Scaffold(
       body: Row(
@@ -318,137 +377,124 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     const SizedBox(height: 32),
 
                 // ───── Tabs ─────
-                    _buildChatNavItem(
-                  context,
-                  ref,
-                  0,
-                  brand,
-                  selectedIndex,
-                ),
-                    const SizedBox(height: 20),
-
-                    _buildNavItem(
-                  context,
-                  ref,
-                  Icons.home_outlined,
-                  1,
-                  brand,
-                  selectedIndex,
-                ),
-                    const SizedBox(height: 20),
-
-                    _buildNavItem(
-                  context,
-                  ref,
-                  Icons.calendar_today_outlined,
-                  2,
-                  brand,
-                  selectedIndex,
-                ),
-                    const SizedBox(height: 20),
-
-                    _buildNavItem(
-                  context,
-                  ref,
-                  Icons.people_outline,
-                  3,
-                  brand,
-                  selectedIndex,
-                ),
-                    const SizedBox(height: 20),
-
-                if (hasClinicWorkspace) ...[
+                if (isClinicStaff) ...[
+                  _buildChatNavItem(context, ref, 0, brand, selectedIndex),
+                  const SizedBox(height: 20),
                   _buildNavItem(
                     context,
                     ref,
                     Icons.local_hospital_outlined,
-                    4,
+                    1,
                     brand,
                     selectedIndex,
                     tooltip: AppLocalizations.of(context)!.translate('clinicNavClinic'),
                   ),
                   const SizedBox(height: 20),
-                ],
-
-                if (canUseTasks) ...[
+                  _buildNotificationsNavItem(context, ref, 2, brand, selectedIndex),
+                  const SizedBox(height: 24),
+                  const LanguageMiniToggle(),
+                  const SizedBox(height: 16),
+                  _buildNavAvatarItem(context, ref, avatarUrl, 3, brand, selectedIndex),
+                ] else ...[
+                  _buildChatNavItem(context, ref, 0, brand, selectedIndex),
+                  const SizedBox(height: 20),
                   _buildNavItem(
                     context,
                     ref,
-                    Icons.task_alt,
-                    5,
+                    Icons.home_outlined,
+                    1,
                     brand,
                     selectedIndex,
                   ),
                   const SizedBox(height: 20),
-                ],
-
-                    _buildNotificationsNavItem(
-                  context,
-                  ref,
-                  6,
-                  brand,
-                  selectedIndex,
-                ),
-
-                    const SizedBox(height: 24),
-
-                    // ───── Language Toggle ─────
-                    const LanguageMiniToggle(),
-
-                    const SizedBox(height: 16),
-
-                    // ───── Profile Avatar ─────
-                    _buildNavAvatarItem(
+                  _buildNavItem(
+                    context,
+                    ref,
+                    Icons.calendar_today_outlined,
+                    2,
+                    brand,
+                    selectedIndex,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildNavItem(
+                    context,
+                    ref,
+                    Icons.people_outline,
+                    3,
+                    brand,
+                    selectedIndex,
+                  ),
+                  const SizedBox(height: 20),
+                  if (hasClinicWorkspace) ...[
+                    _buildNavItem(
                       context,
                       ref,
-                      avatarUrl,
-                      7,
+                      Icons.local_hospital_outlined,
+                      4,
+                      brand,
+                      selectedIndex,
+                      tooltip:
+                          AppLocalizations.of(context)!.translate('clinicNavClinic'),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (canUseTasks) ...[
+                    _buildNavItem(
+                      context,
+                      ref,
+                      Icons.task_alt,
+                      5,
                       brand,
                       selectedIndex,
                     ),
-
-                    const SizedBox(height: 12),
-
-                    if ((_activeLocationLabel ?? '').trim().isNotEmpty)
-                      Container(
-                        width: 64,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.16),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _sidebarLocationChipIsVideo(context)
-                                  ? Icons.videocam_outlined
-                                  : Icons.location_on_outlined,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _activeLocationLabel!,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                        ),
+                    const SizedBox(height: 20),
+                  ],
+                  _buildNotificationsNavItem(context, ref, 6, brand, selectedIndex),
+                  const SizedBox(height: 24),
+                  const LanguageMiniToggle(),
+                  const SizedBox(height: 16),
+                  _buildNavAvatarItem(context, ref, avatarUrl, 7, brand, selectedIndex),
+                  const SizedBox(height: 12),
+                  if ((_activeLocationLabel ?? '').trim().isNotEmpty)
+                    Container(
+                      width: 64,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
                       ),
-
-                    if ((_activeLocationLabel ?? '').trim().isNotEmpty)
-                      const SizedBox(height: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.16),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _sidebarLocationChipIsVideo(context)
+                                ? Icons.videocam_outlined
+                                : Icons.location_on_outlined,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _activeLocationLabel!,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if ((_activeLocationLabel ?? '').trim().isNotEmpty)
+                    const SizedBox(height: 12),
+                ],
 
                     // ───── Logout ─────
                     _LogoutButton(brand: brand),
@@ -471,22 +517,29 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                   final name = settings.name;
                   if (name == null || name.isEmpty || name == '/') {
                     return MaterialPageRoute<void>(
-                      builder: (_) => _ShellTabContent(screens: screens),
+                      builder: (_) => _ShellTabContent(
+                        screens: screens,
+                        selectedIndex: selectedIndex,
+                      ),
                     );
                   }
                   final route = AppRouter.shellOnGenerateRoute(settings);
                   if (route != null) return route;
                   return MaterialPageRoute<void>(
-                    builder: (_) => _ShellTabContent(screens: screens),
+                    builder: (_) => _ShellTabContent(
+                      screens: screens,
+                      selectedIndex: selectedIndex,
+                    ),
                   );
                 },
               ),
             ),
-                const Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: PatientBriefingPanel(),
-                ),
+                if (!isClinicStaff)
+                  const Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: PatientBriefingPanel(),
+                  ),
               ],
             ),
           ),
@@ -735,6 +788,7 @@ class _LogoutButton extends ConsumerWidget {
                       Navigator.of(dialogContext).pop();
                       ref.read(authProvider.notifier).logout();
                       ref.invalidate(profileAllProvider);
+                      ref.invalidate(meProfileProvider);
                       ref.invalidate(shellProvider);
                       // Clear doctor-scoped data so next login never sees stale appointments/patients
                       unawaited(invalidateAppointmentRelatedProviders(ref));
@@ -771,15 +825,18 @@ class _LogoutButton extends ConsumerWidget {
   }
 }
 
-/// Default shell content: tab body. Watches shellProvider so tab switches update the visible screen.
-class _ShellTabContent extends ConsumerWidget {
-  const _ShellTabContent({required this.screens});
+/// Default shell content: tab body ([selectedIndex] is already coerced for clinic staff shells).
+class _ShellTabContent extends StatelessWidget {
+  const _ShellTabContent({
+    required this.screens,
+    required this.selectedIndex,
+  });
 
   final List<Widget> screens;
+  final int selectedIndex;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedIndex = ref.watch(shellProvider);
+  Widget build(BuildContext context) {
     return IndexedStack(index: selectedIndex, children: screens);
   }
 }

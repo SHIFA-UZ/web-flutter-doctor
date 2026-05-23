@@ -5,6 +5,7 @@ import 'package:shifa_doc_app_v1/features/auth/presentation/splash_screen.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/verify_key_screen.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/login_screen.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/create_account/create_account_screen.dart';
+import 'package:shifa_doc_app_v1/features/auth/presentation/receptionist_create_account_screen.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/create_account/account_information_screen.dart';
 import 'package:shifa_doc_app_v1/features/schedule/presentation/setup_schedule_screen.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/main_shell.dart';
@@ -32,6 +33,7 @@ class AppRoutes {
   static const verify = '/verify';
   static const login = '/login';
   static const createAccount = '/create';
+  static const receptionistCreateAccount = '/create/receptionist';
   static const accountInfo = '/create/account-info';
   static const setupSchedule = '/create/schedule';
   static const shell = '/app';
@@ -67,6 +69,11 @@ class AppRouter {
 
       case AppRoutes.createAccount:
         return MaterialPageRoute(builder: (_) => const CreateAccountScreen());
+
+      case AppRoutes.receptionistCreateAccount:
+        return MaterialPageRoute(
+          builder: (_) => const ReceptionistCreateAccountScreen(),
+        );
 
       case AppRoutes.accountInfo:
         return MaterialPageRoute(

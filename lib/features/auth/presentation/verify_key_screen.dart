@@ -32,12 +32,13 @@ class _VerifyKeyScreenState extends ConsumerState<VerifyKeyScreen> {
       // Verify key against backend (returns Future<void>)
       await ref.read(registrationProvider.notifier).verifyKey(key);
 
-      // Defensively store it in provider (not strictly necessary after verifyKey)
-      ref.read(registrationProvider.notifier).setVerifiedKey(key);
-
       if (!mounted) return;
-      // Flow stays the same: go to Login (not CreateAccount)
-      Navigator.pushReplacementNamed(context, AppRoutes.createAccount);
+      final purpose = ref.read(registrationProvider).invitePurpose;
+      final nextRoute =
+          purpose == RegistrationData.clinicReceptionistInvitePurpose
+              ? AppRoutes.receptionistCreateAccount
+              : AppRoutes.createAccount;
+      Navigator.pushReplacementNamed(context, nextRoute);
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
     } finally {

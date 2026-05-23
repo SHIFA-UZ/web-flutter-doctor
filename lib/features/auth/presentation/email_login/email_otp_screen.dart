@@ -78,6 +78,7 @@ class _EmailOtpScreenState extends ConsumerState<EmailOtpScreen> {
       }
       await auth.loginWithEmailOtp(widget.email, code);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.shell);
     } catch (e) {

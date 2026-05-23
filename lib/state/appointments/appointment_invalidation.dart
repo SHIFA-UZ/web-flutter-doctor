@@ -29,8 +29,17 @@ Future<void> invalidateAppointmentRelatedProviders(
   int? clinicWorkspaceId,
 }) async {
   try {
-    final profile = await ref.read(profileAllProvider.future);
-    final doctorTimeZone = profile.profile['timeZone'] as String?;
+    String? doctorTimeZone;
+    try {
+      final me = await ref.read(meProfileProvider.future);
+      doctorTimeZone = me.timeZone;
+    } catch (_) {
+      // Clinic staff has no /api/doctors/me — fall back only for doctors.
+      try {
+        final profile = await ref.read(profileAllProvider.future);
+        doctorTimeZone = profile.profile['timeZone'] as String?;
+      } catch (_) {}
+    }
     if (doctorTimeZone != null && doctorTimeZone.isNotEmpty) {
       final todayInDoctorZone = getTodayInTimezone(doctorTimeZone);
       final todayKey = DateTime(
@@ -43,18 +52,37 @@ Future<void> invalidateAppointmentRelatedProviders(
   } catch (e) {
     debugPrint('invalidateAppointmentRelatedProviders: $e');
   }
-  ref.invalidate(todayAppointmentsProvider);
-  ref.invalidate(doctorAnalyticsOverviewProvider);
+  // Best-effort invalidations: never let a single failure abort the caller,
+  // otherwise success paths like "End appointment" surface a red error
+  // snackbar after the backend has already accepted the change.
+  try {
+    ref.invalidate(todayAppointmentsProvider);
+  } catch (e) {
+    debugPrint('invalidate(todayAppointmentsProvider) failed: $e');
+  }
+  try {
+    ref.invalidate(doctorAnalyticsOverviewProvider);
+  } catch (e) {
+    debugPrint('invalidate(doctorAnalyticsOverviewProvider) failed: $e');
+  }
   // Treatment plan auto-completion runs server-side when an appointment is
   // completed (see TreatmentPlanStatusService), so the list of plans + the
   // finance dashboards may have moved. Invalidate them here so the next
   // navigation to the Clinic workspace shows the up-to-date status without
   // requiring a manual refresh.
-  ref.invalidate(treatmentPlansForClinicProvider);
-  ref.invalidate(treatmentPlansForPatientProvider);
-  final clinicId = clinicWorkspaceId ?? ref.read(selectedClinicIdProvider);
-  if (clinicId != null) {
-    invalidateClinicFinanceTabDataForClinic(ref, clinicId);
+  try {
+    ref.invalidate(treatmentPlansForClinicProvider);
+    ref.invalidate(treatmentPlansForPatientProvider);
+  } catch (e) {
+    debugPrint('invalidate(treatmentPlans*) failed: $e');
+  }
+  try {
+    final clinicId = clinicWorkspaceId ?? ref.read(selectedClinicIdProvider);
+    if (clinicId != null) {
+      invalidateClinicFinanceTabDataForClinic(ref, clinicId);
+    }
+  } catch (e) {
+    debugPrint('invalidateClinicFinanceTabDataForClinic failed: $e');
   }
 }
 

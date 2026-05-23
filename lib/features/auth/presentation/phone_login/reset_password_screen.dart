@@ -53,6 +53,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     try {
       await ref.read(authProvider.notifier).resetPasswordWithFirebaseToken(widget.idToken, newPassword);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordUpdatedSuccessfully)));
       Navigator.pushReplacementNamed(context, AppRoutes.shell);

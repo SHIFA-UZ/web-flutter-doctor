@@ -46,6 +46,10 @@ class SelectedClinicIdNotifier extends StateNotifier<int?> {
   final Ref _ref;
 
   Future<String> _prefsKey() async {
+    final me = _ref.read(meProfileProvider).valueOrNull;
+    if (me != null) {
+      return 'clinic_workspace_selected_id:${me.id}';
+    }
     final profile = _ref.read(profileAllProvider).valueOrNull?.profile;
     final id = profile?['id'] ?? profile?['doctorId'] ?? profile?['doctorProfileId'];
     return 'clinic_workspace_selected_id:${id ?? 'unknown'}';
@@ -227,6 +231,79 @@ Future<ClinicCatalogItem> patchClinicCatalogItem(
   if (m is! Map) throw Exception('Invalid catalog JSON');
   ref.invalidate(clinicCatalogProvider(clinicId));
   return ClinicCatalogItem.fromJson(Map<String, dynamic>.from(m));
+}
+
+class ClinicInvitationRow {
+  ClinicInvitationRow({
+    required this.id,
+    this.emailSentTo,
+    required this.consumed,
+    this.expiresAt,
+    required this.pending,
+  });
+
+  final int id;
+  final String? emailSentTo;
+  final bool consumed;
+  final String? expiresAt;
+  final bool pending;
+
+  factory ClinicInvitationRow.fromJson(Map<String, dynamic> m) {
+    return ClinicInvitationRow(
+      id: (m['id'] as num).toInt(),
+      emailSentTo: m['emailSentTo']?.toString(),
+      consumed: m['consumed'] == true,
+      expiresAt: m['expiresAt']?.toString(),
+      pending: m['pending'] == true,
+    );
+  }
+}
+
+final clinicInvitationsProvider =
+    FutureProvider.family<List<ClinicInvitationRow>, int>((ref, clinicId) async {
+  final api = ref.watch(doctorApiClientProvider);
+  final res = await api.get('/api/clinics/$clinicId/invitations');
+  if (res.statusCode != 200) {
+    throw Exception('invitations ${res.statusCode}');
+  }
+  final decoded = json.decode(utf8.decode(res.bodyBytes));
+  if (decoded is! List) return [];
+  return decoded
+      .whereType<Map>()
+      .map((e) => ClinicInvitationRow.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+});
+
+Future<void> createClinicReceptionistInvitation(
+  WidgetRef ref, {
+  required int clinicId,
+  required String email,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final trimmed = email.trim().toLowerCase();
+  final res = await api.post('/api/clinics/$clinicId/invitations', {
+    'email': trimmed,
+    'role': 'RECEPTIONIST',
+  });
+  if (res.statusCode != 200 && res.statusCode != 201) {
+    throw Exception(res.body.isNotEmpty ? res.body : 'Invite failed (${res.statusCode})');
+  }
+  ref.invalidate(clinicInvitationsProvider(clinicId));
+}
+
+Future<void> revokeClinicInvitation(
+  WidgetRef ref, {
+  required int clinicId,
+  required int invitationId,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.delete('/api/clinics/$clinicId/invitations/$invitationId');
+  if (res.statusCode != 200 && res.statusCode != 204) {
+    throw Exception(
+      res.body.isNotEmpty ? res.body : 'Revoke failed (${res.statusCode})',
+    );
+  }
+  ref.invalidate(clinicInvitationsProvider(clinicId));
 }
 
 class ClinicPatientsPage {

@@ -91,6 +91,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       }
       await ref.read(authProvider.notifier).loginWithFirebaseToken(idToken);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.shell);
     } on FirebaseAuthException catch (e) {

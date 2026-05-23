@@ -97,7 +97,13 @@ final canViewFinanceProvider = Provider<bool>((ref) {
 });
 
 /// Refresh all cached endpoints used by Clinic → Finance (any sub-tab).
-void invalidateClinicFinanceTabDataForClinic(Ref ref, int clinicId) {
+///
+/// Accepts either [Ref] (providers) or [WidgetRef] (widgets) — both expose
+/// `invalidate(ProviderOrFamily)`. The parameter is typed `dynamic` so callers
+/// from either context don't trip Dart's runtime type check (WidgetRef does
+/// not extend Ref, so a narrower signature crashes appointment completion when
+/// invoked from the in-person/video screens).
+void invalidateClinicFinanceTabDataForClinic(dynamic ref, int clinicId) {
   ref.invalidate(clinicFinanceDashboardProvider(clinicId));
   ref.invalidate(clinicFinancialRecordsProvider(clinicId));
   ref.invalidate(clinicPaymentHistoryProvider(clinicId));

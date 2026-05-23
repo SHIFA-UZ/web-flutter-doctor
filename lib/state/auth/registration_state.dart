@@ -9,6 +9,9 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 
 /// State holder for registration flow.
 class RegistrationData {
+  static const clinicReceptionistInvitePurpose =
+      'CLINIC_RECEPTIONIST_INVITE';
+
   // Required by backend /api/auth/register
   final String? key; // invitation key (non-null at submit)
   final String? firstName; // required
@@ -24,8 +27,17 @@ class RegistrationData {
   final String? clinic;
   final int? clinicId;
   final String? profession;
+
   /// IANA time zone (e.g. Europe/Berlin) for practice; set during onboarding.
   final String? timeZone;
+
+  /// From POST /api/auth/verify-key (clinic invitations).
+  final String? invitePurpose;
+  final int? inviteClinicId;
+  final String? inviteClinicName;
+
+  /// Email address the invitation was sent to — must match registration for staff.
+  final String? inviteTargetEmail;
 
   const RegistrationData({
     this.key,
@@ -41,6 +53,10 @@ class RegistrationData {
     this.clinicId,
     this.profession,
     this.timeZone,
+    this.invitePurpose,
+    this.inviteClinicId,
+    this.inviteClinicName,
+    this.inviteTargetEmail,
   });
 
   RegistrationData copyWith({
@@ -57,6 +73,10 @@ class RegistrationData {
     int? clinicId,
     String? profession,
     String? timeZone,
+    String? invitePurpose,
+    int? inviteClinicId,
+    String? inviteClinicName,
+    String? inviteTargetEmail,
   }) {
     return RegistrationData(
       key: key ?? this.key,
@@ -72,6 +92,10 @@ class RegistrationData {
       clinicId: clinicId ?? this.clinicId,
       profession: profession ?? this.profession,
       timeZone: timeZone ?? this.timeZone,
+      invitePurpose: invitePurpose ?? this.invitePurpose,
+      inviteClinicId: inviteClinicId ?? this.inviteClinicId,
+      inviteClinicName: inviteClinicName ?? this.inviteClinicName,
+      inviteTargetEmail: inviteTargetEmail ?? this.inviteTargetEmail,
     );
   }
 }
@@ -86,7 +110,7 @@ class RegistrationController extends StateNotifier<RegistrationData> {
   // ----------------------------
   // 1) Verify key with backend
   // ----------------------------
-  // POST /api/auth/verify-key { key } -> { valid: Boolean }
+  // POST /api/auth/verify-key { key } → extended fields for clinic invitations
   Future<void> verifyKey(String key) async {
     final api = ref.read(apiClientProvider);
     final res = await api.post('/api/auth/verify-key', {'key': key.trim()});
@@ -99,9 +123,25 @@ class RegistrationController extends StateNotifier<RegistrationData> {
       throw Exception('Invalid or already used key');
     }
 
-    // Store in memory and persist locally (survive navigation/refresh)
     final trimmed = key.trim();
-    state = state.copyWith(key: trimmed);
+    final purpose = json['purpose']?.toString();
+    final cid = (json['clinicId'] as num?)?.toInt();
+    final cname = json['clinicName']?.toString();
+    final emailTo = json['emailSentTo']?.toString().trim();
+
+    state = state.copyWith(
+      key: trimmed,
+      invitePurpose: purpose,
+      inviteClinicId: cid,
+      inviteClinicName: (cname != null && cname.isNotEmpty) ? cname : null,
+      inviteTargetEmail: (emailTo != null && emailTo.isNotEmpty) ? emailTo : null,
+      // Receptionist signup must use the invitation email exactly.
+      email: (purpose == RegistrationData.clinicReceptionistInvitePurpose &&
+              emailTo != null &&
+              emailTo.contains('@'))
+          ? emailTo
+          : state.email,
+    );
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefsKey, trimmed);
@@ -162,6 +202,23 @@ class RegistrationController extends StateNotifier<RegistrationData> {
   // ----------------------------
   // 2) Store basic info (CreateAccount)
   // ----------------------------
+  /// Receptionist onboarding: fills name/password/timezone without touching invite email/key.
+  void setClinicStaffSignup({
+    required String firstName,
+    required String lastName,
+    required String password,
+    String? timeZone,
+  }) {
+    final trimmed = timeZone?.trim();
+    state = state.copyWith(
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      password: password.trim(),
+      timeZone:
+          (trimmed != null && trimmed.isNotEmpty) ? trimmed : state.timeZone,
+    );
+  }
+
   void setBasicInfo({
     required String firstName,
     required String lastName,
@@ -183,6 +240,10 @@ class RegistrationController extends StateNotifier<RegistrationData> {
       clinicId: state.clinicId,
       profession: state.profession,
       timeZone: state.timeZone,
+      invitePurpose: state.invitePurpose,
+      inviteClinicId: state.inviteClinicId,
+      inviteClinicName: state.inviteClinicName,
+      inviteTargetEmail: state.inviteTargetEmail,
     );
   }
 
@@ -261,6 +322,45 @@ class RegistrationController extends StateNotifier<RegistrationData> {
     }
 
     // Bubble up server error message if present
+    throw Exception(_errorFrom(res));
+  }
+
+  /// Receptionist onboarding: POST [/api/auth/register-clinic-staff]. Returns JWT or null + throws on error.
+  Future<String?> submitClinicStaffRegistration() async {
+    final api = ref.read(apiClientProvider);
+    final missing = <String>[];
+    if (state.key == null || state.key!.trim().isEmpty) missing.add('verification key');
+    if (state.firstName == null || state.firstName!.trim().isEmpty) missing.add('first name');
+    if (state.lastName == null || state.lastName!.trim().isEmpty) missing.add('last name');
+    if (state.email == null || state.email!.trim().isEmpty) missing.add('email');
+    if (state.password == null || state.password!.trim().isEmpty) missing.add('password');
+    if (missing.isNotEmpty) {
+      throw Exception('Please provide: ${missing.join(', ')}.');
+    }
+
+    final payload = <String, dynamic>{
+      'firstName': state.firstName!.trim(),
+      'lastName': state.lastName!.trim(),
+      'email': state.email!.trim(),
+      'password': state.password!.trim(),
+      'key': state.key!.trim(),
+      if (state.phone != null && state.phone!.trim().isNotEmpty) 'phone': state.phone!.trim(),
+      if (state.timeZone != null && state.timeZone!.trim().isNotEmpty) 'timeZone': state.timeZone!.trim(),
+    };
+
+    final res = await api.post('/api/auth/register-clinic-staff', payload);
+
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_prefsKey);
+      } catch (_) {
+        // ignore
+      }
+      final jsonBody = _safeJson(res.body);
+      final token = jsonBody['token'] as String?;
+      return (token != null && token.isNotEmpty) ? token : null;
+    }
     throw Exception(_errorFrom(res));
   }
 

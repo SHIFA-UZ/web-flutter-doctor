@@ -88,6 +88,7 @@ class AuthController extends StateNotifier<AuthState> {
 
           // 🔁 Force a clean, token-aware refetch for profile after login:
           ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
           
           // Note: Inactivity timer is automatically started when authProvider becomes authenticated
           // via inactivityTimerProvider which watches authProvider
@@ -154,6 +155,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = AuthState(isAuthenticated: true, userId: 'admin', email: username);
       await _saveTokenToStorage(token, forAdmin: true);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       return;
     }
     throw Exception(
@@ -181,6 +183,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = AuthState(isAuthenticated: true, userId: 'doctor', email: null);
       await _saveTokenToStorage(token);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       return;
     }
     if (res.statusCode == 403) {
@@ -217,6 +220,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = AuthState(isAuthenticated: true, userId: 'doctor', email: email);
       await _saveTokenToStorage(token);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       return;
     }
     throw Exception(body?['message'] ?? 'Verification failed (${res.statusCode})');
@@ -267,6 +271,7 @@ class AuthController extends StateNotifier<AuthState> {
       );
       await _saveTokenToStorage(token, forAdmin: isAdminSession);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       return;
     }
     throw Exception(body?['message'] ?? 'Reset password failed (${res.statusCode})');
@@ -293,6 +298,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = AuthState(isAuthenticated: true, userId: 'doctor', email: null);
       await _saveTokenToStorage(token);
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       return;
     }
     final message = responseBody?['message'] ?? responseBody?['error'] ?? res.body;
@@ -366,6 +372,7 @@ class AuthController extends StateNotifier<AuthState> {
     _clearTokenFromStorage(adminOnly: adminOnly);
     // Clear doctor-scoped cached data so next login never sees stale data.
     ref.invalidate(profileAllProvider);
+    ref.invalidate(meProfileProvider);
     unawaited(invalidateAppointmentRelatedProviders(ref));
     ref.invalidate(patientsProvider);
     ref.invalidate(patientByIdProvider);
@@ -404,6 +411,7 @@ class AuthController extends StateNotifier<AuthState> {
     state = AuthState(isAuthenticated: true, userId: 'doctor', email: null);
     await _saveTokenToStorage(token);
     ref.invalidate(profileAllProvider);
+    ref.invalidate(meProfileProvider);
   }
 
   /// Restore session from persistent storage. Call on app start (e.g. after splash).
@@ -431,6 +439,7 @@ class AuthController extends StateNotifier<AuthState> {
         email: null,
       );
       ref.invalidate(profileAllProvider);
+      ref.invalidate(meProfileProvider);
       return true;
     } catch (_) {
       return false;
