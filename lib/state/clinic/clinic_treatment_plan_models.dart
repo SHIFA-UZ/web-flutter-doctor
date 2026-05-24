@@ -227,12 +227,42 @@ class LineDetailDto {
   }
 }
 
+class InstallmentScheduleItemDto {
+  final int installmentItemId;
+  final int sequenceNumber;
+  final String dueDate;
+  final int amountMinor;
+  final String currency;
+  final String status;
+
+  InstallmentScheduleItemDto({
+    required this.installmentItemId,
+    required this.sequenceNumber,
+    required this.dueDate,
+    required this.amountMinor,
+    required this.currency,
+    required this.status,
+  });
+
+  factory InstallmentScheduleItemDto.fromJson(Map<String, dynamic> json) {
+    return InstallmentScheduleItemDto(
+      installmentItemId: (json['installmentItemId'] as num?)?.toInt() ?? 0,
+      sequenceNumber: (json['sequenceNumber'] as num?)?.toInt() ?? 0,
+      dueDate: json['dueDate']?.toString() ?? '',
+      amountMinor: (json['amountMinor'] as num?)?.toInt() ?? 0,
+      currency: json['currency']?.toString() ?? 'UZS',
+      status: json['status']?.toString() ?? '',
+    );
+  }
+}
+
 class InstallmentPlanSummaryDto {
   final int installmentPlanId;
   final String status;
   final int totalAmountMinor;
   final String currency;
   final int numInstallments;
+  final List<InstallmentScheduleItemDto> scheduleRows;
 
   InstallmentPlanSummaryDto({
     required this.installmentPlanId,
@@ -240,15 +270,26 @@ class InstallmentPlanSummaryDto {
     required this.totalAmountMinor,
     required this.currency,
     required this.numInstallments,
+    this.scheduleRows = const [],
   });
 
   factory InstallmentPlanSummaryDto.fromJson(Map<String, dynamic> json) {
+    final srRaw = json['scheduleRows'];
     return InstallmentPlanSummaryDto(
-      installmentPlanId: (json['installmentPlanId'] as num?)?.toInt() ?? 0,
+      installmentPlanId:
+          (json['installmentPlanId'] as num?)?.toInt() ?? 0,
       status: json['status']?.toString() ?? '',
       totalAmountMinor: (json['totalAmountMinor'] as num?)?.toInt() ?? 0,
       currency: json['currency']?.toString() ?? 'UZS',
       numInstallments: (json['numInstallments'] as num?)?.toInt() ?? 0,
+      scheduleRows: srRaw is List
+          ? srRaw
+              .whereType<Map>()
+              .map((e) => InstallmentScheduleItemDto.fromJson(
+                    Map<String, dynamic>.from(e),
+                  ))
+              .toList()
+          : const [],
     );
   }
 }

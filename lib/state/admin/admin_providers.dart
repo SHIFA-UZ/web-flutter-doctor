@@ -1,4 +1,6 @@
 // lib/state/admin/admin_providers.dart
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_providers.dart';
 import 'admin_actions.dart';
@@ -78,7 +80,17 @@ final failedStripeWebhooksProvider = FutureProvider<List<FailedWebhookEvent>>((r
   return actions.listFailedStripeWebhooks();
 });
 
-final adminDoctorActivityProvider = FutureProvider.family<Map<String, dynamic>, DoctorActivityParams>((ref, params) async {
+final adminDoctorActivityProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, DoctorActivityParams>((ref, params) async {
+  final timer = Timer.periodic(const Duration(seconds: 30), (_) {
+    try {
+      ref.invalidateSelf();
+    } catch (_) {
+      // Provider already disposed.
+    }
+  });
+  ref.onDispose(timer.cancel);
+
   final actions = ref.watch(adminActionsProvider);
   return actions.listDoctorActivity(
     fromIso: params.fromIso,
@@ -92,7 +104,16 @@ final adminDoctorActivityProvider = FutureProvider.family<Map<String, dynamic>, 
 });
 
 final adminDoctorActivityDetailProvider =
-    FutureProvider.family<AdminDoctorActivityDetail, DoctorActivityDetailParams>((ref, params) async {
+    FutureProvider.autoDispose.family<AdminDoctorActivityDetail, DoctorActivityDetailParams>((ref, params) async {
+  final timer = Timer.periodic(const Duration(seconds: 30), (_) {
+    try {
+      ref.invalidateSelf();
+    } catch (_) {
+      // Provider already disposed.
+    }
+  });
+  ref.onDispose(timer.cancel);
+
   final actions = ref.watch(adminActionsProvider);
   return actions.getDoctorActivityDetail(
     doctorId: params.doctorId,

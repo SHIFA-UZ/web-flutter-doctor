@@ -2,8 +2,25 @@
 import 'dart:html' as html;
 import 'dart:typed_data';
 
-Future<void> downloadPdfBytes(Uint8List bytes, {required String filename}) async =>
-    downloadBytes(bytes, filename: filename, mimeType: 'application/pdf');
+Future<void> downloadPdfBytes(Uint8List bytes, {required String filename}) async {
+  final blob = html.Blob([bytes], 'application/pdf');
+  final url = html.Url.createObjectUrlFromBlob(blob);
+
+  // Open in a new tab so the browser can show its built-in PDF viewer.
+  // Omit `AnchorElement.download` so the response is treated as navigable PDF,
+  // not a forced download (subject to browser / site PDF settings).
+  final anchor = html.AnchorElement(href: url)
+    ..target = '_blank'
+    ..rel = 'noopener noreferrer'
+    ..style.display = 'none';
+  html.document.body?.append(anchor);
+  anchor.click();
+  anchor.remove();
+
+  Future<void>.delayed(const Duration(seconds: 30), () {
+    html.Url.revokeObjectUrl(url);
+  });
+}
 
 Future<void> downloadBytes(
   Uint8List bytes, {
