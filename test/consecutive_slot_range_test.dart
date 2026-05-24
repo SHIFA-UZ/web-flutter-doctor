@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/consecutive_slot_range.dart';
 
@@ -18,6 +19,8 @@ CalendarEntry freeSlotUtc({
 }
 
 void main() {
+  setUpAll(tz_data.initializeTimeZones);
+
   test('covers two consecutive hourly slots same venue', () {
     final s0 =
         freeSlotUtc(
@@ -106,5 +109,44 @@ void main() {
 
   });
 
+
+  test(
+    'bookingSlotMinutesForRange: wall-clock end matches doctor TZ (Asia/Tashkent +5)',
+    () {
+      // 2026-06-01 08:00 Asia/Tashkent → 03:00 UTC first half-hour slot
+      final slot = freeSlotUtc(
+        startUtc: '2026-06-01T03:00:00.000Z',
+        endUtc: '2026-06-01T03:30:00.000Z',
+        locationId: 1,
+      );
+
+      expect(
+        bookingSlotMinutesForRange(
+          freeSlotStart: slot,
+          endExclusiveWall: const TimeOfDay(hour: 11, minute: 0),
+          calendarDay: DateTime.utc(2026, 06, 01),
+          doctorTimeZone: 'Asia/Tashkent',
+        ),
+        180,
+      );
+    },
+  );
+
+  test(
+    'appointmentSlotMinutesUtcStartWallEnd: same TZ conversion as booking',
+    () {
+      const startUtc = '2026-06-01T03:00:00.000Z';
+
+      expect(
+        appointmentSlotMinutesUtcStartWallEnd(
+          appointmentStartUtcIso: startUtc,
+          endExclusiveWall: const TimeOfDay(hour: 11, minute: 0),
+          calendarDay: DateTime.utc(2026, 06, 01),
+          doctorTimeZone: 'Asia/Tashkent',
+        ),
+        180,
+      );
+    },
+  );
 
 }

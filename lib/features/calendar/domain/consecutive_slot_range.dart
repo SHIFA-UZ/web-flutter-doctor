@@ -179,16 +179,8 @@ int bookingSlotMinutesForRange({
   final endWall =
       timeOfDayToDateTimeInZone(endExclusiveWall, calendarDay, doctorTimeZone);
 
-  final endUtc = DateTime.utc(
-    endWall.year,
-    endWall.month,
-    endWall.day,
-    endWall.hour,
-    endWall.minute,
-    endWall.second,
-    endWall.millisecond,
-    endWall.microsecond,
-  ).toUtc();
+  // endWall is TZDateTime; must convert to UTC, not reuse wall-clock fields as UTC.
+  final endUtc = endWall.toUtc();
 
   return endUtc.difference(startUtc).inMinutes.clamp(0, 48 * 60);
 }
@@ -362,16 +354,7 @@ int appointmentSlotMinutesUtcStartWallEnd({
   final endWall =
       timeOfDayToDateTimeInZone(endExclusiveWall, calendarDay, doctorTimeZone);
 
-  final endUtc = DateTime.utc(
-    endWall.year,
-    endWall.month,
-    endWall.day,
-    endWall.hour,
-    endWall.minute,
-    endWall.second,
-    endWall.millisecond,
-    endWall.microsecond,
-  ).toUtc();
+  final endUtc = endWall.toUtc();
 
   return endUtc.difference(startUtc.toUtc()).inMinutes.clamp(0, 48 * 60);
 }
