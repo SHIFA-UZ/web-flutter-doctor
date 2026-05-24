@@ -42,6 +42,7 @@ import 'package:shifa_doc_app_v1/features/clinic/presentation/treatment_plan_wiz
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
+import 'package:shifa_doc_app_v1/features/calendar/domain/consecutive_slot_range.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';

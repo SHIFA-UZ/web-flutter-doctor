@@ -7,6 +7,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
+import 'package:shifa_doc_app_v1/features/calendar/domain/consecutive_slot_range.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
@@ -22,8 +23,6 @@ import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart'
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
-import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
-
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 
 /// Latin Uzbek fallback strings rendered for Cyrillic locale (`uz` + Cyrl).
@@ -702,6 +701,21 @@ class CalendarDayEntriesList extends StatelessWidget {
   String _fmtRange(TimeOfDay s, TimeOfDay e) =>
       '${_two(s.hour)}:${_two(s.minute)} - ${_two(e.hour)}:${_two(e.minute)}';
 
+  int _rowDurationMinutes(CalendarEntry e) =>
+      ((e.end.hour * 60 + e.end.minute) - (e.start.hour * 60 + e.start.minute))
+          .clamp(0, 24 * 60);
+
+  String _abbrevDuration(BuildContext ctx, CalendarEntry e) {
+    final m = _rowDurationMinutes(e);
+    if (m <= 0) return '';
+    final h = m ~/ 60;
+    final r = m % 60;
+    final l10n = AppLocalizations.of(ctx)!;
+    final mins = l10n.minutes;
+    if (h > 0 && r > 0) return '${h}h ${r} $mins';
+    if (h > 0) return '${h}h';
+    return '$r $mins';
+  }
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -722,6 +736,11 @@ class CalendarDayEntriesList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, i) {
         final e = entries[i];
+        final dur = _rowDurationMinutes(e);
+        final minH =
+            e.type == EntryType.appointment
+                ? (68.0 + dur * 0.45).clamp(68.0, 154.0)
+                : 64.0;
         final isSelected = identical(e, selected);
         final isVideoLocation = (e.location).toLowerCase().contains('video');
         final locationLabel = isVideoLocation ? l10n.videoCall : e.location;
@@ -742,13 +761,15 @@ class CalendarDayEntriesList extends StatelessWidget {
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 6,
-            ),
-            onTap: () => onTap(e),
-            leading: e.type == EntryType.freeSlot
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minH),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 6,
+              ),
+              onTap: () => onTap(e),
+              leading: e.type == EntryType.freeSlot
                 ? CircleAvatar(
                     backgroundColor: Colors.white,
                     foregroundColor: brand,
@@ -836,6 +857,28 @@ class CalendarDayEntriesList extends StatelessWidget {
                   _fmtRange(e.start, e.end),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
+                if (e.type == EntryType.appointment && dur > 5)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: brand.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _abbrevDuration(context, e),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: brand,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (e.type == EntryType.appointment)
                   Text(
                     e.reason,
@@ -843,6 +886,7 @@ class CalendarDayEntriesList extends StatelessWidget {
                   ),
               ],
             ),
+          ),
           ),
         );
       },
@@ -1196,10 +1240,29 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   String _initialReason = '';
   String _initialPlace = '';
 
+  TimeOfDay? _bookingEndExclusive;
+  TimeOfDay? _adjustedAppointmentEndExclusive;
+  int _initialFreeSlotEndRepr = -1;
+  int _initialAppointmentEndRepr = -1;
+
   String _two(int n) => n.toString().padLeft(2, '0');
   String _fmtDate(BuildContext context, DateTime d) =>
       '${_two(d.day)} ${AppLocalizations.of(context)!.monthName(d.month)} ${d.year}';
   String _fmtTime(TimeOfDay t) => '${_two(t.hour)}:${_two(t.minute)}';
+
+  int _todMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+  /// End time for bookings from the tapped slot row until multi-slot selection confirms.
+  TimeOfDay get _effectiveBookingEnd =>
+      _bookingEndExclusive ?? widget.entry.end;
+
+  /// Preview header end for appointments when adjusting length.
+  TimeOfDay get _detailHeaderEnd {
+    if (widget.entry.type == EntryType.appointment) {
+      return _adjustedAppointmentEndExclusive ?? widget.entry.end;
+    }
+    return _effectiveBookingEnd;
+  }
 
   /// TZ used for interpreting schedule times, bookings, cancellations, etc.
   String _calendarTz() {
@@ -1224,6 +1287,21 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
   bool get _paymentPending =>
       (widget.entry.paymentStatus ?? '').trim().toUpperCase() == 'PENDING';
+
+  /// Video consult with unpaid balance — show "remind to pay" for the doctor.
+  bool get _canAdjustAppointmentDuration =>
+      _isAppointment &&
+      !_isPastAppointment &&
+      !_isCancelledStatus &&
+      !_isCompletedStatus &&
+      widget.entry.appointmentId != null &&
+      (widget.entry.startAtUtc ?? '').trim().isNotEmpty &&
+      (widget.entry.endAtUtc ?? '').trim().isNotEmpty;
+
+  bool get _appointmentDurationDirty =>
+      _canAdjustAppointmentDuration &&
+      _todMinutes(_adjustedAppointmentEndExclusive ?? widget.entry.end) !=
+          _initialAppointmentEndRepr;
 
   /// Video consult with unpaid balance — show "remind to pay" for the doctor.
   bool get _shouldShowEncouragePayment =>
@@ -1350,6 +1428,13 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     _reasonCtrl.text = seedReason;
     _initialReason = seedReason;
     _hasUnsavedChanges = false;
+    if (!_isAppointment) {
+      _bookingEndExclusive = null;
+      _initialFreeSlotEndRepr = _todMinutes(widget.entry.end);
+    } else {
+      _adjustedAppointmentEndExclusive = null;
+      _initialAppointmentEndRepr = _todMinutes(widget.entry.end);
+    }
   }
 
   @override
@@ -1381,9 +1466,15 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   }
 
   void _syncDirtyState() {
+    final bookingFreeEndDirty =
+        widget.entry.type == EntryType.freeSlot &&
+        (_initialFreeSlotEndRepr < 0 ||
+            _todMinutes(_effectiveBookingEnd) != _initialFreeSlotEndRepr);
     final isDirty =
         (_reasonCtrl.text.trim() != _initialReason) ||
-        ((_selectedPlace ?? '').trim() != _initialPlace);
+        ((_selectedPlace ?? '').trim() != _initialPlace) ||
+        bookingFreeEndDirty ||
+        (_canAdjustAppointmentDuration && _appointmentDurationDirty);
     if (isDirty != _hasUnsavedChanges && mounted) {
       setState(() => _hasUnsavedChanges = isDirty);
     }
@@ -1689,6 +1780,8 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       } catch (e) {
         if (mounted) {
           final l10n = AppLocalizations.of(context)!;
+          final doctorTimeZone = _calendarTz();
+          await refreshCalendarDay(ref, widget.day, doctorTimeZone);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -1700,6 +1793,121 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       } finally {
         if (mounted) setState(() => _saving = false);
       }
+    }
+  }
+
+  List<TimeOfDay> _buildAppointmentAdjustEndChoices(
+    List<CalendarEntry> dayEntries,
+  ) {
+    final tz = _calendarTz();
+    final startIso = widget.entry.startAtUtc ?? '';
+    final endIso = widget.entry.endAtUtc ?? '';
+    if (startIso.isEmpty || endIso.isEmpty) return [widget.entry.end];
+
+    final grain = scheduleGrainMinutesGuess(
+      entries: dayEntries,
+      venueId: widget.entry.locationId,
+      defaultGrain: (_durationMinutes(widget.entry.start, widget.entry.end))
+              .clamp(5, 240)
+              .toInt(),
+    );
+
+    final shorten = shorteningEndWallsGrainUtc(
+      appointmentStartUtc: startIso,
+      appointmentEndUtcExclusive: endIso,
+      grainMinutes: grain,
+      doctorTimeZone: tz,
+    );
+
+    final extend = extendEndWallsChainFromUtcBoundary(
+      dayEntries: dayEntries,
+      cursorUtcStartIso: endIso,
+      anchorVenueId: widget.entry.locationId,
+      doctorTimeZone: tz,
+    );
+
+    final byKey = <int, TimeOfDay>{};
+    void addTod(TimeOfDay t) {
+      byKey.putIfAbsent(_todMinutes(t), () => t);
+    }
+
+    addTod(widget.entry.end);
+    for (final t in shorten) {
+      addTod(t);
+    }
+    for (final t in extend) {
+      addTod(t);
+    }
+
+    final out = byKey.values.toList()
+      ..sort((a, b) => _todMinutes(a).compareTo(_todMinutes(b)));
+    return out;
+  }
+
+  Future<void> _persistAppointmentDuration() async {
+    if (!_canAdjustAppointmentDuration || _saving) return;
+    final chosen = _adjustedAppointmentEndExclusive;
+    if (chosen == null) return;
+    if (_todMinutes(chosen) == _initialAppointmentEndRepr) return;
+
+    final tz = _calendarTz();
+    final slotMinutes = appointmentSlotMinutesUtcStartWallEnd(
+      appointmentStartUtcIso: widget.entry.startAtUtc!,
+      endExclusiveWall: chosen,
+      calendarDay: widget.day,
+      doctorTimeZone: tz,
+    );
+    if (slotMinutes < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('invalidDuration') ??
+                'Invalid duration.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      setState(() => _saving = true);
+      await ref
+          .read(calendarProvider.notifier)
+          .changeAppointmentSlot(
+            appointmentId: widget.entry.appointmentId!,
+            day: widget.day,
+            newDay: widget.day,
+            newStartTime: widget.entry.start,
+            slotMinutes: slotMinutes,
+            doctorTimeZone: tz,
+          );
+      await invalidateAppointmentRelatedProviders(ref);
+      await refreshCalendarDay(ref, widget.day, tz);
+      await widget.onSavedSuccessfully();
+
+      _initialAppointmentEndRepr = _todMinutes(chosen);
+      _adjustedAppointmentEndExclusive = null;
+
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.slotChanged)),
+        );
+      }
+      _syncDirtyState();
+    } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${l10n.translate('failedToChangeSlot') ?? 'Failed to change slot'}: $e',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -1790,6 +1998,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
             location: location,
             reason: reason,
             isVideo: isVideo,
+            endExclusive: _effectiveBookingEnd,
           );
 
       // Refresh Home's "Today" list and this day in calendar
@@ -1812,11 +2021,15 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       _initialPlace = _selectedPlace ?? '';
       _syncDirtyState();
     } catch (e) {
+      final doctorTimeZone = _calendarTz();
+      await refreshCalendarDay(ref, widget.day, doctorTimeZone);
       final l10n = AppLocalizations.of(context)!;
+      debugPrint('bookFreeSlot error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${l10n.translate('failedToAssign') ?? 'Failed to assign'}: $e',
+            l10n.translate('bookingRangeUnavailable') ??
+                'Selected time range is no longer fully available — calendar refreshed.',
           ),
         ),
       );
@@ -2246,6 +2459,45 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
         ? _selectedPlace
         : null;
 
+    final calendarDayKey =
+        DateTime(widget.day.year, widget.day.month, widget.day.day);
+    final dayEntriesList =
+        ref.watch(calendarProvider)[calendarDayKey] ?? <CalendarEntry>[];
+
+    final freeSlotEndOptions = widget.entry.type == EntryType.freeSlot
+        ? consecutiveEndTimesForFreeSlot(
+            dayEntries: dayEntriesList,
+            startSlot: widget.entry,
+            doctorTimeZone: _calendarTz(),
+          )
+        : const <TimeOfDay>[];
+
+    TimeOfDay _matchingTod(TimeOfDay needle, List<TimeOfDay> opts) {
+      if (opts.isEmpty) return needle;
+      final nk = _todMinutes(needle);
+      for (final o in opts) {
+        if (_todMinutes(o) == nk) return o;
+      }
+      return opts.first;
+    }
+
+    final freeEndDropdownValue = _matchingTod(
+      _effectiveBookingEnd,
+      freeSlotEndOptions,
+    );
+
+    final appointmentAdjustEnds = _canAdjustAppointmentDuration
+        ? _buildAppointmentAdjustEndChoices(dayEntriesList)
+        : const <TimeOfDay>[];
+
+    final appointmentAdjustSelected =
+        _canAdjustAppointmentDuration && appointmentAdjustEnds.isNotEmpty
+        ? _matchingTod(
+            _adjustedAppointmentEndExclusive ?? widget.entry.end,
+            appointmentAdjustEnds,
+          )
+        : null;
+
     return Column(
       children: [
         Align(
@@ -2269,11 +2521,19 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${_fmtDate(context, widget.day)} • ${_fmtTime(widget.entry.start)} - ${_fmtTime(widget.entry.end)}',
+                      '${_fmtDate(context, widget.day)} • ${_fmtTime(widget.entry.start)} - ${_fmtTime(_detailHeaderEnd)}',
                       style: TextStyle(
                         color: subtleText,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${t('durationLabelShort', 'Duration')}: ${_durationLabel(widget.entry.start, _detailHeaderEnd)}',
+                      style: TextStyle(
+                        color: subtleText,
+                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -2736,6 +2996,66 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     ),
                   ),
                   const SizedBox(height: 10),
+                  if (freeSlotEndOptions.isNotEmpty) ...[
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.translate('bookingEndTime') ?? 'End time',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<TimeOfDay>(
+                              isExpanded: true,
+                              value: freeEndDropdownValue,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),
+                              items: [
+                                for (final o in freeSlotEndOptions)
+                                  DropdownMenuItem<TimeOfDay>(
+                                    value: o,
+                                    child: Text(_fmtTime(o)),
+                                  ),
+                              ],
+                              onChanged: (v) {
+                                if (v == null) return;
+                                setState(() => _bookingEndExclusive = v);
+                                _syncDirtyState();
+                              },
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${t('durationLabelShort', 'Duration')}: ${_durationLabel(widget.entry.start, freeEndDropdownValue)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
                   Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -2782,7 +3102,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    '${_fmtDate(context, widget.day)}, ${_fmtTime(widget.entry.start)} - ${_fmtTime(widget.entry.end)}',
+                    '${_fmtDate(context, widget.day)}, ${_fmtTime(widget.entry.start)} - ${_fmtTime(_detailHeaderEnd)}',
                     style: TextStyle(color: Colors.grey.shade700),
                   ),
                   trailing: const Icon(Icons.chevron_right),
@@ -2795,6 +3115,70 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                       : null,
                 ),
               ),
+
+              if (appointmentAdjustSelected != null) ...[
+                const SizedBox(height: 10),
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t('adjustAppointmentDuration', 'Adjust duration'),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<TimeOfDay>(
+                          isExpanded: true,
+                          value: appointmentAdjustSelected,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                          ),
+                          items: [
+                            for (final o in appointmentAdjustEnds)
+                              DropdownMenuItem<TimeOfDay>(
+                                value: o,
+                                child: Text(_fmtTime(o)),
+                              ),
+                          ],
+                          onChanged: (v) {
+                            if (v == null) return;
+                            setState(() => _adjustedAppointmentEndExclusive = v);
+                            _syncDirtyState();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        ShifaPrimaryButton(
+                          label: t(
+                            'applyAppointmentDuration',
+                            'Apply duration change',
+                          ),
+                          onPressed: (!_appointmentDurationDirty || _saving)
+                              ? null
+                              : () {
+                                  _persistAppointmentDuration();
+                                },
+                          width: ButtonWidth.fill,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
 
               if (widget.entry.type == EntryType.appointment) ...[
                 const SizedBox(height: 10),

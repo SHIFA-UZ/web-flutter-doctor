@@ -34,6 +34,9 @@ class CalendarEntry {
   final String? status;
   final String? paymentStatus;
 
+  /// Practice venue from GET /api/calendar (`locationId` JSON); null for video / legacy.
+  final int? locationId;
+
   CalendarEntry.appointment({
     required this.start,
     required this.end,
@@ -48,6 +51,7 @@ class CalendarEntry {
     this.patientId,
     this.status,
     this.paymentStatus,
+    this.locationId,
   }) : type = EntryType.appointment;
 
   CalendarEntry.freeSlot({
@@ -56,6 +60,7 @@ class CalendarEntry {
     this.startAtUtc,
     this.endAtUtc,
     this.location = '',
+    this.locationId,
   })  : type = EntryType.freeSlot,
         patientName = null,
         isVideo = false,
@@ -140,6 +145,7 @@ class CalendarEntry {
         patientId: patientId,
         status: status,
         paymentStatus: paymentStatus,
+        locationId: _intFromJson(j['locationId']),
       );
     }
 
@@ -149,6 +155,7 @@ class CalendarEntry {
       startAtUtc: startAt,
       endAtUtc: endAt,
       location: effectiveLocation,
+      locationId: _intFromJson(j['locationId']),
     );
   }
 

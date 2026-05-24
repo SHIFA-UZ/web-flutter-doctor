@@ -219,6 +219,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
+import 'package:shifa_doc_app_v1/features/calendar/domain/consecutive_slot_range.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
@@ -428,6 +429,9 @@ class CalendarController
 
   /// Book a FREE_SLOT on the backend, then refresh the day.
   /// [doctorTimeZone] is used for post-book refresh; caller must pass it.
+  ///
+  /// [endExclusive] optional wall end (doctor-local [day]); defaults to slot's encoded end row.
+  /// On 409/400 the day is refreshed (race / stale selections) before throwing.
   Future<void> bookFreeSlotRemote({
     required DateTime day,
     required CalendarEntry slot,
@@ -436,6 +440,7 @@ class CalendarController
     String location = 'Clinic Address',
     String? reason,
     bool isVideo = false,
+    TimeOfDay? endExclusive,
   }) async {
     assert(slot.type == EntryType.freeSlot, 'Can only book a free slot');
     final startAtUtc = slot.startAtUtc;
@@ -457,7 +462,18 @@ class CalendarController
     }
 
     final client = ref.read(apiClientProvider);
-    final slotMinutes = _durationMinutes(slot.start, slot.end);
+    final endWall = endExclusive ?? slot.end;
+    final slotMinutes = bookingSlotMinutesForRange(
+      freeSlotStart: slot,
+      endExclusiveWall: endWall,
+      calendarDay: day,
+      doctorTimeZone: doctorTimeZone,
+    );
+    if (slotMinutes <= 0) {
+      throw Exception(
+        'Selected end must be after the slot start. Please refresh the calendar.',
+      );
+    }
 
     final body = <String, dynamic>{
       'startAt': startAtUtc,
@@ -480,6 +496,14 @@ class CalendarController
         forceRefresh: true,
       );
       return;
+    }
+
+    if (res.statusCode == 409 || res.statusCode == 400) {
+      await loadDay(
+        day: day,
+        doctorTimeZone: doctorTimeZone,
+        forceRefresh: true,
+      );
     }
 
     throw Exception('Booking failed: ${res.statusCode} ${res.body}');
@@ -551,6 +575,15 @@ class CalendarController
         );
       }
       return;
+    }
+
+    if (res.statusCode == 409 || res.statusCode == 400) {
+      await loadDay(day: day, doctorTimeZone: doctorTimeZone, forceRefresh: true);
+      await loadDay(
+        day: newDay,
+        doctorTimeZone: doctorTimeZone,
+        forceRefresh: true,
+      );
     }
 
     throw Exception('Change slot failed: ${res.statusCode} ${res.body}');

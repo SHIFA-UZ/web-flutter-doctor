@@ -100,6 +100,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     final l10n = AppLocalizations.of(context)!;
     DateTime? selectedDate;
     CalendarEntry? selectedSlot;
+    TimeOfDay? bookingEndOverride;
     bool isVideo = false;
     bool loadingSlots = false;
     List<CalendarEntry> freeSlots = [];
@@ -188,6 +189,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                               picked.day,
                             );
                             selectedSlot = null;
+                            bookingEndOverride = null;
                             freeSlots = [];
                           });
                           setDialogState(() => loadingSlots = true);
@@ -247,7 +249,10 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                               title: Text(timeStr),
                               selected: isSelected,
                               onTap: () =>
-                                  setDialogState(() => selectedSlot = slot),
+                                  setDialogState(() {
+                                    selectedSlot = slot;
+                                    bookingEndOverride = null;
+                                  }),
                               trailing: isSelected
                                   ? const Icon(Icons.check, color: Colors.teal)
                                   : null,
@@ -255,6 +260,70 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                           },
                         ),
                       ),
+                    if (selectedSlot != null) ...[
+                      Builder(
+                        builder: (_) {
+                          final tz =
+                              ref.read(profileAllProvider).valueOrNull
+                                  ?.profile['timeZone'] as String?;
+                          final tzEff =
+                              tz == null || tz.trim().isEmpty ? 'UTC' : tz.trim();
+                          final endOptions =
+                              consecutiveEndTimesForFreeSlot(
+                                dayEntries: freeSlots,
+                                startSlot: selectedSlot!,
+                                doctorTimeZone: tzEff,
+                              );
+                          if (endOptions.length <= 1) {
+                            return const SizedBox.shrink();
+                          }
+
+                          TimeOfDay match(TimeOfDay want) {
+                            final k = want.hour * 60 + want.minute;
+                            for (final o in endOptions) {
+                              if (o.hour * 60 + o.minute == k) return o;
+                            }
+                            return endOptions.first;
+                          }
+
+                          final two = (int n) =>
+                              n.toString().padLeft(2, '0');
+                          final effective =
+                              match(bookingEndOverride ?? selectedSlot!.end);
+
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: DropdownButtonFormField<TimeOfDay>(
+                              decoration: InputDecoration(
+                                labelText:
+                                    l10n.translate('bookingEndTime') ??
+                                    'End time',
+                                border: const OutlineInputBorder(),
+                              ),
+                              isExpanded: true,
+                              value: effective,
+                              items: [
+                                for (final o in endOptions)
+                                  DropdownMenuItem(
+                                    value: o,
+                                    child: Text(
+                                      '${two(o.hour)}:${two(o.minute)}',
+                                    ),
+                                  ),
+                              ],
+                              onChanged: (v) {
+                                if (v == null) return;
+                                setDialogState(() => bookingEndOverride = v);
+                              },
+                            ),
+                          );
+
+                        },
+
+                      ),
+
+                    ],
+
                     const SizedBox(height: 12),
                     const Divider(height: 1),
                     // 3) Appointment type
@@ -335,6 +404,8 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                                     : 'Clinic Address',
                                 reason: 'Check Up',
                                 isVideo: isVideo,
+                                endExclusive:
+                                    bookingEndOverride ?? selectedSlot!.end,
                               );
                           await invalidateAppointmentRelatedProviders(ref);
                           await refreshCalendarDay(
@@ -356,10 +427,16 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                         } catch (e) {
                           if (ctx.mounted) {
                             setDialogState(() => saving = false);
+                            await refreshCalendarDay(
+                              ref,
+                              selectedDate!,
+                              doctorTimeZone!,
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  '${l10n.translate('failedToAssign') ?? 'Failed to assign'}: $e',
+                                  l10n.translate('bookingRangeUnavailable') ??
+                                      'Selected time range is no longer fully available — calendar refreshed.',
                                 ),
                               ),
                             );

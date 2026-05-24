@@ -1538,6 +1538,13 @@ class AppLocalizations {
       'timePeriod': 'Time Period',
       'slotTimeframe': 'Slot timeframe',
       'minutes': 'minutes',
+      'bookingEndTime': 'End time',
+      'durationLabelShort': 'Duration',
+      'bookingRangeUnavailable':
+          'Selected time range is no longer fully available — calendar refreshed.',
+      'adjustAppointmentDuration': 'Adjust duration',
+      'applyAppointmentDuration': 'Apply duration change',
+      'invalidDuration': 'Invalid duration.',
       'start': 'Start',
       'today': 'Today',
       'noAppointmentsToday': 'No appointments today',
@@ -3090,6 +3097,13 @@ class AppLocalizations {
       'timePeriod': 'Vaqt oralig\'i',
       'slotTimeframe': 'Vaqt oralig\'i',
       'minutes': 'daqiqa',
+      'bookingEndTime': 'Tugash vaqti',
+      'durationLabelShort': 'Davomiyligi',
+      'bookingRangeUnavailable':
+          'Tanlangan vaqt oralig\'i mavjud emas — taqvim yangilandi.',
+      'adjustAppointmentDuration': 'Davomiylikni boshqarish',
+      'applyAppointmentDuration': 'Davomiylikni qo\'llash',
+      'invalidDuration': 'Noto\'g\'ri davomiylik.',
       'expandScheduleForDates': 'Ma\'lum sanalar uchun jadvalni kengaytirish',
       'expandScheduleHint':
           'Mavjud jadvaldan keyin qo\'shimcha soatlar qo\'shing (masalan 17:00–23:00). Belgilangan vaqtlarni o\'zgartira olmaysiz.',
@@ -4451,6 +4465,13 @@ class AppLocalizations {
       'timePeriod': 'Временной период',
       'slotTimeframe': 'Временной интервал слота',
       'minutes': 'минут',
+      'bookingEndTime': 'Время окончания',
+      'durationLabelShort': 'Длительность',
+      'bookingRangeUnavailable':
+          'Выбранный диапазон времени недоступен — календарь обновлён.',
+      'adjustAppointmentDuration': 'Изменить длительность',
+      'applyAppointmentDuration': 'Применить изменение длительности',
+      'invalidDuration': 'Некорректная длительность.',
       'expandScheduleForDates': 'Расширить расписание на конкретные даты',
       'expandScheduleHint':
           'Добавьте часы после текущего расписания (напр. 17:00–23:00). Нельзя перекрывать уже заданные слоты.',
