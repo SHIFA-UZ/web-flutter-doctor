@@ -36,11 +36,51 @@ Future<Uint8List> readVoiceRecordingFileBytes(String filePath) async {
   return file.readAsBytes();
 }
 
-String voiceRecordingUploadFileName(String filePath) {
+String voiceRecordingUploadFileName(String filePath, {Uint8List? bytes}) {
+  final ext = bytes != null ? _detectVoiceRecordingExtension(bytes) : null;
   if (kIsWeb) {
-    return 'speech_${DateTime.now().millisecondsSinceEpoch}.wav';
+    return 'speech_${DateTime.now().millisecondsSinceEpoch}.${ext ?? 'wav'}';
   }
   return 'speech_${DateTime.now().millisecondsSinceEpoch}.m4a';
+}
+
+String _detectVoiceRecordingExtension(Uint8List bytes) {
+  if (bytes.length >= 4 &&
+      bytes[0] == 0x52 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46 &&
+      bytes[3] == 0x46) {
+    return 'wav';
+  }
+  if (bytes.length >= 4 &&
+      bytes[0] == 0x1A &&
+      bytes[1] == 0x45 &&
+      bytes[2] == 0xDF &&
+      bytes[3] == 0xA3) {
+    return 'webm';
+  }
+  if (bytes.length >= 8 &&
+      bytes[4] == 0x66 &&
+      bytes[5] == 0x74 &&
+      bytes[6] == 0x79 &&
+      bytes[7] == 0x70) {
+    return 'm4a';
+  }
+  return kIsWeb ? 'webm' : 'm4a';
+}
+
+String _extractApiErrorMessage(http.Response response) {
+  if (response.body.isEmpty) return 'HTTP ${response.statusCode}';
+  try {
+    final json = jsonDecode(response.body);
+    if (json is Map<String, dynamic>) {
+      final message = json['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message.trim();
+      }
+    }
+  } catch (_) {}
+  return response.body;
 }
 
 String normalizedTranscriptionLanguageHint(WidgetRef ref) {
@@ -78,7 +118,7 @@ Future<String> postDoctorTranscription({
     throw AiStreamException('RATE_LIMIT', message);
   }
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(response.body.isNotEmpty ? response.body : 'HTTP ${response.statusCode}');
+    throw Exception(_extractApiErrorMessage(response));
   }
   final json = jsonDecode(response.body) as Map<String, dynamic>;
   return ((json['text'] as String?) ?? '').trim();
@@ -118,7 +158,7 @@ Future<void> postDoctorTranscriptionFeedback({
     throw AiStreamException('RATE_LIMIT', message);
   }
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(response.body.isNotEmpty ? response.body : 'HTTP ${response.statusCode}');
+    throw Exception(_extractApiErrorMessage(response));
   }
 }
 
@@ -150,7 +190,7 @@ Future<void> completeDoctorTranscriptionFromRecording({
       SnackBar(content: Text(l10n.translate('transcribing'))),
     );
     final bytes = await readVoiceRecordingFileBytes(filePath);
-    final name = voiceRecordingUploadFileName(filePath);
+    final name = voiceRecordingUploadFileName(filePath, bytes: bytes);
     final text = await postDoctorTranscription(
       ref: ref,
       fileBytes: bytes,
