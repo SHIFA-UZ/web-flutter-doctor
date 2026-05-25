@@ -99,14 +99,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     return items.any((e) => e.type == EntryType.freeSlot);
   }
 
-  // Show update schedule warning only if:
-  // 1. Not loading (prevents flash during refresh)
-  // 2. Day is selected
-  // 3. No free slots exist in the actual data (regardless of filters)
+  bool get _hasAppointmentsOnSelected {
+    final items = _rawEntriesFor(_selectedDay);
+    return items.any((e) => e.type == EntryType.appointment);
+  }
+
+  // Show update schedule warning only when the day looks like it has no schedule coverage
+  // (no bookable openings *and* no bookings). Fully booked days still have appointments —
+  // do not imply "extend your calendar horizon" in that case.
   bool get _shouldShowUpdateScheduleCard {
     if (_loadingDay || _isWaitingForProfile)
       return false; // Don't show while loading
     if (_selectedDay == null) return false;
+    if (_hasAppointmentsOnSelected) return false;
     return !_hasFreeSlotsOnSelected;
   }
 
@@ -761,132 +766,177 @@ class CalendarDayEntriesList extends StatelessWidget {
               ),
             ],
           ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minH),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 6,
-              ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(11),
               onTap: () => onTap(e),
-              leading: e.type == EntryType.freeSlot
-                ? CircleAvatar(
-                    backgroundColor: Colors.white,
-                    foregroundColor: brand,
-                    child: const Icon(Icons.add),
-                  )
-                : CircleAvatar(
-                    backgroundColor: Colors.grey.shade300,
-                    // ✅ Show patient photo when available
-                    backgroundImage:
-                        (e.photoUrl != null && e.photoUrl!.isNotEmpty)
-                        ? NetworkImage(e.photoUrl!)
-                        : null,
-                    child: (e.photoUrl == null || e.photoUrl!.isEmpty)
-                        ? const Icon(Icons.person, color: Colors.white)
-                        : null,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: minH),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-            title: e.type == EntryType.freeSlot
-                ? Text(
-                    AppLocalizations.of(context)!.freeSlots,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  )
-                : Text(
-                    e.patientName ?? AppLocalizations.of(context)!.appointments,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-            subtitle: locationLabel.trim().isEmpty
-                ? null
-                : Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isVideoLocation
-                              ? Colors.blue.shade50
-                              : Colors.teal.shade50,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: isVideoLocation
-                                ? Colors.blue.shade100
-                                : Colors.teal.shade100,
+                  // ListTile clamps trailing height to its tile computation; time + badge + reason
+                  // overflows by a few px. IntrinsicHeight lets the row grow with the tallest column.
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        e.type == EntryType.freeSlot
+                            ? CircleAvatar(
+                                backgroundColor: Colors.white,
+                                foregroundColor: brand,
+                                child: const Icon(Icons.add),
+                              )
+                            : CircleAvatar(
+                                backgroundColor: Colors.grey.shade300,
+                                backgroundImage:
+                                    (e.photoUrl != null &&
+                                            e.photoUrl!.isNotEmpty)
+                                        ? NetworkImage(e.photoUrl!)
+                                        : null,
+                                child:
+                                    (e.photoUrl == null || e.photoUrl!.isEmpty)
+                                    ? const Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                      )
+                                    : null,
+                              ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: e.type == EntryType.freeSlot
+                                    ? Text(
+                                        AppLocalizations.of(context)!.freeSlots,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      )
+                                    : Text(
+                                        e.patientName ??
+                                            AppLocalizations.of(
+                                                  context,
+                                                )!.appointments,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                              ),
+                              if (locationLabel.trim().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isVideoLocation
+                                            ? Colors.blue.shade50
+                                            : Colors.teal.shade50,
+                                        borderRadius: BorderRadius.circular(999),
+                                        border: Border.all(
+                                          color: isVideoLocation
+                                              ? Colors.blue.shade100
+                                              : Colors.teal.shade100,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isVideoLocation
+                                                ? Icons.videocam
+                                                : Icons.location_on_outlined,
+                                            size: 13,
+                                            color: isVideoLocation
+                                                ? Colors.blue.shade700
+                                                : Colors.teal.shade700,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              locationLabel,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: isVideoLocation
+                                                    ? Colors.blue.shade700
+                                                    : Colors.teal.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        child: Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              isVideoLocation
-                                  ? Icons.videocam
-                                  : Icons.location_on_outlined,
-                              size: 13,
-                              color: isVideoLocation
-                                  ? Colors.blue.shade700
-                                  : Colors.teal.shade700,
+                            Text(
+                              _fmtRange(e.start, e.end),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                locationLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: isVideoLocation
-                                      ? Colors.blue.shade700
-                                      : Colors.teal.shade700,
+                            if (e.type == EntryType.appointment && dur > 5)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: brand.withOpacity(0.06),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    _abbrevDuration(context, e),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: brand,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                            if (e.type == EntryType.appointment)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  e.reason,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
-            trailing: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _fmtRange(e.start, e.end),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                if (e.type == EntryType.appointment && dur > 5)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: brand.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        _abbrevDuration(context, e),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: brand,
-                        ),
-                      ),
-                    ),
-                  ),
-                if (e.type == EntryType.appointment)
-                  Text(
-                    e.reason,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-              ],
+              ),
             ),
-          ),
           ),
         );
       },
