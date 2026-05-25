@@ -483,6 +483,12 @@ class CalendarController
       'reason': reason,
       'isVideo': isVideo,
     };
+    // Backend validates consecutive slots with [PatientDaySlotsService] filtered by
+    // location; without this, BookingController assumes primary location and rejects
+    // ranges that belong to another venue (calendar still shows merged free slots).
+    if (!isVideo && slot.locationId != null) {
+      body['locationId'] = slot.locationId;
+    }
     if (_resourceDoctorId != null) {
       body['resourceDoctorId'] = _resourceDoctorId;
     }
