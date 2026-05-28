@@ -105,7 +105,10 @@ class _ClinicDoctorScheduleScaffoldState
     final today = getTodayInTimezone(_effectiveTz());
     _selectedDay = DateTime(today.year, today.month, today.day);
     _focusedDay = _selectedDay;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reloadDay(_selectedDay));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _reloadDay(_selectedDay);
+      _loadMonth(_focusedDay);
+    });
   }
 
   Future<void> _reloadDay(DateTime day) async {
@@ -125,6 +128,15 @@ class _ClinicDoctorScheduleScaffoldState
     } finally {
       if (mounted) setState(() => _loadingDay = false);
     }
+  }
+
+  Future<void> _loadMonth(DateTime month) async {
+    try {
+      await ref.read(calendarProvider.notifier).loadMonth(
+            month: month,
+            doctorTimeZone: _effectiveTz(),
+          );
+    } catch (_) {}
   }
 
   @override
@@ -378,6 +390,7 @@ class _ClinicDoctorScheduleScaffoldState
                           },
                           onFocusedDayChanged: (d) {
                             setState(() => _focusedDay = d);
+                            _loadMonth(d);
                           },
                           showUpdateCard: false,
                           onGoToSchedule: null,

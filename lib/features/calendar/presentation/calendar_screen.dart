@@ -6,6 +6,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
+import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_day_occupancy.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/consecutive_slot_range.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
@@ -23,6 +24,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
@@ -153,6 +155,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             'CalendarScreen: Profile loaded (timezone: ${tz ?? "UTC fallback"}), loading calendar for $_selectedDay',
           );
           _loadDay(_selectedDay!, effectiveTz);
+          _loadMonth(_focusedDay, effectiveTz);
         }
       } else if (next.isLoading) {
         debugPrint('CalendarScreen: Waiting for profile to load...');
@@ -174,6 +177,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
           final effectiveTz =
               (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
           _loadDay(_selectedDay!, effectiveTz);
+          _loadMonth(_focusedDay, effectiveTz);
         }
       }
     });
@@ -228,6 +232,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       }
     } finally {
       if (mounted) setState(() => _loadingDay = false);
+    }
+  }
+
+  String _effectiveProfileTimeZone() {
+    final tz =
+        ref.read(profileAllProvider).valueOrNull?.profile['timeZone'] as String?;
+    return (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
+  }
+
+  Future<void> _loadMonth(DateTime month, String doctorTimeZone) async {
+    try {
+      await ref.read(calendarProvider.notifier).loadMonth(
+            month: month,
+            doctorTimeZone: doctorTimeZone,
+          );
+    } catch (e) {
+      debugPrint(
+        'CalendarScreen: Failed to load month ${month.year}-${month.month}: $e',
+      );
     }
   }
 
@@ -384,7 +407,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                   (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
               _loadDay(_selectedDay!, effectiveTz);
             },
-            onFocusedDayChanged: (d) => setState(() => _focusedDay = d),
+            onFocusedDayChanged: (d) {
+              setState(() => _focusedDay = d);
+              _loadMonth(d, _effectiveProfileTimeZone());
+            },
             showUpdateCard: _shouldShowUpdateScheduleCard,
             onGoToSchedule: () {
               ShellScope.pushNamed(context, AppRoutes.setupSchedule);
@@ -637,7 +663,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                     (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
                 _loadDay(_selectedDay!, effectiveTz);
               },
-              onFocusedDayChanged: (d) => setState(() => _focusedDay = d),
+              onFocusedDayChanged: (d) {
+              setState(() => _focusedDay = d);
+              _loadMonth(d, _effectiveProfileTimeZone());
+            },
               showUpdateCard: _shouldShowUpdateScheduleCard,
               onGoToSchedule: () {
                 ShellScope.pushNamed(context, AppRoutes.setupSchedule);
@@ -967,16 +996,16 @@ class CalendarDayEntriesList extends StatelessWidget {
 /// ---- Right: Calendar panel (customizable table_calendar) ----
 ///
 /// Shared by [CalendarScreen] and flows that need the same month grid (e.g. clinic scheduling).
-class CalendarMonthPanel extends StatelessWidget {
+class CalendarMonthPanel extends ConsumerWidget {
   const CalendarMonthPanel({
-    Key? key,
+    super.key,
     required this.focusedDay,
     required this.selectedDay,
     required this.onChanged,
     this.onFocusedDayChanged,
     required this.showUpdateCard,
     this.onGoToSchedule,
-  }) : super(key: key);
+  });
 
   final DateTime focusedDay;
   final DateTime? selectedDay;
@@ -987,10 +1016,19 @@ class CalendarMonthPanel extends StatelessWidget {
   /// Used when [showUpdateCard] is true; optional otherwise.
   final VoidCallback? onGoToSchedule;
 
+  CalendarDayOccupancy? _occupancyForDay(
+    Map<DateTime, List<CalendarEntry>> entries,
+    DateTime day,
+  ) {
+    final key = DateTime(day.year, day.month, day.day);
+    if (!entries.containsKey(key)) return null;
+    return CalendarDayOccupancy.fromEntries(entries[key] ?? const []);
+  }
+
   @override
-  Widget build(BuildContext context) {
-    final brand = Theme.of(context).colorScheme.primary;
+  Widget build(BuildContext context, WidgetRef ref) {
     final intlLocale = _tableCalendarIntlLocale(context);
+    final entries = ref.watch(calendarProvider);
 
     final headerStyle = HeaderStyle(
       formatButtonVisible: false,
@@ -1013,6 +1051,22 @@ class CalendarMonthPanel extends StatelessWidget {
         fontWeight: FontWeight.w600,
       ),
     );
+
+    Widget buildDayCell(
+      DateTime day, {
+      required bool isSelected,
+      required bool isToday,
+      required bool isOutside,
+    }) {
+      final occupancy = isOutside ? null : _occupancyForDay(entries, day);
+      return _OccupancyDayCell(
+        day: day,
+        occupancy: occupancy,
+        isSelected: isSelected,
+        isToday: isToday,
+        isOutside: isOutside,
+      );
+    }
 
     return Column(
       key: key,
@@ -1055,30 +1109,52 @@ class CalendarMonthPanel extends StatelessWidget {
               },
               onPageChanged: onFocusedDayChanged,
               calendarStyle: CalendarStyle(
-                selectedDecoration: BoxDecoration(
-                  color: brand,
+                outsideDaysVisible: true,
+                selectedDecoration: const BoxDecoration(
+                  color: Colors.transparent,
                   shape: BoxShape.circle,
                 ),
-                selectedTextStyle: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-                todayDecoration: BoxDecoration(
-                  color: brand.withOpacity(0.3),
+                todayDecoration: const BoxDecoration(
+                  color: Colors.transparent,
                   shape: BoxShape.circle,
                 ),
-                todayTextStyle: TextStyle(
-                  color: brand,
-                  fontWeight: FontWeight.w600,
+                defaultDecoration: const BoxDecoration(
+                  color: Colors.transparent,
+                  shape: BoxShape.circle,
                 ),
-                defaultTextStyle: TextStyle(color: Colors.grey.shade800),
-                weekendTextStyle: TextStyle(color: Colors.grey.shade800),
-                outsideTextStyle: TextStyle(color: Colors.grey.shade400),
                 markerDecoration: const BoxDecoration(shape: BoxShape.circle),
               ),
               headerStyle: headerStyle,
               daysOfWeekStyle: daysOfWeekStyle,
               calendarBuilders: CalendarBuilders(
+                defaultBuilder: (ctx, day, focusedDay) => buildDayCell(
+                  day,
+                  isSelected: false,
+                  isToday: isSameDay(day, DateTime.now()),
+                  isOutside: false,
+                ),
+                selectedBuilder: (ctx, day, focusedDay) => buildDayCell(
+                  day,
+                  isSelected: true,
+                  isToday: isSameDay(day, DateTime.now()),
+                  isOutside: false,
+                ),
+                todayBuilder: (ctx, day, focusedDay) {
+                  final selected =
+                      selectedDay != null && isSameDay(day, selectedDay!);
+                  return buildDayCell(
+                    day,
+                    isSelected: selected,
+                    isToday: true,
+                    isOutside: false,
+                  );
+                },
+                outsideBuilder: (ctx, day, focusedDay) => buildDayCell(
+                  day,
+                  isSelected: false,
+                  isToday: false,
+                  isOutside: true,
+                ),
                 dowBuilder: (ctx, day) {
                   final l10n = AppLocalizations.of(ctx)!;
                   final wd = day.weekday;
@@ -1159,6 +1235,92 @@ class CalendarMonthPanel extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _OccupancyDayCell extends StatelessWidget {
+  const _OccupancyDayCell({
+    required this.day,
+    required this.occupancy,
+    required this.isSelected,
+    required this.isToday,
+    required this.isOutside,
+  });
+
+  final DateTime day;
+  final CalendarDayOccupancy? occupancy;
+  final bool isSelected;
+  final bool isToday;
+  final bool isOutside;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isOutside) {
+      return Center(
+        child: Text(
+          '${day.day}',
+          style: TextStyle(color: Colors.grey.shade400),
+        ),
+      );
+    }
+
+    if (isSelected) {
+      return Center(
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            color: AppColors.primaryTeal,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '${day.day}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final freeRatio = occupancy?.freeRatio;
+    final background = occupancyBackgroundColor(freeRatio);
+
+    if (background == null) {
+      return Center(
+        child: Text(
+          '${day.day}',
+          style: TextStyle(
+            color: isToday ? AppColors.primaryTeal : Colors.grey.shade800,
+            fontWeight: isToday ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: background,
+          shape: BoxShape.circle,
+          border: isToday
+              ? Border.all(color: AppColors.primaryTeal, width: 2)
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '${day.day}',
+          style: TextStyle(
+            color: occupancyTextColor(freeRatio),
+            fontWeight: isToday ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -342,6 +342,34 @@ class CalendarController
     }
   }
 
+  /// Prefetch all uncached days in [month] for month-grid occupancy coloring.
+  Future<void> loadMonth({
+    required DateTime month,
+    required String doctorTimeZone,
+  }) async {
+    if (ref.read(authTokenProvider) == null ||
+        ref.read(authTokenProvider)!.isEmpty) {
+      return;
+    }
+
+    final first = DateTime(month.year, month.month, 1);
+    final last = DateTime(month.year, month.month + 1, 0);
+    final futures = <Future<void>>[];
+
+    for (var d = first; !d.isAfter(last); d = d.add(const Duration(days: 1))) {
+      final key = _dayKey(d);
+      if (!state.containsKey(key)) {
+        futures.add(
+          loadDay(day: d, doctorTimeZone: doctorTimeZone).catchError((_) {}),
+        );
+      }
+    }
+
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
+
   /// Read-only GET for one day ([doctorProfileId] as `doctorId` query).
   ///
   /// Does not write [state], [_resourceDoctorId], or throttle maps — safe for dialogs.
