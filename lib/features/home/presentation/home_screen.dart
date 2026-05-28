@@ -10,6 +10,7 @@ import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/person_avatar.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/today_appointments_provider.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
@@ -784,7 +785,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     AsyncValue<List<Appointment>> appointmentsAsync,
   ) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: Responsive.screenPadding(context),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -917,7 +918,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: Responsive.screenPadding(context),
         child: Column(
           children: [
             // Layout from sketch: Left 35% Today | Right 65% KPI row + trend + donut + engagement. Collapses to stack on narrow screens.

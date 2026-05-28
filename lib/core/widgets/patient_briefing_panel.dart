@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/utils/text_cleaner.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -11,10 +12,13 @@ import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider
 /// Collapsible chatbot-like panel from bottom-right showing AI patient briefing.
 /// Rendered in the shell so it appears on any screen when briefing is generated.
 class PatientBriefingPanel extends ConsumerStatefulWidget {
-  const PatientBriefingPanel({super.key});
+  const PatientBriefingPanel({super.key, this.bottomInset = 12});
+
+  final double bottomInset;
 
   @override
-  ConsumerState<PatientBriefingPanel> createState() => _PatientBriefingPanelState();
+  ConsumerState<PatientBriefingPanel> createState() =>
+      _PatientBriefingPanelState();
 }
 
 class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
@@ -23,22 +27,31 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(patientBriefingProvider);
-    final canUseBriefing = ref.watch(doctorFeatureProvider(DoctorFeature.patientBriefing));
+    final canUseBriefing =
+        ref.watch(doctorFeatureProvider(DoctorFeature.patientBriefing));
     if (!canUseBriefing || !state.isVisible) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final panelHeight = (screenHeight * 0.5).clamp(280.0, 500.0);
+    final screenSize = MediaQuery.sizeOf(context);
+    final isMobile = Responsive.isMobile(context);
+    final panelHeight = (screenSize.height * (isMobile ? 0.45 : 0.5))
+        .clamp(isMobile ? 220.0 : 280.0, isMobile ? 420.0 : 500.0);
+    final panelWidth = isMobile
+        ? screenSize.width - 24
+        : 380.0;
 
-    return Positioned(
-      right: 12,
-      bottom: 12,
+    return Padding(
+      padding: EdgeInsets.only(
+        right: 12,
+        left: isMobile ? 12 : 0,
+        bottom: widget.bottomInset,
+      ),
       child: Material(
         elevation: 8,
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          width: 380,
+          width: panelWidth,
           height: _expanded ? panelHeight : 56,
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
@@ -48,20 +61,27 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Title bar (always visible when panel is shown)
               InkWell(
                 onTap: () => setState(() => _expanded = !_expanded),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withOpacity(0.08),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(16)),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        _expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                        _expanded
+                            ? Icons.keyboard_arrow_down
+                            : Icons.keyboard_arrow_up,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 8),
@@ -80,9 +100,11 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, size: 20),
-                        onPressed: () => ref.read(patientBriefingProvider.notifier).close(),
+                        onPressed: () =>
+                            ref.read(patientBriefingProvider.notifier).close(),
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
                     ],
                   ),
@@ -90,7 +112,7 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
               ),
               if (_expanded)
                 Expanded(
-                  child:                     state.isLoading
+                  child: state.isLoading
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(24),
@@ -111,11 +133,21 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 32),
+                                  Icon(
+                                    Icons.error_outline,
+                                    color:
+                                        Theme.of(context).colorScheme.error,
+                                    size: 32,
+                                  ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    state.errorMessage ?? l10n.patientBriefingError,
-                                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
+                                    state.errorMessage ??
+                                        l10n.patientBriefingError,
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -126,27 +158,37 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (state.documentCount > 0 || state.appointmentCount > 0)
+                                  if (state.documentCount > 0 ||
+                                      state.appointmentCount > 0)
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
+                                      padding:
+                                          const EdgeInsets.only(bottom: 8),
                                       child: Text(
-                                        state.documentCount > 0 && state.appointmentCount > 0
+                                        state.documentCount > 0 &&
+                                                state.appointmentCount > 0
                                             ? l10n.patientBriefingSourcesWithAppointments(
                                                 state.documentCount,
                                                 state.appointmentCount,
                                               )
                                             : state.documentCount > 0
-                                                ? l10n.patientBriefingSources(state.documentCount)
-                                                : l10n.patientBriefingSourcesAppointmentsOnly(state.appointmentCount),
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey.shade600,
-                                        ),
+                                                ? l10n.patientBriefingSources(
+                                                    state.documentCount,
+                                                  )
+                                                : l10n
+                                                    .patientBriefingSourcesAppointmentsOnly(
+                                                    state.appointmentCount,
+                                                  ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Colors.grey.shade600,
+                                            ),
                                       ),
                                     ),
                                   Builder(
                                     builder: (context) {
                                       final raw = state.briefingText ?? '';
-                                      // Keep the model output mostly as-is; just light cleanup.
                                       final cleaned = TextCleaner.clean(raw);
                                       var display = cleaned.replaceAllMapped(
                                         RegExp(r'\*\*(.*?)\*\*', dotAll: true),
@@ -158,7 +200,10 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
                                       );
                                       return SelectableText(
                                         display.trim(),
-                                        style: const TextStyle(fontSize: 14, height: 1.4),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          height: 1.4,
+                                        ),
                                       );
                                     },
                                   ),
@@ -169,9 +214,15 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
                                     onPressed: () {
                                       final text = state.briefingText ?? '';
                                       if (text.isNotEmpty) {
-                                        Clipboard.setData(ClipboardData(text: text));
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(l10n.patientBriefingCopied)),
+                                        Clipboard.setData(
+                                          ClipboardData(text: text),
+                                        );
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content:
+                                                Text(l10n.patientBriefingCopied),
+                                          ),
                                         );
                                       }
                                     },

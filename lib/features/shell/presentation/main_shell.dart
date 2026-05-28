@@ -34,6 +34,7 @@ import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/patient_briefing_panel.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({Key? key}) : super(key: key);
@@ -330,10 +331,13 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       );
     }
 
+    final isMobile = Responsive.isMobile(context);
+
     return Scaffold(
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!isMobile)
           // ───────────────── Sidebar ─────────────────
           Container(
             width: 80,
@@ -535,16 +539,131 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
               ),
             ),
                 if (!isClinicStaff)
-                  const Positioned(
+                  Positioned(
                     right: 0,
                     bottom: 0,
-                    child: PatientBriefingPanel(),
+                    child: PatientBriefingPanel(
+                      bottomInset: Responsive.bottomNavClearance(context),
+                    ),
                   ),
               ],
             ),
           ),
         ],
       ),
+      bottomNavigationBar: isMobile
+          ? _MobileBottomNav(
+              isClinicStaff: isClinicStaff,
+              selectedIndex: selectedIndex,
+              brand: brand,
+              avatarUrl: avatarUrl,
+              hasClinicWorkspace: hasClinicWorkspace,
+              canUseTasks: canUseTasks,
+              activeLocationLabel: _activeLocationLabel,
+              locationIsVideo: _sidebarLocationChipIsVideo(context),
+              onSelectTab: _goToTab,
+              onShowMore: () => _showMobileMoreSheet(
+                context,
+                brand: brand,
+                selectedIndex: selectedIndex,
+                isClinicStaff: isClinicStaff,
+                hasClinicWorkspace: hasClinicWorkspace,
+                canUseTasks: canUseTasks,
+                activeLocationLabel: _activeLocationLabel,
+                locationIsVideo: _sidebarLocationChipIsVideo(context),
+              ),
+            )
+          : null,
+    );
+  }
+
+  void _showMobileMoreSheet(
+    BuildContext context, {
+    required Color brand,
+    required int selectedIndex,
+    required bool isClinicStaff,
+    required bool hasClinicWorkspace,
+    required bool canUseTasks,
+    required String? activeLocationLabel,
+    required bool locationIsVideo,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!isClinicStaff &&
+                    (activeLocationLabel ?? '').trim().isNotEmpty) ...[
+                  ListTile(
+                    leading: Icon(
+                      locationIsVideo
+                          ? Icons.videocam_outlined
+                          : Icons.location_on_outlined,
+                      color: brand,
+                    ),
+                    title: Text(activeLocationLabel!),
+                    subtitle: Text(l10n.translate('currentLocation') ?? 'Current location'),
+                  ),
+                  const Divider(),
+                ],
+                if (!isClinicStaff && hasClinicWorkspace)
+                  ListTile(
+                    leading: Icon(Icons.local_hospital_outlined, color: brand),
+                    title: Text(l10n.translate('clinicNavClinic') ?? 'Clinic'),
+                    selected: selectedIndex == 4,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _goToTab(4);
+                    },
+                  ),
+                if (!isClinicStaff && canUseTasks)
+                  ListTile(
+                    leading: Icon(Icons.task_alt, color: brand),
+                    title: Text(l10n.translate('tasks') ?? 'Tasks'),
+                    selected: selectedIndex == 5,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _goToTab(5);
+                    },
+                  ),
+                ListTile(
+                  leading: Icon(Icons.notifications_outlined, color: brand),
+                  title: Text(l10n.notifications),
+                  selected: isClinicStaff
+                      ? selectedIndex == 2
+                      : selectedIndex == 6,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _goToTab(isClinicStaff ? 2 : 6);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.person_outline, color: brand),
+                  title: Text(l10n.profile),
+                  selected: isClinicStaff
+                      ? selectedIndex == 3
+                      : selectedIndex == 7,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _goToTab(isClinicStaff ? 3 : 7);
+                  },
+                ),
+                const Divider(),
+                const LanguageMiniToggle(),
+                const SizedBox(height: 8),
+                _LogoutButton(brand: brand),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -871,5 +990,123 @@ class _KeepAliveState extends State<_KeepAlive>
   Widget build(BuildContext context) {
     super.build(context);
     return widget.child;
+  }
+}
+
+class _MobileBottomNav extends ConsumerWidget {
+  const _MobileBottomNav({
+    required this.isClinicStaff,
+    required this.selectedIndex,
+    required this.brand,
+    required this.avatarUrl,
+    required this.hasClinicWorkspace,
+    required this.canUseTasks,
+    required this.activeLocationLabel,
+    required this.locationIsVideo,
+    required this.onSelectTab,
+    required this.onShowMore,
+  });
+
+  final bool isClinicStaff;
+  final int selectedIndex;
+  final Color brand;
+  final String? avatarUrl;
+  final bool hasClinicWorkspace;
+  final bool canUseTasks;
+  final String? activeLocationLabel;
+  final bool locationIsVideo;
+  final ValueChanged<int> onSelectTab;
+  final VoidCallback onShowMore;
+
+  int _doctorNavHighlight(int tabIndex) {
+    if (tabIndex <= 3) return tabIndex;
+    return 4;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final unreadChat = ref.watch(unreadCountProvider).valueOrNull ?? 0;
+    final unreadNotif =
+        ref.watch(doctorNotificationsUnreadCountProvider).valueOrNull ?? 0;
+
+    if (isClinicStaff) {
+      return NavigationBar(
+        selectedIndex: selectedIndex.clamp(0, 3),
+        onDestinationSelected: onSelectTab,
+        destinations: [
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: unreadChat > 0,
+              label: Text('$unreadChat'),
+              child: const Icon(Icons.chat_bubble_outline),
+            ),
+            label: l10n.chat,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.local_hospital_outlined),
+            label: l10n.translate('clinicNavClinic') ?? 'Clinic',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: unreadNotif > 0,
+              label: Text('$unreadNotif'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            label: l10n.notifications,
+          ),
+          NavigationDestination(
+            icon: CircleAvatar(
+              radius: 12,
+              backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                  ? NetworkImage(avatarUrl!)
+                  : null,
+              child: avatarUrl == null || avatarUrl!.isEmpty
+                  ? const Icon(Icons.person, size: 16)
+                  : null,
+            ),
+            label: l10n.profile,
+          ),
+        ],
+      );
+    }
+
+    final navIndex = _doctorNavHighlight(selectedIndex);
+    return NavigationBar(
+      selectedIndex: navIndex,
+      onDestinationSelected: (index) {
+        if (index == 4) {
+          onShowMore();
+        } else {
+          onSelectTab(index);
+        }
+      },
+      destinations: [
+        NavigationDestination(
+          icon: Badge(
+            isLabelVisible: unreadChat > 0,
+            label: Text('$unreadChat'),
+            child: const Icon(Icons.chat_bubble_outline),
+          ),
+          label: l10n.chat,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.home_outlined),
+          label: l10n.home,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.calendar_today_outlined),
+          label: l10n.calendar,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.people_outline),
+          label: l10n.patients,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.more_horiz),
+          label: l10n.translate('more') ?? 'More',
+        ),
+      ],
+    );
   }
 }

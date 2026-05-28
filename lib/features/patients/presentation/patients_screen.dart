@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -27,7 +27,7 @@ import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
         fetchProphylaxisSettingsWithClient,
         upsertProphylaxisSettingsWithClient;
 import 'package:shifa_doc_app_v1/features/patients/presentation/document_viewer_screen.dart';
-import 'package:flutter/services.dart'; // ✅ for Clipboard
+import 'package:flutter/services.dart'; // âœ… for Clipboard
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
@@ -48,6 +48,7 @@ import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/utils/error_formatter.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/document_category.dart';
 
 part 'patient_detail_panel.dart';
@@ -807,13 +808,44 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
+    final isMobile = Responsive.isMobile(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: Responsive.screenPadding(context),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 980;
+            final isNarrow = constraints.maxWidth < Responsive.tabletBreakpoint;
+
+            if (isMobile && _selectedId != null) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() => _selectedId = null),
+                      icon: const Icon(Icons.arrow_back),
+                      label: Text(l10n.patients),
+                    ),
+                  ),
+                  Expanded(
+                    child: PatientDetailPanel(
+                      patient: _selected,
+                      brand: brand,
+                      clinicWorkspaceId: widget.clinicWorkspaceId,
+                      onUploadOptions: (p) => _showUploadOptions(context, p),
+                      onCreateForm: (p) =>
+                          showPatientFormTemplateSheet(context, p),
+                      formatDate: _formatDate,
+                      selectedDocumentId: widget.initialDocumentIdToSelect,
+                      documentTitleForViewer: widget.initialDocumentTitle,
+                      openDocumentViewer: widget.initialOpenDocumentViewer,
+                    ),
+                  ),
+                ],
+              );
+            }
 
             final leftPane = Expanded(
               flex: 2,
@@ -826,8 +858,8 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                       children: [
                         Text(
                           l10n.patients,
-                          style: const TextStyle(
-                            fontSize: 28,
+                          style: TextStyle(
+                            fontSize: isMobile ? 22 : 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -866,20 +898,24 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-
-                    // 🔹 SEARCH + CREATE PATIENT BUTTON
                     Row(
                       children: [
                         Expanded(child: _SearchField(controller: _searchCtrl)),
                         const SizedBox(width: 12),
-                        ShifaPrimaryButton(
-                          onPressed: () => _openCreatePatientModal(context),
-                          icon: Icons.person_add,
-                          label: l10n.translate('newPatient') ?? 'New Patient',
-                        ),
+                        if (!isMobile)
+                          ShifaPrimaryButton(
+                            onPressed: () => _openCreatePatientModal(context),
+                            icon: Icons.person_add,
+                            label: l10n.translate('newPatient') ?? 'New Patient',
+                          )
+                        else
+                          IconButton.filled(
+                            onPressed: () => _openCreatePatientModal(context),
+                            icon: const Icon(Icons.person_add),
+                            tooltip: l10n.translate('newPatient') ?? 'New Patient',
+                          ),
                       ],
                     ),
-
                     const SizedBox(height: 16),
                     Expanded(
                       child: _PatientsList(
@@ -909,21 +945,17 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
             );
 
             if (isNarrow) {
-              return Column(
-                children: [leftPane, const SizedBox(height: 16), rightPane],
-              );
-            } else {
-              return Row(
-                children: [leftPane, const SizedBox(width: 24), rightPane],
-              );
+              return leftPane;
             }
+            return Row(
+              children: [leftPane, const SizedBox(width: 24), rightPane],
+            );
           },
         ),
       ),
     );
   }
 
-  // ---------- NEW: Create Patient Modal & Action ----------
   static const List<String> _patientLanguageOptions = [
     'english',
     'uzbek',

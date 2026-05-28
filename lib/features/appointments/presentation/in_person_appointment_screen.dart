@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -1065,14 +1066,23 @@ class _InPersonAppointmentScreenState
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: Row(
-                    children: [
+                  padding: Responsive.screenPadding(context).copyWith(bottom: 0),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile =
+                          constraints.maxWidth < Responsive.mobileBreakpoint;
+                      final gap = isMobile ? 12.0 : 24.0;
+                      final docCollapsed = _docPanelCollapsed && !isMobile;
+                      return Flex(
+                        direction:
+                            isMobile ? Axis.vertical : Axis.horizontal,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                   // Documents (collapsible)
-                  _docPanelCollapsed
+                  docCollapsed
                       ? Container(
                           width: 52,
-                          margin: const EdgeInsets.only(right: 8),
+                          margin: EdgeInsets.only(right: isMobile ? 0 : 8),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
@@ -1246,7 +1256,10 @@ class _InPersonAppointmentScreenState
                             ),
                           ),
                         ),
-                  const SizedBox(width: 24),
+                  SizedBox(
+                    width: isMobile ? 0 : gap,
+                    height: isMobile ? gap : 0,
+                  ),
                   // Documentation (general notes or 025-2 form)
                   Expanded(
                     child: DocumentationSectionCard(
@@ -2527,9 +2540,11 @@ class _InPersonAppointmentScreenState
                     ),
                   ),
                 ],
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-            ),
           ConsultationStickyFooter(
             hasPatientSignature: _hasPatientSignature,
             signatureRequested: _signatureRequested,

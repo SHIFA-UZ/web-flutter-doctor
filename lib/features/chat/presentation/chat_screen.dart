@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
@@ -18,6 +18,7 @@ import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/typing_indic
 import 'package:shifa_doc_app_v1/core/widgets/inline_voice_recorder_bar.dart';
 import 'package:shifa_doc_app_v1/features/chat/services/image_compression_service.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -543,151 +544,251 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     final brand = Theme.of(context).colorScheme.primary;
     final conversationsAsync = ref.watch(conversationsProvider);
     final searchQuery = _searchCtrl.text.trim();
+    final isMobile = Responsive.isMobile(context);
+    final showConversation =
+        !isMobile || _selectedConversationId != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Row(
-          children: [
-            // LEFT: conversations list
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        padding: Responsive.screenPadding(context),
+        child: isMobile
+            ? (showConversation
+                ? _buildChatPane(context, brand)
+                : _buildConversationsPane(
+                    context,
+                    l10n,
+                    brand,
+                    conversationsAsync,
+                    searchQuery,
+                  ))
+            : Row(
                 children: [
-                  Text(
-                    l10n.chat,
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchCtrl,
-                          onChanged: (_) {
-                            setState(() {
-                              _showSearchResults = _searchCtrl.text.trim().isNotEmpty;
-                            });
-                          },
-                          onTap: () {
-                            if (_searchCtrl.text.trim().isNotEmpty) {
-                              setState(() => _showSearchResults = true);
-                            }
-                          },
-                          decoration: InputDecoration(
-                            hintText: l10n.translate('searchDoctorsAndPatients') ?? 'Search doctors and patients',
-                            prefixIcon: const Icon(Icons.search),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: const BorderRadius.all(Radius.circular(24)),
-                              borderSide: BorderSide(color: brand, width: 2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      PopupMenuButton<_ChatListFilter>(
-                        tooltip: l10n.translate('filterConversations') ?? 'Filter conversations',
-                        icon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade700, size: 28),
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        onSelected: (value) => setState(() => _chatFilter = value),
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: _ChatListFilter.newestFirst,
-                            child: Row(
-                              children: [
-                                Icon(_chatFilter == _ChatListFilter.newestFirst ? Icons.check : Icons.circle_outlined, size: 20, color: brand),
-                                const SizedBox(width: 8),
-                                Text(l10n.translate('newestFirst') ?? 'Newest first'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: _ChatListFilter.oldestFirst,
-                            child: Row(
-                              children: [
-                                Icon(_chatFilter == _ChatListFilter.oldestFirst ? Icons.check : Icons.circle_outlined, size: 20, color: brand),
-                                const SizedBox(width: 8),
-                                Text(l10n.translate('oldestFirst') ?? 'Oldest first'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem(
-                            value: _ChatListFilter.unreadNewestFirst,
-                            child: Row(
-                              children: [
-                                Icon(_chatFilter == _ChatListFilter.unreadNewestFirst ? Icons.check : Icons.circle_outlined, size: 20, color: brand),
-                                const SizedBox(width: 8),
-                                Text(l10n.translate('unreadOnlyNewest') ?? 'Unread only (newest first)'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: _ChatListFilter.unreadOldestFirst,
-                            child: Row(
-                              children: [
-                                Icon(_chatFilter == _ChatListFilter.unreadOldestFirst ? Icons.check : Icons.circle_outlined, size: 20, color: brand),
-                                const SizedBox(width: 8),
-                                Text(l10n.translate('unreadOnlyOldest') ?? 'Unread only (oldest first)'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
                   Expanded(
-                    child: _showSearchResults && searchQuery.isNotEmpty
-                        ? _buildSearchResults(searchQuery, brand)
-                        : _buildConversationsList(conversationsAsync, brand),
+                    flex: 2,
+                    child: _buildConversationsPane(
+                      context,
+                      l10n,
+                      brand,
+                      conversationsAsync,
+                      searchQuery,
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    flex: 3,
+                    child: _buildChatPane(context, brand),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 24),
-            // RIGHT: chat view
+      ),
+    );
+  }
+
+  Widget _buildConversationsPane(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color brand,
+    AsyncValue<List<ChatContact>> conversationsAsync,
+    String searchQuery,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.chat,
+          style: TextStyle(
+            fontSize: Responsive.isMobile(context) ? 22 : 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
             Expanded(
-              flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (_) {
+                  setState(() {
+                    _showSearchResults = _searchCtrl.text.trim().isNotEmpty;
+                  });
+                },
+                onTap: () {
+                  if (_searchCtrl.text.trim().isNotEmpty) {
+                    setState(() => _showSearchResults = true);
+                  }
+                },
+                decoration: InputDecoration(
+                  hintText: l10n.translate('searchDoctorsAndPatients') ??
+                      'Search doctors and patients',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: const BorderRadius.all(Radius.circular(24)),
+                    borderSide: BorderSide(color: brand, width: 2),
+                  ),
                 ),
-                child: _selectedConversationId == null
-                    ? Center(
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('selectConversation') ?? 'Select a conversation',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      )
-                    : _buildChatView(_selectedConversationId.toString(), brand),
               ),
+            ),
+            const SizedBox(width: 8),
+            PopupMenuButton<_ChatListFilter>(
+              tooltip: l10n.translate('filterConversations') ??
+                  'Filter conversations',
+              icon: Icon(Icons.arrow_drop_down,
+                  color: Colors.grey.shade700, size: 28),
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              onSelected: (value) => setState(() => _chatFilter = value),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _ChatListFilter.newestFirst,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _chatFilter == _ChatListFilter.newestFirst
+                            ? Icons.check
+                            : Icons.circle_outlined,
+                        size: 20,
+                        color: brand,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(l10n.translate('newestFirst') ?? 'Newest first'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _ChatListFilter.oldestFirst,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _chatFilter == _ChatListFilter.oldestFirst
+                            ? Icons.check
+                            : Icons.circle_outlined,
+                        size: 20,
+                        color: brand,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(l10n.translate('oldestFirst') ?? 'Oldest first'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: _ChatListFilter.unreadNewestFirst,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _chatFilter == _ChatListFilter.unreadNewestFirst
+                            ? Icons.check
+                            : Icons.circle_outlined,
+                        size: 20,
+                        color: brand,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(l10n.translate('unreadOnlyNewest') ??
+                          'Unread only (newest first)'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _ChatListFilter.unreadOldestFirst,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _chatFilter == _ChatListFilter.unreadOldestFirst
+                            ? Icons.check
+                            : Icons.circle_outlined,
+                        size: 20,
+                        color: brand,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(l10n.translate('unreadOnlyOldest') ??
+                          'Unread only (oldest first)'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: _showSearchResults && searchQuery.isNotEmpty
+              ? _buildSearchResults(searchQuery, brand)
+              : _buildConversationsList(conversationsAsync, brand),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChatPane(BuildContext context, Color brand) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
+      child: _selectedConversationId == null
+          ? Center(
+              child: Text(
+                AppLocalizations.of(context)!.translate('selectConversation') ??
+                    'Select a conversation',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            )
+          : Column(
+              children: [
+                if (Responsive.isMobile(context))
+                  Material(
+                    color: Colors.white,
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedConversationId = null),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.arrow_back, color: brand),
+                            const SizedBox(width: 4),
+                            Text(
+                              AppLocalizations.of(context)!.chat,
+                              style: TextStyle(
+                                color: brand,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: _buildChatView(
+                    _selectedConversationId.toString(),
+                    brand,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 

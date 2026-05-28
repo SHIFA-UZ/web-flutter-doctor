@@ -1,4 +1,4 @@
-// lib/features/calendar/presentation/calendar_screen.dart
+﻿// lib/features/calendar/presentation/calendar_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +12,7 @@ import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
+import 'package:shifa_doc_app_v1/features/patients/presentation/create_patient_sheet.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
@@ -23,6 +24,7 @@ import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart'
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 
 /// Latin Uzbek fallback strings rendered for Cyrillic locale (`uz` + Cyrl).
@@ -32,7 +34,7 @@ String _latinUzbekForDisplay(BuildContext context, String latinUzbek) {
   return transliterateUzbekLatinToCyrillicUi(latinUzbek);
 }
 
-/// `intl` / [TableCalendar] only loads `en`, `uz`, `ru` in [main] — avoid invalid tags.
+/// `intl` / [TableCalendar] only loads `en`, `uz`, `ru` in [main] â€” avoid invalid tags.
 String _tableCalendarIntlLocale(BuildContext context) {
   final lc = Localizations.localeOf(context).languageCode.toLowerCase();
   if (lc == 'uz') return 'uz';
@@ -105,7 +107,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   }
 
   // Show update schedule warning only when the day looks like it has no schedule coverage
-  // (no bookable openings *and* no bookings). Fully booked days still have appointments —
+  // (no bookable openings *and* no bookings). Fully booked days still have appointments â€”
   // do not imply "extend your calendar horizon" in that case.
   bool get _shouldShowUpdateScheduleCard {
     if (_loadingDay || _isWaitingForProfile)
@@ -159,7 +161,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       }
     }, fireImmediately: true);
 
-    /// Index of [CalendarScreen] in [MainShell] `screens` (0=Chat, 1=Home, 2=Calendar, …).
+    /// Index of [CalendarScreen] in [MainShell] `screens` (0=Chat, 1=Home, 2=Calendar, â€¦).
     const calendarShellTabIndex = 2;
     ref.listenManual(shellProvider, (previous, next) {
       if (next == calendarShellTabIndex &&
@@ -257,9 +259,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       );
     }
     if (localeCode == 'ru') {
-      return 'Текущий часовой пояс устройства не совпадает с часовым поясом расписания ($scheduleTimeZone). '
-          'Слоты были заданы в одном часовом поясе, а сейчас вы в другом. '
-          'Пожалуйста, учитывайте это при работе с приёмами.';
+      return 'Ð¢ÐµÐºÑƒÑ‰Ð¸Ð¹ Ñ‡Ð°ÑÐ¾Ð²Ð¾Ð¹ Ð¿Ð¾ÑÑ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð° Ð½Ðµ ÑÐ¾Ð²Ð¿Ð°Ð´Ð°ÐµÑ‚ Ñ Ñ‡Ð°ÑÐ¾Ð²Ñ‹Ð¼ Ð¿Ð¾ÑÑÐ¾Ð¼ Ñ€Ð°ÑÐ¿Ð¸ÑÐ°Ð½Ð¸Ñ ($scheduleTimeZone). '
+          'Ð¡Ð»Ð¾Ñ‚Ñ‹ Ð±Ñ‹Ð»Ð¸ Ð·Ð°Ð´Ð°Ð½Ñ‹ Ð² Ð¾Ð´Ð½Ð¾Ð¼ Ñ‡Ð°ÑÐ¾Ð²Ð¾Ð¼ Ð¿Ð¾ÑÑÐµ, Ð° ÑÐµÐ¹Ñ‡Ð°Ñ Ð²Ñ‹ Ð² Ð´Ñ€ÑƒÐ³Ð¾Ð¼. '
+          'ÐŸÐ¾Ð¶Ð°Ð»ÑƒÐ¹ÑÑ‚Ð°, ÑƒÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°Ð¹Ñ‚Ðµ ÑÑ‚Ð¾ Ð¿Ñ€Ð¸ Ñ€Ð°Ð±Ð¾Ñ‚Ðµ Ñ Ð¿Ñ€Ð¸Ñ‘Ð¼Ð°Ð¼Ð¸.';
     }
     return 'Your current device timezone does not match the calendar schedule timezone ($scheduleTimeZone). '
         'Your slots were defined in one timezone, but you are currently in another. '
@@ -308,9 +310,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
 
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
-    final dateLabel = _selectedDay == null
-        ? null
-        : '${_selectedDay!.day} ${l10n.monthName(_selectedDay!.month)} ${_selectedDay!.year}';
 
     final profile = ref.watch(profileAllProvider).valueOrNull?.profile;
     final profileTimeZone = profile != null
@@ -320,326 +319,347 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         !_timeZoneHintDismissed &&
         _shouldShowTimeZoneMismatchHint(profileTimeZone);
 
+    final isMobile = Responsive.isMobile(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Row(
-          children: [
-            // ---------- Left: header + entries list ----------
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (showTimeZoneHint)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Material(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.schedule,
-                                color: Colors.amber.shade800,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _timeZoneMismatchHintMessage(
-                                    scheduleTimeZone: profileTimeZone?.trim() ?? 'Unknown',
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.amber.shade900,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () => setState(
-                                  () => _timeZoneHintDismissed = true,
-                                ),
-                                child: Text(
-                                  l10n.translate('dismiss') ?? 'Dismiss',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Top bar
-                  Row(
-                    children: [
-                      Text(
-                        l10n.calendar,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      if (dateLabel != null)
-                        InkWell(
-                          onTap: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              locale: localeForMaterialIntl(
-                                Localizations.localeOf(context),
-                              ),
-                              initialDate: _selectedDay ?? DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2030),
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                _selectedDay = DateTime(
-                                  picked.year,
-                                  picked.month,
-                                  picked.day,
-                                );
-                                _focusedDay = _selectedDay!;
-                                _selectedEntry = null;
-                              });
-                              final tz =
-                                  ref
-                                          .read(profileAllProvider)
-                                          .valueOrNull
-                                          ?.profile['timeZone']
-                                      as String?;
-                              final effectiveTz =
-                                  (tz != null && tz.trim().isNotEmpty)
-                                  ? tz
-                                  : 'UTC';
-                              _loadDay(_selectedDay!, effectiveTz);
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: brand.withOpacity(0.4)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  dateLabel,
-                                  style: TextStyle(
-                                    color: brand,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: brand,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      const Spacer(),
-                      if (_loadingDay)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 8.0),
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      const SizedBox(width: 8),
-                      ShifaSecondaryButton(
-                        label: l10n.filter,
-                        onPressed: () async {
-                          // Store current filter state as starting point
-                          bool tempShowAppointments = _showAppointments;
-                          bool tempShowFreeSlots = _showFreeSlots;
+        padding: Responsive.screenPadding(context),
+        child: isMobile && _selectedEntry != null
+            ? CalendarSlotDetailsPanel(
+                key: const ValueKey('details_mobile'),
+                entry: _selectedEntry!,
+                day: _selectedDay!,
+                onSavedSuccessfully: () async {
+                  final tz = ref
+                          .read(profileAllProvider)
+                          .valueOrNull
+                          ?.profile['timeZone']
+                      as String?;
+                  if (tz != null && tz.trim().isNotEmpty) {
+                    await _loadDay(_selectedDay!, tz);
+                  }
+                  if (mounted) setState(() => _selectedEntry = null);
+                },
+                onClose: () => setState(() => _selectedEntry = null),
+              )
+            : isMobile
+                ? _buildMobileCalendar(context, l10n, brand, showTimeZoneHint, profileTimeZone)
+                : _buildDesktopCalendar(context, l10n, brand, showTimeZoneHint, profileTimeZone),
+      ),
+    );
+  }
 
-                          final result = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) {
-                              final l10n = AppLocalizations.of(ctx)!;
-                              return StatefulBuilder(
-                                builder: (context, setDialogState) {
-                                  return AlertDialog(
-                                    title: Text(l10n.filter),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CheckboxListTile(
-                                          title: Text(
-                                            l10n.translate(
-                                                  'showAppointments',
-                                                ) ??
-                                                'Show Appointments',
-                                          ),
-                                          value: tempShowAppointments,
-                                          onChanged: (val) {
-                                            setDialogState(() {
-                                              tempShowAppointments =
-                                                  val ?? true;
-                                            });
-                                          },
-                                        ),
-                                        CheckboxListTile(
-                                          title: Text(
-                                            l10n.translate('showFreeSlots') ??
-                                                'Show Free Slots',
-                                          ),
-                                          value: tempShowFreeSlots,
-                                          onChanged: (val) {
-                                            setDialogState(() {
-                                              tempShowFreeSlots = val ?? true;
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, false),
-                                        child: Text(l10n.cancel),
-                                      ),
-                                      ShifaPrimaryButton(
-                                        label: l10n.translate('apply') ?? 'Apply',
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, true),
-                                        icon: Icons.check,
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          );
+  Widget _buildMobileCalendar(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color brand,
+    bool showTimeZoneHint,
+    String? profileTimeZone,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showTimeZoneHint) _buildTimeZoneHint(context, l10n, profileTimeZone),
+        SizedBox(
+          height: 300,
+          child: CalendarMonthPanel(
+            key: ValueKey(
+              'calendar_mobile_${_selectedDay?.year ?? _focusedDay.year}_${_selectedDay?.month ?? _focusedDay.month}',
+            ),
+            focusedDay: _focusedDay,
+            selectedDay: _selectedDay,
+            onChanged: (d) {
+              setState(() {
+                _selectedDay = DateTime(d.year, d.month, d.day);
+                _focusedDay = _selectedDay!;
+                _selectedEntry = null;
+              });
+              final tz = ref
+                      .read(profileAllProvider)
+                      .valueOrNull
+                      ?.profile['timeZone']
+                  as String?;
+              final effectiveTz =
+                  (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
+              _loadDay(_selectedDay!, effectiveTz);
+            },
+            onFocusedDayChanged: (d) => setState(() => _focusedDay = d),
+            showUpdateCard: _shouldShowUpdateScheduleCard,
+            onGoToSchedule: () {
+              ShellScope.pushNamed(context, AppRoutes.setupSchedule);
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(child: _buildCalendarEntriesColumn(context, l10n, brand)),
+      ],
+    );
+  }
 
-                          // Apply filters and refresh if user clicked Apply
-                          if (result == true && mounted) {
-                            setState(() {
-                              _showAppointments = tempShowAppointments;
-                              _showFreeSlots = tempShowFreeSlots;
-                            });
+  Widget _buildDesktopCalendar(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color brand,
+    bool showTimeZoneHint,
+    String? profileTimeZone,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showTimeZoneHint) _buildTimeZoneHint(context, l10n, profileTimeZone),
+              _buildCalendarHeaderRow(context, l10n, brand),
+              const SizedBox(height: 16),
+              Expanded(child: _buildCalendarEntriesColumn(context, l10n, brand)),
+            ],
+          ),
+        ),
+        const SizedBox(width: 24),
+        Expanded(
+          flex: 2,
+          child: _buildCalendarRightPanel(context),
+        ),
+      ],
+    );
+  }
 
-                            // Refresh the current day to reflect filter changes
-                            final tz =
-                                ref
-                                        .read(profileAllProvider)
-                                        .valueOrNull
-                                        ?.profile['timeZone']
-                                    as String?;
-                            final effectiveTz =
-                                (tz != null && tz.trim().isNotEmpty)
-                                ? tz
-                                : 'UTC';
-                            if (_selectedDay != null) {
-                              await _loadDay(_selectedDay!, effectiveTz);
-                            }
-                          }
-                        },
-                        icon: Icons.tune,
-                      ),
-                    ],
+  Widget _buildTimeZoneHint(
+    BuildContext context,
+    AppLocalizations l10n,
+    String? profileTimeZone,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Icon(Icons.schedule, color: Colors.amber.shade800, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _timeZoneMismatchHintMessage(
+                    scheduleTimeZone: profileTimeZone?.trim() ?? 'Unknown',
                   ),
-                  const SizedBox(height: 16),
-                  // Content list
-                  Expanded(
-                    child: _selectedDay == null
-                        ? _EmptyCalendarHint(brand: brand)
-                        : CalendarDayEntriesList(
-                            entries: _entriesFor(_selectedDay),
-                            onTap: (entry) {
-                              setState(() => _selectedEntry = entry);
-                            },
-                            selected: _selectedEntry,
-                            brand: brand,
-                            loading: _loadingDay || _isWaitingForProfile,
-                          ),
+                  style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
+                ),
+              ),
+              TextButton(
+                onPressed: () => setState(() => _timeZoneHintDismissed = true),
+                child: Text(l10n.translate('dismiss') ?? 'Dismiss'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarHeaderRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color brand,
+  ) {
+    final dateLabel = _selectedDay == null
+        ? null
+        : '${_selectedDay!.day} ${l10n.monthName(_selectedDay!.month)} ${_selectedDay!.year}';
+
+    return Row(
+      children: [
+        Text(
+          l10n.calendar,
+          style: TextStyle(
+            fontSize: Responsive.isMobile(context) ? 22 : 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 12),
+        if (dateLabel != null)
+          Flexible(
+            child: Text(
+              dateLabel,
+              style: TextStyle(
+                fontSize: Responsive.isMobile(context) ? 14 : 16,
+                color: Colors.grey.shade700,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        const Spacer(),
+        if (_loadingDay)
+          const Padding(
+            padding: EdgeInsets.only(right: 8.0),
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        const SizedBox(width: 8),
+        ShifaSecondaryButton(
+          label: l10n.filter,
+          onPressed: () => _showFilterDialog(context),
+          icon: Icons.tune,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showFilterDialog(BuildContext context) async {
+    bool tempShowAppointments = _showAppointments;
+    bool tempShowFreeSlots = _showFreeSlots;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.filter),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CheckboxListTile(
+                    title: Text(
+                      l10n.translate('showAppointments') ?? 'Show Appointments',
+                    ),
+                    value: tempShowAppointments,
+                    onChanged: (val) {
+                      setDialogState(() {
+                        tempShowAppointments = val ?? true;
+                      });
+                    },
+                  ),
+                  CheckboxListTile(
+                    title: Text(
+                      l10n.translate('showFreeSlots') ?? 'Show Free Slots',
+                    ),
+                    value: tempShowFreeSlots,
+                    onChanged: (val) {
+                      setDialogState(() {
+                        tempShowFreeSlots = val ?? true;
+                      });
+                    },
                   ),
                 ],
               ),
-            ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(l10n.cancel),
+                ),
+                ShifaPrimaryButton(
+                  label: l10n.translate('apply') ?? 'Apply',
+                  onPressed: () => Navigator.pop(ctx, true),
+                  icon: Icons.check,
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
 
-            const SizedBox(width: 24),
+    if (result == true && mounted) {
+      setState(() {
+        _showAppointments = tempShowAppointments;
+        _showFreeSlots = tempShowFreeSlots;
+      });
 
-            // ---------- Right: calendar OR slot details ----------
-            Expanded(
-              flex: 2,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                child: _selectedEntry == null
-                    ? CalendarMonthPanel(
-                        key: ValueKey(
-                          'calendar_${_selectedDay?.year ?? _focusedDay.year}_${_selectedDay?.month ?? _focusedDay.month}_${_selectedDay?.day ?? _focusedDay.day}',
-                        ),
-                        focusedDay: _focusedDay,
-                        selectedDay: _selectedDay,
-                        onChanged: (d) {
-                          setState(() {
-                            _selectedDay = DateTime(d.year, d.month, d.day);
-                            _focusedDay = _selectedDay!;
-                            _selectedEntry = null;
-                          });
-                          final tz =
-                              ref
-                                      .read(profileAllProvider)
-                                      .valueOrNull
-                                      ?.profile['timeZone']
-                                  as String?;
-                          final effectiveTz =
-                              (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
-                          _loadDay(_selectedDay!, effectiveTz);
-                        },
-                        onFocusedDayChanged: (d) {
-                          setState(() => _focusedDay = d);
-                        },
-                        showUpdateCard: _shouldShowUpdateScheduleCard,
-                        onGoToSchedule: () {
-                          ShellScope.pushNamed(
-                            context,
-                            AppRoutes.setupSchedule,
-                          );
-                        },
-                      )
-                    : CalendarSlotDetailsPanel(
-                        key: const ValueKey('details'),
-                        entry: _selectedEntry!,
-                        day: _selectedDay!,
-                        onSavedSuccessfully: () async {
-                          final tz =
-                              ref
-                                      .read(profileAllProvider)
-                                      .valueOrNull
-                                      ?.profile['timeZone']
-                                  as String?;
-                          if (tz != null && tz.trim().isNotEmpty)
-                            await _loadDay(_selectedDay!, tz);
-                          if (mounted) setState(() => _selectedEntry = null);
-                        },
-                        onClose: () => setState(() => _selectedEntry = null),
-                      ),
-              ),
-            ),
-          ],
+      final tz = ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
+          as String?;
+      final effectiveTz = (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
+      if (_selectedDay != null) {
+        await _loadDay(_selectedDay!, effectiveTz);
+      }
+    }
+  }
+
+  Widget _buildCalendarEntriesColumn(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color brand,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (Responsive.isMobile(context)) ...[
+          _buildCalendarHeaderRow(context, l10n, brand),
+          const SizedBox(height: 12),
+        ],
+        Expanded(
+          child: _selectedDay == null
+              ? _EmptyCalendarHint(brand: brand)
+              : CalendarDayEntriesList(
+                  entries: _entriesFor(_selectedDay),
+                  onTap: (entry) => setState(() => _selectedEntry = entry),
+                  selected: _selectedEntry,
+                  brand: brand,
+                  loading: _loadingDay || _isWaitingForProfile,
+                ),
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarRightPanel(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: _selectedEntry == null
+          ? CalendarMonthPanel(
+              key: ValueKey(
+                'calendar_${_selectedDay?.year ?? _focusedDay.year}_${_selectedDay?.month ?? _focusedDay.month}_${_selectedDay?.day ?? _focusedDay.day}',
+              ),
+              focusedDay: _focusedDay,
+              selectedDay: _selectedDay,
+              onChanged: (d) {
+                setState(() {
+                  _selectedDay = DateTime(d.year, d.month, d.day);
+                  _focusedDay = _selectedDay!;
+                  _selectedEntry = null;
+                });
+                final tz = ref
+                        .read(profileAllProvider)
+                        .valueOrNull
+                        ?.profile['timeZone']
+                    as String?;
+                final effectiveTz =
+                    (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
+                _loadDay(_selectedDay!, effectiveTz);
+              },
+              onFocusedDayChanged: (d) => setState(() => _focusedDay = d),
+              showUpdateCard: _shouldShowUpdateScheduleCard,
+              onGoToSchedule: () {
+                ShellScope.pushNamed(context, AppRoutes.setupSchedule);
+              },
+            )
+          : CalendarSlotDetailsPanel(
+              key: const ValueKey('details'),
+              entry: _selectedEntry!,
+              day: _selectedDay!,
+              onSavedSuccessfully: () async {
+                final tz = ref
+                        .read(profileAllProvider)
+                        .valueOrNull
+                        ?.profile['timeZone']
+                    as String?;
+                if (tz != null && tz.trim().isNotEmpty) {
+                  await _loadDay(_selectedDay!, tz);
+                }
+                if (mounted) setState(() => _selectedEntry = null);
+              },
+              onClose: () => setState(() => _selectedEntry = null),
+            ),
     );
   }
 }
@@ -1338,7 +1358,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   bool get _paymentPending =>
       (widget.entry.paymentStatus ?? '').trim().toUpperCase() == 'PENDING';
 
-  /// Video consult with unpaid balance — show "remind to pay" for the doctor.
+  /// Video consult with unpaid balance â€” show "remind to pay" for the doctor.
   bool get _canAdjustAppointmentDuration =>
       _isAppointment &&
       !_isPastAppointment &&
@@ -1353,7 +1373,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       _todMinutes(_adjustedAppointmentEndExclusive ?? widget.entry.end) !=
           _initialAppointmentEndRepr;
 
-  /// Video consult with unpaid balance — show "remind to pay" for the doctor.
+  /// Video consult with unpaid balance â€” show "remind to pay" for the doctor.
   bool get _shouldShowEncouragePayment =>
       _isVideoAppointment &&
       !_isPastAppointment &&
@@ -2079,7 +2099,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
         SnackBar(
           content: Text(
             l10n.translate('bookingRangeUnavailable') ??
-                'Selected time range is no longer fully available — calendar refreshed.',
+                'Selected time range is no longer fully available â€” calendar refreshed.',
           ),
         ),
       );
@@ -2124,7 +2144,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       l10n.appointmentDocumentation.toLowerCase(),
       'appointment documentation',
       'uchrashuv hujjatlari',
-      'документация приема',
+      'Ð´Ð¾ÐºÑƒÐ¼ÐµÐ½Ñ‚Ð°Ñ†Ð¸Ñ Ð¿Ñ€Ð¸ÐµÐ¼Ð°',
     };
 
     final candidates = docs.where((d) {
@@ -2274,7 +2294,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       fg = Colors.amber.shade800;
       final confirmedFallback = lang == 'uz'
           ? _latinUzbekForDisplay(context, 'Tasdiqlangan')
-          : (lang == 'ru' ? 'Подтверждено' : 'Confirmed');
+          : (lang == 'ru' ? 'ÐŸÐ¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ð¾' : 'Confirmed');
       label = t('confirmed', confirmedFallback);
     }
 
@@ -2460,7 +2480,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
           const SizedBox(height: 8),
           SelectionArea(
             child: SelectableText(
-              body.trim().isEmpty ? '—' : body,
+              body.trim().isEmpty ? 'â€”' : body,
               style: const TextStyle(fontSize: 13, height: 1.35),
             ),
           ),
@@ -2477,13 +2497,13 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final lang = Localizations.localeOf(context).languageCode.toLowerCase();
     final aiDocsFallback = lang == 'uz'
         ? _latinUzbekForDisplay(context, 'Uchrashuv hujjatlari')
-        : (lang == 'ru' ? 'Документация приема' : 'Appointment Documentation');
+        : (lang == 'ru' ? 'Ð”Ð¾ÐºÑƒÐ¼ÐµÐ½Ñ‚Ð°Ñ†Ð¸Ñ Ð¿Ñ€Ð¸ÐµÐ¼Ð°' : 'Appointment Documentation');
     final notesTabFallback = lang == 'uz'
         ? _latinUzbekForDisplay(context, 'Uchrashuv yozuvlari')
-        : (lang == 'ru' ? 'Записи приема' : 'Appointment Notes');
+        : (lang == 'ru' ? 'Ð—Ð°Ð¿Ð¸ÑÐ¸ Ð¿Ñ€Ð¸ÐµÐ¼Ð°' : 'Appointment Notes');
     final summaryPdfTabFallback = lang == 'uz'
         ? _latinUzbekForDisplay(context, 'Xulosa PDF')
-        : (lang == 'ru' ? 'PDF сводка' : 'Summary PDF');
+        : (lang == 'ru' ? 'PDF ÑÐ²Ð¾Ð´ÐºÐ°' : 'Summary PDF');
     String t(String key, String fallback) {
       final v = l10n.translate(key);
       if (v == null || v.trim().isEmpty || v.trim() == key) return fallback;
@@ -2571,7 +2591,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${_fmtDate(context, widget.day)} • ${_fmtTime(widget.entry.start)} - ${_fmtTime(_detailHeaderEnd)}',
+                      '${_fmtDate(context, widget.day)} â€¢ ${_fmtTime(widget.entry.start)} - ${_fmtTime(_detailHeaderEnd)}',
                       style: TextStyle(
                         color: subtleText,
                         fontSize: 12,
@@ -2908,7 +2928,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                               .read(patientsForAssignmentProvider.notifier)
                               .loadPatientsForAssignment();
                         } catch (e, st) {
-                          debugPrint('Assign patient – load failed: $e');
+                          debugPrint('Assign patient â€“ load failed: $e');
                           debugPrint('$st');
                           if (mounted) {
                             final msg = e is Exception ? e.toString() : '$e';
@@ -2931,7 +2951,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                                   'Failed to load patients. Please try again.';
                             } else {
                               display = msg.length > 80
-                                  ? '${msg.substring(0, 80)}…'
+                                  ? '${msg.substring(0, 80)}â€¦'
                                   : msg;
                             }
                             ScaffoldMessenger.of(
@@ -2941,21 +2961,8 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                           return;
                         }
 
-                        if (list.isEmpty) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.translate('noPatientsAvailable') ??
-                                      'No patients available',
-                                ),
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
-                        final selectedId = await showModalBottomSheet<String>(
+                        final selected = await showModalBottomSheet<
+                            PatientAssignmentItem>(
                           context: context,
                           isScrollControlled: true,
                           builder: (ctx) => _AssignPatientSheet(
@@ -2964,14 +2971,10 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                           ),
                         );
 
-                        if (selectedId != null && mounted) {
-                          final item = list.firstWhere(
-                            (p) => p.id == selectedId,
-                            orElse: () => list.first,
-                          );
+                        if (selected != null && mounted) {
                           setState(() {
-                            _selectedPatientId = int.tryParse(selectedId);
-                            _selectedPatientName = item.name;
+                            _selectedPatientId = int.tryParse(selected.id);
+                            _selectedPatientName = selected.name;
                           });
                         }
                       },
@@ -3134,7 +3137,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
               const SizedBox(height: 10),
 
-              // Date & Time — tap opens Change Slot dialog for (non-past) appointments
+              // Date & Time â€” tap opens Change Slot dialog for (non-past) appointments
               Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -3232,7 +3235,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
               if (widget.entry.type == EntryType.appointment) ...[
                 const SizedBox(height: 10),
-                // Place (appointments only – dropdown: doctor's clinic address or VIDEO CONSULTATION)
+                // Place (appointments only â€“ dropdown: doctor's clinic address or VIDEO CONSULTATION)
                 AppointmentPlaceDropdown(
                   entry: widget.entry,
                   clinicVenueLabelOverride: widget.primaryClinicVenueLabel,
@@ -3477,19 +3480,27 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 }
 
 /// Bottom sheet content for assigning a patient to a slot, with search by name or ID.
-class _AssignPatientSheet extends StatefulWidget {
+class _AssignPatientSheet extends ConsumerStatefulWidget {
   const _AssignPatientSheet({required this.items, required this.l10n});
 
   final List<PatientAssignmentItem> items;
   final AppLocalizations l10n;
 
   @override
-  State<_AssignPatientSheet> createState() => _AssignPatientSheetState();
+  ConsumerState<_AssignPatientSheet> createState() =>
+      _AssignPatientSheetState();
 }
 
-class _AssignPatientSheetState extends State<_AssignPatientSheet> {
+class _AssignPatientSheetState extends ConsumerState<_AssignPatientSheet> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  late List<PatientAssignmentItem> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List<PatientAssignmentItem>.from(widget.items);
+  }
 
   @override
   void dispose() {
@@ -3498,10 +3509,32 @@ class _AssignPatientSheetState extends State<_AssignPatientSheet> {
     super.dispose();
   }
 
+  Future<void> _createAndSelectPatient() async {
+    final created = await showCreatePatientSheet(
+      context,
+      ref,
+      reloadPatientsList: true,
+    );
+    if (created == null || !mounted) return;
+
+    await ref
+        .read(patientsForAssignmentProvider.notifier)
+        .loadPatientsForAssignment();
+
+    final item = PatientAssignmentItem(
+      id: created.id,
+      name: created.name,
+      photoUrl: created.photoUrl,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context, item);
+  }
+
   List<PatientAssignmentItem> get _filteredItems {
     final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return widget.items;
-    return widget.items.where((p) {
+    if (query.isEmpty) return _items;
+    return _items.where((p) {
       return p.name.toLowerCase().contains(query) ||
           p.id.toLowerCase().contains(query);
     }).toList();
@@ -3533,28 +3566,47 @@ class _AssignPatientSheetState extends State<_AssignPatientSheet> {
                   ),
                 ),
               ),
-              // Search bar – always visible at top
+              // Search bar â€“ always visible at top
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 color: Theme.of(context).dialogBackgroundColor,
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: _searchFocus,
-                  decoration: InputDecoration(
-                    hintText: widget.l10n.searchByNameOrId,
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocus,
+                        decoration: InputDecoration(
+                          hintText: widget.l10n.searchByNameOrId,
+                          prefixIcon:
+                              const Icon(Icons.search, color: Colors.grey),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
                     ),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _createAndSelectPatient,
+                      icon: const Icon(Icons.add),
+                      tooltip: widget.l10n.translate('newPatient') ??
+                          'New Patient',
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(48, 48),
+                      ),
                     ),
-                  ),
-                  onChanged: (_) => setState(() {}),
+                  ],
                 ),
               ),
               const Divider(height: 1),
@@ -3593,7 +3645,7 @@ class _AssignPatientSheetState extends State<_AssignPatientSheet> {
                             subtitle: Text(
                               '${widget.l10n.translate('id')}: ${p.id}',
                             ),
-                            onTap: () => Navigator.pop(context, p.id),
+                            onTap: () => Navigator.pop(context, p),
                           );
                         },
                       ),
