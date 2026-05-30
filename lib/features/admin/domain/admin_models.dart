@@ -472,6 +472,7 @@ class AdminDoctorActivityRow {
   final int aiRequests;
   final int aiDraftNotes;
   final String? lastActiveAt;
+  final String? earlyPartnerContractNumber;
 
   AdminDoctorActivityRow({
     required this.doctorId,
@@ -494,6 +495,7 @@ class AdminDoctorActivityRow {
     required this.aiRequests,
     required this.aiDraftNotes,
     this.lastActiveAt,
+    this.earlyPartnerContractNumber,
   });
 
   factory AdminDoctorActivityRow.fromJson(Map<String, dynamic> json) {
@@ -518,6 +520,7 @@ class AdminDoctorActivityRow {
       aiRequests: (json['aiRequests'] as num?)?.toInt() ?? 0,
       aiDraftNotes: (json['aiDraftNotes'] as num?)?.toInt() ?? 0,
       lastActiveAt: json['lastActiveAt'] as String?,
+      earlyPartnerContractNumber: json['earlyPartnerContractNumber'] as String?,
     );
   }
 }

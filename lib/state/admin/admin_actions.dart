@@ -520,6 +520,18 @@ class AdminActions {
     return AdminDoctorActivityDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  /// Allocate or refresh early-partner contract (sequential number for new doctors).
+  Future<dynamic> issueEarlyPartnerContract(int doctorId) async {
+    final response = await apiClient.post(
+      '/api/admin/doctors/$doctorId/early-partner-contract/issue',
+      {},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to issue contract: ${response.body}');
+    }
+    return response;
+  }
+
   // ==================== AUDIT LOGS ====================
 
   Future<Map<String, dynamic>> getAuditLogs({

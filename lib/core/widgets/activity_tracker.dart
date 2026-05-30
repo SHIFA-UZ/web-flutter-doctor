@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/inactivity_timer_service.dart';
+import '../../state/auth/auth_controller.dart';
+import '../util/jwt_utils.dart';
 
 /// Widget that tracks user activity and resets the inactivity timer
 /// Wrap your app content with this widget to enable activity tracking
@@ -33,15 +36,31 @@ class _ActivityTrackerState extends ConsumerState<ActivityTracker>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Reset timer when app comes to foreground
     if (state == AppLifecycleState.resumed) {
-      _resetTimer();
+      _enforceSessionOnResume();
     }
   }
 
   void _resetTimer() {
+    final jwt = ref.read(authTokenProvider);
+    if (jwt != null && isJwtExpired(jwt)) {
+      ref.read(authProvider.notifier).logout();
+      return;
+    }
     final timer = ref.read(inactivityTimerProvider);
     timer?.resetTimer();
+  }
+
+  void _enforceSessionOnResume() {
+    final timer = ref.read(inactivityTimerProvider);
+    if (timer == null) return;
+    final jwt = ref.read(authTokenProvider);
+    unawaited(() async {
+      await timer.enforceTimeoutIfNeeded(jwt: jwt);
+      if (!mounted) return;
+      if (!ref.read(authProvider).isAuthenticated) return;
+      timer.resetTimer();
+    }());
   }
 
   @override

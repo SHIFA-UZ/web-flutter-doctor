@@ -302,6 +302,7 @@ Future<Patient> createPatientWithClient({
   required ApiClient client,
   required String name,
   String? phone,
+  List<String>? phones,
   String? email,
   String? address,
   DateTime? birthDate,
@@ -309,9 +310,14 @@ Future<Patient> createPatientWithClient({
   String? photoUrl,
   String? chronicDisease,
 }) async {
+  final resolvedPhones = phones != null
+      ? phones.map((p) => p.trim()).where((p) => p.isNotEmpty).toList()
+      : (phone != null && phone.trim().isNotEmpty ? [phone.trim()] : <String>[]);
+
   final res = await client.post('/api/patients', {
     'name': name,
-    if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+    if (resolvedPhones.isNotEmpty) 'phones': resolvedPhones,
+    if (resolvedPhones.length == 1) 'phone': resolvedPhones.first,
     'email': email,
     'address': address,
     'birthDate': birthDate == null

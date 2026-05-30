@@ -26,7 +26,7 @@ class _AccountInformationScreenState
     extends ConsumerState<AccountInformationScreen> {
   DateTime? _dob;
   String? _selectedGender;
-  String? _selectedProfession;
+  List<String> _selectedProfessions = [];
   String? _selectedTimeZone; // IANA e.g. Europe/Berlin; detected on init, editable
   int? _selectedClinicId;
   String? _selectedClinicName;
@@ -82,7 +82,9 @@ class _AccountInformationScreenState
           address: _addressCtrl.text.trim(),
           clinic: _selectedClinicName,
           clinicId: _selectedClinicId,
-          profession: _selectedProfession,
+          profession: _selectedProfessions.isEmpty
+              ? null
+              : _selectedProfessions.join(', '),
           timeZone: _selectedTimeZone?.trim().isNotEmpty == true
               ? _selectedTimeZone!.trim()
               : 'UTC',
@@ -222,10 +224,12 @@ class _AccountInformationScreenState
               ),
               const SizedBox(height: 16),
               SearchableProfessionDropdown(
-                value: _selectedProfession,
+                allowMultiple: true,
+                values: _selectedProfessions,
                 hintText: AppLocalizations.of(context)!.profession,
                 labelText: AppLocalizations.of(context)!.profession,
-                onChanged: (v) => setState(() => _selectedProfession = v),
+                onChangedMultiple: (values) =>
+                    setState(() => _selectedProfessions = values),
               ),
               const SizedBox(height: 16),
               _timeZoneDetecting

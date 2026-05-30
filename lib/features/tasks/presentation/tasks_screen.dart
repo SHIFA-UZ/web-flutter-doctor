@@ -9,6 +9,7 @@ import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({Key? key}) : super(key: key);
@@ -70,6 +71,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     final overdueCount =
         tasks.where((t) => t.status == TaskStatus.expired).length;
 
+    final isMobile = Responsive.isMobile(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -85,9 +88,50 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               await ref.read(tasksProvider.notifier).loadTasks();
             },
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+              padding: Responsive.screenPadding(context).copyWith(bottom: 32),
               children: [
                 // Header
+                if (isMobile)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        l10n.remoteCareTasks,
+                        style: Responsive.pageTitleStyle(context),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.translate('remoteCareTasksSubtitle'),
+                        style: Responsive.pageSubtitleStyle(context),
+                      ),
+                      const SizedBox(height: 12),
+                      ShifaPrimaryButton(
+                        label: l10n.translate('createTask'),
+                        icon: Icons.add,
+                        onPressed: () async {
+                          await ShellScope.pushNamed(
+                            context,
+                            AppRoutes.createTask,
+                          );
+                          ref.read(tasksProvider.notifier).loadTasks();
+                        },
+                        width: ButtonWidth.fill,
+                      ),
+                      const SizedBox(height: 8),
+                      ShifaSecondaryButton(
+                        label: l10n.translate('useTemplate'),
+                        onPressed: () async {
+                          await ShellScope.pushNamed(
+                            context,
+                            AppRoutes.selectTemplate,
+                          );
+                          ref.read(tasksProvider.notifier).loadTasks();
+                        },
+                        width: ButtonWidth.fill,
+                      ),
+                    ],
+                  )
+                else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -142,24 +186,27 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                 const SizedBox(height: 24),
 
                 // Summary cards
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
                   children: [
                     _SummaryCard(
                       title: l10n.translate('activeTasks'),
                       value: activeCount.toString(),
                       color: Colors.blue,
+                      expanded: isMobile,
                     ),
-                    const SizedBox(width: 12),
                     _SummaryCard(
                       title: l10n.translate('completedTasks'),
                       value: completedCount.toString(),
                       color: Colors.green,
+                      expanded: isMobile,
                     ),
-                    const SizedBox(width: 12),
                     _SummaryCard(
                       title: l10n.translate('overdueTasks'),
                       value: overdueCount.toString(),
                       color: Colors.red,
+                      expanded: isMobile,
                     ),
                   ],
                 ),
@@ -174,7 +221,103 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: Row(
+                  child: isMobile
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              decoration: InputDecoration(
+                                prefixIcon: const Icon(Icons.search),
+                                hintText: l10n.translate('searchTasksOrPatients'),
+                                border: const OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              onChanged: (value) {
+                                setState(() => _searchQuery = value);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<TaskStatus?>(
+                              value: _selectedStatus,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: l10n.status,
+                                border: const OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: null,
+                                  child: Text(l10n.all),
+                                ),
+                                ...TaskStatus.values.map((status) {
+                                  String statusName;
+                                  switch (status) {
+                                    case TaskStatus.active:
+                                      statusName = l10n.active;
+                                      break;
+                                    case TaskStatus.completed:
+                                      statusName = l10n.taskCompleted;
+                                      break;
+                                    case TaskStatus.expired:
+                                      statusName = l10n.expired;
+                                      break;
+                                    case TaskStatus.cancelled:
+                                      statusName = l10n.taskStatusCancelled;
+                                      break;
+                                    case TaskStatus.draft:
+                                      statusName = l10n.draft;
+                                      break;
+                                  }
+                                  return DropdownMenuItem(
+                                    value: status,
+                                    child: Text(statusName),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) {
+                                setState(() => _selectedStatus = value);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<TaskCategory?>(
+                              value: _selectedCategory,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: l10n.translate('category'),
+                                border: const OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: null,
+                                  child: Text(l10n.all),
+                                ),
+                                ...TaskCategory.values.map((cat) {
+                                  return DropdownMenuItem(
+                                    value: cat,
+                                    child: Text(cat.name),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) {
+                                setState(() => _selectedCategory = value);
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                onPressed: () {
+                                  ref.read(tasksProvider.notifier).loadTasks();
+                                },
+                                icon: const Icon(Icons.refresh),
+                                tooltip: l10n.refresh,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
                     children: [
                       Expanded(
                         flex: 3,
@@ -366,28 +509,29 @@ class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
   final Color color;
+  final bool expanded;
 
   const _SummaryCard({
     required this.title,
     required this.value,
     required this.color,
+    this.expanded = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
+    final card = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey.shade600,
@@ -404,8 +548,15 @@ class _SummaryCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
+
+    if (expanded) {
+      return SizedBox(
+        width: Responsive.widthOf(context) - 24,
+        child: card,
+      );
+    }
+    return Expanded(child: card);
   }
 }
 

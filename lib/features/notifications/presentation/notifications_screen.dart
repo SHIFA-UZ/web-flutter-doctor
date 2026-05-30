@@ -5,8 +5,10 @@ import 'package:shifa_doc_app_v1/core/services/push_notification_service.dart';
 import 'package:shifa_doc_app_v1/features/notifications/domain/notification_model.dart';
 import 'package:shifa_doc_app_v1/features/notifications/presentation/notification_ui_helpers.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
+import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 
 /// Notifications screen for the doctor app.
 /// Product-grade UI: grouped by date, semantic colors, cards, actions, filters.
@@ -23,52 +25,96 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final doctorTimeZone = ref
+        .watch(profileAllProvider)
+        .valueOrNull
+        ?.profile['timeZone'] as String?;
     final notificationsAsync = ref.watch(doctorNotificationsProvider);
     final unreadCountAsync = ref.watch(doctorNotificationsUnreadCountProvider);
     final controller = ref.read(doctorNotificationsControllerProvider);
     final unreadCount = unreadCountAsync.valueOrNull ?? 0;
+
+    final isMobile = Responsive.isMobile(context);
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header: "Notifications (12)" and [Mark all read] [Settings]
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    unreadCount > 0
-                        ? '${l10n.notifications} ($unreadCount)'
-                        : l10n.notifications,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+              padding: Responsive.screenPadding(context).copyWith(bottom: 8),
+              child: isMobile
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          unreadCount > 0
+                              ? '${l10n.notifications} ($unreadCount)'
+                              : l10n.notifications,
+                          style: Responsive.pageTitleStyle(context),
                         ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => controller.markAllAsRead(),
-                        icon: const Icon(Icons.done_all, size: 18),
-                        label: Text(l10n.markAllAsRead, style: const TextStyle(fontSize: 13)),
-                      ),
-                      IconButton(
-                        onPressed: () => ref.read(shellProvider.notifier).setTab(6),
-                        icon: const Icon(Icons.settings_outlined, size: 22),
-                        tooltip: l10n.notificationSettings,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton.icon(
+                                onPressed: () => controller.markAllAsRead(),
+                                icon: const Icon(Icons.done_all, size: 18),
+                                label: Text(
+                                  l10n.markAllAsRead,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () =>
+                                  ref.read(shellProvider.notifier).setTab(6),
+                              icon: const Icon(Icons.settings_outlined, size: 22),
+                              tooltip: l10n.notificationSettings,
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          unreadCount > 0
+                              ? '${l10n.notifications} ($unreadCount)'
+                              : l10n.notifications,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => controller.markAllAsRead(),
+                              icon: const Icon(Icons.done_all, size: 18),
+                              label: Text(
+                                l10n.markAllAsRead,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () =>
+                                  ref.read(shellProvider.notifier).setTab(6),
+                              icon: const Icon(Icons.settings_outlined, size: 22),
+                              tooltip: l10n.notificationSettings,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
             ),
-            // Filters: All | Appointments | Tasks | Messages
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 12 : 20,
+              ),
               child: Row(
                 children: [
                   _FilterChip(
@@ -137,6 +183,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                     notification: n,
                                     controller: controller,
                                     l10n: l10n,
+                                    doctorTimeZone: doctorTimeZone,
                                     onTap: () {
                                       controller.markAsRead(n.id);
                                       _deliverPayload(n);
@@ -197,6 +244,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       'notificationId': n.id,
       'type': n.type,
       if (n.appointmentId != null) 'appointmentId': n.appointmentId,
+      if (n.appointmentStartAt != null)
+        'appointmentStartAt': n.appointmentStartAt!.toUtc().toIso8601String(),
       if (n.patientId != null) 'patientId': n.patientId,
       if (n.documentId != null) 'documentId': n.documentId,
       if (n.documentTitle != null) 'documentTitle': n.documentTitle,
@@ -271,6 +320,7 @@ class _NotificationCard extends StatelessWidget {
   final DoctorNotificationModel notification;
   final DoctorNotificationsController controller;
   final AppLocalizations l10n;
+  final String? doctorTimeZone;
   final VoidCallback onTap;
   final VoidCallback? onOpenCalendar;
 
@@ -278,6 +328,7 @@ class _NotificationCard extends StatelessWidget {
     required this.notification,
     required this.controller,
     required this.l10n,
+    this.doctorTimeZone,
     required this.onTap,
     this.onOpenCalendar,
   });
@@ -362,7 +413,11 @@ class _NotificationCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          localizedNotificationMessage(notification, l10n),
+                          localizedNotificationMessage(
+                            notification,
+                            l10n,
+                            timeZone: doctorTimeZone,
+                          ),
                           style: Theme.of(context).textTheme.bodyMedium,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
@@ -464,6 +519,8 @@ class _NotificationCard extends StatelessWidget {
       'notificationId': n.id,
       'type': n.type,
       if (n.appointmentId != null) 'appointmentId': n.appointmentId,
+      if (n.appointmentStartAt != null)
+        'appointmentStartAt': n.appointmentStartAt!.toUtc().toIso8601String(),
       if (n.patientId != null) 'patientId': n.patientId,
       if (n.documentId != null) 'documentId': n.documentId,
       if (n.documentTitle != null) 'documentTitle': n.documentTitle,

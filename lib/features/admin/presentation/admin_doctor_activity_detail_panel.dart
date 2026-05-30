@@ -2,6 +2,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_provider_params.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
@@ -11,6 +12,8 @@ class AdminDoctorActivityDetailPanel extends ConsumerWidget {
   final String? fromIso;
   final String? toIso;
   final VoidCallback onClose;
+  final Future<void> Function(AdminDoctorActivityRow row)? onDownloadContract;
+  final bool contractPdfLoading;
 
   const AdminDoctorActivityDetailPanel({
     super.key,
@@ -18,6 +21,8 @@ class AdminDoctorActivityDetailPanel extends ConsumerWidget {
     required this.fromIso,
     required this.toIso,
     required this.onClose,
+    this.onDownloadContract,
+    this.contractPdfLoading = false,
   });
 
   Widget _pill(String t) {
@@ -102,6 +107,24 @@ class AdminDoctorActivityDetailPanel extends ConsumerWidget {
                   ],
                 ),
                 Text(row.clinicName ?? '—', style: TextStyle(color: Colors.grey.shade700)),
+                if (row.earlyPartnerContractNumber != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Contract: ${row.earlyPartnerContractNumber}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+                if (onDownloadContract != null) ...[
+                  const SizedBox(height: 12),
+                  ShifaSecondaryButton(
+                    label: contractPdfLoading ? 'Generating PDF…' : 'Partnership contract PDF',
+                    onPressed: contractPdfLoading ? null : () => onDownloadContract!(row),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 6,

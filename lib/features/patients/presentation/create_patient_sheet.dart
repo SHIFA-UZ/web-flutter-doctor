@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/widgets/multiple_phone_fields.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
@@ -29,7 +30,7 @@ Future<Patient?> showCreatePatientSheet(
   bool reloadPatientsList = true,
 }) async {
   final nameCtrl = TextEditingController();
-  final phoneCtrl = TextEditingController();
+  final phoneFieldsKey = GlobalKey<MultiplePhoneFieldsState>();
   final emailCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
   String? selectedLanguage = patientLanguageOptions.first;
@@ -68,11 +69,9 @@ Future<Patient?> showCreatePatientSheet(
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: phoneCtrl,
-                  decoration: InputDecoration(
-                    labelText: '${l10n.phoneNumber} (${l10n.optional})',
-                  ),
+                MultiplePhoneFields(
+                  key: phoneFieldsKey,
+                  labelText: '${l10n.phoneNumber} (${l10n.optional})',
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -151,7 +150,6 @@ Future<Patient?> showCreatePatientSheet(
 
   if (confirmed != true || !context.mounted) {
     nameCtrl.dispose();
-    phoneCtrl.dispose();
     emailCtrl.dispose();
     addressCtrl.dispose();
     return null;
@@ -159,11 +157,11 @@ Future<Patient?> showCreatePatientSheet(
 
   try {
     final client = ref.read(apiClientProvider);
-    final phoneRaw = phoneCtrl.text.trim();
+    final phones = phoneFieldsKey.currentState?.values ?? const [];
     final created = await createPatientWithClient(
       client: client,
       name: nameCtrl.text.trim(),
-      phone: phoneRaw.isEmpty ? null : phoneRaw,
+      phones: phones,
       email: emailCtrl.text.trim(),
       address: addressCtrl.text.trim(),
       birthDate: birthDate,
@@ -203,7 +201,6 @@ Future<Patient?> showCreatePatientSheet(
     return null;
   } finally {
     nameCtrl.dispose();
-    phoneCtrl.dispose();
     emailCtrl.dispose();
     addressCtrl.dispose();
   }

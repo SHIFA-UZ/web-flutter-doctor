@@ -15,6 +15,7 @@ class DoctorNotificationModel {
   final String? patientName;
   final String? documentTitle;
   final String? requestingDoctorName;
+  final DateTime? appointmentStartAt;
   final DateTime createdAt;
   final DateTime? readAt;
 
@@ -32,6 +33,7 @@ class DoctorNotificationModel {
     this.patientName,
     this.documentTitle,
     this.requestingDoctorName,
+    this.appointmentStartAt,
     required this.createdAt,
     this.readAt,
   });
@@ -59,6 +61,9 @@ class DoctorNotificationModel {
       patientName: json['patientName'] as String?,
       documentTitle: json['documentTitle'] as String?,
       requestingDoctorName: json['requestingDoctorName'] as String?,
+      appointmentStartAt: json['appointmentStartAt'] != null
+          ? DateTime.parse(json['appointmentStartAt'] as String)
+          : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
       readAt: json['readAt'] != null
           ? DateTime.parse(json['readAt'] as String)

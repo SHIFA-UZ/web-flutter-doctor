@@ -597,10 +597,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
       children: [
         Text(
           l10n.chat,
-          style: TextStyle(
-            fontSize: Responsive.isMobile(context) ? 22 : 28,
-            fontWeight: FontWeight.bold,
-          ),
+          style: Responsive.pageTitleStyle(context),
         ),
         const SizedBox(height: 12),
         Row(

@@ -146,7 +146,11 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
                     DropdownMenuItem<int?>(
                       value: p.patientId,
                       child: Text(
-                        p.fullName.isEmpty ? 'Patient #${p.patientId}' : p.fullName,
+                        p.fullName.isEmpty
+                            ? l10n
+                                .translate('clinicPatientNumber')
+                                .replaceAll('{{id}}', '${p.patientId}')
+                            : p.fullName,
                       ),
                     ),
                 ],
@@ -206,7 +210,10 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
               initialValue: _recordType,
               items: [
                 for (final t in _types)
-                  DropdownMenuItem(value: t, child: Text(t.replaceAll('_', ' '))),
+                  DropdownMenuItem(
+                    value: t,
+                    child: Text(l10n.clinicRecordTypeLabel(t)),
+                  ),
               ],
               onChanged: _busy ? null : (v) => setState(() => _recordType = v ?? _recordType),
             ),

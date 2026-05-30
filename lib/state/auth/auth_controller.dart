@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/util/admin_host.dart';
+import '../../core/util/jwt_utils.dart';
 import '../profile/profile_providers.dart';
 import '../appointments/appointment_invalidation.dart';
 import '../patients/patients_provider.dart';
@@ -423,6 +424,15 @@ class AuthController extends StateNotifier<AuthState> {
       final key = forAdmin ? _adminAuthTokenStorageKey : _authTokenStorageKey;
       final token = prefs.getString(key);
       if (token == null || token.isEmpty) return false;
+      if (isJwtExpired(token)) {
+        await prefs.remove(key);
+        if (forAdmin) {
+          await _clearAdminTokenFromStorage();
+        } else {
+          await prefs.remove(_adminAuthTokenStorageKey);
+        }
+        return false;
+      }
       if (forAdmin && _extractJwtRole(token) != 'ADMIN') {
         await _clearAdminTokenFromStorage();
         ref.read(apiClientProvider).clearToken();

@@ -174,6 +174,11 @@ class AppLocalizations {
       'clinicTreatmentPlansPaymentStatus': 'Payment status',
       'clinicTreatmentPlansUpdated': 'Updated',
       'treatmentPlanWizardTitle': 'Treatment plan wizard',
+      'treatmentPlanWizardStep': 'Step {{current}}/{{total}}',
+      'treatmentPlanWizardQty': 'Qty',
+      'treatmentPlanWizardDoctorNumber': 'Doctor #{{id}}',
+      'treatmentPlanWizardCouldNotCreatePlan': 'Could not create plan',
+      'treatmentPlanWizardCouldNotSaveServices': 'Could not save services',
       'treatmentPlanWizardSymptoms': 'Symptoms (comma separated)',
       'treatmentPlanWizardReminderDays': 'Payment reminder (days)',
       'treatmentPlanWizardReminderDaysHelp':
@@ -409,6 +414,31 @@ class AppLocalizations {
       'clinicPlanCancelConfirmBody':
           'Plan "{{title}}" will be marked CANCELLED. Recorded payments and installments will be kept but no new charges will be auto-applied. Continue?',
       'clinicPlanCancelConfirm': 'Cancel plan',
+      'clinicPaymentStatusPaid': 'Paid',
+      'clinicPaymentStatusPartial': 'Partial',
+      'clinicPaymentStatusUnpaid': 'Unpaid',
+      'clinicPaymentStatusNone': 'None',
+      'clinicRecordStatusIssued': 'Issued',
+      'clinicRecordStatusPartiallyPaid': 'Partially paid',
+      'clinicRecordStatusOverdue': 'Overdue',
+      'clinicRecordStatusVoid': 'Void',
+      'clinicRecordTypeInvoice': 'Invoice',
+      'clinicRecordTypeReceipt': 'Receipt',
+      'clinicRecordTypeEstimate': 'Estimate',
+      'clinicRecordTypeCreditNote': 'Credit note',
+      'clinicPaymentMethodCash': 'Cash',
+      'clinicPaymentMethodCard': 'Card',
+      'clinicPaymentMethodTransfer': 'Transfer',
+      'clinicPaymentMethodOther': 'Other',
+      'clinicMembershipRoleOwner': 'Owner',
+      'clinicMembershipRoleClinicAdmin': 'Clinic admin',
+      'clinicMembershipRoleReceptionist': 'Receptionist',
+      'clinicMembershipRoleDoctor': 'Doctor',
+      'clinicMembershipRoleNurse': 'Nurse',
+      'clinicActionSuccess': 'Done',
+      'clinicActionFailed': 'Failed',
+      'treatmentPlanWizardPaymentFailed': 'Could not record payment',
+      'clinicPatientNumber': 'Patient #{{id}}',
       'clinicWorkspaceFinance': 'Finance',
       'clinicWorkspaceInvitations': 'Invitations',
       'clinicInviteEmailLabel': 'Email',
@@ -1221,6 +1251,8 @@ class AppLocalizations {
       'notificationTypeDocumentAccessRejected': 'Document access rejected',
       'notificationTypeAiScribeReady': 'AI Scribe summary ready',
       'notificationMessagePatientBookedAppointment':
+          'Patient {name} booked an appointment for {date} at {time}.',
+      'notificationMessagePatientBookedAppointmentNoTime':
           'Patient {name} booked an appointment.',
       'notificationMessageAppointmentReminder':
           'Your appointment is in about 1 hour. Please be ready.',
@@ -1763,6 +1795,11 @@ class AppLocalizations {
       'clinicTreatmentPlansPaymentStatus': 'To\'lov holati',
       'clinicTreatmentPlansUpdated': 'Yangilandi',
       'treatmentPlanWizardTitle': 'Reja yordamchisi',
+      'treatmentPlanWizardStep': '{{current}}/{{total}} qadam',
+      'treatmentPlanWizardQty': 'Soni',
+      'treatmentPlanWizardDoctorNumber': 'Shifokor #{{id}}',
+      'treatmentPlanWizardCouldNotCreatePlan': 'Rejani yaratib bo\'lmadi',
+      'treatmentPlanWizardCouldNotSaveServices': 'Xizmatlarni saqlab bo\'lmadi',
       'treatmentPlanWizardSymptoms': 'Simptomlar (vergul bilan)',
       'treatmentPlanWizardReminderDays': 'Eslatma (kun)',
       'treatmentPlanWizardReminderDaysHelp':
@@ -1995,6 +2032,31 @@ class AppLocalizations {
       'clinicPlanCancelConfirmBody':
           '"{{title}}" rejasi BEKOR QILINGAN deb belgilanadi. Yozilgan to\'lovlar va bo\'lib-bo\'lib to\'lovlar saqlanadi, lekin yangi summalar avtomatik qo\'shilmaydi. Davom ettirish?',
       'clinicPlanCancelConfirm': 'Rejani bekor qilish',
+      'clinicPaymentStatusPaid': 'To\'langan',
+      'clinicPaymentStatusPartial': 'Qisman',
+      'clinicPaymentStatusUnpaid': 'To\'lanmagan',
+      'clinicPaymentStatusNone': 'Yo\'q',
+      'clinicRecordStatusIssued': 'Berilgan',
+      'clinicRecordStatusPartiallyPaid': 'Qisman to\'langan',
+      'clinicRecordStatusOverdue': 'Muddati o\'tgan',
+      'clinicRecordStatusVoid': 'Bekor qilingan',
+      'clinicRecordTypeInvoice': 'Hisob-faktura',
+      'clinicRecordTypeReceipt': 'Kvitansiya',
+      'clinicRecordTypeEstimate': 'Taxminiy hisob',
+      'clinicRecordTypeCreditNote': 'Kredit eslatmasi',
+      'clinicPaymentMethodCash': 'Naqd',
+      'clinicPaymentMethodCard': 'Karta',
+      'clinicPaymentMethodTransfer': 'O\'tkazma',
+      'clinicPaymentMethodOther': 'Boshqa',
+      'clinicMembershipRoleOwner': 'Egasi',
+      'clinicMembershipRoleClinicAdmin': 'Klinika administratori',
+      'clinicMembershipRoleReceptionist': 'Resepsionist',
+      'clinicMembershipRoleDoctor': 'Shifokor',
+      'clinicMembershipRoleNurse': 'Hamshira',
+      'clinicActionSuccess': 'Bajarildi',
+      'clinicActionFailed': 'Bajarilmadi',
+      'treatmentPlanWizardPaymentFailed': 'To\'lovni qayd etib bo\'lmadi',
+      'clinicPatientNumber': 'Bemor #{{id}}',
       'createTreatmentPlan': 'Davolash rejasi yaratish',
       'treatmentPlanTitle': 'Sarlavha',
       'treatmentPlanTitleHint': 'masalan, Tish tiklash',
@@ -2702,6 +2764,8 @@ class AppLocalizations {
       'notificationTypeDocumentAccessRejected': 'Hujjatga kirish rad etildi',
       'notificationTypeAiScribeReady': 'AI yozuvchi xulosasi tayyor',
       'notificationMessagePatientBookedAppointment':
+          'Bemor {name} {date} kuni soat {time} ga uchrashuvni band qildi.',
+      'notificationMessagePatientBookedAppointmentNoTime':
           'Bemor {name} uchrashuvni band qildi.',
       'notificationMessageAppointmentReminder':
           'Uchrashuvingiz taxminan 1 soatdan keyin. Tayyor bo\'ling.',
@@ -3309,6 +3373,11 @@ class AppLocalizations {
       'clinicTreatmentPlansPaymentStatus': 'Статус оплаты',
       'clinicTreatmentPlansUpdated': 'Обновлено',
       'treatmentPlanWizardTitle': 'Мастер плана лечения',
+      'treatmentPlanWizardStep': 'Шаг {{current}}/{{total}}',
+      'treatmentPlanWizardQty': 'Кол-во',
+      'treatmentPlanWizardDoctorNumber': 'Врач #{{id}}',
+      'treatmentPlanWizardCouldNotCreatePlan': 'Не удалось создать план',
+      'treatmentPlanWizardCouldNotSaveServices': 'Не удалось сохранить услуги',
       'treatmentPlanWizardSymptoms': 'Симптомы (через запятую)',
       'treatmentPlanWizardReminderDays': 'Напоминание (дней)',
       'treatmentPlanWizardReminderDaysHelp':
@@ -3545,6 +3614,31 @@ class AppLocalizations {
       'clinicPlanCancelConfirmBody':
           'План «{{title}}» будет отмечен как ОТМЕНЁН. Уже записанные платежи и рассрочки сохранятся, но новые суммы не будут начисляться автоматически. Продолжить?',
       'clinicPlanCancelConfirm': 'Отменить план',
+      'clinicPaymentStatusPaid': 'Оплачено',
+      'clinicPaymentStatusPartial': 'Частично',
+      'clinicPaymentStatusUnpaid': 'Не оплачено',
+      'clinicPaymentStatusNone': 'Нет',
+      'clinicRecordStatusIssued': 'Выставлен',
+      'clinicRecordStatusPartiallyPaid': 'Частично оплачен',
+      'clinicRecordStatusOverdue': 'Просрочен',
+      'clinicRecordStatusVoid': 'Аннулирован',
+      'clinicRecordTypeInvoice': 'Счёт',
+      'clinicRecordTypeReceipt': 'Квитанция',
+      'clinicRecordTypeEstimate': 'Смета',
+      'clinicRecordTypeCreditNote': 'Кредит-нота',
+      'clinicPaymentMethodCash': 'Наличные',
+      'clinicPaymentMethodCard': 'Карта',
+      'clinicPaymentMethodTransfer': 'Перевод',
+      'clinicPaymentMethodOther': 'Другое',
+      'clinicMembershipRoleOwner': 'Владелец',
+      'clinicMembershipRoleClinicAdmin': 'Администратор клиники',
+      'clinicMembershipRoleReceptionist': 'Регистратор',
+      'clinicMembershipRoleDoctor': 'Врач',
+      'clinicMembershipRoleNurse': 'Медсестра',
+      'clinicActionSuccess': 'Готово',
+      'clinicActionFailed': 'Не удалось',
+      'treatmentPlanWizardPaymentFailed': 'Не удалось записать оплату',
+      'clinicPatientNumber': 'Пациент #{{id}}',
       'createTreatmentPlan': 'Создать план лечения',
       'treatmentPlanTitle': 'Название',
       'treatmentPlanTitleHint': 'напр. Реставрация зубов',
@@ -4144,6 +4238,8 @@ class AppLocalizations {
       'notificationGeneric': 'Уведомление',
       'notificationTypeAiScribeReady': 'Готово резюме AI-секретаря',
       'notificationMessagePatientBookedAppointment':
+          'Пациент {name} записался на приём на {date} в {time}.',
+      'notificationMessagePatientBookedAppointmentNoTime':
           'Пациент {name} записался на приём.',
       'notificationMessageAppointmentReminder':
           'Ваш приём примерно через 1 час. Пожалуйста, будьте готовы.',
@@ -4583,6 +4679,104 @@ class AppLocalizations {
       return _localizedValues['en']?[key] ?? key;
     }
     return _localizedValues[lc]?[key] ?? _localizedValues['en']?[key] ?? key;
+  }
+
+  String clinicPlanStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'DRAFT':
+        return translate('clinicPlanStatusDraft');
+      case 'ACTIVE':
+        return translate('clinicPlanStatusActive');
+      case 'ON_HOLD':
+        return translate('clinicPlanStatusOnHold');
+      case 'IN_PROGRESS':
+        return translate('clinicPlanStatusInProgress');
+      case 'COMPLETED':
+        return translate('clinicPlanStatusCompleted');
+      case 'CANCELLED':
+        return translate('clinicPlanStatusCancelled');
+      default:
+        return status;
+    }
+  }
+
+  String clinicPaymentStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'PAID':
+        return translate('clinicPaymentStatusPaid');
+      case 'PARTIAL':
+        return translate('clinicPaymentStatusPartial');
+      case 'UNPAID':
+        return translate('clinicPaymentStatusUnpaid');
+      case 'NONE':
+        return translate('clinicPaymentStatusNone');
+      default:
+        return status;
+    }
+  }
+
+  String clinicRecordStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'ISSUED':
+        return translate('clinicRecordStatusIssued');
+      case 'PAID':
+        return translate('clinicPaymentStatusPaid');
+      case 'PARTIALLY_PAID':
+        return translate('clinicRecordStatusPartiallyPaid');
+      case 'OVERDUE':
+        return translate('clinicRecordStatusOverdue');
+      case 'VOID':
+        return translate('clinicRecordStatusVoid');
+      default:
+        return status;
+    }
+  }
+
+  String clinicRecordTypeLabel(String recordType) {
+    switch (recordType.toUpperCase()) {
+      case 'INVOICE':
+        return translate('clinicRecordTypeInvoice');
+      case 'RECEIPT':
+        return translate('clinicRecordTypeReceipt');
+      case 'ESTIMATE':
+        return translate('clinicRecordTypeEstimate');
+      case 'CREDIT_NOTE':
+        return translate('clinicRecordTypeCreditNote');
+      default:
+        return recordType.replaceAll('_', ' ');
+    }
+  }
+
+  String clinicPaymentMethodLabel(String method) {
+    switch (method.toUpperCase()) {
+      case 'CASH':
+        return translate('clinicPaymentMethodCash');
+      case 'CARD_EXTERNAL':
+        return translate('clinicPaymentMethodCard');
+      case 'TRANSFER':
+        return translate('clinicPaymentMethodTransfer');
+      case 'OTHER':
+        return translate('clinicPaymentMethodOther');
+      default:
+        return method;
+    }
+  }
+
+  String clinicMembershipRoleLabel(String role) {
+    switch (role.toUpperCase()) {
+      case 'OWNER':
+        return translate('clinicMembershipRoleOwner');
+      case 'CLINIC_ADMIN':
+        return translate('clinicMembershipRoleClinicAdmin');
+      case 'RECEPTIONIST':
+        return translate('clinicMembershipRoleReceptionist');
+      case 'DOCTOR':
+        return translate('clinicMembershipRoleDoctor');
+      case 'NURSE':
+        return translate('clinicMembershipRoleNurse');
+      default:
+        return role;
+    }
   }
 
   /// Localized month name (1 = January, 12 = December).
@@ -5047,9 +5241,18 @@ class AppLocalizations {
       translate('notificationTypeDocumentAccessRejected');
   String get notificationTypeAiScribeReady =>
       translate('notificationTypeAiScribeReady');
-  String notificationMessagePatientBookedAppointment(String name) => translate(
-    'notificationMessagePatientBookedAppointment',
-  ).replaceAll('{name}', name);
+  String notificationMessagePatientBookedAppointment(
+    String name,
+    String date,
+    String time,
+  ) =>
+      translate('notificationMessagePatientBookedAppointment')
+          .replaceAll('{name}', name)
+          .replaceAll('{date}', date)
+          .replaceAll('{time}', time);
+  String notificationMessagePatientBookedAppointmentNoTime(String name) =>
+      translate('notificationMessagePatientBookedAppointmentNoTime')
+          .replaceAll('{name}', name);
   String get notificationMessageAppointmentReminder =>
       translate('notificationMessageAppointmentReminder');
   String get patientBriefingTitle => translate('patientBriefingTitle');

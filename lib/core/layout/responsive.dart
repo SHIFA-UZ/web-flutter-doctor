@@ -21,8 +21,24 @@ class Responsive {
 
   static EdgeInsets screenPadding(BuildContext context) =>
       isMobile(context)
-          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+          ? const EdgeInsets.fromLTRB(12, 8, 12, 8)
           : const EdgeInsets.all(24);
+
+  static double sectionGap(BuildContext context) => isMobile(context) ? 12 : 16;
+
+  static TextStyle pageTitleStyle(BuildContext context) => TextStyle(
+        fontSize: isMobile(context) ? 22 : 28,
+        fontWeight: FontWeight.bold,
+      );
+
+  static TextStyle pageSubtitleStyle(BuildContext context) => TextStyle(
+        fontSize: isMobile(context) ? 13 : 14,
+        color: Colors.grey.shade700,
+      );
+
+  /// Max width for dialogs / bottom sheets on narrow screens.
+  static double dialogMaxWidth(BuildContext context) =>
+      isMobile(context) ? widthOf(context) - 32 : 480;
 
   /// Bottom inset so floating panels (e.g. patient briefing) sit above mobile nav.
   static double bottomNavClearance(BuildContext context) {
@@ -68,6 +84,44 @@ class ResponsiveRowColumn extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: spaced,
+    );
+  }
+}
+
+/// Wraps [children] in a [Row] on desktop and a vertical [Column] on mobile.
+class ResponsiveToolbar extends StatelessWidget {
+  const ResponsiveToolbar({
+    super.key,
+    required this.children,
+    this.gap = 12,
+    this.mobileGap = 8,
+  });
+
+  final List<Widget> children;
+  final double gap;
+  final double mobileGap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (Responsive.isMobile(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) SizedBox(height: mobileGap),
+            children[i],
+          ],
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) SizedBox(width: gap),
+          if (i == 0) Expanded(child: children[i]) else children[i],
+        ],
+      ],
     );
   }
 }

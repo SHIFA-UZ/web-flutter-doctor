@@ -480,7 +480,13 @@ class _TreatmentPlanWizardDialogState
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(tr(context, 'error', 'Could not create plan')),
+              content: Text(
+                tr(
+                  context,
+                  'treatmentPlanWizardCouldNotCreatePlan',
+                  'Could not create plan',
+                ),
+              ),
             ),
           );
         }
@@ -496,7 +502,15 @@ class _TreatmentPlanWizardDialogState
       if (summary == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(tr(context, 'error', 'Could not save services'))),
+            SnackBar(
+              content: Text(
+                tr(
+                  context,
+                  'treatmentPlanWizardCouldNotSaveServices',
+                  'Could not save services',
+                ),
+              ),
+            ),
           );
         }
         return;
@@ -700,7 +714,10 @@ class _TreatmentPlanWizardDialogState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Step ${_phase + 1}/2',
+                l10n
+                    .translate('treatmentPlanWizardStep')
+                    .replaceAll('{{current}}', '${_phase + 1}')
+                    .replaceAll('{{total}}', '2'),
                 style: const TextStyle(color: Colors.black54),
               ),
               const SizedBox(height: 12),
@@ -962,11 +979,21 @@ class _TreatmentPlanWizardDialogState
                     labelText: tr(
                         context, 'treatmentPlanWizardMethod', 'Payment method'),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'CASH', child: Text('CASH')),
-                    DropdownMenuItem(value: 'TRANSFER', child: Text('TRANSFER')),
+                  items: [
                     DropdownMenuItem(
-                        value: 'CARD_EXTERNAL', child: Text('CARD')),
+                      value: 'CASH',
+                      child: Text(l10n.clinicPaymentMethodLabel('CASH')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'TRANSFER',
+                      child: Text(l10n.clinicPaymentMethodLabel('TRANSFER')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'CARD_EXTERNAL',
+                      child: Text(
+                        l10n.clinicPaymentMethodLabel('CARD_EXTERNAL'),
+                      ),
+                    ),
                   ],
                   onChanged: (v) => setState(() => _payMethod = v ?? 'CASH'),
                 ),
@@ -1236,7 +1263,9 @@ class _TreatmentPlanWizardDialogState
                 orElse: () => ClinicMember(
                   doctorProfileId: doctorId,
                   userId: 0,
-                  displayName: 'Doctor #$doctorId',
+                  displayName: tr(context, 'treatmentPlanWizardDoctorNumber',
+                          'Doctor #$doctorId')
+                      .replaceAll('{{id}}', '$doctorId'),
                   membershipRole: 'DOCTOR',
                 ),
               );
@@ -1420,8 +1449,10 @@ class _TreatmentPlanWizardDialogState
                   initialValue: '$qty',
                   enabled: picked,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                      labelText: 'Qty', isDense: true),
+                  decoration: InputDecoration(
+                    labelText: tr(context, 'treatmentPlanWizardQty', 'Qty'),
+                    isDense: true,
+                  ),
                   onChanged: (s) =>
                       _serviceQty[c.key] = int.tryParse(s) ?? 1,
                 ),

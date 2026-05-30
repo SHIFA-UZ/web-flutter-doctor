@@ -12,9 +12,9 @@ const outDir = path.join(__dirname, '..', 'assets', 'localization');
 
 // Line ranges (1-based, inclusive): content inside each map
 const blocks = [
-  { lang: 'en', start: 16, end: 835 },
-  { lang: 'uz', start: 838, end: 1634 },
-  { lang: 'ru', start: 1637, end: 2364 },
+  { lang: 'en', start: 18, end: 1604 },
+  { lang: 'uz', start: 1605, end: 3181 },
+  { lang: 'ru', start: 3182, end: 4671 },
 ];
 
 // Parse a single Dart map line: 'key': 'value', or 'key': 'value'

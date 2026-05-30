@@ -287,9 +287,8 @@ class _ClinicDoctorScheduleScaffoldState
                                                 CheckboxListTile(
                                                   title: Text(
                                                     dl.translate(
-                                                          'showAppointments',
-                                                        ) ??
-                                                        'Show appointments',
+                                                      'showAppointments',
+                                                    ),
                                                   ),
                                                   value: tempShowAppointments,
                                                   onChanged: (val) {
@@ -302,9 +301,8 @@ class _ClinicDoctorScheduleScaffoldState
                                                 CheckboxListTile(
                                                   title: Text(
                                                     dl.translate(
-                                                          'showFreeSlots',
-                                                        ) ??
-                                                        'Show free slots',
+                                                      'showFreeSlots',
+                                                    ),
                                                   ),
                                                   value: tempShowFreeSlots,
                                                   onChanged: (val) {
@@ -323,9 +321,7 @@ class _ClinicDoctorScheduleScaffoldState
                                                 child: Text(dl.cancel),
                                               ),
                                               ShifaPrimaryButton(
-                                                label:
-                                                    dl.translate('apply') ??
-                                                    'Apply',
+                                                label: dl.translate('apply'),
                                                 onPressed: () =>
                                                     Navigator.pop(ctx, true),
                                                 icon: Icons.check,

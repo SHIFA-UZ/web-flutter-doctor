@@ -7,18 +7,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SearchableProfessionDropdown extends ConsumerStatefulWidget {
   final String? value;
+  final List<String>? values;
   final ValueChanged<String?>? onChanged;
+  final ValueChanged<List<String>>? onChangedMultiple;
   final String? hintText;
   final String? labelText;
   final bool useBackend;
+  final bool allowMultiple;
 
   const SearchableProfessionDropdown({
     Key? key,
     this.value,
+    this.values,
     this.onChanged,
+    this.onChangedMultiple,
     this.hintText,
     this.labelText,
     this.useBackend = true,
+    this.allowMultiple = false,
   }) : super(key: key);
 
   @override
@@ -31,15 +37,17 @@ class _SearchableProfessionDropdownState
   final TextEditingController _searchController = TextEditingController();
   List<ProfessionModel> _filteredProfessions = [];
   String? _selectedValue;
+  List<String> _selectedValues = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _selectedValue = widget.value;
+    _selectedValues = List<String>.from(widget.values ?? const []);
     _loadProfessions();
   }
-  
+
   Future<void> _loadProfessions() async {
     setState(() => _isLoading = true);
     try {
@@ -71,6 +79,9 @@ class _SearchableProfessionDropdownState
     if (oldWidget.value != widget.value) {
       _selectedValue = widget.value;
     }
+    if (oldWidget.values != widget.values) {
+      _selectedValues = List<String>.from(widget.values ?? const []);
+    }
   }
 
   @override
@@ -81,17 +92,15 @@ class _SearchableProfessionDropdownState
 
   Future<void> _updateFilteredList(String query) async {
     if (query.isEmpty) {
-      // Reload all professions
       await _loadProfessions();
       return;
     }
-    
+
     setState(() {
-      // Search in current list
-      _filteredProfessions = _filteredProfessions.where((p) => p.matches(query)).toList();
+      _filteredProfessions =
+          _filteredProfessions.where((p) => p.matches(query)).toList();
     });
-    
-    // Also try backend search if enabled
+
     if (widget.useBackend && query.isNotEmpty) {
       try {
         final locale = ref.read(languageProvider).locale;
@@ -111,9 +120,35 @@ class _SearchableProfessionDropdownState
     }
   }
 
+  ProfessionModel? _findProfession(String english) {
+    try {
+      return _filteredProfessions.firstWhere((p) => p.english == english);
+    } catch (_) {
+      return ProfessionData.findByEnglish(english);
+    }
+  }
+
   Future<void> _showSearchDialog() async {
     _searchController.clear();
     _updateFilteredList('');
+
+    if (widget.allowMultiple) {
+      final result = await showDialog<List<String>>(
+        context: context,
+        builder: (context) => _MultiSearchDialog(
+          searchController: _searchController,
+          initialFilteredProfessions: _filteredProfessions,
+          selectedValues: _selectedValues,
+          locale: ref.read(languageProvider).locale,
+        ),
+      );
+
+      if (result != null && widget.onChangedMultiple != null) {
+        widget.onChangedMultiple!(result);
+        setState(() => _selectedValues = result);
+      }
+      return;
+    }
 
     final result = await showDialog<String>(
       context: context,
@@ -134,29 +169,41 @@ class _SearchableProfessionDropdownState
     }
   }
 
+  String _displayText(Locale locale) {
+    if (widget.allowMultiple) {
+      if (_selectedValues.isEmpty) {
+        return widget.hintText ??
+            AppLocalizations.of(context)!.selectProfession;
+      }
+      final labels = _selectedValues
+          .map((v) => _findProfession(v)?.getDisplayText(locale) ?? v)
+          .toList();
+      return labels.join(', ');
+    }
+
+    final selectedProfession =
+        _selectedValue != null ? _findProfession(_selectedValue!) : null;
+    if (selectedProfession != null) {
+      return selectedProfession.getDisplayText(locale);
+    }
+    return widget.hintText ?? AppLocalizations.of(context)!.selectProfession;
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = ref.watch(languageProvider).locale;
-    
-    // Find selected profession in current list
-    ProfessionModel? selectedProfession;
-    if (_selectedValue != null) {
-      try {
-        selectedProfession = _filteredProfessions.firstWhere(
-          (p) => p.english == _selectedValue,
-        );
-      } catch (e) {
-        // Try to find in all professions as fallback
-        selectedProfession = ProfessionData.findByEnglish(_selectedValue!);
-      }
-    }
+    final hasSelection = widget.allowMultiple
+        ? _selectedValues.isNotEmpty
+        : _selectedValue != null;
 
     return InkWell(
       onTap: _isLoading ? null : _showSearchDialog,
       child: InputDecorator(
         decoration: InputDecoration(
-          hintText: widget.hintText ?? AppLocalizations.of(context)!.selectProfession,
-          labelText: widget.labelText ?? AppLocalizations.of(context)!.profession,
+          hintText: widget.hintText ??
+              AppLocalizations.of(context)!.selectProfession,
+          labelText:
+              widget.labelText ?? AppLocalizations.of(context)!.profession,
           border: const OutlineInputBorder(),
           suffixIcon: _isLoading
               ? const SizedBox(
@@ -169,16 +216,30 @@ class _SearchableProfessionDropdownState
                 )
               : const Icon(Icons.arrow_drop_down),
         ),
-        child: Text(
-          selectedProfession != null
-              ? selectedProfession.getDisplayText(locale)
-              : widget.hintText ?? 'Select Profession',
-          style: TextStyle(
-            color: selectedProfession != null
-                ? Theme.of(context).textTheme.bodyLarge?.color
-                : Theme.of(context).hintColor,
-          ),
-        ),
+        child: widget.allowMultiple && _selectedValues.length > 1
+            ? Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: _selectedValues.map((value) {
+                  final profession = _findProfession(value);
+                  return Chip(
+                    label: Text(
+                      profession?.getDisplayText(locale) ?? value,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  );
+                }).toList(),
+              )
+            : Text(
+                _displayText(locale),
+                style: TextStyle(
+                  color: hasSelection
+                      ? Theme.of(context).textTheme.bodyLarge?.color
+                      : Theme.of(context).hintColor,
+                ),
+              ),
       ),
     );
   }
@@ -228,8 +289,7 @@ class _SearchDialogState extends State<_SearchDialog> {
       });
       return;
     }
-    
-    // Filter locally from initial list
+
     setState(() {
       _filteredProfessions = widget.initialFilteredProfessions
           .where((p) => p.matches(query))
@@ -246,7 +306,6 @@ class _SearchDialogState extends State<_SearchDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Search bar
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
@@ -273,7 +332,6 @@ class _SearchDialogState extends State<_SearchDialog> {
               ),
             ),
             const Divider(height: 1),
-            // List of professions
             Expanded(
               child: _filteredProfessions.isEmpty
                   ? Center(
@@ -305,8 +363,10 @@ class _SearchDialogState extends State<_SearchDialog> {
                             ),
                           ),
                           selected: isSelected,
-                          selectedTileColor:
-                              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          selectedTileColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
                           onTap: () {
                             Navigator.pop(context, profession.english);
                           },
@@ -319,6 +379,158 @@ class _SearchDialogState extends State<_SearchDialog> {
                         );
                       },
                     ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MultiSearchDialog extends StatefulWidget {
+  final TextEditingController searchController;
+  final List<ProfessionModel> initialFilteredProfessions;
+  final List<String> selectedValues;
+  final Locale locale;
+
+  const _MultiSearchDialog({
+    Key? key,
+    required this.searchController,
+    required this.initialFilteredProfessions,
+    required this.selectedValues,
+    required this.locale,
+  }) : super(key: key);
+
+  @override
+  State<_MultiSearchDialog> createState() => _MultiSearchDialogState();
+}
+
+class _MultiSearchDialogState extends State<_MultiSearchDialog> {
+  late List<ProfessionModel> _filteredProfessions;
+  late Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredProfessions = widget.initialFilteredProfessions;
+    _selected = Set<String>.from(widget.selectedValues);
+    widget.searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.searchController.removeListener(_onSearchChanged);
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = widget.searchController.text;
+    if (query.isEmpty) {
+      setState(() {
+        _filteredProfessions = widget.initialFilteredProfessions;
+      });
+      return;
+    }
+
+    setState(() {
+      _filteredProfessions = widget.initialFilteredProfessions
+          .where((p) => p.matches(query))
+          .toList();
+    });
+  }
+
+  void _toggle(String english) {
+    setState(() {
+      if (_selected.contains(english)) {
+        _selected.remove(english);
+      } else {
+        _selected.add(english);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Dialog(
+      child: Container(
+        width: double.maxFinite,
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: widget.searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: l10n.searchProfession,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: widget.searchController,
+                    builder: (context, value, child) {
+                      return value.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: widget.searchController.clear,
+                            )
+                          : const SizedBox.shrink();
+                    },
+                  ),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: _filteredProfessions.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          l10n.noProfessionsFound,
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _filteredProfessions.length,
+                      itemBuilder: (context, index) {
+                        final profession = _filteredProfessions[index];
+                        final isSelected =
+                            _selected.contains(profession.english);
+
+                        return CheckboxListTile(
+                          title: Text(
+                            profession.getDisplayText(widget.locale),
+                          ),
+                          value: isSelected,
+                          onChanged: (_) => _toggle(profession.english),
+                        );
+                      },
+                    ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(l10n.cancel),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () =>
+                        Navigator.pop(context, _selected.toList()),
+                    child: Text(l10n.ok),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

@@ -254,7 +254,7 @@ class _ClinicIdentityBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${l10n.translate('clinicWorkspaceYourRole')}: ${clinic.membershipRole}'
+                  '${l10n.translate('clinicWorkspaceYourRole')}: ${l10n.clinicMembershipRoleLabel(clinic.membershipRole)}'
                   '${clinic.isPracticeClinic ? ' (${l10n.translate('clinicWorkspacePrimaryPractice')})' : ''}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -496,7 +496,8 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                   value: 'ALL',
                   label: l10n.translate('clinicTreatmentPlansAll'),
                 ),
-                for (final r in roles) (value: r, label: r),
+                for (final r in roles)
+                  (value: r, label: l10n.clinicMembershipRoleLabel(r)),
               ],
             ),
           ],
@@ -563,7 +564,7 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                           ],
                         ),
                       ),
-                      DataCell(Text(m.membershipRole)),
+                      DataCell(Text(l10n.clinicMembershipRoleLabel(m.membershipRole))),
                       DataCell(Text('#${m.doctorProfileId}')),
                       DataCell(Text('#${m.userId}')),
                       DataCell(
@@ -1175,7 +1176,9 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                               title: Text(m.displayName),
-                              subtitle: Text(m.membershipRole),
+                              subtitle: Text(
+                                l10n.clinicMembershipRoleLabel(m.membershipRole),
+                              ),
                               value: selected.contains(m.doctorProfileId),
                               onChanged: (on) {
                                 setLocal(() {

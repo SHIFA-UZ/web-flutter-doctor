@@ -836,6 +836,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 
 import '../../../state/profile/profile_actions.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'location_picker_widget.dart';
 import 'searchable_profession_dropdown.dart';
 import 'searchable_timezone_dropdown.dart';
@@ -852,6 +853,7 @@ enum _ProfilePanel { profile, contact, payment, settings, servicesPricing, exten
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   _ProfilePanel _selected = _ProfilePanel.profile;
+  bool _mobileDetailOpen = false;
 
   final _passwordFormKey = GlobalKey<FormState>();
   final TextEditingController _currentPassCtrl = TextEditingController();
@@ -1091,133 +1093,55 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
           body: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
+            padding: Responsive.screenPadding(context),
+            child: Responsive.isMobile(context)
+                ? (_mobileDetailOpen
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: () =>
+                                  setState(() => _mobileDetailOpen = false),
+                              icon: const Icon(Icons.arrow_back),
+                              label: Text(
+                                AppLocalizations.of(context)!.profile,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              child: _buildRightPanelBackend(
+                                profile: profile,
+                                contact: contact,
+                                billing: billing,
+                                settings: settings,
+                                brand: brand,
+                                photoUrl: photoUrl,
+                                key: ValueKey(_selected),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : _buildProfileSectionList(
+                        profile: profile,
+                        contact: contact,
+                        billing: billing,
+                      ))
+                : Row(
               children: [
-                // LEFT: Sections
                 Expanded(
                   flex: 3,
-                  child: ListView(
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.profile,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!.profileInformation,
-                        subtitleLines: [
-                          fullName.isEmpty ? '—' : fullName,
-                          dobLabel ?? '—',
-                          (profile['address'] as String?)?.isNotEmpty == true
-                              ? profile['address'] as String
-                              : '—',
-                        ],
-                        selected: _selected == _ProfilePanel.profile,
-                        onTap: () =>
-                            setState(() => _selected = _ProfilePanel.profile),
-                      ),
-                      const SizedBox(height: 10),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!.contactDetails,
-                        subtitleLines: [
-                          (contact['phone'] as String?)?.isNotEmpty == true
-                              ? contact['phone'] as String
-                              : '—',
-                          (contact['email'] as String?)?.isNotEmpty == true
-                              ? contact['email'] as String
-                              : '—',
-                        ],
-                        selected: _selected == _ProfilePanel.contact,
-                        onTap: () =>
-                            setState(() => _selected = _ProfilePanel.contact),
-                      ),
-                      const SizedBox(height: 10),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!.paymentAndInvoicing,
-                        subtitleLines: [
-                          (billing['billingName'] as String?)?.isNotEmpty ==
-                                  true
-                              ? billing['billingName'] as String
-                              : '—',
-                          (billing['billingEmail'] as String?)?.isNotEmpty ==
-                                  true
-                              ? billing['billingEmail'] as String
-                              : '—',
-                          (billing['iban'] as String?)?.isNotEmpty == true
-                              ? billing['iban'] as String
-                              : '—',
-                          (billing['taxId'] as String?)?.isNotEmpty == true
-                              ? billing['taxId'] as String
-                              : '—',
-                        ],
-                        selected: _selected == _ProfilePanel.payment,
-                        onTap: () =>
-                            setState(() => _selected = _ProfilePanel.payment),
-                      ),
-                      const SizedBox(height: 10),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!.settings,
-                        subtitleLines: [
-                          AppLocalizations.of(context)!.settingsSubtitle,
-                        ],
-                        selected: _selected == _ProfilePanel.settings,
-                        onTap: () =>
-                            setState(() => _selected = _ProfilePanel.settings),
-                      ),
-                      const SizedBox(height: 10),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!
-                            .translate('servicesPricing') ??
-                            'Services & Pricing',
-                        subtitleLines: [
-                          AppLocalizations.of(context)!
-                                  .translate('servicesPricingSubtitle') ??
-                              'Manage service titles, prices, currencies and descriptions',
-                        ],
-                        selected: _selected == _ProfilePanel.servicesPricing,
-                        onTap: () =>
-                            setState(() => _selected = _ProfilePanel.servicesPricing),
-                      ),
-                      const SizedBox(height: 10),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!.extendedProfile,
-                        subtitleLines: [
-                          AppLocalizations.of(context)!.extendedProfileSubtitle,
-                        ],
-                        selected: _selected == _ProfilePanel.extended,
-                        onTap: () =>
-                            setState(() => _selected = _ProfilePanel.extended),
-                      ),
-                      const SizedBox(height: 10),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!.schedule,
-                        subtitleLines: [AppLocalizations.of(context)!.updateOrChangeSchedule],
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ScheduleScreen(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _SectionCard(
-                        title: AppLocalizations.of(context)!.password,
-                        subtitleLines: [
-                          AppLocalizations.of(context)!.changeOrResetPassword,
-                        ],
-                        selected: _selected == _ProfilePanel.password,
-                        onTap: () =>
-                            setState(() => _selected = _ProfilePanel.password),
-                      ),
-                    ],
+                  child: _buildProfileSectionList(
+                    profile: profile,
+                    contact: contact,
+                    billing: billing,
                   ),
                 ),
                 const SizedBox(width: 24),
-                // RIGHT: Panel
                 Expanded(
                   flex: 2,
                   child: AnimatedSwitcher(
@@ -1240,6 +1164,139 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _selectProfilePanel(_ProfilePanel panel) {
+    setState(() {
+      _selected = panel;
+      if (Responsive.isMobile(context)) {
+        _mobileDetailOpen = true;
+      }
+    });
+  }
+
+  Widget _buildProfileSectionList({
+    required Map<String, dynamic> profile,
+    required Map<String, dynamic> contact,
+    required Map<String, dynamic> billing,
+  }) {
+    final fullName = [
+      profile['firstName'] ?? '',
+      profile['lastName'] ?? '',
+    ].where((s) => (s as String).isNotEmpty).join(' ').trim();
+
+    String? dobLabel;
+    if (profile['dob'] != null && (profile['dob'] as String).isNotEmpty) {
+      dobLabel = _fmtDobLabel(profile['dob'] as String);
+    }
+
+    return ListView(
+      children: [
+        Text(
+          AppLocalizations.of(context)!.profile,
+          style: Responsive.pageTitleStyle(context),
+        ),
+        SizedBox(height: Responsive.sectionGap(context)),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.profileInformation,
+          subtitleLines: [
+            fullName.isEmpty ? '—' : fullName,
+            dobLabel ?? '—',
+            (profile['address'] as String?)?.isNotEmpty == true
+                ? profile['address'] as String
+                : '—',
+          ],
+          selected: _selected == _ProfilePanel.profile,
+          onTap: () => _selectProfilePanel(_ProfilePanel.profile),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.contactDetails,
+          subtitleLines: [
+            (contact['phone'] as String?)?.isNotEmpty == true
+                ? contact['phone'] as String
+                : '—',
+            (contact['email'] as String?)?.isNotEmpty == true
+                ? contact['email'] as String
+                : '—',
+          ],
+          selected: _selected == _ProfilePanel.contact,
+          onTap: () => _selectProfilePanel(_ProfilePanel.contact),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.paymentAndInvoicing,
+          subtitleLines: [
+            (billing['billingName'] as String?)?.isNotEmpty == true
+                ? billing['billingName'] as String
+                : '—',
+            (billing['billingEmail'] as String?)?.isNotEmpty == true
+                ? billing['billingEmail'] as String
+                : '—',
+            (billing['iban'] as String?)?.isNotEmpty == true
+                ? billing['iban'] as String
+                : '—',
+            (billing['taxId'] as String?)?.isNotEmpty == true
+                ? billing['taxId'] as String
+                : '—',
+          ],
+          selected: _selected == _ProfilePanel.payment,
+          onTap: () => _selectProfilePanel(_ProfilePanel.payment),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.settings,
+          subtitleLines: [
+            AppLocalizations.of(context)!.settingsSubtitle,
+          ],
+          selected: _selected == _ProfilePanel.settings,
+          onTap: () => _selectProfilePanel(_ProfilePanel.settings),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.translate('servicesPricing') ??
+              'Services & Pricing',
+          subtitleLines: [
+            AppLocalizations.of(context)!
+                    .translate('servicesPricingSubtitle') ??
+                'Manage service titles, prices, currencies and descriptions',
+          ],
+          selected: _selected == _ProfilePanel.servicesPricing,
+          onTap: () => _selectProfilePanel(_ProfilePanel.servicesPricing),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.extendedProfile,
+          subtitleLines: [
+            AppLocalizations.of(context)!.extendedProfileSubtitle,
+          ],
+          selected: _selected == _ProfilePanel.extended,
+          onTap: () => _selectProfilePanel(_ProfilePanel.extended),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.schedule,
+          subtitleLines: [
+            AppLocalizations.of(context)!.updateOrChangeSchedule,
+          ],
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ScheduleScreen(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: AppLocalizations.of(context)!.password,
+          subtitleLines: [
+            AppLocalizations.of(context)!.changeOrResetPassword,
+          ],
+          selected: _selected == _ProfilePanel.password,
+          onTap: () => _selectProfilePanel(_ProfilePanel.password),
+        ),
+      ],
     );
   }
 

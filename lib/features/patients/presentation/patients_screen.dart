@@ -48,6 +48,7 @@ import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/utils/error_formatter.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/multiple_phone_fields.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/document_category.dart';
 
@@ -858,10 +859,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                       children: [
                         Text(
                           l10n.patients,
-                          style: TextStyle(
-                            fontSize: isMobile ? 22 : 28,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Responsive.pageTitleStyle(context),
                         ),
                         const SizedBox(width: 12),
                         IconButton.filledTonal(
@@ -971,7 +969,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
   Future<void> _openCreatePatientModal(BuildContext context) async {
     final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
+    final phoneFieldsKey = GlobalKey<MultiplePhoneFieldsState>();
     final emailCtrl = TextEditingController();
     final addressCtrl = TextEditingController();
     String? selectedLanguage = _patientLanguageOptions.first;
@@ -1012,11 +1010,9 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  TextField(
-                    controller: phoneCtrl,
-                    decoration: InputDecoration(
-                      labelText: '${l10n.phoneNumber} (${l10n.optional})',
-                    ),
+                  MultiplePhoneFields(
+                    key: phoneFieldsKey,
+                    labelText: '${l10n.phoneNumber} (${l10n.optional})',
                   ),
                   const SizedBox(height: 12),
 
@@ -1085,12 +1081,13 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     width: ButtonWidth.fill,
                     onPressed: () async {
                       final name = nameCtrl.text.trim();
-                      final phoneRaw = phoneCtrl.text.trim();
+                      final phones =
+                          phoneFieldsKey.currentState?.values ?? const [];
                       if (name.isEmpty) return;
                       Navigator.pop(ctx);
                       await _createPatientExtended(
                         name: name,
-                        phone: phoneRaw.isEmpty ? null : phoneRaw,
+                        phones: phones,
                         email: emailCtrl.text.trim(),
                         address: addressCtrl.text.trim(),
                         birthDate: birthDate,
@@ -1110,7 +1107,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
   Future<void> _createPatientExtended({
     required String name,
-    String? phone,
+    List<String>? phones,
     String? email,
     String? address,
     DateTime? birthDate,
@@ -1122,7 +1119,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
       final created = await createPatientWithClient(
         client: client,
         name: name,
-        phone: phone,
+        phones: phones,
         email: email,
         address: address,
         birthDate: birthDate,

@@ -68,6 +68,19 @@ class Patient {
     return value.toString();
   }
 
+  static List<String> _parsePhones(Map<String, dynamic> json) {
+    final raw = json['phones'];
+    if (raw is List) {
+      return raw
+          .map((e) => e?.toString().trim() ?? '')
+          .where((p) => p.isNotEmpty)
+          .toList();
+    }
+    final single = _stringOrNull(json['phone']);
+    if (single != null && single.isNotEmpty) return [single];
+    return const [];
+  }
+
   /// ✅ Parse `photoUrl` and `documents` coming from backend.
   /// The backend may return documents with either:
   ///  - {id, title, date, filePath}  (older contract)
@@ -101,6 +114,7 @@ class Patient {
             ? DateTime.parse(json['birthDate'])
             : null,
         phone: json['phone'],
+        phones: _parsePhones(json),
         email: json['email'],
         address: json['address'],
         language: json['language'],
@@ -123,6 +137,7 @@ class Patient {
 class PatientGeneral {
   final DateTime? birthDate;
   final String? phone;
+  final List<String> phones;
   final String? email;
   final String? address; // Legacy field - populated from structured location if available
   final String? language;
@@ -138,6 +153,7 @@ class PatientGeneral {
   const PatientGeneral({
     this.birthDate,
     this.phone,
+    this.phones = const [],
     this.email,
     this.address,
     this.language,
@@ -166,6 +182,12 @@ class PatientGeneral {
       parts.add(locationRegion!);
     }
     return parts.isEmpty ? address : parts.join(', ');
+  }
+
+  List<String> get allPhones {
+    if (phones.isNotEmpty) return phones;
+    if (phone != null && phone!.isNotEmpty) return [phone!];
+    return const [];
   }
 }
 

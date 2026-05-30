@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/features/notifications/domain/notification_model.dart';
 
@@ -45,13 +46,17 @@ const String _kEnglishReminderMessage =
 /// Localized notification body. For known types (e.g. appointment booked, reminder) returns
 /// a locale-specific message; otherwise returns the backend message.
 /// Also translates by content so old notifications with English text are localized.
-String localizedNotificationMessage(DoctorNotificationModel notification, AppLocalizations l10n) {
+String localizedNotificationMessage(
+  DoctorNotificationModel notification,
+  AppLocalizations l10n, {
+  String? timeZone,
+}) {
   final type = notification.type.trim();
   final message = notification.message.trim();
 
   switch (type) {
     case 'APPOINTMENT_BOOKED_BY_PATIENT':
-      return _localizedPatientBooked(notification, l10n);
+      return _localizedPatientBooked(notification, l10n, timeZone: timeZone);
     case 'APPOINTMENT_REMINDER':
       return l10n.notificationMessageAppointmentReminder;
     default:
@@ -71,26 +76,45 @@ String localizedNotificationMessage(DoctorNotificationModel notification, AppLoc
           message.length - _kEnglishPatientBookedSuffix.length,
         )
         .trim();
-    return l10n.notificationMessagePatientBookedAppointment(name.isEmpty ? 'Patient' : name);
+    return l10n.notificationMessagePatientBookedAppointmentNoTime(name.isEmpty ? 'Patient' : name);
   }
 
   return notification.message;
 }
 
-String _localizedPatientBooked(DoctorNotificationModel notification, AppLocalizations l10n) {
+String _localizedPatientBooked(
+  DoctorNotificationModel notification,
+  AppLocalizations l10n, {
+  String? timeZone,
+}) {
   String name = notification.patientName?.trim() ?? '';
   if (name.isEmpty &&
       notification.message.startsWith(_kEnglishPatientBookedPrefix) &&
-      notification.message.endsWith(_kEnglishPatientBookedSuffix)) {
-    name = notification.message
-        .substring(
-          _kEnglishPatientBookedPrefix.length,
-          notification.message.length - _kEnglishPatientBookedSuffix.length,
-        )
-        .trim();
+      (notification.message.contains(_kEnglishPatientBookedSuffix) ||
+          notification.message.contains(' booked an appointment for '))) {
+    final bookedIdx = notification.message.indexOf(' booked an appointment');
+    if (bookedIdx > _kEnglishPatientBookedPrefix.length) {
+      name = notification.message
+          .substring(_kEnglishPatientBookedPrefix.length, bookedIdx)
+          .trim();
+    }
   }
   if (name.isEmpty) name = 'Patient';
-  return l10n.notificationMessagePatientBookedAppointment(name);
+
+  final startAt = notification.appointmentStartAt;
+  if (startAt != null) {
+    final local = utcToTimezone(startAt, timeZone);
+    final dateStr = '${local.day} ${l10n.monthShort(local.month)} ${local.year}';
+    final timeStr = formatTimeForDisplay(local);
+    return l10n.notificationMessagePatientBookedAppointment(name, dateStr, timeStr);
+  }
+
+  if (notification.message.contains(' booked an appointment for ') &&
+      notification.message.contains(' at ')) {
+    return notification.message;
+  }
+
+  return l10n.notificationMessagePatientBookedAppointmentNoTime(name);
 }
 
 /// Human-readable label; no raw event codes.

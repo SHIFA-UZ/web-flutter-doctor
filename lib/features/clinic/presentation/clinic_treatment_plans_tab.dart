@@ -328,10 +328,22 @@ class _ClinicTreatmentPlansTabState
               value: null,
               label: l10n.translate('clinicTreatmentPlansAll'),
             ),
-            (value: 'ACTIVE', label: 'ACTIVE'),
-            (value: 'DRAFT', label: 'DRAFT'),
-            (value: 'COMPLETED', label: 'COMPLETED'),
-            (value: 'CANCELLED', label: 'CANCELLED'),
+            (
+              value: 'ACTIVE',
+              label: l10n.clinicPlanStatusLabel('ACTIVE'),
+            ),
+            (
+              value: 'DRAFT',
+              label: l10n.clinicPlanStatusLabel('DRAFT'),
+            ),
+            (
+              value: 'COMPLETED',
+              label: l10n.clinicPlanStatusLabel('COMPLETED'),
+            ),
+            (
+              value: 'CANCELLED',
+              label: l10n.clinicPlanStatusLabel('CANCELLED'),
+            ),
           ],
         ),
       ],
@@ -478,7 +490,7 @@ class _ClinicTreatmentPlansTabState
                   onSelected: (s) => _changeStatus(context, p, s),
                 )),
                 DataCell(_pill(
-                  p.planPaymentStatus,
+                  l10n.clinicPaymentStatusLabel(p.planPaymentStatus),
                   _paymentColor(p.planPaymentStatus),
                 )),
                 DataCell(Text(_shortDate(p.updatedAt))),
@@ -660,9 +672,14 @@ class _ClinicTreatmentPlansTabState
                   _money(p.paidMinor, p.currency)),
               _kv(l10n.translate('clinicTreatmentPlansOutstanding'),
                   _money(p.owedMinor, p.currency)),
-              _kv(l10n.translate('clinicTreatmentPlansStatus'), p.status),
-              _kv(l10n.translate('clinicTreatmentPlansPaymentStatus'),
-                  p.planPaymentStatus),
+              _kv(
+                l10n.translate('clinicTreatmentPlansStatus'),
+                l10n.clinicPlanStatusLabel(p.status),
+              ),
+              _kv(
+                l10n.translate('clinicTreatmentPlansPaymentStatus'),
+                l10n.clinicPaymentStatusLabel(p.planPaymentStatus),
+              ),
               _kv(l10n.translate('clinicTreatmentPlansUpdated'),
                   _shortDate(p.updatedAt)),
             ],

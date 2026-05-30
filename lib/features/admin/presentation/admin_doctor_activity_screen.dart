@@ -10,6 +10,7 @@ import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/features/admin/presentation/admin_doctor_activity_detail_panel.dart';
 import 'package:shifa_doc_app_v1/features/admin/presentation/admin_pdf_downloader_stub.dart'
     if (dart.library.html) 'package:shifa_doc_app_v1/features/admin/presentation/admin_pdf_downloader_web.dart' as dl;
+import 'package:shifa_doc_app_v1/features/admin/services/admin_early_partner_contract_pdf.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_provider_params.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -50,6 +51,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
   String _sort = 'appointments';
   bool _sortDesc = true;
   int? _selectedDoctorId;
+  int? _contractPdfLoadingDoctorId;
 
   @override
   void initState() {
@@ -169,6 +171,30 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     });
   }
 
+  Future<void> _downloadContractPdf(AdminDoctorActivityRow row) async {
+    if (_contractPdfLoadingDoctorId != null) return;
+    setState(() => _contractPdfLoadingDoctorId = row.doctorId);
+    try {
+      final actions = ref.read(adminActionsProvider);
+      final result = await adminGenerateEarlyPartnerContractPdf(actions, row.doctorId);
+      final filename = earlyPartnerContractPdfFilename(result.contractNumber, row.doctorName);
+      await dl.downloadPdfBytes(result.bytes, filename: filename);
+      ref.invalidate(adminDoctorActivityProvider(_params()));
+      if (!mounted) return;
+      final msg = result.newAllocation
+          ? 'Contract ${result.contractNumber} created — PDF opened'
+          : 'Contract ${result.contractNumber} updated — PDF opened';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Contract PDF failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _contractPdfLoadingDoctorId = null);
+    }
+  }
+
   Future<void> _exportCsv(List<AdminDoctorActivityRow> rows) async {
     const header =
         'doctorId,doctorName,clinicName,appointmentsBooked,appointmentsCompleted,cancelPct,videoAppts,activePatients,patientsCreated,documents,treatmentPlans,remoteTasks,consultNotes,forms,aiRequests,aiDrafts,lastActive';
@@ -254,6 +280,8 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                 doctorId: _selectedDoctorId!,
                 fromIso: _rangeIso().from,
                 toIso: _rangeIso().to,
+                contractPdfLoading: _contractPdfLoadingDoctorId == _selectedDoctorId,
+                onDownloadContract: (row) => _downloadContractPdf(row),
                 onClose: () {
                   Navigator.of(context).maybePop();
                   setState(() => _selectedDoctorId = null);
@@ -359,9 +387,11 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                           const DataColumn(label: Text('Drafts')),
                           const DataColumn(label: Text('Video')),
                           _sortCol('Last act', 'lastactive'),
+                          const DataColumn(label: Text('Contract')),
                         ],
                         rows: rows.map((r) {
                           final la = r.lastActiveAt == null ? '—' : (r.lastActiveAt!.length >= 16 ? r.lastActiveAt!.substring(0, 16) : r.lastActiveAt!);
+                          final loadingPdf = _contractPdfLoadingDoctorId == r.doctorId;
                           return DataRow(
                             selected: _selectedDoctorId == r.doctorId,
                             cells: [
@@ -381,6 +411,40 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                               DataCell(Text('${r.aiDraftNotes}')),
                               DataCell(Text('${r.videoAppointments}')),
                               DataCell(Text(la)),
+                              DataCell(
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (r.earlyPartnerContractNumber != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 6),
+                                        child: Text(
+                                          r.earlyPartnerContractNumber!,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                    Tooltip(
+                                      message: r.earlyPartnerContractNumber == null
+                                          ? 'Issue contract PDF (new number)'
+                                          : 'Regenerate contract PDF (${r.earlyPartnerContractNumber})',
+                                      child: IconButton(
+                                        icon: loadingPdf
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                              )
+                                            : const Icon(Icons.picture_as_pdf_outlined, size: 22),
+                                        color: Colors.red.shade700,
+                                        onPressed: loadingPdf ? null : () => _downloadContractPdf(r),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                             onSelectChanged: (_) {
                               setState(() => _selectedDoctorId = r.doctorId);

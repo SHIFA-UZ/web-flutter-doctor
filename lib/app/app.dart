@@ -33,14 +33,26 @@ Future<DateTime?> _fetchAppointmentDay(WidgetRef ref, int appointmentId) async {
   try {
     final client = ref.read(apiClientProvider);
     final tz = ref.read(profileAllProvider).valueOrNull?.profile['timeZone'] as String?;
-    if (tz == null || tz.isEmpty) return null;
+    final effectiveTz = (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
     final resp = await client.get('/api/appointments/$appointmentId');
     if (resp.statusCode != 200) return null;
     final map = json.decode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
     final startAtStr = map['startAt'] as String?;
     if (startAtStr == null) return null;
     final utc = DateTime.parse(startAtStr);
-    final inTz = utcToTimezone(utc, tz);
+    final inTz = utcToTimezone(utc, effectiveTz);
+    return DateTime(inTz.year, inTz.month, inTz.day);
+  } catch (_) {
+    return null;
+  }
+}
+
+DateTime? _dayFromAppointmentStartAt(WidgetRef ref, String appointmentStartAt) {
+  try {
+    final tz = ref.read(profileAllProvider).valueOrNull?.profile['timeZone'] as String?;
+    final effectiveTz = (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
+    final utc = DateTime.parse(appointmentStartAt);
+    final inTz = utcToTimezone(utc, effectiveTz);
     return DateTime(inTz.year, inTz.month, inTz.day);
   } catch (_) {
     return null;
@@ -77,7 +89,11 @@ void _pushIntoShell(Object arguments, {int retriesLeft = 5}) {
 }
 
 /// Resolves appointment day, shows loading, then navigates to Calendar on that day (no "today" flash).
-Future<void> _openCalendarToAppointment(WidgetRef ref, int id) async {
+Future<void> _openCalendarToAppointment(
+  WidgetRef ref,
+  int id, {
+  String? appointmentStartAt,
+}) async {
   final context = navigatorKey.currentContext;
   if (context == null) return;
   showDialog<void>(
@@ -99,11 +115,13 @@ Future<void> _openCalendarToAppointment(WidgetRef ref, int id) async {
       ),
     ),
   );
-  bool didNavigate = false;
   try {
-    final day = await _fetchAppointmentDay(ref, id);
-    if (day != null) {
-      ref.read(calendarGoToAppointmentDayProvider.notifier).state = day;
+    final day = (appointmentStartAt != null && appointmentStartAt.isNotEmpty)
+        ? _dayFromAppointmentStartAt(ref, appointmentStartAt)
+        : null;
+    final resolvedDay = day ?? await _fetchAppointmentDay(ref, id);
+    if (resolvedDay != null) {
+      ref.read(calendarGoToAppointmentDayProvider.notifier).state = resolvedDay;
       ref.read(calendarGoToAppointmentIdProvider.notifier).state = id;
       await invalidateAppointmentRelatedProviders(ref);
       ref.read(shellProvider.notifier).setTab(2);
@@ -111,11 +129,10 @@ Future<void> _openCalendarToAppointment(WidgetRef ref, int id) async {
         AppRoutes.shell,
         (route) => false,
       );
-      didNavigate = true;
     }
   } finally {
-    if (!didNavigate && context.mounted) {
-      Navigator.of(context).pop();
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
     }
   }
 }
@@ -276,7 +293,12 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
           if (appointmentId != null) {
             final id = int.tryParse(appointmentId.toString());
             if (id != null && id > 0) {
-              _openCalendarToAppointment(ref, id);
+              final startAtRaw = data['appointmentStartAt'];
+              _openCalendarToAppointment(
+                ref,
+                id,
+                appointmentStartAt: startAtRaw?.toString(),
+              );
               return;
             }
           }

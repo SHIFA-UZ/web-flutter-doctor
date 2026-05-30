@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../util/jwt_utils.dart';
 
 /// Callback function type for handling 401 unauthorized responses
 typedef UnauthorizedCallback = void Function();
@@ -23,24 +24,60 @@ class ApiClient {
     _onUnauthorized = callback;
   }
   
+  /// Proactively logout when the stored JWT is past its `exp` claim.
+  /// Returns false when the request should not proceed.
+  bool _ensureTokenStillValid({String? path}) {
+    if (_jwt == null || _jwt!.isEmpty) return true;
+    if (!isJwtExpired(_jwt!)) return true;
+    print('API Client: JWT expired${path != null ? " before $path" : ""} - triggering logout');
+    _onUnauthorized?.call();
+    return false;
+  }
+
   /// Check response and trigger unauthorized callback if needed.
   /// Do not logout when we never sent a token (avoids 403 loop when shell loads before token is set).
   void _checkUnauthorized(http.Response response, {String? path}) {
-    // Only 401 should force logout.
-    // 403 often means "forbidden for this role" (e.g. admin calling doctor-only endpoint)
-    // and should not wipe the session.
-    if (response.statusCode != 401) return;
     if (_onUnauthorized == null) return;
+
+    final statusCode = response.statusCode;
+    if (statusCode != 401 && statusCode != 403) return;
+
     // Only trigger logout if we had a token (i.e. we sent Authorization and it was rejected).
     // When token is null we must not logout, or we get: request without token → 403 → logout → more requests without token.
     if (_jwt == null || _jwt!.isEmpty) {
       if (path != null) {
-        print('API Client: ${response.statusCode} on $path - no token sent, skipping logout');
+        print('API Client: $statusCode on $path - no token sent, skipping logout');
       }
       return;
     }
-    print('API Client: ${response.statusCode} on ${path ?? "request"} - triggering unauthorized callback (logout)');
-    _onUnauthorized!();
+
+    if (statusCode == 401 || _shouldLogoutOn403(response, path: path)) {
+      print('API Client: $statusCode on ${path ?? "request"} - triggering unauthorized callback (logout)');
+      _onUnauthorized!();
+    }
+  }
+
+  /// Expired JWTs are rejected before auth is set, so Spring returns generic 403 (not 401).
+  /// Only treat 403 as logout when the token is expired or the server signals account/session issues.
+  /// Do not logout on 403 for valid tokens (e.g. clinic staff hitting doctor-only endpoints).
+  bool _shouldLogoutOn403(http.Response response, {String? path}) {
+    if (isJwtExpired(_jwt)) return true;
+
+    final body = response.body;
+    if (body.contains('"error":"Account is disabled"')) return true;
+    if (body.contains('"error":"Session invalid"')) return true;
+    if (body.contains('"error":"Session expired or signed out"')) return true;
+
+    // Expired/invalid JWT is rejected before auth is set; Spring returns generic 403 on
+    // doctor-only routes. Clinic staff legitimately get 403 here — do not log them out.
+    if (path != null && body.contains('"status":403') && body.contains('"error":"Forbidden"')) {
+      final basePath = path.split('?').first;
+      if (basePath == '/api/doctors/me' || basePath.startsWith('/api/doctors/me/')) {
+        final role = jwtRoleFromToken(_jwt)?.toUpperCase();
+        if (role != null && role != 'CLINIC_STAFF') return true;
+      }
+    }
+    return false;
   }
 
   Map<String, String> _headers({Map<String, String>? extra}) => {
@@ -75,6 +112,9 @@ class ApiClient {
 
   Future<http.Response> get(String path, {Map<String, String>? params}) async {
     _assertAllowedPath(path);
+    if (!_ensureTokenStillValid(path: path)) {
+      return http.Response('{"error":"Session expired"}', 401, headers: const {'content-type': 'application/json'});
+    }
     final uri = Uri.parse('$baseUrl$path').replace(queryParameters: params);
     final headers = _headers();
     // Debug: Check if token is present
@@ -114,6 +154,9 @@ class ApiClient {
     // Ensure path starts with / if baseUrl doesn't end with /
     final cleanPath = path.startsWith('/') ? path : '/$path';
     _assertAllowedPath(cleanPath);
+    if (!_ensureTokenStillValid(path: cleanPath)) {
+      return http.Response('{"error":"Session expired"}', 401, headers: const {'content-type': 'application/json'});
+    }
     final uri = Uri.parse('$baseUrl$cleanPath');
     
     // Log request for debugging
@@ -163,6 +206,9 @@ class ApiClient {
 
   Future<http.Response> put(String path, Object body) async {
     _assertAllowedPath(path);
+    if (!_ensureTokenStillValid(path: path)) {
+      return http.Response('{"error":"Session expired"}', 401, headers: const {'content-type': 'application/json'});
+    }
     final uri = Uri.parse('$baseUrl$path');
     final response = await http.put(uri, headers: _headers(), body: jsonEncode(body));
     _checkUnauthorized(response, path: path);
@@ -171,6 +217,9 @@ class ApiClient {
 
   Future<http.Response> patch(String path, Object body) async {
     _assertAllowedPath(path);
+    if (!_ensureTokenStillValid(path: path)) {
+      return http.Response('{"error":"Session expired"}', 401, headers: const {'content-type': 'application/json'});
+    }
     final uri = Uri.parse('$baseUrl$path');
     final response = await http.patch(uri, headers: _headers(), body: jsonEncode(body));
     _checkUnauthorized(response, path: path);
@@ -179,6 +228,9 @@ class ApiClient {
 
   Future<http.Response> delete(String path) async {
     _assertAllowedPath(path);
+    if (!_ensureTokenStillValid(path: path)) {
+      return http.Response('{"error":"Session expired"}', 401, headers: const {'content-type': 'application/json'});
+    }
     final uri = Uri.parse('$baseUrl$path');
     final response = await http.delete(uri, headers: _headers());
     _checkUnauthorized(response, path: path);

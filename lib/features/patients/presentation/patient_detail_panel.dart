@@ -1602,8 +1602,8 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
     final rows = <MapEntry<String, String>>[
       MapEntry(l10n.patientId, widget.patientId),
       if (dob != null) MapEntry(l10n.birthDate, dob),
-      if (widget.general.phone != null)
-        MapEntry(l10n.phoneNumber, widget.general.phone!),
+      if (widget.general.allPhones.isNotEmpty)
+        MapEntry(l10n.phoneNumber, widget.general.allPhones.join(', ')),
       if (widget.general.email != null)
         MapEntry(l10n.email, widget.general.email!),
       if (widget.general.formattedLocation != null)

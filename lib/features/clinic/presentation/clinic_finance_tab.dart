@@ -90,7 +90,7 @@ class _DashboardView extends ConsumerWidget {
 
     return dashboardAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(child: Text('${l10n.error}: $e')),
       data: (stats) => SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -499,7 +499,7 @@ class _AppointmentLedgerViewState
     bool canAct,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final label = row.planSimplePaymentStatus;
+    final label = l10n.clinicPaymentStatusLabel(row.planSimplePaymentStatus);
     final fullyPaidPlan = row.planSimplePaymentStatus == 'PAID';
     final payable = row.visitTotalMinor > 0 &&
         row.planSimplePaymentStatus != 'NONE' &&
@@ -578,7 +578,7 @@ class _AppointmentLedgerViewState
         ref.watch(clinicAppointmentLedgerProvider(widget.clinicId));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(child: Text('${l10n.error}: $e')),
       data: (page) {
         final content = page['content'] as List<dynamic>? ?? [];
         final rows = content
@@ -604,9 +604,18 @@ class _AppointmentLedgerViewState
                   value: 'ALL',
                   label: l10n.translate('clinicTreatmentPlansAll'),
                 ),
-                (value: 'PAID', label: 'PAID'),
-                (value: 'PARTIAL', label: 'PARTIAL'),
-                (value: 'UNPAID', label: 'UNPAID'),
+                (
+                  value: 'PAID',
+                  label: l10n.clinicPaymentStatusLabel('PAID'),
+                ),
+                (
+                  value: 'PARTIAL',
+                  label: l10n.clinicPaymentStatusLabel('PARTIAL'),
+                ),
+                (
+                  value: 'UNPAID',
+                  label: l10n.clinicPaymentStatusLabel('UNPAID'),
+                ),
               ],
             ),
           ],
@@ -1033,7 +1042,7 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
         Expanded(
           child: itemsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => Center(child: Text('${l10n.error}: $e')),
             data: (list) {
               final filtered = _applyClientFilters(list);
               final itemCount = filtered.length;
@@ -1318,7 +1327,15 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
                                                 .showSnackBar(
                                               SnackBar(
                                                 content:
-                                                    Text(ok ? 'OK' : 'Failed'),
+                                                    Text(
+                                                      ok
+                                                          ? l10n.translate(
+                                                              'clinicActionSuccess',
+                                                            )
+                                                          : l10n.translate(
+                                                              'clinicActionFailed',
+                                                            ),
+                                                    ),
                                               ),
                                             );
                                           }
@@ -1445,7 +1462,7 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
             <ClinicMember>[];
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(child: Text('${l10n.error}: $e')),
       data: (rows) {
         final filtered = _apply(rows, members);
         final toolbar = ClinicTableSearchField(
@@ -1652,7 +1669,7 @@ class _RecordsViewState extends ConsumerState<_RecordsView> {
 
     return recordsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(child: Text('${l10n.error}: $e')),
       data: (records) {
         final filtered = _apply(records);
         final canManage = ref.watch(canManageFinanceProvider);
@@ -1672,13 +1689,31 @@ class _RecordsViewState extends ConsumerState<_RecordsView> {
                   ClinicFilterChips<String>(
                     selected: _statusFilter,
                     onSelected: (v) => setState(() => _statusFilter = v),
-                    options: const [
-                      (value: 'ALL', label: 'All'),
-                      (value: 'ISSUED', label: 'Issued'),
-                      (value: 'PAID', label: 'Paid'),
-                      (value: 'PARTIALLY_PAID', label: 'Partial'),
-                      (value: 'OVERDUE', label: 'Overdue'),
-                      (value: 'VOID', label: 'Void'),
+                    options: [
+                      (
+                        value: 'ALL',
+                        label: l10n.translate('clinicTreatmentPlansAll'),
+                      ),
+                      (
+                        value: 'ISSUED',
+                        label: l10n.clinicRecordStatusLabel('ISSUED'),
+                      ),
+                      (
+                        value: 'PAID',
+                        label: l10n.clinicRecordStatusLabel('PAID'),
+                      ),
+                      (
+                        value: 'PARTIALLY_PAID',
+                        label: l10n.clinicRecordStatusLabel('PARTIALLY_PAID'),
+                      ),
+                      (
+                        value: 'OVERDUE',
+                        label: l10n.clinicRecordStatusLabel('OVERDUE'),
+                      ),
+                      (
+                        value: 'VOID',
+                        label: l10n.clinicRecordStatusLabel('VOID'),
+                      ),
                     ],
                   ),
                 ],
@@ -1803,7 +1838,7 @@ class _RecordsViewState extends ConsumerState<_RecordsView> {
                   return DataRow(
                     cells: [
                       DataCell(Text(_formatDate(r.createdAt))),
-                      DataCell(Text(r.recordType)),
+                      DataCell(Text(l10n.clinicRecordTypeLabel(r.recordType))),
                       DataCell(Text(r.recordNumber ?? '#${r.id}')),
                       DataCell(Text(
                         _formatMoney(r.totalMinor, r.currency),
@@ -1835,7 +1870,7 @@ class _RecordsViewState extends ConsumerState<_RecordsView> {
                         child: Text(
                           r.uiPaymentStatus.isNotEmpty
                               ? r.uiPaymentStatus
-                              : r.status,
+                              : l10n.clinicRecordStatusLabel(r.status),
                           style: TextStyle(
                             color: color,
                             fontSize: 11,
@@ -2013,7 +2048,7 @@ class _PaymentsViewState extends ConsumerState<_PaymentsView> {
 
     return paymentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => Center(child: Text('${l10n.error}: $e')),
       data: (payments) {
         final filtered = _apply(payments);
         final totalsMinor =
@@ -2060,12 +2095,27 @@ class _PaymentsViewState extends ConsumerState<_PaymentsView> {
             ClinicFilterChips<String>(
               selected: _methodFilter,
               onSelected: (v) => setState(() => _methodFilter = v),
-              options: const [
-                (value: 'ALL', label: 'All'),
-                (value: 'CASH', label: 'Cash'),
-                (value: 'CARD_EXTERNAL', label: 'Card'),
-                (value: 'TRANSFER', label: 'Transfer'),
-                (value: 'OTHER', label: 'Other'),
+              options: [
+                (
+                  value: 'ALL',
+                  label: l10n.translate('clinicTreatmentPlansAll'),
+                ),
+                (
+                  value: 'CASH',
+                  label: l10n.clinicPaymentMethodLabel('CASH'),
+                ),
+                (
+                  value: 'CARD_EXTERNAL',
+                  label: l10n.clinicPaymentMethodLabel('CARD_EXTERNAL'),
+                ),
+                (
+                  value: 'TRANSFER',
+                  label: l10n.clinicPaymentMethodLabel('TRANSFER'),
+                ),
+                (
+                  value: 'OTHER',
+                  label: l10n.clinicPaymentMethodLabel('OTHER'),
+                ),
               ],
             ),
           ],
@@ -2148,7 +2198,7 @@ class _PaymentsViewState extends ConsumerState<_PaymentsView> {
                           Icon(_methodIcon(p.method),
                               size: 16, color: color),
                           const SizedBox(width: 6),
-                          Text(p.method),
+                          Text(l10n.clinicPaymentMethodLabel(p.method)),
                         ],
                       )),
                       DataCell(Text(

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SHIFA — Erta foydalanuvchi hamkorlik shartnomasi</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 20mm 16mm;
+    }
+
+    :root {
+      --shifa-teal: #00bbb0;
+      --shifa-teal-soft: rgba(0, 187, 176, 0.1);
+      --text: #1a1a1a;
+      --muted: #5c5c5c;
+      --border: #b8b8b8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      color: var(--text);
+      margin: 0;
+      background: #e8ecef;
+    }
+
+    .page {
+      position: relative;
+      max-width: 210mm;
+      min-height: 297mm;
+      margin: 12px auto;
+      padding: 14mm 14mm 16mm;
+      background: #fff;
+      box-shadow: 0 4px 24px rgba(0,0,0,.12);
+      overflow: hidden;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("../../assets/branding/shifa_logo.png") center 42% / 42% no-repeat;
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page > * { position: relative; z-index: 1; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid var(--shifa-teal);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand img {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22pt;
+      letter-spacing: 0.04em;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+
+    .doc-meta {
+      text-align: right;
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+
+    .title {
+      text-align: center;
+      margin: 18px 0 12px;
+    }
+
+    .title h2 {
+      margin: 0;
+      font-size: 15pt;
+      letter-spacing: 0.02em;
+    }
+
+    .title hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin-top: 10px;
+    }
+
+    .meta-box {
+      border: 1.5px solid var(--shifa-teal);
+      background: var(--shifa-teal-soft);
+      padding: 12px 14px;
+      margin-bottom: 18px;
+    }
+
+    .meta-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+    }
+
+    .meta-box td:first-child {
+      width: 38%;
+      font-weight: 700;
+      padding: 3px 8px 3px 0;
+      vertical-align: top;
+    }
+
+    section {
+      margin-bottom: 14px;
+      break-inside: avoid-page;
+    }
+
+    .section-head {
+      background: #d9d9d9;
+      padding: 6px 10px;
+      font-weight: 700;
+      font-size: 10.5pt;
+      text-transform: none;
+    }
+
+    .section-body {
+      border: 1px solid var(--border);
+      border-top: none;
+      background: #fafafa;
+      padding: 12px 14px;
+    }
+
+    h3 {
+      margin: 10px 0 6px;
+      font-size: 10pt;
+      color: #333;
+    }
+
+    ul {
+      margin: 6px 0 8px;
+      padding-left: 1.2em;
+    }
+
+    li { margin-bottom: 4px; }
+
+    .field {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: flex-end;
+    }
+
+    .field label {
+      font-weight: 700;
+      white-space: nowrap;
+      min-width: 140px;
+    }
+
+    .field .line {
+      flex: 1;
+      border-bottom: 1px solid #666;
+      min-height: 1.2em;
+    }
+
+    .roles {
+      margin: 8px 0;
+      font-size: 10pt;
+    }
+
+    .roles span { margin-right: 18px; }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .sig-box {
+      border: 1px solid var(--border);
+      padding: 12px;
+      min-height: 140px;
+    }
+
+    .sig-box h4 {
+      margin: 0 0 10px;
+      font-size: 10.5pt;
+    }
+
+    .sig-line {
+      margin-bottom: 10px;
+    }
+
+    .sig-line .lbl {
+      font-size: 8.5pt;
+      font-weight: 700;
+      display: block;
+    }
+
+    .sig-line .val {
+      border-bottom: 1px solid #333;
+      min-height: 1.3em;
+      margin-top: 2px;
+    }
+
+    .sig-pad {
+      margin-top: 14px;
+      border-bottom: 1px solid #333;
+      height: 28px;
+    }
+
+    .ack {
+      margin-top: 14px;
+      padding: 10px;
+      text-align: center;
+      font-style: italic;
+      font-size: 9.5pt;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+    }
+
+    .footer-note {
+      margin-top: 20px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      font-size: 8pt;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        max-width: none;
+        min-height: auto;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <p class="no-print" style="text-align:center;padding:8px;font-size:9pt;color:#555;">
+    Chop etish: Ctrl+P → «PDF sifatida saqlash». Logo va suv belgisi avtomatik qo‘llanadi.
+  </p>
+
+  <article class="page">
+    <header class="header">
+      <div class="brand">
+        <img src="../../assets/branding/shifa_logo.png" alt="SHIFA" />
+        <div>
+          <h1>SHIFA</h1>
+          <p>Raqamli tibbiy platforma</p>
+        </div>
+      </div>
+      <div class="doc-meta">
+        <div>Hujjat turi: Hamkorlik shartnomasi</div>
+        <div>Versiya: Erta foydalanuvchi</div>
+      </div>
+    </header>
+
+    <div class="title">
+      <h2>SHIFA ERTA FOYDALANUVCHI HAMKORLIK SHARTNOMASI</h2>
+      <hr />
+    </div>
+
+    <div class="meta-box">
+      <table>
+        <tr><td>Shartnoma raqami:</td><td><strong>SHIFA-0461</strong></td></tr>
+        <tr><td>Kuchga kirish sanasi:</td><td><strong>01.06.2026</strong></td></tr>
+        <tr><td>Amal qilish muddati:</td><td>Kuchga kirgan kundan boshlab <strong>6 (olti) oy</strong></td></tr>
+      </table>
+    </div>
+
+    <section>
+      <div class="section-head">TOMONLAR</div>
+      <div class="section-body">
+        <h3>Ta'minotchi (SHIFA)</h3>
+        <p>SHIFA raqamli tibbiy platformasi<br />
+        «Qobilov Bekzodbek Olimjon o'g'li» YaTT<br />
+        Istiqbol 30, Andijon, O'zbekiston<br />
+        <em>(keyingi o'rinlarda "SHIFA" deb yuritiladi)</em></p>
+
+        <h3>Erta foydalanuvchi hamkor</h3>
+        <div class="field"><label>F.I.Sh.</label><div class="line"></div></div>
+        <div class="field"><label>Klinika/Tashkilot</label><div class="line"></div></div>
+        <p class="roles">
+          <span>Roli:</span>
+          <span>[ ] Shifokor</span>
+          <span>[ ] Bemor</span>
+          <span>[ ] Ikkalasi ham</span>
+        </p>
+        <div class="field"><label>Bog'lanish telefoni</label><div class="line"></div></div>
+        <div class="field"><label>Elektron pochta</label><div class="line"></div></div>
+        <p><em>(keyingi o'rinlarda "Hamkor" deb yuritiladi)</em></p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">1. MAQSAD</div>
+      <div class="section-body">
+        <p>Mazkur Shartnoma SHIFA va Hamkor o'rtasida SHIFA telemeditsina platformasini dastlabki joriy etish bosqichida sinovdan o'tkazish, tekshirish va takomillashtirish maqsadida hamkorlik munosabatlarini belgilaydi. Har ikki tomon ushbu hamkorlik O'zbekistonda qulay raqamli sog'liqni saqlash tizimini rivojlantirish uchun o'zaro manfaatli ekanini tan oladi.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">2. SHIFA TOMONIDAN TAQDIM ETILADIGAN XIZMATLAR</div>
+      <div class="section-body">
+        <p>Mazkur Shartnoma amal qiladigan davr mobaynida SHIFA Hamkorga quyidagilarni bepul taqdim etadi:</p>
+        <h3>2.1 Platformadan to'liq foydalanish</h3>
+        <ul>
+          <li>SHIFA shifokorlar ilovasining barcha funksiyalaridan to'liq foydalanish (shifokor-hamkorlar uchun)</li>
+          <li>SHIFA bemorlar ilovasining barcha funksiyalaridan to'liq foydalanish (bemor-hamkorlar uchun)</li>
+          <li>Shartnoma muddati davomida chiqarilgan barcha yangilanishlar va yangi funksiyalar</li>
+          <li>Qabul yozuvlari, raqamli tibbiy kartalar va telemeditsina konsultatsiyalarini boshqarishda hech qanday cheklovlarning yo'qligi</li>
+        </ul>
+        <h3>2.2 Masofaviy qo'llab-quvvatlash</h3>
+        <ul>
+          <li>Telegram/WhatsApp orqali alohida texnik yordam</li>
+          <li>Javob berish muddati: 24 ish soati ichida</li>
+          <li>Ulanish, sozlash va nosozliklarni bartaraf etishda yordam</li>
+          <li>Muammolarni ustuvor tartibda hal qilish</li>
+        </ul>
+        <h3>2.3 Hujjatlar va o'qitish</h3>
+        <ul>
+          <li>Platformaning barcha funksiyalari bo'yicha to'liq foydalanuvchi hujjatlari</li>
+          <li>Muhim funksiyalar bo'yicha videoqo'llanmalar va bosqichma-bosqich ko'rsatmalar</li>
+          <li>Yangi funksiyalar chiqarilishi bilan yangilanadigan materiallar</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">3. HAMKORNING MAJBURIYATLARI</div>
+      <div class="section-body">
+        <p>2-bo'limda ko'rsatilgan xizmatlar evaziga Hamkor quyidagilarga rozilik bildiradi:</p>
+        <h3>3.1 Haftalik fikr-mulohaza sessiyalari</h3>
+        <ul>
+          <li>Haftasiga bir (1) marta masofaviy fikr-mulohaza sessiyasida ishtirok etish (taxminan 20–30 daqiqa)</li>
+          <li>Sessiyalar har ikki tomon kelishgan vaqtda o'tkaziladi</li>
+          <li>Platformaning qulayligi, funksiyalari va ishlashi bo'yicha halol va konstruktiv fikr-mulohaza bildirish</li>
+          <li>Hafta davomida aniqlangan xatolar, muammolar yoki takliflar haqida xabar berish</li>
+          <li>Minimal ishtirok: rejalashtirilgan sessiyalarning kamida 80 foizida qatnashish (bayramlar va favqulodda holatlar hisobga olingan holda)</li>
+        </ul>
+        <h3>3.2 Platforma vakilligi</h3>
+        <ul>
+          <li>SHIFA platformasini professional va shaxsiy doiralarda faol targ'ib qilish</li>
+          <li>Ijobiy tajriba bilan hamkasblar, bemorlar yoki hamjamiyat a'zolari bilan bo'lishish</li>
+          <li>Zarurat tug'ilganda yangi foydalanuvchilarni jalb qilishga ko'maklashish</li>
+          <li>Shartnoma muddati davomida kamida bir (1) ta fikr-mulohaza yoki keyslar tavsifini taqdim etish (Hamkor tomonidan mazmuni tasdiqlangan holda)</li>
+          <li>Oldindan yozma rozilik mavjud bo'lsa, reklama materiallarida (foto, iqtibos yoki video) ishtirok etish</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">4. MA'LUMOTLAR VA MAXFIYLIK</div>
+      <div class="section-body">
+        <ul>
+          <li>SHIFA barcha bemor ma'lumotlari va tibbiy axborotni O'zbekiston Respublikasining amaldagi ma'lumotlarni himoya qilish qonunchiligiga muvofiq qayta ishlash majburiyatini oladi.</li>
+          <li>Fikr-mulohaza sessiyalarining yozuvlari (agar mavjud bo'lsa) faqat mahsulotni ichki takomillashtirish maqsadlarida ishlatiladi.</li>
+          <li>Hech qanday shaxsiy tibbiy ma'lumotlar aniq roziliksiz uchinchi shaxslarga berilmaydi.</li>
+          <li>Hamkor SHIFAning yozma ruxsatisiz platformaga oid maxfiy ma'lumotlar, chiqarilmagan funksiyalar skrinshotlari yoki ichki yozishmalarni uchinchi shaxslarga bermaslikka rozilik bildiradi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">5. INTELLEKTUAL MULK</div>
+      <div class="section-body">
+        <ul>
+          <li>Fikr-mulohaza sessiyalarida bildirilgan barcha takliflar va g'oyalar SHIFA tomonidan mahsulotni rivojlantirish uchun qo'shimcha kompensatsiyasiz ishlatilishi mumkin.</li>
+          <li>SHIFA platformasi, uning dizayni, kodi va brendi SHIFAning mutlaq mulki bo'lib qoladi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">6. AMAL QILISH MUDDATI VA BEKOR QILISH</div>
+      <div class="section-body">
+        <ul>
+          <li>Mazkur Shartnoma kuchga kirgan kundan boshlab 6 (olti) oy davomida amal qiladi.</li>
+          <li>Har qanday tomon 14 kun oldin yozma ravishda xabardor qilish orqali Shartnomani bekor qilishi mumkin.</li>
+          <li>Bekor qilingandan so'ng Hamkorning platformaga kirishi standart tarif shartlariga o'tkaziladi (qo'llaniladigan tariflar haqida 30 kun oldin xabardor qilinadi).</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">7. SHARTNOMA YAKUNLANGANDAN KEYINGI AFZALLIKLAR</div>
+      <div class="section-body">
+        <p>6 oylik hamkorlik muvaffaqiyatli yakunlangandan so'ng Hamkor quyidagilarga ega bo'ladi:</p>
+        <ul>
+          <li>Har qanday pullik tarif rejasining dastlabki 3 oyi uchun 50% chegirma</li>
+          <li>Platforma profilida "Founding Partner" belgisi</li>
+          <li>Kelajakdagi beta-funksiyalarga ustuvor kirish huquqi</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">8. JAVOBGARLIKNI CHEKLASH</div>
+      <div class="section-body">
+        <ul>
+          <li>SHIFA platformani dastlabki joriy etish bosqichida "qanday bo'lsa, shunday" holatda taqdim etadi. SHIFA platforma barqarorligini ta'minlash uchun barcha sa'y-harakatlarni amalga oshirsa-da, vaqtinchalik nosozliklar yoki xatolar yuz berishi mumkin.</li>
+          <li>SHIFA sinov davrida platformadan foydalana olmaslik natijasida yuzaga kelgan bilvosita zararlar uchun javobgar emas.</li>
+          <li>Hamkor bu sinov bosqichi ekanini tasdiqlaydi va zaxira variant sifatida bemorlar bilan aloqa qilishning muqobil usullarini saqlab turishga rozilik bildiradi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">9. UMUMIY QOIDALAR</div>
+      <div class="section-body">
+        <ul>
+          <li>Mazkur Shartnoma tomonlar o'rtasidagi to'liq o'zaro tushunishni ifodalaydi.</li>
+          <li>Har qanday o'zgartirishlar yozma shaklda rasmiylashtirilishi va har ikki tomon tomonidan imzolanishi kerak.</li>
+          <li>Mazkur Shartnoma O'zbekiston Respublikasi qonunchiligiga muvofiq tartibga solinadi.</li>
+          <li>Nizolar birinchi navbatda halol muzokaralar yo'li bilan hal qilinadi. Agar nizo 30 kun ichida hal qilinmasa, u O'zbekistonning vakolatli sudlariga topshiriladi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">IMZOLAR</div>
+      <div class="section-body">
+        <div class="signatures">
+          <div class="sig-box">
+            <h4>SHIFA nomidan</h4>
+            <div class="sig-line"><span class="lbl">Ism</span><div class="val">Bekzodbek Qobilov Olimjon O'g'li</div></div>
+            <div class="sig-line"><span class="lbl">Lavozim</span><div class="val">CEO, Founder</div></div>
+            <div class="sig-line"><span class="lbl">Imzo</span><div class="sig-pad"></div></div>
+            <div class="sig-line"><span class="lbl">Sana</span><div class="val">25 May 2026</div></div>
+          </div>
+          <div class="sig-box">
+            <h4>Hamkor</h4>
+            <div class="sig-line"><span class="lbl">Ism</span><div class="val"></div></div>
+            <div class="sig-line"><span class="lbl">Imzo</span><div class="sig-pad"></div></div>
+            <div class="sig-line"><span class="lbl">Sana</span><div class="val"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="ack">Har ikki tomon ushbu Shartnoma shartlarini o'qib chiqqani, tushungani va ularga rozilik bildirganini tasdiqlaydi.</p>
+
+    <p class="footer-note">SHIFA — SHIFA-0461 · Maxfiy hujjat. Ruxsatsiz tarqatish taqiqlanadi.</p>
+  </article>
+</body>
+</html>
