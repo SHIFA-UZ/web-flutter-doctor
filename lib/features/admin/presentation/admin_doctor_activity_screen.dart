@@ -197,7 +197,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
 
   Future<void> _exportCsv(List<AdminDoctorActivityRow> rows) async {
     const header =
-        'doctorId,doctorName,clinicName,appointmentsBooked,appointmentsCompleted,cancelPct,videoAppts,activePatients,patientsCreated,documents,treatmentPlans,remoteTasks,consultNotes,forms,aiRequests,aiDrafts,lastActive';
+        'doctorId,doctorName,clinicName,smsAllowed,smsSent,smsOwedMinor,smsCurrency,appointmentsBooked,appointmentsCompleted,cancelPct,videoAppts,activePatients,patientsCreated,documents,treatmentPlans,remoteTasks,consultNotes,forms,aiRequests,aiDrafts,lastActive';
     final sb = StringBuffer(header);
     for (final r in rows) {
       sb.writeln();
@@ -212,6 +212,10 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
         r.doctorId,
         csvCell(r.doctorName),
         csvCell(r.clinicName),
+        r.smsRemindersAllowed,
+        r.smsSentCount,
+        r.smsOwedMinor,
+        csvCell(r.smsCurrency),
         r.appointmentsBooked,
         r.appointmentsCompleted,
         (r.cancellationRate * 100).toStringAsFixed(1),
@@ -373,6 +377,9 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                         columns: [
                           _sortCol('Doctor', 'name'),
                           const DataColumn(label: Text('Clinic')),
+                          const DataColumn(label: Text('SMS on')),
+                          const DataColumn(label: Text('SMS sent')),
+                          const DataColumn(label: Text('SMS owed')),
                           _sortCol('Booked', 'appointments'),
                           _sortCol('Done', 'completed'),
                           const DataColumn(label: Text('Cncl %')),
@@ -397,6 +404,9 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                             cells: [
                               DataCell(Text(r.doctorName)),
                               DataCell(Text(r.clinicName ?? '—')),
+                              DataCell(Text(r.smsRemindersAllowed ? 'Yes' : 'No')),
+                              DataCell(Text('${r.smsSentCount}')),
+                              DataCell(Text('${r.smsOwedMinor} ${r.smsCurrency}')),
                               DataCell(Text('${r.appointmentsBooked}')),
                               DataCell(Text('${r.appointmentsCompleted}')),
                               DataCell(Text('${(r.cancellationRate * 100).toStringAsFixed(1)}%')),

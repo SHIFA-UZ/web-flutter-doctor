@@ -56,4 +56,19 @@ class DoctorAnalyticsService {
     final map = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     return DoctorEngagement.fromJson(map);
   }
+
+  Future<DoctorSmsUsage> getSmsUsage({
+    required String fromIso,
+    required String toIso,
+  }) async {
+    final res = await _api.get(
+      '/api/doctor/analytics/sms-usage',
+      params: {'from': fromIso, 'to': toIso},
+    );
+    if (res.statusCode != 200) {
+      throw Exception('SMS usage: ${res.statusCode} ${res.body}');
+    }
+    final map = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+    return DoctorSmsUsage.fromJson(map);
+  }
 }

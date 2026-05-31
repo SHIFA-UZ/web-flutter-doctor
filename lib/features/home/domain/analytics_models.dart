@@ -73,3 +73,30 @@ class DoctorEngagement {
     );
   }
 }
+
+/// GET /api/doctor/analytics/sms-usage
+class DoctorSmsUsage {
+  final int sentCount;
+  final int totalCostMinor;
+  final String currency;
+  final int pricePerSmsMinor;
+  final bool smsRemindersAllowed;
+
+  const DoctorSmsUsage({
+    required this.sentCount,
+    required this.totalCostMinor,
+    required this.currency,
+    required this.pricePerSmsMinor,
+    required this.smsRemindersAllowed,
+  });
+
+  factory DoctorSmsUsage.fromJson(Map<String, dynamic> json) {
+    return DoctorSmsUsage(
+      sentCount: (json['sentCount'] as num?)?.toInt() ?? 0,
+      totalCostMinor: (json['totalCostMinor'] as num?)?.toInt() ?? 0,
+      currency: json['currency']?.toString() ?? 'UZS',
+      pricePerSmsMinor: (json['pricePerSmsMinor'] as num?)?.toInt() ?? 500,
+      smsRemindersAllowed: json['smsRemindersAllowed'] == true,
+    );
+  }
+}

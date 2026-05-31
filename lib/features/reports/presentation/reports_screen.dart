@@ -12,6 +12,7 @@ import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_date_r
 import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_export_service.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/analytics_engagement_widget.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/analytics_kpi_cards.dart';
+import 'package:shifa_doc_app_v1/features/home/presentation/analytics_sms_usage_widget.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/dashboard_card.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_dashboard_toolbar.dart';
 import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
@@ -86,6 +87,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const AnalyticsKpiCards(),
+                  const SizedBox(height: 16),
+                  const AnalyticsSmsUsageWidget(),
                   if (showAdvanced) ...[
                     SizedBox(height: Responsive.sectionGap(context)),
                     const AppointmentsTrendChart(),

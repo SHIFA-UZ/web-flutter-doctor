@@ -2,7 +2,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/state/admin/admin_actions.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_provider_params.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
@@ -118,6 +120,18 @@ class AdminDoctorActivityDetailPanel extends ConsumerWidget {
                     ),
                   ),
                 ],
+                const SizedBox(height: 12),
+                _AdminSmsRemindersToggle(
+                  doctorId: doctorId,
+                  initialAllowed: row.smsRemindersAllowed,
+                  smsSentCount: row.smsSentCount,
+                  smsOwedMinor: row.smsOwedMinor,
+                  smsCurrency: row.smsCurrency,
+                  pricePerSmsMinor: row.smsPricePerUnitMinor,
+                  onChanged: () {
+                    ref.invalidate(adminDoctorActivityDetailProvider(params));
+                  },
+                ),
                 if (onDownloadContract != null) ...[
                   const SizedBox(height: 12),
                   ShifaSecondaryButton(
@@ -155,6 +169,114 @@ class AdminDoctorActivityDetailPanel extends ConsumerWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _AdminSmsRemindersToggle extends ConsumerStatefulWidget {
+  const _AdminSmsRemindersToggle({
+    required this.doctorId,
+    required this.initialAllowed,
+    required this.smsSentCount,
+    required this.smsOwedMinor,
+    required this.smsCurrency,
+    required this.pricePerSmsMinor,
+    required this.onChanged,
+  });
+
+  final int doctorId;
+  final bool initialAllowed;
+  final int smsSentCount;
+  final int smsOwedMinor;
+  final String smsCurrency;
+  final int pricePerSmsMinor;
+  final VoidCallback onChanged;
+
+  @override
+  ConsumerState<_AdminSmsRemindersToggle> createState() =>
+      _AdminSmsRemindersToggleState();
+}
+
+class _AdminSmsRemindersToggleState extends ConsumerState<_AdminSmsRemindersToggle> {
+  late bool _allowed;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _allowed = widget.initialAllowed;
+  }
+
+  @override
+  void didUpdateWidget(covariant _AdminSmsRemindersToggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialAllowed != widget.initialAllowed) {
+      _allowed = widget.initialAllowed;
+    }
+  }
+
+  Future<void> _onChanged(bool value) async {
+    setState(() {
+      _saving = true;
+      _allowed = value;
+    });
+    try {
+      await AdminActions(apiClient: ref.read(apiClientProvider))
+          .setDoctorSmsRemindersAllowed(doctorId: widget.doctorId, allowed: value);
+      widget.onChanged();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(value ? 'SMS reminders enabled for doctor' : 'SMS reminders disabled for doctor')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _allowed = !value);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'SMS appointment reminders',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Allow this doctor to enable 24h SMS reminders for patients. '
+            'Billed at ${widget.pricePerSmsMinor} ${widget.smsCurrency} per SMS.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Period: ${widget.smsSentCount} sent · ${widget.smsOwedMinor} ${widget.smsCurrency} owed',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Allow SMS reminders', style: TextStyle(fontSize: 13)),
+            value: _allowed,
+            onChanged: _saving ? null : _onChanged,
+          ),
+          if (_saving) const LinearProgressIndicator(minHeight: 2),
+        ],
       ),
     );
   }

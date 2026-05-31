@@ -621,6 +621,21 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                           ref.invalidate(patientByIdProvider(p.id));
                         },
                       ),
+                      if (ref.watch(profileAllProvider).valueOrNull?.profile['smsRemindersAllowed'] == true) ...[
+                        const SizedBox(height: 16),
+                        _SmsReminderCard(
+                          patient: p,
+                          brand: brand,
+                          onUpdated: () {
+                            if (widget.onPatientDataRefresh != null) {
+                              widget.onPatientDataRefresh!();
+                            } else {
+                              ref.read(patientsProvider.notifier).loadPatients();
+                            }
+                            ref.invalidate(patientByIdProvider(p.id));
+                          },
+                        ),
+                      ],
                       const SizedBox(height: 20),
                       Text(
                         AppLocalizations.of(context)!.patientAppAccess,
@@ -1773,6 +1788,141 @@ class _CollapsibleCardState extends State<_CollapsibleCard> {
             ),
           ),
           if (_isExpanded) ...[const SizedBox(height: 12), widget.child],
+        ],
+      ),
+    );
+  }
+}
+
+class _SmsReminderCard extends ConsumerStatefulWidget {
+  const _SmsReminderCard({
+    required this.patient,
+    required this.brand,
+    required this.onUpdated,
+  });
+
+  final Patient patient;
+  final Color brand;
+  final VoidCallback onUpdated;
+
+  @override
+  ConsumerState<_SmsReminderCard> createState() => _SmsReminderCardState();
+}
+
+class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
+  bool _saving = false;
+  late bool _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _enabled = widget.patient.general.smsReminderEnabled;
+  }
+
+  @override
+  void didUpdateWidget(covariant _SmsReminderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.patient.id != widget.patient.id ||
+        oldWidget.patient.general.smsReminderEnabled !=
+            widget.patient.general.smsReminderEnabled) {
+      _enabled = widget.patient.general.smsReminderEnabled;
+    }
+  }
+
+  bool get _hasPhone => widget.patient.general.allPhones.isNotEmpty;
+
+  Future<void> _onToggle(bool value) async {
+    if (!_hasPhone || _saving) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _saving = true;
+      _enabled = value;
+    });
+    try {
+      await updatePatientWithClient(
+        client: ref.read(apiClientProvider),
+        patientId: widget.patient.id,
+        smsReminderEnabled: value,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.translate('smsReminderSaved') ??
+                  'SMS reminder settings saved',
+            ),
+          ),
+        );
+        widget.onUpdated();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _enabled = !value);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.error}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return _CardBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.sms_outlined, size: 18, color: widget.brand),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.translate('smsReminderTitle') ??
+                      'SMS appointment reminders',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.translate('smsReminderDescription') ??
+                'Patient receives an SMS 24 hours before each future appointment.',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+          if (!_hasPhone) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.translate('smsReminderNoPhone') ??
+                  'Add a phone number to enable SMS reminders.',
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+            ),
+          ],
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              l10n.translate('smsReminderEnabled') ?? 'Send SMS reminders',
+              style: const TextStyle(fontSize: 13),
+            ),
+            value: _enabled,
+            onChanged: (!_hasPhone || _saving) ? null : _onToggle,
+            activeTrackColor: widget.brand.withValues(alpha: 0.35),
+            activeThumbColor: widget.brand,
+          ),
+          if (_saving)
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
         ],
       ),
     );

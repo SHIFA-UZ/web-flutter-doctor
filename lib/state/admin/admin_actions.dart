@@ -520,6 +520,19 @@ class AdminActions {
     return AdminDoctorActivityDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  Future<void> setDoctorSmsRemindersAllowed({
+    required int doctorId,
+    required bool allowed,
+  }) async {
+    final response = await apiClient.patch(
+      '/api/admin/doctors/$doctorId/sms-reminders-allowed',
+      {'allowed': allowed},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to update SMS permission: ${response.body}');
+    }
+  }
+
   /// Allocate or refresh early-partner contract (sequential number for new doctors).
   Future<dynamic> issueEarlyPartnerContract(int doctorId) async {
     final response = await apiClient.post(

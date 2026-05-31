@@ -367,6 +367,7 @@ Future<Patient> updatePatientWithClient({
   String? language,
   String? photoUrl,
   String? chronicDisease,
+  bool? smsReminderEnabled,
 }) async {
   final body = <String, dynamic>{};
   if (name != null) body['name'] = name;
@@ -386,6 +387,9 @@ Future<Patient> updatePatientWithClient({
   // Since String? can't distinguish, we'll always include it if it's not null
   if (chronicDisease != null) {
     body['chronicDisease'] = chronicDisease; // Empty string will clear it in backend
+  }
+  if (smsReminderEnabled != null) {
+    body['smsReminderEnabled'] = smsReminderEnabled;
   }
 
   final res = await client.patch('/api/patients/$patientId', body);

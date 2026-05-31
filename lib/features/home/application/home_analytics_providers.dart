@@ -52,6 +52,18 @@ final doctorEngagementProvider = FutureProvider<DoctorEngagement>((ref) async {
   return service.getEngagement();
 });
 
+String _ymd(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+final doctorSmsUsageProvider = FutureProvider.autoDispose<DoctorSmsUsage>((ref) async {
+  final service = ref.watch(doctorAnalyticsServiceProvider);
+  final range = ref.watch(homeDashboardDateRangeProvider);
+  return service.getSmsUsage(
+    fromIso: _ymd(range.start),
+    toIso: _ymd(range.end),
+  );
+});
+
 // Legacy stub providers (used by charts if API not yet wired) — kept for backward compatibility.
 // TODO: Remove once all widgets use API providers above.
 final todayAnalyticsProvider = Provider((ref) {

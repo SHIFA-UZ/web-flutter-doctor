@@ -473,6 +473,11 @@ class AdminDoctorActivityRow {
   final int aiDraftNotes;
   final String? lastActiveAt;
   final String? earlyPartnerContractNumber;
+  final bool smsRemindersAllowed;
+  final int smsSentCount;
+  final int smsOwedMinor;
+  final String smsCurrency;
+  final int smsPricePerUnitMinor;
 
   AdminDoctorActivityRow({
     required this.doctorId,
@@ -496,6 +501,11 @@ class AdminDoctorActivityRow {
     required this.aiDraftNotes,
     this.lastActiveAt,
     this.earlyPartnerContractNumber,
+    this.smsRemindersAllowed = false,
+    this.smsSentCount = 0,
+    this.smsOwedMinor = 0,
+    this.smsCurrency = 'UZS',
+    this.smsPricePerUnitMinor = 500,
   });
 
   factory AdminDoctorActivityRow.fromJson(Map<String, dynamic> json) {
@@ -521,6 +531,11 @@ class AdminDoctorActivityRow {
       aiDraftNotes: (json['aiDraftNotes'] as num?)?.toInt() ?? 0,
       lastActiveAt: json['lastActiveAt'] as String?,
       earlyPartnerContractNumber: json['earlyPartnerContractNumber'] as String?,
+      smsRemindersAllowed: json['smsRemindersAllowed'] == true,
+      smsSentCount: (json['smsSentCount'] as num?)?.toInt() ?? 0,
+      smsOwedMinor: (json['smsOwedMinor'] as num?)?.toInt() ?? 0,
+      smsCurrency: json['smsCurrency']?.toString() ?? 'UZS',
+      smsPricePerUnitMinor: (json['smsPricePerUnitMinor'] as num?)?.toInt() ?? 500,
     );
   }
 }

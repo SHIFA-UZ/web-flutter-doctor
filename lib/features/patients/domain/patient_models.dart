@@ -125,6 +125,7 @@ class Patient {
         locationCity: json['locationCity'],
         locationPostalCode: json['locationPostalCode'],
         locationStreetAddress: json['locationStreetAddress'],
+        smsReminderEnabled: json['smsReminderEnabled'] == true,
       ),
       documents: parsedDocs,
       photoUrl: json['photoUrl'] as String?, // ✅ <--- important
@@ -149,6 +150,7 @@ class PatientGeneral {
   final String? locationCity;
   final String? locationPostalCode;
   final String? locationStreetAddress;
+  final bool smsReminderEnabled;
 
   const PatientGeneral({
     this.birthDate,
@@ -164,6 +166,7 @@ class PatientGeneral {
     this.locationCity,
     this.locationPostalCode,
     this.locationStreetAddress,
+    this.smsReminderEnabled = false,
   });
   
   /// Format structured location for display: Street (if any), City, District, Region
