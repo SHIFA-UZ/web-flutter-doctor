@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
-import 'package:shifa_doc_app_v1/core/services/push_notification_service.dart';
 import 'package:shifa_doc_app_v1/features/notifications/domain/notification_model.dart';
 import 'package:shifa_doc_app_v1/features/notifications/presentation/notification_ui_helpers.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
@@ -68,7 +68,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             ),
                             IconButton(
                               onPressed: () =>
-                                  ref.read(shellProvider.notifier).setTab(6),
+                                  ref.read(shellProvider.notifier).setTab(DoctorShellTab.notifications),
                               icon: const Icon(Icons.settings_outlined, size: 22),
                               tooltip: l10n.notificationSettings,
                             ),
@@ -101,7 +101,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                             ),
                             IconButton(
                               onPressed: () =>
-                                  ref.read(shellProvider.notifier).setTab(6),
+                                  ref.read(shellProvider.notifier).setTab(DoctorShellTab.notifications),
                               icon: const Icon(Icons.settings_outlined, size: 22),
                               tooltip: l10n.notificationSettings,
                             ),
@@ -240,19 +240,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   void _deliverPayload(DoctorNotificationModel n) {
-    final payload = <String, dynamic>{
-      'notificationId': n.id,
-      'type': n.type,
-      if (n.appointmentId != null) 'appointmentId': n.appointmentId,
-      if (n.appointmentStartAt != null)
-        'appointmentStartAt': n.appointmentStartAt!.toUtc().toIso8601String(),
-      if (n.patientId != null) 'patientId': n.patientId,
-      if (n.documentId != null) 'documentId': n.documentId,
-      if (n.documentTitle != null) 'documentTitle': n.documentTitle,
-      if (n.documentAccessRequestId != null) 'documentAccessRequestId': n.documentAccessRequestId,
-      if (n.taskId != null) 'taskId': n.taskId,
-    };
-    PushNotificationService().deliverPayloadFromApp(payload);
+    navigateToNotificationTarget(n);
   }
 
   List<({String label, List<DoctorNotificationModel> items})> _groupByDate(
@@ -514,20 +502,7 @@ class _NotificationCard extends StatelessWidget {
   }
 
   void _deliverPayload() {
-    final n = notification;
-    final payload = <String, dynamic>{
-      'notificationId': n.id,
-      'type': n.type,
-      if (n.appointmentId != null) 'appointmentId': n.appointmentId,
-      if (n.appointmentStartAt != null)
-        'appointmentStartAt': n.appointmentStartAt!.toUtc().toIso8601String(),
-      if (n.patientId != null) 'patientId': n.patientId,
-      if (n.documentId != null) 'documentId': n.documentId,
-      if (n.documentTitle != null) 'documentTitle': n.documentTitle,
-      if (n.documentAccessRequestId != null) 'documentAccessRequestId': n.documentAccessRequestId,
-      if (n.taskId != null) 'taskId': n.taskId,
-    };
-    PushNotificationService().deliverPayloadFromApp(payload);
+    navigateToNotificationTarget(notification);
   }
 }
 

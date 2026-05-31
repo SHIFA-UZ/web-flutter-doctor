@@ -620,9 +620,6 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   void initState() {
     super.initState();
 
-    // Optional: force a reload when the screen is constructed
-    // (Your updated provider constructor may already auto-load;
-    //  keeping this call guarantees the list is fresh when you open the screen.)
     ref.read(patientsProvider.notifier).loadPatients();
 
     final patients = ref.read(patientsProvider);
@@ -633,9 +630,8 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     } else if (initialId != null && clinicWs != null) {
       _selectedId = initialId;
       _loadClinicOverlayPatient(initialId, clinicWs);
-    } else if (patients.isNotEmpty) {
-      _selectedId = patients.first.id;
     }
+    // First patient auto-select runs in build via ref.listen (desktop only).
 
     _searchCtrl.addListener(() {
       setState(() => _query = _searchCtrl.text.trim());
@@ -810,147 +806,175 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
     final isMobile = Responsive.isMobile(context);
+
+    ref.listen<List<Patient>>(patientsProvider, (prev, next) {
+      if (!mounted || isMobile) return;
+      if (_selectedId != null || widget.initialSelectedId != null) return;
+      if (next.isNotEmpty) {
+        setState(() => _selectedId = next.first.id);
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
         padding: Responsive.screenPadding(context),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < Responsive.tabletBreakpoint;
+            final isWide =
+                constraints.maxWidth >= Responsive.tabletBreakpoint;
 
             if (isMobile && _selectedId != null) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => setState(() => _selectedId = null),
-                      icon: const Icon(Icons.arrow_back),
-                      label: Text(l10n.patients),
-                    ),
-                  ),
-                  Expanded(
-                    child: PatientDetailPanel(
-                      patient: _selected,
-                      brand: brand,
-                      clinicWorkspaceId: widget.clinicWorkspaceId,
-                      onUploadOptions: (p) => _showUploadOptions(context, p),
-                      onCreateForm: (p) =>
-                          showPatientFormTemplateSheet(context, p),
-                      formatDate: _formatDate,
-                      selectedDocumentId: widget.initialDocumentIdToSelect,
-                      documentTitleForViewer: widget.initialDocumentTitle,
-                      openDocumentViewer: widget.initialOpenDocumentViewer,
-                    ),
-                  ),
-                ],
-              );
+              return _buildMobilePatientDetail(context, l10n, brand);
             }
 
-            final leftPane = Expanded(
-              flex: 2,
-              child: SizedBox(
-                width: isNarrow ? double.infinity : null,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          l10n.patients,
-                          style: Responsive.pageTitleStyle(context),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton.filledTonal(
-                          onPressed: () async {
-                            try {
-                              await ref
-                                  .read(patientsProvider.notifier)
-                                  .loadPatients();
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      l10n.translate('listRefreshed') ??
-                                          'Patient list refreshed',
-                                    ),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('${l10n.error}: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          icon: const Icon(Icons.refresh),
-                          tooltip: l10n.refresh,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: _SearchField(controller: _searchCtrl)),
-                        const SizedBox(width: 12),
-                        if (!isMobile)
-                          ShifaPrimaryButton(
-                            onPressed: () => _openCreatePatientModal(context),
-                            icon: Icons.person_add,
-                            label: l10n.translate('newPatient') ?? 'New Patient',
-                          )
-                        else
-                          IconButton.filled(
-                            onPressed: () => _openCreatePatientModal(context),
-                            icon: const Icon(Icons.person_add),
-                            tooltip: l10n.translate('newPatient') ?? 'New Patient',
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: _PatientsList(
-                        patients: _sidebarPatients,
-                        selectedId: _selectedId,
-                        onSelect: _handlePatientSelection,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            final listContent =
+                _buildPatientsListContent(context, l10n, brand, isMobile);
 
-            final rightPane = Expanded(
-              flex: 3,
-              child: PatientDetailPanel(
-                patient: _selected,
-                brand: brand,
-                clinicWorkspaceId: widget.clinicWorkspaceId,
-                onUploadOptions: (p) => _showUploadOptions(context, p),
-                onCreateForm: (p) => showPatientFormTemplateSheet(context, p),
-                formatDate: _formatDate,
-                selectedDocumentId: widget.initialDocumentIdToSelect,
-                documentTitleForViewer: widget.initialDocumentTitle,
-                openDocumentViewer: widget.initialOpenDocumentViewer,
-              ),
-            );
-
-            if (isNarrow) {
-              return leftPane;
+            if (!isWide) {
+              return listContent;
             }
+
             return Row(
-              children: [leftPane, const SizedBox(width: 24), rightPane],
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(flex: 2, child: listContent),
+                const SizedBox(width: 24),
+                Expanded(
+                  flex: 3,
+                  child: PatientDetailPanel(
+                    patient: _selected,
+                    brand: brand,
+                    clinicWorkspaceId: widget.clinicWorkspaceId,
+                    onUploadOptions: (p) => _showUploadOptions(context, p),
+                    onCreateForm: (p) =>
+                        showPatientFormTemplateSheet(context, p),
+                    formatDate: _formatDate,
+                    selectedDocumentId: widget.initialDocumentIdToSelect,
+                    documentTitleForViewer: widget.initialDocumentTitle,
+                    openDocumentViewer: widget.initialOpenDocumentViewer,
+                  ),
+                ),
+              ],
             );
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildMobilePatientDetail(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color brand,
+  ) {
+    final patient = _selected;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _selectedId = null),
+            icon: const Icon(Icons.arrow_back),
+            label: Text(l10n.patients),
+          ),
+        ),
+        Expanded(
+          child: patient == null
+              ? const Center(child: CircularProgressIndicator())
+              : PatientDetailPanel(
+                  patient: patient,
+                  brand: brand,
+                  clinicWorkspaceId: widget.clinicWorkspaceId,
+                  onUploadOptions: (p) => _showUploadOptions(context, p),
+                  onCreateForm: (p) =>
+                      showPatientFormTemplateSheet(context, p),
+                  formatDate: _formatDate,
+                  selectedDocumentId: widget.initialDocumentIdToSelect,
+                  documentTitleForViewer: widget.initialDocumentTitle,
+                  openDocumentViewer: widget.initialOpenDocumentViewer,
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPatientsListContent(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color brand,
+    bool isMobile,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              l10n.patients,
+              style: Responsive.pageTitleStyle(context),
+            ),
+            const SizedBox(width: 12),
+            IconButton.filledTonal(
+              onPressed: () async {
+                try {
+                  await ref.read(patientsProvider.notifier).loadPatients();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          l10n.translate('listRefreshed') ??
+                              'Patient list refreshed',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${l10n.error}: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.refresh),
+              tooltip: l10n.refresh,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _SearchField(controller: _searchCtrl)),
+            const SizedBox(width: 12),
+            if (!isMobile)
+              ShifaPrimaryButton(
+                onPressed: () => _openCreatePatientModal(context),
+                icon: Icons.person_add,
+                label: l10n.translate('newPatient') ?? 'New Patient',
+              )
+            else
+              IconButton.filled(
+                onPressed: () => _openCreatePatientModal(context),
+                icon: const Icon(Icons.person_add),
+                tooltip: l10n.translate('newPatient') ?? 'New Patient',
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: _PatientsList(
+            patients: _sidebarPatients,
+            selectedId: _selectedId,
+            onSelect: _handlePatientSelection,
+          ),
+        ),
+      ],
     );
   }
 

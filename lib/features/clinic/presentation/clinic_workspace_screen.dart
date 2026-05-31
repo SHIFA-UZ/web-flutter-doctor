@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
@@ -766,6 +767,7 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
         }
 
         void ensureSelection() {
+          if (Responsive.isMobile(context)) return;
           if (_selectedPatientId != null) return;
           final first = page.content.first;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -889,7 +891,30 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
+            final isMobile = Responsive.isMobile(context);
             final wide = constraints.maxWidth >= 900;
+
+            if (isMobile && _selectedPatientId != null) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() {
+                        _selectedPatientId = null;
+                        _selectedPatient = null;
+                        _patientError = null;
+                      }),
+                      icon: const Icon(Icons.arrow_back),
+                      label: Text(l10n.translate('clinicWorkspacePatients')),
+                    ),
+                  ),
+                  Expanded(child: detailPane()),
+                ],
+              );
+            }
+
             if (wide) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -900,14 +925,7 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
                 ],
               );
             }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(flex: 2, child: listPane()),
-                const Divider(height: 1),
-                Expanded(flex: 3, child: detailPane()),
-              ],
-            );
+            return listPane();
           },
         );
       },

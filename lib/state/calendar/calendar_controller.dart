@@ -653,3 +653,14 @@ final calendarGoToAppointmentIdProvider = StateProvider<int?>((ref) => null);
 final calendarGoToAppointmentDayProvider = StateProvider<DateTime?>(
   (ref) => null,
 );
+
+/// When set, [CalendarScreen] opens the first available free slot for booking.
+/// Used by home quick actions (e.g. video consultation).
+class CalendarQuickBookIntent {
+  const CalendarQuickBookIntent({this.preferVideoConsultation = false});
+
+  final bool preferVideoConsultation;
+}
+
+final calendarQuickBookIntentProvider =
+    StateProvider<CalendarQuickBookIntent?>((ref) => null);

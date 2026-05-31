@@ -36,6 +36,9 @@ class Appointment {
   final TimeOfDay end;
   final AppointmentStatus? status; // Appointment status from backend
 
+  /// Visit reason / complaint from calendar booking.
+  final String? reason;
+
   /// ✅ New: optional public photo URL (CDN/Firebase/etc.)
   final String? photoUrl;
 
@@ -47,6 +50,7 @@ class Appointment {
     required this.start,
     required this.end,
     this.status,
+    this.reason,
     this.photoUrl,
   });
 

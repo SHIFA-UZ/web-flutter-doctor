@@ -2249,7 +2249,7 @@ class _ClinicStaffProfileShellState
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
           body: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: Responsive.screenPadding(context),
             child: ListView(
               children: [
                 Text(

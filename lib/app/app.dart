@@ -96,44 +96,65 @@ Future<void> _openCalendarToAppointment(
 }) async {
   final context = navigatorKey.currentContext;
   if (context == null) return;
-  showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const Center(
-      child: Card(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Opening appointment...'),
-            ],
+
+  final alreadyOnShell =
+      ModalRoute.of(context)?.settings.name == AppRoutes.shell;
+  var loadingDialogShown = false;
+
+  void dismissLoading() {
+    if (loadingDialogShown && context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+      loadingDialogShown = false;
+    }
+  }
+
+  if (!alreadyOnShell) {
+    loadingDialogShown = true;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Opening appointment...'),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
+
   try {
     final day = (appointmentStartAt != null && appointmentStartAt.isNotEmpty)
         ? _dayFromAppointmentStartAt(ref, appointmentStartAt)
         : null;
     final resolvedDay = day ?? await _fetchAppointmentDay(ref, id);
-    if (resolvedDay != null) {
-      ref.read(calendarGoToAppointmentDayProvider.notifier).state = resolvedDay;
-      ref.read(calendarGoToAppointmentIdProvider.notifier).state = id;
-      await invalidateAppointmentRelatedProviders(ref);
-      ref.read(shellProvider.notifier).setTab(2);
-      navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        AppRoutes.shell,
-        (route) => false,
-      );
+    if (resolvedDay == null) return;
+
+    ref.read(calendarGoToAppointmentDayProvider.notifier).state = resolvedDay;
+    ref.read(calendarGoToAppointmentIdProvider.notifier).state = id;
+    await invalidateAppointmentRelatedProviders(ref);
+    ref.read(shellProvider.notifier).setTab(2);
+
+    if (alreadyOnShell) {
+      // Already inside MainShell (e.g. notifications tab) — switch tab only.
+      return;
     }
+
+    dismissLoading();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      AppRoutes.shell,
+      (route) => false,
+    );
   } finally {
-    if (context.mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
+    dismissLoading();
   }
 }
 

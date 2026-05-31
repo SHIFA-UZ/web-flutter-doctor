@@ -5,14 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
+import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_search_overlay.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/chat_screen.dart';
+import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
+import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/home_screen.dart';
 import 'package:shifa_doc_app_v1/features/calendar/presentation/calendar_screen.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart';
 import 'package:shifa_doc_app_v1/features/profile/presentation/profile_screen.dart';
 import 'package:shifa_doc_app_v1/features/tasks/presentation/tasks_screen.dart';
 import 'package:shifa_doc_app_v1/features/notifications/presentation/notifications_screen.dart';
+import 'package:shifa_doc_app_v1/features/reports/presentation/reports_screen.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_workspace_screen.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 
@@ -185,6 +190,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
         return;
       }
       _loadActiveLocationLabel();
+      ref.read(tasksProvider.notifier).loadTasks();
     });
     _sidebarLocationTicker = Timer.periodic(const Duration(minutes: 1), (_) {
       if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
@@ -275,12 +281,12 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
         });
         selectedIndex = 1;
       }
-    } else if (selectedIndex == 5 && !canUseTasks) {
+    } else if (selectedIndex == DoctorShellTab.tasks && !canUseTasks) {
       // Doctor was on Tasks but tier no longer permits it — bounce to Home.
       Future.microtask(() {
-        if (mounted) ref.read(shellProvider.notifier).setTab(1);
+        if (mounted) ref.read(shellProvider.notifier).setTab(DoctorShellTab.home);
       });
-      selectedIndex = 1;
+      selectedIndex = DoctorShellTab.home;
     }
 
     final hasClinicWorkspace = ref.watch(hasClinicWorkspaceProvider);
@@ -299,6 +305,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
             _KeepAlive(child: PatientsScreen()),
             _KeepAlive(child: ClinicWorkspaceScreen()),
             _KeepAlive(child: TasksScreen()),
+            _KeepAlive(child: ReportsScreen()),
             _KeepAlive(child: NotificationsScreen()),
             _KeepAlive(child: ProfileScreen()),
           ];
@@ -332,178 +339,119 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     }
 
     final isMobile = Responsive.isMobile(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!isMobile)
-          // ───────────────── Sidebar ─────────────────
+          // ───────────────── Sidebar (screenshot-style labeled nav) ─────────────────
           Container(
-            width: 80,
+            width: 260,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [brand, brand.withOpacity(0.85)],
+                colors: [brand, brand.withValues(alpha: 0.88)],
               ),
             ),
             child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-
-                // ───── Logo + Divider (Option 2) ─────
-                InkWell(
-                  onTap: () => _goToTab(1),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Image.asset(
-                      'assets/branding/shifa_logo.png',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                Container(
-                  width: 32,
-                  height: 1,
-                  color: Colors.white.withOpacity(0.35),
-                ),
-
-                    const SizedBox(height: 32),
-
-                // ───── Tabs ─────
-                if (isClinicStaff) ...[
-                  _buildChatNavItem(context, ref, 0, brand, selectedIndex),
+              child: Column(
+                children: [
                   const SizedBox(height: 20),
-                  _buildNavItem(
-                    context,
-                    ref,
-                    Icons.local_hospital_outlined,
-                    1,
-                    brand,
-                    selectedIndex,
-                    tooltip: AppLocalizations.of(context)!.translate('clinicNavClinic'),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildNotificationsNavItem(context, ref, 2, brand, selectedIndex),
-                  const SizedBox(height: 24),
-                  const LanguageMiniToggle(),
-                  const SizedBox(height: 16),
-                  _buildNavAvatarItem(context, ref, avatarUrl, 3, brand, selectedIndex),
-                ] else ...[
-                  _buildChatNavItem(context, ref, 0, brand, selectedIndex),
-                  const SizedBox(height: 20),
-                  _buildNavItem(
-                    context,
-                    ref,
-                    Icons.home_outlined,
-                    1,
-                    brand,
-                    selectedIndex,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildNavItem(
-                    context,
-                    ref,
-                    Icons.calendar_today_outlined,
-                    2,
-                    brand,
-                    selectedIndex,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildNavItem(
-                    context,
-                    ref,
-                    Icons.people_outline,
-                    3,
-                    brand,
-                    selectedIndex,
-                  ),
-                  const SizedBox(height: 20),
-                  if (hasClinicWorkspace) ...[
-                    _buildNavItem(
-                      context,
-                      ref,
-                      Icons.local_hospital_outlined,
-                      4,
-                      brand,
-                      selectedIndex,
-                      tooltip:
-                          AppLocalizations.of(context)!.translate('clinicNavClinic'),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  if (canUseTasks) ...[
-                    _buildNavItem(
-                      context,
-                      ref,
-                      Icons.task_alt,
-                      5,
-                      brand,
-                      selectedIndex,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  _buildNotificationsNavItem(context, ref, 6, brand, selectedIndex),
-                  const SizedBox(height: 24),
-                  const LanguageMiniToggle(),
-                  const SizedBox(height: 16),
-                  _buildNavAvatarItem(context, ref, avatarUrl, 7, brand, selectedIndex),
-                  const SizedBox(height: 12),
-                  if ((_activeLocationLabel ?? '').trim().isNotEmpty)
-                    Container(
-                      width: 64,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.16),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _sidebarLocationChipIsVideo(context)
-                                ? Icons.videocam_outlined
-                                : Icons.location_on_outlined,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _activeLocationLabel!,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              height: 1.1,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Image.asset(
+                              'assets/branding/shifa_logo.png',
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.contain,
                             ),
-                          ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'SHIFA',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.translate('clinicIntelligence'),
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        _SidebarSearchButtonDark(
+                          onTap: () => HomeSearchOverlay.show(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Column(
+                        children: [
+                          if (isClinicStaff) ...[
+                            _buildDarkNavItem(context, ref, Icons.chat_bubble_outline, l10n.chat, 0, brand, selectedIndex),
+                            _buildDarkNavItem(context, ref, Icons.local_hospital_outlined, l10n.translate('clinicNavClinic'), 1, brand, selectedIndex),
+                            _buildDarkNotificationsNavItem(context, ref, 2, brand, selectedIndex),
+                          ] else ...[
+                            _buildDarkNavItem(context, ref, Icons.home_outlined, l10n.home, DoctorShellTab.home, brand, selectedIndex),
+                            _buildDarkNavItem(context, ref, Icons.calendar_today_outlined, l10n.translate('navAppointments'), DoctorShellTab.calendar, brand, selectedIndex),
+                            _buildDarkNavItem(context, ref, Icons.people_outline, l10n.patients, DoctorShellTab.patients, brand, selectedIndex),
+                            if (hasClinicWorkspace)
+                              _buildDarkNavItem(context, ref, Icons.medical_services_outlined, l10n.translate('navServices'), DoctorShellTab.clinic, brand, selectedIndex),
+                            if (canUseTasks)
+                              _buildDarkTasksNavItem(context, ref, DoctorShellTab.tasks, brand, selectedIndex),
+                            _buildDarkNavItem(context, ref, Icons.analytics_outlined, l10n.translate('navReports'), DoctorShellTab.reports, brand, selectedIndex),
+                            if (hasClinicWorkspace)
+                              _buildDarkNavItem(context, ref, Icons.account_balance_wallet_outlined, l10n.translate('navFinance'), DoctorShellTab.clinic, brand, selectedIndex),
+                            _buildDarkNavItem(context, ref, Icons.settings_outlined, l10n.translate('navSettings'), DoctorShellTab.profile, brand, selectedIndex),
+                          ],
                         ],
                       ),
                     ),
-                  if ((_activeLocationLabel ?? '').trim().isNotEmpty)
-                    const SizedBox(height: 12),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      children: [
+                        if (!isClinicStaff) _SidebarAiCard(brand: brand, onTap: () => _goToTab(DoctorShellTab.home)),
+                        if (!isClinicStaff) const SizedBox(height: 12),
+                        _SidebarDoctorProfile(
+                          brand: brand,
+                          photoUrl: avatarUrl,
+                          onTap: () => _goToTab(isClinicStaff ? 3 : DoctorShellTab.profile),
+                        ),
+                        const SizedBox(height: 8),
+                        const LanguageMiniToggle(),
+                        const SizedBox(height: 8),
+                        _LogoutButtonDark(brand: brand),
+                      ],
+                    ),
+                  ),
                 ],
-
-                    // ───── Logout ─────
-                    _LogoutButton(brand: brand),
-                  ],
-                ),
               ),
             ),
           ),
@@ -627,10 +575,20 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                   ListTile(
                     leading: Icon(Icons.task_alt, color: brand),
                     title: Text(l10n.translate('tasks') ?? 'Tasks'),
-                    selected: selectedIndex == 5,
+                    selected: selectedIndex == DoctorShellTab.tasks,
                     onTap: () {
                       Navigator.pop(ctx);
-                      _goToTab(5);
+                      _goToTab(DoctorShellTab.tasks);
+                    },
+                  ),
+                if (!isClinicStaff)
+                  ListTile(
+                    leading: Icon(Icons.analytics_outlined, color: brand),
+                    title: Text(l10n.translate('navReports')),
+                    selected: selectedIndex == DoctorShellTab.reports,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _goToTab(DoctorShellTab.reports);
                     },
                   ),
                 ListTile(
@@ -638,10 +596,10 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                   title: Text(l10n.notifications),
                   selected: isClinicStaff
                       ? selectedIndex == 2
-                      : selectedIndex == 6,
+                      : selectedIndex == DoctorShellTab.notifications,
                   onTap: () {
                     Navigator.pop(ctx);
-                    _goToTab(isClinicStaff ? 2 : 6);
+                    _goToTab(isClinicStaff ? 2 : DoctorShellTab.notifications);
                   },
                 ),
                 ListTile(
@@ -649,10 +607,10 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                   title: Text(l10n.profile),
                   selected: isClinicStaff
                       ? selectedIndex == 3
-                      : selectedIndex == 7,
+                      : selectedIndex == DoctorShellTab.profile,
                   onTap: () {
                     Navigator.pop(ctx);
-                    _goToTab(isClinicStaff ? 3 : 7);
+                    _goToTab(isClinicStaff ? 3 : DoctorShellTab.profile);
                   },
                 ),
                 const Divider(),
@@ -664,6 +622,386 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDarkNavItem(
+    BuildContext context,
+    WidgetRef ref,
+    IconData icon,
+    String label,
+    int index,
+    Color brand,
+    int selectedIndex,
+  ) {
+    final isSelected = selectedIndex == index;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: isSelected ? Colors.white : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _goToTab(index),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Row(
+              children: [
+                Icon(icon, color: isSelected ? brand : Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? brand : Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDarkTasksNavItem(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    Color brand,
+    int selectedIndex,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final isSelected = selectedIndex == index;
+    final count = ref.watch(tasksProvider).where((t) => t.status == TaskStatus.active).length;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: isSelected ? Colors.white : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _goToTab(index),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Row(
+              children: [
+                Icon(Icons.task_alt_outlined,
+                    color: isSelected ? brand : Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.tasks,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? brand : Colors.white,
+                    ),
+                  ),
+                ),
+                if (count > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isSelected ? brand : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? Colors.white : brand,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDarkNotificationsNavItem(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    Color brand,
+    int selectedIndex,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final isSelected = selectedIndex == index;
+    final unread = ref.watch(doctorNotificationsUnreadCountProvider).valueOrNull ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: isSelected ? Colors.white : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _goToTab(index),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Row(
+              children: [
+                Icon(Icons.notifications_outlined,
+                    color: isSelected ? brand : Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.notifications,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? brand : Colors.white,
+                    ),
+                  ),
+                ),
+                if (unread > 0)
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabeledNavItem(
+    BuildContext context,
+    WidgetRef ref,
+    IconData icon,
+    String label,
+    int index,
+    Color brand,
+    int selectedIndex,
+  ) {
+    final isSelected = selectedIndex == index;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: isSelected ? brand.withValues(alpha: 0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _goToTab(index),
+          borderRadius: BorderRadius.circular(12),
+          hoverColor: brand.withValues(alpha: 0.06),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(icon, color: isSelected ? brand : Colors.grey.shade600, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? brand : Colors.grey.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabeledChatNavItem(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    Color brand,
+    int selectedIndex,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final isSelected = selectedIndex == index;
+    final unreadAsync = ref.watch(unreadCountProvider);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: isSelected ? brand.withValues(alpha: 0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _goToTab(index),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(Icons.chat_bubble_outline,
+                        color: isSelected ? brand : Colors.grey.shade600, size: 22),
+                    unreadAsync.when(
+                      data: (count) => count > 0
+                          ? Positioned(
+                              right: -6,
+                              top: -4,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.chat,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? brand : Colors.grey.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabeledNotificationsNavItem(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    Color brand,
+    int selectedIndex,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final isSelected = selectedIndex == index;
+    final unreadAsync = ref.watch(doctorNotificationsUnreadCountProvider);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: isSelected ? brand.withValues(alpha: 0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _goToTab(index),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(Icons.notifications_outlined,
+                        color: isSelected ? brand : Colors.grey.shade600, size: 22),
+                    unreadAsync.when(
+                      data: (count) => count > 0
+                          ? Positioned(
+                              right: -6,
+                              top: -4,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.notifications,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? brand : Colors.grey.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabeledNavAvatarItem(
+    BuildContext context,
+    WidgetRef ref,
+    String? photoUrl,
+    int index,
+    Color brand,
+    int selectedIndex,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final isSelected = selectedIndex == index;
+    final hasPhoto = photoUrl != null && photoUrl.isNotEmpty;
+
+    return Material(
+      color: isSelected ? brand.withValues(alpha: 0.1) : Colors.grey.shade50,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => _goToTab(index),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: brand.withValues(alpha: 0.12),
+                backgroundImage: hasPhoto ? NetworkImage(photoUrl!) : null,
+                child: hasPhoto
+                    ? null
+                    : Icon(Icons.person, color: brand, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.profile,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? brand : Colors.grey.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -879,6 +1217,340 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
   }
 }
 
+class _SidebarSearchButtonDark extends StatelessWidget {
+  const _SidebarSearchButtonDark({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: Colors.white.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.search, size: 18, color: Colors.white.withValues(alpha: 0.9)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.translate('search'),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                ),
+              ),
+              Text(
+                '⌘K',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SidebarAiCard extends StatelessWidget {
+  const _SidebarAiCard({required this.brand, required this.onTap});
+
+  final Color brand;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.white.withValues(alpha: 0.95), size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.translate('sidebarAiTitle'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: onTap,
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: brand,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: Text(
+                l10n.translate('sidebarAiCta'),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidebarDoctorProfile extends ConsumerWidget {
+  const _SidebarDoctorProfile({
+    required this.brand,
+    required this.photoUrl,
+    required this.onTap,
+  });
+
+  final Color brand;
+  final String? photoUrl;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final isClinicStaff =
+        ref.watch(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff;
+
+    String name = l10n.doctor;
+    if (isClinicStaff) {
+      final me = ref.watch(meProfileProvider).valueOrNull;
+      if (me != null) {
+        name = '${me.firstName} ${me.lastName.isNotEmpty ? '${me.lastName[0]}.' : ''}'.trim();
+      }
+    } else {
+      final profile = ref.watch(profileAllProvider).valueOrNull?.profile;
+      final first = profile?['firstName'] as String? ?? '';
+      final last = profile?['lastName'] as String? ?? '';
+      final title = profile?['title'] as String? ?? 'Dr.';
+      if (first.isNotEmpty || last.isNotEmpty) {
+        name = '$title $first ${last.isNotEmpty ? '${last[0]}.' : ''}'.trim();
+      }
+    }
+    final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
+
+    return Material(
+      color: Colors.white.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                backgroundImage: hasPhoto ? NetworkImage(photoUrl!) : null,
+                child: hasPhoto ? null : const Icon(Icons.person, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      l10n.translate('administrator'),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutButtonDark extends ConsumerWidget {
+  const _LogoutButtonDark({required this.brand});
+
+  final Color brand;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return TextButton.icon(
+      onPressed: () {
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(l10n.signOut),
+            content: Text(l10n.signOutConfirm),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  ref.read(authProvider.notifier).logout();
+                  ref.invalidate(profileAllProvider);
+                  ref.invalidate(meProfileProvider);
+                  ref.invalidate(shellProvider);
+                  unawaited(invalidateAppointmentRelatedProviders(ref));
+                  ref.invalidate(patientsProvider);
+                  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text(l10n.signOut),
+              ),
+            ],
+          ),
+        );
+      },
+      icon: Icon(Icons.logout, size: 18, color: Colors.white.withValues(alpha: 0.85)),
+      label: Text(l10n.signOut, style: TextStyle(color: Colors.white.withValues(alpha: 0.85))),
+    );
+  }
+}
+
+class _SidebarSearchButton extends StatelessWidget {
+  const _SidebarSearchButton({required this.brand, required this.onTap});
+
+  final Color brand;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: Colors.grey.shade50,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.search, size: 18, color: Colors.grey.shade500),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.translate('search') ?? 'Search',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                ),
+              ),
+              Text(
+                '⌘K',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade400,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutButtonLabeled extends ConsumerWidget {
+  const _LogoutButtonLabeled({required this.brand});
+
+  final Color brand;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: Text(l10n.signOut),
+              content: Text(l10n.signOutConfirm),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(l10n.cancel),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    ref.read(authProvider.notifier).logout();
+                    ref.invalidate(profileAllProvider);
+                    ref.invalidate(meProfileProvider);
+                    ref.invalidate(shellProvider);
+                    unawaited(invalidateAppointmentRelatedProviders(ref));
+                    ref.invalidate(patientsProvider);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.login,
+                      (_) => false,
+                    );
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: Text(l10n.signOut),
+                ),
+              ],
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.logout, color: Colors.grey.shade600, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                l10n.signOut,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LogoutButton extends ConsumerWidget {
   final Color brand;
   const _LogoutButton({required this.brand});
@@ -965,8 +1637,10 @@ class _ShellTabContent extends ConsumerWidget {
     } else {
       final canUseTasks =
           ref.watch(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
-      if (selectedIndex == 5 && !canUseTasks) {
-        selectedIndex = 1;
+      if (selectedIndex == DoctorShellTab.tasks && !canUseTasks) {
+        selectedIndex = DoctorShellTab.home;
+      } else if (selectedIndex > DoctorShellTab.profile) {
+        selectedIndex = DoctorShellTab.home;
       }
     }
     return IndexedStack(index: selectedIndex, children: screens);

@@ -186,30 +186,59 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                 const SizedBox(height: 24),
 
                 // Summary cards
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _SummaryCard(
-                      title: l10n.translate('activeTasks'),
-                      value: activeCount.toString(),
-                      color: Colors.blue,
-                      expanded: isMobile,
-                    ),
-                    _SummaryCard(
-                      title: l10n.translate('completedTasks'),
-                      value: completedCount.toString(),
-                      color: Colors.green,
-                      expanded: isMobile,
-                    ),
-                    _SummaryCard(
-                      title: l10n.translate('overdueTasks'),
-                      value: overdueCount.toString(),
-                      color: Colors.red,
-                      expanded: isMobile,
-                    ),
-                  ],
-                ),
+                if (isMobile)
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _SummaryCard(
+                        title: l10n.translate('activeTasks'),
+                        value: activeCount.toString(),
+                        color: Colors.blue,
+                        fullWidth: true,
+                      ),
+                      _SummaryCard(
+                        title: l10n.translate('completedTasks'),
+                        value: completedCount.toString(),
+                        color: Colors.green,
+                        fullWidth: true,
+                      ),
+                      _SummaryCard(
+                        title: l10n.translate('overdueTasks'),
+                        value: overdueCount.toString(),
+                        color: Colors.red,
+                        fullWidth: true,
+                      ),
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SummaryCard(
+                          title: l10n.translate('activeTasks'),
+                          value: activeCount.toString(),
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SummaryCard(
+                          title: l10n.translate('completedTasks'),
+                          value: completedCount.toString(),
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SummaryCard(
+                          title: l10n.translate('overdueTasks'),
+                          value: overdueCount.toString(),
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
 
                 const SizedBox(height: 24),
 
@@ -509,13 +538,13 @@ class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
   final Color color;
-  final bool expanded;
+  final bool fullWidth;
 
   const _SummaryCard({
     required this.title,
     required this.value,
     required this.color,
-    this.expanded = false,
+    this.fullWidth = false,
   });
 
   @override
@@ -532,31 +561,31 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Text(
             title,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
             ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
 
-    if (expanded) {
+    if (fullWidth) {
       return SizedBox(
         width: Responsive.widthOf(context) - 24,
         child: card,
       );
     }
-    return Expanded(child: card);
+    return card;
   }
 }
 

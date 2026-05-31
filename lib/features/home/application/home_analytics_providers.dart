@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/features/home/application/doctor_analytics_service.dart';
 import 'package:shifa_doc_app_v1/features/home/domain/analytics_models.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/today_appointments_provider.dart';
+import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_date_range_provider.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 
 final doctorAnalyticsOverviewProvider =
@@ -36,7 +37,8 @@ final doctorAnalyticsOverviewProvider =
 final doctorAnalyticsTrendProvider =
     FutureProvider<List<AppointmentTrendPoint>>((ref) async {
   final service = ref.watch(doctorAnalyticsServiceProvider);
-  return service.getAppointmentsTrend(days: 7);
+  final days = ref.watch(homeDashboardDateRangeProvider).dayCount;
+  return service.getAppointmentsTrend(days: days.clamp(1, 90));
 });
 
 final doctorConsultationTypesProvider =

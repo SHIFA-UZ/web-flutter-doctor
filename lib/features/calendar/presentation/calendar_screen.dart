@@ -69,6 +69,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   /// When true, profile listener skips loading "today" so go-to-appointment can load the target day only.
   bool _skipInitialProfileLoad = false;
 
+  /// Prevents scheduling duplicate go-to-appointment callbacks on rebuild.
+  int? _goToAppointmentInFlight;
+
+  /// Prevents duplicate quick-book callbacks on rebuild.
+  bool _quickBookInFlight = false;
+
+  /// Pre-selects video consultation when opening a free slot from quick actions.
+  String? _initialBookingPlaceForSelection;
+
   DateTime _dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
   String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -259,6 +268,93 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   String _ymd(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  int _entryStartMinutes(CalendarEntry entry) =>
+      entry.start.hour * 60 + entry.start.minute;
+
+  void _selectCalendarEntry(
+    CalendarEntry entry, {
+    String? initialBookingPlace,
+  }) {
+    setState(() {
+      _selectedEntry = entry;
+      _initialBookingPlaceForSelection = initialBookingPlace;
+    });
+  }
+
+  void _clearSelectedEntry() {
+    setState(() {
+      _selectedEntry = null;
+      _initialBookingPlaceForSelection = null;
+    });
+  }
+
+  Future<void> _handleQuickBookIntent(CalendarQuickBookIntent intent) async {
+    final tz = _effectiveProfileTimeZone();
+    final today = getTodayInTimezone(tz);
+    final now = getNowInTimezone(tz);
+    final l10n = AppLocalizations.of(context)!;
+    final initialPlace =
+        intent.preferVideoConsultation ? l10n.videoCall : null;
+
+    if (!_showFreeSlots && mounted) {
+      setState(() => _showFreeSlots = true);
+    }
+
+    CalendarEntry? picked;
+    DateTime? pickedDay;
+
+    for (var dayOffset = 0; dayOffset < 30; dayOffset++) {
+      final day = DateTime(
+        today.year,
+        today.month,
+        today.day,
+      ).add(Duration(days: dayOffset));
+      await _loadDay(day, tz);
+      if (!mounted) return;
+
+      final entries = ref.read(calendarProvider)[_dayKey(day)] ?? [];
+      final freeSlots = entries
+          .where((e) => e.type == EntryType.freeSlot)
+          .toList()
+        ..sort(
+          (a, b) => _entryStartMinutes(a).compareTo(_entryStartMinutes(b)),
+        );
+
+      for (final slot in freeSlots) {
+        if (dayOffset == 0) {
+          final slotStart = timeOfDayToDateTimeInZone(slot.start, day, tz);
+          if (slotStart.isBefore(now)) continue;
+        }
+        picked = slot;
+        pickedDay = day;
+        break;
+      }
+
+      if (picked != null) break;
+    }
+
+    if (!mounted) return;
+
+    if (picked != null && pickedDay != null) {
+      setState(() {
+        _selectedDay = DateTime(
+          pickedDay!.year,
+          pickedDay.month,
+          pickedDay.day,
+        );
+        _focusedDay = _selectedDay!;
+        _selectedEntry = picked;
+        _initialBookingPlaceForSelection = initialPlace;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.noSlotsAvailable),
+        ),
+      );
+    }
+  }
+
   bool _shouldShowTimeZoneMismatchHint(String? scheduleTimeZone) {
     final tz = scheduleTimeZone?.trim();
     if (tz == null || tz.isEmpty) return false;
@@ -298,7 +394,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     // Go-to-appointment: use calendarGoToAppointmentDayProvider when set (notification tap).
     // CalendarScreen may already be alive on another day via KeepAlive — switch day first.
     final goToId = ref.watch(calendarGoToAppointmentIdProvider);
-    if (goToId != null && goToId > 0 && mounted) {
+    if (goToId != null &&
+        goToId > 0 &&
+        mounted &&
+        _goToAppointmentInFlight != goToId) {
+      _goToAppointmentInFlight = goToId;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         final appointmentId = goToId;
@@ -309,7 +409,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         final day = targetDay != null
             ? DateTime(targetDay.year, targetDay.month, targetDay.day)
             : _selectedDay;
-        if (day == null) return;
+        if (day == null) {
+          _goToAppointmentInFlight = null;
+          return;
+        }
 
         if (_selectedDay == null ||
             _selectedDay!.year != day.year ||
@@ -343,6 +446,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             'CalendarScreen: failed to go to appointment $appointmentId: $e',
           );
           _skipInitialProfileLoad = false;
+        } finally {
+          if (mounted) {
+            _goToAppointmentInFlight = null;
+          }
+        }
+      });
+    }
+
+    final quickBookIntent = ref.watch(calendarQuickBookIntentProvider);
+    if (quickBookIntent != null && mounted && !_quickBookInFlight) {
+      _quickBookInFlight = true;
+      final intent = quickBookIntent;
+      ref.read(calendarQuickBookIntentProvider.notifier).state = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        try {
+          await _handleQuickBookIntent(intent);
+        } finally {
+          if (mounted) _quickBookInFlight = false;
         }
       });
     }
@@ -369,6 +491,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 key: const ValueKey('details_mobile'),
                 entry: _selectedEntry!,
                 day: _selectedDay!,
+                initialBookingPlace: _initialBookingPlaceForSelection,
                 onSavedSuccessfully: () async {
                   final tz = ref
                           .read(profileAllProvider)
@@ -378,9 +501,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                   if (tz != null && tz.trim().isNotEmpty) {
                     await _loadDay(_selectedDay!, tz);
                   }
-                  if (mounted) setState(() => _selectedEntry = null);
+                  if (mounted) _clearSelectedEntry();
                 },
-                onClose: () => setState(() => _selectedEntry = null),
+                onClose: _clearSelectedEntry,
               )
             : isMobile
                 ? _buildMobileCalendar(context, l10n, brand, showTimeZoneHint, profileTimeZone)
@@ -414,6 +537,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               _selectedDay = DateTime(d.year, d.month, d.day);
               _focusedDay = _selectedDay!;
               _selectedEntry = null;
+              _initialBookingPlaceForSelection = null;
             });
             final tz = ref
                     .read(profileAllProvider)
@@ -456,7 +580,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               if (showTimeZoneHint) _buildTimeZoneHint(context, l10n, profileTimeZone),
               _buildCalendarHeaderRow(context, l10n, brand),
               const SizedBox(height: 16),
-              Expanded(child: _buildCalendarEntriesColumn(context, l10n, brand)),
+              Expanded(child: _buildCalendarEntriesList(context, l10n, brand)),
             ],
           ),
         ),
@@ -659,23 +783,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     }
   }
 
-  Widget _buildCalendarEntriesColumn(
-    BuildContext context,
-    AppLocalizations l10n,
-    Color brand,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!Responsive.isMobile(context)) ...[
-          _buildCalendarHeaderRow(context, l10n, brand),
-          SizedBox(height: Responsive.sectionGap(context)),
-        ],
-        Expanded(child: _buildCalendarEntriesList(context, l10n, brand)),
-      ],
-    );
-  }
-
   Widget _buildCalendarEntriesList(
     BuildContext context,
     AppLocalizations l10n,
@@ -685,7 +792,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         ? _EmptyCalendarHint(brand: brand)
         : CalendarDayEntriesList(
             entries: _entriesFor(_selectedDay),
-            onTap: (entry) => setState(() => _selectedEntry = entry),
+            onTap: (entry) => _selectCalendarEntry(entry),
             selected: _selectedEntry,
             brand: brand,
             loading: _loadingDay || _isWaitingForProfile,
@@ -709,6 +816,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                   _selectedDay = DateTime(d.year, d.month, d.day);
                   _focusedDay = _selectedDay!;
                   _selectedEntry = null;
+                  _initialBookingPlaceForSelection = null;
                 });
                 final tz = ref
                         .read(profileAllProvider)
@@ -732,6 +840,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               key: const ValueKey('details'),
               entry: _selectedEntry!,
               day: _selectedDay!,
+              initialBookingPlace: _initialBookingPlaceForSelection,
               onSavedSuccessfully: () async {
                 final tz = ref
                         .read(profileAllProvider)
@@ -741,9 +850,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 if (tz != null && tz.trim().isNotEmpty) {
                   await _loadDay(_selectedDay!, tz);
                 }
-                if (mounted) setState(() => _selectedEntry = null);
+                if (mounted) _clearSelectedEntry();
               },
-              onClose: () => setState(() => _selectedEntry = null),
+              onClose: _clearSelectedEntry,
             ),
     );
   }
@@ -1515,6 +1624,7 @@ class CalendarSlotDetailsPanel extends ConsumerStatefulWidget {
     required this.day,
     this.scheduleTimeZone,
     this.primaryClinicVenueLabel,
+    this.initialBookingPlace,
     required this.onSavedSuccessfully,
     required this.onClose,
   }) : super(key: key);
@@ -1527,6 +1637,9 @@ class CalendarSlotDetailsPanel extends ConsumerStatefulWidget {
 
   /// Fallback label for clinic/in-person bookings (typically selected clinic street).
   final String? primaryClinicVenueLabel;
+
+  /// Pre-selects clinic vs video when booking a free slot (e.g. quick action).
+  final String? initialBookingPlace;
 
   /// Called by panel when save succeeds (to reload list / close panel).
   final Future<void> Function() onSavedSuccessfully;
@@ -1730,11 +1843,13 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   }
 
   void _seedStateFromEntry() {
-    _selectedPlace = _isAppointment
-        ? (widget.entry.location.toLowerCase().contains('video')
-              ? 'Video Consultation'
-              : 'Clinic Address')
-        : null;
+    if (_isAppointment) {
+      _selectedPlace = widget.entry.location.toLowerCase().contains('video')
+          ? 'Video Consultation'
+          : 'Clinic Address';
+    } else {
+      _selectedPlace = widget.initialBookingPlace;
+    }
     _initialPlace = _selectedPlace ?? '';
     final seedReason = widget.entry.reason.trim().isEmpty
         ? 'Check Up'
@@ -1766,7 +1881,8 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
         oldWidget.entry.type != widget.entry.type ||
         oldWidget.entry.appointmentId != widget.entry.appointmentId ||
         oldWidget.entry.startAtUtc != widget.entry.startAtUtc ||
-        oldWidget.entry.endAtUtc != widget.entry.endAtUtc;
+        oldWidget.entry.endAtUtc != widget.entry.endAtUtc ||
+        oldWidget.initialBookingPlace != widget.initialBookingPlace;
     if (changed) {
       _seedStateFromEntry();
     }
@@ -2364,6 +2480,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
           AppointmentStatus.fromString(widget.entry.status) ??
           AppointmentStatus.confirmed,
       photoUrl: widget.entry.photoUrl,
+      reason: widget.entry.reason.isNotEmpty ? widget.entry.reason : null,
     );
   }
 

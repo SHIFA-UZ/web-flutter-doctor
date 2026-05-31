@@ -10,6 +10,7 @@ import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 
 import 'clinic_finance_record_dialog.dart';
 
@@ -79,14 +80,24 @@ class _ClinicFinanceTabState extends ConsumerState<ClinicFinanceTab> {
   }
 }
 
-class _DashboardView extends ConsumerWidget {
+enum _DashboardKpi { revenue, outstanding, overdue, collectionRate }
+
+class _DashboardView extends ConsumerStatefulWidget {
   final int clinicId;
   const _DashboardView({required this.clinicId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends ConsumerState<_DashboardView> {
+  _DashboardKpi _selectedKpi = _DashboardKpi.revenue;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final dashboardAsync = ref.watch(clinicFinanceDashboardProvider(clinicId));
+    final dashboardAsync =
+        ref.watch(clinicFinanceDashboardProvider(widget.clinicId));
 
     return dashboardAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -109,47 +120,496 @@ class _DashboardView extends ConsumerWidget {
                   title: l10n.translate('clinicFinanceTotalRevenue'),
                   value: _formatMoney(stats.totalRevenueMinor, stats.currency),
                   color: Colors.green,
+                  selected: _selectedKpi == _DashboardKpi.revenue,
+                  onTap: () =>
+                      setState(() => _selectedKpi = _DashboardKpi.revenue),
                 ),
                 _KpiCard(
                   title: l10n.translate('clinicFinanceOutstanding'),
                   value: _formatMoney(stats.outstandingMinor, stats.currency),
                   color: Colors.orange,
+                  selected: _selectedKpi == _DashboardKpi.outstanding,
+                  onTap: () =>
+                      setState(() => _selectedKpi = _DashboardKpi.outstanding),
                 ),
                 _KpiCard(
                   title: l10n.translate('clinicFinanceOverdueCount'),
                   value: stats.overdueCount.toString(),
                   color: Colors.red,
+                  selected: _selectedKpi == _DashboardKpi.overdue,
+                  onTap: () =>
+                      setState(() => _selectedKpi = _DashboardKpi.overdue),
                 ),
                 _KpiCard(
                   title: l10n.translate('clinicFinanceCollectionRate'),
                   value: '${(stats.collectionRate * 100).toStringAsFixed(1)}%',
                   color: AppColors.primaryTeal,
+                  selected: _selectedKpi == _DashboardKpi.collectionRate,
+                  onTap: () => setState(
+                      () => _selectedKpi = _DashboardKpi.collectionRate),
                 ),
               ],
             ),
-            if (stats.doctorEarningsTop.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text(
-                l10n.translate('clinicFinanceDoctorEarnings'),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              ...stats.doctorEarningsTop.map((d) {
-                return ListTile(
-                  dense: true,
-                  title: Text('#${d.doctorProfileId}'),
-                  subtitle: Text(l10n.translate('clinicFinanceDoctorEarningsHint')),
-                  trailing: Text(
-                    '${_formatMoney(d.grossMinor, stats.currency)} / '
-                    '${_formatMoney(d.collectedMinor, stats.currency)} / '
-                    '${_formatMoney(d.outstandingMinor, stats.currency)}',
-                  ),
-                );
-              }),
-            ],
+            const SizedBox(height: 24),
+            _DashboardKpiDetail(
+              clinicId: widget.clinicId,
+              kpi: _selectedKpi,
+              currency: stats.currency,
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DashboardKpiDetail extends ConsumerWidget {
+  final int clinicId;
+  final _DashboardKpi kpi;
+  final String currency;
+
+  const _DashboardKpiDetail({
+    required this.clinicId,
+    required this.kpi,
+    required this.currency,
+  });
+
+  String _detailTitle(AppLocalizations l10n) {
+    switch (kpi) {
+      case _DashboardKpi.revenue:
+        return l10n.translate('clinicFinanceDashboardRevenueDetail');
+      case _DashboardKpi.outstanding:
+        return l10n.translate('clinicFinanceDashboardOutstandingDetail');
+      case _DashboardKpi.overdue:
+        return l10n.translate('clinicFinanceDashboardOverdueDetail');
+      case _DashboardKpi.collectionRate:
+        return l10n.translate('clinicFinanceDashboardCollectionDetail');
+    }
+  }
+
+  String? _detailHint(AppLocalizations l10n) {
+    switch (kpi) {
+      case _DashboardKpi.revenue:
+        return l10n.translate('clinicFinanceDashboardRevenueHint');
+      case _DashboardKpi.outstanding:
+        return l10n.translate('clinicFinanceDashboardOutstandingHint');
+      case _DashboardKpi.overdue:
+        return l10n.translate('clinicFinanceDashboardOverdueHint');
+      case _DashboardKpi.collectionRate:
+        return l10n.translate('clinicFinanceDashboardCollectionHint');
+    }
+  }
+
+  Widget _emptyState(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Text(
+          message,
+          style: TextStyle(color: Colors.grey.shade600),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _detailCard({required Widget child}) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: child,
+    );
+  }
+
+  String _planLabel(TreatmentPlanSummaryDto plan, AppLocalizations l10n) {
+    final title = plan.title?.trim();
+    if (title != null && title.isNotEmpty) {
+      return '$title (#${plan.id})';
+    }
+    return '${l10n.translate('treatmentPlanTitle')} #${plan.id}';
+  }
+
+  String _patientLabel(String? name, int? id, AppLocalizations l10n) {
+    final n = name?.trim();
+    if (n != null && n.isNotEmpty) return n;
+    if (id != null && id != 0) {
+      return '${l10n.translate('patient')} #$id';
+    }
+    return '—';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final hint = _detailHint(l10n);
+
+    Widget body;
+    switch (kpi) {
+      case _DashboardKpi.revenue:
+        body = _buildRevenueDetail(ref, l10n);
+      case _DashboardKpi.outstanding:
+        body = _buildOutstandingDetail(ref, l10n);
+      case _DashboardKpi.overdue:
+        body = _buildOverdueDetail(ref, l10n);
+      case _DashboardKpi.collectionRate:
+        body = _buildCollectionDetail(ref, l10n);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _detailTitle(l10n),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        if (hint != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            hint,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        body,
+      ],
+    );
+  }
+
+  Widget _buildRevenueDetail(WidgetRef ref, AppLocalizations l10n) {
+    final paymentsAsync = ref.watch(clinicPaymentHistoryProvider(clinicId));
+    return paymentsAsync.when(
+      loading: () => const Center(child: Padding(
+        padding: EdgeInsets.all(24),
+        child: CircularProgressIndicator(),
+      )),
+      error: (e, _) => _emptyState('${l10n.error}: $e'),
+      data: (payments) {
+        if (payments.isEmpty) {
+          return _emptyState(l10n.translate('clinicFinanceNoPayments'));
+        }
+        final sorted = [...payments]
+          ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+        return _detailCard(
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: sorted.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, i) {
+              final p = sorted[i];
+              final planTitle = p.treatmentPlanTitle?.trim();
+              final planLabel = planTitle != null && planTitle.isNotEmpty
+                  ? '$planTitle (#${p.treatmentPlanId})'
+                  : '#${p.treatmentPlanId}';
+              return ListTile(
+                dense: true,
+                leading: Icon(
+                  Icons.payments_outlined,
+                  color: Colors.green.shade700,
+                  size: 22,
+                ),
+                title: Text(_patientLabel(p.patientName, p.patientId, l10n)),
+                subtitle: Text(
+                  '$planLabel · ${_formatDate(p.recordedAt)} · '
+                  '${l10n.clinicPaymentMethodLabel(p.method)}',
+                ),
+                trailing: Text(
+                  _formatMoney(p.amountMinor, p.currency),
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOutstandingDetail(WidgetRef ref, AppLocalizations l10n) {
+    final plansAsync = ref.watch(
+      treatmentPlansForClinicProvider(
+        ClinicPlansFilter(clinicId: clinicId),
+      ),
+    );
+    final recordsAsync = ref.watch(clinicFinancialRecordsProvider(clinicId));
+
+    if (plansAsync.isLoading || recordsAsync.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    if (plansAsync.hasError) {
+      return _emptyState('${l10n.error}: ${plansAsync.error}');
+    }
+    if (recordsAsync.hasError) {
+      return _emptyState('${l10n.error}: ${recordsAsync.error}');
+    }
+
+    final plans = (plansAsync.value ?? [])
+        .where((p) => p.owedMinor > 0 && p.status != 'CANCELLED')
+        .toList()
+      ..sort((a, b) => b.owedMinor.compareTo(a.owedMinor));
+    final records = (recordsAsync.value ?? [])
+        .where((r) =>
+            r.remainingMinor > 0 &&
+            r.status != 'VOIDED' &&
+            r.status != 'PAID')
+        .toList()
+      ..sort((a, b) => b.remainingMinor.compareTo(a.remainingMinor));
+
+    if (plans.isEmpty && records.isEmpty) {
+      return _emptyState(l10n.translate('clinicFinanceDashboardNoOutstanding'));
+    }
+
+    return _detailCard(
+      child: ListView(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          if (plans.isNotEmpty) ...[
+            ...plans.map((plan) {
+              return ListTile(
+                dense: true,
+                leading: Icon(
+                  Icons.assignment_outlined,
+                  color: Colors.orange.shade700,
+                  size: 22,
+                ),
+                title: Text(_patientLabel(plan.patientName, plan.patientId, l10n)),
+                subtitle: Text(_planLabel(plan, l10n)),
+                trailing: Text(
+                  _formatMoney(plan.owedMinor, plan.currency),
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            }),
+          ],
+          if (records.isNotEmpty) ...[
+            if (plans.isNotEmpty) const Divider(height: 1),
+            ...records.map((record) {
+              final recordLabel = record.recordNumber?.trim();
+              final title = recordLabel != null && recordLabel.isNotEmpty
+                  ? recordLabel
+                  : '${l10n.clinicRecordTypeLabel(record.recordType)} #${record.id}';
+              return ListTile(
+                dense: true,
+                leading: Icon(
+                  Icons.receipt_long_outlined,
+                  color: Colors.orange.shade700,
+                  size: 22,
+                ),
+                title: Text(
+                  _patientLabel(null, record.patientId, l10n),
+                ),
+                subtitle: Text(title),
+                trailing: Text(
+                  _formatMoney(record.remainingMinor, record.currency),
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverdueDetail(WidgetRef ref, AppLocalizations l10n) {
+    final installmentsAsync = ref.watch(
+      clinicInstallmentItemsProvider((clinicId, 'overdue')),
+    );
+    final recordsAsync = ref.watch(clinicFinancialRecordsProvider(clinicId));
+
+    if (installmentsAsync.isLoading || recordsAsync.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    if (installmentsAsync.hasError) {
+      return _emptyState('${l10n.error}: ${installmentsAsync.error}');
+    }
+    if (recordsAsync.hasError) {
+      return _emptyState('${l10n.error}: ${recordsAsync.error}');
+    }
+
+    final installments = installmentsAsync.value ?? [];
+    final overdueRecords = (recordsAsync.value ?? [])
+        .where((r) => r.status == 'OVERDUE' && r.remainingMinor > 0)
+        .toList()
+      ..sort((a, b) => b.remainingMinor.compareTo(a.remainingMinor));
+
+    if (installments.isEmpty && overdueRecords.isEmpty) {
+      return _emptyState(l10n.translate('clinicFinanceDashboardNoOverdue'));
+    }
+
+    return _detailCard(
+      child: ListView(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          if (installments.isNotEmpty) ...[
+            ...installments.map((item) {
+              final planTitle = item.treatmentPlanTitle?.trim();
+              final planLabel = planTitle != null && planTitle.isNotEmpty
+                  ? planTitle
+                  : '#${item.treatmentPlanId}';
+              return ListTile(
+                dense: true,
+                leading: Icon(
+                  Icons.schedule_outlined,
+                  color: Colors.red.shade700,
+                  size: 22,
+                ),
+                title: Text(item.patientName),
+                subtitle: Text(
+                  '$planLabel · ${l10n.translate('clinicFinanceInstallColSeq')} '
+                  '${item.sequenceNumber} · '
+                  '${l10n.translate('clinicFinanceInstallDue')} '
+                  '${_formatDate(item.dueDate)}',
+                ),
+                trailing: Text(
+                  _formatMoney(item.amountMinor, item.currency),
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            }),
+          ],
+          if (overdueRecords.isNotEmpty) ...[
+            if (installments.isNotEmpty) const Divider(height: 1),
+            ...overdueRecords.map((record) {
+              final recordLabel = record.recordNumber?.trim();
+              final title = recordLabel != null && recordLabel.isNotEmpty
+                  ? recordLabel
+                  : '${l10n.clinicRecordTypeLabel(record.recordType)} #${record.id}';
+              final due = record.dueDate;
+              final dueText = due != null && due.isNotEmpty
+                  ? ' · ${l10n.translate('clinicFinanceInstallDue')} ${_formatDate(due)}'
+                  : '';
+              return ListTile(
+                dense: true,
+                leading: Icon(
+                  Icons.receipt_long_outlined,
+                  color: Colors.red.shade700,
+                  size: 22,
+                ),
+                title: Text(_patientLabel(null, record.patientId, l10n)),
+                subtitle: Text('$title$dueText'),
+                trailing: Text(
+                  _formatMoney(record.remainingMinor, record.currency),
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCollectionDetail(WidgetRef ref, AppLocalizations l10n) {
+    final plansAsync = ref.watch(
+      treatmentPlansForClinicProvider(
+        ClinicPlansFilter(clinicId: clinicId),
+      ),
+    );
+
+    return plansAsync.when(
+      loading: () => const Center(child: Padding(
+        padding: EdgeInsets.all(24),
+        child: CircularProgressIndicator(),
+      )),
+      error: (e, _) => _emptyState('${l10n.error}: $e'),
+      data: (allPlans) {
+        final plans = allPlans
+            .where((p) => p.totalMinor > 0 && p.status != 'CANCELLED')
+            .toList()
+          ..sort((a, b) {
+            final rateA = a.paidMinor / a.totalMinor;
+            final rateB = b.paidMinor / b.totalMinor;
+            final c = rateA.compareTo(rateB);
+            if (c != 0) return c;
+            return b.totalMinor.compareTo(a.totalMinor);
+          });
+
+        if (plans.isEmpty) {
+          return _emptyState(l10n.translate('clinicFinanceDashboardNoCollection'));
+        }
+
+        return _detailCard(
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: plans.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, i) {
+              final plan = plans[i];
+              final rate = plan.totalMinor > 0
+                  ? (plan.paidMinor / plan.totalMinor * 100)
+                  : 0.0;
+              final rateColor = rate >= 100
+                  ? Colors.green.shade700
+                  : rate >= 50
+                      ? Colors.orange.shade700
+                      : Colors.red.shade700;
+              return ListTile(
+                dense: true,
+                leading: Icon(Icons.pie_chart_outline, color: rateColor, size: 22),
+                title: Text(_patientLabel(plan.patientName, plan.patientId, l10n)),
+                subtitle: Text(_planLabel(plan, l10n)),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${rate.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        color: rateColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      '${_formatMoney(plan.paidMinor, plan.currency)} / '
+                      '${_formatMoney(plan.totalMinor, plan.currency)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -2235,44 +2695,65 @@ class _KpiCard extends StatelessWidget {
   final String title;
   final String value;
   final Color color;
+  final bool selected;
+  final VoidCallback? onTap;
 
   const _KpiCard({
     required this.title,
     required this.value,
     required this.color,
+    this.selected = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+    final borderColor =
+        selected ? color : color.withValues(alpha: 0.2);
+    final backgroundColor = selected
+        ? color.withValues(alpha: 0.16)
+        : color.withValues(alpha: 0.08);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 200,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderColor,
+              width: selected ? 2 : 1,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
