@@ -19,6 +19,7 @@ import 'package:shifa_doc_app_v1/core/widgets/inline_voice_recorder_bar.dart';
 import 'package:shifa_doc_app_v1/features/chat/services/image_compression_service.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
+import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patient.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -538,8 +539,50 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     }
   }
 
+  Future<void> _openConversationWithPatient(String patientId) async {
+    final client = ref.read(apiClientProvider);
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final conversations = await fetchConversationsWithClient(client: client);
+      ChatContact? existing;
+      for (final conv in conversations) {
+        if (!conv.isDoctor && conv.participantId == patientId) {
+          existing = conv;
+          break;
+        }
+      }
+      if (existing != null) {
+        if (mounted) _selectConversation(existing.id);
+        return;
+      }
+      final created = await startConversationWithClient(
+        client: client,
+        recipientPatientId: patientId,
+      );
+      ref.invalidate(conversationsProvider);
+      if (mounted) _selectConversation(created.id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${l10n.error}: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(chatPendingPatientIdProvider, (prev, next) {
+      if (next == null || next.isEmpty) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _openConversationWithPatient(next);
+        ref.read(chatPendingPatientIdProvider.notifier).state = null;
+      });
+    });
+
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
     final conversationsAsync = ref.watch(conversationsProvider);

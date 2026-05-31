@@ -1,6 +1,6 @@
 part of 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart';
 
-/// Right-hand patient detail: header + tabbed sections (Profile, optional Prophylaxis, Documents).
+/// Right-hand patient detail workspace matching the Patients mockup layout.
 class PatientDetailPanel extends ConsumerStatefulWidget {
   final Patient? patient;
   final Color brand;
@@ -11,6 +11,8 @@ class PatientDetailPanel extends ConsumerStatefulWidget {
   final String? selectedDocumentId;
   final String? documentTitleForViewer;
   final bool openDocumentViewer;
+  final bool isFavorite;
+  final VoidCallback? onToggleFavorite;
   /// When set (e.g. clinic split view), called after profile/general updates instead of only [loadPatients].
   final VoidCallback? onPatientDataRefresh;
 
@@ -25,6 +27,8 @@ class PatientDetailPanel extends ConsumerStatefulWidget {
     this.selectedDocumentId,
     this.documentTitleForViewer,
     this.openDocumentViewer = false,
+    this.isFavorite = false,
+    this.onToggleFavorite,
     this.onPatientDataRefresh,
   }) : super(key: key);
 
@@ -37,9 +41,11 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     with SingleTickerProviderStateMixin {
   final TextEditingController _documentSearchController =
       TextEditingController();
+  final TextEditingController _aiCopilotController = TextEditingController();
   String _documentSearchQuery = '';
   bool _documentViewerOpenedFromDeepLink = false;
   TabController? _tabController;
+  static const int _tabCount = 6;
 
   PatientDocumentsKey _docKey(String patientId) => PatientDocumentsKey(
         patientId: patientId,
@@ -61,14 +67,13 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
   }
 
   void _syncTabController() {
-    final len = widget.clinicWorkspaceId != null ? 3 : 2;
     if (_tabController == null) {
-      _tabController = TabController(length: len, vsync: this);
+      _tabController = TabController(length: _tabCount, vsync: this);
       return;
     }
-    if (_tabController!.length != len) {
+    if (_tabController!.length != _tabCount) {
       _tabController!.dispose();
-      _tabController = TabController(length: len, vsync: this);
+      _tabController = TabController(length: _tabCount, vsync: this);
     }
   }
 
@@ -87,8 +92,388 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
   @override
   void dispose() {
     _documentSearchController.dispose();
+    _aiCopilotController.dispose();
     _tabController?.dispose();
     super.dispose();
+  }
+
+  void _showHeroMoreActions(BuildContext context, Patient p, Color brand) {
+    final l10n = AppLocalizations.of(context)!;
+    final canUseBriefing = ref.watch(
+      doctorFeatureProvider(DoctorFeature.patientBriefing),
+    );
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.calendar_today, color: brand),
+              title: Text(l10n.translate('makeAppointment') ?? 'Make appointment'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showMakeAppointmentDialog(context, ref, p, brand);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.upload, color: brand),
+              title: Text(l10n.uploadDocument),
+              onTap: () {
+                Navigator.pop(ctx);
+                widget.onUploadOptions(p);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.description, color: brand),
+              title: Text(l10n.translate('createForm') ?? 'Create Form'),
+              onTap: () {
+                Navigator.pop(ctx);
+                widget.onCreateForm(p);
+              },
+            ),
+            if (widget.clinicWorkspaceId != null)
+              ListTile(
+                leading: Icon(Icons.assignment, color: brand),
+                title: Text(
+                  l10n.translate('createTreatmentPlan') ?? 'Create treatment plan',
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  TreatmentPlanWizardSheet.show(
+                    context,
+                    ref,
+                    clinicId: widget.clinicWorkspaceId!,
+                    initialPatientId: int.parse(p.id),
+                  );
+                },
+              ),
+            if (canUseBriefing)
+              ListTile(
+                leading: Icon(Icons.summarize, color: brand),
+                title: Text(l10n.generateBriefing),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ref.read(patientBriefingProvider.notifier).generate(p.id, p.name);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(
+    BuildContext context,
+    Patient p, {
+    String? genderFromForm,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final age = patientAge(p);
+    final stats = [
+      PatientSummaryStat(
+        label: l10n.translate('age') ?? 'Age',
+        value: age?.toString() ?? '—',
+      ),
+      PatientSummaryStat(
+        label: l10n.gender,
+        value: patientGenderLabel(p, l10n, fromForm: genderFromForm),
+      ),
+      PatientSummaryStat(
+        label: l10n.phoneNumber,
+        value: patientPhoneDisplay(p),
+      ),
+      PatientSummaryStat(
+        label: l10n.birthDate,
+        value: formatPatientBirthDate(p),
+      ),
+      PatientSummaryStat(
+        label: l10n.patientId,
+        value: patientDisplayId(p),
+      ),
+      PatientSummaryStat(
+        label: l10n.language,
+        value: patientLanguageDisplay(p),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 720) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var i = 0; i < stats.length; i++) ...[
+                  SizedBox(width: 132, child: stats[i]),
+                  if (i < stats.length - 1) const SizedBox(width: 10),
+                ],
+              ],
+            ),
+          );
+        }
+        return Row(
+          children: [
+            for (var i = 0; i < stats.length; i++) ...[
+              Expanded(child: stats[i]),
+              if (i < stats.length - 1) const SizedBox(width: 10),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildOverviewTab(
+    BuildContext context,
+    Patient p,
+    Color brand,
+    List<PatientActivityItem> activities,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final suggestions = buildAiFollowUpSuggestions(p, l10n);
+    final smsAllowed =
+        ref.watch(profileAllProvider).valueOrNull?.profile['smsRemindersAllowed'] ==
+            true;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 760;
+          final leftColumn = Column(
+            children: [
+              ClinicalSummaryCard(patient: p),
+              const SizedBox(height: AppDesignSystem.sectionGap),
+              RecentActivityCard(
+                activities: activities,
+                brand: brand,
+                onViewFullHistory: () => _tabController?.animateTo(5),
+              ),
+            ],
+          );
+          final rightColumn = Column(
+            children: [
+              QuickActionsCard(
+                brand: brand,
+                onNewAppointment: () =>
+                    _showMakeAppointmentDialog(context, ref, p, brand),
+                onSendMessage: () => openChatWithPatient(ref, p.id),
+                onCreateDocument: () => widget.onUploadOptions(p),
+                onMoreActions: () => _showHeroMoreActions(context, p, brand),
+              ),
+              const SizedBox(height: AppDesignSystem.sectionGap),
+              if (smsAllowed)
+                _SmsReminderCard(
+                  patient: p,
+                  brand: brand,
+                  onUpdated: () {
+                    if (widget.onPatientDataRefresh != null) {
+                      widget.onPatientDataRefresh!();
+                    } else {
+                      ref.read(patientsProvider.notifier).loadPatients();
+                    }
+                    ref.invalidate(patientByIdProvider(p.id));
+                  },
+                ),
+              if (smsAllowed) const SizedBox(height: AppDesignSystem.sectionGap),
+              _PatientPortalCard(
+                patient: p,
+                brand: brand,
+                onCreateAccount: () => _createAccount(context, ref, p),
+              ),
+              const SizedBox(height: AppDesignSystem.sectionGap),
+              AiFollowUpSuggestionsCard(
+                suggestions: suggestions,
+                brand: brand,
+              ),
+            ],
+          );
+
+          if (isWide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: leftColumn),
+                const SizedBox(width: AppDesignSystem.sectionGap),
+                Expanded(flex: 2, child: rightColumn),
+              ],
+            );
+          }
+          return Column(
+            children: [
+              leftColumn,
+              const SizedBox(height: AppDesignSystem.sectionGap),
+              rightColumn,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMedicalInfoTab(Patient p) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _GeneralInfo(
+            general: p.general,
+            patientId: p.id,
+            onUpdate: () {
+              if (widget.onPatientDataRefresh != null) {
+                widget.onPatientDataRefresh!();
+              } else {
+                ref.read(patientsProvider.notifier).loadPatients();
+              }
+              ref.invalidate(patientByIdProvider(p.id));
+            },
+          ),
+          if (widget.clinicWorkspaceId != null) ...[
+            const SizedBox(height: AppDesignSystem.sectionGap),
+            _SectionCardWrapper(
+              title: AppLocalizations.of(context)!
+                      .translate('patientDetailTabProphylaxis') ??
+                  'Prophylaxis',
+              child: _ClinicProphylaxisEditor(
+                patientId: p.id,
+                clinicId: widget.clinicWorkspaceId!,
+                brand: widget.brand,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsTab(Patient p, Color brand) {
+    final l10n = AppLocalizations.of(context)!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_month_outlined, size: 48, color: brand),
+            const SizedBox(height: 16),
+            Text(
+              l10n.translate('appointmentsTabHint') ??
+                  'Schedule and manage appointments for this patient.',
+              textAlign: TextAlign.center,
+              style: AppDesignSystem.body1(context),
+            ),
+            const SizedBox(height: 20),
+            ShifaPrimaryButton(
+              onPressed: () => _showMakeAppointmentDialog(context, ref, p, brand),
+              icon: Icons.add,
+              label: l10n.translate('newAppointment') ?? 'New Appointment',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrescriptionsTab(Patient p, List<PatientForm> forms, Color brand) {
+    final l10n = AppLocalizations.of(context)!;
+    if (forms.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.medication_outlined, size: 48, color: brand),
+            const SizedBox(height: 12),
+            Text(l10n.translate('noPrescriptions') ?? 'No prescriptions yet'),
+            const SizedBox(height: 16),
+            ShifaSecondaryButton(
+              onPressed: () => widget.onCreateForm(p),
+              label: l10n.translate('createForm') ?? 'Create Form',
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 16),
+      itemCount: forms.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final form = forms[index];
+        return _CardBox(
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.description, color: brand),
+            title: Text(form.templateId),
+            subtitle: Text(widget.formatDate(form.date)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ShellScope.pushNamed(
+                context,
+                AppRoutes.patientForm,
+                arguments: {
+                  'patient': p,
+                  'templateId': form.templateId,
+                  'existingForm': form,
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHistoryTab(List<PatientActivityItem> activities, Color brand) {
+    final l10n = AppLocalizations.of(context)!;
+    String two(int n) => n.toString().padLeft(2, '0');
+    if (activities.isEmpty) {
+      return Center(
+        child: Text(
+          l10n.translate('noRecentActivity') ?? 'No recent activity',
+          style: AppDesignSystem.body2(context),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 16),
+      itemCount: activities.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final item = activities[index];
+        return _CardBox(
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: item.iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(item.icon, size: 18, color: item.iconColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title, style: AppDesignSystem.h2(context)),
+                    Text(item.subtitle, style: AppDesignSystem.body2(context)),
+                  ],
+                ),
+              ),
+              Text(
+                '${two(item.date.day)}.${two(item.date.month)}.${item.date.year}',
+                style: AppDesignSystem.caption(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _showMakeAppointmentDialog(
@@ -458,494 +843,359 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     final brand = widget.brand;
 
     if (patient == null) {
-      return const SizedBox();
+      final l10n = AppLocalizations.of(context)!;
+      return Container(
+        decoration: AppDesignSystem.cardDecoration(),
+        alignment: Alignment.center,
+        child: Text(
+          l10n.translate('selectPatientHint') ??
+              'Select a patient to view details',
+          style: AppDesignSystem.body2(context),
+        ),
+      );
     }
     final p = patient;
-
-    // Backend-backed document list for this patient
+    final l10n = AppLocalizations.of(context)!;
     final docsAsync = ref.watch(patientDocumentsProvider(_docKey(p.id)));
     final formsAsync = ref.watch(patientFormsProvider(p.id));
+    final canUseBriefing = ref.watch(
+      doctorFeatureProvider(DoctorFeature.patientBriefing),
+    );
+
+    final activities = docsAsync.maybeWhen(
+      data: (docs) => buildPatientActivities(
+        p.copyWith(documents: docs),
+        l10n,
+        brand,
+      ),
+      orElse: () => buildPatientActivities(p, l10n, brand),
+    );
+    final genderFromForm = formsAsync.maybeWhen(
+      data: (forms) {
+        for (final form in forms) {
+          final gender = form.gender;
+          if (gender != null && gender.trim().isNotEmpty) return gender.trim();
+        }
+        return null;
+      },
+      orElse: () => null,
+    );
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
+      decoration: AppDesignSystem.cardDecoration(
+        borderOverride: Border.all(color: AppDesignSystem.border.withValues(alpha: 0.6)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header: avatar, name, chronic badge, three-dots menu
-          Row(
-            children: [
-              _Avatar(size: 44, name: p.name, photoUrl: p.photoUrl),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  p.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (p.general.chronicDisease != null &&
-                  p.general.chronicDisease!.isNotEmpty &&
-                  p.general.chronicDisease != 'None')
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.flag, color: Colors.white, size: 20),
-                ),
-              Builder(
-                builder: (context) {
-                  final canUseBriefing = ref.watch(
-                    doctorFeatureProvider(DoctorFeature.patientBriefing),
-                  );
-                  return PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, color: brand, size: 24),
-                    padding: EdgeInsets.zero,
-                    onSelected: (value) {
-                      if (value == 'make_appointment') {
-                        _showMakeAppointmentDialog(context, ref, p, brand);
-                      } else if (value == 'create_treatment_plan') {
-                        TreatmentPlanWizardSheet.show(
-                          context,
-                          ref,
-                          clinicId: widget.clinicWorkspaceId!,
-                          initialPatientId: int.parse(p.id),
-                        );
-                      } else if (value == 'briefing') {
-                        ref
-                            .read(patientBriefingProvider.notifier)
-                            .generate(p.id, p.name);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'make_appointment',
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, size: 18, color: brand),
-                            const SizedBox(width: 8),
-                            Text(
-                              AppLocalizations.of(
-                                    context,
-                                  )!.translate('makeAppointment') ??
-                                  'Make appointment',
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (widget.clinicWorkspaceId != null)
-                        PopupMenuItem(
-                          value: 'create_treatment_plan',
-                          child: Row(
-                            children: [
-                              Icon(Icons.assignment, size: 18, color: brand),
-                              const SizedBox(width: 8),
-                              Text(
-                                AppLocalizations.of(context)!
-                                        .translate('createTreatmentPlan') ??
-                                    'Create treatment plan',
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (canUseBriefing)
-                        PopupMenuItem(
-                          value: 'briefing',
-                          child: Row(
-                            children: [
-                              Icon(Icons.summarize, size: 18, color: brand),
-                              const SizedBox(width: 8),
-                              Text(AppLocalizations.of(context)!.generateBriefing),
-                            ],
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TabBar(
-            controller: _tabController!,
-            isScrollable: true,
-            labelColor: brand,
-            unselectedLabelColor: Colors.black54,
-            tabs: [
-              Tab(
-                text: AppLocalizations.of(context)!.translate('patientDetailTabProfile') ??
-                    'Profile',
-              ),
-              if (widget.clinicWorkspaceId != null)
-                Tab(
-                  text: AppLocalizations.of(context)!
-                          .translate('patientDetailTabProphylaxis') ??
-                      'Prophylaxis',
-                ),
-              Tab(
-                text: AppLocalizations.of(context)!.translate('patientDetailTabDocuments') ??
-                    'Documents',
-              ),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController!,
+          Padding(
+            padding: const EdgeInsets.all(AppDesignSystem.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _GeneralInfo(
-                        general: p.general,
-                        patientId: p.id,
-                        onUpdate: () {
-                          if (widget.onPatientDataRefresh != null) {
-                            widget.onPatientDataRefresh!();
-                          } else {
-                            ref.read(patientsProvider.notifier).loadPatients();
-                          }
-                          ref.invalidate(patientByIdProvider(p.id));
-                        },
-                      ),
-                      if (ref.watch(profileAllProvider).valueOrNull?.profile['smsRemindersAllowed'] == true) ...[
-                        const SizedBox(height: 16),
-                        _SmsReminderCard(
-                          patient: p,
-                          brand: brand,
-                          onUpdated: () {
-                            if (widget.onPatientDataRefresh != null) {
-                              widget.onPatientDataRefresh!();
-                            } else {
-                              ref.read(patientsProvider.notifier).loadPatients();
-                            }
-                            ref.invalidate(patientByIdProvider(p.id));
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      Text(
-                        AppLocalizations.of(context)!.patientAppAccess,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (p.hasAccount)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                p.username != null && p.username!.isNotEmpty
-                                    ? '${AppLocalizations.of(context)!.accountAlreadyAvailable} (${p.username})'
-                                    : AppLocalizations.of(context)!
-                                        .accountAlreadyAvailable,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.green,
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.noAccountYet,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            ShifaPrimaryButton(
-                              width: ButtonWidth.fill,
-                              onPressed: () => _createAccount(context, ref, p),
-                              icon: Icons.person_add_alt_1,
-                              label: AppLocalizations.of(context)!
-                                  .createPatientAccount,
-                            ),
-                          ],
-                        ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
+                PatientHeroHeader(
+                  patient: p,
+                  brand: brand,
+                  isFavorite: widget.isFavorite,
+                  onToggleFavorite: widget.onToggleFavorite ?? () {},
+                  onMoreActions: () => _showHeroMoreActions(context, p, brand),
+                  onAiSummary: () =>
+                      ref.read(patientBriefingProvider.notifier).generate(p.id, p.name),
+                  showAiSummary: canUseBriefing,
                 ),
-                if (widget.clinicWorkspaceId != null)
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: _ClinicProphylaxisEditor(
-                      patientId: p.id,
-                      clinicId: widget.clinicWorkspaceId!,
-                      brand: brand,
-                    ),
-                  ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(context)!
-                                    .translate('documentHistory') ??
-                                'Document History',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.refresh, size: 20),
-                          onPressed: () {
-                            ref.refresh(
-                              patientDocumentsProvider(_docKey(p.id)),
-                            );
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!
-                                            .translate('refreshing') ??
-                                        'Refreshing...',
-                                  ),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            }
-                          },
-                          tooltip: AppLocalizations.of(context)!
-                                  .translate('refresh') ??
-                              'Refresh list',
-                        ),
-                        PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert, color: brand),
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'upload':
-                                widget.onUploadOptions(p);
-                                break;
-                              case 'form':
-                                widget.onCreateForm(p);
-                                break;
-                              case 'task':
-                                ShellScope.pushNamed(
-                                  context,
-                                  AppRoutes.createTask,
-                                  arguments: {'patientId': int.parse(p.id)},
-                                );
-                                break;
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'upload',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.upload, size: 18, color: brand),
-                                  const SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .uploadDocument),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'form',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.description, size: 18, color: brand),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    AppLocalizations.of(context)!
-                                            .translate('createForm') ??
-                                        'Create Form',
-                                  ),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'task',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.task, size: 18, color: brand),
-                                  const SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!.createTask),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _documentSearchController,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.search,
-                        prefixIcon: const Icon(Icons.search, size: 18),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: brand, width: 2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: docsAsync.when(
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (e, st) {
-                          final l10n = AppLocalizations.of(context)!;
-                          final safeMessage = sanitizeErrorMessage(e, l10n);
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    color: Colors.red.shade400,
-                                    size: 28,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '${l10n.error}: $safeMessage',
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  TextButton.icon(
-                                    onPressed: () => ref.refresh(
-                                      patientDocumentsProvider(_docKey(p.id)),
-                                    ),
-                                    icon: const Icon(Icons.refresh, size: 16),
-                                    label: Text(l10n.retry),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                        data: (docs) {
-                          final l10n = AppLocalizations.of(context)!;
-                          final filteredDocs = _documentSearchQuery.isEmpty
-                              ? docs
-                              : docs
-                                  .where(
-                                    (doc) => doc.title.toLowerCase().contains(
-                                          _documentSearchQuery.toLowerCase(),
-                                        ),
-                                  )
-                                  .toList();
-                          if (widget.openDocumentViewer &&
-                              widget.selectedDocumentId != null &&
-                              widget.patient != null &&
-                              !_documentViewerOpenedFromDeepLink &&
-                              docs.any(
-                                (d) =>
-                                    d.id.toString() == widget.selectedDocumentId,
-                              )) {
-                            _documentViewerOpenedFromDeepLink = true;
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (!mounted) return;
-                              ShellScope.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => DocumentViewerScreen(
-                                    patientId: widget.patient!.id,
-                                    documentId: widget.selectedDocumentId!,
-                                    title: widget.documentTitleForViewer ??
-                                        'Document',
-                                    clinicWorkspaceId: widget.clinicWorkspaceId,
-                                  ),
-                                ),
-                              );
-                            });
-                          }
-                          return formsAsync.when(
-                            loading: () => filteredDocs.isEmpty
-                                ? Center(child: Text(l10n.noDocuments))
-                                : _buildDocumentList(
-                                    context,
-                                    ref,
-                                    filteredDocs,
-                                    [],
-                                    brand,
-                                    widget.formatDate,
-                                    p,
-                                  ),
-                            error: (_, __) => filteredDocs.isEmpty
-                                ? Center(child: Text(l10n.noDocuments))
-                                : _buildDocumentList(
-                                    context,
-                                    ref,
-                                    filteredDocs,
-                                    [],
-                                    brand,
-                                    widget.formatDate,
-                                    p,
-                                  ),
-                            data: (forms) => filteredDocs.isEmpty
-                                ? Center(child: Text(l10n.noDocuments))
-                                : _buildDocumentList(
-                                    context,
-                                    ref,
-                                    filteredDocs,
-                                    forms,
-                                    brand,
-                                    widget.formatDate,
-                                    p,
-                                  ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: AppDesignSystem.sectionGap),
+                _buildSummaryRow(
+                  context,
+                  p,
+                  genderFromForm: genderFromForm,
+                ),
+                const SizedBox(height: AppDesignSystem.sectionGap),
+                PatientAiCopilotCard(
+                  patientName: p.name,
+                  brand: brand,
+                  controller: _aiCopilotController,
+                  onAsk: () {
+                    final query = _aiCopilotController.text.trim();
+                    if (query.isEmpty) return;
+                    ref
+                        .read(patientBriefingProvider.notifier)
+                        .generate(p.id, p.name);
+                    _aiCopilotController.clear();
+                  },
                 ),
               ],
             ),
           ),
+          TabBar(
+            controller: _tabController!,
+            isScrollable: true,
+            labelColor: brand,
+            unselectedLabelColor: AppDesignSystem.textSecondary,
+            indicatorColor: brand,
+            indicatorWeight: 2.5,
+            tabs: [
+              Tab(text: l10n.translate('overview') ?? 'Overview'),
+              Tab(text: l10n.translate('medicalInfo') ?? 'Medical Info'),
+              Tab(text: l10n.translate('appointments') ?? 'Appointments'),
+              Tab(text: l10n.translate('documents') ?? 'Documents'),
+              Tab(text: l10n.translate('prescriptions') ?? 'Prescriptions'),
+              Tab(text: l10n.translate('history') ?? 'History'),
+            ],
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDesignSystem.cardPadding,
+                0,
+                AppDesignSystem.cardPadding,
+                AppDesignSystem.cardPadding,
+              ),
+              child: TabBarView(
+                controller: _tabController!,
+                children: [
+                  _buildOverviewTab(context, p, brand, activities),
+                  _buildMedicalInfoTab(p),
+                  _buildAppointmentsTab(p, brand),
+                  _buildDocumentsTab(context, p, brand, docsAsync, formsAsync),
+                  formsAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, __) => _buildPrescriptionsTab(p, const [], brand),
+                    data: (forms) => _buildPrescriptionsTab(p, forms, brand),
+                  ),
+                  _buildHistoryTab(activities, brand),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDocumentsTab(
+    BuildContext context,
+    Patient p,
+    Color brand,
+    AsyncValue<List<PatientDocument>> docsAsync,
+    AsyncValue<List<PatientForm>> formsAsync,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.translate('documentHistory') ?? 'Document History',
+                style: AppDesignSystem.h2(context),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 20),
+              onPressed: () {
+                ref.refresh(patientDocumentsProvider(_docKey(p.id)));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        l10n.translate('refreshing') ?? 'Refreshing...',
+                      ),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                }
+              },
+              tooltip: l10n.translate('refresh') ?? 'Refresh list',
+            ),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: brand),
+              onSelected: (value) {
+                switch (value) {
+                  case 'upload':
+                    widget.onUploadOptions(p);
+                    break;
+                  case 'form':
+                    widget.onCreateForm(p);
+                    break;
+                  case 'task':
+                    ShellScope.pushNamed(
+                      context,
+                      AppRoutes.createTask,
+                      arguments: {'patientId': int.parse(p.id)},
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'upload',
+                  child: Row(
+                    children: [
+                      Icon(Icons.upload, size: 18, color: brand),
+                      const SizedBox(width: 8),
+                      Text(l10n.uploadDocument),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'form',
+                  child: Row(
+                    children: [
+                      Icon(Icons.description, size: 18, color: brand),
+                      const SizedBox(width: 8),
+                      Text(l10n.translate('createForm') ?? 'Create Form'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'task',
+                  child: Row(
+                    children: [
+                      Icon(Icons.task, size: 18, color: brand),
+                      const SizedBox(width: 8),
+                      Text(l10n.createTask),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _documentSearchController,
+          decoration: InputDecoration(
+            hintText: l10n.search,
+            prefixIcon: const Icon(Icons.search, size: 18),
+            filled: true,
+            fillColor: AppDesignSystem.backgroundSecondary,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppDesignSystem.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppDesignSystem.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: brand, width: 1.5),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: docsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, st) {
+              final safeMessage = sanitizeErrorMessage(e, l10n);
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red.shade400,
+                        size: 28,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${l10n.error}: $safeMessage',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () =>
+                            ref.refresh(patientDocumentsProvider(_docKey(p.id))),
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: Text(l10n.retry),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            data: (docs) {
+              final filteredDocs = _documentSearchQuery.isEmpty
+                  ? docs
+                  : docs
+                      .where(
+                        (doc) => doc.title.toLowerCase().contains(
+                              _documentSearchQuery.toLowerCase(),
+                            ),
+                      )
+                      .toList();
+              if (widget.openDocumentViewer &&
+                  widget.selectedDocumentId != null &&
+                  widget.patient != null &&
+                  !_documentViewerOpenedFromDeepLink &&
+                  docs.any(
+                    (d) => d.id.toString() == widget.selectedDocumentId,
+                  )) {
+                _documentViewerOpenedFromDeepLink = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  ShellScope.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => DocumentViewerScreen(
+                        patientId: widget.patient!.id,
+                        documentId: widget.selectedDocumentId!,
+                        title: widget.documentTitleForViewer ?? 'Document',
+                        clinicWorkspaceId: widget.clinicWorkspaceId,
+                      ),
+                    ),
+                  );
+                });
+              }
+              return formsAsync.when(
+                loading: () => filteredDocs.isEmpty
+                    ? Center(child: Text(l10n.noDocuments))
+                    : _buildDocumentList(
+                        context,
+                        ref,
+                        filteredDocs,
+                        [],
+                        brand,
+                        widget.formatDate,
+                        p,
+                      ),
+                error: (_, __) => filteredDocs.isEmpty
+                    ? Center(child: Text(l10n.noDocuments))
+                    : _buildDocumentList(
+                        context,
+                        ref,
+                        filteredDocs,
+                        [],
+                        brand,
+                        widget.formatDate,
+                        p,
+                      ),
+                data: (forms) => filteredDocs.isEmpty
+                    ? Center(child: Text(l10n.noDocuments))
+                    : _buildDocumentList(
+                        context,
+                        ref,
+                        filteredDocs,
+                        forms,
+                        brand,
+                        widget.formatDate,
+                        p,
+                      ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -1526,63 +1776,91 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
     'Other',
   ];
 
+  static const List<String> bloodGroups = [
+    '',
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-',
+  ];
+
+  static const List<String> genderOptions = [
+    '',
+    'Male',
+    'Female',
+    'Other',
+  ];
+
   String? _selectedChronicDisease;
+  String? _selectedBloodGroup;
+  String? _selectedGender;
+  late TextEditingController _allergiesCtrl;
   bool _isUpdating = false;
 
   @override
   void initState() {
     super.initState();
     _selectedChronicDisease = widget.general.chronicDisease ?? 'None';
+    _selectedBloodGroup = widget.general.bloodGroup ?? '';
+    _selectedGender = widget.general.gender ?? '';
+    _allergiesCtrl = TextEditingController(text: widget.general.allergies ?? '');
+  }
+
+  @override
+  void dispose() {
+    _allergiesCtrl.dispose();
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(_GeneralInfo oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reset state when patient changes
     if (oldWidget.patientId != widget.patientId ||
-        oldWidget.general.chronicDisease != widget.general.chronicDisease) {
+        oldWidget.general.chronicDisease != widget.general.chronicDisease ||
+        oldWidget.general.bloodGroup != widget.general.bloodGroup ||
+        oldWidget.general.gender != widget.general.gender ||
+        oldWidget.general.allergies != widget.general.allergies) {
       setState(() {
         _selectedChronicDisease = widget.general.chronicDisease ?? 'None';
+        _selectedBloodGroup = widget.general.bloodGroup ?? '';
+        _selectedGender = widget.general.gender ?? '';
+        _allergiesCtrl.text = widget.general.allergies ?? '';
       });
     }
   }
 
-  Future<void> _updateChronicDisease(String? value) async {
+  Future<void> _updateClinicalFields({
+    String? chronicDisease,
+    String? bloodGroup,
+    String? gender,
+    String? allergies,
+  }) async {
     if (_isUpdating) return;
-    setState(() {
-      _isUpdating = true;
-      _selectedChronicDisease = value;
-    });
-
+    setState(() => _isUpdating = true);
     try {
       final client = ref.read(apiClientProvider);
-      // Send empty string to clear, or the actual value to set
-      final chronicDiseaseValue = value == 'None' || value == null ? '' : value;
       final updatedPatient = await updatePatientWithClient(
         client: client,
         patientId: widget.patientId,
-        chronicDisease:
-            chronicDiseaseValue, // Always send the value (empty string to clear)
+        chronicDisease: chronicDisease,
+        bloodGroup: bloodGroup,
+        gender: gender,
+        allergies: allergies,
       );
-
-      // Update local state immediately based on the response
       if (mounted) {
         setState(() {
           _selectedChronicDisease =
               updatedPatient.general.chronicDisease ?? 'None';
+          _selectedBloodGroup = updatedPatient.general.bloodGroup ?? '';
+          _selectedGender = updatedPatient.general.gender ?? '';
+          _allergiesCtrl.text = updatedPatient.general.allergies ?? '';
         });
       }
-
-      // Refresh all patient data
       widget.onUpdate();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.chronicDiseaseUpdated),
-          ),
-        );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1593,15 +1871,23 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
             backgroundColor: Colors.red,
           ),
         );
-        // Revert on error
-        setState(() {
-          _selectedChronicDisease = widget.general.chronicDisease ?? 'None';
-        });
       }
     } finally {
-      if (mounted) {
-        setState(() => _isUpdating = false);
-      }
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  Future<void> _updateChronicDisease(String? value) async {
+    if (_isUpdating) return;
+    setState(() => _selectedChronicDisease = value);
+    final chronicDiseaseValue = value == 'None' || value == null ? '' : value;
+    await _updateClinicalFields(chronicDisease: chronicDiseaseValue);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.chronicDiseaseUpdated),
+        ),
+      );
     }
   }
 
@@ -1710,6 +1996,125 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(
+                l10n.gender,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _selectedGender,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                items: genderOptions
+                    .map(
+                      (g) => DropdownMenuItem<String>(
+                        value: g,
+                        child: Text(g.isEmpty ? '—' : g),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _isUpdating
+                    ? null
+                    : (value) {
+                        setState(() => _selectedGender = value);
+                        _updateClinicalFields(gender: value ?? '');
+                      },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(
+                l10n.translate('bloodGroup') ?? 'Blood Group',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _selectedBloodGroup,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                items: bloodGroups
+                    .map(
+                      (g) => DropdownMenuItem<String>(
+                        value: g,
+                        child: Text(g.isEmpty ? '—' : g),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _isUpdating
+                    ? null
+                    : (value) {
+                        setState(() => _selectedBloodGroup = value);
+                        _updateClinicalFields(bloodGroup: value ?? '');
+                      },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(
+                l10n.translate('allergies') ?? 'Allergies',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ),
+            Expanded(
+              child: TextField(
+                controller: _allergiesCtrl,
+                enabled: !_isUpdating,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.translate('noKnownAllergies') ??
+                      'No known allergies',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                onSubmitted: (value) => _updateClinicalFields(allergies: value),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1788,6 +2193,83 @@ class _CollapsibleCardState extends State<_CollapsibleCard> {
             ),
           ),
           if (_isExpanded) ...[const SizedBox(height: 12), widget.child],
+        ],
+      ),
+    );
+  }
+}
+
+class _PatientPortalCard extends StatelessWidget {
+  const _PatientPortalCard({
+    required this.patient,
+    required this.brand,
+    required this.onCreateAccount,
+  });
+
+  final Patient patient;
+  final Color brand;
+  final VoidCallback onCreateAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return _SectionCardWrapper(
+      title: l10n.patientAppAccess,
+      child: patient.hasAccount
+          ? Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    patient.username != null && patient.username!.isNotEmpty
+                        ? '${l10n.accountAlreadyAvailable} (${patient.username})'
+                        : l10n.accountAlreadyAvailable,
+                    style: const TextStyle(fontSize: 13, color: Colors.green),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.noAccountYet,
+                  style: AppDesignSystem.body2(context),
+                ),
+                const SizedBox(height: 12),
+                ShifaPrimaryButton(
+                  width: ButtonWidth.fill,
+                  onPressed: onCreateAccount,
+                  icon: Icons.person_add_alt_1,
+                  label: l10n.createPatientAccount,
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _SectionCardWrapper extends StatelessWidget {
+  const _SectionCardWrapper({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDesignSystem.cardPadding),
+      decoration: AppDesignSystem.cardDecoration(
+        borderOverride: Border.all(color: AppDesignSystem.border.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppDesignSystem.h2(context)),
+          const SizedBox(height: 14),
+          child,
         ],
       ),
     );
@@ -1907,31 +2389,15 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return _CardBox(
+    return _SectionCardWrapper(
+      title: l10n.translate('smsReminderTitle') ?? 'SMS appointment reminders',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.sms_outlined, size: 18, color: widget.brand),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.translate('smsReminderTitle') ??
-                      'SMS appointment reminders',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
           Text(
             l10n.translate('smsReminderDescription') ??
                 'Patient receives an SMS 24 hours before each future appointment.',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: AppDesignSystem.body2(context),
           ),
           if (!_hasPhone) ...[
             const SizedBox(height: 8),
@@ -1941,6 +2407,7 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
               style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
             ),
           ],
+          const SizedBox(height: 8),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
@@ -1952,31 +2419,45 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
             activeTrackColor: widget.brand.withValues(alpha: 0.35),
             activeThumbColor: widget.brand,
           ),
-          if (_hasPhone) ...[
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: (_saving || _sendingTest) ? null : _sendTestSms,
-                icon: _sendingTest
-                    ? SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: widget.brand,
-                        ),
-                      )
-                    : Icon(Icons.send_outlined, size: 18, color: widget.brand),
-                label: Text(
-                  l10n.translate('smsSendTest') ?? 'Send test SMS now',
-                ),
+          DropdownButtonFormField<String>(
+            value: '24h',
+            decoration: InputDecoration(
+              labelText: l10n.translate('reminderTiming') ?? 'Reminder time',
+              filled: true,
+              fillColor: AppDesignSystem.backgroundSecondary,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppDesignSystem.border),
               ),
             ),
-            Text(
-              l10n.translate('smsSendTestHint') ??
-                  'Sends one SMS immediately (500 UZS). Real reminders still go 24h before appointments.',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            items: [
+              DropdownMenuItem(
+                value: '24h',
+                child: Text(
+                  l10n.translate('reminder24Hours') ?? '24 hours before',
+                ),
+              ),
+            ],
+            onChanged: (!_hasPhone || !_enabled) ? null : (_) {},
+          ),
+          if (_hasPhone) ...[
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: (_saving || _sendingTest) ? null : _sendTestSms,
+              icon: _sendingTest
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: widget.brand,
+                      ),
+                    )
+                  : Icon(Icons.send_outlined, size: 16, color: widget.brand),
+              label: Text(
+                l10n.translate('smsSendTest') ?? 'Send test SMS now',
+                style: TextStyle(color: widget.brand, fontWeight: FontWeight.w600),
+              ),
             ),
           ],
           if (_saving || _sendingTest)

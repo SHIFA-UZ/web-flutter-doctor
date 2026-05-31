@@ -10,7 +10,9 @@ import 'package:shifa_doc_app_v1/features/appointments/application/today_appoint
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/dashboard_card.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_appointment_card.dart';
+import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patient.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_current_appointment_hero.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
@@ -76,7 +78,9 @@ class HomeTimelineSection extends ConsumerWidget {
                   onOpenDocuments: hero.patientId != null
                       ? () => ref.read(shellProvider.notifier).setTab(3)
                       : null,
-                  onMessagePatient: () => ref.read(shellProvider.notifier).setTab(0),
+                  onMessagePatient: hero.patientId != null
+                      ? () => openChatWithPatient(ref, hero.patientId!)
+                      : () => ref.read(shellProvider.notifier).setTab(DoctorShellTab.chat),
                 ),
                 const SizedBox(height: 20),
               ],

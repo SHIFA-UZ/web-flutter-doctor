@@ -52,6 +52,12 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/multiple_phone_fields.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/document_category.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patient.dart';
+import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_helpers.dart';
+import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_overview.dart';
+import 'package:shifa_doc_app_v1/features/patients/presentation/patients_directory_panel.dart';
 
 part 'patient_detail_panel.dart';
 
@@ -612,10 +618,9 @@ class PatientsScreen extends ConsumerStatefulWidget {
 }
 
 class _PatientsScreenState extends ConsumerState<PatientsScreen> {
-  final TextEditingController _searchCtrl = TextEditingController();
-  String _query = '';
   String? _selectedId;
   Patient? _overlayPatient;
+  final Set<String> _favoriteIds = {};
 
   @override
   void initState() {
@@ -634,9 +639,6 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     }
     // First patient auto-select runs in build via ref.listen (desktop only).
 
-    _searchCtrl.addListener(() {
-      setState(() => _query = _searchCtrl.text.trim());
-    });
   }
 
   Future<void> _loadClinicOverlayPatient(String patientId, int clinicId) async {
@@ -662,26 +664,13 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
     super.dispose();
   }
 
-  List<Patient> get _filtered {
-    final patients = ref.watch(patientsProvider);
-    if (_query.isEmpty) return patients;
-    final q = _query.toLowerCase();
-    return patients.where((p) => p.name.toLowerCase().contains(q)).toList();
-  }
-
-  /// Sidebar list: includes clinic overlay patient when they are not in the doctor directory.
   List<Patient> get _sidebarPatients {
-    final base = _filtered;
+    final base = ref.watch(patientsProvider);
     final o = _overlayPatient;
     if (o == null || base.any((p) => p.id == o.id)) return base;
-    if (_query.isNotEmpty) {
-      final q = _query.toLowerCase();
-      if (!o.name.toLowerCase().contains(q)) return base;
-    }
     return [o, ...base];
   }
 
@@ -738,70 +727,6 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
 
   // --------------------------------------------------------------------------------------
 
-  /*Widget build(BuildContext context) {
-    final brand = Theme.of(context).colorScheme.primary;
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 980;
-
-            final leftPane = Expanded(
-              flex: 2,
-              child: SizedBox(
-                width: isNarrow ? double.infinity : null,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.patients,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _SearchField(controller: _searchCtrl),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: _PatientsList(
-                        patients: _filtered,
-                        selectedId: _selectedId,
-                        onSelect: _handlePatientSelection,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-
-            final rightPane = Expanded(
-              flex: 3,
-              child: PatientDetailPanel(
-                patient: _selected,
-                brand: brand,
-                onUpload: (p) => _addDocument(p),
-                formatDate: _formatDate,
-              ),
-            );
-
-            if (isNarrow) {
-              return Column(
-                children: [leftPane, const SizedBox(height: 16), rightPane],
-              );
-            } else {
-              return Row(
-                children: [leftPane, const SizedBox(width: 24), rightPane],
-              );
-            }
-          },
-        ),
-      ),
-    );
-  }
-}*/
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -817,7 +742,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.scaffoldBackground,
       body: Padding(
         padding: Responsive.screenPadding(context),
         child: LayoutBuilder(
@@ -829,24 +754,93 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
               return _buildMobilePatientDetail(context, l10n, brand);
             }
 
-            final listContent =
-                _buildPatientsListContent(context, l10n, brand, isMobile);
+            final directoryPatients = _sidebarPatients;
 
             if (!isWide) {
-              return listContent;
+              return PatientsDirectoryPanel(
+                patients: directoryPatients,
+                selectedId: _selectedId,
+                favoriteIds: _favoriteIds,
+                onSelect: _handlePatientSelection,
+                onCreatePatient: () => _openCreatePatientModal(context),
+                onRefresh: () async {
+                  try {
+                    await ref.read(patientsProvider.notifier).loadPatients();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.translate('listRefreshed') ??
+                                'Patient list refreshed',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${l10n.error}: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              );
             }
 
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(flex: 2, child: listContent),
-                const SizedBox(width: 24),
                 Expanded(
-                  flex: 3,
+                  flex: 7,
+                  child: PatientsDirectoryPanel(
+                    patients: directoryPatients,
+                    selectedId: _selectedId,
+                    favoriteIds: _favoriteIds,
+                    onSelect: _handlePatientSelection,
+                    onCreatePatient: () => _openCreatePatientModal(context),
+                    onRefresh: () async {
+                      try {
+                        await ref.read(patientsProvider.notifier).loadPatients();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                l10n.translate('listRefreshed') ??
+                                    'Patient list refreshed',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${l10n.error}: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppDesignSystem.sectionGap),
+                Expanded(
+                  flex: 13,
                   child: PatientDetailPanel(
                     patient: _selected,
                     brand: brand,
                     clinicWorkspaceId: widget.clinicWorkspaceId,
+                    isFavorite: _selectedId != null &&
+                        _favoriteIds.contains(_selectedId),
+                    onToggleFavorite: _selectedId == null
+                        ? null
+                        : () => _toggleFavorite(_selectedId!),
                     onUploadOptions: (p) => _showUploadOptions(context, p),
                     onCreateForm: (p) =>
                         showPatientFormTemplateSheet(context, p),
@@ -862,6 +856,16 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
         ),
       ),
     );
+  }
+
+  void _toggleFavorite(String patientId) {
+    setState(() {
+      if (_favoriteIds.contains(patientId)) {
+        _favoriteIds.remove(patientId);
+      } else {
+        _favoriteIds.add(patientId);
+      }
+    });
   }
 
   Widget _buildMobilePatientDetail(
@@ -888,6 +892,8 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                   patient: patient,
                   brand: brand,
                   clinicWorkspaceId: widget.clinicWorkspaceId,
+                  isFavorite: _favoriteIds.contains(patient.id),
+                  onToggleFavorite: () => _toggleFavorite(patient.id),
                   onUploadOptions: (p) => _showUploadOptions(context, p),
                   onCreateForm: (p) =>
                       showPatientFormTemplateSheet(context, p),
@@ -896,84 +902,6 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                   documentTitleForViewer: widget.initialDocumentTitle,
                   openDocumentViewer: widget.initialOpenDocumentViewer,
                 ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPatientsListContent(
-    BuildContext context,
-    AppLocalizations l10n,
-    Color brand,
-    bool isMobile,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              l10n.patients,
-              style: Responsive.pageTitleStyle(context),
-            ),
-            const SizedBox(width: 12),
-            IconButton.filledTonal(
-              onPressed: () async {
-                try {
-                  await ref.read(patientsProvider.notifier).loadPatients();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          l10n.translate('listRefreshed') ??
-                              'Patient list refreshed',
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${l10n.error}: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              icon: const Icon(Icons.refresh),
-              tooltip: l10n.refresh,
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _SearchField(controller: _searchCtrl)),
-            const SizedBox(width: 12),
-            if (!isMobile)
-              ShifaPrimaryButton(
-                onPressed: () => _openCreatePatientModal(context),
-                icon: Icons.person_add,
-                label: l10n.translate('newPatient') ?? 'New Patient',
-              )
-            else
-              IconButton.filled(
-                onPressed: () => _openCreatePatientModal(context),
-                icon: const Icon(Icons.person_add),
-                tooltip: l10n.translate('newPatient') ?? 'New Patient',
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: _PatientsList(
-            patients: _sidebarPatients,
-            selectedId: _selectedId,
-            onSelect: _handlePatientSelection,
-          ),
         ),
       ],
     );
@@ -992,12 +920,28 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     'arabic',
   ];
 
+  static const List<String> _patientGenderOptions = ['', 'Male', 'Female', 'Other'];
+  static const List<String> _patientBloodGroups = [
+    '',
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-',
+  ];
+
   Future<void> _openCreatePatientModal(BuildContext context) async {
     final nameCtrl = TextEditingController();
     final phoneFieldsKey = GlobalKey<MultiplePhoneFieldsState>();
     final emailCtrl = TextEditingController();
     final addressCtrl = TextEditingController();
+    final allergiesCtrl = TextEditingController();
     String? selectedLanguage = _patientLanguageOptions.first;
+    String? selectedGender = '';
+    String? selectedBloodGroup = '';
     DateTime? birthDate;
 
     await showModalBottomSheet(
@@ -1077,6 +1021,54 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                   ),
                   const SizedBox(height: 12),
 
+                  DropdownButtonFormField<String>(
+                    value: selectedGender,
+                    decoration: InputDecoration(
+                      labelText: l10n.gender,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: _patientGenderOptions
+                        .map(
+                          (g) => DropdownMenuItem<String>(
+                            value: g,
+                            child: Text(g.isEmpty ? '—' : g),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setModalState(() => selectedGender = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  DropdownButtonFormField<String>(
+                    value: selectedBloodGroup,
+                    decoration: InputDecoration(
+                      labelText: l10n.translate('bloodGroup') ?? 'Blood Group',
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: _patientBloodGroups
+                        .map(
+                          (g) => DropdownMenuItem<String>(
+                            value: g,
+                            child: Text(g.isEmpty ? '—' : g),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setModalState(() => selectedBloodGroup = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextField(
+                    controller: allergiesCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.translate('allergies') ?? 'Allergies',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
                   InkWell(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -1117,6 +1109,9 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                         address: addressCtrl.text.trim(),
                         birthDate: birthDate,
                         language: selectedLanguage,
+                        gender: selectedGender,
+                        bloodGroup: selectedBloodGroup,
+                        allergies: allergiesCtrl.text.trim(),
                       );
                     },
                     label: l10n.translate('createPatient') ?? 'Create Patient',
@@ -1137,6 +1132,9 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     String? address,
     DateTime? birthDate,
     String? language,
+    String? gender,
+    String? bloodGroup,
+    String? allergies,
   }) async {
     try {
       final client = ref.read(apiClientProvider);
@@ -1150,6 +1148,9 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
         birthDate: birthDate,
         language: language,
         photoUrl: null,
+        gender: gender,
+        bloodGroup: bloodGroup,
+        allergies: allergies,
       );
 
       // Reload patients list
@@ -1325,126 +1326,6 @@ class _CredentialRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// ---------------- Left: search ----------------
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-  const _SearchField({Key? key, required this.controller}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    final brand = Theme.of(context).colorScheme.primary;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 420),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: AppLocalizations.of(context)!.search,
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide(color: brand, width: 2),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// ---------------- Left: list ----------------
-class _PatientsList extends StatelessWidget {
-  final List<Patient> patients;
-  final String? selectedId;
-  final ValueChanged<String> onSelect;
-  const _PatientsList({
-    Key? key,
-    required this.patients,
-    required this.selectedId,
-    required this.onSelect,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final brand = Theme.of(context).colorScheme.primary;
-    if (patients.isEmpty) {
-      return Center(child: Text(l10n.noPatientsFound));
-    }
-    return ListView.separated(
-      itemCount: patients.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final p = patients[index];
-        final isSelected = selectedId == p.id;
-        return InkWell(
-          onTap: () => onSelect(p.id),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? brand : Colors.transparent,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                _Avatar(name: p.name, photoUrl: p.photoUrl),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    p.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (p.general.chronicDisease != null &&
-                    p.general.chronicDisease!.isNotEmpty &&
-                    p.general.chronicDisease != 'None')
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.flag,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                Icon(Icons.chevron_right, color: Colors.grey.shade600),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

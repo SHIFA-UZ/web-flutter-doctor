@@ -309,6 +309,9 @@ Future<Patient> createPatientWithClient({
   String? language,
   String? photoUrl,
   String? chronicDisease,
+  String? gender,
+  String? bloodGroup,
+  String? allergies,
 }) async {
   final resolvedPhones = phones != null
       ? phones.map((p) => p.trim()).where((p) => p.isNotEmpty).toList()
@@ -329,6 +332,9 @@ Future<Patient> createPatientWithClient({
     'language': language,
     'photoUrl': photoUrl,
     'chronicDisease': chronicDisease,
+    if (gender != null && gender.isNotEmpty) 'gender': gender,
+    if (bloodGroup != null && bloodGroup.isNotEmpty) 'bloodGroup': bloodGroup,
+    if (allergies != null && allergies.isNotEmpty) 'allergies': allergies,
   });
 
   if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -368,6 +374,9 @@ Future<Patient> updatePatientWithClient({
   String? photoUrl,
   String? chronicDisease,
   bool? smsReminderEnabled,
+  String? gender,
+  String? bloodGroup,
+  String? allergies,
 }) async {
   final body = <String, dynamic>{};
   if (name != null) body['name'] = name;
@@ -391,6 +400,9 @@ Future<Patient> updatePatientWithClient({
   if (smsReminderEnabled != null) {
     body['smsReminderEnabled'] = smsReminderEnabled;
   }
+  if (gender != null) body['gender'] = gender;
+  if (bloodGroup != null) body['bloodGroup'] = bloodGroup;
+  if (allergies != null) body['allergies'] = allergies;
 
   final res = await client.patch('/api/patients/$patientId', body);
 

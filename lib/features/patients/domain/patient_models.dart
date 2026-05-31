@@ -28,8 +28,11 @@ class Patient {
   /// ✅ Use this in UI (public image URL)
   final String? photoUrl;
 
-  final bool hasAccount; // ✅ NEW
-  final String? username; // ✅ NEW
+  final bool hasAccount;
+  final String? username;
+  final String clinicalStatus;
+  final bool atRisk;
+  final bool followUpRequired;
 
   Patient({
     required this.id,
@@ -37,8 +40,11 @@ class Patient {
     required this.general,
     required this.documents,
     this.photoUrl,
-    this.hasAccount = false, // ✅ NEW
-    this.username, // ✅ NEW
+    this.hasAccount = false,
+    this.username,
+    this.clinicalStatus = 'ACTIVE',
+    this.atRisk = false,
+    this.followUpRequired = false,
   });
 
   Patient copyWith({
@@ -47,8 +53,11 @@ class Patient {
     PatientGeneral? general,
     List<PatientDocument>? documents,
     String? photoUrl,
-    bool? hasAccount, // ✅ NEW
-    String? username, // ✅ NEW
+    bool? hasAccount,
+    String? username,
+    String? clinicalStatus,
+    bool? atRisk,
+    bool? followUpRequired,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -56,8 +65,11 @@ class Patient {
       general: general ?? this.general,
       documents: documents ?? List<PatientDocument>.from(this.documents),
       photoUrl: photoUrl ?? this.photoUrl,
-      hasAccount: hasAccount ?? this.hasAccount, // ✅ NEW
-      username: username ?? this.username, // ✅ NEW
+      hasAccount: hasAccount ?? this.hasAccount,
+      username: username ?? this.username,
+      clinicalStatus: clinicalStatus ?? this.clinicalStatus,
+      atRisk: atRisk ?? this.atRisk,
+      followUpRequired: followUpRequired ?? this.followUpRequired,
     );
   }
 
@@ -126,11 +138,17 @@ class Patient {
         locationPostalCode: json['locationPostalCode'],
         locationStreetAddress: json['locationStreetAddress'],
         smsReminderEnabled: json['smsReminderEnabled'] == true,
+        gender: _stringOrNull(json['gender']),
+        bloodGroup: _stringOrNull(json['bloodGroup']),
+        allergies: _stringOrNull(json['allergies']),
       ),
       documents: parsedDocs,
-      photoUrl: json['photoUrl'] as String?, // ✅ <--- important
-      hasAccount: json['hasAccount'] == true, // ✅ patients without account: must not assume hasAccount is present or bool
-      username: _stringOrNull(json['username']), // ✅ safe: backend may omit or send null
+      photoUrl: json['photoUrl'] as String?,
+      hasAccount: json['hasAccount'] == true,
+      username: _stringOrNull(json['username']),
+      clinicalStatus: (_stringOrNull(json['clinicalStatus']) ?? 'ACTIVE').toUpperCase(),
+      atRisk: json['atRisk'] == true,
+      followUpRequired: json['followUpRequired'] == true,
     );
   }
 }
@@ -143,6 +161,9 @@ class PatientGeneral {
   final String? address; // Legacy field - populated from structured location if available
   final String? language;
   final String? chronicDisease;
+  final String? gender;
+  final String? bloodGroup;
+  final String? allergies;
   // Structured location fields
   final String? locationCountry;
   final String? locationRegion;
@@ -160,6 +181,9 @@ class PatientGeneral {
     this.address,
     this.language,
     this.chronicDisease,
+    this.gender,
+    this.bloodGroup,
+    this.allergies,
     this.locationCountry,
     this.locationRegion,
     this.locationDistrict,
