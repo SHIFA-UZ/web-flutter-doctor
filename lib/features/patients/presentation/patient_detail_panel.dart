@@ -1811,6 +1811,7 @@ class _SmsReminderCard extends ConsumerStatefulWidget {
 
 class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
   bool _saving = false;
+  bool _sendingTest = false;
   late bool _enabled;
 
   @override
@@ -1830,6 +1831,39 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
   }
 
   bool get _hasPhone => widget.patient.general.allPhones.isNotEmpty;
+
+  Future<void> _sendTestSms() async {
+    if (!_hasPhone || _sendingTest || _saving) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _sendingTest = true);
+    try {
+      await sendPatientTestSmsWithClient(
+        client: ref.read(apiClientProvider),
+        patientId: widget.patient.id,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.translate('smsTestSent') ??
+                  'Test SMS sent. Check the patient phone.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.error}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sendingTest = false);
+    }
+  }
 
   Future<void> _onToggle(bool value) async {
     if (!_hasPhone || _saving) return;
@@ -1918,7 +1952,34 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
             activeTrackColor: widget.brand.withValues(alpha: 0.35),
             activeThumbColor: widget.brand,
           ),
-          if (_saving)
+          if (_hasPhone) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: (_saving || _sendingTest) ? null : _sendTestSms,
+                icon: _sendingTest
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: widget.brand,
+                        ),
+                      )
+                    : Icon(Icons.send_outlined, size: 18, color: widget.brand),
+                label: Text(
+                  l10n.translate('smsSendTest') ?? 'Send test SMS now',
+                ),
+              ),
+            ),
+            Text(
+              l10n.translate('smsSendTestHint') ??
+                  'Sends one SMS immediately (500 UZS). Real reminders still go 24h before appointments.',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+            ),
+          ],
+          if (_saving || _sendingTest)
             const Padding(
               padding: EdgeInsets.only(top: 4),
               child: LinearProgressIndicator(minHeight: 2),

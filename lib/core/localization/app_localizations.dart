@@ -567,6 +567,10 @@ class AppLocalizations {
       'smsReminderEnabled': 'Send SMS reminders',
       'smsReminderSaved': 'SMS reminder settings saved',
       'smsReminderNoPhone': 'Add a phone number to enable SMS reminders.',
+      'smsSendTest': 'Send test SMS now',
+      'smsSendTestHint':
+          'Sends one SMS immediately (500 UZS). Real reminders still go 24h before appointments.',
+      'smsTestSent': 'Test SMS sent. Check the patient phone.',
       'reportsSmsTitle': 'SMS reminders',
       'reportsSmsSent': 'SMS sent',
       'reportsSmsSpent': 'Total SMS cost',
@@ -2238,6 +2242,10 @@ class AppLocalizations {
       'smsReminderSaved': 'SMS eslatma sozlamalari saqlandi',
       'smsReminderNoPhone':
           'SMS eslatmalarni yoqish uchun telefon raqamini qo\'shing.',
+      'smsSendTest': 'Test SMS yuborish',
+      'smsSendTestHint':
+          'Bir SMS darhol yuboriladi (500 UZS). Haqiqiy eslatmalar qabuldan 24 soat oldin ketadi.',
+      'smsTestSent': 'Test SMS yuborildi. Bemor telefonini tekshiring.',
       'reportsSmsTitle': 'SMS eslatmalar',
       'reportsSmsSent': 'Yuborilgan SMS',
       'reportsSmsSpent': 'SMS xarajati',
@@ -3906,6 +3914,10 @@ class AppLocalizations {
       'smsReminderSaved': 'Настройки SMS-напоминаний сохранены',
       'smsReminderNoPhone':
           'Добавьте номер телефона, чтобы включить SMS-напоминания.',
+      'smsSendTest': 'Отправить тестовое SMS',
+      'smsSendTestHint':
+          'Отправляет одно SMS сейчас (500 UZS). Настоящие напоминания — за 24 ч до приёма.',
+      'smsTestSent': 'Тестовое SMS отправлено. Проверьте телефон пациента.',
       'reportsSmsTitle': 'SMS-напоминания',
       'reportsSmsSent': 'Отправлено SMS',
       'reportsSmsSpent': 'Расходы на SMS',

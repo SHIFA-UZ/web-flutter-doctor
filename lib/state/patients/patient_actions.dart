@@ -411,6 +411,31 @@ Future<Patient> updatePatientWithClient({
   }
 }
 
+/// POST /api/patients/{id}/send-test-sms — immediate DevSMS test (billed).
+Future<void> sendPatientTestSmsWithClient({
+  required ApiClient client,
+  required String patientId,
+}) async {
+  final res = await client.post('/api/patients/$patientId/send-test-sms', {});
+
+  if (res.statusCode >= 200 && res.statusCode < 300) {
+    return;
+  } else if (res.statusCode == 401) {
+    throw Exception('Unauthorized: please login again.');
+  } else if (res.statusCode == 403) {
+    throw Exception('SMS reminders are not enabled for your account.');
+  } else if (res.statusCode == 503) {
+    throw Exception('SMS service is not configured on the server.');
+  } else {
+    String msg = 'Failed to send test SMS: ${res.statusCode}';
+    try {
+      final j = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>?;
+      if (j?['message'] != null) msg = j!['message'] as String;
+    } catch (_) {}
+    throw Exception(msg);
+  }
+}
+
 /// Fetch a single patient by ID
 Future<Patient> fetchPatientWithClient({
   required ApiClient client,

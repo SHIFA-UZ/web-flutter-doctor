@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
+import 'package:shifa_doc_app_v1/features/home/presentation/widgets/ask_shifa_ai_overlay.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_search_overlay.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/chat_screen.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
@@ -437,7 +438,21 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     padding: const EdgeInsets.all(12),
                     child: Column(
                       children: [
-                        if (!isClinicStaff) _SidebarAiCard(brand: brand, onTap: () => _goToTab(DoctorShellTab.home)),
+                        if (!isClinicStaff)
+                          _SidebarAiCard(
+                            brand: brand,
+                            onTap: () {
+                              if (!ref.read(
+                                doctorFeatureProvider(DoctorFeature.askShifaAi),
+                              )) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(l10n.error)),
+                                );
+                                return;
+                              }
+                              AskShifaAiOverlay.show(context);
+                            },
+                          ),
                         if (!isClinicStaff) const SizedBox(height: 12),
                         _SidebarDoctorProfile(
                           brand: brand,

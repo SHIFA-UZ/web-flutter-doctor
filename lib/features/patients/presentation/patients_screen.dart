@@ -21,6 +21,7 @@ import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
         uploadPatientDocumentWithClient,
         requestDocumentAccessWithClient,
         updatePatientWithClient,
+        sendPatientTestSmsWithClient,
         createPatientWithClient,
         createPatientAccountWithClient,
         fetchPatientWithClient,
