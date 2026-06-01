@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -90,25 +91,20 @@ class HomeTimelineSection extends ConsumerWidget {
                   style: AppDesignSystem.h2(context),
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  height: 168,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: upcoming.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (context, i) {
-                      final appt = upcoming[i];
-                      return _UpcomingSlot(
-                        ref: ref,
-                        appointment: appt,
-                        selected: selectedAppointmentId == appt.id,
-                        doctorTimeZone: doctorTimeZone,
-                        now: now,
-                        onTap: () => onAppointmentSelected(appt),
-                        onStart: () => _startAppointment(context, ref, appt),
-                      );
-                    },
-                  ),
+                _UpcomingAppointmentsStrip(
+                  itemCount: upcoming.length,
+                  itemBuilder: (context, i) {
+                    final appt = upcoming[i];
+                    return _UpcomingSlot(
+                      ref: ref,
+                      appointment: appt,
+                      selected: selectedAppointmentId == appt.id,
+                      doctorTimeZone: doctorTimeZone,
+                      now: now,
+                      onTap: () => onAppointmentSelected(appt),
+                      onStart: () => _startAppointment(context, ref, appt),
+                    );
+                  },
                 ),
               ],
               if (completed.isNotEmpty) ...[
@@ -389,6 +385,175 @@ class _EmptyTimeline extends StatelessWidget {
             style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Horizontal upcoming strip with mouse drag, scrollbar, and chevron navigation.
+class _UpcomingAppointmentsStrip extends StatefulWidget {
+  const _UpcomingAppointmentsStrip({
+    required this.itemCount,
+    required this.itemBuilder,
+  });
+
+  final int itemCount;
+  final Widget Function(BuildContext context, int index) itemBuilder;
+
+  static const _cardWidth = 280.0;
+  static const _separatorWidth = 12.0;
+  static const _scrollStep = _cardWidth + _separatorWidth;
+  static const _height = 168.0;
+
+  @override
+  State<_UpcomingAppointmentsStrip> createState() =>
+      _UpcomingAppointmentsStripState();
+}
+
+class _UpcomingAppointmentsStripState extends State<_UpcomingAppointmentsStrip> {
+  late final ScrollController _controller;
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScrollController()..addListener(_syncScrollButtons);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncScrollButtons());
+  }
+
+  @override
+  void didUpdateWidget(covariant _UpcomingAppointmentsStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.itemCount != widget.itemCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncScrollButtons());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _syncScrollButtons() {
+    if (!mounted || !_controller.hasClients) return;
+    final offset = _controller.offset;
+    final maxExtent = _controller.position.maxScrollExtent;
+    final canLeft = offset > 4;
+    final canRight = offset < maxExtent - 4;
+    if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
+      setState(() {
+        _canScrollLeft = canLeft;
+        _canScrollRight = canRight;
+      });
+    }
+  }
+
+  void _scrollBy(double delta) {
+    if (!_controller.hasClients) return;
+    final target = (_controller.offset + delta)
+        .clamp(0.0, _controller.position.maxScrollExtent);
+    _controller.animateTo(
+      target,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = Theme.of(context).colorScheme.primary;
+
+    return SizedBox(
+      height: _UpcomingAppointmentsStrip._height,
+      child: ScrollConfiguration(
+        behavior: _MouseDragScrollBehavior(),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Scrollbar(
+              controller: _controller,
+              thumbVisibility: true,
+              notificationPredicate: (notification) =>
+                  notification.metrics.axis == Axis.horizontal,
+              child: ListView.separated(
+                controller: _controller,
+                scrollDirection: Axis.horizontal,
+                primary: false,
+                itemCount: widget.itemCount,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: _UpcomingAppointmentsStrip._separatorWidth),
+                itemBuilder: widget.itemBuilder,
+              ),
+            ),
+            if (_canScrollLeft)
+              _UpcomingScrollArrow(
+                alignment: Alignment.centerLeft,
+                icon: Icons.chevron_left,
+                brand: brand,
+                onPressed: () =>
+                    _scrollBy(-_UpcomingAppointmentsStrip._scrollStep),
+              ),
+            if (_canScrollRight)
+              _UpcomingScrollArrow(
+                alignment: Alignment.centerRight,
+                icon: Icons.chevron_right,
+                brand: brand,
+                onPressed: () =>
+                    _scrollBy(_UpcomingAppointmentsStrip._scrollStep),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MouseDragScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+      };
+}
+
+class _UpcomingScrollArrow extends StatelessWidget {
+  const _UpcomingScrollArrow({
+    required this.alignment,
+    required this.icon,
+    required this.brand,
+    required this.onPressed,
+  });
+
+  final Alignment alignment;
+  final IconData icon;
+  final Color brand;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: alignment,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Material(
+          elevation: 2,
+          color: Colors.white,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: Icon(icon, size: 22, color: brand),
+            ),
+          ),
+        ),
       ),
     );
   }

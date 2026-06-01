@@ -2221,7 +2221,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
   bool _saving = false;
   bool _hasUnsavedChanges = false;
-  bool _showAiSummary = true;
+  bool _showAiSummary = false;
   bool _sendingPaymentReminder = false;
   String _initialReason = '';
   String _initialPlace = '';
@@ -2473,6 +2473,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     _reasonCtrl.text = seedReason;
     _initialReason = seedReason;
     _hasUnsavedChanges = false;
+    _showAiSummary = false;
     if (!_isAppointment) {
       _bookingEndExclusive = null;
       _initialFreeSlotEndRepr = _todMinutes(widget.entry.end);
@@ -2632,6 +2633,33 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final nowInDoctorZone = getNowInTimezone(doctorTimeZone);
     return endInstant.isBefore(nowInDoctorZone.toUtc());
   }
+
+  /// True when the appointment's calendar day is today in the doctor's timezone.
+  bool get _isAppointmentOnToday {
+    final doctorTimeZone = _calendarTz();
+    final todayInDoctorZone = getTodayInTimezone(doctorTimeZone);
+    final slotDay = DateTime(widget.day.year, widget.day.month, widget.day.day);
+    return slotDay.year == todayInDoctorZone.year &&
+        slotDay.month == todayInDoctorZone.month &&
+        slotDay.day == todayInDoctorZone.day;
+  }
+
+  /// In-clinic visits from earlier today may still be started (matches home screen).
+  bool get _canStartInClinicDespitePastDue =>
+      _isAppointment &&
+      !_isVideoAppointment &&
+      _isPastAppointment &&
+      _isAppointmentOnToday &&
+      !_isInProgressStatus &&
+      !_isCompletedStatus &&
+      !_isCancelledStatus;
+
+  /// Past-due appointments that cannot be started from the calendar panel.
+  bool get _isPastDueStartBlocked =>
+      _isPastAppointment &&
+      !_isInProgressStatus &&
+      !_isCompletedStatus &&
+      !_canStartInClinicDespitePastDue;
 
   /// True if the selected entry is a free slot on a past *day* (cannot assign patient).
   /// Slots on *today* are allowed (whole day), e.g. at 2 PM you can still assign morning slots on the same day.
@@ -3222,14 +3250,17 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       return v;
     }
 
-    if (_isPastAppointment && !_isInProgressStatus && !_isCompletedStatus) {
-      return t('appointmentEnded', 'Appointment Ended');
-    }
     if (_isCompletedStatus) {
       return t('openSummary', 'Open Summary');
     }
     if (_isInProgressStatus) {
       return t('continueAppointment', 'Continue Appointment');
+    }
+    if (_canStartInClinicDespitePastDue) {
+      return l10n.startAppointment;
+    }
+    if (_isPastDueStartBlocked) {
+      return t('appointmentEnded', 'Appointment Ended');
     }
     return l10n.startAppointment;
   }
@@ -3702,6 +3733,9 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                   elevation: 0,
                   color: Colors.white,
                   child: ExpansionTile(
+                    key: ValueKey(
+                      widget.entry.appointmentId ?? widget.entry.startAtUtc,
+                    ),
                     initiallyExpanded: _showAiSummary,
                     onExpansionChanged: (v) =>
                         setState(() => _showAiSummary = v),
@@ -4328,9 +4362,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                         (widget.entry.type == EntryType.freeSlot &&
                             _isPastFreeSlot) ||
                         (widget.entry.type == EntryType.appointment &&
-                            _isPastAppointment &&
-                            !_isInProgressStatus &&
-                            !_isCompletedStatus) ||
+                            _isPastDueStartBlocked) ||
                         (widget.entry.type == EntryType.appointment &&
                             _isVideoAppointment &&
                             !_canStartVideoByTimeWindow &&
@@ -4358,7 +4390,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
               // For appointments: Cancel and Discard buttons (disabled for past appointments)
               // For free slots: Discard button
               if (widget.entry.type == EntryType.appointment) ...[
-                if (_isPastAppointment)
+                if (_isPastDueStartBlocked)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Text(

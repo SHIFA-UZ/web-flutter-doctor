@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
@@ -126,6 +128,13 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
   List<_AggregatedServiceGroup> _serviceGroups = [];
   bool _loading = true;
   bool _saving = false;
+  bool _hydrating = true;
+  bool _loaded = false;
+  bool _dirty = false;
+  Timer? _autosaveTimer;
+  ApiClient? _apiClient;
+
+  static const _autosaveDelay = Duration(milliseconds: 1200);
 
   int get _version => 1;
 
@@ -138,16 +147,36 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     _discountCtrl.addListener(_touch);
     _notesCtrl.addListener(_touch);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _apiClient = ref.read(apiClientProvider);
       widget.registerSaveHandler?.call(requestSave);
       await Future.wait([_loadServices(), _loadSaved()]);
+      _hydrating = false;
+      _loaded = true;
+      _dirty = false;
       if (mounted) setState(() => _loading = false);
     });
   }
 
-  void _touch() => widget.onUnsavedChanged?.call(true);
+  void _touch() {
+    if (_hydrating || !_loaded) return;
+    widget.onUnsavedChanged?.call(true);
+    _dirty = true;
+    _scheduleAutosave();
+  }
+
+  void _scheduleAutosave() {
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer(_autosaveDelay, () {
+      unawaited(_persistDraft(silent: true));
+    });
+  }
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
+    if (_dirty && _apiClient != null) {
+      unawaited(_persistDraft(silent: true, showErrors: false));
+    }
     _discountCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
@@ -287,12 +316,15 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     } catch (_) {}
   }
 
-  bool get hasBillableContent {
+  bool get hasDentalChartContent {
     for (final list in _teeth.values) {
       if (list.isNotEmpty) return true;
     }
-    return _notesCtrl.text.trim().isNotEmpty;
+    return false;
   }
+
+  bool get hasBillableContent =>
+      hasDentalChartContent || _notesCtrl.text.trim().isNotEmpty;
 
   double _discountValue() {
     final v = double.tryParse(_discountCtrl.text.trim().replaceAll(',', '.'));
@@ -339,22 +371,47 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     };
   }
 
+  /// Persists the current draft immediately (e.g. before leaving the screen).
+  Future<void> flushSave() async {
+    _autosaveTimer?.cancel();
+    await _persistDraft(silent: true);
+  }
+
   /// Called when switching documentation mode with "Save".
   Future<bool> requestSave() async {
+    _autosaveTimer?.cancel();
+    return _persistDraft(showSuccessSnackBar: true);
+  }
+
+  Future<bool> _persistDraft({
+    bool silent = false,
+    bool showSuccessSnackBar = false,
+    bool showErrors = true,
+  }) async {
+    if (!_loaded || (!_dirty && silent)) return true;
+    if (!mounted) return false;
+
     setState(() => _saving = true);
     try {
-      final api = ref.read(apiClientProvider);
-      final res = await api.put(
+      _apiClient ??= ref.read(apiClientProvider);
+      final res = await _apiClient!.put(
         '/api/appointments/${widget.appointmentId}/dental-documentation',
         _toPayload(),
       );
       final ok = res.statusCode == 200;
       if (ok && mounted) {
+        _dirty = false;
         widget.onUnsavedChanged?.call(false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.translate('dentalDocSaved'))),
-        );
-      } else if (mounted) {
+        if (showSuccessSnackBar) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!.translate('dentalDocSaved'),
+              ),
+            ),
+          );
+        }
+      } else if (showErrors && mounted) {
         final msg = _extractApiMessage(utf8.decode(res.bodyBytes));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -373,20 +430,8 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
 
   /// Persist dental chart to backend before generating the PDF (same payload as Save).
   Future<void> persistForPdf() async {
-    final api = ref.read(apiClientProvider);
-    final res = await api.put(
-      '/api/appointments/${widget.appointmentId}/dental-documentation',
-      _toPayload(),
-    );
-    if (res.statusCode != 200 && mounted) {
-      final msg = _extractApiMessage(utf8.decode(res.bodyBytes));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(msg ?? AppLocalizations.of(context)!.translate('dentalDocSaveFailed')),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
+    _autosaveTimer?.cancel();
+    await _persistDraft(silent: true, showErrors: true);
   }
 
   /// Free-text notes for PDF only (rendered under [Clinical Notes]; no billing).

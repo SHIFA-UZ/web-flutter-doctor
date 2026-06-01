@@ -86,10 +86,44 @@ String patientGenderLabel(
   AppLocalizations l10n, {
   String? fromForm,
 }) {
-  if (fromForm != null && fromForm.trim().isNotEmpty) return fromForm.trim();
+  if (fromForm != null && fromForm.trim().isNotEmpty) {
+    return _translateGenderValue(l10n, fromForm.trim());
+  }
   final gender = patient.general.gender;
-  if (gender != null && gender.trim().isNotEmpty) return gender.trim();
+  if (gender != null && gender.trim().isNotEmpty) {
+    return _translateGenderValue(l10n, gender.trim());
+  }
   return '—';
+}
+
+String _translateGenderValue(AppLocalizations l10n, String raw) {
+  switch (raw.toLowerCase()) {
+    case 'male':
+      return l10n.translate('genderMale');
+    case 'female':
+      return l10n.translate('genderFemale');
+    case 'other':
+      return l10n.translate('genderOther');
+    default:
+      return raw;
+  }
+}
+
+String patientAppointmentStatusLabel(AppLocalizations l10n, String status) {
+  switch (status.trim().toUpperCase()) {
+    case 'REQUESTED':
+      return l10n.appointmentStatusRequested;
+    case 'CONFIRMED':
+      return l10n.appointmentStatusConfirmed;
+    case 'CANCELLED':
+      return l10n.appointmentStatusCancelled;
+    case 'COMPLETED':
+      return l10n.appointmentStatusCompleted;
+    case 'IN_PROGRESS':
+      return l10n.appointmentStatusInProgress;
+    default:
+      return status;
+  }
 }
 
 String patientBloodGroupLabel(Patient patient, AppLocalizations l10n) {

@@ -153,6 +153,26 @@ class _InPersonAppointmentScreenState
     if (mounted) setState(() => _hasUnsavedChanges = true);
   }
 
+  Future<void> _persistAppointmentDrafts() async {
+    if (_documentationType == 'dental') {
+      await _dentalDocPanelKey.currentState?.flushSave();
+    }
+  }
+
+  Future<void> _leaveAppointmentScreen() async {
+    await _persistAppointmentDrafts();
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _setDentalDocumentationFullScreen(bool value) async {
+    if (_documentationType != 'dental') return;
+    if (value) {
+      await _persistAppointmentDrafts();
+    }
+    if (!mounted) return;
+    setState(() => _dentalDocumentationFullScreen = value);
+  }
+
   void _clearGeneralNoteFields() {
     _notesController.clear();
     _soapSubjective.clear();
@@ -658,12 +678,10 @@ class _InPersonAppointmentScreenState
       var dentalNotesForPdf = '';
       AppointmentPdfDentalBilling? dentalBilling;
       if (_documentationType == 'dental') {
-        await _dentalDocPanelKey.currentState?.persistForPdf();
-        dentalNotesForPdf =
-            _dentalDocPanelKey.currentState?.dentalClinicalNotesPdfText ??
-                '';
-        dentalBilling =
-            _dentalDocPanelKey.currentState?.buildDentalPdfBilling(l10nForPdf);
+        final dentalState = _dentalDocPanelKey.currentState;
+        await dentalState?.flushSave();
+        dentalNotesForPdf = dentalState?.dentalClinicalNotesPdfText ?? '';
+        dentalBilling = dentalState?.buildDentalPdfBilling(l10nForPdf);
       }
 
       final combinedNotes = [
@@ -675,8 +693,9 @@ class _InPersonAppointmentScreenState
       final hasNotes = combinedNotes.isNotEmpty;
       final hasBeforeImages = _beforeTreatmentImages.isNotEmpty;
       final hasAfterImages = _afterTreatmentImages.isNotEmpty;
+      final dentalState = _dentalDocPanelKey.currentState;
       final dentalHasWork = _documentationType == 'dental' &&
-          (_dentalDocPanelKey.currentState?.hasBillableContent ?? false);
+          (dentalState?.hasBillableContent ?? false);
 
       if (!hasNotes && !hasBeforeImages && !hasAfterImages && !dentalHasWork) {
         if (mounted) {
@@ -1062,7 +1081,7 @@ class _InPersonAppointmentScreenState
                 appointment: widget.appointment,
                 resolvedPatient: resolvedPatient,
                 patientLoading: patientProfileLoading,
-                onBack: () => Navigator.pop(context),
+                onBack: _leaveAppointmentScreen,
               ),
               Expanded(
                 child: Padding(
@@ -1284,9 +1303,7 @@ class _InPersonAppointmentScreenState
                             IconButton(
                               icon: const Icon(Icons.fullscreen),
                               tooltip: AppLocalizations.of(context)!.expand,
-                              onPressed: () => setState(
-                                () => _dentalDocumentationFullScreen = true,
-                              ),
+                              onPressed: () => _setDentalDocumentationFullScreen(true),
                             ),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.more_vert),
@@ -2604,9 +2621,7 @@ class _InPersonAppointmentScreenState
                       IconButton(
                         icon: const Icon(Icons.fullscreen_exit),
                         tooltip: l10n.collapse,
-                        onPressed: () => setState(
-                          () => _dentalDocumentationFullScreen = false,
-                        ),
+                        onPressed: () => _setDentalDocumentationFullScreen(false),
                       ),
                     ],
                   ),

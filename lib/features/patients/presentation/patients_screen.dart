@@ -13,7 +13,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart'
-    show patientsProvider, patientByIdProvider;
+    show patientsProvider, patientByIdProvider, patientDoctorAppointmentsProvider;
 
 // NEW: actions & provider for documents
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'

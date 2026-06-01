@@ -279,3 +279,36 @@ class PatientDocument {
     );
   }
 }
+
+/// Appointment row for patient detail — history with the logged-in doctor.
+class PatientDoctorAppointment {
+  const PatientDoctorAppointment({
+    required this.id,
+    required this.startAt,
+    required this.endAt,
+    required this.status,
+    this.location,
+    this.isVideo = false,
+    this.reason,
+  });
+
+  final String id;
+  final DateTime startAt;
+  final DateTime endAt;
+  final String status;
+  final String? location;
+  final bool isVideo;
+  final String? reason;
+
+  factory PatientDoctorAppointment.fromJson(Map<String, dynamic> json) {
+    return PatientDoctorAppointment(
+      id: (json['id'] ?? '').toString(),
+      startAt: DateTime.parse(json['startAt'] as String),
+      endAt: DateTime.parse(json['endAt'] as String),
+      status: (json['status'] ?? '').toString(),
+      location: json['location'] as String?,
+      isVideo: json['isVideo'] == true,
+      reason: json['reason'] as String?,
+    );
+  }
+}

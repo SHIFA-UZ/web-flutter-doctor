@@ -350,29 +350,130 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
 
   Widget _buildAppointmentsTab(Patient p, Color brand) {
     final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.calendar_month_outlined, size: 48, color: brand),
-            const SizedBox(height: 16),
-            Text(
-              l10n.translate('appointmentsTabHint') ??
-                  'Schedule and manage appointments for this patient.',
-              textAlign: TextAlign.center,
-              style: AppDesignSystem.body1(context),
-            ),
-            const SizedBox(height: 20),
-            ShifaPrimaryButton(
-              onPressed: () => _showMakeAppointmentDialog(context, ref, p, brand),
-              icon: Icons.add,
-              label: l10n.translate('newAppointment') ?? 'New Appointment',
-            ),
-          ],
+    final appointmentsAsync = ref.watch(patientDoctorAppointmentsProvider(p.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
+          child: ShifaPrimaryButton(
+            onPressed: () => _showMakeAppointmentDialog(context, ref, p, brand),
+            icon: Icons.add,
+            label: l10n.translate('newAppointment') ?? 'New Appointment',
+          ),
         ),
-      ),
+        Expanded(
+          child: appointmentsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+              child: Text(
+                '${l10n.error}: $e',
+                style: AppDesignSystem.body2(context),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            data: (appointments) {
+              if (appointments.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      l10n.translate('noPatientAppointments') ??
+                          'No appointments with you yet.',
+                      textAlign: TextAlign.center,
+                      style: AppDesignSystem.body1(context),
+                    ),
+                  ),
+                );
+              }
+              String two(int n) => n.toString().padLeft(2, '0');
+              return ListView.separated(
+                padding: const EdgeInsets.only(bottom: 16),
+                itemCount: appointments.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final appt = appointments[index];
+                  final start = appt.startAt.toLocal();
+                  final end = appt.endAt.toLocal();
+                  final dateLine =
+                      '${two(start.day)}.${two(start.month)}.${start.year}';
+                  final timeLine =
+                      '${two(start.hour)}:${two(start.minute)} – ${two(end.hour)}:${two(end.minute)}';
+                  final location = appt.isVideo
+                      ? l10n.videoCall
+                      : ((appt.location ?? '').trim().isNotEmpty
+                          ? appt.location!.trim()
+                          : l10n.inClinic);
+                  final reason = (appt.reason ?? '').trim();
+                  return _CardBox(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              appt.isVideo
+                                  ? Icons.videocam_outlined
+                                  : Icons.location_on_outlined,
+                              size: 18,
+                              color: brand,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                dateLine,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: brand.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                patientAppointmentStatusLabel(l10n, appt.status),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: brand,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          timeLine,
+                          style: AppDesignSystem.body2(context),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          location,
+                          style: AppDesignSystem.body2(context),
+                        ),
+                        if (reason.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            reason,
+                            style: AppDesignSystem.caption(context),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -793,6 +894,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                                     bookingEndOverride ?? selectedSlot!.end,
                               );
                           await invalidateAppointmentRelatedProviders(ref);
+                          ref.invalidate(patientDoctorAppointmentsProvider(p.id));
                           await refreshCalendarDay(
                             ref,
                             selectedDate!,
@@ -1799,7 +1901,21 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
   String? _selectedBloodGroup;
   String? _selectedGender;
   late TextEditingController _allergiesCtrl;
+  late List<TextEditingController> _phoneControllers;
   bool _isUpdating = false;
+
+  void _initPhoneControllers() {
+    final phones = widget.general.allPhones;
+    final seeds = phones.isEmpty ? const [''] : phones;
+    _phoneControllers =
+        seeds.map((p) => TextEditingController(text: p)).toList();
+  }
+
+  void _disposePhoneControllers() {
+    for (final c in _phoneControllers) {
+      c.dispose();
+    }
+  }
 
   @override
   void initState() {
@@ -1808,11 +1924,13 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
     _selectedBloodGroup = widget.general.bloodGroup ?? '';
     _selectedGender = widget.general.gender ?? '';
     _allergiesCtrl = TextEditingController(text: widget.general.allergies ?? '');
+    _initPhoneControllers();
   }
 
   @override
   void dispose() {
     _allergiesCtrl.dispose();
+    _disposePhoneControllers();
     super.dispose();
   }
 
@@ -1831,6 +1949,27 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
         _allergiesCtrl.text = widget.general.allergies ?? '';
       });
     }
+    if (oldWidget.general.allPhones.join('|') !=
+        widget.general.allPhones.join('|')) {
+      setState(() {
+        _disposePhoneControllers();
+        _initPhoneControllers();
+      });
+    }
+  }
+
+  void _addPhoneField() {
+    setState(() => _phoneControllers.add(TextEditingController()));
+  }
+
+  void _removePhoneField(int index) {
+    setState(() {
+      if (_phoneControllers.length <= 1) {
+        _phoneControllers.first.clear();
+        return;
+      }
+      _phoneControllers.removeAt(index).dispose();
+    });
   }
 
   Future<void> _updateClinicalFields({
@@ -1891,6 +2030,40 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
     }
   }
 
+  Future<void> _savePhones() async {
+    if (_isUpdating) return;
+    final l10n = AppLocalizations.of(context)!;
+    final phones = _phoneControllers
+        .map((c) => c.text.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+    setState(() => _isUpdating = true);
+    try {
+      await updatePatientWithClient(
+        client: ref.read(apiClientProvider),
+        patientId: widget.patientId,
+        phones: phones,
+      );
+      widget.onUpdate();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.translate('phoneUpdated'))),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.failedToUpdate}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1903,8 +2076,6 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
     final rows = <MapEntry<String, String>>[
       MapEntry(l10n.patientId, widget.patientId),
       if (dob != null) MapEntry(l10n.birthDate, dob),
-      if (widget.general.allPhones.isNotEmpty)
-        MapEntry(l10n.phoneNumber, widget.general.allPhones.join(', ')),
       if (widget.general.email != null)
         MapEntry(l10n.email, widget.general.email!),
       if (widget.general.formattedLocation != null)
@@ -1941,6 +2112,64 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
                 ),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (var i = 0; i < _phoneControllers.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _phoneControllers[i],
+                  keyboardType: TextInputType.phone,
+                  enabled: !_isUpdating,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    labelText: i == 0
+                        ? '${l10n.phoneNumber} (${l10n.optional})'
+                        : null,
+                    hintText: l10n.phoneNumber,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                ),
+              ),
+              if (_phoneControllers.length > 1)
+                IconButton(
+                  tooltip: l10n.remove,
+                  onPressed: _isUpdating ? null : () => _removePhoneField(i),
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+            ],
+          ),
+        ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _isUpdating ? null : _addPhoneField,
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(l10n.translate('addPhoneNumber')),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _isUpdating ? null : _savePhones,
+            icon: _isUpdating
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  )
+                : const Icon(Icons.save_outlined, size: 18),
+            label: Text(l10n.save),
           ),
         ),
         const SizedBox(height: 8),

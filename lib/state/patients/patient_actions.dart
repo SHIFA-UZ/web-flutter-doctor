@@ -367,6 +367,7 @@ Future<Patient> updatePatientWithClient({
   required String patientId,
   String? name,
   String? phone,
+  List<String>? phones,
   String? email,
   String? address,
   DateTime? birthDate,
@@ -380,7 +381,14 @@ Future<Patient> updatePatientWithClient({
 }) async {
   final body = <String, dynamic>{};
   if (name != null) body['name'] = name;
-  if (phone != null) body['phone'] = phone;
+  if (phones != null) {
+    final cleaned =
+        phones.map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+    body['phones'] = cleaned;
+    if (cleaned.isNotEmpty) body['phone'] = cleaned.first;
+  } else if (phone != null) {
+    body['phone'] = phone;
+  }
   if (email != null) body['email'] = email;
   if (address != null) body['address'] = address;
   if (birthDate != null) {
@@ -421,6 +429,21 @@ Future<Patient> updatePatientWithClient({
   } else {
     throw Exception('Failed to update patient: ${res.statusCode} ${res.body}');
   }
+}
+
+/// GET /api/patients/{id}/appointments — history with the logged-in doctor.
+Future<List<PatientDoctorAppointment>> fetchPatientDoctorAppointments({
+  required ApiClient client,
+  required String patientId,
+}) async {
+  final res = await client.get('/api/patients/$patientId/appointments');
+  if (res.statusCode != 200) return [];
+  final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+  if (decoded is! List) return [];
+  return decoded
+      .whereType<Map>()
+      .map((e) => PatientDoctorAppointment.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
 }
 
 /// POST /api/patients/{id}/send-test-sms — immediate DevSMS test (billed).

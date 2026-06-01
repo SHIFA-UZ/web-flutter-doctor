@@ -89,3 +89,10 @@ final patientsForAssignmentProvider =
     StateNotifierProvider<PatientsForAssignmentController, AsyncValue<List<PatientAssignmentItem>>>((ref) {
   return PatientsForAssignmentController(ref);
 });
+
+/// Appointment history for a patient with the logged-in doctor.
+final patientDoctorAppointmentsProvider =
+    FutureProvider.family<List<PatientDoctorAppointment>, String>((ref, patientId) async {
+  final client = ref.read(apiClientProvider);
+  return fetchPatientDoctorAppointments(client: client, patientId: patientId);
+});

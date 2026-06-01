@@ -204,6 +204,17 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
   }
 
+  Future<void> _persistAppointmentDrafts() async {
+    if (_documentationType == 'dental') {
+      await _dentalDocPanelKey.currentState?.flushSave();
+    }
+  }
+
+  Future<void> _leaveAppointmentScreen() async {
+    await _persistAppointmentDrafts();
+    if (mounted) Navigator.pop(context);
+  }
+
   void _clearGeneralNoteFields() {
     _notesController.clear();
     _soapSubjective.clear();
@@ -880,12 +891,10 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       var dentalNotesForPdf = '';
       AppointmentPdfDentalBilling? dentalBilling;
       if (_documentationType == 'dental') {
-        await _dentalDocPanelKey.currentState?.persistForPdf();
-        dentalNotesForPdf =
-            _dentalDocPanelKey.currentState?.dentalClinicalNotesPdfText ??
-                '';
-        dentalBilling =
-            _dentalDocPanelKey.currentState?.buildDentalPdfBilling(l10nForPdf);
+        final dentalState = _dentalDocPanelKey.currentState;
+        await dentalState?.flushSave();
+        dentalNotesForPdf = dentalState?.dentalClinicalNotesPdfText ?? '';
+        dentalBilling = dentalState?.buildDentalPdfBilling(l10nForPdf);
       }
 
       final combinedNotes = [
@@ -897,8 +906,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       final hasNotes = combinedNotes.isNotEmpty;
       final hasBeforeImages = _beforeTreatmentImages.isNotEmpty;
       final hasAfterImages = _afterTreatmentImages.isNotEmpty;
+      final dentalState = _dentalDocPanelKey.currentState;
       final dentalHasWork = _documentationType == 'dental' &&
-          (_dentalDocPanelKey.currentState?.hasBillableContent ?? false);
+          (dentalState?.hasBillableContent ?? false);
 
       if (!hasNotes && !hasBeforeImages && !hasAfterImages && !dentalHasWork) {
         if (mounted) {
@@ -1221,7 +1231,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                 appointment: widget.appointment,
                 resolvedPatient: resolvedPatient,
                 patientLoading: patientProfileLoading,
-                onBack: () => Navigator.pop(context),
+                onBack: _leaveAppointmentScreen,
               ),
               Expanded(
                 child: Padding(
