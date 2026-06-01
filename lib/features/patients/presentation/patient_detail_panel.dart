@@ -41,7 +41,6 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     with SingleTickerProviderStateMixin {
   final TextEditingController _documentSearchController =
       TextEditingController();
-  final TextEditingController _aiCopilotController = TextEditingController();
   String _documentSearchQuery = '';
   bool _documentViewerOpenedFromDeepLink = false;
   TabController? _tabController;
@@ -92,7 +91,6 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
   @override
   void dispose() {
     _documentSearchController.dispose();
-    _aiCopilotController.dispose();
     _tabController?.dispose();
     super.dispose();
   }
@@ -1014,17 +1012,9 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                 ),
                 const SizedBox(height: AppDesignSystem.sectionGap),
                 PatientAiCopilotCard(
+                  patientId: p.id,
                   patientName: p.name,
                   brand: brand,
-                  controller: _aiCopilotController,
-                  onAsk: () {
-                    final query = _aiCopilotController.text.trim();
-                    if (query.isEmpty) return;
-                    ref
-                        .read(patientBriefingProvider.notifier)
-                        .generate(p.id, p.name);
-                    _aiCopilotController.clear();
-                  },
                 ),
               ],
             ),
@@ -2524,11 +2514,13 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
   bool _saving = false;
   bool _sendingTest = false;
   late bool _enabled;
+  late int _hoursBefore;
 
   @override
   void initState() {
     super.initState();
     _enabled = widget.patient.general.smsReminderEnabled;
+    _hoursBefore = widget.patient.general.smsReminderHoursBefore;
   }
 
   @override
@@ -2536,8 +2528,11 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.patient.id != widget.patient.id ||
         oldWidget.patient.general.smsReminderEnabled !=
-            widget.patient.general.smsReminderEnabled) {
+            widget.patient.general.smsReminderEnabled ||
+        oldWidget.patient.general.smsReminderHoursBefore !=
+            widget.patient.general.smsReminderHoursBefore) {
       _enabled = widget.patient.general.smsReminderEnabled;
+      _hoursBefore = widget.patient.general.smsReminderHoursBefore;
     }
   }
 
@@ -2615,6 +2610,46 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
     }
   }
 
+  Future<void> _onHoursChanged(int? value) async {
+    if (value == null || value == _hoursBefore || !_hasPhone || _saving) return;
+    final l10n = AppLocalizations.of(context)!;
+    final previous = _hoursBefore;
+    setState(() {
+      _saving = true;
+      _hoursBefore = value;
+    });
+    try {
+      await updatePatientWithClient(
+        client: ref.read(apiClientProvider),
+        patientId: widget.patient.id,
+        smsReminderHoursBefore: value,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.translate('smsReminderSaved') ??
+                  'SMS reminder settings saved',
+            ),
+          ),
+        );
+        widget.onUpdated();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _hoursBefore = previous);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.error}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -2625,7 +2660,7 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
         children: [
           Text(
             l10n.translate('smsReminderDescription') ??
-                'Patient receives an SMS 24 hours before each future appointment.',
+                'Patient receives an SMS before each future appointment at the time you choose below.',
             style: AppDesignSystem.body2(context),
           ),
           if (!_hasPhone) ...[
@@ -2648,8 +2683,8 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
             activeTrackColor: widget.brand.withValues(alpha: 0.35),
             activeThumbColor: widget.brand,
           ),
-          DropdownButtonFormField<String>(
-            value: '24h',
+          DropdownButtonFormField<int>(
+            value: _hoursBefore,
             decoration: InputDecoration(
               labelText: l10n.translate('reminderTiming') ?? 'Reminder time',
               filled: true,
@@ -2661,13 +2696,21 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
             ),
             items: [
               DropdownMenuItem(
-                value: '24h',
+                value: 24,
                 child: Text(
                   l10n.translate('reminder24Hours') ?? '24 hours before',
                 ),
               ),
+              DropdownMenuItem(
+                value: 1,
+                child: Text(
+                  l10n.translate('reminder1Hour') ?? '1 hour before',
+                ),
+              ),
             ],
-            onChanged: (!_hasPhone || !_enabled) ? null : (_) {},
+            onChanged: (!_hasPhone || !_enabled || _saving)
+                ? null
+                : _onHoursChanged,
           ),
           if (_hasPhone) ...[
             const SizedBox(height: 10),

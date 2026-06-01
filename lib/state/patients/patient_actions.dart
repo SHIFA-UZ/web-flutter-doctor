@@ -375,6 +375,7 @@ Future<Patient> updatePatientWithClient({
   String? photoUrl,
   String? chronicDisease,
   bool? smsReminderEnabled,
+  int? smsReminderHoursBefore,
   String? gender,
   String? bloodGroup,
   String? allergies,
@@ -407,6 +408,9 @@ Future<Patient> updatePatientWithClient({
   }
   if (smsReminderEnabled != null) {
     body['smsReminderEnabled'] = smsReminderEnabled;
+  }
+  if (smsReminderHoursBefore != null) {
+    body['smsReminderHoursBefore'] = smsReminderHoursBefore;
   }
   if (gender != null) body['gender'] = gender;
   if (bloodGroup != null) body['bloodGroup'] = bloodGroup;

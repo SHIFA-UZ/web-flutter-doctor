@@ -93,6 +93,11 @@ class Patient {
     return const [];
   }
 
+  static int _parseSmsReminderHoursBefore(dynamic value) {
+    final parsed = value is int ? value : int.tryParse(value?.toString() ?? '');
+    return parsed == 1 ? 1 : 24;
+  }
+
   /// ✅ Parse `photoUrl` and `documents` coming from backend.
   /// The backend may return documents with either:
   ///  - {id, title, date, filePath}  (older contract)
@@ -138,6 +143,7 @@ class Patient {
         locationPostalCode: json['locationPostalCode'],
         locationStreetAddress: json['locationStreetAddress'],
         smsReminderEnabled: json['smsReminderEnabled'] == true,
+        smsReminderHoursBefore: _parseSmsReminderHoursBefore(json['smsReminderHoursBefore']),
         gender: _stringOrNull(json['gender']),
         bloodGroup: _stringOrNull(json['bloodGroup']),
         allergies: _stringOrNull(json['allergies']),
@@ -172,6 +178,7 @@ class PatientGeneral {
   final String? locationPostalCode;
   final String? locationStreetAddress;
   final bool smsReminderEnabled;
+  final int smsReminderHoursBefore;
 
   const PatientGeneral({
     this.birthDate,
@@ -191,6 +198,7 @@ class PatientGeneral {
     this.locationPostalCode,
     this.locationStreetAddress,
     this.smsReminderEnabled = false,
+    this.smsReminderHoursBefore = 24,
   });
   
   /// Format structured location for display: Street (if any), City, District, Region

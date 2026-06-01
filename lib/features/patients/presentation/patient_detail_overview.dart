@@ -1,10 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
+import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
+import 'package:shifa_doc_app_v1/core/api/ai_message.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_helpers.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 
 class PatientSummaryStat extends StatelessWidget {
   const PatientSummaryStat({
@@ -174,23 +184,142 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class PatientAiCopilotCard extends StatelessWidget {
+class PatientAiCopilotCard extends ConsumerStatefulWidget {
   const PatientAiCopilotCard({
     super.key,
+    required this.patientId,
     required this.patientName,
     required this.brand,
-    required this.controller,
-    required this.onAsk,
   });
 
+  final String patientId;
   final String patientName;
   final Color brand;
-  final TextEditingController controller;
-  final VoidCallback onAsk;
+
+  @override
+  ConsumerState<PatientAiCopilotCard> createState() =>
+      _PatientAiCopilotCardState();
+}
+
+class _PatientAiCopilotCardState extends ConsumerState<PatientAiCopilotCard> {
+  final _controller = TextEditingController();
+  final _scroll = ScrollController();
+  StreamSubscription<AiStreamEvent>? _sub;
+
+  bool _loading = false;
+  String _streamingText = '';
+  String? _error;
+  List<AiMessage> _conversation = [];
+
+  static const int _maxConversationMessages = 12;
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _controller.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant PatientAiCopilotCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.patientId != widget.patientId) {
+      _sub?.cancel();
+      _controller.clear();
+      setState(() {
+        _loading = false;
+        _streamingText = '';
+        _error = null;
+        _conversation = [];
+      });
+    }
+  }
+
+  List<AiMessage> _trimConversation(List<AiMessage> messages) {
+    if (messages.length <= _maxConversationMessages) return messages;
+    return messages.sublist(messages.length - _maxConversationMessages);
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
+  }
+
+  Future<void> _ask() async {
+    final question = _controller.text.trim();
+    if (question.isEmpty || _loading) return;
+
+    final aiApi = ref.read(aiApiProvider);
+    final patientId = int.tryParse(widget.patientId);
+    final next = _trimConversation([
+      ..._conversation,
+      AiMessage(role: 'user', content: question),
+    ]);
+
+    setState(() {
+      _conversation = next;
+      _streamingText = '';
+      _error = null;
+      _loading = true;
+    });
+    _controller.clear();
+    _scrollToBottom();
+
+    _sub?.cancel();
+    final streamLang =
+        ref.read(languageProvider).locale.backendLanguageCode.toUpperCase();
+    _sub = aiApi
+        .streamAi(
+          messages: next,
+          question: question,
+          language: streamLang,
+          patientId: patientId,
+        )
+        .listen(
+          (event) {
+            if (event is AiTokenEvent) {
+              setState(() => _streamingText += event.token);
+              _scrollToBottom();
+            }
+          },
+          onDone: () {
+            if (!mounted) return;
+            setState(() {
+              final answer = _streamingText.trimRight();
+              if (answer.isNotEmpty) {
+                _conversation = _trimConversation([
+                  ..._conversation,
+                  AiMessage(role: 'assistant', content: answer),
+                ]);
+              }
+              _streamingText = '';
+              _loading = false;
+            });
+            _scrollToBottom();
+          },
+          onError: (e) {
+            if (!mounted) return;
+            setState(() {
+              _loading = false;
+              _streamingText = '';
+              _error = e is AiStreamException ? e.userFacingMessage : e.toString();
+            });
+          },
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final canUse = ref.watch(doctorFeatureProvider(DoctorFeature.askShifaAi));
+    if (!canUse) return const SizedBox.shrink();
+
     final l10n = AppLocalizations.of(context)!;
+    final hasResponse =
+        _loading || _error != null || _conversation.isNotEmpty || _streamingText.isNotEmpty;
+
     return Container(
       decoration: AppDesignSystem.aiCardDecoration(),
       padding: const EdgeInsets.all(AppDesignSystem.cardPadding),
@@ -203,7 +332,7 @@ class PatientAiCopilotCard extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [brand, AppDesignSystem.primaryAi],
+                    colors: [widget.brand, AppDesignSystem.primaryAi],
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -220,7 +349,7 @@ class PatientAiCopilotCard extends StatelessWidget {
                     ),
                     Text(
                       l10n.translate('aiPatientCopilotSubtitle') ??
-                          'Ask clinical questions about $patientName.',
+                          'Ask about this patient\'s history, risks, and follow-ups.',
                       style: AppDesignSystem.body2(context),
                     ),
                   ],
@@ -228,15 +357,87 @@ class PatientAiCopilotCard extends StatelessWidget {
               ),
             ],
           ),
+          if (hasResponse) ...[
+            const SizedBox(height: 12),
+            Container(
+              constraints: const BoxConstraints(minHeight: 72, maxHeight: 220),
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppDesignSystem.border),
+              ),
+              child: SingleChildScrollView(
+                controller: _scroll,
+                child: _error != null
+                    ? Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontSize: 13,
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final message in _conversation)
+                            _PatientAiChatBubble(
+                              role: message.role,
+                              child: AiResponseText(
+                                text: message.content,
+                                style: const TextStyle(fontSize: 13),
+                                maxWidth: 520,
+                              ),
+                            ),
+                          if (_streamingText.isNotEmpty)
+                            _PatientAiChatBubble(
+                              role: 'assistant',
+                              child: AiResponseText(
+                                text: _streamingText,
+                                style: const TextStyle(fontSize: 13),
+                                maxWidth: 520,
+                              ),
+                            ),
+                          if (_loading && _streamingText.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: widget.brand,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.translate('aiAnalyzingPatientDocs') ??
+                                          'Analyzing patient documents…',
+                                      style: AppDesignSystem.body2(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: TextField(
-                  controller: controller,
+                  controller: _controller,
+                  enabled: !_loading,
                   decoration: InputDecoration(
                     hintText: l10n.translate('askAboutPatient') ??
-                        'Ask anything about this patient...',
+                        'Ask about this patient…',
                     filled: true,
                     fillColor: Colors.white,
                     isDense: true,
@@ -257,18 +458,45 @@ class PatientAiCopilotCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  onSubmitted: (_) => onAsk(),
+                  onSubmitted: (_) => _ask(),
                 ),
               ),
               const SizedBox(width: 10),
               ShifaPrimaryButton(
-                onPressed: onAsk,
+                onPressed: _loading ? null : _ask,
                 icon: Icons.send_rounded,
                 label: l10n.translate('ask') ?? 'Ask',
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PatientAiChatBubble extends StatelessWidget {
+  const _PatientAiChatBubble({required this.role, required this.child});
+
+  final String role;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = role == 'user';
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isUser
+              ? AppColors.secondaryLight.withValues(alpha: 0.5)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppDesignSystem.border),
+        ),
+        child: child,
       ),
     );
   }
