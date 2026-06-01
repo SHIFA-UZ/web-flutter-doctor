@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/foundation.dart' show debugPrint;
 
-enum EntryType { appointment, freeSlot }
+enum EntryType { appointment, freeSlot, blocked }
 
 class CalendarEntry {
   final EntryType type;
@@ -26,6 +26,12 @@ class CalendarEntry {
 
   /// Appointment ID (for canceling/changing)
   final int? appointmentId;
+
+  /// Schedule block ID (for emergency unavailability)
+  final int? blockId;
+
+  /// Optional reason on a blocked period
+  final String? blockReason;
 
   /// Patient ID (for notifications)
   final int? patientId;
@@ -52,7 +58,9 @@ class CalendarEntry {
     this.status,
     this.paymentStatus,
     this.locationId,
-  }) : type = EntryType.appointment;
+  })  : type = EntryType.appointment,
+        blockId = null,
+        blockReason = null;
 
   CalendarEntry.freeSlot({
     required this.start,
@@ -67,9 +75,30 @@ class CalendarEntry {
         reason = '',
         photoUrl = null,
         appointmentId = null,
+        blockId = null,
+        blockReason = null,
         patientId = null,
         status = null,
         paymentStatus = null;
+
+  CalendarEntry.blocked({
+    required this.start,
+    required this.end,
+    this.startAtUtc,
+    this.endAtUtc,
+    this.blockId,
+    this.blockReason,
+  })  : type = EntryType.blocked,
+        patientName = null,
+        isVideo = false,
+        location = '',
+        reason = blockReason ?? '',
+        photoUrl = null,
+        appointmentId = null,
+        patientId = null,
+        status = null,
+        paymentStatus = null,
+        locationId = null;
 
   /// Converts ISO 8601 UTC string to TimeOfDay in [doctorTimeZone]. Use for consistent display (Today list and Calendar).
   static TimeOfDay utcIsoToTimeOfDayInZone(String isoUtc, String? doctorTimeZone) {
@@ -119,6 +148,17 @@ class CalendarEntry {
         : (locationText ?? '');
 
     final typeStr = (j['type'] as String?)?.toUpperCase();
+
+    if (typeStr == 'BLOCKED') {
+      return CalendarEntry.blocked(
+        start: start,
+        end: end,
+        startAtUtc: startAt,
+        endAtUtc: endAt,
+        blockId: _intFromJson(j['blockId']),
+        blockReason: j['blockReason'] as String?,
+      );
+    }
 
     if (typeStr == 'APPOINTMENT') {
       final reason = (j['reason'] as String?) ?? '';

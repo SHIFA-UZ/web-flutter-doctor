@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/features/auth/presentation/verify_key_screen.da
 import 'package:shifa_doc_app_v1/features/auth/presentation/email_login/email_input_screen.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 
 // Use AuthController instead of talking to ApiClient directly
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
@@ -31,6 +32,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(languageProvider.notifier).applyRegionalDefaultIfUnset();
+    });
+  }
 
   @override
   void dispose() {

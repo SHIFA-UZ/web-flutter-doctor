@@ -784,6 +784,34 @@ class AppLocalizations {
       'selectDatesToSeeSchedule': 'Select dates to see your schedule',
       'showAppointments': 'Show Appointments',
       'showFreeSlots': 'Show Free Slots',
+      'showBlockedTime': 'Show blocked time',
+      'blockTime': 'Block time',
+      'blockTimeTitle': 'Block time',
+      'blockEntireDay': 'Block entire day',
+      'blockTimeRange': 'Block time range',
+      'blockDateRange': 'Block multiple days',
+      'blockReason': 'Reason (optional)',
+      'blockReasonHint': 'Emergency, personal, etc.',
+      'blockTimeConfirm': 'Block',
+      'blockTimeSuccess': 'Time blocked successfully',
+      'blockTimeSuccessWithCancel':
+          'Time blocked. {{count}} appointment(s) cancelled.',
+      'blockedTime': 'Blocked',
+      'unblockTime': 'Remove block',
+      'unblockConfirm':
+          'Remove this block? Free slots will become available again.',
+      'unblockSuccess': 'Block removed',
+      'blockOverlapWarning':
+          'Some existing appointments fall within this period.',
+      'blockOverlapWillCancel': '{{count}} appointment(s) will be cancelled.',
+      'blockCancelOverlapping': 'Cancel overlapping appointments',
+      'blockCancelOverlappingHint':
+          'Patients will be notified automatically.',
+      'blockEndDateMustBeOnOrAfterStart':
+          'End date must be on or after start date.',
+      'blockOverlapInfo':
+          'Patients cannot book new appointments during this blocked period.',
+      'emergencyBlock': 'Emergency',
       'goToSchedule': 'Go To Schedule',
       'updateScheduleMessage':
           'Update schedule - Your calendar does not provide booking slots this far ahead',
@@ -3252,6 +3280,35 @@ class AppLocalizations {
       'clinicAddress': 'Klinika manzili',
       'showAppointments': 'Uchrashuvlarni ko\'rsatish',
       'showFreeSlots': 'Bo\'sh vaqtlarni ko\'rsatish',
+      'showBlockedTime': 'Bloklangan vaqtlarni ko\'rsatish',
+      'blockTime': 'Vaqtni bloklash',
+      'blockTimeTitle': 'Vaqtni bloklash',
+      'blockEntireDay': 'Butun kunni bloklash',
+      'blockTimeRange': 'Vaqt oralig\'ini bloklash',
+      'blockDateRange': 'Bir necha kunni bloklash',
+      'blockReason': 'Sabab (ixtiyoriy)',
+      'blockReasonHint': 'Favqulodda holat, shaxsiy va hokazo',
+      'blockTimeConfirm': 'Bloklash',
+      'blockTimeSuccess': 'Vaqt muvaffaqiyatli bloklandi',
+      'blockTimeSuccessWithCancel':
+          'Vaqt bloklandi. {{count}} ta uchrashuv bekor qilindi.',
+      'blockedTime': 'Bloklangan',
+      'unblockTime': 'Blokni olib tashlash',
+      'unblockConfirm':
+          'Ushbu blokni olib tashlaysizmi? Bo\'sh vaqtlar yana ochiladi.',
+      'unblockSuccess': 'Blok olib tashlandi',
+      'blockOverlapWarning':
+          'Bu davrda mavjud uchrashuvlar bor.',
+      'blockOverlapWillCancel':
+          '{{count}} ta uchrashuv bekor qilinadi.',
+      'blockCancelOverlapping': 'Ustma-ust tushadigan uchrashuvlarni bekor qilish',
+      'blockCancelOverlappingHint':
+          'Bemorlarga avtomatik xabar yuboriladi.',
+      'blockEndDateMustBeOnOrAfterStart':
+          'Tugash sanasi boshlanish sanasidan oldin bo\'lmasligi kerak.',
+      'blockOverlapInfo':
+          'Bloklangan davrda bemorlar yangi uchrashuv bron qila olmaydi.',
+      'emergencyBlock': 'Favqulodda holat',
       'dismiss': 'Yopish',
       'setPracticeTimezoneHint':
           'Uchrashuv vaqtlari to\'g\'ri bo\'lishi uchun Profilda amaliyot vaqt zonangizni (masalan, Europe/Berlin) o\'rnating.',
@@ -4871,6 +4928,34 @@ class AppLocalizations {
       'clinicAddress': 'Адрес клиники',
       'showAppointments': 'Показать записи',
       'showFreeSlots': 'Показать свободные слоты',
+      'showBlockedTime': 'Показать заблокированное время',
+      'blockTime': 'Заблокировать время',
+      'blockTimeTitle': 'Заблокировать время',
+      'blockEntireDay': 'Заблокировать весь день',
+      'blockTimeRange': 'Заблокировать период',
+      'blockDateRange': 'Заблокировать несколько дней',
+      'blockReason': 'Причина (необязательно)',
+      'blockReasonHint': 'Чрезвычайная ситуация, личные дела и т.д.',
+      'blockTimeConfirm': 'Заблокировать',
+      'blockTimeSuccess': 'Время успешно заблокировано',
+      'blockTimeSuccessWithCancel':
+          'Время заблокировано. Отменено записей: {{count}}.',
+      'blockedTime': 'Заблокировано',
+      'unblockTime': 'Снять блокировку',
+      'unblockConfirm':
+          'Снять эту блокировку? Свободные слоты снова станут доступны.',
+      'unblockSuccess': 'Блокировка снята',
+      'blockOverlapWarning':
+          'В этот период есть записи.',
+      'blockOverlapWillCancel': 'Будет отменено записей: {{count}}.',
+      'blockCancelOverlapping': 'Отменить пересекающиеся записи',
+      'blockCancelOverlappingHint':
+          'Пациенты получат уведомление автоматически.',
+      'blockEndDateMustBeOnOrAfterStart':
+          'Дата окончания не может быть раньше даты начала.',
+      'blockOverlapInfo':
+          'В заблокированный период пациенты не смогут записаться.',
+      'emergencyBlock': 'Чрезвычайная ситуация',
       'dismiss': 'Закрыть',
       'setPracticeTimezoneHint':
           'Укажите часовой пояс практики в Профиле (например, Europe/Berlin), чтобы время приёмов отображалось верно.',

@@ -143,3 +143,42 @@ String _errorMessageFromResponse(http.Response res) {
   } catch (_) {}
   return '${res.statusCode} ${res.body}';
 }
+
+/// POST /api/schedule/blocks — block free slots for emergencies / unavailability.
+Future<void> createScheduleBlock(
+  WidgetRef ref, {
+  required String startAtUtc,
+  required String endAtUtc,
+  String? reason,
+  int? resourceDoctorId,
+  bool cancelOverlappingAppointments = false,
+}) async {
+  final api = ref.read(apiClientProvider);
+  final body = <String, dynamic>{
+    'startAt': startAtUtc,
+    'endAt': endAtUtc,
+    'cancelOverlappingAppointments': cancelOverlappingAppointments,
+    if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+    if (resourceDoctorId != null) 'resourceDoctorId': resourceDoctorId,
+  };
+  final res = await api.post('/api/schedule/blocks', body);
+  if (res.statusCode != 200 && res.statusCode != 201) {
+    throw Exception(_errorMessageFromResponse(res));
+  }
+}
+
+/// DELETE /api/schedule/blocks/{id}
+Future<void> deleteScheduleBlock(
+  WidgetRef ref, {
+  required int blockId,
+  int? doctorId,
+}) async {
+  final api = ref.read(apiClientProvider);
+  final path = doctorId != null
+      ? '/api/schedule/blocks/$blockId?doctorId=$doctorId'
+      : '/api/schedule/blocks/$blockId';
+  final res = await api.delete(path);
+  if (res.statusCode != 200 && res.statusCode != 204) {
+    throw Exception(_errorMessageFromResponse(res));
+  }
+}

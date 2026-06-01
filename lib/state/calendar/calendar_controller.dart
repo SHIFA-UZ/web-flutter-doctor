@@ -281,7 +281,7 @@ class CalendarController
   }
 
   /// Build ISO 8601 UTC string from local date/time in [doctorTimeZone] (IANA).
-  static String _localToUtcIso(
+  static String localDateTimeToUtcIso(
     String doctorTimeZone,
     int year,
     int month,
@@ -299,6 +299,23 @@ class CalendarController
     final utc = local.toUtc();
     return utc.toIso8601String();
   }
+
+  static String _localToUtcIso(
+    String doctorTimeZone,
+    int year,
+    int month,
+    int day,
+    int hour,
+    int minute,
+  ) =>
+      localDateTimeToUtcIso(
+        doctorTimeZone,
+        year,
+        month,
+        day,
+        hour,
+        minute,
+      );
 
   /// Fetch entries for a given day from backend and store in state.
   /// [doctorTimeZone] is an explicit dependency; caller (e.g. CalendarScreen) must pass it.
@@ -634,6 +651,100 @@ class CalendarController
       return;
     }
     throw Exception('Notify payment reminder failed: ${res.statusCode} ${res.body}');
+  }
+
+  /// Block free slots for a period (emergency / unavailability), then refresh affected days.
+  /// Returns how many appointments were auto-cancelled by the backend.
+  Future<int> createScheduleBlock({
+    required DateTime day,
+    required String startAtUtc,
+    required String endAtUtc,
+    required String doctorTimeZone,
+    String? reason,
+    bool cancelOverlappingAppointments = false,
+    DateTime? refreshThroughDay,
+  }) async {
+    final client = ref.read(apiClientProvider);
+    final body = <String, dynamic>{
+      'startAt': startAtUtc,
+      'endAt': endAtUtc,
+      'cancelOverlappingAppointments': cancelOverlappingAppointments,
+      if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      if (_resourceDoctorId != null) 'resourceDoctorId': _resourceDoctorId,
+    };
+    final res = await client.post('/api/schedule/blocks', body);
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('Block failed: ${res.statusCode} ${res.body}');
+    }
+
+    var cancelledCount = 0;
+    try {
+      final decoded = json.decode(utf8.decode(res.bodyBytes));
+      if (decoded is Map && decoded['cancelledAppointmentCount'] is num) {
+        cancelledCount = (decoded['cancelledAppointmentCount'] as num).toInt();
+      }
+    } catch (_) {}
+
+    final lastDay = refreshThroughDay ?? day;
+    final firstKey = DateTime(day.year, day.month, day.day);
+    final lastKey = DateTime(lastDay.year, lastDay.month, lastDay.day);
+    for (var d = firstKey;
+        !d.isAfter(lastKey);
+        d = d.add(const Duration(days: 1))) {
+      await loadDay(
+        day: d,
+        doctorTimeZone: doctorTimeZone,
+        forceRefresh: true,
+      );
+    }
+    return cancelledCount;
+  }
+
+  /// Preview how many appointments would be cancelled for a block range.
+  Future<int> countOverlappingAppointmentsForBlock({
+    required String startAtUtc,
+    required String endAtUtc,
+  }) async {
+    final client = ref.read(apiClientProvider);
+    final params = <String, String>{
+      'startAt': startAtUtc,
+      'endAt': endAtUtc,
+    };
+    if (_resourceDoctorId != null) {
+      params['doctorId'] = _resourceDoctorId.toString();
+    }
+    final res = await client.get('/api/schedule/blocks/overlapping-count', params: params);
+    if (res.statusCode != 200) {
+      return 0;
+    }
+    try {
+      final decoded = json.decode(utf8.decode(res.bodyBytes));
+      if (decoded is Map && decoded['count'] is num) {
+        return (decoded['count'] as num).toInt();
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  /// Remove a schedule block, then refresh the day.
+  Future<void> deleteScheduleBlock({
+    required int blockId,
+    required DateTime day,
+    required String doctorTimeZone,
+  }) async {
+    final client = ref.read(apiClientProvider);
+    final path = _resourceDoctorId != null
+        ? '/api/schedule/blocks/$blockId?doctorId=$_resourceDoctorId'
+        : '/api/schedule/blocks/$blockId';
+    final res = await client.delete(path);
+    if (res.statusCode != 200 && res.statusCode != 204) {
+      throw Exception('Unblock failed: ${res.statusCode} ${res.body}');
+    }
+    await loadDay(
+      day: day,
+      doctorTimeZone: doctorTimeZone,
+      forceRefresh: true,
+    );
   }
 }
 

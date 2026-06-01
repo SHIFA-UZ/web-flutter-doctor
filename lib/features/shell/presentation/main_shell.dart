@@ -422,7 +422,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                             _buildDarkNavItem(context, ref, Icons.calendar_today_outlined, l10n.translate('navAppointments'), DoctorShellTab.calendar, brand, selectedIndex),
                             _buildDarkNavItem(context, ref, Icons.people_outline, l10n.patients, DoctorShellTab.patients, brand, selectedIndex),
                             if (hasClinicWorkspace)
-                              _buildDarkNavItem(context, ref, Icons.medical_services_outlined, l10n.translate('navServices'), DoctorShellTab.clinic, brand, selectedIndex),
+                              _buildDarkNavItem(context, ref, Icons.medical_services_outlined, l10n.translate('clinicNavClinic'), DoctorShellTab.clinic, brand, selectedIndex),
                             if (canUseTasks)
                               _buildDarkTasksNavItem(context, ref, DoctorShellTab.tasks, brand, selectedIndex),
                             _buildDarkNavItem(context, ref, Icons.analytics_outlined, l10n.translate('navReports'), DoctorShellTab.reports, brand, selectedIndex),
@@ -500,13 +500,24 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                   );
                 },
               ),
-            ),
+                ),
                 if (!isClinicStaff)
                   Positioned(
                     right: 0,
                     bottom: 0,
                     child: PatientBriefingPanel(
                       bottomInset: Responsive.bottomNavClearance(context),
+                    ),
+                  ),
+                if (isMobile)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, right: 8),
+                        child: const LanguageMiniToggle(),
+                      ),
                     ),
                   ),
               ],
@@ -629,7 +640,11 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                   },
                 ),
                 const Divider(),
-                const LanguageMiniToggle(),
+                ListTile(
+                  leading: Icon(Icons.language, color: brand),
+                  title: Text(l10n.language),
+                  trailing: const LanguageMiniToggle(),
+                ),
                 const SizedBox(height: 8),
                 _LogoutButton(brand: brand),
               ],

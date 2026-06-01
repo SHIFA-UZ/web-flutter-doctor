@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:shifa_doc_app_v1/core/localization/locale_detection.dart';
+
 /// Persisted tag / [DropdownMenuItem] value for Uzbek Cyrillic UI (`Locale(uz, Cyrl)`).
 const String kUzbekCyrillicLocaleTag = 'uz-Cyrl';
 
@@ -54,13 +56,46 @@ class LanguageNotifier extends StateNotifier<LanguageState> {
 
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
-    final tag = prefs.getString('doctor_language') ?? 'en';
-    state = LanguageState(localeFromPersistenceTag(tag));
+    final saved = prefs.getString('doctor_language');
+    final explicit = prefs.getBool(languageExplicitPrefKey) ?? false;
+
+    if (saved != null && saved.isNotEmpty) {
+      if (explicit) {
+        state = LanguageState(localeFromPersistenceTag(saved));
+        return;
+      }
+      // Legacy or auto-saved — re-check region on each cold start when not explicit.
+      final regional = detectDefaultLocale();
+      if (regional.languageCode != saved) {
+        await prefs.setString('doctor_language', regional.persistenceTag);
+        state = LanguageState(regional);
+        return;
+      }
+      state = LanguageState(localeFromPersistenceTag(saved));
+      return;
+    }
+
+    final detected = detectDefaultLocale();
+    await prefs.setString('doctor_language', detected.persistenceTag);
+    state = LanguageState(detected);
+  }
+
+  /// Call on login screens; sets Uzbek when in Uzbekistan unless user chose a language.
+  Future<void> applyRegionalDefaultIfUnset({String? phoneCountryCode}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(languageExplicitPrefKey) ?? false) return;
+
+    if (!isLikelyUzbekistan(phoneCountryCode: phoneCountryCode)) return;
+
+    const uz = Locale('uz');
+    await prefs.setString('doctor_language', uz.persistenceTag);
+    state = LanguageState(uz);
   }
 
   Future<void> setLanguage(Locale locale) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('doctor_language', locale.persistenceTag);
+    await prefs.setBool(languageExplicitPrefKey, true);
     state = LanguageState(locale);
   }
 }

@@ -8,6 +8,7 @@ import '../../core/util/jwt_utils.dart';
 import '../profile/profile_providers.dart';
 import '../appointments/appointment_invalidation.dart';
 import '../patients/patients_provider.dart';
+import '../../core/providers/language_provider.dart';
 
 const String _authTokenStorageKey = 'shifa_doctor_auth_token';
 const String _adminAuthTokenStorageKey = 'shifa_admin_auth_token';
@@ -90,6 +91,10 @@ class AuthController extends StateNotifier<AuthState> {
           // 🔁 Force a clean, token-aware refetch for profile after login:
           ref.invalidate(profileAllProvider);
       ref.invalidate(meProfileProvider);
+
+          if (app != 'admin') {
+            await _applyRegionalLanguageDefault();
+          }
           
           // Note: Inactivity timer is automatically started when authProvider becomes authenticated
           // via inactivityTimerProvider which watches authProvider
@@ -166,7 +171,10 @@ class AuthController extends StateNotifier<AuthState> {
 
   /// Login with Firebase ID token (after phone OTP). Backend verifies token and checks DOCTOR role.
   /// On success sets JWT and state. On 403 (not doctor / blocked) throws with localized message key.
-  Future<void> loginWithFirebaseToken(String idToken) async {
+  Future<void> loginWithFirebaseToken(
+    String idToken, {
+    String? phoneCountryCode,
+  }) async {
     final api = ref.read(apiClientProvider);
     final res = await api.postWithBearer('/api/auth/verify', <String, dynamic>{}, idToken);
     final contentType = res.headers['content-type'] ?? '';
@@ -185,6 +193,7 @@ class AuthController extends StateNotifier<AuthState> {
       await _saveTokenToStorage(token);
       ref.invalidate(profileAllProvider);
       ref.invalidate(meProfileProvider);
+      await _applyRegionalLanguageDefault(phoneCountryCode: phoneCountryCode);
       return;
     }
     if (res.statusCode == 403) {
@@ -222,6 +231,7 @@ class AuthController extends StateNotifier<AuthState> {
       await _saveTokenToStorage(token);
       ref.invalidate(profileAllProvider);
       ref.invalidate(meProfileProvider);
+      await _applyRegionalLanguageDefault();
       return;
     }
     throw Exception(body?['message'] ?? 'Verification failed (${res.statusCode})');
@@ -476,6 +486,12 @@ class AuthController extends StateNotifier<AuthState> {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<void> _applyRegionalLanguageDefault({String? phoneCountryCode}) async {
+    await ref.read(languageProvider.notifier).applyRegionalDefaultIfUnset(
+          phoneCountryCode: phoneCountryCode,
+        );
   }
 }
 

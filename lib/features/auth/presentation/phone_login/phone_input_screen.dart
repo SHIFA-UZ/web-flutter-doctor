@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/providers/auth_providers.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/phone_login/otp_screen.dart';
@@ -52,6 +54,16 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
   final _phoneCtrl = TextEditingController();
   String _selectedCode = '+998';
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(languageProvider.notifier).applyRegionalDefaultIfUnset(
+            phoneCountryCode: _selectedCode,
+          );
+    });
+  }
 
   @override
   void dispose() {
@@ -129,6 +141,12 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Center(child: LanguageMiniToggle()),
+          ),
+        ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -169,7 +187,13 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                             items: _countryCodes
                                 .map((c) => DropdownMenuItem(value: c.code, child: Text(c.code)))
                                 .toList(),
-                            onChanged: (v) => setState(() => _selectedCode = v ?? '+998'),
+                            onChanged: (v) {
+                              final code = v ?? '+998';
+                              setState(() => _selectedCode = code);
+                              ref.read(languageProvider.notifier).applyRegionalDefaultIfUnset(
+                                    phoneCountryCode: code,
+                                  );
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),

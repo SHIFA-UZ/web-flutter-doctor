@@ -46,6 +46,9 @@ String _tableCalendarIntlLocale(BuildContext context) {
   return 'en';
 }
 
+/// Block-time dialog modes on [CalendarScreen].
+enum _ScheduleBlockMode { entireDay, timeRange, dateRange }
+
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
 
@@ -65,6 +68,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   // Filter state
   bool _showAppointments = true;
   bool _showFreeSlots = true;
+  bool _showBlockedTime = true;
 
   /// When true, profile listener skips loading "today" so go-to-appointment can load the target day only.
   bool _skipInitialProfileLoad = false;
@@ -90,6 +94,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     return allEntries.where((e) {
       if (e.type == EntryType.appointment) return _showAppointments;
       if (e.type == EntryType.freeSlot) return _showFreeSlots;
+      if (e.type == EntryType.blocked) return _showBlockedTime;
       return true;
     }).toList();
   }
@@ -650,6 +655,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             icon: Icons.tune,
           );
 
+    final blockControl = isMobile
+        ? IconButton.filledTonal(
+            onPressed: _selectedDay == null
+                ? null
+                : () => _showBlockTimeDialog(context),
+            icon: const Icon(Icons.block),
+            tooltip: l10n.translate('blockTime') ?? 'Block time',
+          )
+        : ShifaSecondaryButton(
+            label: l10n.translate('blockTime') ?? 'Block time',
+            onPressed: _selectedDay == null
+                ? null
+                : () => _showBlockTimeDialog(context),
+            icon: Icons.block,
+          );
+
     if (isMobile) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -679,6 +700,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
+          blockControl,
+          const SizedBox(width: 4),
           filterControl,
         ],
       );
@@ -707,6 +730,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             ),
           ),
         const SizedBox(width: 8),
+        blockControl,
+        const SizedBox(width: 8),
         filterControl,
       ],
     );
@@ -715,6 +740,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   Future<void> _showFilterDialog(BuildContext context) async {
     bool tempShowAppointments = _showAppointments;
     bool tempShowFreeSlots = _showFreeSlots;
+    bool tempShowBlockedTime = _showBlockedTime;
 
     final result = await showDialog<bool>(
       context: context,
@@ -749,6 +775,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                       });
                     },
                   ),
+                  CheckboxListTile(
+                    title: Text(
+                      l10n.translate('showBlockedTime') ?? 'Show blocked time',
+                    ),
+                    value: tempShowBlockedTime,
+                    onChanged: (val) {
+                      setDialogState(() {
+                        tempShowBlockedTime = val ?? true;
+                      });
+                    },
+                  ),
                 ],
               ),
               actions: [
@@ -772,6 +809,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       setState(() {
         _showAppointments = tempShowAppointments;
         _showFreeSlots = tempShowFreeSlots;
+        _showBlockedTime = tempShowBlockedTime;
       });
 
       final tz = ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
@@ -781,6 +819,479 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         await _loadDay(_selectedDay!, effectiveTz);
       }
     }
+  }
+
+  bool _timeRangesOverlap(
+    TimeOfDay aStart,
+    TimeOfDay aEnd,
+    TimeOfDay bStart,
+    TimeOfDay bEnd,
+  ) {
+    final a0 = aStart.hour * 60 + aStart.minute;
+    final a1 = aEnd.hour * 60 + aEnd.minute;
+    final b0 = bStart.hour * 60 + bStart.minute;
+    final b1 = bEnd.hour * 60 + bEnd.minute;
+    return a0 < b1 && b0 < a1;
+  }
+
+  String _localToUtcIso(
+    String doctorTimeZone,
+    DateTime day,
+    TimeOfDay time,
+  ) {
+    return CalendarController.localDateTimeToUtcIso(
+      doctorTimeZone,
+      day.year,
+      day.month,
+      day.day,
+      time.hour,
+      time.minute,
+    );
+  }
+
+  Future<void> _showBlockTimeDialog(BuildContext context) async {
+    final day = _selectedDay;
+    if (day == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final doctorTimeZone = _effectiveProfileTimeZone();
+    var mode = _ScheduleBlockMode.entireDay;
+    var startTime = const TimeOfDay(hour: 9, minute: 0);
+    var endTime = const TimeOfDay(hour: 17, minute: 0);
+    var rangeStartDate = DateTime(day.year, day.month, day.day);
+    var rangeEndDate = DateTime(day.year, day.month, day.day);
+    var cancelOverlapping = true;
+    var overlappingCount = 0;
+    var loadingOverlapCount = false;
+    final reasonCtrl = TextEditingController(
+      text: l10n.translate('emergencyBlock') ?? 'Emergency',
+    );
+    var saving = false;
+
+    Future<void> pickTime(
+      BuildContext ctx,
+      TimeOfDay initial,
+      void Function(TimeOfDay) onPicked,
+    ) async {
+      final picked = await showTimePicker(
+        context: ctx,
+        initialTime: initial,
+      );
+      if (picked != null) onPicked(picked);
+    }
+
+    Future<void> pickDate(
+      BuildContext ctx,
+      DateTime initial,
+      void Function(DateTime) onPicked,
+    ) async {
+      final picked = await showDatePicker(
+        context: ctx,
+        initialDate: initial,
+        firstDate: DateTime(day.year - 1, day.month, day.day),
+        lastDate: DateTime(day.year + 2, day.month, day.day),
+      );
+      if (picked != null) {
+        onPicked(DateTime(picked.year, picked.month, picked.day));
+      }
+    }
+
+    bool blockRangeValid(_ScheduleBlockMode currentMode) {
+      switch (currentMode) {
+        case _ScheduleBlockMode.entireDay:
+          return true;
+        case _ScheduleBlockMode.timeRange:
+          return (endTime.hour * 60 + endTime.minute) >
+              (startTime.hour * 60 + startTime.minute);
+        case _ScheduleBlockMode.dateRange:
+          return !rangeEndDate.isBefore(rangeStartDate);
+      }
+    }
+
+    ({
+      DateTime startDay,
+      TimeOfDay startTod,
+      DateTime endDay,
+      TimeOfDay endTod,
+    }) blockRangeForMode(_ScheduleBlockMode currentMode) {
+      switch (currentMode) {
+        case _ScheduleBlockMode.entireDay:
+          return (
+            startDay: day,
+            startTod: const TimeOfDay(hour: 0, minute: 0),
+            endDay: day,
+            endTod: const TimeOfDay(hour: 23, minute: 59),
+          );
+        case _ScheduleBlockMode.timeRange:
+          return (
+            startDay: day,
+            startTod: startTime,
+            endDay: day,
+            endTod: endTime,
+          );
+        case _ScheduleBlockMode.dateRange:
+          return (
+            startDay: rangeStartDate,
+            startTod: const TimeOfDay(hour: 0, minute: 0),
+            endDay: rangeEndDate,
+            endTod: const TimeOfDay(hour: 23, minute: 59),
+          );
+      }
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        var overlapInitialized = false;
+
+        Future<void> refreshOverlapCount(VoidCallback rebuild) async {
+          if (!blockRangeValid(mode)) {
+            rebuild();
+            return;
+          }
+          final range = blockRangeForMode(mode);
+          loadingOverlapCount = true;
+          rebuild();
+          try {
+            final startAtUtc = _localToUtcIso(
+              doctorTimeZone,
+              range.startDay,
+              range.startTod,
+            );
+            final endAtUtc = _localToUtcIso(
+              doctorTimeZone,
+              range.endDay,
+              range.endTod,
+            );
+            overlappingCount = await ref
+                .read(calendarProvider.notifier)
+                .countOverlappingAppointmentsForBlock(
+                  startAtUtc: startAtUtc,
+                  endAtUtc: endAtUtc,
+                );
+          } catch (_) {
+            overlappingCount = 0;
+          } finally {
+            loadingOverlapCount = false;
+            rebuild();
+          }
+        }
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            if (!overlapInitialized) {
+              overlapInitialized = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                refreshOverlapCount(() => setDialogState(() {}));
+              });
+            }
+
+            return AlertDialog(
+              title: Text(l10n.translate('blockTimeTitle') ?? 'Block time'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    RadioListTile<_ScheduleBlockMode>(
+                      title: Text(
+                        l10n.translate('blockEntireDay') ?? 'Block entire day',
+                      ),
+                      value: _ScheduleBlockMode.entireDay,
+                      groupValue: mode,
+                      onChanged: saving
+                          ? null
+                          : (v) {
+                              if (v == null) return;
+                              setDialogState(() {
+                                mode = v;
+                                overlappingCount = 0;
+                              });
+                              refreshOverlapCount(() => setDialogState(() {}));
+                            },
+                    ),
+                    RadioListTile<_ScheduleBlockMode>(
+                      title: Text(
+                        l10n.translate('blockTimeRange') ?? 'Block time range',
+                      ),
+                      value: _ScheduleBlockMode.timeRange,
+                      groupValue: mode,
+                      onChanged: saving
+                          ? null
+                          : (v) {
+                              if (v == null) return;
+                              setDialogState(() {
+                                mode = v;
+                                overlappingCount = 0;
+                              });
+                              refreshOverlapCount(() => setDialogState(() {}));
+                            },
+                    ),
+                    RadioListTile<_ScheduleBlockMode>(
+                      title: Text(
+                        l10n.translate('blockDateRange') ??
+                            'Block multiple days',
+                      ),
+                      value: _ScheduleBlockMode.dateRange,
+                      groupValue: mode,
+                      onChanged: saving
+                          ? null
+                          : (v) {
+                              if (v == null) return;
+                              setDialogState(() {
+                                mode = v;
+                                overlappingCount = 0;
+                              });
+                              refreshOverlapCount(() => setDialogState(() {}));
+                            },
+                    ),
+                    if (mode == _ScheduleBlockMode.timeRange) ...[
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.start),
+                        trailing: TextButton(
+                          onPressed: saving
+                              ? null
+                              : () => pickTime(
+                                    ctx,
+                                    startTime,
+                                    (t) {
+                                      setDialogState(() => startTime = t);
+                                      refreshOverlapCount(
+                                        () => setDialogState(() {}),
+                                      );
+                                    },
+                                  ),
+                          child: Text(
+                            '${_two(startTime.hour)}:${_two(startTime.minute)}',
+                          ),
+                        ),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          l10n.translate('bookingEndTime') ?? 'End time',
+                        ),
+                        trailing: TextButton(
+                          onPressed: saving
+                              ? null
+                              : () => pickTime(
+                                    ctx,
+                                    endTime,
+                                    (t) {
+                                      setDialogState(() => endTime = t);
+                                      refreshOverlapCount(
+                                        () => setDialogState(() {}),
+                                      );
+                                    },
+                                  ),
+                          child: Text(
+                            '${_two(endTime.hour)}:${_two(endTime.minute)}',
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (mode == _ScheduleBlockMode.dateRange) ...[
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.translate('fromDate') ?? 'From date'),
+                        trailing: TextButton(
+                          onPressed: saving
+                              ? null
+                              : () => pickDate(
+                                    ctx,
+                                    rangeStartDate,
+                                    (d) {
+                                      setDialogState(() {
+                                        rangeStartDate = d;
+                                        if (rangeEndDate.isBefore(d)) {
+                                          rangeEndDate = d;
+                                        }
+                                      });
+                                      refreshOverlapCount(
+                                        () => setDialogState(() {}),
+                                      );
+                                    },
+                                  ),
+                          child: Text(
+                            '${rangeStartDate.day}.${rangeStartDate.month}.${rangeStartDate.year}',
+                          ),
+                        ),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.translate('toDate') ?? 'To date'),
+                        trailing: TextButton(
+                          onPressed: saving
+                              ? null
+                              : () => pickDate(
+                                    ctx,
+                                    rangeEndDate,
+                                    (d) {
+                                      setDialogState(() => rangeEndDate = d);
+                                      refreshOverlapCount(
+                                        () => setDialogState(() {}),
+                                      );
+                                    },
+                                  ),
+                          child: Text(
+                            '${rangeEndDate.day}.${rangeEndDate.month}.${rangeEndDate.year}',
+                          ),
+                        ),
+                      ),
+                    ],
+                    TextField(
+                      controller: reasonCtrl,
+                      enabled: !saving,
+                      decoration: InputDecoration(
+                        labelText:
+                            l10n.translate('blockReason') ?? 'Reason (optional)',
+                        hintText: l10n.translate('blockReasonHint') ??
+                            'Emergency, personal, etc.',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        l10n.translate('blockCancelOverlapping') ??
+                            'Cancel overlapping appointments',
+                      ),
+                      subtitle: Text(
+                        l10n.translate('blockCancelOverlappingHint') ??
+                            'Patients will be notified automatically.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      value: cancelOverlapping,
+                      onChanged: saving
+                          ? null
+                          : (v) => setDialogState(
+                                () => cancelOverlapping = v ?? true,
+                              ),
+                    ),
+                    if (loadingOverlapCount)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: LinearProgressIndicator(minHeight: 2),
+                      )
+                    else if (overlappingCount > 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        cancelOverlapping
+                            ? (l10n
+                                      .translate('blockOverlapWillCancel')
+                                      ?.replaceAll(
+                                        '{{count}}',
+                                        '$overlappingCount',
+                                      ) ??
+                                  '$overlappingCount appointment(s) will be cancelled.')
+                            : (l10n.translate('blockOverlapWarning') ??
+                                'Some existing appointments fall within this period.'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cancelOverlapping
+                              ? Colors.red.shade800
+                              : Colors.orange.shade800,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.pop(ctx),
+                  child: Text(l10n.cancel),
+                ),
+                ShifaPrimaryButton(
+                  label: l10n.translate('blockTimeConfirm') ?? 'Block',
+                  isLoading: saving,
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          if (!blockRangeValid(mode)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  mode == _ScheduleBlockMode.dateRange
+                                      ? (l10n.translate(
+                                              'blockEndDateMustBeOnOrAfterStart',
+                                            ) ??
+                                            'End date must be on or after start date.')
+                                      : l10n.endTimeMustBeAfterStartTime,
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          setDialogState(() => saving = true);
+                          try {
+                            final range = blockRangeForMode(mode);
+                            final startAtUtc = _localToUtcIso(
+                              doctorTimeZone,
+                              range.startDay,
+                              range.startTod,
+                            );
+                            final endAtUtc = _localToUtcIso(
+                              doctorTimeZone,
+                              range.endDay,
+                              range.endTod,
+                            );
+                            final cancelledCount = await ref
+                                .read(calendarProvider.notifier)
+                                .createScheduleBlock(
+                                  day: range.startDay,
+                                  startAtUtc: startAtUtc,
+                                  endAtUtc: endAtUtc,
+                                  doctorTimeZone: doctorTimeZone,
+                                  reason: reasonCtrl.text.trim(),
+                                  cancelOverlappingAppointments:
+                                      cancelOverlapping,
+                                  refreshThroughDay: range.endDay,
+                                );
+                            if (cancelOverlapping && cancelledCount > 0) {
+                              await invalidateAppointmentRelatedProviders(ref);
+                            }
+                            if (context.mounted) {
+                              Navigator.pop(ctx);
+                              final successMsg = cancelledCount > 0
+                                  ? (l10n
+                                            .translate('blockTimeSuccessWithCancel')
+                                            ?.replaceAll(
+                                              '{{count}}',
+                                              '$cancelledCount',
+                                            ) ??
+                                        'Time blocked. $cancelledCount appointment(s) cancelled.')
+                                  : (l10n.translate('blockTimeSuccess') ??
+                                      'Time blocked successfully');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(successMsg)),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('$e')),
+                              );
+                            }
+                          } finally {
+                            if (context.mounted) {
+                              setDialogState(() => saving = false);
+                            }
+                          }
+                        },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    reasonCtrl.dispose();
   }
 
   Widget _buildCalendarEntriesList(
@@ -963,13 +1474,16 @@ class CalendarDayEntriesList extends StatelessWidget {
         final isSelected = identical(e, selected);
         final isVideoLocation = (e.location).toLowerCase().contains('video');
         final locationLabel = isVideoLocation ? l10n.videoCall : e.location;
+        final isBlocked = e.type == EntryType.blocked;
 
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isBlocked ? Colors.red.shade50 : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? brand : Colors.transparent,
+              color: isSelected
+                  ? brand
+                  : (isBlocked ? Colors.red.shade200 : Colors.transparent),
               width: isSelected ? 2 : 1,
             ),
             boxShadow: [
@@ -1004,6 +1518,12 @@ class CalendarDayEntriesList extends StatelessWidget {
                                 foregroundColor: brand,
                                 child: const Icon(Icons.add),
                               )
+                            : e.type == EntryType.blocked
+                            ? CircleAvatar(
+                                backgroundColor: Colors.red.shade100,
+                                foregroundColor: Colors.red.shade700,
+                                child: const Icon(Icons.block),
+                              )
                             : CircleAvatar(
                                 backgroundColor: Colors.grey.shade300,
                                 backgroundImage:
@@ -1034,6 +1554,22 @@ class CalendarDayEntriesList extends StatelessWidget {
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : e.type == EntryType.blocked
+                                    ? Text(
+                                        e.blockReason?.trim().isNotEmpty == true
+                                            ? e.blockReason!.trim()
+                                            : (AppLocalizations.of(context)!
+                                                      .translate('blockedTime') ??
+                                                  'Blocked'),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.red.shade800,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       )
                                     : Text(
                                         e.patientName ??
@@ -1043,9 +1579,12 @@ class CalendarDayEntriesList extends StatelessWidget {
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                               ),
-                              if (locationLabel.trim().isNotEmpty)
+                              if (locationLabel.trim().isNotEmpty &&
+                                  e.type != EntryType.blocked)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Align(
@@ -1101,14 +1640,18 @@ class CalendarDayEntriesList extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                             Text(
                               _fmtRange(e.start, e.end),
                               style: const TextStyle(fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             if (e.type == EntryType.appointment && dur > 5)
                               Padding(
@@ -1132,6 +1675,19 @@ class CalendarDayEntriesList extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            if (e.type == EntryType.blocked)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                          .translate('blockedTime') ??
+                                      'Blocked',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red.shade700,
+                                  ),
+                                ),
+                              ),
                             if (e.type == EntryType.appointment)
                               Padding(
                                 padding: const EdgeInsets.only(top: 2),
@@ -1144,6 +1700,7 @@ class CalendarDayEntriesList extends StatelessWidget {
                                 ),
                               ),
                           ],
+                        ),
                         ),
                       ],
                     ),
@@ -1343,6 +1900,8 @@ class CalendarMonthPanel extends ConsumerWidget {
           return Text(
             '${l10n.monthName(focusedMonth.month)} ${focusedMonth.year}',
             style: headerStyle.titleTextStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             textAlign: headerStyle.titleCentered
                 ? TextAlign.center
                 : TextAlign.start,
@@ -1703,6 +2262,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   }
 
   bool get _isAppointment => widget.entry.type == EntryType.appointment;
+  bool get _isBlocked => widget.entry.type == EntryType.blocked;
   String get _statusUpper => (widget.entry.status ?? '').trim().toUpperCase();
   bool get _isCompletedStatus => _statusUpper == 'COMPLETED';
   bool get _isCancelledStatus => _statusUpper == 'CANCELLED';
@@ -1752,6 +2312,62 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
         arguments: patientId,
       );
     });
+  }
+
+  Future<void> _removeScheduleBlock() async {
+    final blockId = widget.entry.blockId;
+    if (blockId == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.translate('unblockTime') ?? 'Remove block'),
+        content: Text(
+          l10n.translate('unblockConfirm') ??
+              'Remove this block? Free slots will become available again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.translate('unblockTime') ?? 'Remove block'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final doctorTimeZone = _calendarTz();
+    try {
+      setState(() => _saving = true);
+      await ref.read(calendarProvider.notifier).deleteScheduleBlock(
+            blockId: blockId,
+            day: widget.day,
+            doctorTimeZone: doctorTimeZone,
+          );
+      await widget.onSavedSuccessfully();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.translate('unblockSuccess') ?? 'Block removed',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   DateTime _appointmentStartDateTimeInDoctorZone() {
@@ -2942,6 +3558,8 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     Text(
                       _isAppointment
                           ? t('appointmentDetails', 'Appointment Details')
+                          : _isBlocked
+                          ? (l10n.translate('blockTimeTitle') ?? 'Block time')
                           : (l10n.translate('slotDetails') ?? 'Slot details'),
                       style: TextStyle(
                         fontSize: 20,
@@ -2989,6 +3607,50 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
           child: ListView(
             padding: const EdgeInsets.only(bottom: 8),
             children: [
+              if (_isBlocked) ...[
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                  color: Colors.red.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.block, color: Colors.red.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.entry.blockReason?.trim().isNotEmpty == true
+                                    ? widget.entry.blockReason!.trim()
+                                    : (l10n.translate('blockedTime') ?? 'Blocked'),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.red.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.translate('blockOverlapInfo') ??
+                              'Patients cannot book new appointments during this blocked period.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.red.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               if (_isAppointment) ...[
                 Card(
                   shape: RoundedRectangleBorder(
@@ -3496,6 +4158,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                 ],
               ],
 
+              if (!_isBlocked) ...[
               const SizedBox(height: 10),
 
               // Date & Time â€” tap opens Change Slot dialog for (non-past) appointments
@@ -3624,6 +4287,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                   ),
                 ],
               ],
+              ],
             ],
           ),
         ),
@@ -3638,6 +4302,20 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
           ),
           child: Column(
             children: [
+              if (_isBlocked) ...[
+                ShifaPrimaryButton(
+                  label: l10n.translate('unblockTime') ?? 'Remove block',
+                  onPressed: _saving ? null : _removeScheduleBlock,
+                  width: ButtonWidth.fill,
+                  isLoading: _saving,
+                ),
+                const SizedBox(height: 10),
+                ShifaSecondaryButton(
+                  label: AppLocalizations.of(context)!.close,
+                  onPressed: _saving ? null : widget.onClose,
+                  width: ButtonWidth.fill,
+                ),
+              ] else ...[
               // ---------- Primary action ----------
               ShifaPrimaryButton(
                 // Match Home/Today behavior: video appointments become startable
@@ -3831,6 +4509,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                   width: ButtonWidth.fill,
                   variant: ButtonVariant.destructive,
                 ),
+              ],
               ],
             ],
           ),

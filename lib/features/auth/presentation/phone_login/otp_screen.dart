@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/localization/locale_detection.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/providers/auth_providers.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/phone_login/reset_password_screen.dart';
@@ -89,7 +90,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         );
         return;
       }
-      await ref.read(authProvider.notifier).loginWithFirebaseToken(idToken);
+      await ref.read(authProvider.notifier).loginWithFirebaseToken(
+            idToken,
+            phoneCountryCode: countryCodeFromPhone(widget.fullPhoneNumber),
+          );
       ref.invalidate(profileAllProvider);
       ref.invalidate(meProfileProvider);
       if (!mounted) return;
