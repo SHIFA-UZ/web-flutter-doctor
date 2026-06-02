@@ -75,7 +75,8 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
   }
 
   void _onWorkspaceTabChanged() {
-    if (_tabController.indexIsChanging || _tabController.index != 6) return;
+    if (_tabController.indexIsChanging) return;
+    if (_tabController.index != 6) return;
     final clinicId = ref.read(selectedClinicIdProvider);
     if (clinicId != null) {
       refreshClinicFinancialData(ref, clinicId);

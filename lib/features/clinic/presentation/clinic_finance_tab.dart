@@ -27,6 +27,12 @@ class ClinicFinanceTab extends ConsumerStatefulWidget {
 class _ClinicFinanceTabState extends ConsumerState<ClinicFinanceTab> {
   int _selectedSubTab = 0;
 
+  void _selectSubTab(int index) {
+    if (_selectedSubTab == index) return;
+    setState(() => _selectedSubTab = index);
+    refreshClinicFinancialData(ref, widget.clinicId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -51,7 +57,7 @@ class _ClinicFinanceTabState extends ConsumerState<ClinicFinanceTab> {
                 child: ChoiceChip(
                   label: Text(tabs[i], overflow: TextOverflow.ellipsis),
                   selected: selected,
-                  onSelected: (_) => setState(() => _selectedSubTab = i),
+                  onSelected: (_) => _selectSubTab(i),
                   selectedColor: AppColors.primaryTeal.withValues(alpha: 0.15),
                   labelStyle: TextStyle(
                     color: selected ? AppColors.primaryTeal : Colors.grey.shade700,
@@ -70,7 +76,10 @@ class _ClinicFinanceTabState extends ConsumerState<ClinicFinanceTab> {
               _DashboardView(clinicId: widget.clinicId),
               _AppointmentLedgerView(clinicId: widget.clinicId),
               _InstallmentsFinanceView(clinicId: widget.clinicId),
-              _DoctorEarningsPane(clinicId: widget.clinicId),
+              _DoctorEarningsPane(
+                clinicId: widget.clinicId,
+                isActive: _selectedSubTab == 3,
+              ),
               _RecordsView(clinicId: widget.clinicId),
               _PaymentsView(clinicId: widget.clinicId),
             ],
@@ -1847,7 +1856,12 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
 
 class _DoctorEarningsPane extends ConsumerStatefulWidget {
   final int clinicId;
-  const _DoctorEarningsPane({required this.clinicId});
+  final bool isActive;
+
+  const _DoctorEarningsPane({
+    required this.clinicId,
+    required this.isActive,
+  });
 
   @override
   ConsumerState<_DoctorEarningsPane> createState() =>
@@ -1859,55 +1873,63 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
   String _search = '';
   int _sortIdx = 2; // Default: highest gross first.
   bool _sortAsc = false;
-  late DateTime _selectedMonth;
-  bool _monthInitialized = false;
+  bool _refreshing = false;
+  bool _initialLoading = true;
+  Object? _loadError;
+  List<DoctorEarningRow> _rows = const [];
+
+  Future<void> _loadEarnings() async {
+    if (_refreshing) return;
+    setState(() {
+      _refreshing = true;
+      _loadError = null;
+    });
+    try {
+      final clinic = ref.read(selectedClinicProvider);
+      final today = getTodayInTimezone(clinic?.timeZone);
+      final range = monthRangeUtcInTimezone(
+        today.year,
+        today.month,
+        clinic?.timeZone,
+      );
+      final rows = await fetchDoctorEarnings(
+        ref,
+        clinicId: widget.clinicId,
+        fromIso: range.fromUtc.toIso8601String(),
+        toIso: range.toUtc.toIso8601String(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _rows = rows;
+        _initialLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e;
+        _initialLoading = false;
+      });
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _selectedMonth = DateTime(now.year, now.month);
+    if (widget.isActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadEarnings();
+      });
+    }
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_monthInitialized) return;
-    _monthInitialized = true;
-    final clinic = ref.read(selectedClinicProvider);
-    final today = getTodayInTimezone(clinic?.timeZone);
-    _selectedMonth = DateTime(today.year, today.month);
-  }
-
-  DoctorEarningsQuery _earningsQuery() {
-    final clinic = ref.read(selectedClinicProvider);
-    final tz = clinic?.timeZone;
-    final range = monthRangeUtcInTimezone(
-      _selectedMonth.year,
-      _selectedMonth.month,
-      tz,
-    );
-    return DoctorEarningsQuery(
-      clinicId: widget.clinicId,
-      fromIso: range.fromUtc.toIso8601String(),
-      toIso: range.toUtc.toIso8601String(),
-    );
-  }
-
-  Future<void> _pickMonth() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedMonth,
-      firstDate: DateTime(2020, 1),
-      lastDate: DateTime(DateTime.now().year + 1, 12),
-      initialDatePickerMode: DatePickerMode.year,
-    );
-    if (picked == null) return;
-    setState(() => _selectedMonth = DateTime(picked.year, picked.month));
-  }
-
-  String _monthLabel(AppLocalizations l10n) {
-    return '${l10n.monthName(_selectedMonth.month)} ${_selectedMonth.year}';
+  void didUpdateWidget(covariant _DoctorEarningsPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadEarnings();
+    }
   }
 
   @override
@@ -1972,150 +1994,163 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final query = _earningsQuery();
-    final async = ref.watch(clinicDoctorEarningsProvider(query));
     final members =
         ref.watch(clinicMembersProvider(widget.clinicId)).valueOrNull ??
             <ClinicMember>[];
     final currency =
         ref.watch(clinicFinanceDashboardProvider(widget.clinicId)).valueOrNull?.currency ??
             'UZS';
-    return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('${l10n.error}: $e')),
-      data: (rows) {
-        final filtered = _apply(rows, members);
-        final toolbar = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+
+    if (_initialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_loadError != null && _rows.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _pickMonth,
-                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                  label: Text(
-                    l10n.translate('clinicFinanceDoctorEarningsMonth')
-                        .replaceAll('{{month}}', _monthLabel(l10n)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.translate('clinicFinanceDoctorEarningsHint'),
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 8),
-            ClinicTableSearchField(
-              controller: _searchCtrl,
-              hint: l10n.translate('clinicEarningsSearchHint'),
-              onChanged: (v) => setState(() => _search = v),
+            Text('${l10n.error}: $_loadError'),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _loadEarnings,
+              icon: const Icon(Icons.refresh),
+              label: Text(l10n.refresh),
             ),
           ],
-        );
+        ),
+      );
+    }
 
-        final Widget body = rows.isEmpty || filtered.isEmpty
-            ? ClinicTableEmpty(
-                l10n.translate('clinicFinanceNoLedgerRows'))
-            : clinicDataTable(
-                context: context,
-                sortColumnIndex: _sortIdx,
-                sortAscending: _sortAsc,
-                columns: [
-                  DataColumn(
-                    label: Text(l10n.translate('clinicEarningsColDoctor')),
-                    onSort: _onSort,
-                  ),
-                  DataColumn(
-                    label: Text(l10n.translate('clinicEarningsColVisits')),
-                    numeric: true,
-                    onSort: _onSort,
-                  ),
-                  DataColumn(
-                    label: Text(l10n.translate('clinicEarningsColGross')),
-                    numeric: true,
-                    onSort: _onSort,
-                  ),
-                  DataColumn(
-                    label:
-                        Text(l10n.translate('clinicEarningsColCollected')),
-                    numeric: true,
-                    onSort: _onSort,
-                  ),
-                  DataColumn(
-                    label: Text(
-                        l10n.translate('clinicEarningsColOutstanding')),
-                    numeric: true,
-                    onSort: _onSort,
-                  ),
-                ],
-                rows: filtered.map((d) {
-                  final name = _doctorName(d.doctorProfileId, members);
-                  return DataRow(
-                    cells: [
-                      DataCell(Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: AppColors.primaryTeal
-                                .withValues(alpha: 0.15),
-                            child: Text(
-                              name.isNotEmpty
-                                  ? name[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: AppColors.primaryTeal,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
+    final filtered = _apply(_rows, members);
+    final toolbar = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.translate('clinicFinanceDoctorEarningsHint'),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.refresh,
+              onPressed: _refreshing ? null : _loadEarnings,
+              icon: _refreshing
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryTeal,
+                      ),
+                    )
+                  : const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClinicTableSearchField(
+          controller: _searchCtrl,
+          hint: l10n.translate('clinicEarningsSearchHint'),
+          onChanged: (v) => setState(() => _search = v),
+        ),
+      ],
+    );
+
+    final Widget body = _rows.isEmpty || filtered.isEmpty
+        ? ClinicTableEmpty(l10n.translate('clinicFinanceNoLedgerRows'))
+        : clinicDataTable(
+            context: context,
+            sortColumnIndex: _sortIdx,
+            sortAscending: _sortAsc,
+            columns: [
+              DataColumn(
+                label: Text(l10n.translate('clinicEarningsColDoctor')),
+                onSort: _onSort,
+              ),
+              DataColumn(
+                label: Text(l10n.translate('clinicEarningsColVisits')),
+                numeric: true,
+                onSort: _onSort,
+              ),
+              DataColumn(
+                label: Text(l10n.translate('clinicEarningsColGross')),
+                numeric: true,
+                onSort: _onSort,
+              ),
+              DataColumn(
+                label: Text(l10n.translate('clinicEarningsColCollected')),
+                numeric: true,
+                onSort: _onSort,
+              ),
+              DataColumn(
+                label: Text(l10n.translate('clinicEarningsColOutstanding')),
+                numeric: true,
+                onSort: _onSort,
+              ),
+            ],
+            rows: filtered.map((d) {
+              final name = _doctorName(d.doctorProfileId, members);
+              return DataRow(
+                cells: [
+                  DataCell(Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor:
+                            AppColors.primaryTeal.withValues(alpha: 0.15),
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                            color: AppColors.primaryTeal,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            name,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '#${d.doctorProfileId}',
-                            style: TextStyle(
-                                color: Colors.grey.shade500, fontSize: 12),
-                          ),
-                        ],
-                      )),
-                      DataCell(Text('${d.visitCount}')),
-                      DataCell(Text(
-                        _formatMoney(d.grossMinor, currency),
-                        style:
-                            const TextStyle(fontWeight: FontWeight.w600),
-                      )),
-                      DataCell(Text(
-                        _formatMoney(d.collectedMinor, currency),
-                        style: TextStyle(color: Colors.green.shade700),
-                      )),
-                      DataCell(Text(
-                        _formatMoney(d.outstandingMinor, currency),
-                        style: TextStyle(
-                          color: d.outstandingMinor > 0
-                              ? Colors.red.shade700
-                              : Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
                         ),
-                      )),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        name,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '#${d.doctorProfileId}',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
-                  );
-                }).toList(),
+                  )),
+                  DataCell(Text('${d.visitCount}')),
+                  DataCell(Text(
+                    _formatMoney(d.grossMinor, currency),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  )),
+                  DataCell(Text(
+                    _formatMoney(d.collectedMinor, currency),
+                    style: TextStyle(color: Colors.green.shade700),
+                  )),
+                  DataCell(Text(
+                    _formatMoney(d.outstandingMinor, currency),
+                    style: TextStyle(
+                      color: d.outstandingMinor > 0
+                          ? Colors.red.shade700
+                          : Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )),
+                ],
               );
+            }).toList(),
+          );
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            refreshClinicFinancialData(ref, widget.clinicId);
-          },
-          child: ClinicTableShell(toolbar: toolbar, body: body),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _loadEarnings,
+      child: ClinicTableShell(toolbar: toolbar, body: body),
     );
   }
 }
