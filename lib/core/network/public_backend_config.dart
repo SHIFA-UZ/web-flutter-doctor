@@ -25,11 +25,11 @@ class PublicBackendConfig {
       }
     }
 
-    if (AppConfig.apiBaseUrl.isEmpty) return {};
+    if (AppConfig.resolvedApiBaseUrl.isEmpty) return {};
 
     try {
       _fetching = true;
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/public/config');
+      final uri = Uri.parse('${AppConfig.resolvedApiBaseUrl}/api/public/config');
       final response =
           await http.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {

@@ -40,6 +40,8 @@ import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/patient_briefing_panel.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
+import 'package:shifa_doc_app_v1/features/auth/presentation/clinic_staff_web_only_screen.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -235,6 +237,10 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
+    if (ClinicStaffWebOnlyScreen.shouldShow(ref)) {
+      return const ClinicStaffWebOnlyScreen();
+    }
+
     final isClinicStaff =
         ref.watch(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff;
 
@@ -339,7 +345,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       );
     }
 
-    final isMobile = Responsive.isMobile(context);
+    final isMobile = PlatformLayout.useMobileShell(context);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -501,7 +507,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                 },
               ),
                 ),
-                if (!isClinicStaff)
+                if (!isClinicStaff && !PlatformLayout.isNativeMobile)
                   Positioned(
                     right: 0,
                     bottom: 0,
@@ -1723,8 +1729,31 @@ class _MobileBottomNav extends ConsumerWidget {
   final VoidCallback onShowMore;
 
   int _doctorNavHighlight(int tabIndex) {
-    if (tabIndex <= 3) return tabIndex;
+    // Mobile bottom bar order: Home, Calendar, Patients, Chat, More
+    const mobilePrimaryTabs = [
+      DoctorShellTab.home,
+      DoctorShellTab.calendar,
+      DoctorShellTab.patients,
+      DoctorShellTab.chat,
+    ];
+    final idx = mobilePrimaryTabs.indexOf(tabIndex);
+    if (idx >= 0) return idx;
     return 4;
+  }
+
+  int _mobileTabFromNavIndex(int navIndex) {
+    switch (navIndex) {
+      case 0:
+        return DoctorShellTab.home;
+      case 1:
+        return DoctorShellTab.calendar;
+      case 2:
+        return DoctorShellTab.patients;
+      case 3:
+        return DoctorShellTab.chat;
+      default:
+        return -1;
+    }
   }
 
   @override
@@ -1782,18 +1811,11 @@ class _MobileBottomNav extends ConsumerWidget {
         if (index == 4) {
           onShowMore();
         } else {
-          onSelectTab(index);
+          final tab = _mobileTabFromNavIndex(index);
+          if (tab >= 0) onSelectTab(tab);
         }
       },
       destinations: [
-        NavigationDestination(
-          icon: Badge(
-            isLabelVisible: unreadChat > 0,
-            label: Text('$unreadChat'),
-            child: const Icon(Icons.chat_bubble_outline),
-          ),
-          label: l10n.chat,
-        ),
         NavigationDestination(
           icon: const Icon(Icons.home_outlined),
           label: l10n.home,
@@ -1805,6 +1827,14 @@ class _MobileBottomNav extends ConsumerWidget {
         NavigationDestination(
           icon: const Icon(Icons.people_outline),
           label: l10n.patients,
+        ),
+        NavigationDestination(
+          icon: Badge(
+            isLabelVisible: unreadChat > 0,
+            label: Text('$unreadChat'),
+            child: const Icon(Icons.chat_bubble_outline),
+          ),
+          label: l10n.chat,
         ),
         NavigationDestination(
           icon: const Icon(Icons.more_horiz),

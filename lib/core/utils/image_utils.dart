@@ -18,7 +18,7 @@ String? normalizePhotoUrl(String? photoUrl) {
   }
   
   // Otherwise, prepend the API base URL (same as backend URL)
-  final publicBaseUrl = AppConfig.apiBaseUrl;
+  final publicBaseUrl = AppConfig.resolvedApiBaseUrl;
   final path = trimmed.startsWith('/') ? trimmed.substring(1) : trimmed;
   return '$publicBaseUrl/$path';
 }

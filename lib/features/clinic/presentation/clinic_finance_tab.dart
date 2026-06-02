@@ -1860,12 +1860,23 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
   int _sortIdx = 2; // Default: highest gross first.
   bool _sortAsc = false;
   late DateTime _selectedMonth;
+  bool _monthInitialized = false;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _selectedMonth = DateTime(now.year, now.month);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_monthInitialized) return;
+    _monthInitialized = true;
+    final clinic = ref.read(selectedClinicProvider);
+    final today = getTodayInTimezone(clinic?.timeZone);
+    _selectedMonth = DateTime(today.year, today.month);
   }
 
   DoctorEarningsQuery _earningsQuery() {

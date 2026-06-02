@@ -9,14 +9,14 @@ ApiClient _buildClient(ProviderRef<ApiClient> ref, ApiClientScope scope) {
   // Use environment-aware API URL from AppConfig
   // In development: http://localhost:8080
   // In production: Set via --dart-define=API_BASE_URL=https://api.yourdomain.com
-  final client = ApiClient(AppConfig.apiBaseUrl, scope: scope);
+  final client = ApiClient(AppConfig.resolvedApiBaseUrl, scope: scope);
 
   // Always log configuration for debugging (even in production, but only once)
   print('========================================');
   print('API Client Configuration:');
-  print('  Base URL: ${AppConfig.apiBaseUrl}');
+  print('  Base URL: ${AppConfig.resolvedApiBaseUrl}');
   print('  Environment: ${AppConfig.environment}');
-  print('  Full API URL example: ${AppConfig.apiBaseUrl}/api/auth/login');
+  print('  Full API URL example: ${AppConfig.resolvedApiBaseUrl}/api/auth/login');
   print('  Scope: $scope');
   print('========================================');
 

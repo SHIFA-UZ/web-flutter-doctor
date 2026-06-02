@@ -157,7 +157,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     );
                   }
                   final grouped = _groupByDate(filtered, l10n);
-                  return ListView.builder(
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(doctorNotificationsProvider);
+                      ref.invalidate(doctorNotificationsUnreadCountProvider);
+                      await ref.read(doctorNotificationsProvider.future);
+                    },
+                    child: ListView.builder(
                     padding: EdgeInsets.fromLTRB(
                       isMobile ? 12 : 20,
                       0,
@@ -202,6 +208,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         ),
                       );
                     },
+                  ),
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),

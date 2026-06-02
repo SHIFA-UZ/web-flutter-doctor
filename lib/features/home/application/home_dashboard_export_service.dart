@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shifa_doc_app_v1/features/home/application/home_analytics_providers.dart';
 import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_date_range_provider.dart';
 import 'package:shifa_doc_app_v1/features/admin/presentation/admin_pdf_downloader_stub.dart'
@@ -43,6 +45,14 @@ class HomeDashboardExportService {
     final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
     final filename =
         'shifa_dashboard_${range.start.toIso8601String().substring(0, 10)}_${range.end.toIso8601String().substring(0, 10)}.csv';
+
+    if (!kIsWeb) {
+      await Share.shareXFiles(
+        [XFile.fromData(bytes, name: filename, mimeType: 'text/csv')],
+        subject: 'Shifa dashboard export',
+      );
+      return;
+    }
 
     await file_download.downloadBytes(
       bytes,

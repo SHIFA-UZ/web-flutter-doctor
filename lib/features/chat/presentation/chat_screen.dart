@@ -20,6 +20,7 @@ import 'package:shifa_doc_app_v1/features/chat/services/image_compression_servic
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patient.dart';
+import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -45,6 +46,7 @@ enum _ChatListFilter {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObserver {
   int? _selectedConversationId;
+  bool _appInForeground = true;
   final TextEditingController _searchCtrl = TextEditingController();
   final TextEditingController _messageCtrl = TextEditingController();
   final ScrollController _chatScroll = ScrollController();
@@ -78,7 +80,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Refresh when app comes to foreground
+    _appInForeground = state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed) {
       ref.invalidate(conversationsProvider);
       if (_selectedConversationId != null) {
@@ -88,15 +90,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   }
 
   void _startPeriodicRefresh() {
-    // Refresh conversations every 5 seconds
     Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) {
-        ref.invalidate(conversationsProvider);
-        if (_selectedConversationId != null) {
-          ref.invalidate(conversationProvider(_selectedConversationId.toString()));
-        }
-        _startPeriodicRefresh(); // Schedule next refresh
+      if (!mounted || !_appInForeground) {
+        if (mounted) _startPeriodicRefresh();
+        return;
       }
+      ref.invalidate(conversationsProvider);
+      if (_selectedConversationId != null) {
+        ref.invalidate(conversationProvider(_selectedConversationId.toString()));
+      }
+      _startPeriodicRefresh();
     });
   }
 
@@ -580,6 +583,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         if (!mounted) return;
         _openConversationWithPatient(next);
         ref.read(chatPendingPatientIdProvider.notifier).state = null;
+      });
+    });
+
+    ref.listen<int?>(notificationPendingConversationIdProvider, (prev, next) {
+      if (next == null || next <= 0) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _selectConversation(next.toString());
+        ref.read(notificationPendingConversationIdProvider.notifier).state = null;
       });
     });
 

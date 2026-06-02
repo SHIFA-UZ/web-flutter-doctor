@@ -30,10 +30,10 @@ class GoogleGeocodingService {
     }
     
     // Fetch from backend if available
-    if (!_isFetching && AppConfig.apiBaseUrl.isNotEmpty) {
+    if (!_isFetching && AppConfig.resolvedApiBaseUrl.isNotEmpty) {
       try {
         _isFetching = true;
-        final configUrl = Uri.parse('${AppConfig.apiBaseUrl}/api/public/config');
+        final configUrl = Uri.parse('${AppConfig.resolvedApiBaseUrl}/api/public/config');
         final response = await http.get(configUrl).timeout(
           const Duration(seconds: 5),
         );

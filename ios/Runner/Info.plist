@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Shifa Doc App V1</string>
+	<string>Shifa Doctor</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>shifa_doc_app_v1</string>
+	<string>Shifa Doctor</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -47,8 +47,12 @@
 	<true/>
 	<!-- Permissions for video calling -->
 	<key>NSCameraUsageDescription</key>
-	<string>We need camera access for video consultations</string>
+	<string>We need camera access for video consultations and document capture</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>We need microphone access for video consultations</string>
+	<string>We need microphone access for video consultations and voice messages</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need photo library access to share images with patients</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Use Face ID to unlock the Shifa Doctor app</string>
 </dict>
 </plist>

@@ -1,0 +1,78 @@
+name: Deploy Doctor App to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip Flutter tests'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: doctor-testflight-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.35.5'
+  API_BASE_URL: 'https://shifa-doc-backend-mvp-production.up.railway.app'
+
+jobs:
+  build-and-deploy-ios:
+    name: Build and Deploy Shifa Doctor iOS
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.0'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings
+          flutter test
+
+      - name: Decode Firebase iOS config
+        env:
+          FIREBASE_IOS_CONFIG_BASE64: ${{ secrets.DOCTOR_FIREBASE_IOS_CONFIG_BASE64 }}
+        run: |
+          echo "$FIREBASE_IOS_CONFIG_BASE64" | base64 --decode > ios/Runner/GoogleService-Info.plist
+
+      - name: Calculate version
+        id: version
+        run: |
+          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+          BUILD_NUMBER=$(( 1 + ${{ github.run_number }} ))
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+
+      - name: Build iOS release (no codesign)
+        run: |
+          flutter build ios \
+            --release \
+            --no-codesign \
+            --dart-define=ENVIRONMENT=production \
+            --dart-define=API_BASE_URL=${{ env.API_BASE_URL }} \
+            --build-name=${{ steps.version.outputs.version_name }} \
+            --build-number=${{ steps.version.outputs.build_number }}
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: rm -f ios/Runner/GoogleService-Info.plist

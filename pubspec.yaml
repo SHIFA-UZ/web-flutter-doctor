@@ -67,6 +67,11 @@ dependencies:
   timezone: ^0.9.4
   iana_time_zone: ^0.0.1
 
+  # Secure storage for JWT on mobile
+  flutter_secure_storage: ^9.2.4
+  local_auth: ^2.3.0
+  share_plus: ^10.1.4
+
   # Local notifications & push (doctor app)
   flutter_local_notifications: ^17.2.2
 

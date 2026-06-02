@@ -118,6 +118,32 @@ firebase target:apply hosting doctor shifa-doctor-staging
 firebase target:apply hosting admin shifa-admin-staging
 ```
 
+# Mobile (Android / iOS)
+
+The same Flutter codebase ships as native apps for doctors.
+
+| Platform | Bundle ID | App name |
+|----------|-----------|----------|
+| Android | `com.shifa.doctorapp` | Shifa Doctor |
+| iOS | `com.shifa.doctorapp` | Shifa Doctor |
+
+```bash
+# Production mobile build
+flutter build apk --release \
+  --dart-define=ENVIRONMENT=production \
+  --dart-define=API_BASE_URL=https://shifa-doc-backend-mvp-production.up.railway.app
+
+flutter build appbundle --release \
+  --dart-define=ENVIRONMENT=production \
+  --dart-define=API_BASE_URL=https://shifa-doc-backend-mvp-production.up.railway.app
+```
+
+CI workflows: `.github/workflows/flutter_ci.yml`, `google_play_deploy.yml`, `ios_testflight.yml`.
+
+**Note:** Register `com.shifa.doctorapp` in Firebase (`shifa-doctor-staging` / production) and provide `google-services.json` / `GoogleService-Info.plist` via CI secrets before store upload.
+
+Clinic staff (`CLINIC_STAFF` role) are blocked on native mobile in v1 — web portal only.
+
 ## Project Structure
 
 ```

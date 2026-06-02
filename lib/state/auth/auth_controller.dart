@@ -1,17 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api/api_providers.dart';
 import '../../core/util/admin_host.dart';
 import '../../core/util/jwt_utils.dart';
+import '../../core/utils/secure_token_storage.dart';
 import '../profile/profile_providers.dart';
 import '../appointments/appointment_invalidation.dart';
 import '../patients/patients_provider.dart';
 import '../../core/providers/language_provider.dart';
-
-const String _authTokenStorageKey = 'shifa_doctor_auth_token';
-const String _adminAuthTokenStorageKey = 'shifa_admin_auth_token';
 
 // Holds the current JWT for the session, reactively.
 final authTokenProvider = StateProvider<String?>((_) => null);
@@ -26,7 +23,16 @@ class AuthState {
 
 class AuthController extends StateNotifier<AuthState> {
   final Ref ref;
+  final SecureTokenStorage _tokenStorage = SecureTokenStorage();
+  bool _storageMigrated = false;
+
   AuthController(this.ref) : super(AuthState.unauthenticated);
+
+  Future<void> _ensureStorageMigrated() async {
+    if (_storageMigrated) return;
+    await _tokenStorage.migrateFromSharedPreferencesIfNeeded();
+    _storageMigrated = true;
+  }
 
   /// [app] When 'admin', requests an ADMIN-scoped JWT so admin endpoints accept the token.
   /// Admin tokens are stored separately from doctor/patient tokens to avoid 403 when opening admin panel with a doctor session.
@@ -395,8 +401,8 @@ class AuthController extends StateNotifier<AuthState> {
   /// [forAdmin] When true, saves to admin-specific key to keep admin and doctor tokens separate.
   Future<void> _saveTokenToStorage(String token, {bool forAdmin = false}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(forAdmin ? _adminAuthTokenStorageKey : _authTokenStorageKey, token);
+      await _ensureStorageMigrated();
+      await _tokenStorage.saveToken(token, forAdmin: forAdmin);
     } catch (e) {
       // Ignore storage errors; session will still work until refresh
     }
@@ -405,14 +411,7 @@ class AuthController extends StateNotifier<AuthState> {
   /// Clear JWT from persistent storage on logout.
   /// [adminOnly] When true (from admin panel logout), only clear admin token to avoid affecting doctor session.
   void _clearTokenFromStorage({bool adminOnly = false}) {
-    SharedPreferences.getInstance().then((prefs) {
-      if (adminOnly) {
-        prefs.remove(_adminAuthTokenStorageKey);
-      } else {
-        prefs.remove(_authTokenStorageKey);
-        prefs.remove(_adminAuthTokenStorageKey);
-      }
-    });
+    _tokenStorage.clearToken(adminOnly: adminOnly);
   }
 
   /// Set session from a JWT token (e.g. after registration). Same effect as login/restoreSession.
@@ -430,16 +429,13 @@ class AuthController extends StateNotifier<AuthState> {
   /// [forAdmin] When true (admin panel), only restores from admin token key so doctor token is not used.
   Future<bool> restoreSession({bool forAdmin = false}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = forAdmin ? _adminAuthTokenStorageKey : _authTokenStorageKey;
-      final token = prefs.getString(key);
+      await _ensureStorageMigrated();
+      final token = await _tokenStorage.readToken(forAdmin: forAdmin);
       if (token == null || token.isEmpty) return false;
       if (isJwtExpired(token)) {
-        await prefs.remove(key);
-        if (forAdmin) {
-          await _clearAdminTokenFromStorage();
-        } else {
-          await prefs.remove(_adminAuthTokenStorageKey);
+        await _tokenStorage.clearToken(adminOnly: forAdmin);
+        if (!forAdmin) {
+          await _tokenStorage.clearToken(adminOnly: false);
         }
         return false;
       }
@@ -468,8 +464,7 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> _clearAdminTokenFromStorage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_adminAuthTokenStorageKey);
+      await _tokenStorage.clearToken(adminOnly: true);
     } catch (_) {
       // Best effort.
     }

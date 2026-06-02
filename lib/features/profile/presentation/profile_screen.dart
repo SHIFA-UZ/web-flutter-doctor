@@ -842,6 +842,7 @@ import 'searchable_profession_dropdown.dart';
 import 'searchable_timezone_dropdown.dart';
 import 'services_pricing_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shifa_doc_app_v1/features/settings/presentation/app_lock_settings_section.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -1851,6 +1852,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     patchSettings(ref, {'country': country, 'language': currentLanguageTag, 'twoFA': twoFA, 'encryptedDocs': v});
                   },
                 ),
+                const SizedBox(height: 12),
+                const AppLockSettingsSection(),
               ],
             ),
           );

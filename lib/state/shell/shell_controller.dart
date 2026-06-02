@@ -14,3 +14,6 @@ final shellProvider = StateNotifierProvider<ShellController, int>(
 /// When set (e.g. from notification tap for TASK_COMPLETED), shell will push TaskDetailsScreen(taskId).
 /// Cleared after pushing to avoid re-triggering.
 final notificationPendingTaskIdProvider = StateProvider<int?>((ref) => null);
+
+/// When set from a chat push notification, ChatScreen opens this conversation.
+final notificationPendingConversationIdProvider = StateProvider<int?>((ref) => null);

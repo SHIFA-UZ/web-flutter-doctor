@@ -14,6 +14,7 @@ import 'package:shifa_doc_app_v1/core/services/push_notification_service.dart';
 import 'package:shifa_doc_app_v1/core/util/admin_host.dart' show isAdminHost;
 import 'package:shifa_doc_app_v1/core/util/set_web_title.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_lock_layer.dart';
 import 'package:shifa_doc_app_v1/core/widgets/activity_tracker.dart';
 export 'package:shifa_doc_app_v1/core/util/admin_host.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
@@ -23,6 +24,7 @@ import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 
 // Global navigator key for navigation from anywhere
@@ -310,7 +312,22 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
             return;
           }
 
-          // Priority 2: Appointment (fetch day first, then navigate so calendar opens on correct date)
+          // Priority 2b: Chat message → open conversation
+          if (type == 'CHAT_MESSAGE' || type == 'NEW_MESSAGE') {
+            final chatRaw = data['chatId'] ?? data['conversationId'] ?? data['entityId'];
+            final cid = int.tryParse(chatRaw?.toString() ?? '');
+            if (cid != null && cid > 0) {
+              ref.read(notificationPendingConversationIdProvider.notifier).state = cid;
+              ref.read(shellProvider.notifier).setTab(DoctorShellTab.chat);
+              navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                AppRoutes.shell,
+                (route) => false,
+              );
+              return;
+            }
+          }
+
+          // Priority 3: Appointment (fetch day first, then navigate so calendar opens on correct date)
           if (appointmentId != null) {
             final id = int.tryParse(appointmentId.toString());
             if (id != null && id > 0) {
@@ -373,7 +390,8 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
       });
     }
     
-    return ActivityTracker(
+    return AppLockLifecycleLayer(
+      child: ActivityTracker(
       child: MaterialApp(
         navigatorKey: navigatorKey,
         title: 'Shifa Doctor',
@@ -396,6 +414,7 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
         // Admin URL: start at admin login. Doctor URL: start at splash -> login
         initialRoute: isAdminHost ? AppRoutes.adminLogin : AppRoutes.splash,
       ),
+    ),
     );
   }
 }
