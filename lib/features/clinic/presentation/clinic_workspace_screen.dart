@@ -871,7 +871,7 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
           return ClinicTableShell(toolbar: toolbar, body: body);
         }
 
-        Widget detailPane() {
+        Widget detailPane({bool mobileScrollEmbedded = false}) {
           if (_loadingPatient) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -884,6 +884,7 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
             );
           }
           return PatientDetailPanel(
+            mobileScrollEmbedded: mobileScrollEmbedded,
             patient: _selectedPatient,
             brand: brand,
             clinicWorkspaceId: widget.clinicId,
@@ -906,23 +907,29 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
             final wide = constraints.maxWidth >= 900;
 
             if (isMobile && _selectedPatientId != null) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => setState(() {
-                        _selectedPatientId = null;
-                        _selectedPatient = null;
-                        _patientError = null;
-                      }),
-                      icon: const Icon(Icons.arrow_back),
-                      label: Text(l10n.translate('clinicWorkspacePatients')),
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.only(
+                  bottom: Responsive.bottomNavClearance(context) + 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => setState(() {
+                          _selectedPatientId = null;
+                          _selectedPatient = null;
+                          _patientError = null;
+                        }),
+                        icon: const Icon(Icons.arrow_back),
+                        label: Text(l10n.translate('clinicWorkspacePatients')),
+                      ),
                     ),
-                  ),
-                  Expanded(child: detailPane()),
-                ],
+                    detailPane(mobileScrollEmbedded: true),
+                  ],
+                ),
               );
             }
 

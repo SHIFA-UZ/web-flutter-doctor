@@ -15,6 +15,8 @@ class PatientDetailPanel extends ConsumerStatefulWidget {
   final VoidCallback? onToggleFavorite;
   /// When set (e.g. clinic split view), called after profile/general updates instead of only [loadPatients].
   final VoidCallback? onPatientDataRefresh;
+  /// When true on mobile, content is a plain [Column] for a parent [SingleChildScrollView].
+  final bool mobileScrollEmbedded;
 
   const PatientDetailPanel({
     Key? key,
@@ -30,6 +32,7 @@ class PatientDetailPanel extends ConsumerStatefulWidget {
     this.isFavorite = false,
     this.onToggleFavorite,
     this.onPatientDataRefresh,
+    this.mobileScrollEmbedded = false,
   }) : super(key: key);
 
   @override
@@ -198,16 +201,14 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 720) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (var i = 0; i < stats.length; i++) ...[
-                  SizedBox(width: 132, child: stats[i]),
-                  if (i < stats.length - 1) const SizedBox(width: 10),
-                ],
-              ],
-            ),
+          final tileWidth = (constraints.maxWidth - 10) / 2;
+          return Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final stat in stats)
+                SizedBox(width: tileWidth, child: stat),
+            ],
           );
         }
         return Row(
@@ -1583,37 +1584,35 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     );
 
     if (Responsive.isMobile(context)) {
-      return Container(
-        decoration: decoration,
-        clipBehavior: Clip.antiAlias,
-        child: ListenableBuilder(
-          listenable: _tabController!,
-          builder: (context, _) {
-            return CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _buildPatientHeaderSection(
-                    context,
-                    p,
-                    brand,
-                    l10n,
-                    canUseBriefing: canUseBriefing,
-                    genderFromForm: genderFromForm,
+      final header = _buildPatientHeaderSection(
+        context,
+        p,
+        brand,
+        l10n,
+        canUseBriefing: canUseBriefing,
+        genderFromForm: genderFromForm,
+      );
+
+      if (widget.mobileScrollEmbedded) {
+        return Container(
+          decoration: decoration,
+          clipBehavior: Clip.antiAlias,
+          child: ListenableBuilder(
+            listenable: _tabController!,
+            builder: (context, _) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  header,
+                  Material(
+                    color: AppDesignSystem.background,
+                    child: tabBar,
                   ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _StickyTabBarDelegate(
-                    tabBar: tabBar,
-                    backgroundColor: AppDesignSystem.background,
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.cardPadding,
-                  ),
-                  sliver: SliverToBoxAdapter(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppDesignSystem.cardPadding,
+                    ),
                     child: _buildMobileTabBody(
                       index: _tabController!.index,
                       context: context,
@@ -1625,6 +1624,45 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                       formsAsync: formsAsync,
                     ),
                   ),
+                ],
+              );
+            },
+          ),
+        );
+      }
+
+      return Container(
+        decoration: decoration,
+        clipBehavior: Clip.antiAlias,
+        child: ListenableBuilder(
+          listenable: _tabController!,
+          builder: (context, _) {
+            final tabContent = _buildMobileTabBody(
+              index: _tabController!.index,
+              context: context,
+              p: p,
+              brand: brand,
+              l10n: l10n,
+              activities: activities,
+              docsAsync: docsAsync,
+              formsAsync: formsAsync,
+            );
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(child: header),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyTabBarDelegate(
+                    tabBar: tabBar,
+                    backgroundColor: AppDesignSystem.background,
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDesignSystem.cardPadding,
+                  ),
+                  sliver: SliverToBoxAdapter(child: tabContent),
                 ),
                 SliverPadding(
                   padding: EdgeInsets.only(

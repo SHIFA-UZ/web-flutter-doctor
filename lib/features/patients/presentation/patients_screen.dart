@@ -751,10 +751,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                 constraints.maxWidth >= Responsive.tabletBreakpoint;
 
             if (isMobile && _selectedId != null) {
-              return SizedBox(
-                height: constraints.maxHeight,
-                child: _buildMobilePatientDetail(context, l10n, brand),
-              );
+              return _buildMobilePatientDetail(context, l10n, brand);
             }
 
             final directoryPatients = _sidebarPatients;
@@ -880,36 +877,44 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     Color brand,
   ) {
     final patient = _selected;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => setState(() => _selectedId = null),
-            icon: const Icon(Icons.arrow_back),
-            label: Text(l10n.patients),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(
+        bottom: Responsive.bottomNavClearance(context) + 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _selectedId = null),
+              icon: const Icon(Icons.arrow_back),
+              label: Text(l10n.patients),
+            ),
           ),
-        ),
-        Expanded(
-          child: patient == null
-              ? const Center(child: CircularProgressIndicator())
-              : PatientDetailPanel(
-                  patient: patient,
-                  brand: brand,
-                  clinicWorkspaceId: widget.clinicWorkspaceId,
-                  isFavorite: _favoriteIds.contains(patient.id),
-                  onToggleFavorite: () => _toggleFavorite(patient.id),
-                  onUploadOptions: (p) => _showUploadOptions(context, p),
-                  onCreateForm: (p) =>
-                      showPatientFormTemplateSheet(context, p),
-                  formatDate: _formatDate,
-                  selectedDocumentId: widget.initialDocumentIdToSelect,
-                  documentTitleForViewer: widget.initialDocumentTitle,
-                  openDocumentViewer: widget.initialOpenDocumentViewer,
-                ),
-        ),
-      ],
+          if (patient == null)
+            const Padding(
+              padding: EdgeInsets.all(48),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            PatientDetailPanel(
+              mobileScrollEmbedded: true,
+              patient: patient,
+              brand: brand,
+              clinicWorkspaceId: widget.clinicWorkspaceId,
+              isFavorite: _favoriteIds.contains(patient.id),
+              onToggleFavorite: () => _toggleFavorite(patient.id),
+              onUploadOptions: (p) => _showUploadOptions(context, p),
+              onCreateForm: (p) => showPatientFormTemplateSheet(context, p),
+              formatDate: _formatDate,
+              selectedDocumentId: widget.initialDocumentIdToSelect,
+              documentTitleForViewer: widget.initialDocumentTitle,
+              openDocumentViewer: widget.initialOpenDocumentViewer,
+            ),
+        ],
+      ),
     );
   }
 

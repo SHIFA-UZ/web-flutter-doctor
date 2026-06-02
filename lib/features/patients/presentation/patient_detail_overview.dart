@@ -10,6 +10,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
@@ -76,49 +77,98 @@ class PatientHeroHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final status = patientStatus(patient, l10n);
     final hasRisk = patient.atRisk;
+    final isNarrow = Responsive.isMobile(context);
+
+    final nameBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          patient.name,
+          style: AppDesignSystem.display(context).copyWith(fontSize: 22),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _StatusPill(
+              label: status.kind == PatientStatusKind.active
+                  ? (l10n.translate('activePatient') ?? 'Active Patient')
+                  : status.label,
+              color: status.textColor,
+              background: status.backgroundColor,
+            ),
+            if (hasRisk)
+              _StatusPill(
+                label: l10n.translate('aiRiskDetected') ?? 'AI Risk Detected',
+                color: AppDesignSystem.warning,
+                background: const Color(0xFFFFF7ED),
+                icon: Icons.auto_awesome,
+              ),
+            Text(
+              patientLastVisitLabel(patient, l10n),
+              style: AppDesignSystem.body2(context),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    final actions = Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        IconButton(
+          onPressed: onToggleFavorite,
+          icon: Icon(
+            isFavorite ? Icons.star : Icons.star_border,
+            color: isFavorite ? brand : Colors.grey.shade500,
+          ),
+          tooltip: l10n.translate('favorites') ?? 'Favorite',
+        ),
+        if (showAiSummary)
+          ShifaSecondaryButton(
+            onPressed: onAiSummary,
+            icon: Icons.summarize_outlined,
+            label: l10n.translate('aiSummary') ?? 'AI Summary',
+          ),
+        IconButton(
+          onPressed: onMoreActions,
+          icon: Icon(Icons.more_vert, color: brand),
+        ),
+      ],
+    );
+
+    if (isNarrow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _PatientAvatar(
+                name: patient.name,
+                photoUrl: patient.photoUrl,
+                size: 32,
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: nameBlock),
+            ],
+          ),
+          const SizedBox(height: 8),
+          actions,
+        ],
+      );
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _PatientAvatar(name: patient.name, photoUrl: patient.photoUrl, size: 32),
         const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                patient.name,
-                style: AppDesignSystem.display(context).copyWith(fontSize: 22),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _StatusPill(
-                    label: status.kind == PatientStatusKind.active
-                        ? (l10n.translate('activePatient') ?? 'Active Patient')
-                        : status.label,
-                    color: status.textColor,
-                    background: status.backgroundColor,
-                  ),
-                  if (hasRisk)
-                    _StatusPill(
-                      label: l10n.translate('aiRiskDetected') ?? 'AI Risk Detected',
-                      color: AppDesignSystem.warning,
-                      background: const Color(0xFFFFF7ED),
-                      icon: Icons.auto_awesome,
-                    ),
-                  Text(
-                    patientLastVisitLabel(patient, l10n),
-                    style: AppDesignSystem.body2(context),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        Expanded(child: nameBlock),
         IconButton(
           onPressed: onToggleFavorite,
           icon: Icon(
