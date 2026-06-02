@@ -1,4 +1,4 @@
-part of 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart';
+﻿part of 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart';
 
 /// Right-hand patient detail workspace matching the Patients mockup layout.
 class PatientDetailPanel extends ConsumerStatefulWidget {
@@ -171,7 +171,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     final stats = [
       PatientSummaryStat(
         label: l10n.translate('age') ?? 'Age',
-        value: age?.toString() ?? '—',
+        value: age?.toString() ?? 'â€”',
       ),
       PatientSummaryStat(
         label: l10n.gender,
@@ -226,123 +226,130 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     BuildContext context,
     Patient p,
     Color brand,
-    List<PatientActivityItem> activities,
-  ) {
+    List<PatientActivityItem> activities, {
+    bool wrapScroll = true,
+  }) {
     final l10n = AppLocalizations.of(context)!;
     final suggestions = buildAiFollowUpSuggestions(p, l10n);
     final smsAllowed =
         ref.watch(profileAllProvider).valueOrNull?.profile['smsRemindersAllowed'] ==
             true;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 760;
-          final leftColumn = Column(
-            children: [
-              ClinicalSummaryCard(patient: p),
-              const SizedBox(height: AppDesignSystem.sectionGap),
-              RecentActivityCard(
-                activities: activities,
-                brand: brand,
-                onViewFullHistory: () => _tabController?.animateTo(5),
-              ),
-            ],
-          );
-          final rightColumn = Column(
-            children: [
-              QuickActionsCard(
-                brand: brand,
-                onNewAppointment: () =>
-                    _showMakeAppointmentDialog(context, ref, p, brand),
-                onSendMessage: () => openChatWithPatient(ref, p.id),
-                onCreateDocument: () => widget.onUploadOptions(p),
-                onMoreActions: () => _showHeroMoreActions(context, p, brand),
-              ),
-              const SizedBox(height: AppDesignSystem.sectionGap),
-              if (smsAllowed)
-                _SmsReminderCard(
-                  patient: p,
-                  brand: brand,
-                  onUpdated: () {
-                    if (widget.onPatientDataRefresh != null) {
-                      widget.onPatientDataRefresh!();
-                    } else {
-                      ref.read(patientsProvider.notifier).loadPatients();
-                    }
-                    ref.invalidate(patientByIdProvider(p.id));
-                  },
-                ),
-              if (smsAllowed) const SizedBox(height: AppDesignSystem.sectionGap),
-              _PatientPortalCard(
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 760;
+        final leftColumn = Column(
+          children: [
+            ClinicalSummaryCard(patient: p),
+            const SizedBox(height: AppDesignSystem.sectionGap),
+            RecentActivityCard(
+              activities: activities,
+              brand: brand,
+              onViewFullHistory: () => _tabController?.animateTo(5),
+            ),
+          ],
+        );
+        final rightColumn = Column(
+          children: [
+            QuickActionsCard(
+              brand: brand,
+              onNewAppointment: () =>
+                  _showMakeAppointmentDialog(context, ref, p, brand),
+              onSendMessage: () => openChatWithPatient(ref, p.id),
+              onCreateDocument: () => widget.onUploadOptions(p),
+              onMoreActions: () => _showHeroMoreActions(context, p, brand),
+            ),
+            const SizedBox(height: AppDesignSystem.sectionGap),
+            if (smsAllowed)
+              _SmsReminderCard(
                 patient: p,
                 brand: brand,
-                onCreateAccount: () => _createAccount(context, ref, p),
+                onUpdated: () {
+                  if (widget.onPatientDataRefresh != null) {
+                    widget.onPatientDataRefresh!();
+                  } else {
+                    ref.read(patientsProvider.notifier).loadPatients();
+                  }
+                  ref.invalidate(patientByIdProvider(p.id));
+                },
               ),
-              const SizedBox(height: AppDesignSystem.sectionGap),
-              AiFollowUpSuggestionsCard(
-                suggestions: suggestions,
-                brand: brand,
-              ),
-            ],
-          );
+            if (smsAllowed) const SizedBox(height: AppDesignSystem.sectionGap),
+            _PatientPortalCard(
+              patient: p,
+              brand: brand,
+              onCreateAccount: () => _createAccount(context, ref, p),
+            ),
+            const SizedBox(height: AppDesignSystem.sectionGap),
+            AiFollowUpSuggestionsCard(
+              suggestions: suggestions,
+              brand: brand,
+            ),
+          ],
+        );
 
-          if (isWide) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 3, child: leftColumn),
-                const SizedBox(width: AppDesignSystem.sectionGap),
-                Expanded(flex: 2, child: rightColumn),
-              ],
-            );
-          }
-          return Column(
+        if (isWide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              leftColumn,
-              const SizedBox(height: AppDesignSystem.sectionGap),
-              rightColumn,
+              Expanded(flex: 3, child: leftColumn),
+              const SizedBox(width: AppDesignSystem.sectionGap),
+              Expanded(flex: 2, child: rightColumn),
             ],
           );
-        },
-      ),
+        }
+        return Column(
+          children: [
+            leftColumn,
+            const SizedBox(height: AppDesignSystem.sectionGap),
+            rightColumn,
+          ],
+        );
+      },
+    );
+
+    if (!wrapScroll) return content;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: content,
     );
   }
 
-  Widget _buildMedicalInfoTab(Patient p) {
+  Widget _buildMedicalInfoTab(Patient p, {bool wrapScroll = true}) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _GeneralInfo(
+          general: p.general,
+          patientId: p.id,
+          onUpdate: () {
+            if (widget.onPatientDataRefresh != null) {
+              widget.onPatientDataRefresh!();
+            } else {
+              ref.read(patientsProvider.notifier).loadPatients();
+            }
+            ref.invalidate(patientByIdProvider(p.id));
+          },
+        ),
+        if (widget.clinicWorkspaceId != null) ...[
+          const SizedBox(height: AppDesignSystem.sectionGap),
+          _SectionCardWrapper(
+            title: AppLocalizations.of(context)!
+                    .translate('patientDetailTabProphylaxis') ??
+                'Prophylaxis',
+            child: _ClinicProphylaxisEditor(
+              patientId: p.id,
+              clinicId: widget.clinicWorkspaceId!,
+              brand: widget.brand,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (!wrapScroll) return content;
     return SingleChildScrollView(
       padding: const EdgeInsets.only(top: 16, bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _GeneralInfo(
-            general: p.general,
-            patientId: p.id,
-            onUpdate: () {
-              if (widget.onPatientDataRefresh != null) {
-                widget.onPatientDataRefresh!();
-              } else {
-                ref.read(patientsProvider.notifier).loadPatients();
-              }
-              ref.invalidate(patientByIdProvider(p.id));
-            },
-          ),
-          if (widget.clinicWorkspaceId != null) ...[
-            const SizedBox(height: AppDesignSystem.sectionGap),
-            _SectionCardWrapper(
-              title: AppLocalizations.of(context)!
-                      .translate('patientDetailTabProphylaxis') ??
-                  'Prophylaxis',
-              child: _ClinicProphylaxisEditor(
-                patientId: p.id,
-                clinicId: widget.clinicWorkspaceId!,
-                brand: widget.brand,
-              ),
-            ),
-          ],
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -397,7 +404,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                   final dateLine =
                       '${two(start.day)}.${two(start.month)}.${start.year}';
                   final timeLine =
-                      '${two(start.hour)}:${two(start.minute)} – ${two(end.hour)}:${two(end.minute)}';
+                      '${two(start.hour)}:${two(start.minute)} â€“ ${two(end.hour)}:${two(end.minute)}';
                   final location = appt.isVideo
                       ? l10n.videoCall
                       : ((appt.location ?? '').trim().isNotEmpty
@@ -921,7 +928,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                               SnackBar(
                                 content: Text(
                                   l10n.translate('bookingRangeUnavailable') ??
-                                      'Selected time range is no longer fully available — calendar refreshed.',
+                                      'Selected time range is no longer fully available â€” calendar refreshed.',
                                 ),
                               ),
                             );
@@ -934,6 +941,581 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
           );
         },
       ),
+    );
+  }
+
+  TabBar _buildDetailTabBar(AppLocalizations l10n, Color brand) {
+    return TabBar(
+      controller: _tabController!,
+      isScrollable: true,
+      labelColor: brand,
+      unselectedLabelColor: AppDesignSystem.textSecondary,
+      indicatorColor: brand,
+      indicatorWeight: 2.5,
+      tabs: [
+        Tab(text: l10n.translate('overview') ?? 'Overview'),
+        Tab(text: l10n.translate('medicalInfo') ?? 'Medical Info'),
+        Tab(text: l10n.translate('appointments') ?? 'Appointments'),
+        Tab(text: l10n.translate('documents') ?? 'Documents'),
+        Tab(text: l10n.translate('prescriptions') ?? 'Prescriptions'),
+        Tab(text: l10n.translate('history') ?? 'History'),
+      ],
+    );
+  }
+
+  Widget _buildPatientHeaderSection(
+    BuildContext context,
+    Patient p,
+    Color brand,
+    AppLocalizations l10n, {
+    required bool canUseBriefing,
+    String? genderFromForm,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(AppDesignSystem.cardPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PatientHeroHeader(
+            patient: p,
+            brand: brand,
+            isFavorite: widget.isFavorite,
+            onToggleFavorite: widget.onToggleFavorite ?? () {},
+            onMoreActions: () => _showHeroMoreActions(context, p, brand),
+            onAiSummary: () =>
+                ref.read(patientBriefingProvider.notifier).generate(p.id, p.name),
+            showAiSummary: canUseBriefing,
+          ),
+          const SizedBox(height: AppDesignSystem.sectionGap),
+          _buildSummaryRow(
+            context,
+            p,
+            genderFromForm: genderFromForm,
+          ),
+          const SizedBox(height: AppDesignSystem.sectionGap),
+          PatientAiCopilotCard(
+            patientId: p.id,
+            patientName: p.name,
+            brand: brand,
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  static const EdgeInsets _mobileTabBodyPadding =
+      EdgeInsets.only(top: 16, bottom: 8);
+
+  Widget _buildMobileTabBody({
+    required int index,
+    required BuildContext context,
+    required Patient p,
+    required Color brand,
+    required AppLocalizations l10n,
+    required List<PatientActivityItem> activities,
+    required AsyncValue<List<PatientDocument>> docsAsync,
+    required AsyncValue<List<PatientForm>> formsAsync,
+  }) {
+    switch (index) {
+      case 0:
+        return Padding(
+          padding: _mobileTabBodyPadding,
+          child: _buildOverviewTab(
+            context,
+            p,
+            brand,
+            activities,
+            wrapScroll: false,
+          ),
+        );
+      case 1:
+        return Padding(
+          padding: _mobileTabBodyPadding,
+          child: _buildMedicalInfoTab(p, wrapScroll: false),
+        );
+      case 2:
+        return Padding(
+          padding: _mobileTabBodyPadding,
+          child: _buildAppointmentsTabBody(p, brand),
+        );
+      case 3:
+        return Padding(
+          padding: _mobileTabBodyPadding,
+          child: _buildDocumentsTabBody(
+            context,
+            p,
+            brand,
+            docsAsync,
+            formsAsync,
+          ),
+        );
+      case 4:
+        return Padding(
+          padding: _mobileTabBodyPadding,
+          child: formsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => _buildPrescriptionsTabBody(p, const [], brand),
+            data: (forms) => _buildPrescriptionsTabBody(p, forms, brand),
+          ),
+        );
+      case 5:
+        return Padding(
+          padding: _mobileTabBodyPadding,
+          child: _buildHistoryTabBody(activities, brand),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildPatientAppointmentCard(
+    PatientDoctorAppointment appt,
+    Color brand,
+    AppLocalizations l10n,
+  ) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final start = appt.startAt.toLocal();
+    final end = appt.endAt.toLocal();
+    final dateLine = '${two(start.day)}.${two(start.month)}.${start.year}';
+    final timeLine =
+        '${two(start.hour)}:${two(start.minute)} â€“ ${two(end.hour)}:${two(end.minute)}';
+    final location = appt.isVideo
+        ? l10n.videoCall
+        : ((appt.location ?? '').trim().isNotEmpty
+            ? appt.location!.trim()
+            : l10n.inClinic);
+    final reason = (appt.reason ?? '').trim();
+    return _CardBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                appt.isVideo
+                    ? Icons.videocam_outlined
+                    : Icons.location_on_outlined,
+                size: 18,
+                color: brand,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  dateLine,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: brand.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  patientAppointmentStatusLabel(l10n, appt.status),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: brand,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(timeLine, style: AppDesignSystem.body2(context)),
+          const SizedBox(height: 4),
+          Text(location, style: AppDesignSystem.body2(context)),
+          if (reason.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(reason, style: AppDesignSystem.caption(context)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsTabBody(Patient p, Color brand) {
+    final l10n = AppLocalizations.of(context)!;
+    final appointmentsAsync = ref.watch(patientDoctorAppointmentsProvider(p.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ShifaPrimaryButton(
+          onPressed: () => _showMakeAppointmentDialog(context, ref, p, brand),
+          icon: Icons.add,
+          label: l10n.translate('newAppointment') ?? 'New Appointment',
+        ),
+        const SizedBox(height: 12),
+        appointmentsAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              '${l10n.error}: $e',
+              style: AppDesignSystem.body2(context),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          data: (appointments) {
+            if (appointments.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  l10n.translate('noPatientAppointments') ??
+                      'No appointments with you yet.',
+                  textAlign: TextAlign.center,
+                  style: AppDesignSystem.body1(context),
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (var i = 0; i < appointments.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _buildPatientAppointmentCard(
+                    appointments[i],
+                    brand,
+                    l10n,
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPrescriptionsTabBody(
+    Patient p,
+    List<PatientForm> forms,
+    Color brand,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    if (forms.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.medication_outlined, size: 48, color: brand),
+            const SizedBox(height: 12),
+            Text(l10n.translate('noPrescriptions') ?? 'No prescriptions yet'),
+            const SizedBox(height: 16),
+            ShifaSecondaryButton(
+              onPressed: () => widget.onCreateForm(p),
+              label: l10n.translate('createForm') ?? 'Create Form',
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < forms.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          _CardBox(
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.description, color: brand),
+              title: Text(forms[i].templateId),
+              subtitle: Text(widget.formatDate(forms[i].date)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                ShellScope.pushNamed(
+                  context,
+                  AppRoutes.patientForm,
+                  arguments: {
+                    'patient': p,
+                    'templateId': forms[i].templateId,
+                    'existingForm': forms[i],
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHistoryTabBody(
+    List<PatientActivityItem> activities,
+    Color brand,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    String two(int n) => n.toString().padLeft(2, '0');
+    if (activities.isEmpty) {
+      return Center(
+        child: Text(
+          l10n.translate('noRecentActivity') ?? 'No recent activity',
+          style: AppDesignSystem.body2(context),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < activities.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          _CardBox(
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: activities[i].iconColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    activities[i].icon,
+                    size: 18,
+                    color: activities[i].iconColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        activities[i].title,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      if (activities[i].subtitle.isNotEmpty)
+                        Text(
+                          activities[i].subtitle,
+                          style: AppDesignSystem.body2(context),
+                        ),
+                      Text(
+                        '${two(activities[i].date.day)}.${two(activities[i].date.month)}.${activities[i].date.year}',
+                        style: AppDesignSystem.caption(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDocumentsTabBody(
+    BuildContext context,
+    Patient p,
+    Color brand,
+    AsyncValue<List<PatientDocument>> docsAsync,
+    AsyncValue<List<PatientForm>> formsAsync,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.translate('documentHistory') ?? 'Document History',
+                style: AppDesignSystem.h2(context),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 20),
+              onPressed: () {
+                ref.refresh(patientDocumentsProvider(_docKey(p.id)));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        l10n.translate('refreshing') ?? 'Refreshing...',
+                      ),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                }
+              },
+              tooltip: l10n.translate('refresh') ?? 'Refresh list',
+            ),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: brand),
+              onSelected: (value) {
+                switch (value) {
+                  case 'upload':
+                    widget.onUploadOptions(p);
+                    break;
+                  case 'form':
+                    widget.onCreateForm(p);
+                    break;
+                  case 'task':
+                    ShellScope.pushNamed(
+                      context,
+                      AppRoutes.createTask,
+                      arguments: {'patientId': int.parse(p.id)},
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'upload',
+                  child: Row(
+                    children: [
+                      Icon(Icons.upload, size: 18, color: brand),
+                      const SizedBox(width: 8),
+                      Text(l10n.uploadDocument),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'form',
+                  child: Row(
+                    children: [
+                      Icon(Icons.description, color: brand, size: 18),
+                      const SizedBox(width: 8),
+                      Text(l10n.translate('createForm') ?? 'Create Form'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'task',
+                  child: Row(
+                    children: [
+                      Icon(Icons.task_alt, color: brand, size: 18),
+                      const SizedBox(width: 8),
+                      Text(l10n.createTask),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _documentSearchController,
+          decoration: InputDecoration(
+            hintText: l10n.search,
+            prefixIcon: const Icon(Icons.search, size: 18),
+            filled: true,
+            fillColor: AppDesignSystem.backgroundSecondary,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppDesignSystem.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppDesignSystem.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: brand, width: 1.5),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        docsAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, st) {
+            final safeMessage = sanitizeErrorMessage(e, l10n);
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red.shade400,
+                    size: 28,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${l10n.error}: $safeMessage',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () =>
+                        ref.refresh(patientDocumentsProvider(_docKey(p.id))),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text(l10n.retry),
+                  ),
+                ],
+              ),
+            );
+          },
+          data: (docs) {
+            final filteredDocs = _documentSearchQuery.isEmpty
+                ? docs
+                : docs
+                    .where(
+                      (doc) => doc.title.toLowerCase().contains(
+                            _documentSearchQuery.toLowerCase(),
+                          ),
+                    )
+                    .toList();
+            if (widget.openDocumentViewer &&
+                widget.selectedDocumentId != null &&
+                widget.patient != null &&
+                !_documentViewerOpenedFromDeepLink &&
+                docs.any(
+                  (d) => d.id.toString() == widget.selectedDocumentId,
+                )) {
+              _documentViewerOpenedFromDeepLink = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ShellScope.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => DocumentViewerScreen(
+                      patientId: widget.patient!.id,
+                      documentId: widget.selectedDocumentId!,
+                      title: widget.documentTitleForViewer ?? 'Document',
+                      clinicWorkspaceId: widget.clinicWorkspaceId,
+                    ),
+                  ),
+                );
+              });
+            }
+            if (filteredDocs.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  l10n.translate('noDocuments') ?? 'No documents yet',
+                  style: AppDesignSystem.body2(context),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            final forms = formsAsync.valueOrNull ?? const <PatientForm>[];
+            return _buildDocumentList(
+              context,
+              ref,
+              filteredDocs,
+              forms,
+              brand,
+              widget.formatDate,
+              p,
+              shrinkWrap: true,
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -981,60 +1563,97 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
       orElse: () => null,
     );
 
-    return Container(
-      decoration: AppDesignSystem.cardDecoration(
-        borderOverride: Border.all(color: AppDesignSystem.border.withValues(alpha: 0.6)),
+    final tabBar = _buildDetailTabBar(l10n, brand);
+    final tabChildren = [
+      _buildOverviewTab(context, p, brand, activities),
+      _buildMedicalInfoTab(p),
+      _buildAppointmentsTab(p, brand),
+      _buildDocumentsTab(context, p, brand, docsAsync, formsAsync),
+      formsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => _buildPrescriptionsTab(p, const [], brand),
+        data: (forms) => _buildPrescriptionsTab(p, forms, brand),
       ),
+      _buildHistoryTab(activities, brand),
+    ];
+
+    final decoration = AppDesignSystem.cardDecoration(
+      borderOverride:
+          Border.all(color: AppDesignSystem.border.withValues(alpha: 0.6)),
+    );
+
+    if (Responsive.isMobile(context)) {
+      return Container(
+        decoration: decoration,
+        clipBehavior: Clip.antiAlias,
+        child: ListenableBuilder(
+          listenable: _tabController!,
+          builder: (context, _) {
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildPatientHeaderSection(
+                    context,
+                    p,
+                    brand,
+                    l10n,
+                    canUseBriefing: canUseBriefing,
+                    genderFromForm: genderFromForm,
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyTabBarDelegate(
+                    tabBar: tabBar,
+                    backgroundColor: AppDesignSystem.background,
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDesignSystem.cardPadding,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: _buildMobileTabBody(
+                      index: _tabController!.index,
+                      context: context,
+                      p: p,
+                      brand: brand,
+                      l10n: l10n,
+                      activities: activities,
+                      docsAsync: docsAsync,
+                      formsAsync: formsAsync,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.only(
+                    bottom: Responsive.bottomNavClearance(context) + 16,
+                  ),
+                  sliver: const SliverToBoxAdapter(child: SizedBox.shrink()),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    return Container(
+      decoration: decoration,
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(AppDesignSystem.cardPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                PatientHeroHeader(
-                  patient: p,
-                  brand: brand,
-                  isFavorite: widget.isFavorite,
-                  onToggleFavorite: widget.onToggleFavorite ?? () {},
-                  onMoreActions: () => _showHeroMoreActions(context, p, brand),
-                  onAiSummary: () =>
-                      ref.read(patientBriefingProvider.notifier).generate(p.id, p.name),
-                  showAiSummary: canUseBriefing,
-                ),
-                const SizedBox(height: AppDesignSystem.sectionGap),
-                _buildSummaryRow(
-                  context,
-                  p,
-                  genderFromForm: genderFromForm,
-                ),
-                const SizedBox(height: AppDesignSystem.sectionGap),
-                PatientAiCopilotCard(
-                  patientId: p.id,
-                  patientName: p.name,
-                  brand: brand,
-                ),
-              ],
-            ),
+          _buildPatientHeaderSection(
+            context,
+            p,
+            brand,
+            l10n,
+            canUseBriefing: canUseBriefing,
+            genderFromForm: genderFromForm,
           ),
-          TabBar(
-            controller: _tabController!,
-            isScrollable: true,
-            labelColor: brand,
-            unselectedLabelColor: AppDesignSystem.textSecondary,
-            indicatorColor: brand,
-            indicatorWeight: 2.5,
-            tabs: [
-              Tab(text: l10n.translate('overview') ?? 'Overview'),
-              Tab(text: l10n.translate('medicalInfo') ?? 'Medical Info'),
-              Tab(text: l10n.translate('appointments') ?? 'Appointments'),
-              Tab(text: l10n.translate('documents') ?? 'Documents'),
-              Tab(text: l10n.translate('prescriptions') ?? 'Prescriptions'),
-              Tab(text: l10n.translate('history') ?? 'History'),
-            ],
-          ),
+          tabBar,
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -1045,19 +1664,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
               ),
               child: TabBarView(
                 controller: _tabController!,
-                children: [
-                  _buildOverviewTab(context, p, brand, activities),
-                  _buildMedicalInfoTab(p),
-                  _buildAppointmentsTab(p, brand),
-                  _buildDocumentsTab(context, p, brand, docsAsync, formsAsync),
-                  formsAsync.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => _buildPrescriptionsTab(p, const [], brand),
-                    data: (forms) => _buildPrescriptionsTab(p, forms, brand),
-                  ),
-                  _buildHistoryTab(activities, brand),
-                ],
+                children: tabChildren,
               ),
             ),
           ),
@@ -1298,8 +1905,9 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     List<PatientForm> forms,
     Color brand,
     String Function(DateTime) formatDate,
-    Patient patient,
-  ) {
+    Patient patient, {
+    bool shrinkWrap = false,
+  }) {
     // Find form linked to a document by documentId
     PatientForm? findFormForDocument(PatientDocument doc) {
       if (forms.isEmpty) return null;
@@ -1340,6 +1948,8 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     }
 
     return ListView.separated(
+      shrinkWrap: shrinkWrap,
+      physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
       itemCount: docs.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -2244,7 +2854,7 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
                     .map(
                       (g) => DropdownMenuItem<String>(
                         value: g,
-                        child: Text(g.isEmpty ? '—' : g),
+                        child: Text(g.isEmpty ? 'â€”' : g),
                       ),
                     )
                     .toList(),
@@ -2287,7 +2897,7 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
                     .map(
                       (g) => DropdownMenuItem<String>(
                         value: g,
-                        child: Text(g.isEmpty ? '—' : g),
+                        child: Text(g.isEmpty ? 'â€”' : g),
                       ),
                     )
                     .toList(),
@@ -2740,5 +3350,40 @@ class _SmsReminderCardState extends ConsumerState<_SmsReminderCard> {
         ],
       ),
     );
+  }
+}
+
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  const _StickyTabBarDelegate({
+    required this.tabBar,
+    required this.backgroundColor,
+  });
+
+  final TabBar tabBar;
+  final Color backgroundColor;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: backgroundColor,
+      elevation: overlapsContent ? 1 : 0,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyTabBarDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar ||
+        backgroundColor != oldDelegate.backgroundColor;
   }
 }

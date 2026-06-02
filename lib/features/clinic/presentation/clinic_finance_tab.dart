@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
@@ -102,7 +103,12 @@ class _DashboardViewState extends ConsumerState<_DashboardView> {
     return dashboardAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('${l10n.error}: $e')),
-      data: (stats) => SingleChildScrollView(
+      data: (stats) => RefreshIndicator(
+        onRefresh: () async {
+          refreshClinicFinancialData(ref, widget.clinicId);
+        },
+        child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,6 +124,7 @@ class _DashboardViewState extends ConsumerState<_DashboardView> {
               children: [
                 _KpiCard(
                   title: l10n.translate('clinicFinanceTotalRevenue'),
+                  subtitle: l10n.translate('clinicFinanceTotalRevenueHint'),
                   value: _formatMoney(stats.totalRevenueMinor, stats.currency),
                   color: Colors.green,
                   selected: _selectedKpi == _DashboardKpi.revenue,
@@ -158,6 +165,7 @@ class _DashboardViewState extends ConsumerState<_DashboardView> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -766,11 +774,7 @@ class _AppointmentLedgerViewState
   }
 
   void _invalidateFinanceAfterPayment() {
-    ref.invalidate(clinicAppointmentLedgerProvider(widget.clinicId));
-    ref.invalidate(clinicPaymentHistoryProvider(widget.clinicId));
-    ref.invalidate(clinicDoctorEarningsProvider(widget.clinicId));
-    ref.invalidate(clinicFinanceDashboardProvider(widget.clinicId));
-    ref.invalidate(clinicFinancialRecordsProvider(widget.clinicId));
+    refreshClinicFinancialData(ref, widget.clinicId);
   }
 
   Future<void> _quickPayRow(AppointmentLedgerRowDto row, String method) async {
@@ -1184,7 +1188,12 @@ class _AppointmentLedgerViewState
                 }).toList(),
               );
 
-        return ClinicTableShell(toolbar: toolbar, body: body);
+        return RefreshIndicator(
+          onRefresh: () async {
+            refreshClinicFinancialData(ref, widget.clinicId);
+          },
+          child: ClinicTableShell(toolbar: toolbar, body: body),
+        );
       },
     );
   }
@@ -1221,9 +1230,7 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
   }
 
   void _invalidateInstallments() {
-    ref.invalidate(clinicInstallmentItemsProvider((widget.clinicId, _filter)));
-    ref.invalidate(clinicOverdueProvider(widget.clinicId));
-    ref.invalidate(clinicFinanceDashboardProvider(widget.clinicId));
+    refreshClinicFinancialData(ref, widget.clinicId);
   }
 
   /// Client-side filter + sort. The backend already applies the status filter
@@ -1524,7 +1531,8 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
                       children: [
                         Chip(
                           label: Text(
-                            '${l10n.translate('clinicFinanceInstallTotalsItems')}: $itemCount',
+                            '${l10n.translate('clinicFinanceInstallTotalsItems')}: $itemCount · '
+                            '${l10n.translate('clinicFinanceInstallTotalsFilteredNote')}',
                           ),
                         ),
                         Chip(
@@ -1569,9 +1577,7 @@ class _InstallmentsFinanceViewState extends ConsumerState<_InstallmentsFinanceVi
                   Expanded(
                     child: RefreshIndicator(
                 onRefresh: () async {
-                  ref.invalidate(
-                    clinicInstallmentItemsProvider((widget.clinicId, _filter)),
-                  );
+                  refreshClinicFinancialData(ref, widget.clinicId);
                 },
                 child: SingleChildScrollView(
                   primary: true,
@@ -1853,6 +1859,45 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
   String _search = '';
   int _sortIdx = 2; // Default: highest gross first.
   bool _sortAsc = false;
+  late DateTime _selectedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month);
+  }
+
+  DoctorEarningsQuery _earningsQuery() {
+    final clinic = ref.read(selectedClinicProvider);
+    final tz = clinic?.timeZone;
+    final range = monthRangeUtcInTimezone(
+      _selectedMonth.year,
+      _selectedMonth.month,
+      tz,
+    );
+    return DoctorEarningsQuery(
+      clinicId: widget.clinicId,
+      fromIso: range.fromUtc.toIso8601String(),
+      toIso: range.toUtc.toIso8601String(),
+    );
+  }
+
+  Future<void> _pickMonth() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedMonth,
+      firstDate: DateTime(2020, 1),
+      lastDate: DateTime(DateTime.now().year + 1, 12),
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked == null) return;
+    setState(() => _selectedMonth = DateTime(picked.year, picked.month));
+  }
+
+  String _monthLabel(AppLocalizations l10n) {
+    return '${l10n.monthName(_selectedMonth.month)} ${_selectedMonth.year}';
+  }
 
   @override
   void dispose() {
@@ -1916,19 +1961,46 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(clinicDoctorEarningsProvider(widget.clinicId));
+    final query = _earningsQuery();
+    final async = ref.watch(clinicDoctorEarningsProvider(query));
     final members =
         ref.watch(clinicMembersProvider(widget.clinicId)).valueOrNull ??
             <ClinicMember>[];
+    final currency =
+        ref.watch(clinicFinanceDashboardProvider(widget.clinicId)).valueOrNull?.currency ??
+            'UZS';
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('${l10n.error}: $e')),
       data: (rows) {
         final filtered = _apply(rows, members);
-        final toolbar = ClinicTableSearchField(
-          controller: _searchCtrl,
-          hint: l10n.translate('clinicEarningsSearchHint'),
-          onChanged: (v) => setState(() => _search = v),
+        final toolbar = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _pickMonth,
+                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                  label: Text(
+                    l10n.translate('clinicFinanceDoctorEarningsMonth')
+                        .replaceAll('{{month}}', _monthLabel(l10n)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.translate('clinicFinanceDoctorEarningsHint'),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 8),
+            ClinicTableSearchField(
+              controller: _searchCtrl,
+              hint: l10n.translate('clinicEarningsSearchHint'),
+              onChanged: (v) => setState(() => _search = v),
+            ),
+          ],
         );
 
         final Widget body = rows.isEmpty || filtered.isEmpty
@@ -2004,16 +2076,16 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
                       )),
                       DataCell(Text('${d.visitCount}')),
                       DataCell(Text(
-                        _formatMoney(d.grossMinor, 'UZS'),
+                        _formatMoney(d.grossMinor, currency),
                         style:
                             const TextStyle(fontWeight: FontWeight.w600),
                       )),
                       DataCell(Text(
-                        _formatMoney(d.collectedMinor, 'UZS'),
+                        _formatMoney(d.collectedMinor, currency),
                         style: TextStyle(color: Colors.green.shade700),
                       )),
                       DataCell(Text(
-                        _formatMoney(d.outstandingMinor, 'UZS'),
+                        _formatMoney(d.outstandingMinor, currency),
                         style: TextStyle(
                           color: d.outstandingMinor > 0
                               ? Colors.red.shade700
@@ -2026,7 +2098,12 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
                 }).toList(),
               );
 
-        return ClinicTableShell(toolbar: toolbar, body: body);
+        return RefreshIndicator(
+          onRefresh: () async {
+            refreshClinicFinancialData(ref, widget.clinicId);
+          },
+          child: ClinicTableShell(toolbar: toolbar, body: body),
+        );
       },
     );
   }
@@ -2346,7 +2423,12 @@ class _RecordsViewState extends ConsumerState<_RecordsView> {
               );
         }
 
-        return ClinicTableShell(toolbar: toolbar, body: body);
+        return RefreshIndicator(
+          onRefresh: () async {
+            refreshClinicFinancialData(ref, widget.clinicId);
+          },
+          child: ClinicTableShell(toolbar: toolbar, body: body),
+        );
       },
     );
   }
@@ -2685,7 +2767,12 @@ class _PaymentsViewState extends ConsumerState<_PaymentsView> {
               );
         }
 
-        return ClinicTableShell(toolbar: toolbar, body: body);
+        return RefreshIndicator(
+          onRefresh: () async {
+            refreshClinicFinancialData(ref, widget.clinicId);
+          },
+          child: ClinicTableShell(toolbar: toolbar, body: body),
+        );
       },
     );
   }
@@ -2693,6 +2780,7 @@ class _PaymentsViewState extends ConsumerState<_PaymentsView> {
 
 class _KpiCard extends StatelessWidget {
   final String title;
+  final String? subtitle;
   final String value;
   final Color color;
   final bool selected;
@@ -2700,6 +2788,7 @@ class _KpiCard extends StatelessWidget {
 
   const _KpiCard({
     required this.title,
+    this.subtitle,
     required this.value,
     required this.color,
     this.selected = false,
@@ -2742,6 +2831,16 @@ class _KpiCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
                 value,

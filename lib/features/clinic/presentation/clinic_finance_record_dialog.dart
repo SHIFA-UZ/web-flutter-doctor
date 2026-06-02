@@ -103,8 +103,7 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
           notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
         );
       }
-      ref.invalidate(clinicFinancialRecordsProvider(widget.clinicId));
-      ref.invalidate(clinicFinanceDashboardProvider(widget.clinicId));
+      refreshClinicFinancialData(ref, widget.clinicId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.translate('clinicRecordsFormSuccess'))),

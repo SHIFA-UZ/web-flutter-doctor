@@ -13,7 +13,6 @@ import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
-import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 
 enum _WizardPayMode { unpaid, full, installments }
 
@@ -655,11 +654,7 @@ class _TreatmentPlanWizardDialogState
       }
 
       await patchTreatmentPlanStatus(ref, planId: planId, status: 'ACTIVE');
-      ref.invalidate(treatmentPlansForPatientProvider([widget.clinicId, pid]));
-      ref.invalidate(treatmentPlansForClinicProvider);
-      ref.invalidate(clinicFinanceDashboardProvider(widget.clinicId));
-      ref.invalidate(clinicInstallmentItemsProvider);
-      ref.invalidate(clinicOverdueProvider(widget.clinicId));
+      refreshClinicFinancialData(ref, widget.clinicId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

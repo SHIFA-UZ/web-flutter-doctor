@@ -249,8 +249,7 @@ class _ClinicTreatmentPlansTabState
       // Force the table + finance widgets to re-pull so the new status
       // (and any downstream payment-status / outstanding changes) become
       // visible immediately.
-      ref.invalidate(treatmentPlansForClinicProvider);
-      ref.invalidate(clinicFinanceDashboardProvider(widget.clinicId));
+      refreshClinicFinancialData(ref, widget.clinicId);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

@@ -158,7 +158,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   }
                   final grouped = _groupByDate(filtered, l10n);
                   return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 12 : 20,
+                      0,
+                      isMobile ? 12 : 20,
+                      Responsive.bottomNavClearance(context) + 24,
+                    ),
                     itemCount: grouped.length,
                     itemBuilder: (context, index) {
                       final section = grouped[index];

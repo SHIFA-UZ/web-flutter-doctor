@@ -71,18 +71,15 @@ Future<void> invalidateAppointmentRelatedProviders(
   // navigation to the Clinic workspace shows the up-to-date status without
   // requiring a manual refresh.
   try {
-    ref.invalidate(treatmentPlansForClinicProvider);
-    ref.invalidate(treatmentPlansForPatientProvider);
-  } catch (e) {
-    debugPrint('invalidate(treatmentPlans*) failed: $e');
-  }
-  try {
     final clinicId = clinicWorkspaceId ?? ref.read(selectedClinicIdProvider);
     if (clinicId != null) {
-      invalidateClinicFinanceTabDataForClinic(ref, clinicId);
+      refreshClinicFinancialData(ref, clinicId);
+    } else {
+      ref.invalidate(treatmentPlansForClinicProvider);
+      ref.invalidate(treatmentPlansForPatientProvider);
     }
   } catch (e) {
-    debugPrint('invalidateClinicFinanceTabDataForClinic failed: $e');
+    debugPrint('refreshClinicFinancialData failed: $e');
   }
 }
 

@@ -751,13 +751,18 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                 constraints.maxWidth >= Responsive.tabletBreakpoint;
 
             if (isMobile && _selectedId != null) {
-              return _buildMobilePatientDetail(context, l10n, brand);
+              return SizedBox(
+                height: constraints.maxHeight,
+                child: _buildMobilePatientDetail(context, l10n, brand),
+              );
             }
 
             final directoryPatients = _sidebarPatients;
 
             if (!isWide) {
-              return PatientsDirectoryPanel(
+              return SizedBox(
+                height: constraints.maxHeight,
+                child: PatientsDirectoryPanel(
                 patients: directoryPatients,
                 selectedId: _selectedId,
                 favoriteIds: _favoriteIds,
@@ -788,6 +793,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     }
                   }
                 },
+                ),
               );
             }
 

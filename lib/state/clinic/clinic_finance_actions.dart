@@ -208,11 +208,13 @@ Future<List<DoctorEarningRow>> fetchDoctorEarnings(
 }) async {
   final api = ref.read(doctorApiClientProvider);
   final q = <String>[];
-  if (fromIso != null) q.add('from=$fromIso');
-  if (toIso != null) q.add('to=$toIso');
+  if (fromIso != null) q.add('from=${Uri.encodeQueryComponent(fromIso)}');
+  if (toIso != null) q.add('to=${Uri.encodeQueryComponent(toIso)}');
   final qs = q.isEmpty ? '' : '?${q.join('&')}';
   final res = await api.get('/api/clinics/$clinicId/finance/doctor-earnings$qs');
-  if (res.statusCode != 200) return [];
+  if (res.statusCode != 200) {
+    throw Exception('Doctor earnings ${res.statusCode}');
+  }
   final list = json.decode(utf8.decode(res.bodyBytes));
   if (list is! List) return [];
   return list

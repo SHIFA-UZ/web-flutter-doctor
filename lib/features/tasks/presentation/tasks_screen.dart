@@ -88,7 +88,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               await ref.read(tasksProvider.notifier).loadTasks();
             },
             child: ListView(
-              padding: Responsive.screenPadding(context).copyWith(bottom: 32),
+              padding: Responsive.screenPadding(context).copyWith(
+                bottom: Responsive.bottomNavClearance(context) + 32,
+              ),
               children: [
                 // Header
                 if (isMobile)

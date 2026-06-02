@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -98,6 +99,174 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
     final end = visible == 0
         ? 0
         : ((_page + 1) * _pageSize).clamp(0, visible);
+
+    if (Responsive.isMobile(context)) {
+      return Container(
+        decoration: AppDesignSystem.cardDecoration(
+          borderOverride:
+              Border.all(color: AppDesignSystem.border.withValues(alpha: 0.6)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.patients,
+                            style: AppDesignSystem.display(context).copyWith(
+                              fontSize: 22,
+                            ),
+                          ),
+                        ),
+                        _CountBadge(count: total),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.translate('patientsPageSubtitle') ??
+                          'Manage patient records, communications and clinical data.',
+                      style: AppDesignSystem.body2(context),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _searchCtrl,
+                      onChanged: (_) => setState(() => _page = 0),
+                      decoration: InputDecoration(
+                        hintText: l10n.translate('searchPatientsGlobalHint') ??
+                            'Search patients, phone, ID...',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        filled: true,
+                        fillColor: AppDesignSystem.backgroundSecondary,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              BorderSide(color: AppDesignSystem.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              BorderSide(color: AppDesignSystem.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: brand, width: 1.5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        _FilterButton(
+                          activeFilter: _statusFilter,
+                          brand: brand,
+                          onChanged: (value) => setState(() {
+                            _statusFilter = value;
+                            _page = 0;
+                          }),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ShifaPrimaryButton(
+                            onPressed: widget.onCreatePatient,
+                            icon: Icons.person_add_outlined,
+                            label: l10n.translate('newPatient') ?? 'New Patient',
+                            width: ButtonWidth.fill,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _DirectoryTabs(
+                      selected: _tab,
+                      onChanged: _setTab,
+                      brand: brand,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (widget.onRefresh != null)
+                          IconButton(
+                            onPressed: widget.onRefresh,
+                            icon: Icon(Icons.refresh, color: brand, size: 20),
+                            tooltip: l10n.refresh,
+                          ),
+                        Expanded(
+                          child: _SortButton(
+                            sort: _sort,
+                            brand: brand,
+                            onChanged: (value) =>
+                                setState(() => _sort = value),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (pageItems.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    l10n.noPatientsFound,
+                    style: AppDesignSystem.body2(context),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index.isOdd) return const SizedBox(height: 8);
+                      final patient = pageItems[index ~/ 2];
+                      return _PatientListRow(
+                        patient: patient,
+                        isSelected: widget.selectedId == patient.id,
+                        brand: brand,
+                        onTap: () => widget.onSelect(patient.id),
+                      );
+                    },
+                    childCount: pageItems.length * 2 - 1,
+                  ),
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: _DirectoryPagination(
+                start: start,
+                end: end,
+                total: visible,
+                page: _page,
+                totalPages: _totalPages,
+                brand: brand,
+                onPageChanged: (page) => setState(() => _page = page),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: Responsive.bottomNavClearance(context),
+              ),
+              sliver: const SliverToBoxAdapter(child: SizedBox.shrink()),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       decoration: AppDesignSystem.cardDecoration(

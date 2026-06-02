@@ -6,6 +6,31 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
+
+/// Query params for doctor earnings (clinic + UTC month range as ISO instants).
+class DoctorEarningsQuery {
+  final int clinicId;
+  final String fromIso;
+  final String toIso;
+
+  const DoctorEarningsQuery({
+    required this.clinicId,
+    required this.fromIso,
+    required this.toIso,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DoctorEarningsQuery &&
+          other.clinicId == clinicId &&
+          other.fromIso == fromIso &&
+          other.toIso == toIso;
+
+  @override
+  int get hashCode => Object.hash(clinicId, fromIso, toIso);
+}
 
 final clinicFinanceDashboardProvider =
     FutureProvider.family<FinanceDashboardStats, int>((ref, clinicId) async {
@@ -76,8 +101,14 @@ final clinicAppointmentLedgerProvider =
 });
 
 final clinicDoctorEarningsProvider =
-    FutureProvider.family<List<DoctorEarningRow>, int>((ref, clinicId) {
-  return fetchDoctorEarnings(ref, clinicId: clinicId);
+    FutureProvider.family<List<DoctorEarningRow>, DoctorEarningsQuery>(
+        (ref, query) {
+  return fetchDoctorEarnings(
+    ref,
+    clinicId: query.clinicId,
+    fromIso: query.fromIso,
+    toIso: query.toIso,
+  );
 });
 
 /// Whether user may record payments, installments, etc. (patient-scoped on server).
@@ -109,8 +140,15 @@ void invalidateClinicFinanceTabDataForClinic(dynamic ref, int clinicId) {
   ref.invalidate(clinicPaymentHistoryProvider(clinicId));
   ref.invalidate(clinicOverdueProvider(clinicId));
   ref.invalidate(clinicAppointmentLedgerProvider(clinicId));
-  ref.invalidate(clinicDoctorEarningsProvider(clinicId));
+  ref.invalidate(clinicDoctorEarningsProvider);
   for (final f in ['all', 'pending', 'overdue', 'paid']) {
     ref.invalidate(clinicInstallmentItemsProvider((clinicId, f)));
   }
+}
+
+/// Refreshes every provider backing Clinic → Finance and related treatment-plan totals.
+void refreshClinicFinancialData(dynamic ref, int clinicId) {
+  invalidateClinicFinanceTabDataForClinic(ref, clinicId);
+  ref.invalidate(treatmentPlansForClinicProvider);
+  ref.invalidate(treatmentPlansForPatientProvider);
 }

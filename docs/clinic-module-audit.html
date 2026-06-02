@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clinic Module Audit — Shifa Doctor App</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 20mm 16mm;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Calibri, Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      color: #1a1a1a;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 22pt;
+      color: #00796b;
+      border-bottom: 3px solid #00bbb0;
+      padding-bottom: 8px;
+      margin: 0 0 6px 0;
+    }
+    .meta {
+      color: #555;
+      font-size: 9.5pt;
+      margin-bottom: 24px;
+    }
+    h2 {
+      font-size: 14pt;
+      color: #00695c;
+      margin: 28px 0 10px 0;
+      page-break-after: avoid;
+      border-left: 4px solid #00bbb0;
+      padding-left: 10px;
+    }
+    h3 {
+      font-size: 11.5pt;
+      color: #004d40;
+      margin: 18px 0 8px 0;
+      page-break-after: avoid;
+    }
+    h4 {
+      font-size: 10.5pt;
+      color: #333;
+      margin: 14px 0 6px 0;
+      page-break-after: avoid;
+    }
+    p { margin: 0 0 8px 0; }
+    ul, ol { margin: 4px 0 10px 0; padding-left: 22px; }
+    li { margin-bottom: 3px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px 0;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #e0f2f1;
+      color: #004d40;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { background: #fafafa; }
+    code, .path {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 9pt;
+      background: #f5f5f5;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 8.5pt;
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 10px 12px;
+      overflow-x: auto;
+      line-height: 1.35;
+      page-break-inside: avoid;
+    }
+    .summary-box {
+      background: #e8f5f3;
+      border: 1px solid #80cbc4;
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin: 12px 0 18px 0;
+    }
+    .gap {
+      background: #fff8e1;
+      border-left: 4px solid #ffa000;
+      padding: 8px 12px;
+      margin: 8px 0;
+    }
+    .page-break { page-break-before: always; }
+    .footer-note {
+      margin-top: 30px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+      font-size: 9pt;
+      color: #666;
+      font-style: italic;
+    }
+    .check { color: #2e7d32; }
+  </style>
+</head>
+<body>
+
+<h1>Clinic Module Audit</h1>
+<p class="meta">
+  <strong>Shifa Doctor App</strong> (<code>web-flutter-doctor</code>) &nbsp;|&nbsp;
+  Document version 1.0 &nbsp;|&nbsp; June 1, 2026 &nbsp;|&nbsp;
+  Backend: <code>backend-kotlin-shifa</code>
+</p>
+
+<div class="summary-box">
+  <strong>Executive summary:</strong> The clinic module is the multi-user clinic workspace inside the doctor app.
+  It lets doctors and clinic staff operate at clinic scope — shared patient roster, doctor schedules, service catalog,
+  treatment plans, finance, and staff invitations. It is embedded in the main shell (not a separate route or package).
+</div>
+
+<h2>1. Architecture Overview</h2>
+
+<h3>Entry point &amp; navigation</h3>
+<ul>
+  <li><strong>Main screen:</strong> <span class="path">ClinicWorkspaceScreen</span> — 9 inner tabs</li>
+  <li><strong>Doctor shell:</strong> Clinic tab at index 4 (<code>DoctorShellTab.clinic</code>)</li>
+  <li><strong>Clinic staff shell:</strong> Reduced 4-tab shell; Clinic at index 1 (primary surface)</li>
+  <li><strong>Visibility:</strong> Shown only when <code>hasClinicWorkspaceProvider</code> is true (≥1 clinic from <code>GET /api/me/clinics</code>)</li>
+  <li><strong>No named route:</strong> <code>router.dart</code> has no <code>/clinic</code> path</li>
+  <li><strong>Finance nav shortcut:</strong> Sidebar "Finance" also opens the same Clinic screen (does not auto-select Finance sub-tab)</li>
+</ul>
+
+<h3>Layer map</h3>
+<table>
+  <tr><th>Layer</th><th>Location</th></tr>
+  <tr><td>UI</td><td><code>web-flutter-doctor/lib/features/clinic/</code></td></tr>
+  <tr><td>State / API</td><td><code>web-flutter-doctor/lib/state/clinic/</code></td></tr>
+  <tr><td>Backend controllers</td><td>ClinicWorkspace, ClinicFinance, ClinicInvitation, TreatmentPlan, PublicClinic</td></tr>
+  <tr><td>Auth design</td><td><code>backend-kotlin-shifa/docs/adr/002-clinic-staff-auth.md</code></td></tr>
+  <tr><td>Stack</td><td>Flutter + Riverpod (client); Kotlin/Spring (server)</td></tr>
+</table>
+
+<h2>2. File Inventory</h2>
+
+<h3>Presentation layer</h3>
+<table>
+  <tr><th>File</th><th>~Lines</th><th>Role</th></tr>
+  <tr><td><code>clinic_workspace_screen.dart</code></td><td>1,570</td><td>Hub + 6 inline tabs</td></tr>
+  <tr><td><code>clinic_finance_tab.dart</code></td><td>2,840</td><td>Finance hub, 6 sub-tabs</td></tr>
+  <tr><td><code>treatment_plan_wizard_sheet.dart</code></td><td>2,070</td><td>Multi-step create-plan wizard</td></tr>
+  <tr><td><code>clinic_treatment_plans_tab.dart</code></td><td>790</td><td>Plans ledger + PDF export</td></tr>
+  <tr><td><code>clinic_doctor_schedule_page.dart</code></td><td>—</td><td>Full-screen colleague booking</td></tr>
+  <tr><td><code>clinic_invitations_tab.dart</code></td><td>190</td><td>Receptionist invites</td></tr>
+  <tr><td><code>clinic_table_shell.dart</code></td><td>—</td><td>Shared DataTable shell</td></tr>
+  <tr><td><code>visit_charges_catalog_dialog.dart</code></td><td>80</td><td>Catalog picker (unwired)</td></tr>
+  <tr><td><code>pdf/*</code></td><td>—</td><td>Treatment plan PDF (en/uz)</td></tr>
+</table>
+
+<h3>State layer</h3>
+<table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td><code>clinic_models.dart</code></td><td>Workspace DTOs</td></tr>
+  <tr><td><code>clinic_providers.dart</code></td><td>Clinics, selection, members, patients, catalog, invitations</td></tr>
+  <tr><td><code>clinic_finance_*.dart</code></td><td>Finance models, providers, actions</td></tr>
+  <tr><td><code>clinic_treatment_plan_*.dart</code></td><td>Plan models, providers, actions</td></tr>
+</table>
+<p><strong>Pattern:</strong> Riverpod <code>FutureProvider</code> + imperative actions. Selected clinic persisted in SharedPreferences per user.</p>
+
+<h2>3. User Personas &amp; Access Control</h2>
+
+<h3>Membership roles (backend)</h3>
+<table>
+  <tr><th>Role</th><th>Description</th></tr>
+  <tr><td>OWNER</td><td>First membership per clinic; manage catalog / staff</td></tr>
+  <tr><td>DOCTOR</td><td>Standard clinician membership</td></tr>
+  <tr><td>CLINIC_ADMIN</td><td>Administrative access to roster and operations</td></tr>
+  <tr><td>RECEPTIONIST</td><td>Front desk — full roster and scheduling</td></tr>
+  <tr><td>NURSE</td><td>Limited operational access</td></tr>
+  <tr><td>STAFF</td><td>Generic staff role</td></tr>
+</table>
+
+<h3>Finance role gating (client-side)</h3>
+<table>
+  <tr><th>Role</th><th>Finance tab</th><th>Manage payments</th></tr>
+  <tr><td>OWNER, CLINIC_ADMIN, RECEPTIONIST, DOCTOR</td><td>Visible</td><td>Yes</td></tr>
+  <tr><td>NURSE</td><td>Visible</td><td>No</td></tr>
+  <tr><td>STAFF</td><td>Visible</td><td>No</td></tr>
+</table>
+<p><em>Note: <code>canViewFinanceProvider</code> exists but is not used to hide the Finance tab. Server enforces via <code>ClinicFinanceAccessService</code>.</em></p>
+
+<h3>Auth architecture (ADR 002)</h3>
+<ul>
+  <li>Dedicated <code>ClinicStaffPrincipal</code> + JWT role <code>CLINIC_STAFF</code></li>
+  <li><code>ClinicMembership</code> binds staff to clinics</li>
+  <li><code>ClinicAccessService</code> centralizes clinic scope checks</li>
+</ul>
+
+<h2 class="page-break">4. Workspace Tabs — Capabilities</h2>
+
+<h3>Tab 0: Overview</h3>
+<p><strong>API:</strong> <code>GET /api/clinics/{id}/overview-stats</code></p>
+<ul>
+  <li>Clinic contact info (phone, email)</li>
+  <li>Metrics: appointments today, active doctors, patients this month</li>
+  <li>Quick jumps to Calendar and Patients tabs</li>
+</ul>
+
+<h3>Tab 1: Doctors</h3>
+<p><strong>API:</strong> <code>GET /api/clinics/{id}/members</code></p>
+<ul>
+  <li>Sortable/filterable member table</li>
+  <li>Open schedule → <code>ClinicDoctorScheduleRoute</code> (book on behalf of doctor)</li>
+</ul>
+
+<h3>Tab 2: Calendar (MVP)</h3>
+<ul>
+  <li>Explicit MVP hint in UI</li>
+  <li>"My schedule" → shell Calendar tab (doctors only)</li>
+  <li>Per-doctor buttons → colleague schedule route</li>
+  <li><strong>Not</strong> a unified clinic calendar — launcher only</li>
+</ul>
+
+<h3>Tab 3: Patients</h3>
+<p><strong>API:</strong> <code>GET /api/clinics/{id}/patients?page=0&amp;size=50</code></p>
+<ul>
+  <li>First page only (50 records); client-side search/sort</li>
+  <li>Desktop: master–detail with <code>PatientDetailPanel</code></li>
+  <li>Mobile: list → detail navigation</li>
+  <li>Clinic-scoped access via <code>clinicWorkspaceId</code></li>
+</ul>
+<div class="gap"><strong>Gap:</strong> No pagination UI despite backend supporting Pageable.</div>
+
+<h3>Tab 4: Services (Catalog)</h3>
+<ul>
+  <li>Unified clinic catalog + doctor profile services</li>
+  <li>Clinic items: CRUD, activate/deactivate, doctor assignment</li>
+  <li>Doctor-owned services: read-only (edit in Profile → Services &amp; Pricing)</li>
+</ul>
+
+<h3>Tab 5: Treatment Plans</h3>
+<ul>
+  <li>Clinic-wide ledger with search, status filter, sortable columns</li>
+  <li>Create via wizard: patient → details → doctors → services → slots → payment</li>
+  <li>Payment modes: unpaid / full / installments</li>
+  <li>Status changes, PDF export (en/uz)</li>
+  <li>Also from Home quick actions and patient detail</li>
+</ul>
+
+<h3>Tab 6: Finance (6 sub-tabs)</h3>
+<table>
+  <tr><th>Sub-tab</th><th>Capabilities</th></tr>
+  <tr><td>Dashboard</td><td>Revenue, outstanding, collection rate, overdue, top doctor earnings</td></tr>
+  <tr><td>By appointment</td><td>Visit ledger; view services; quick-pay</td></tr>
+  <tr><td>Installments</td><td>Filter, mark paid, notify patient, change status</td></tr>
+  <tr><td>Doctor earnings</td><td>Monthly gross/collected/outstanding per doctor</td></tr>
+  <tr><td>Records</td><td>Financial records CRUD via dialog</td></tr>
+  <tr><td>Payments</td><td>Payment history</td></tr>
+</table>
+
+<h3>Tab 7: Invitations</h3>
+<ul>
+  <li>Invite receptionist by email only (backend hardcodes RECEPTIONIST role)</li>
+  <li>List pending/consumed invites; revoke pending</li>
+  <li>Onboarding: invitation key → <code>CLINIC_STAFF</code> JWT</li>
+</ul>
+
+<h3>Tab 8: Settings</h3>
+<ul>
+  <li>Read-only: name, timezone, phone, email, address</li>
+  <li>Clinic editing in Admin shell, not workspace</li>
+</ul>
+
+<h2 class="page-break">5. Backend API Surface</h2>
+
+<h3>Workspace</h3>
+<table>
+  <tr><th>Method</th><th>Path</th></tr>
+  <tr><td>GET</td><td><code>/api/me/clinics</code></td></tr>
+  <tr><td>GET</td><td><code>/api/clinics/{id}/overview-stats</code></td></tr>
+  <tr><td>GET</td><td><code>/api/clinics/{id}/members</code></td></tr>
+  <tr><td>GET</td><td><code>/api/clinics/{id}/patients</code></td></tr>
+  <tr><td>GET</td><td><code>/api/clinics/{id}/patients/{patientId}/appointments</code></td></tr>
+  <tr><td>POST</td><td><code>/api/clinics/{id}/appointments/{appointmentId}/visit-charges</code></td></tr>
+</table>
+
+<h3>Finance</h3>
+<p>Base: <code>/api/clinics/{id}/finance/</code> — dashboard, appointment-ledger, doctor-earnings, audit, records, payments, installment-items/plans, overdue, mark-paid, notify.</p>
+
+<h3>Treatment plans</h3>
+<p>Base: <code>/api/treatment-plans/</code> — full lifecycle, catalog items, plan-services, doctor-locations, free-slots.</p>
+
+<h3>Access control services</h3>
+<ul>
+  <li><code>ClinicAccessService</code> — membership, calendar, patient roster</li>
+  <li><code>ClinicFinanceAccessService</code> — finance role checks</li>
+  <li><code>VisitChargeService</code> — visit charges → treatment plan lines</li>
+</ul>
+
+<h2>6. Cross-Module Dependencies</h2>
+<table>
+  <tr><th>Module</th><th>Dependency</th></tr>
+  <tr><td>Shell</td><td>Tab indices, visibility rules, clinic-staff layout</td></tr>
+  <tr><td>Auth</td><td>CLINIC_STAFF role, receptionist registration</td></tr>
+  <tr><td>Patients</td><td>PatientDetailPanel, forms, documents</td></tr>
+  <tr><td>Calendar</td><td>CalendarScreen, ClinicDoctorScheduleRoute</td></tr>
+  <tr><td>Appointments</td><td>Complete flow, finance/plan invalidation</td></tr>
+  <tr><td>Home</td><td>Quick action → treatment plan wizard</td></tr>
+  <tr><td>Profile</td><td>Doctor services in Services tab (read-only)</td></tr>
+  <tr><td>Admin</td><td>Clinic CRUD, PDF download helper</td></tr>
+</table>
+
+<h2>7. What Users Can Do Today</h2>
+
+<h3>Doctors with clinic workspace</h3>
+<ul>
+  <li class="check">✓ Switch between multiple clinics</li>
+  <li class="check">✓ View overview metrics and contact info</li>
+  <li class="check">✓ Browse doctors; book on colleague schedules</li>
+  <li class="check">✓ Browse patients (first 50); full patient detail</li>
+  <li class="check">✓ Manage service catalog</li>
+  <li class="check">✓ Create/manage treatment plans (wizard, status, PDF)</li>
+  <li class="check">✓ Finance operations (role-dependent)</li>
+  <li class="check">✓ Invite receptionists; view/revoke invitations</li>
+  <li class="check">✓ View read-only settings</li>
+</ul>
+
+<h3>Clinic staff</h3>
+<ul>
+  <li class="check">✓ Same workspace UI as primary tab</li>
+  <li class="check">✓ Book on behalf of doctors</li>
+  <li class="check">✓ Chat, notifications, profile in reduced shell</li>
+</ul>
+
+<h2 class="page-break">8. Gaps, Limitations &amp; Tech Debt</h2>
+
+<h3>Functional gaps</h3>
+<ol>
+  <li><strong>Settings read-only</strong> — no in-app clinic editing for owners</li>
+  <li><strong>Calendar MVP</strong> — launcher only, not unified clinic calendar</li>
+  <li><strong>Patients pagination</strong> — 50 records max in UI</li>
+  <li><strong>Finance shortcut</strong> — does not deep-link to Finance sub-tab</li>
+  <li><strong>canViewFinanceProvider unused</strong> — tab visible to all roles</li>
+  <li><strong>Invitations RECEPTIONIST-only</strong> — other roles not supported in UI/API</li>
+  <li><strong>Documents tab missing</strong> — i18n key exists; docs under Patients</li>
+  <li><strong>VisitChargesCatalogDialog unwired</strong> — auto-derive from dental docs instead</li>
+</ol>
+
+<h3>Structural / maintainability</h3>
+<ol>
+  <li><code>clinic_workspace_screen.dart</code> monolith (~1,570 lines, 6 inline tabs)</li>
+  <li><code>clinic_finance_tab.dart</code> very large (~2,840 lines)</li>
+  <li><code>treatment_plan_wizard_sheet.dart</code> very large (~2,070 lines)</li>
+  <li>No dedicated internal routing for clinic sub-tabs</li>
+  <li>Backend ahead of UI (pagination, audit API, role invitations)</li>
+</ol>
+
+<h2>9. Suggested Lenses for Transformation</h2>
+<ol>
+  <li><strong>Shell vs workspace</strong> — one tab vs sub-app with internal routing?</li>
+  <li><strong>Tab explosion</strong> — 9 + 6 = 15 surfaces; group by Operations / Clinical / Financial / Admin</li>
+  <li><strong>Role-based IA</strong> — different defaults and hidden sections per role</li>
+  <li><strong>Calendar</strong> — biggest functional gap; MVP vs real clinic calendar</li>
+  <li><strong>Monolith split</strong> — workspace, finance, wizard are top extraction targets</li>
+  <li><strong>Dead code cleanup</strong> — VisitChargesCatalogDialog, unused providers, Documents i18n</li>
+</ol>
+
+<h2>Appendix: File Tree</h2>
+<pre>web-flutter-doctor/lib/features/clinic/
+  presentation/
+    clinic_workspace_screen.dart
+    clinic_doctor_schedule_page.dart
+    clinic_treatment_plans_tab.dart
+    clinic_finance_tab.dart
+    clinic_finance_record_dialog.dart
+    clinic_invitations_tab.dart
+    clinic_table_shell.dart
+    treatment_plan_wizard_sheet.dart
+    visit_charges_catalog_dialog.dart
+  pdf/
+    treatment_plan_pdf_service.dart
+    treatment_plan_pdf_data.dart
+    treatment_plan_pdf_translations.dart
+
+web-flutter-doctor/lib/state/clinic/
+  clinic_models.dart
+  clinic_providers.dart
+  clinic_finance_models.dart
+  clinic_finance_providers.dart
+  clinic_finance_actions.dart
+  clinic_treatment_plan_models.dart
+  clinic_treatment_plan_providers.dart
+  clinic_treatment_plan_actions.dart
+
+backend-kotlin-shifa/src/main/kotlin/com/shifa/
+  web/ClinicWorkspaceController.kt
+  web/ClinicFinanceController.kt
+  web/ClinicInvitationController.kt
+  web/TreatmentPlanController.kt
+  service/ClinicAccessService.kt
+  domain/Clinic.kt, ClinicMembership.kt</pre>
+
+<p class="footer-note">Generated for Shifa doctor app clinic module transformation planning.</p>
+
+</body>
+</html>

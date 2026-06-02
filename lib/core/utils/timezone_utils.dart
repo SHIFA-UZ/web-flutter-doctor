@@ -137,6 +137,31 @@ DateTime utcToTimezone(DateTime utc, String? timezoneId) {
   }
 }
 
+/// Inclusive calendar month [year]/[month] in [timezoneId], as UTC instants
+/// suitable for finance API `from` / `to` query params (`to` is exclusive).
+({DateTime fromUtc, DateTime toUtc}) monthRangeUtcInTimezone(
+  int year,
+  int month,
+  String? timezoneId,
+) {
+  final zoneId =
+      (timezoneId != null && timezoneId.isNotEmpty) ? timezoneId : 'UTC';
+  try {
+    final location = tz.getLocation(zoneId);
+    final start = tz.TZDateTime(location, year, month, 1);
+    final end = month >= 12
+        ? tz.TZDateTime(location, year + 1, 1, 1)
+        : tz.TZDateTime(location, year, month + 1, 1);
+    return (fromUtc: start.toUtc(), toUtc: end.toUtc());
+  } catch (_) {
+    final start = DateTime.utc(year, month, 1);
+    final end = month >= 12
+        ? DateTime.utc(year + 1, 1, 1)
+        : DateTime.utc(year, month + 1, 1);
+    return (fromUtc: start, toUtc: end);
+  }
+}
+
 /// Formats a DateTime as HH:mm for display.
 String formatTimeForDisplay(DateTime dateTime) {
   final hour = dateTime.hour.toString().padLeft(2, '0');

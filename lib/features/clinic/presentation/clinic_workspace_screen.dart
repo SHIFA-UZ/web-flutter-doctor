@@ -24,6 +24,7 @@ import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_doctor_schedule_page.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_finance_tab.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_treatment_plans_tab.dart';
 
 /// Full booking UI for another clinic doctor ([ClinicDoctorScheduleRoute]).
@@ -70,10 +71,20 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 9, vsync: this);
+    _tabController.addListener(_onWorkspaceTabChanged);
+  }
+
+  void _onWorkspaceTabChanged() {
+    if (_tabController.indexIsChanging || _tabController.index != 6) return;
+    final clinicId = ref.read(selectedClinicIdProvider);
+    if (clinicId != null) {
+      refreshClinicFinancialData(ref, clinicId);
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onWorkspaceTabChanged);
     _tabController.dispose();
     super.dispose();
   }
