@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_month.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 
@@ -38,13 +40,25 @@ final clinicFinanceRefreshTickProvider =
 
 final clinicFinanceDashboardProvider =
     FutureProvider.family<FinanceDashboardStats, int>((ref, clinicId) async {
-  final api = ref.watch(doctorApiClientProvider);
-  final res = await api.get('/api/clinics/$clinicId/finance/dashboard');
-  if (res.statusCode != 200) {
-    throw Exception('Failed to load finance dashboard (${res.statusCode})');
+  final month = ref.watch(clinicFinanceMonthFilterProvider(clinicId));
+  final clinic = ref.watch(selectedClinicProvider);
+  String? fromIso;
+  String? toIso;
+  if (month != null) {
+    final range = monthRangeUtcInTimezone(
+      month.year,
+      month.month,
+      clinic?.timeZone,
+    );
+    fromIso = range.fromUtc.toIso8601String();
+    toIso = range.toUtc.toIso8601String();
   }
-  final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-  return FinanceDashboardStats.fromJson(data);
+  return fetchFinanceDashboard(
+    ref,
+    clinicId: clinicId,
+    fromIso: fromIso,
+    toIso: toIso,
+  );
 });
 
 final clinicFinancialRecordsProvider =

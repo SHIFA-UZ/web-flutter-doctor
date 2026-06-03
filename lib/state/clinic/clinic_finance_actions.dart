@@ -200,6 +200,25 @@ Future<Map<String, dynamic>> fetchAppointmentLedgerPage(
   return json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
 }
 
+Future<FinanceDashboardStats> fetchFinanceDashboard(
+  dynamic ref, {
+  required int clinicId,
+  String? fromIso,
+  String? toIso,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final q = <String>[];
+  if (fromIso != null) q.add('from=${Uri.encodeQueryComponent(fromIso)}');
+  if (toIso != null) q.add('to=${Uri.encodeQueryComponent(toIso)}');
+  final qs = q.isEmpty ? '' : '?${q.join('&')}';
+  final res = await api.get('/api/clinics/$clinicId/finance/dashboard$qs');
+  if (res.statusCode != 200) {
+    throw Exception('Failed to load finance dashboard (${res.statusCode})');
+  }
+  final data = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+  return FinanceDashboardStats.fromJson(data);
+}
+
 Future<List<DoctorEarningRow>> fetchDoctorEarnings(
   dynamic ref, {
   required int clinicId,

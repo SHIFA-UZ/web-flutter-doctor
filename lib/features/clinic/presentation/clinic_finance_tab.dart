@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_month.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
@@ -106,6 +107,10 @@ class _DashboardViewState extends ConsumerState<_DashboardView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final month = ref.watch(clinicFinanceMonthFilterProvider(widget.clinicId));
+    final revenueHint = month == null
+        ? l10n.translate('clinicFinanceTotalRevenueHint')
+        : l10n.translate('clinicFinanceTotalRevenueHintMonth');
     final dashboardAsync =
         ref.watch(clinicFinanceDashboardProvider(widget.clinicId));
 
@@ -126,6 +131,8 @@ class _DashboardViewState extends ConsumerState<_DashboardView> {
               l10n.translate('clinicFinanceDashboard'),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 12),
+            FinanceMonthFilterBar(clinicId: widget.clinicId),
             const SizedBox(height: 16),
             Wrap(
               spacing: 16,
@@ -133,7 +140,7 @@ class _DashboardViewState extends ConsumerState<_DashboardView> {
               children: [
                 _KpiCard(
                   title: l10n.translate('clinicFinanceTotalRevenue'),
-                  subtitle: l10n.translate('clinicFinanceTotalRevenueHint'),
+                  subtitle: revenueHint,
                   value: _formatMoney(stats.totalRevenueMinor, stats.currency),
                   color: Colors.green,
                   selected: _selectedKpi == _DashboardKpi.revenue,
@@ -300,6 +307,19 @@ class _DashboardKpiDetail extends ConsumerWidget {
   }
 
   Widget _buildRevenueDetail(WidgetRef ref, AppLocalizations l10n) {
+    final month = ref.watch(clinicFinanceMonthFilterProvider(clinicId));
+    final clinic = ref.watch(selectedClinicProvider);
+    DateTime? fromUtc;
+    DateTime? toUtc;
+    if (month != null) {
+      final range = monthRangeUtcInTimezone(
+        month.year,
+        month.month,
+        clinic?.timeZone,
+      );
+      fromUtc = range.fromUtc;
+      toUtc = range.toUtc;
+    }
     final paymentsAsync = ref.watch(clinicPaymentHistoryProvider(clinicId));
     return paymentsAsync.when(
       loading: () => const Center(child: Padding(
@@ -308,10 +328,13 @@ class _DashboardKpiDetail extends ConsumerWidget {
       )),
       error: (e, _) => _emptyState('${l10n.error}: $e'),
       data: (payments) {
-        if (payments.isEmpty) {
+        final scoped = payments
+            .where((p) => financeInstantInMonthRange(p.recordedAt, fromUtc, toUtc))
+            .toList();
+        if (scoped.isEmpty) {
           return _emptyState(l10n.translate('clinicFinanceNoPayments'));
         }
-        final sorted = [...payments]
+        final sorted = [...scoped]
           ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
         return _detailCard(
           child: ListView.separated(
@@ -1885,9 +1908,12 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
       _loadError = null;
     });
     try {
+      final range = financeMonthRangeIso(ref, widget.clinicId);
       final rows = await fetchDoctorEarnings(
         ref,
         clinicId: widget.clinicId,
+        fromIso: range.fromIso,
+        toIso: range.toIso,
       );
       if (!mounted) return;
       setState(() {
@@ -1990,6 +2016,12 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
         if (prev != null && widget.isActive) _loadEarnings();
       },
     );
+    ref.listen<({int year, int month})?>(
+      clinicFinanceMonthFilterProvider(widget.clinicId),
+      (prev, next) {
+        if (prev != next && widget.isActive) _loadEarnings();
+      },
+    );
     final l10n = AppLocalizations.of(context)!;
     final members =
         ref.watch(clinicMembersProvider(widget.clinicId)).valueOrNull ??
@@ -2019,14 +2051,20 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
     }
 
     final filtered = _apply(_rows, members);
+    final month = ref.watch(clinicFinanceMonthFilterProvider(widget.clinicId));
+    final earningsHint = month == null
+        ? l10n.translate('clinicFinanceDoctorEarningsHint')
+        : l10n.translate('clinicFinanceDoctorEarningsHintMonth');
     final toolbar = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        FinanceMonthFilterBar(clinicId: widget.clinicId),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               child: Text(
-                l10n.translate('clinicFinanceDoctorEarningsHint'),
+                earningsHint,
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ),
