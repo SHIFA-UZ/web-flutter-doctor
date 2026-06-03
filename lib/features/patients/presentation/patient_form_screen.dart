@@ -16,6 +16,8 @@ import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
@@ -1193,7 +1195,17 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 +
+                (widget.isEmbedded
+                    ? MediaQuery.paddingOf(context).bottom
+                    : Responsive.isMobile(context)
+                        ? Responsive.bottomNavClearance(context)
+                        : 0),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2462,70 +2474,66 @@ class _FollowupsTable extends StatelessWidget {
       final ctrl = TextEditingController(text: f.clinicalFindings);
       DateTime date = f.date;
 
-      final res = await showDialog<bool>(
+      final res = await showScrollableFormDialog<bool>(
         context: context,
-        builder: (ctx) {
-          final l10nDialog = AppLocalizations.of(ctx)!;
-          return Consumer(
-            builder: (ctx, ref, _) {
-              return AlertDialog(
-                title: Text(l10nDialog.returnVisits),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
+        title: Text(l10n.returnVisits),
+        content: StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Text('${l10nDialog.date}:'),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: ctx,
-                              locale: localeForMaterialIntl(Localizations.localeOf(ctx)),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                              initialDate: date,
-                            );
-                            if (picked != null) {
-                              date = picked;
-                              (ctx as Element).markNeedsBuild();
-                            }
-                          },
-                          child: Text(
-                            '${date.year.toString().padLeft(4, '0')}-'
-                            '${date.month.toString().padLeft(2, '0')}-'
-                            '${date.day.toString().padLeft(2, '0')}',
+                    Text('${l10n.date}:'),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          locale: localeForMaterialIntl(
+                            Localizations.localeOf(ctx),
                           ),
-                        ),
-                      ],
-                    ),
-                    DoctorSpeechTextField(
-                      controller: ctrl,
-                      onTranscriptAppended: () {
-                        markUnsaved?.call();
-                        (ctx as Element).markNeedsBuild();
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                          initialDate: date,
+                        );
+                        if (picked != null) {
+                          setDialogState(() => date = picked);
+                        }
                       },
-                      decoration: InputDecoration(
-                        labelText: l10nDialog.clinicalFindingsConclusion,
+                      child: Text(
+                        '${date.year.toString().padLeft(4, '0')}-'
+                        '${date.month.toString().padLeft(2, '0')}-'
+                        '${date.day.toString().padLeft(2, '0')}',
                       ),
-                      maxLines: 4,
                     ),
                   ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(l10nDialog.cancel),
+                DoctorSpeechTextField(
+                  controller: ctrl,
+                  onTranscriptAppended: () {
+                    markUnsaved?.call();
+                    setDialogState(() {});
+                  },
+                  decoration: InputDecoration(
+                    labelText: l10n.clinicalFindingsConclusion,
                   ),
-                  ShifaPrimaryButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    label: l10nDialog.save,
-                  ),
-                ],
-              );
-            },
-          );
-        },
+                  maxLines: 4,
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          ShifaPrimaryButton(
+            onPressed: () => Navigator.pop(context, true),
+            label: l10n.save,
+          ),
+        ],
       );
 
       if (res != true) return;

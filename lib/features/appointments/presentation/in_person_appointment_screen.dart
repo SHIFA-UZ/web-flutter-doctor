@@ -113,6 +113,7 @@ class _InPersonAppointmentScreenState
   /// After the doctor explicitly picks a mode, do not override from profile.
   bool _userSelectedDocumentationType = false;
   bool _dentalDocumentationFullScreen = false;
+  bool _form0252DocumentationFullScreen = false;
   final GlobalKey<DentalVisitDocumentationPanelState> _dentalDocPanelKey =
       GlobalKey<DentalVisitDocumentationPanelState>();
 
@@ -173,6 +174,26 @@ class _InPersonAppointmentScreenState
     setState(() => _dentalDocumentationFullScreen = value);
   }
 
+  Future<void> _setForm0252DocumentationFullScreen(bool value) async {
+    if (_documentationType != '025-2') return;
+    if (!mounted) return;
+    setState(() => _form0252DocumentationFullScreen = value);
+  }
+
+  void _applyMobileDocumentationLayout(String mode) {
+    if (!Responsive.isMobile(context)) return;
+    if (mode == '025-2') {
+      _docPanelCollapsed = true;
+      _form0252DocumentationFullScreen = true;
+      _dentalDocumentationFullScreen = false;
+    } else if (mode == 'dental') {
+      _form0252DocumentationFullScreen = false;
+    } else {
+      _form0252DocumentationFullScreen = false;
+      _dentalDocumentationFullScreen = false;
+    }
+  }
+
   void _clearGeneralNoteFields() {
     _notesController.clear();
     _soapSubjective.clear();
@@ -196,6 +217,9 @@ class _InPersonAppointmentScreenState
         _documentationType = mode;
         if (mode != 'dental') {
           _dentalDocumentationFullScreen = false;
+        }
+        if (mode != '025-2') {
+          _form0252DocumentationFullScreen = false;
         }
       });
     });
@@ -1091,7 +1115,8 @@ class _InPersonAppointmentScreenState
                       final isMobile =
                           constraints.maxWidth < Responsive.mobileBreakpoint;
                       final gap = isMobile ? 12.0 : 24.0;
-                      final docCollapsed = _docPanelCollapsed && !isMobile;
+                      final docCollapsed = _docPanelCollapsed &&
+                          (!isMobile || _documentationType == '025-2');
                       return Flex(
                         direction:
                             isMobile ? Axis.vertical : Axis.horizontal,
@@ -1305,6 +1330,15 @@ class _InPersonAppointmentScreenState
                               tooltip: AppLocalizations.of(context)!.expand,
                               onPressed: () => _setDentalDocumentationFullScreen(true),
                             ),
+                          if (_documentationType == '025-2' &&
+                              !_form0252DocumentationFullScreen &&
+                              isMobile)
+                            IconButton(
+                              icon: const Icon(Icons.fullscreen),
+                              tooltip: AppLocalizations.of(context)!.expand,
+                              onPressed: () =>
+                                  _setForm0252DocumentationFullScreen(true),
+                            ),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.more_vert),
                             tooltip: AppLocalizations.of(context)!.notes,
@@ -1375,6 +1409,9 @@ class _InPersonAppointmentScreenState
                               if (value != 'dental') {
                                 _dentalDocumentationFullScreen = false;
                               }
+                              if (value != '025-2') {
+                                _form0252DocumentationFullScreen = false;
+                              }
                               if (_hasUnsavedChanges) {
                                 final result = await showDialog<String>(
                                   context: context,
@@ -1419,6 +1456,7 @@ class _InPersonAppointmentScreenState
                                   setState(() {
                                     _hasUnsavedChanges = false;
                                     _documentationType = value;
+                                    _applyMobileDocumentationLayout(value);
                                   });
                                   return;
                                 }
@@ -1429,10 +1467,14 @@ class _InPersonAppointmentScreenState
                                     _afterTreatmentImages.clear();
                                     _hasUnsavedChanges = false;
                                     _documentationType = value;
+                                    _applyMobileDocumentationLayout(value);
                                   });
                                 }
                               } else {
-                                setState(() => _documentationType = value);
+                                setState(() {
+                                  _documentationType = value;
+                                  _applyMobileDocumentationLayout(value);
+                                });
                               }
                             },
                             itemBuilder: (context) {
@@ -2541,7 +2583,7 @@ class _InPersonAppointmentScreenState
                                   ),
                               ],
                             )
-                          : _documentationType == 'dental'
+                              : _documentationType == 'dental'
                               ? (_dentalDocumentationFullScreen
                                   ? const SizedBox.shrink()
                                   : DentalVisitDocumentationPanel(
@@ -2553,7 +2595,13 @@ class _InPersonAppointmentScreenState
                                             () => _hasUnsavedChanges = v,
                                           ),
                                     ))
-                              : _build0252Panel(brand, patientId, patientIdAsync),
+                              : (_form0252DocumentationFullScreen
+                                  ? const SizedBox.shrink()
+                                  : _build0252Panel(
+                                      brand,
+                                      patientId,
+                                      patientIdAsync,
+                                    )),
                     ),
                   ),
                 ],
@@ -2579,7 +2627,77 @@ class _InPersonAppointmentScreenState
             Positioned.fill(
               child: _buildDentalDocumentationFullScreenOverlay(brand),
             ),
+          if (_documentationType == '025-2' &&
+              _form0252DocumentationFullScreen)
+            Positioned.fill(
+              child: _buildForm0252DocumentationFullScreenOverlay(
+                brand,
+                patientId,
+                patientIdAsync,
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildForm0252DocumentationFullScreenOverlay(
+    Color brand,
+    String? patientId,
+    AsyncValue<String?>? patientIdAsync,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: Colors.black54,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        l10n.docMode0252,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.fullscreen_exit),
+                        tooltip: l10n.collapse,
+                        onPressed: () =>
+                            _setForm0252DocumentationFullScreen(false),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: _build0252Panel(brand, patientId, patientIdAsync),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

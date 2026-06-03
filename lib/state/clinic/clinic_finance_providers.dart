@@ -8,16 +8,16 @@ import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 
-/// Query params for doctor earnings (clinic + UTC month range as ISO instants).
+/// Query params for doctor earnings (clinic + optional UTC date range as ISO instants).
 class DoctorEarningsQuery {
   final int clinicId;
-  final String fromIso;
-  final String toIso;
+  final String? fromIso;
+  final String? toIso;
 
   const DoctorEarningsQuery({
     required this.clinicId,
-    required this.fromIso,
-    required this.toIso,
+    this.fromIso,
+    this.toIso,
   });
 
   @override
@@ -31,6 +31,10 @@ class DoctorEarningsQuery {
   @override
   int get hashCode => Object.hash(clinicId, fromIso, toIso);
 }
+
+/// Incremented on [refreshClinicFinancialData] so panes with local fetch state can reload.
+final clinicFinanceRefreshTickProvider =
+    StateProvider.family<int, int>((ref, clinicId) => 0);
 
 final clinicFinanceDashboardProvider =
     FutureProvider.family<FinanceDashboardStats, int>((ref, clinicId) async {
@@ -149,6 +153,7 @@ void invalidateClinicFinanceTabDataForClinic(dynamic ref, int clinicId) {
 /// Refreshes every provider backing Clinic → Finance and related treatment-plan totals.
 void refreshClinicFinancialData(dynamic ref, int clinicId) {
   invalidateClinicFinanceTabDataForClinic(ref, clinicId);
+  ref.read(clinicFinanceRefreshTickProvider(clinicId).notifier).state++;
   ref.invalidate(treatmentPlansForClinicProvider);
   ref.invalidate(treatmentPlansForPatientProvider);
 }

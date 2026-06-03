@@ -298,7 +298,7 @@ class AppLocalizations {
       'clinicFinanceByAppointment': 'By appointment',
       'clinicFinanceInstallments': 'Installments',
       'clinicFinanceDoctorEarnings': 'Doctor earnings',
-      'clinicFinanceDoctorEarningsHint': 'Gross / collected / outstanding · current calendar month (UTC)',
+      'clinicFinanceDoctorEarningsHint': 'Gross / collected / outstanding · all billable visits with linked charges (by visit date)',
       'clinicFinanceNoLedgerRows': 'No linked visit charges yet.',
       'clinicFinanceVisitServices': 'Services on visit',
       'clinicFinanceMarkInstallmentPaid': 'Mark paid',
@@ -2110,7 +2110,7 @@ class AppLocalizations {
       'clinicFinanceInstallments': 'Bo\'lib-to\'lash',
       'clinicFinanceDoctorEarnings': 'Shifokor daromadi',
       'clinicFinanceDoctorEarningsHint':
-          'Yig\'ma / yig\'ilgan / qoldiq · joriy oy (UTC)',
+          'Yalpi / yig\'ilgan / qoldiq · barcha to\'lovli tashriflar (tashrif sanasi bo\'yicha)',
       'clinicFinanceNoLedgerRows': 'Ulangan tashrif yo\'qlari yo\'q.',
       'clinicFinanceVisitServices': 'Xizmatlar',
       'clinicFinanceMarkInstallmentPaid': 'To\'langan',
@@ -3870,7 +3870,7 @@ class AppLocalizations {
       'clinicFinanceInstallments': 'Рассрочка',
       'clinicFinanceDoctorEarnings': 'Доход врачей',
       'clinicFinanceDoctorEarningsHint':
-          'Всего / собрано / долг · текущий календарный месяц (UTC)',
+          'Валовый / получено / остаток · все оплачиваемые визиты с привязанными услугами (по дате визита)',
       'clinicFinanceNoLedgerRows': 'Нет привязанных услуг к визитам.',
       'clinicFinanceVisitServices': 'Услуги визита',
       'clinicFinanceMarkInstallmentPaid': 'Оплачено',

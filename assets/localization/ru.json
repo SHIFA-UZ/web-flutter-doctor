@@ -215,7 +215,7 @@
   "clinicFinanceByAppointment": "По приёму",
   "clinicFinanceInstallments": "Рассрочка",
   "clinicFinanceDoctorEarnings": "Доход врачей",
-  "clinicFinanceDoctorEarningsHint": "Валовый / получено / остаток по дате визита · месяц в часовом поясе клиники",
+  "clinicFinanceDoctorEarningsHint": "Валовый / получено / остаток · все оплачиваемые визиты с привязанными услугами (по дате визита)",
   "clinicFinanceDoctorEarningsMonth": "{{month}}",
   "clinicFinanceNoLedgerRows": "Нет привязанных услуг к визитам.",
   "clinicFinanceVisitServices": "Услуги визита",

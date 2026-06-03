@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
@@ -126,14 +127,70 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final patientsAsync = ref.watch(clinicPatientsFirstPageProvider(widget.clinicId));
+    final formBody = _buildFormBody(context, l10n, patientsAsync);
+    final actions = [
+      TextButton(
+        onPressed: _busy ? null : () => Navigator.pop(context),
+        child: Text(l10n.cancel),
+      ),
+      FilledButton(
+        onPressed: _busy ? null : _submit,
+        child: _busy
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(l10n.translate('clinicRecordsFormCreate')),
+      ),
+    ];
 
-    final body = SizedBox(
-      width: 420,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    if (Responsive.isMobile(context)) {
+      return Dialog.fullscreen(
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.translate('clinicRecordsFormTitle')),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: _busy ? null : () => Navigator.pop(context),
+            ),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: formBody,
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: actions,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AlertDialog(
+      title: Text(l10n.translate('clinicRecordsFormTitle')),
+      content: SizedBox(
+        width: Responsive.dialogMaxWidth(context),
+        child: SingleChildScrollView(child: formBody),
+      ),
+      actions: actions,
+    );
+  }
+
+  Widget _buildFormBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    AsyncValue<ClinicPatientsPage> patientsAsync,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
             patientsAsync.when(
               data: (page) => DropdownButtonFormField<int?>(
                 key: ValueKey<Object?>(_patientId),
@@ -276,23 +333,6 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
               maxLines: 2,
               decoration: InputDecoration(labelText: l10n.translate('clinicRecordsFormNotes')),
             ),
-          ],
-        ),
-      ),
-    );
-
-    return AlertDialog(
-      title: Text(l10n.translate('clinicRecordsFormTitle')),
-      content: body,
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: _busy ? null : _submit,
-          child: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text(l10n.translate('clinicRecordsFormCreate')),
-        ),
       ],
     );
   }

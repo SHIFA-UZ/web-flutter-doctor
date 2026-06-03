@@ -1885,18 +1885,9 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
       _loadError = null;
     });
     try {
-      final clinic = ref.read(selectedClinicProvider);
-      final today = getTodayInTimezone(clinic?.timeZone);
-      final range = monthRangeUtcInTimezone(
-        today.year,
-        today.month,
-        clinic?.timeZone,
-      );
       final rows = await fetchDoctorEarnings(
         ref,
         clinicId: widget.clinicId,
-        fromIso: range.fromUtc.toIso8601String(),
-        toIso: range.toUtc.toIso8601String(),
       );
       if (!mounted) return;
       setState(() {
@@ -1993,6 +1984,12 @@ class _DoctorEarningsPaneState extends ConsumerState<_DoctorEarningsPane> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(
+      clinicFinanceRefreshTickProvider(widget.clinicId),
+      (prev, next) {
+        if (prev != null && widget.isActive) _loadEarnings();
+      },
+    );
     final l10n = AppLocalizations.of(context)!;
     final members =
         ref.watch(clinicMembersProvider(widget.clinicId)).valueOrNull ??

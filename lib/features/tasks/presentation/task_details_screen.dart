@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/state/tasks/task_actions.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:timezone/timezone.dart' as tz;
 // Using manual date formatting instead of intl package
 
@@ -482,71 +483,66 @@ void _showCheckInDetailModal(
       break;
   }
   final scheduledStr = _formatScheduled(checkIn.scheduledDate, checkIn.scheduledTime);
-  showModalBottomSheet<void>(
+  showScrollableFormBottomSheet<void>(
     context: context,
-    isScrollControlled: true,
-    builder: (ctx) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewPadding.bottom),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.translate('checkInDetails') ?? 'Check-in Details',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _ModalRow(
-                label: l10n.translate('scheduled') ?? 'Scheduled',
-                value: scheduledStr,
-              ),
-              _ModalRow(
-                label: l10n.translate('status') ?? 'Status',
-                value: statusName,
-              ),
-              if (effective == CheckInStatus.completed) ...[
-                if (checkIn.completedAt != null)
-                  _ModalRow(
-                    label: l10n.translate('submittedAt') ?? 'Submitted at',
-                    value: _formatSubmittedAtInPatientTz(checkIn.completedAt!, patientTimeZone),
-                  ),
-                _ModalValueRow(
-                  l10n: l10n,
-                  checkIn: checkIn,
-                  inputLabel: inputLabel,
-                ),
-                if (checkIn.notes != null && checkIn.notes!.isNotEmpty)
-                  _ModalRow(
-                    label: l10n.notes,
-                    value: checkIn.notes!,
-                  ),
-              ] else if (effective == CheckInStatus.missed) ...[
-                const SizedBox(height: 8),
-                Text(
-                  l10n.translate('noSubmissionReceived') ?? 'No submission received',
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-              ] else ...[
-                const SizedBox(height: 8),
-                Text(
-                  l10n.translate('awaitingSubmission') ?? 'Awaiting submission',
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-              ],
-              const SizedBox(height: 24),
-              ShifaPrimaryButton(
-                label: l10n.translate('close') ?? 'Close',
-                width: ButtonWidth.fill,
-                onPressed: () => Navigator.pop(ctx),
-              ),
-            ],
+    builder: (ctx) => scrollableBottomSheetContent(
+      ctx,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.translate('checkInDetails') ?? 'Check-in Details',
+            style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+          _ModalRow(
+            label: l10n.translate('scheduled') ?? 'Scheduled',
+            value: scheduledStr,
+          ),
+          _ModalRow(
+            label: l10n.translate('status') ?? 'Status',
+            value: statusName,
+          ),
+          if (effective == CheckInStatus.completed) ...[
+            if (checkIn.completedAt != null)
+              _ModalRow(
+                label: l10n.translate('submittedAt') ?? 'Submitted at',
+                value: _formatSubmittedAtInPatientTz(checkIn.completedAt!, patientTimeZone),
+              ),
+            _ModalValueRow(
+              l10n: l10n,
+              checkIn: checkIn,
+              inputLabel: inputLabel,
+            ),
+            if (checkIn.notes != null && checkIn.notes!.isNotEmpty)
+              _ModalRow(
+                label: l10n.notes,
+                value: checkIn.notes!,
+              ),
+          ] else if (effective == CheckInStatus.missed) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.translate('noSubmissionReceived') ?? 'No submission received',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.translate('awaitingSubmission') ?? 'Awaiting submission',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+          const SizedBox(height: 24),
+          ShifaPrimaryButton(
+            label: l10n.translate('close') ?? 'Close',
+            width: ButtonWidth.fill,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
       ),
     ),
   );

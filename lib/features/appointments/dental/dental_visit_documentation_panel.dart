@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
+import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
 import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_data.dart';
 
@@ -479,215 +480,206 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     final display = toothKeyDisplay(compactKey);
     final list = List<Map<String, dynamic>>.from(_teeth[compactKey] ?? []);
 
-    await showModalBottomSheet<void>(
+    await showScrollableFormBottomSheetWithFooter<void>(
       context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
+      includeBottomNavClearance: false,
+      bodyBuilder: (ctx) {
         var activeGroupIndex = 0;
-        final maxH =
-            (MediaQuery.sizeOf(ctx).height * 0.5).clamp(260.0, 480.0);
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.viewInsetsOf(ctx).bottom,
-            ),
-            child: StatefulBuilder(
-              builder: (ctx, setLocal) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        '${l10n.translate('dentalToothServices')} $display',
-                        style: Theme.of(ctx).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      if (_catalog.isEmpty)
-                        Text(
-                          l10n.translate('dentalNoServices'),
-                          style: TextStyle(color: Colors.grey.shade700),
-                        )
-                      else ...[
-                        Text(
-                          l10n.translate('dentalAddService'),
-                          style: Theme.of(ctx).textTheme.labelLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        if (_serviceGroups.isEmpty)
-                          const SizedBox.shrink()
-                        else
-                          SizedBox(
-                            height: maxH,
-                            child: Builder(
-                              builder: (context) {
-                                final n = _serviceGroups.length;
-                                activeGroupIndex =
-                                    activeGroupIndex.clamp(0, n - 1);
-                                final g = _serviceGroups[activeGroupIndex];
-                                return Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      flex: 2,
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.shade50,
-                                          borderRadius:
-                                              const BorderRadius.only(
-                                            topLeft: Radius.circular(8),
-                                            bottomLeft: Radius.circular(8),
-                                          ),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              const BorderRadius.only(
-                                            topLeft: Radius.circular(8),
-                                            bottomLeft: Radius.circular(8),
-                                          ),
-                                          child: ListView.builder(
-                                            itemCount: n,
-                                            itemBuilder: (c, i) {
-                                              final grp = _serviceGroups[i];
-                                              final selected =
-                                                  i == activeGroupIndex;
-                                              return InkWell(
-                                                onTap: () => setLocal(
-                                                  () => activeGroupIndex = i,
-                                                ),
-                                                child: MouseRegion(
-                                                  onEnter: (_) => setLocal(
-                                                    () => activeGroupIndex = i,
-                                                  ),
-                                                  child: Container(
-                                                    width: double.infinity,
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 14,
-                                                    ),
-                                                    color: selected
-                                                        ? widget.brand
-                                                            .withValues(
-                                                            alpha: 0.14,
-                                                          )
-                                                        : null,
-                                                    child: Text(
-                                                      grp.label(l10n),
-                                                      style: TextStyle(
-                                                        fontWeight: selected
-                                                            ? FontWeight.w700
-                                                            : FontWeight.w500,
-                                                        fontSize: 13,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    VerticalDivider(
-                                      width: 1,
-                                      thickness: 1,
-                                      color: Colors.grey.shade300,
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: ClipRRect(
-                                        borderRadius: const BorderRadius.only(
-                                          topRight: Radius.circular(8),
-                                          bottomRight: Radius.circular(8),
-                                        ),
-                                        child: ListView.builder(
-                                          itemCount: g.services.length,
-                                          itemBuilder: (c, j) {
-                                            final s = g.services[j];
-                                            final priceLine =
-                                                s.isFreeConsultation
-                                                    ? '0 ${s.currency}'
-                                                    : '${(s.amountMinor / 100).toStringAsFixed(2)} ${s.currency}';
-                                            return ListTile(
-                                              dense: true,
-                                              title: Text(
-                                                s.title,
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              subtitle: Text(priceLine),
-                                              onTap: () {
-                                                setLocal(() {
-                                                  list.add({
-                                                    'serviceId': s.id,
-                                                    'title': s.title,
-                                                    'amountMinor': s
-                                                            .isFreeConsultation
-                                                        ? 0
-                                                        : s.amountMinor,
-                                                    'currency': s.currency,
-                                                  });
-                                                  _touch();
-                                                });
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                      ],
-                      const SizedBox(height: 12),
-                      Flexible(
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: list.length,
-                          itemBuilder: (c, i) {
-                            final line = list[i];
-                            final title = line['title']?.toString() ?? '';
-                            final am = (line['amountMinor'] as num?)?.toInt() ?? 0;
-                            final cur = line['currency']?.toString() ?? '';
-                            return ListTile(
-                              title: Text(title),
-                              subtitle: Text('${(am / 100).toStringAsFixed(2)} $cur'),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: () {
-                                  setLocal(() {
-                                    list.removeAt(i);
-                                    _touch();
-                                  });
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      FilledButton(
-                        onPressed: () {
-                          setState(() {
-                            _teeth[compactKey] = List<Map<String, dynamic>>.from(list);
-                          });
-                          Navigator.pop(ctx);
-                        },
-                        child: Text(l10n.save),
-                      ),
-                    ],
+        final maxH = (MediaQuery.sizeOf(ctx).height * 0.38).clamp(220.0, 360.0);
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${l10n.translate('dentalToothServices')} $display',
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                if (_catalog.isEmpty)
+                  Text(
+                    l10n.translate('dentalNoServices'),
+                    style: TextStyle(color: Colors.grey.shade700),
+                  )
+                else ...[
+                  Text(
+                    l10n.translate('dentalAddService'),
+                    style: Theme.of(ctx).textTheme.labelLarge,
                   ),
-                );
-              },
-            ),
-          ),
+                  const SizedBox(height: 8),
+                  if (_serviceGroups.isEmpty)
+                    const SizedBox.shrink()
+                  else
+                    SizedBox(
+                      height: maxH,
+                      child: Builder(
+                        builder: (context) {
+                          final n = _serviceGroups.length;
+                          activeGroupIndex = activeGroupIndex.clamp(0, n - 1);
+                          final g = _serviceGroups[activeGroupIndex];
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(8),
+                                      bottomLeft: Radius.circular(8),
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(8),
+                                      bottomLeft: Radius.circular(8),
+                                    ),
+                                    child: ListView.builder(
+                                      itemCount: n,
+                                      itemBuilder: (c, i) {
+                                        final grp = _serviceGroups[i];
+                                        final selected = i == activeGroupIndex;
+                                        return InkWell(
+                                          onTap: () => setLocal(
+                                            () => activeGroupIndex = i,
+                                          ),
+                                          child: MouseRegion(
+                                            onEnter: (_) => setLocal(
+                                              () => activeGroupIndex = i,
+                                            ),
+                                            child: Container(
+                                              width: double.infinity,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 14,
+                                              ),
+                                              color: selected
+                                                  ? widget.brand.withValues(
+                                                      alpha: 0.14,
+                                                    )
+                                                  : null,
+                                              child: Text(
+                                                grp.label(l10n),
+                                                style: TextStyle(
+                                                  fontWeight: selected
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w500,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              VerticalDivider(
+                                width: 1,
+                                thickness: 1,
+                                color: Colors.grey.shade300,
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(8),
+                                    bottomRight: Radius.circular(8),
+                                  ),
+                                  child: ListView.builder(
+                                    itemCount: g.services.length,
+                                    itemBuilder: (c, j) {
+                                      final s = g.services[j];
+                                      final priceLine = s.isFreeConsultation
+                                          ? '0 ${s.currency}'
+                                          : '${(s.amountMinor / 100).toStringAsFixed(2)} ${s.currency}';
+                                      return ListTile(
+                                        dense: true,
+                                        title: Text(
+                                          s.title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(priceLine),
+                                        onTap: () {
+                                          setLocal(() {
+                                            list.add({
+                                              'serviceId': s.id,
+                                              'title': s.title,
+                                              'amountMinor':
+                                                  s.isFreeConsultation
+                                                      ? 0
+                                                      : s.amountMinor,
+                                              'currency': s.currency,
+                                            });
+                                            _touch();
+                                          });
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                ],
+                if (list.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.translate('dentalSelectedServices') ??
+                        'Selected services',
+                    style: Theme.of(ctx).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  for (var i = 0; i < list.length; i++) ...[
+                    if (i > 0) const Divider(height: 1),
+                    Builder(
+                      builder: (context) {
+                        final line = list[i];
+                        final title = line['title']?.toString() ?? '';
+                        final am =
+                            (line['amountMinor'] as num?)?.toInt() ?? 0;
+                        final cur = line['currency']?.toString() ?? '';
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(title),
+                          subtitle: Text('${(am / 100).toStringAsFixed(2)} $cur'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () {
+                              setLocal(() {
+                                list.removeAt(i);
+                                _touch();
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ],
+            );
+          },
         );
       },
+      footer: Builder(
+        builder: (sheetCtx) => FilledButton(
+          onPressed: () {
+            setState(() {
+              _teeth[compactKey] = List<Map<String, dynamic>>.from(list);
+            });
+            Navigator.pop(sheetCtx);
+          },
+          child: Text(l10n.save),
+        ),
+      ),
     );
   }
 

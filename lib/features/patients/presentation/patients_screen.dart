@@ -58,6 +58,7 @@ import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patien
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_helpers.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_overview.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patients_directory_panel.dart';
+import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 
 part 'patient_detail_panel.dart';
 
@@ -67,25 +68,18 @@ Future<Map<String, String?>?> askPatientDocumentTitleAndCategory(
 }) async {
   final titleCtrl = TextEditingController(text: defaultTitle);
   DocumentCategory? selected;
-  return showModalBottomSheet<Map<String, String?>>(
+  return showScrollableFormBottomSheet<Map<String, String?>>(
     context: context,
-    isScrollControlled: true,
     builder: (ctx) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: 16 + MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            final l10n = AppLocalizations.of(ctx)!;
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      return StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final l10n = AppLocalizations.of(ctx)!;
+          return scrollableBottomSheetContent(
+            ctx,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                   Text(
                     l10n.uploadDocument,
                     style: const TextStyle(
@@ -213,11 +207,10 @@ Future<Map<String, String?>?> askPatientDocumentTitleAndCategory(
                       ),
                     ],
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+          );
+        },
       );
     },
   );
@@ -955,22 +948,17 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     String? selectedBloodGroup = '';
     DateTime? birthDate;
 
-    await showModalBottomSheet(
+    await showScrollableFormBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: 16 + MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: StatefulBuilder(
-            builder: (ctx, setModalState) {
-              final l10n = AppLocalizations.of(ctx)!;
-              return Column(
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final l10n = AppLocalizations.of(ctx)!;
+            return scrollableBottomSheetContent(
+              ctx,
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     l10n.translate('createNewPatient') ?? 'Create New Patient',
@@ -1128,9 +1116,9 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     label: l10n.translate('createPatient') ?? 'Create Patient',
                   ),
                 ],
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1235,48 +1223,46 @@ void _showAccountCreatedModal(
   String password,
 ) {
   final l10n = AppLocalizations.of(context)!;
-  showDialog(
+  showScrollableFormDialog<void>(
     context: context,
-    barrierDismissible: false, // Force user to read/close
-    builder: (ctx) => AlertDialog(
-      title: Row(
-        children: [
-          const Icon(Icons.verified_user, color: Colors.green),
-          const SizedBox(width: 8),
-          Text(l10n.accountCreated),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.shareCredentialsWithPatient),
-          const SizedBox(height: 20),
-          _CredentialRow(label: l10n.username, value: username),
-          const SizedBox(height: 12),
-          _CredentialRow(
-            label: l10n.oneTimePassword,
-            value: password,
-            isSecret: true,
+    barrierDismissible: false,
+    title: Row(
+      children: [
+        const Icon(Icons.verified_user, color: Colors.green),
+        const SizedBox(width: 8),
+        Expanded(child: Text(l10n.accountCreated)),
+      ],
+    ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.shareCredentialsWithPatient),
+        const SizedBox(height: 20),
+        _CredentialRow(label: l10n.username, value: username),
+        const SizedBox(height: 12),
+        _CredentialRow(
+          label: l10n.oneTimePassword,
+          value: password,
+          isSecret: true,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          l10n.forSecurityPasswordShownOnce,
+          style: const TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
           ),
-          const SizedBox(height: 20),
-          Text(
-            l10n.forSecurityPasswordShownOnce,
-            style: const TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(l10n.close),
         ),
       ],
     ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(l10n.close),
+      ),
+    ],
   );
 }
 

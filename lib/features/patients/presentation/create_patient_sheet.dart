@@ -4,6 +4,7 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/multiple_phone_fields.dart';
+import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
@@ -36,22 +37,17 @@ Future<Patient?> showCreatePatientSheet(
   String? selectedLanguage = patientLanguageOptions.first;
   DateTime? birthDate;
 
-  final confirmed = await showModalBottomSheet<bool>(
+  final confirmed = await showScrollableFormBottomSheet<bool>(
     context: context,
-    isScrollControlled: true,
     builder: (ctx) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: 16 + MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: StatefulBuilder(
-          builder: (ctx, setModalState) {
-            final l10n = AppLocalizations.of(ctx)!;
-            return Column(
+      return StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final l10n = AppLocalizations.of(ctx)!;
+          return scrollableBottomSheetContent(
+            ctx,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   l10n.translate('createNewPatient') ?? 'Create New Patient',
@@ -141,9 +137,9 @@ Future<Patient?> showCreatePatientSheet(
                   label: l10n.translate('createPatient') ?? 'Create Patient',
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
     },
   );

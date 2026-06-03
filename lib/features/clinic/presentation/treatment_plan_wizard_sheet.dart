@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
@@ -1299,9 +1300,9 @@ class _TreatmentPlanWizardDialogState
         .map((s) => s.startAt)
         .toSet();
 
-    final picked = await showModalBottomSheet<List<_PickedSlot>>(
+    final picked = await showScrollableFormBottomSheet<List<_PickedSlot>>(
       context: context,
-      isScrollControlled: true,
+      includeBottomNavClearance: false,
       builder: (ctx) => _FreeSlotsSheet(
         clinicId: widget.clinicId,
         doctorId: doctorId,
@@ -1880,18 +1881,16 @@ class _FreeSlotsSheetState extends State<_FreeSlotsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 12,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
             Row(
               children: [
                 Expanded(
@@ -1980,7 +1979,7 @@ class _FreeSlotsSheetState extends State<_FreeSlotsSheet> {
                 ),
               )
             else if (!_loadingLocations && !_loadingSlots)
-              Flexible(
+              Expanded(
                 child: SingleChildScrollView(
                   child: Wrap(
                     spacing: 6,
@@ -2060,7 +2059,6 @@ class _FreeSlotsSheetState extends State<_FreeSlotsSheet> {
             ),
           ],
         ),
-      ),
     );
   }
 }

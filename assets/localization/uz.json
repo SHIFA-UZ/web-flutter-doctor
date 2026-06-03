@@ -212,7 +212,7 @@
   "clinicFinanceByAppointment": "Qabul bo'yicha",
   "clinicFinanceInstallments": "Bo'lib-to'lash",
   "clinicFinanceDoctorEarnings": "Shifokor daromadi",
-  "clinicFinanceDoctorEarningsHint": "Yalpi / yig'ilgan / qoldiq · tashrif sanasi bo'yicha · klinika vaqt zonasi oyi",
+  "clinicFinanceDoctorEarningsHint": "Yalpi / yig'ilgan / qoldiq · barcha to'lovli tashriflar (tashrif sanasi bo'yicha)",
   "clinicFinanceDoctorEarningsMonth": "{{month}}",
   "clinicFinanceNoLedgerRows": "Ulangan tashrif yo'qlari yo'q.",
   "clinicFinanceVisitServices": "Xizmatlar",
