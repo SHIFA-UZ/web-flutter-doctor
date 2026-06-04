@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 
 String formatRevenueShareLabel(AppLocalizations l10n, int? doctorPercent) {
@@ -98,6 +99,7 @@ Future<void> showDefaultClinicRevenueShareDialog({
                             clinic.clinicId,
                             null,
                           );
+                          refreshClinicFinancialData(ref, clinic.clinicId);
                         } catch (e) {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -140,6 +142,7 @@ Future<void> showDefaultClinicRevenueShareDialog({
                             clinic.clinicId,
                             value,
                           );
+                          refreshClinicFinancialData(ref, clinic.clinicId);
                           if (ctx.mounted) Navigator.pop(ctx);
                         } catch (e) {
                           setLocal(() => saving = false);
@@ -247,6 +250,7 @@ Future<void> showDoctorRevenueShareDialog({
                             member.doctorProfileId,
                             null,
                           );
+                          refreshClinicFinancialData(ref, clinicId);
                         } catch (e) {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -283,6 +287,7 @@ Future<void> showDoctorRevenueShareDialog({
                             member.doctorProfileId,
                             parsed,
                           );
+                          refreshClinicFinancialData(ref, clinicId);
                           if (ctx.mounted) Navigator.pop(ctx);
                         } catch (e) {
                           setLocal(() => saving = false);

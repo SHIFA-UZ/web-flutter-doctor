@@ -521,6 +521,20 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                           ),
                         ),
                       ),
+                      if (clinic != null) ...[
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => showDefaultClinicRevenueShareDialog(
+                            context: context,
+                            ref: ref,
+                            clinic: clinic,
+                          ),
+                          icon: const Icon(Icons.tune, size: 16),
+                          label: Text(
+                            l10n.translate('clinicFinanceConfigureDefaultShare'),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1630,79 +1644,13 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
   }
 }
 
-class _SettingsTab extends ConsumerStatefulWidget {
+class _SettingsTab extends ConsumerWidget {
   const _SettingsTab({required this.clinic});
   final MyClinicSummary clinic;
 
   @override
-  ConsumerState<_SettingsTab> createState() => _SettingsTabState();
-}
-
-class _SettingsTabState extends ConsumerState<_SettingsTab> {
-  final TextEditingController _defaultShareCtrl = TextEditingController();
-  bool _savingDefault = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _defaultShareCtrl.text =
-        widget.clinic.defaultDoctorRevenueSharePercent?.toString() ?? '';
-  }
-
-  @override
-  void didUpdateWidget(covariant _SettingsTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.clinic.defaultDoctorRevenueSharePercent !=
-        widget.clinic.defaultDoctorRevenueSharePercent) {
-      _defaultShareCtrl.text =
-          widget.clinic.defaultDoctorRevenueSharePercent?.toString() ?? '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _defaultShareCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveDefaultShare(AppLocalizations l10n) async {
-    final raw = _defaultShareCtrl.text.trim();
-    final int? value;
-    if (raw.isEmpty) {
-      value = null;
-    } else {
-      final parsed = int.tryParse(raw);
-      if (parsed == null || parsed < 0 || parsed > 100) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.translate('clinicDoctorRevenueShareInvalid')),
-          ),
-        );
-        return;
-      }
-      value = parsed;
-    }
-    setState(() => _savingDefault = true);
-    try {
-      await updateClinicFinanceSettings(ref, widget.clinic.clinicId, value);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.translate('settingsSaved'))),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e')),
-      );
-    } finally {
-      if (mounted) setState(() => _savingDefault = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final canManage = canManageClinicFinanceFor(widget.clinic);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1710,76 +1658,38 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
         const SizedBox(height: 12),
         ListTile(
           title: Text(l10n.translate('adminClinicNameLabel')),
-          subtitle: Text(widget.clinic.name),
+          subtitle: Text(clinic.name),
         ),
         ListTile(
           title: Text(l10n.translate('adminClinicTimezoneLabel')),
-          subtitle: Text(widget.clinic.timeZone),
+          subtitle: Text(clinic.timeZone),
         ),
-        if (widget.clinic.phone != null)
+        if (clinic.phone != null)
           ListTile(
             title: Text(l10n.translate('adminClinicPhoneLabel')),
-            subtitle: Text(widget.clinic.phone!),
+            subtitle: Text(clinic.phone!),
           ),
-        if (widget.clinic.email != null)
+        if (clinic.email != null)
           ListTile(
             title: Text(l10n.translate('adminClinicEmailLabel')),
-            subtitle: Text(widget.clinic.email!),
+            subtitle: Text(clinic.email!),
           ),
-        if (widget.clinic.address != null)
+        if (clinic.address != null)
           ListTile(
             title: Text(l10n.translate('adminClinicAddressLabel')),
-            subtitle: Text(widget.clinic.address!),
+            subtitle: Text(clinic.address!),
           ),
         const Divider(height: 32),
-        Text(
-          l10n.translate('clinicFinanceDefaultRevenueShare'),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.translate('clinicFinanceDefaultRevenueShareHint'),
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: 12),
-        if (canManage)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 120,
-                child: TextField(
-                  controller: _defaultShareCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: l10n.translate('clinicDoctorRevenueShareDoctorLabel'),
-                    suffixText: '%',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton(
-                onPressed: _savingDefault ? null : () => _saveDefaultShare(l10n),
-                child: _savingDefault
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.translate('clinicDoctorRevenueShareSave')),
-              ),
-            ],
-          )
-        else
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              formatRevenueShareLabel(
-                l10n,
-                widget.clinic.defaultDoctorRevenueSharePercent,
-              ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.translate('clinicFinanceDefaultRevenueShare')),
+          subtitle: Text(
+            formatRevenueShareLabel(
+              l10n,
+              clinic.defaultDoctorRevenueSharePercent,
             ),
           ),
+        ),
       ],
     );
   }
