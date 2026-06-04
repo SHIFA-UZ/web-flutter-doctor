@@ -369,6 +369,7 @@ class AppointmentLedgerRowDto {
   final int treatmentPlanId;
   final List<AppointmentLedgerServiceLineDto> services;
   final int visitTotalMinor;
+  final int visitCollectedMinor;
   final String currency;
   final String planPaymentStatus;
   final String planSimplePaymentStatus;
@@ -383,6 +384,7 @@ class AppointmentLedgerRowDto {
     required this.treatmentPlanId,
     required this.services,
     required this.visitTotalMinor,
+    required this.visitCollectedMinor,
     required this.currency,
     required this.planPaymentStatus,
     required this.planSimplePaymentStatus,
@@ -406,6 +408,7 @@ class AppointmentLedgerRowDto {
               .toList()
           : const [],
       visitTotalMinor: (json['visitTotalMinor'] as num?)?.toInt() ?? 0,
+      visitCollectedMinor: (json['visitCollectedMinor'] as num?)?.toInt() ?? 0,
       currency: json['currency']?.toString() ?? 'UZS',
       planPaymentStatus: json['planPaymentStatus']?.toString() ?? '',
       planSimplePaymentStatus:

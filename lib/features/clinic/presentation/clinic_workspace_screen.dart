@@ -23,6 +23,7 @@ import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
     show fetchPatientWithClient;
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_doctor_schedule_page.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_finance_tab.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_revenue_share_ui.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_treatment_plans_tab.dart';
@@ -479,6 +480,8 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final clinic = ref.watch(selectedClinicProvider);
+    final canManage = canManageClinicFinanceSettings(clinic?.membershipRole ?? '');
     final async = ref.watch(clinicMembersProvider(widget.clinicId));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -542,6 +545,9 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                     onSort: _onSort,
                   ),
                   DataColumn(
+                    label: Text(l10n.translate('clinicDoctorsColRevenueShare')),
+                  ),
+                  DataColumn(
                     label: Text(l10n.translate('clinicDoctorsColActions')),
                   ),
                 ],
@@ -581,17 +587,45 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                       DataCell(Text('#${m.doctorProfileId}')),
                       DataCell(Text('#${m.userId}')),
                       DataCell(
-                        IconButton(
-                          tooltip: l10n.translate('clinicDoctorOpenSchedule'),
-                          icon: const Icon(
-                            Icons.calendar_month_outlined,
-                            size: 20,
+                        Text(
+                          formatRevenueShareLabel(
+                            l10n,
+                            m.effectiveRevenueSharePercent,
                           ),
-                          onPressed: () => pushClinicDoctorScheduleForMember(
-                            context,
-                            ref,
-                            m,
-                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (canManage &&
+                                (m.membershipRole == 'DOCTOR' ||
+                                    m.membershipRole == 'OWNER'))
+                              IconButton(
+                                tooltip: l10n.translate(
+                                  'clinicDoctorRevenueShareEdit',
+                                ),
+                                icon: const Icon(Icons.percent, size: 20),
+                                onPressed: () => showDoctorRevenueShareDialog(
+                                  context: context,
+                                  ref: ref,
+                                  clinicId: widget.clinicId,
+                                  member: m,
+                                ),
+                              ),
+                            IconButton(
+                              tooltip: l10n.translate('clinicDoctorOpenSchedule'),
+                              icon: const Icon(
+                                Icons.calendar_month_outlined,
+                                size: 20,
+                              ),
+                              onPressed: () => pushClinicDoctorScheduleForMember(
+                                context,
+                                ref,
+                                m,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -1546,13 +1580,79 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
   }
 }
 
-class _SettingsTab extends StatelessWidget {
+class _SettingsTab extends ConsumerStatefulWidget {
   const _SettingsTab({required this.clinic});
   final MyClinicSummary clinic;
 
   @override
+  ConsumerState<_SettingsTab> createState() => _SettingsTabState();
+}
+
+class _SettingsTabState extends ConsumerState<_SettingsTab> {
+  final TextEditingController _defaultShareCtrl = TextEditingController();
+  bool _savingDefault = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _defaultShareCtrl.text =
+        widget.clinic.defaultDoctorRevenueSharePercent?.toString() ?? '';
+  }
+
+  @override
+  void didUpdateWidget(covariant _SettingsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.clinic.defaultDoctorRevenueSharePercent !=
+        widget.clinic.defaultDoctorRevenueSharePercent) {
+      _defaultShareCtrl.text =
+          widget.clinic.defaultDoctorRevenueSharePercent?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _defaultShareCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveDefaultShare(AppLocalizations l10n) async {
+    final raw = _defaultShareCtrl.text.trim();
+    final int? value;
+    if (raw.isEmpty) {
+      value = null;
+    } else {
+      final parsed = int.tryParse(raw);
+      if (parsed == null || parsed < 0 || parsed > 100) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.translate('clinicDoctorRevenueShareInvalid')),
+          ),
+        );
+        return;
+      }
+      value = parsed;
+    }
+    setState(() => _savingDefault = true);
+    try {
+      await updateClinicFinanceSettings(ref, widget.clinic.clinicId, value);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.translate('settingsSaved'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
+    } finally {
+      if (mounted) setState(() => _savingDefault = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final canManage = canManageClinicFinanceSettings(widget.clinic.membershipRole);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1560,26 +1660,75 @@ class _SettingsTab extends StatelessWidget {
         const SizedBox(height: 12),
         ListTile(
           title: Text(l10n.translate('adminClinicNameLabel')),
-          subtitle: Text(clinic.name),
+          subtitle: Text(widget.clinic.name),
         ),
         ListTile(
           title: Text(l10n.translate('adminClinicTimezoneLabel')),
-          subtitle: Text(clinic.timeZone),
+          subtitle: Text(widget.clinic.timeZone),
         ),
-        if (clinic.phone != null)
+        if (widget.clinic.phone != null)
           ListTile(
             title: Text(l10n.translate('adminClinicPhoneLabel')),
-            subtitle: Text(clinic.phone!),
+            subtitle: Text(widget.clinic.phone!),
           ),
-        if (clinic.email != null)
+        if (widget.clinic.email != null)
           ListTile(
             title: Text(l10n.translate('adminClinicEmailLabel')),
-            subtitle: Text(clinic.email!),
+            subtitle: Text(widget.clinic.email!),
           ),
-        if (clinic.address != null)
+        if (widget.clinic.address != null)
           ListTile(
             title: Text(l10n.translate('adminClinicAddressLabel')),
-            subtitle: Text(clinic.address!),
+            subtitle: Text(widget.clinic.address!),
+          ),
+        const Divider(height: 32),
+        Text(
+          l10n.translate('clinicFinanceDefaultRevenueShare'),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.translate('clinicFinanceDefaultRevenueShareHint'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 12),
+        if (canManage)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
+                child: TextField(
+                  controller: _defaultShareCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: l10n.translate('clinicDoctorRevenueShareDoctorLabel'),
+                    suffixText: '%',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                onPressed: _savingDefault ? null : () => _saveDefaultShare(l10n),
+                child: _savingDefault
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.translate('clinicDoctorRevenueShareSave')),
+              ),
+            ],
+          )
+        else
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              formatRevenueShareLabel(
+                l10n,
+                widget.clinic.defaultDoctorRevenueSharePercent,
+              ),
+            ),
           ),
       ],
     );

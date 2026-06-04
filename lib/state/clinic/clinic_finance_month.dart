@@ -12,7 +12,7 @@ final clinicFinanceMonthFilterProvider =
 
 /// UTC ISO range (`from` inclusive, `to` exclusive) for finance APIs.
 ({String? fromIso, String? toIso}) financeMonthRangeIso(
-  WidgetRef ref,
+  dynamic ref,
   int clinicId,
 ) {
   final month = ref.watch(clinicFinanceMonthFilterProvider(clinicId));
@@ -45,13 +45,32 @@ List<({int year, int month})> financeRecentMonths(String? timezoneId, {int count
   return months;
 }
 
+const _uzbekMonthNames = [
+  'yanvar',
+  'fevral',
+  'mart',
+  'aprel',
+  'may',
+  'iyun',
+  'iyul',
+  'avgust',
+  'sentabr',
+  'oktabr',
+  'noyabr',
+  'dekabr',
+];
+
 String formatFinanceMonthLabel(
   BuildContext context,
   int year,
   int month,
 ) {
-  final locale = Localizations.localeOf(context).toString();
-  return DateFormat.yMMMM(locale).format(DateTime(year, month));
+  final locale = Localizations.localeOf(context);
+  if (locale.languageCode == 'uz') {
+    final name = _uzbekMonthNames[month - 1];
+    return '$name, $year';
+  }
+  return DateFormat.yMMMM(locale.toString()).format(DateTime(year, month));
 }
 
 /// Dropdown shared by Finance dashboard and doctor earnings.

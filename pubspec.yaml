@@ -110,6 +110,9 @@ flutter:
     - assets/images/shifa_logo.svg
     - assets/branding/shifa_logo.png
     - assets/fonts/DejaVuSans.ttf
+    - assets/localization/en.json
+    - assets/localization/uz.json
+    - assets/localization/ru.json
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

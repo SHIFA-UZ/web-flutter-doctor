@@ -187,12 +187,17 @@ Future<bool> notifyInstallmentItem(dynamic ref, {required int clinicId, required
 Future<Map<String, dynamic>> fetchAppointmentLedgerPage(
   dynamic ref, {
   required int clinicId,
+  String? fromIso,
+  String? toIso,
   int page = 0,
   int size = 20,
 }) async {
   final api = ref.read(doctorApiClientProvider);
+  final q = <String>['page=$page', 'size=$size'];
+  if (fromIso != null) q.add('from=${Uri.encodeQueryComponent(fromIso)}');
+  if (toIso != null) q.add('to=${Uri.encodeQueryComponent(toIso)}');
   final res = await api.get(
-    '/api/clinics/$clinicId/finance/appointment-ledger?page=$page&size=$size',
+    '/api/clinics/$clinicId/finance/appointment-ledger?${q.join('&')}',
   );
   if (res.statusCode != 200) {
     throw Exception('Ledger ${res.statusCode}');

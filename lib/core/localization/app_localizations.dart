@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:shifa_doc_app_v1/core/localization/localization_asset_loader.dart';
 import 'package:shifa_doc_app_v1/core/localization/uzbek_latin_to_cyrillic.dart';
+
+// Localization pipeline:
+// - Primary source: assets/localization/{en,uz,ru}.json — add new keys here only.
+// - Fallback: _localizedValues below (legacy embedded strings for keys missing in JSON).
+// - JSON wins at runtime when a key exists in both places.
+// - Regenerate JSON from embedded map: node scripts/export_localization_json.js
 
 class AppLocalizations {
   final Locale locale;
@@ -299,6 +306,10 @@ class AppLocalizations {
       'clinicFinanceInstallments': 'Installments',
       'clinicFinanceDoctorEarnings': 'Doctor earnings',
       'clinicFinanceDoctorEarningsHint': 'Gross / collected / outstanding · all billable visits with linked charges (by visit date)',
+      'clinicFinanceDoctorEarningsHintMonth': 'Gross / collected / outstanding · billable visits in the selected month (by visit date)',
+      'clinicFinanceMonthFilter': 'Month',
+      'clinicFinanceMonthAllTime': 'All time',
+      'clinicFinanceTotalRevenueHintMonth': 'Collected from billable visits in the selected month (by visit date)',
       'clinicFinanceNoLedgerRows': 'No linked visit charges yet.',
       'clinicFinanceVisitServices': 'Services on visit',
       'clinicFinanceMarkInstallmentPaid': 'Mark paid',
@@ -341,6 +352,28 @@ class AppLocalizations {
       'clinicDoctorsColProfileId': 'Profile #',
       'clinicDoctorsColUserId': 'User #',
       'clinicDoctorsColActions': 'Actions',
+      'clinicDoctorsColRevenueShare': 'Revenue share',
+      'clinicDoctorRevenueShareNotSet': 'Not set',
+      'clinicDoctorRevenueShareSummary': '{{doctor}}% doctor / {{clinic}}% clinic',
+      'clinicDoctorRevenueShareEdit': 'Edit revenue share',
+      'clinicDoctorRevenueShareSave': 'Save',
+      'clinicDoctorRevenueShareClear': 'Use clinic default',
+      'clinicDoctorRevenueShareDialogTitle': 'Doctor revenue share',
+      'clinicDoctorRevenueShareDoctorLabel': 'Doctor share',
+      'clinicDoctorRevenueSharePreview': 'Doctor {{doctor}}% · Clinic {{clinic}}%',
+      'clinicDoctorRevenueShareInvalid': 'Enter a whole number from 0 to 100',
+      'clinicFinanceDefaultRevenueShare': 'Default doctor revenue share',
+      'clinicFinanceDefaultRevenueShareHint': 'Used when a doctor has no individual override. Clinic keeps the remainder.',
+      'clinicEarningsColSharePercent': 'Share %',
+      'clinicEarningsColDoctorShareGross': 'Doctor (gross)',
+      'clinicEarningsColClinicShareGross': 'Clinic (gross)',
+      'clinicEarningsColDoctorShareCollected': 'Doctor (collected)',
+      'clinicEarningsColClinicShareCollected': 'Clinic (collected)',
+      'clinicEarningsSplitTotals': 'Revenue share totals',
+      'clinicFinanceDoctorShareCollected': 'Doctor share (collected)',
+      'clinicFinanceClinicShareCollected': 'Clinic share (collected)',
+      'clinicFinanceDoctorShareGross': 'Doctor share (gross)',
+      'clinicFinanceClinicShareGross': 'Clinic share (gross)',
       'clinicPatientsSearchHint': 'Search by name, phone or email…',
       'clinicPatientsColId': 'ID',
       'clinicPatientsColName': 'Full name',
@@ -534,14 +567,20 @@ class AppLocalizations {
       'clinicFinanceNoPayments': 'No payment history yet.',
       'clinicFinanceDashboardRevenueDetail': 'Payments contributing to revenue',
       'clinicFinanceDashboardRevenueHint': 'Recorded payments on treatment plans',
+      'clinicFinanceDashboardRevenueHintMonth': 'Collected per billable visit in the selected month (by visit date)',
       'clinicFinanceDashboardOutstandingDetail': 'Outstanding balances',
       'clinicFinanceDashboardOutstandingHint': 'Treatment plans and invoices with remaining amount due',
+      'clinicFinanceDashboardOutstandingHintMonth': 'Unpaid visit balance in the selected month (by visit date)',
       'clinicFinanceDashboardOverdueDetail': 'Overdue items',
       'clinicFinanceDashboardOverdueHint': 'Overdue installments and invoices past due date',
+      'clinicFinanceDashboardOverdueHintMonth': 'Overdue is tracked all-time only; switch to All time to view overdue items',
       'clinicFinanceDashboardCollectionDetail': 'Collection breakdown',
       'clinicFinanceDashboardCollectionHint': 'Collected / expected · collection % per treatment plan',
+      'clinicFinanceDashboardCollectionHintMonth': 'Collected / expected · collection % per visit in the selected month',
+      'clinicFinanceDashboardDoctorEarningsTop': 'Top doctors',
       'clinicFinanceDashboardNoOutstanding': 'No outstanding balances.',
       'clinicFinanceDashboardNoOverdue': 'No overdue items.',
+      'clinicFinanceDashboardNoOverdueMonth': 'Overdue is not tracked for a selected month. Switch to All time to view overdue items.',
       'clinicFinanceDashboardNoCollection': 'No treatment plans with billable amounts yet.',
       'createTreatmentPlan': 'Create treatment plan',
       'treatmentPlanTitle': 'Title',
@@ -2018,14 +2057,20 @@ class AppLocalizations {
       'clinicFinanceNoPayments': 'Hali to\'lov tarixi yo\'q.',
       'clinicFinanceDashboardRevenueDetail': 'Daromadga ta\'sir qiluvchi to\'lovlar',
       'clinicFinanceDashboardRevenueHint': 'Davolash rejalari bo\'yicha qayd etilgan to\'lovlar',
+      'clinicFinanceDashboardRevenueHintMonth': 'Tanlangan oydagi to\'lovli tashriflar bo\'yicha yig\'ilgan (tashrif sanasi)',
       'clinicFinanceDashboardOutstandingDetail': 'Qoldiq balanslar',
       'clinicFinanceDashboardOutstandingHint': 'To\'lanmagan qismi qolgan davolash rejalari va hisob-fakturalar',
+      'clinicFinanceDashboardOutstandingHintMonth': 'Tanlangan oydagi to\'lanmagan tashrif qoldig\'i (tashrif sanasi)',
       'clinicFinanceDashboardOverdueDetail': 'Muddati o\'tgan bandlar',
       'clinicFinanceDashboardOverdueHint': 'Muddati o\'tgan bo\'lib-to\'lovlar va kechikkan hisob-fakturalar',
+      'clinicFinanceDashboardOverdueHintMonth': 'Muddati o\'tganlik faqat butun davr bo\'yicha; ko\'rish uchun «Butun davr»ni tanlang',
       'clinicFinanceDashboardCollectionDetail': 'Yig\'ish tafsilotlari',
       'clinicFinanceDashboardCollectionHint': 'Yig\'ilgan / kutilgan · davolash rejasi bo\'yicha yig\'ish %',
+      'clinicFinanceDashboardCollectionHintMonth': 'Yig\'ilgan / kutilgan · tanlangan oydagi tashrif bo\'yicha yig\'ish %',
+      'clinicFinanceDashboardDoctorEarningsTop': 'Eng yaxshi shifokorlar',
       'clinicFinanceDashboardNoOutstanding': 'Qoldiq balanslar yo\'q.',
       'clinicFinanceDashboardNoOverdue': 'Muddati o\'tgan bandlar yo\'q.',
+      'clinicFinanceDashboardNoOverdueMonth': 'Tanlangan oy uchun muddati o\'tganlik kuzatilmaydi. Ko\'rish uchun «Butun davr»ni tanlang.',
       'clinicFinanceDashboardNoCollection': 'Hali hisob-kitob qilinadigan davolash rejalari yo\'q.',
       'clinicWorkspaceTreatmentPlans': 'Davolash rejasi',
       'clinicTreatmentPlansSearchPatient': 'Bemor qidirish (min 2 belgi)',
@@ -2111,6 +2156,12 @@ class AppLocalizations {
       'clinicFinanceDoctorEarnings': 'Shifokor daromadi',
       'clinicFinanceDoctorEarningsHint':
           'Yalpi / yig\'ilgan / qoldiq · barcha to\'lovli tashriflar (tashrif sanasi bo\'yicha)',
+      'clinicFinanceDoctorEarningsHintMonth':
+          'Yalpi / yig\'ilgan / qoldiq · tanlangan oydagi tashriflar (tashrif sanasi bo\'yicha)',
+      'clinicFinanceMonthFilter': 'Oy',
+      'clinicFinanceMonthAllTime': 'Barcha vaqt',
+      'clinicFinanceTotalRevenueHintMonth':
+          'Tanlangan oydagi to\'lovli tashriflardan yig\'ilgan (tashrif sanasi bo\'yicha)',
       'clinicFinanceNoLedgerRows': 'Ulangan tashrif yo\'qlari yo\'q.',
       'clinicFinanceVisitServices': 'Xizmatlar',
       'clinicFinanceMarkInstallmentPaid': 'To\'langan',
@@ -2151,6 +2202,28 @@ class AppLocalizations {
       'clinicDoctorsColProfileId': 'Profil #',
       'clinicDoctorsColUserId': 'Foydalanuvchi #',
       'clinicDoctorsColActions': 'Harakatlar',
+      'clinicDoctorsColRevenueShare': 'Daromad ulushi',
+      'clinicDoctorRevenueShareNotSet': 'Belgilanmagan',
+      'clinicDoctorRevenueShareSummary': '{{doctor}}% shifokor / {{clinic}}% klinika',
+      'clinicDoctorRevenueShareEdit': 'Ulushni tahrirlash',
+      'clinicDoctorRevenueShareSave': 'Saqlash',
+      'clinicDoctorRevenueShareClear': 'Klinika standartidan foydalanish',
+      'clinicDoctorRevenueShareDialogTitle': 'Shifokor daromad ulushi',
+      'clinicDoctorRevenueShareDoctorLabel': 'Shifokor ulushi',
+      'clinicDoctorRevenueSharePreview': 'Shifokor {{doctor}}% · Klinika {{clinic}}%',
+      'clinicDoctorRevenueShareInvalid': '0 dan 100 gacha butun son kiriting',
+      'clinicFinanceDefaultRevenueShare': 'Standart shifokor ulushi',
+      'clinicFinanceDefaultRevenueShareHint': 'Shifokorda alohida ulush bo\'lmasa qo\'llaniladi. Qolgan qismi klinikada qoladi.',
+      'clinicEarningsColSharePercent': 'Ulush %',
+      'clinicEarningsColDoctorShareGross': 'Shifokor (yalpi)',
+      'clinicEarningsColClinicShareGross': 'Klinika (yalpi)',
+      'clinicEarningsColDoctorShareCollected': 'Shifokor (yig\'ilgan)',
+      'clinicEarningsColClinicShareCollected': 'Klinika (yig\'ilgan)',
+      'clinicEarningsSplitTotals': 'Ulush jami',
+      'clinicFinanceDoctorShareCollected': 'Shifokor ulushi (yig\'ilgan)',
+      'clinicFinanceClinicShareCollected': 'Klinika ulushi (yig\'ilgan)',
+      'clinicFinanceDoctorShareGross': 'Shifokor ulushi (yalpi)',
+      'clinicFinanceClinicShareGross': 'Klinika ulushi (yalpi)',
       'clinicPatientsSearchHint': 'Ism, telefon yoki email…',
       'clinicPatientsColId': 'ID',
       'clinicPatientsColName': 'To\'liq ism',
@@ -3778,14 +3851,20 @@ class AppLocalizations {
       'clinicFinanceNoPayments': 'Истории платежей пока нет.',
       'clinicFinanceDashboardRevenueDetail': 'Платежи, формирующие доход',
       'clinicFinanceDashboardRevenueHint': 'Записанные платежи по планам лечения',
+      'clinicFinanceDashboardRevenueHintMonth': 'Собрано по оплачиваемым визитам за выбранный месяц (по дате визита)',
       'clinicFinanceDashboardOutstandingDetail': 'Неоплаченные остатки',
       'clinicFinanceDashboardOutstandingHint': 'Планы лечения и счета с неоплаченным остатком',
+      'clinicFinanceDashboardOutstandingHintMonth': 'Неоплаченный остаток по визитам за выбранный месяц (по дате визита)',
       'clinicFinanceDashboardOverdueDetail': 'Просроченные позиции',
       'clinicFinanceDashboardOverdueHint': 'Просроченные рассрочки и счета с истёкшим сроком',
+      'clinicFinanceDashboardOverdueHintMonth': 'Просрочка отслеживается только за всё время; выберите «За всё время» для просмотра',
       'clinicFinanceDashboardCollectionDetail': 'Детализация сбора',
       'clinicFinanceDashboardCollectionHint': 'Собрано / ожидается · % сбора по плану лечения',
+      'clinicFinanceDashboardCollectionHintMonth': 'Собрано / ожидается · % сбора по визиту за выбранный месяц',
+      'clinicFinanceDashboardDoctorEarningsTop': 'Топ врачей',
       'clinicFinanceDashboardNoOutstanding': 'Неоплаченных остатков нет.',
       'clinicFinanceDashboardNoOverdue': 'Просроченных позиций нет.',
+      'clinicFinanceDashboardNoOverdueMonth': 'Просрочка не отслеживается для выбранного месяца. Выберите «За всё время» для просмотра.',
       'clinicFinanceDashboardNoCollection': 'Планов лечения с суммами к оплате пока нет.',
       'clinicWorkspaceTreatmentPlans': 'Планы лечения',
       'clinicTreatmentPlansSearchPatient': 'Поиск пациента (мин. 2 символа)',
@@ -3871,6 +3950,12 @@ class AppLocalizations {
       'clinicFinanceDoctorEarnings': 'Доход врачей',
       'clinicFinanceDoctorEarningsHint':
           'Валовый / получено / остаток · все оплачиваемые визиты с привязанными услугами (по дате визита)',
+      'clinicFinanceDoctorEarningsHintMonth':
+          'Валовый / получено / остаток · визиты за выбранный месяц (по дате визита)',
+      'clinicFinanceMonthFilter': 'Месяц',
+      'clinicFinanceMonthAllTime': 'За всё время',
+      'clinicFinanceTotalRevenueHintMonth':
+          'Получено по оплачиваемым визитам за выбранный месяц (по дате визита)',
       'clinicFinanceNoLedgerRows': 'Нет привязанных услуг к визитам.',
       'clinicFinanceVisitServices': 'Услуги визита',
       'clinicFinanceMarkInstallmentPaid': 'Оплачено',
@@ -3912,6 +3997,28 @@ class AppLocalizations {
       'clinicDoctorsColProfileId': 'Профиль №',
       'clinicDoctorsColUserId': 'Пользователь №',
       'clinicDoctorsColActions': 'Действия',
+      'clinicDoctorsColRevenueShare': 'Доля выручки',
+      'clinicDoctorRevenueShareNotSet': 'Не задано',
+      'clinicDoctorRevenueShareSummary': '{{doctor}}% врач / {{clinic}}% клиника',
+      'clinicDoctorRevenueShareEdit': 'Изменить долю',
+      'clinicDoctorRevenueShareSave': 'Сохранить',
+      'clinicDoctorRevenueShareClear': 'Использовать значение клиники',
+      'clinicDoctorRevenueShareDialogTitle': 'Доля выручки врача',
+      'clinicDoctorRevenueShareDoctorLabel': 'Доля врача',
+      'clinicDoctorRevenueSharePreview': 'Врач {{doctor}}% · Клиника {{clinic}}%',
+      'clinicDoctorRevenueShareInvalid': 'Введите целое число от 0 до 100',
+      'clinicFinanceDefaultRevenueShare': 'Доля врача по умолчанию',
+      'clinicFinanceDefaultRevenueShareHint': 'Используется, если у врача нет индивидуальной доли. Остаток остаётся клинике.',
+      'clinicEarningsColSharePercent': 'Доля %',
+      'clinicEarningsColDoctorShareGross': 'Врач (брутто)',
+      'clinicEarningsColClinicShareGross': 'Клиника (брутто)',
+      'clinicEarningsColDoctorShareCollected': 'Врач (получено)',
+      'clinicEarningsColClinicShareCollected': 'Клиника (получено)',
+      'clinicEarningsSplitTotals': 'Итого по долям',
+      'clinicFinanceDoctorShareCollected': 'Доля врача (получено)',
+      'clinicFinanceClinicShareCollected': 'Доля клиники (получено)',
+      'clinicFinanceDoctorShareGross': 'Доля врача (брутто)',
+      'clinicFinanceClinicShareGross': 'Доля клиники (брутто)',
       'clinicPatientsSearchHint': 'Имя, телефон или email…',
       'clinicPatientsColId': 'ID',
       'clinicPatientsColName': 'ФИО',
@@ -5215,12 +5322,20 @@ class AppLocalizations {
 
   String translate(String key) {
     final lc = locale.languageCode;
+    final assetMap = LocalizationAssetLoader.cached(lc);
+    final embedded = _localizedValues[lc];
+    final embeddedEn = _localizedValues['en'];
+
+    String? resolveFromAsset() => assetMap?[key];
+    String? resolveFromEmbedded() => embedded?[key] ?? embeddedEn?[key];
+
     if (lc == 'uz' && (locale.scriptCode ?? '') == 'Cyrl') {
-      final uzVal = _localizedValues['uz']?[key];
+      final uzVal = resolveFromAsset() ?? resolveFromEmbedded();
       if (uzVal != null) return transliterateUzbekLatinToCyrillicUi(uzVal);
-      return _localizedValues['en']?[key] ?? key;
+      return key;
     }
-    return _localizedValues[lc]?[key] ?? _localizedValues['en']?[key] ?? key;
+
+    return resolveFromAsset() ?? resolveFromEmbedded() ?? key;
   }
 
   String clinicPlanStatusLabel(String status) {
@@ -6176,6 +6291,7 @@ class _AppLocalizationsDelegate
 
   @override
   Future<AppLocalizations> load(Locale locale) async {
+    await LocalizationAssetLoader.load(locale.languageCode);
     return AppLocalizations(locale);
   }
 

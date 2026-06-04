@@ -4,6 +4,11 @@ class DoctorEarningRow {
   final int grossMinor;
   final int collectedMinor;
   final int outstandingMinor;
+  final int? revenueSharePercent;
+  final int? doctorShareGrossMinor;
+  final int? clinicShareGrossMinor;
+  final int? doctorShareCollectedMinor;
+  final int? clinicShareCollectedMinor;
 
   DoctorEarningRow({
     required this.doctorProfileId,
@@ -11,7 +16,14 @@ class DoctorEarningRow {
     required this.grossMinor,
     required this.collectedMinor,
     required this.outstandingMinor,
+    this.revenueSharePercent,
+    this.doctorShareGrossMinor,
+    this.clinicShareGrossMinor,
+    this.doctorShareCollectedMinor,
+    this.clinicShareCollectedMinor,
   });
+
+  bool get hasRevenueShare => revenueSharePercent != null;
 
   factory DoctorEarningRow.fromJson(Map<String, dynamic> json) {
     return DoctorEarningRow(
@@ -20,6 +32,13 @@ class DoctorEarningRow {
       grossMinor: (json['grossMinor'] as num?)?.toInt() ?? 0,
       collectedMinor: (json['collectedMinor'] as num?)?.toInt() ?? 0,
       outstandingMinor: (json['outstandingMinor'] as num?)?.toInt() ?? 0,
+      revenueSharePercent: (json['revenueSharePercent'] as num?)?.toInt(),
+      doctorShareGrossMinor: (json['doctorShareGrossMinor'] as num?)?.toInt(),
+      clinicShareGrossMinor: (json['clinicShareGrossMinor'] as num?)?.toInt(),
+      doctorShareCollectedMinor:
+          (json['doctorShareCollectedMinor'] as num?)?.toInt(),
+      clinicShareCollectedMinor:
+          (json['clinicShareCollectedMinor'] as num?)?.toInt(),
     );
   }
 }
@@ -31,6 +50,10 @@ class FinanceDashboardStats {
   final double collectionRate;
   final String currency;
   final List<DoctorEarningRow> doctorEarningsTop;
+  final int? totalDoctorShareGrossMinor;
+  final int? totalClinicShareGrossMinor;
+  final int? totalDoctorShareCollectedMinor;
+  final int? totalClinicShareCollectedMinor;
 
   FinanceDashboardStats({
     required this.totalRevenueMinor,
@@ -39,7 +62,15 @@ class FinanceDashboardStats {
     required this.collectionRate,
     required this.currency,
     this.doctorEarningsTop = const [],
+    this.totalDoctorShareGrossMinor,
+    this.totalClinicShareGrossMinor,
+    this.totalDoctorShareCollectedMinor,
+    this.totalClinicShareCollectedMinor,
   });
+
+  bool get hasRevenueShareTotals =>
+      totalDoctorShareCollectedMinor != null &&
+      totalClinicShareCollectedMinor != null;
 
   factory FinanceDashboardStats.fromJson(Map<String, dynamic> json) {
     final top = json['doctorEarningsTop'];
@@ -55,6 +86,14 @@ class FinanceDashboardStats {
               .map((e) => DoctorEarningRow.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      totalDoctorShareGrossMinor:
+          (json['totalDoctorShareGrossMinor'] as num?)?.toInt(),
+      totalClinicShareGrossMinor:
+          (json['totalClinicShareGrossMinor'] as num?)?.toInt(),
+      totalDoctorShareCollectedMinor:
+          (json['totalDoctorShareCollectedMinor'] as num?)?.toInt(),
+      totalClinicShareCollectedMinor:
+          (json['totalClinicShareCollectedMinor'] as num?)?.toInt(),
     );
   }
 }

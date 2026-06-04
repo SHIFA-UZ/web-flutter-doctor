@@ -392,3 +392,39 @@ class ClinicPatientsPage {
     );
   }
 }
+
+bool canManageClinicFinanceSettings(String membershipRole) =>
+    membershipRole == 'OWNER' || membershipRole == 'CLINIC_ADMIN';
+
+Future<void> updateClinicFinanceSettings(
+  WidgetRef ref,
+  int clinicId,
+  int? defaultDoctorRevenueSharePercent,
+) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.patch(
+    '/api/clinics/$clinicId/finance-settings',
+    {'defaultDoctorRevenueSharePercent': defaultDoctorRevenueSharePercent},
+  );
+  if (res.statusCode != 200) {
+    throw Exception('finance-settings ${res.statusCode}: ${res.body}');
+  }
+  ref.invalidate(myClinicsProvider);
+}
+
+Future<void> updateMemberRevenueShare(
+  WidgetRef ref,
+  int clinicId,
+  int doctorProfileId,
+  int? doctorRevenueSharePercent,
+) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.patch(
+    '/api/clinics/$clinicId/members/$doctorProfileId/revenue-share',
+    {'doctorRevenueSharePercent': doctorRevenueSharePercent},
+  );
+  if (res.statusCode != 200) {
+    throw Exception('revenue-share ${res.statusCode}: ${res.body}');
+  }
+  ref.invalidate(clinicMembersProvider(clinicId));
+}

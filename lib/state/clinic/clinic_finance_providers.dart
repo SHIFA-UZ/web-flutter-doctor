@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_month.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
 
 /// Query params for doctor earnings (clinic + optional UTC date range as ISO instants).
@@ -34,7 +35,53 @@ class DoctorEarningsQuery {
   int get hashCode => Object.hash(clinicId, fromIso, toIso);
 }
 
-/// Incremented on [refreshClinicFinancialData] so panes with local fetch state can reload.
+/// Query params for appointment ledger (clinic + optional UTC date range as ISO instants).
+class AppointmentLedgerQuery {
+  final int clinicId;
+  final String? fromIso;
+  final String? toIso;
+  final int page;
+  final int size;
+
+  const AppointmentLedgerQuery({
+    required this.clinicId,
+    this.fromIso,
+    this.toIso,
+    this.page = 0,
+    this.size = 20,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AppointmentLedgerQuery &&
+          other.clinicId == clinicId &&
+          other.fromIso == fromIso &&
+          other.toIso == toIso &&
+          other.page == page &&
+          other.size == size;
+
+  @override
+  int get hashCode => Object.hash(clinicId, fromIso, toIso, page, size);
+}
+
+/// Builds an appointment-ledger query using the shared finance month filter.
+AppointmentLedgerQuery appointmentLedgerQueryForClinic(
+  dynamic ref,
+  int clinicId, {
+  int page = 0,
+  int size = 20,
+}) {
+  final range = financeMonthRangeIso(ref, clinicId);
+  return AppointmentLedgerQuery(
+    clinicId: clinicId,
+    fromIso: range.fromIso,
+    toIso: range.toIso,
+    page: page,
+    size: size,
+  );
+}
+
 final clinicFinanceRefreshTickProvider =
     StateProvider.family<int, int>((ref, clinicId) => 0);
 
@@ -114,8 +161,37 @@ final clinicInstallmentItemsProvider = FutureProvider.autoDispose
 });
 
 final clinicAppointmentLedgerProvider =
-    FutureProvider.family<Map<String, dynamic>, int>((ref, clinicId) {
-  return fetchAppointmentLedgerPage(ref, clinicId: clinicId);
+    FutureProvider.family<Map<String, dynamic>, AppointmentLedgerQuery>(
+        (ref, query) {
+  return fetchAppointmentLedgerPage(
+    ref,
+    clinicId: query.clinicId,
+    fromIso: query.fromIso,
+    toIso: query.toIso,
+    page: query.page,
+    size: query.size,
+  );
+});
+
+/// Visit-level ledger rows for the selected month (dashboard drill-downs).
+final clinicFinanceMonthVisitsProvider =
+    FutureProvider.family<List<AppointmentLedgerRowDto>, int>((ref, clinicId) async {
+  final month = ref.watch(clinicFinanceMonthFilterProvider(clinicId));
+  if (month == null) return [];
+  final range = financeMonthRangeIso(ref, clinicId);
+  final page = await fetchAppointmentLedgerPage(
+    ref,
+    clinicId: clinicId,
+    fromIso: range.fromIso,
+    toIso: range.toIso,
+    page: 0,
+    size: 500,
+  );
+  final content = page['content'] as List<dynamic>? ?? [];
+  return content
+      .whereType<Map>()
+      .map((r) => AppointmentLedgerRowDto.fromJson(Map<String, dynamic>.from(r)))
+      .toList();
 });
 
 final clinicDoctorEarningsProvider =
@@ -145,6 +221,18 @@ final canViewFinanceProvider = Provider<bool>((ref) {
   return financeRoles.contains(clinic.membershipRole);
 });
 
+/// Clinic currency for finance display — from clinic settings or dashboard API.
+final clinicFinanceCurrencyProvider = Provider.family<String, int>((ref, clinicId) {
+  final clinic = ref.watch(selectedClinicProvider);
+  if (clinic != null &&
+      clinic.clinicId == clinicId &&
+      clinic.currency.isNotEmpty) {
+    return clinic.currency;
+  }
+  return ref.watch(clinicFinanceDashboardProvider(clinicId)).valueOrNull?.currency ??
+      'UZS';
+});
+
 /// Refresh all cached endpoints used by Clinic → Finance (any sub-tab).
 ///
 /// Accepts either [Ref] (providers) or [WidgetRef] (widgets) — both expose
@@ -157,7 +245,8 @@ void invalidateClinicFinanceTabDataForClinic(dynamic ref, int clinicId) {
   ref.invalidate(clinicFinancialRecordsProvider(clinicId));
   ref.invalidate(clinicPaymentHistoryProvider(clinicId));
   ref.invalidate(clinicOverdueProvider(clinicId));
-  ref.invalidate(clinicAppointmentLedgerProvider(clinicId));
+  ref.invalidate(clinicAppointmentLedgerProvider);
+  ref.invalidate(clinicFinanceMonthVisitsProvider(clinicId));
   ref.invalidate(clinicDoctorEarningsProvider);
   for (final f in ['all', 'pending', 'overdue', 'paid']) {
     ref.invalidate(clinicInstallmentItemsProvider((clinicId, f)));

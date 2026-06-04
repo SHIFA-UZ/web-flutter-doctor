@@ -9,6 +9,8 @@ class MyClinicSummary {
   final String? address;
   final String membershipRole;
   final bool isPracticeClinic;
+  final String currency;
+  final int? defaultDoctorRevenueSharePercent;
 
   const MyClinicSummary({
     required this.clinicId,
@@ -19,6 +21,8 @@ class MyClinicSummary {
     required this.address,
     required this.membershipRole,
     required this.isPracticeClinic,
+    required this.currency,
+    this.defaultDoctorRevenueSharePercent,
   });
 
   factory MyClinicSummary.fromJson(Map<String, dynamic> json) {
@@ -31,6 +35,9 @@ class MyClinicSummary {
       address: json['address'] as String?,
       membershipRole: json['membershipRole'] as String? ?? 'DOCTOR',
       isPracticeClinic: json['isPracticeClinic'] as bool? ?? false,
+      currency: json['currency'] as String? ?? 'UZS',
+      defaultDoctorRevenueSharePercent:
+          (json['defaultDoctorRevenueSharePercent'] as num?)?.toInt(),
     );
   }
 }
@@ -66,12 +73,16 @@ class ClinicMember {
   final int userId;
   final String displayName;
   final String membershipRole;
+  final int? doctorRevenueSharePercent;
+  final int? effectiveRevenueSharePercent;
 
   const ClinicMember({
     required this.doctorProfileId,
     required this.userId,
     required this.displayName,
     required this.membershipRole,
+    this.doctorRevenueSharePercent,
+    this.effectiveRevenueSharePercent,
   });
 
   factory ClinicMember.fromJson(Map<String, dynamic> json) {
@@ -80,6 +91,10 @@ class ClinicMember {
       userId: (json['userId'] as num).toInt(),
       displayName: json['displayName'] as String? ?? '',
       membershipRole: json['membershipRole'] as String? ?? 'DOCTOR',
+      doctorRevenueSharePercent:
+          (json['doctorRevenueSharePercent'] as num?)?.toInt(),
+      effectiveRevenueSharePercent:
+          (json['effectiveRevenueSharePercent'] as num?)?.toInt(),
     );
   }
 }
