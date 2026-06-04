@@ -396,6 +396,14 @@ class ClinicPatientsPage {
 bool canManageClinicFinanceSettings(String membershipRole) =>
     membershipRole == 'OWNER' || membershipRole == 'CLINIC_ADMIN';
 
+bool canManageClinicFinanceFor(MyClinicSummary? clinic) {
+  if (clinic == null) return false;
+  return clinic.canManageFinanceSettings;
+}
+
+bool canEditMemberRevenueShare(ClinicMember member) =>
+    member.membershipRole == 'DOCTOR' || member.membershipRole == 'OWNER';
+
 Future<void> updateClinicFinanceSettings(
   WidgetRef ref,
   int clinicId,

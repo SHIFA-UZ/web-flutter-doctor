@@ -211,6 +211,26 @@ class _AdminClinicsScreenState extends ConsumerState<AdminClinicsScreen> {
     }
   }
 
+  Future<void> _changeMemberRole(int clinicId, int doctorProfileId, String membershipRole) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await ref.read(adminActionsProvider).updateClinicMemberRole(
+            clinicId: clinicId,
+            doctorProfileId: doctorProfileId,
+            membershipRole: membershipRole,
+          );
+      if (!mounted) return;
+      await _refreshLists();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.translate('saved'))));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${AppLocalizations.of(context)!.error}: $e'), backgroundColor: AppColors.destructiveRed),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -261,6 +281,7 @@ class _AdminClinicsScreenState extends ConsumerState<AdminClinicsScreen> {
                 onEdit: () => _showCreateEditDialog(existing: c),
                 onAssignDoctor: () => _pickAndAssignDoctor(c.id),
                 onRemoveDoctor: (pid) => _confirmRemoveDoctor(c.id, pid),
+                onChangeMemberRole: (pid, role) => _changeMemberRole(c.id, pid, role),
               ),
             );
           }
@@ -331,16 +352,20 @@ class _AdminClinicsScreenState extends ConsumerState<AdminClinicsScreen> {
 }
 
 class _ClinicDetailView extends StatelessWidget {
+  static const _assignableRoles = ['OWNER', 'CLINIC_ADMIN', 'DOCTOR'];
+
   final AdminClinicDetail clinic;
   final VoidCallback onEdit;
   final VoidCallback onAssignDoctor;
   final void Function(int doctorProfileId) onRemoveDoctor;
+  final void Function(int doctorProfileId, String membershipRole) onChangeMemberRole;
 
   const _ClinicDetailView({
     required this.clinic,
     required this.onEdit,
     required this.onAssignDoctor,
     required this.onRemoveDoctor,
+    required this.onChangeMemberRole,
   });
 
   @override
@@ -376,6 +401,10 @@ class _ClinicDetailView extends StatelessWidget {
                 ),
               const SizedBox(height: 24),
               Text(l10n.translate('adminClinicDoctorsHeading'), style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                l10n.translate('adminClinicRoleOwnerHint'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              ),
               const SizedBox(height: 8),
               if (clinic.doctors.isEmpty)
                 Text(l10n.translate('adminClinicNoDoctors'))
@@ -384,11 +413,45 @@ class _ClinicDetailView extends StatelessWidget {
                   (d) => Card(
                     child: ListTile(
                       title: Text(d.displayName),
-                      subtitle: Text('doctorProfileId=${d.doctorProfileId} · userId=${d.userId} · ${d.membershipRole}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle_outline, color: AppColors.destructiveRed),
-                        tooltip: l10n.translate('adminClinicRemoveDoctor'),
-                        onPressed: () => onRemoveDoctor(d.doctorProfileId),
+                      subtitle: Text('doctorProfileId=${d.doctorProfileId} · userId=${d.userId}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PopupMenuButton<String>(
+                            tooltip: l10n.translate('adminClinicChangeMemberRole'),
+                            onSelected: (role) {
+                              if (role != d.membershipRole) {
+                                onChangeMemberRole(d.doctorProfileId, role);
+                              }
+                            },
+                            itemBuilder: (ctx) => _assignableRoles
+                                .map(
+                                  (role) => PopupMenuItem<String>(
+                                    value: role,
+                                    child: Row(
+                                      children: [
+                                        if (role == d.membershipRole)
+                                          const Icon(Icons.check, size: 18)
+                                        else
+                                          const SizedBox(width: 18),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.clinicMembershipRoleLabel(role)),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            child: Chip(
+                              label: Text(l10n.clinicMembershipRoleLabel(d.membershipRole)),
+                              avatar: const Icon(Icons.badge_outlined, size: 18),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.destructiveRed),
+                            tooltip: l10n.translate('adminClinicRemoveDoctor'),
+                            onPressed: () => onRemoveDoctor(d.doctorProfileId),
+                          ),
+                        ],
                       ),
                     ),
                   ),

@@ -17,6 +17,155 @@ String formatRevenueShareLabel(AppLocalizations l10n, int? doctorPercent) {
       .replaceAll('{{clinic}}', '$clinicPercent');
 }
 
+Future<void> showDefaultClinicRevenueShareDialog({
+  required BuildContext context,
+  required WidgetRef ref,
+  required MyClinicSummary clinic,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  final initial = clinic.defaultDoctorRevenueSharePercent;
+  final controller = TextEditingController(
+    text: initial?.toString() ?? '',
+  );
+  var previewDoctor = initial ?? 0;
+  var saving = false;
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (ctx, setLocal) {
+          void updatePreview(String raw) {
+            final parsed = int.tryParse(raw.trim());
+            setLocal(() {
+              previewDoctor = parsed?.clamp(0, 100) ?? previewDoctor;
+            });
+          }
+
+          final clinicPart = 100 - previewDoctor;
+          return AlertDialog(
+            title: Text(l10n.translate('clinicFinanceDefaultRevenueShare')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.translate('clinicFinanceDefaultRevenueShareHint'),
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: l10n.translate('clinicDoctorRevenueShareDoctorLabel'),
+                    suffixText: '%',
+                  ),
+                  onChanged: updatePreview,
+                ),
+                const SizedBox(height: 8),
+                Slider(
+                  value: previewDoctor.toDouble(),
+                  min: 0,
+                  max: 100,
+                  divisions: 100,
+                  label: '$previewDoctor%',
+                  activeColor: AppColors.primaryTeal,
+                  onChanged: (v) {
+                    final i = v.round();
+                    controller.text = '$i';
+                    setLocal(() => previewDoctor = i);
+                  },
+                ),
+                Text(
+                  l10n
+                      .translate('clinicDoctorRevenueSharePreview')
+                      .replaceAll('{{doctor}}', '$previewDoctor')
+                      .replaceAll('{{clinic}}', '$clinicPart'),
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        Navigator.pop(ctx);
+                        try {
+                          await updateClinicFinanceSettings(
+                            ref,
+                            clinic.clinicId,
+                            null,
+                          );
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('$e')),
+                          );
+                        }
+                      },
+                child: Text(l10n.translate('clinicDoctorRevenueShareClear')),
+              ),
+              TextButton(
+                onPressed: saving ? null : () => Navigator.pop(ctx),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        final raw = controller.text.trim();
+                        final int? value;
+                        if (raw.isEmpty) {
+                          value = null;
+                        } else {
+                          final parsed = int.tryParse(raw);
+                          if (parsed == null || parsed < 0 || parsed > 100) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  l10n.translate('clinicDoctorRevenueShareInvalid'),
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          value = parsed;
+                        }
+                        setLocal(() => saving = true);
+                        try {
+                          await updateClinicFinanceSettings(
+                            ref,
+                            clinic.clinicId,
+                            value,
+                          );
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        } catch (e) {
+                          setLocal(() => saving = false);
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('$e')),
+                          );
+                        }
+                      },
+                child: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.translate('clinicDoctorRevenueShareSave')),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+  controller.dispose();
+}
+
 Future<void> showDoctorRevenueShareDialog({
   required BuildContext context,
   required WidgetRef ref,

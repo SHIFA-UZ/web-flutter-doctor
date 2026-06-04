@@ -481,7 +481,7 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final clinic = ref.watch(selectedClinicProvider);
-    final canManage = canManageClinicFinanceSettings(clinic?.membershipRole ?? '');
+    final canManage = canManageClinicFinanceFor(clinic);
     final async = ref.watch(clinicMembersProvider(widget.clinicId));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -498,6 +498,35 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
         final toolbar = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (canManage) ...[
+              Material(
+                color: AppColors.primaryTeal.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.primaryTeal.withValues(alpha: 0.85),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l10n.translate('clinicDoctorsRevenueShareHint'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             ClinicTableSearchField(
               controller: _searchCtrl,
               hint: l10n.translate('clinicDoctorsSearchHint'),
@@ -552,6 +581,8 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                   ),
                 ],
                 rows: filtered.map((m) {
+                  final canEditShare =
+                      canManage && canEditMemberRevenueShare(m);
                   return DataRow(
                     cells: [
                       DataCell(
@@ -587,20 +618,39 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                       DataCell(Text('#${m.doctorProfileId}')),
                       DataCell(Text('#${m.userId}')),
                       DataCell(
-                        Text(
-                          formatRevenueShareLabel(
-                            l10n,
-                            m.effectiveRevenueSharePercent,
-                          ),
-                        ),
+                        canEditShare
+                            ? InkWell(
+                                onTap: () => showDoctorRevenueShareDialog(
+                                  context: context,
+                                  ref: ref,
+                                  clinicId: widget.clinicId,
+                                  member: m,
+                                ),
+                                child: Text(
+                                  formatRevenueShareLabel(
+                                    l10n,
+                                    m.effectiveRevenueSharePercent,
+                                  ),
+                                  style: TextStyle(
+                                    color: AppColors.primaryTeal.withValues(alpha: 0.9),
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: AppColors.primaryTeal
+                                        .withValues(alpha: 0.35),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                formatRevenueShareLabel(
+                                  l10n,
+                                  m.effectiveRevenueSharePercent,
+                                ),
+                              ),
                       ),
                       DataCell(
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (canManage &&
-                                (m.membershipRole == 'DOCTOR' ||
-                                    m.membershipRole == 'OWNER'))
+                            if (canEditShare)
                               IconButton(
                                 tooltip: l10n.translate(
                                   'clinicDoctorRevenueShareEdit',
@@ -1652,7 +1702,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final canManage = canManageClinicFinanceSettings(widget.clinic.membershipRole);
+    final canManage = canManageClinicFinanceFor(widget.clinic);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [

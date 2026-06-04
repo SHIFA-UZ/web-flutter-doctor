@@ -452,6 +452,29 @@ class AdminActions {
     return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  Future<AdminClinicDetail> updateClinicMemberRole({
+    required int clinicId,
+    required int doctorProfileId,
+    required String membershipRole,
+  }) async {
+    final response = await apiClient.patch(
+      '/api/admin/clinics/$clinicId/doctors/$doctorProfileId/role',
+      {'membershipRole': membershipRole.toUpperCase()},
+    );
+    if (response.statusCode != 200) {
+      final body = response.body;
+      try {
+        final json = jsonDecode(body) as Map<String, dynamic>?;
+        final msg = json?['message'] ?? json?['error'] ?? body;
+        throw Exception(msg);
+      } catch (e) {
+        if (e is Exception) rethrow;
+        throw Exception('Failed to update member role: $body');
+      }
+    }
+    return AdminClinicDetail.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
   Future<AdminClinicDetail> removeDoctorFromClinic({
     required int clinicId,
     required int doctorProfileId,

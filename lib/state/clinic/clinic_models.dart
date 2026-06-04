@@ -1,5 +1,8 @@
 // lib/state/clinic/clinic_models.dart
 
+bool _membershipRoleCanManageFinance(String membershipRole) =>
+    membershipRole == 'OWNER' || membershipRole == 'CLINIC_ADMIN';
+
 class MyClinicSummary {
   final int clinicId;
   final String name;
@@ -11,6 +14,7 @@ class MyClinicSummary {
   final bool isPracticeClinic;
   final String currency;
   final int? defaultDoctorRevenueSharePercent;
+  final bool canManageFinanceSettings;
 
   const MyClinicSummary({
     required this.clinicId,
@@ -23,6 +27,7 @@ class MyClinicSummary {
     required this.isPracticeClinic,
     required this.currency,
     this.defaultDoctorRevenueSharePercent,
+    this.canManageFinanceSettings = false,
   });
 
   factory MyClinicSummary.fromJson(Map<String, dynamic> json) {
@@ -38,6 +43,10 @@ class MyClinicSummary {
       currency: json['currency'] as String? ?? 'UZS',
       defaultDoctorRevenueSharePercent:
           (json['defaultDoctorRevenueSharePercent'] as num?)?.toInt(),
+      canManageFinanceSettings: json['canManageFinanceSettings'] == true ||
+          _membershipRoleCanManageFinance(
+            json['membershipRole'] as String? ?? 'DOCTOR',
+          ),
     );
   }
 }

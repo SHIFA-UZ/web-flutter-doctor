@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/features/clinic/application/finance_export_service.dart';
 import 'package:shifa_doc_app_v1/features/clinic/pdf/finance_report_pdf_service.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_table_shell.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_revenue_share_ui.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
@@ -115,6 +116,23 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
       if (m.doctorProfileId == profileId) return m.displayName;
     }
     return '#$profileId';
+  }
+
+  ClinicMember? _memberFor(int profileId, List<ClinicMember> members) {
+    for (final m in members) {
+      if (m.doctorProfileId == profileId) return m;
+    }
+    return null;
+  }
+
+  Future<void> _editMemberShare(ClinicMember member) async {
+    await showDoctorRevenueShareDialog(
+      context: context,
+      ref: ref,
+      clinicId: widget.clinicId,
+      member: member,
+    );
+    if (mounted) _loadEarnings();
   }
 
   List<DoctorEarningRow> _apply(
@@ -304,6 +322,8 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
       },
     );
     final l10n = AppLocalizations.of(context)!;
+    final clinic = ref.watch(selectedClinicProvider);
+    final canManage = canManageClinicFinanceFor(clinic);
     final members =
         ref.watch(clinicMembersProvider(widget.clinicId)).valueOrNull ??
             <ClinicMember>[];
@@ -360,6 +380,51 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         FinanceMonthFilterBar(clinicId: widget.clinicId),
+        if (canManage && clinic != null) ...[
+          const SizedBox(height: 8),
+          Material(
+            color: AppColors.primaryTeal.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: AppColors.primaryTeal.withValues(alpha: 0.85),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.translate('clinicFinanceEarningsRevenueShareBanner'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await showDefaultClinicRevenueShareDialog(
+                        context: context,
+                        ref: ref,
+                        clinic: clinic,
+                      );
+                      if (mounted) _loadEarnings();
+                    },
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: Text(
+                      l10n.translate('clinicFinanceConfigureDefaultShare'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         Row(
           children: [
@@ -437,6 +502,10 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
                 label: Text(l10n.translate('clinicEarningsColSharePercent')),
                 numeric: true,
               ),
+              if (canManage)
+                DataColumn(
+                  label: Text(l10n.translate('clinicDoctorsColActions')),
+                ),
               DataColumn(
                 label: Text(l10n.translate('clinicEarningsColDoctorShareGross')),
                 numeric: true,
@@ -460,6 +529,10 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
             ],
             rows: filtered.map((d) {
               final name = _doctorName(d.doctorProfileId, members);
+              final member = _memberFor(d.doctorProfileId, members);
+              final canEditShare = canManage &&
+                  member != null &&
+                  canEditMemberRevenueShare(member);
               return DataRow(
                 cells: [
                   DataCell(Row(
@@ -511,7 +584,25 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
                       fontWeight: FontWeight.w600,
                     ),
                   )),
-                  DataCell(Text(formatOptionalPercent(d.revenueSharePercent))),
+                  DataCell(
+                    canEditShare
+                        ? InkWell(
+                            onTap: () => _editMemberShare(member),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(formatOptionalPercent(d.revenueSharePercent)),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.edit_outlined,
+                                  size: 14,
+                                  color: AppColors.primaryTeal.withValues(alpha: 0.85),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Text(formatOptionalPercent(d.revenueSharePercent)),
+                  ),
                   DataCell(Text(
                     formatOptionalFinanceMoney(d.doctorShareGrossMinor, currency),
                   )),
@@ -531,6 +622,18 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
                       currency,
                     ),
                   )),
+                  if (canManage)
+                    DataCell(
+                      canEditShare
+                          ? IconButton(
+                              tooltip: l10n.translate(
+                                'clinicFinanceEarningsEditShare',
+                              ),
+                              icon: const Icon(Icons.percent, size: 20),
+                              onPressed: () => _editMemberShare(member),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                 ],
               );
             }).toList(),
