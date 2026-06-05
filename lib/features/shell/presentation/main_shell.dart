@@ -570,90 +570,101 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
+      useSafeArea: true,
       builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!isClinicStaff &&
-                    (activeLocationLabel ?? '').trim().isNotEmpty) ...[
-                  ListTile(
-                    leading: Icon(
-                      locationIsVideo
-                          ? Icons.videocam_outlined
-                          : Icons.location_on_outlined,
-                      color: brand,
+        final bottomPad = Responsive.mobileBottomSheetPadding(ctx);
+        return Padding(
+          padding: EdgeInsets.only(bottom: bottomPad),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!isClinicStaff &&
+                      (activeLocationLabel ?? '').trim().isNotEmpty) ...[
+                    _MobileMoreSheetTile(
+                      leading: Icon(
+                        locationIsVideo
+                            ? Icons.videocam_outlined
+                            : Icons.location_on_outlined,
+                        color: brand,
+                      ),
+                      title: Text(activeLocationLabel!),
+                      subtitle: Text(
+                        l10n.translate('currentLocation') ?? 'Current location',
+                      ),
                     ),
-                    title: Text(activeLocationLabel!),
-                    subtitle: Text(l10n.translate('currentLocation') ?? 'Current location'),
+                    const Divider(),
+                  ],
+                  if (!isClinicStaff && hasClinicWorkspace)
+                    _MobileMoreSheetTile(
+                      leading: Icon(Icons.local_hospital_outlined, color: brand),
+                      title: Text(l10n.translate('clinicNavClinic') ?? 'Clinic'),
+                      selected: selectedIndex == 4,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _goToTab(4);
+                      },
+                    ),
+                  if (!isClinicStaff && canUseTasks)
+                    _MobileMoreSheetTile(
+                      leading: Icon(Icons.task_alt, color: brand),
+                      title: Text(l10n.translate('tasks') ?? 'Tasks'),
+                      selected: selectedIndex == DoctorShellTab.tasks,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _goToTab(DoctorShellTab.tasks);
+                      },
+                    ),
+                  if (!isClinicStaff)
+                    _MobileMoreSheetTile(
+                      leading: Icon(Icons.analytics_outlined, color: brand),
+                      title: Text(l10n.translate('navReports')),
+                      selected: selectedIndex == DoctorShellTab.reports,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _goToTab(DoctorShellTab.reports);
+                      },
+                    ),
+                  _MobileMoreSheetTile(
+                    leading: Icon(Icons.notifications_outlined, color: brand),
+                    title: Text(l10n.notifications),
+                    selected: isClinicStaff
+                        ? selectedIndex == 2
+                        : selectedIndex == DoctorShellTab.notifications,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _goToTab(
+                        isClinicStaff ? 2 : DoctorShellTab.notifications,
+                      );
+                    },
+                  ),
+                  _MobileMoreSheetTile(
+                    leading: Icon(Icons.person_outline, color: brand),
+                    title: Text(l10n.profile),
+                    selected: isClinicStaff
+                        ? selectedIndex == 3
+                        : selectedIndex == DoctorShellTab.profile,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _goToTab(isClinicStaff ? 3 : DoctorShellTab.profile);
+                    },
                   ),
                   const Divider(),
+                  _MobileMoreSheetTile(
+                    leading: Icon(Icons.language, color: brand),
+                    title: Text(l10n.language),
+                    trailing: const LanguageMiniToggle(),
+                  ),
+                  const SizedBox(height: 8),
+                  _MobileMoreLogoutButton(brand: brand),
+                  const SizedBox(height: 8),
                 ],
-                if (!isClinicStaff && hasClinicWorkspace)
-                  ListTile(
-                    leading: Icon(Icons.local_hospital_outlined, color: brand),
-                    title: Text(l10n.translate('clinicNavClinic') ?? 'Clinic'),
-                    selected: selectedIndex == 4,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _goToTab(4);
-                    },
-                  ),
-                if (!isClinicStaff && canUseTasks)
-                  ListTile(
-                    leading: Icon(Icons.task_alt, color: brand),
-                    title: Text(l10n.translate('tasks') ?? 'Tasks'),
-                    selected: selectedIndex == DoctorShellTab.tasks,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _goToTab(DoctorShellTab.tasks);
-                    },
-                  ),
-                if (!isClinicStaff)
-                  ListTile(
-                    leading: Icon(Icons.analytics_outlined, color: brand),
-                    title: Text(l10n.translate('navReports')),
-                    selected: selectedIndex == DoctorShellTab.reports,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _goToTab(DoctorShellTab.reports);
-                    },
-                  ),
-                ListTile(
-                  leading: Icon(Icons.notifications_outlined, color: brand),
-                  title: Text(l10n.notifications),
-                  selected: isClinicStaff
-                      ? selectedIndex == 2
-                      : selectedIndex == DoctorShellTab.notifications,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _goToTab(isClinicStaff ? 2 : DoctorShellTab.notifications);
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.person_outline, color: brand),
-                  title: Text(l10n.profile),
-                  selected: isClinicStaff
-                      ? selectedIndex == 3
-                      : selectedIndex == DoctorShellTab.profile,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _goToTab(isClinicStaff ? 3 : DoctorShellTab.profile);
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: Icon(Icons.language, color: brand),
-                  title: Text(l10n.language),
-                  trailing: const LanguageMiniToggle(),
-                ),
-                const SizedBox(height: 8),
-                _LogoutButton(brand: brand),
-              ],
+              ),
             ),
           ),
         );
@@ -1700,6 +1711,140 @@ class _KeepAliveState extends State<_KeepAlive>
   Widget build(BuildContext context) {
     super.build(context);
     return widget.child;
+  }
+}
+
+class _MobileMoreSheetTile extends StatelessWidget {
+  const _MobileMoreSheetTile({
+    required this.leading,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.selected = false,
+    this.onTap,
+  });
+
+  final Widget leading;
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? trailing;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08) : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              leading,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DefaultTextStyle.merge(
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      child: title,
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      DefaultTextStyle.merge(
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                        child: subtitle!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileMoreLogoutButton extends ConsumerWidget {
+  const _MobileMoreLogoutButton({required this.brand});
+
+  final Color brand;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: Text(l10n.signOut),
+              content: Text(l10n.signOutConfirm),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(l10n.cancel),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    ref.read(authProvider.notifier).logout();
+                    ref.invalidate(profileAllProvider);
+                    ref.invalidate(meProfileProvider);
+                    ref.invalidate(shellProvider);
+                    unawaited(invalidateAppointmentRelatedProviders(ref));
+                    ref.invalidate(patientsProvider);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.login,
+                      (_) => false,
+                    );
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: Text(l10n.signOut),
+                ),
+              ],
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.logout, color: brand, size: 22),
+              const SizedBox(width: 16),
+              Text(
+                l10n.signOut,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: brand,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

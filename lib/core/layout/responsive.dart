@@ -47,6 +47,18 @@ class Responsive {
         MediaQuery.paddingOf(context).bottom +
         12;
   }
+
+  /// Bottom padding for modal sheets so the last row clears app nav + OS gesture bar.
+  /// Mobile browsers (especially Samsung Internet) often report zero [MediaQuery.padding].
+  static double mobileBottomSheetPadding(BuildContext context) {
+    if (!isMobile(context)) return 16;
+    final systemBottom = MediaQuery.paddingOf(context).bottom;
+    final gestureFallback = systemBottom < 8 ? 20.0 : 0.0;
+    return systemBottom +
+        kBottomNavigationBarHeight +
+        gestureFallback +
+        24;
+  }
 }
 
 /// Renders [row] on wide screens and [column] on phone-sized viewports.
