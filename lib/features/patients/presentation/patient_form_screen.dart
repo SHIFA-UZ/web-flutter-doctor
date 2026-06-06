@@ -2524,13 +2524,13 @@ class _FollowupsTable extends StatelessWidget {
             );
           },
         ),
-        actions: [
+        actionsBuilder: (dialogContext) => [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: Text(l10n.cancel),
           ),
           ShifaPrimaryButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             label: l10n.save,
           ),
         ],

@@ -55,10 +55,13 @@ class HomeDashboardToolbar extends ConsumerWidget {
       );
     }
 
+    // Shrink-wrap: this toolbar is often placed inside a parent Row with
+    // mainAxisSize.min (e.g. HomeGreetingHeader). Spacer/Expanded need bounded width.
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _DateRangeButton(label: rangeLabel, onTap: () => _pickRange(context, ref)),
-        const Spacer(),
+        const SizedBox(width: 12),
         _ExportButton(exporting: exporting, onExport: onExport, brand: brand, l10n: l10n),
       ],
     );

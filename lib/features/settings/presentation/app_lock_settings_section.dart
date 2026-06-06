@@ -81,14 +81,17 @@ class _AppLockSettingsSectionState extends ConsumerState<AppLockSettingsSection>
             ),
         ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+      actionsBuilder: (dialogContext) => [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(l10n.cancel),
+        ),
         FilledButton(
           onPressed: () {
             final pin = controller.text.trim();
             if (!AppLockService.isValidPin(pin)) return;
             if (confirm && pin != confirmController.text.trim()) return;
-            Navigator.pop(context, pin);
+            Navigator.pop(dialogContext, pin);
           },
           child: Text(l10n.save),
         ),

@@ -327,6 +327,18 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
   bool get hasBillableContent =>
       hasDentalChartContent || _notesCtrl.text.trim().isNotEmpty;
 
+  /// Appends text to clinical notes (e.g. from last 025-2 form or Shifa AI).
+  void appendClinicalNotes(String text) {
+    final toAdd = text.trim();
+    if (toAdd.isEmpty) return;
+    if (_notesCtrl.text.trim().isNotEmpty) {
+      _notesCtrl.text += '\n\n';
+    }
+    _notesCtrl.text += toAdd;
+    _touch();
+    if (mounted) setState(() {});
+  }
+
   double _discountValue() {
     final v = double.tryParse(_discountCtrl.text.trim().replaceAll(',', '.'));
     if (v == null || v < 0) return 0;

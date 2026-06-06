@@ -84,21 +84,33 @@ Future<T?> showScrollableFormBottomSheetWithFooter<T>({
 }
 
 /// Dialog that becomes fullscreen on mobile with a scrollable body.
+///
+/// Prefer [actionsBuilder] so Save/Cancel use the dialog [BuildContext] and
+/// only close the dialog — not the screen underneath.
 Future<T?> showScrollableFormDialog<T>({
   required BuildContext context,
   required Widget title,
   required Widget content,
+  List<Widget> Function(BuildContext dialogContext)? actionsBuilder,
   List<Widget>? actions,
   bool barrierDismissible = true,
 }) {
+  List<Widget>? resolveActions(BuildContext dialogContext) {
+    if (actionsBuilder != null) {
+      return actionsBuilder(dialogContext);
+    }
+    return actions;
+  }
+
   if (Responsive.isMobile(context)) {
     return showDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (ctx) {
+      builder: (dialogContext) {
+        final dialogActions = resolveActions(dialogContext);
         final l10nClose = IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: () => Navigator.pop(dialogContext),
         );
         return Dialog.fullscreen(
           child: Scaffold(
@@ -111,14 +123,14 @@ Future<T?> showScrollableFormDialog<T>({
               padding: const EdgeInsets.all(16),
               child: content,
             ),
-            bottomNavigationBar: actions == null || actions.isEmpty
+            bottomNavigationBar: dialogActions == null || dialogActions.isEmpty
                 ? null
                 : SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
-                        children: actions,
+                        children: dialogActions,
                       ),
                     ),
                   ),
@@ -131,15 +143,15 @@ Future<T?> showScrollableFormDialog<T>({
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    builder: (ctx) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       title: title,
       content: SingleChildScrollView(
         child: SizedBox(
-          width: Responsive.dialogMaxWidth(ctx),
+          width: Responsive.dialogMaxWidth(dialogContext),
           child: content,
         ),
       ),
-      actions: actions,
+      actions: resolveActions(dialogContext),
     ),
   );
 }

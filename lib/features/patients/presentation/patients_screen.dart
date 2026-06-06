@@ -1257,9 +1257,9 @@ void _showAccountCreatedModal(
         ),
       ],
     ),
-    actions: [
+    actionsBuilder: (dialogContext) => [
       TextButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.pop(dialogContext),
         child: Text(l10n.close),
       ),
     ],

@@ -202,6 +202,23 @@ class _InPersonAppointmentScreenState
     _soapPlan.clear();
   }
 
+  void _appendToActiveDocumentationNotes(String toAdd) {
+    if (toAdd.trim().isEmpty) return;
+    if (_documentationType == 'dental') {
+      _dentalDocPanelKey.currentState?.appendClinicalNotes(toAdd);
+      setState(() => _hasUnsavedChanges = true);
+      return;
+    }
+    if (_notesController.text.trim().isNotEmpty) {
+      _notesController.text += '\n\n';
+    }
+    _notesController.text += toAdd;
+    _markUnsaved();
+  }
+
+  bool get _showDocumentationNoteHelpers =>
+      _documentationType == 'general' || _documentationType == 'dental';
+
   /// [ref.listen] does not fire when [profileAllProvider] is already loaded; sync from [ref.watch] instead.
   void _applyProfessionDocumentationDefaultIfReady(Map<String, dynamic> profile) {
     if (_documentationProfessionDefaultApplied) return;
@@ -1345,7 +1362,7 @@ class _InPersonAppointmentScreenState
                             onSelected: (value) async {
                               final l10n = AppLocalizations.of(context)!;
 
-                              // Source actions (AI / 025-2 form) – only meaningful in general mode.
+                              // Source actions (AI / 025-2 form) – general + dental modes.
                               if (value == 'ai' || value == '0252') {
                                 setState(() {
                                   _notesSectionsExpanded = true;
@@ -1480,7 +1497,7 @@ class _InPersonAppointmentScreenState
                             itemBuilder: (context) {
                               final l10n = AppLocalizations.of(context)!;
                               final items = <PopupMenuEntry<String>>[];
-                              if (_documentationType == 'general') {
+                              if (_showDocumentationNoteHelpers) {
                                 items.addAll([
                                   PopupMenuItem(
                                     value: 'ai',
@@ -1541,7 +1558,7 @@ class _InPersonAppointmentScreenState
                           ),
                         ],
                       ),
-                      child: _documentationType == 'general'
+                      child: _showDocumentationNoteHelpers
                           ? Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -2114,17 +2131,12 @@ class _InPersonAppointmentScreenState
                                                   ),
                                                   onPressed: () {
                                                     final toAdd = n.displayText;
-                                                    if (toAdd.trim().isEmpty)
+                                                    if (toAdd.trim().isEmpty) {
                                                       return;
-                                                    if (_notesController.text
-                                                        .trim()
-                                                        .isNotEmpty) {
-                                                      _notesController.text +=
-                                                          '\n\n';
                                                     }
-                                                    _notesController.text +=
-                                                        toAdd;
-                                                    _markUnsaved();
+                                                    _appendToActiveDocumentationNotes(
+                                                      toAdd,
+                                                    );
                                                     setState(
                                                       () =>
                                                           _notesSectionsExpanded =
@@ -2367,20 +2379,12 @@ class _InPersonAppointmentScreenState
                                                         onPressed: () {
                                                           if (toAdd
                                                               .trim()
-                                                              .isEmpty)
+                                                              .isEmpty) {
                                                             return;
-                                                          if (_notesController
-                                                              .text
-                                                              .trim()
-                                                              .isNotEmpty) {
-                                                            _notesController
-                                                                    .text +=
-                                                                '\n\n';
                                                           }
-                                                          _notesController
-                                                                  .text +=
-                                                              toAdd;
-                                                          _markUnsaved();
+                                                          _appendToActiveDocumentationNotes(
+                                                            toAdd,
+                                                          );
                                                           setState(
                                                             () =>
                                                                 _notesSectionsExpanded =
@@ -2438,6 +2442,7 @@ class _InPersonAppointmentScreenState
                                                 const SizedBox.shrink(),
                                           ),
                                 ],
+                                if (_documentationType == 'general') ...[
                                 ConsultationSoapSection(
                                   l10n: AppLocalizations.of(context)!,
                                   subjective: _soapSubjective,
@@ -2528,6 +2533,20 @@ class _InPersonAppointmentScreenState
                                           icon: Icons.mic,
                                           width: ButtonWidth.fill,
                                         ),
+                                ] else if (!_dentalDocumentationFullScreen)
+                                  Expanded(
+                                    child: DentalVisitDocumentationPanel(
+                                      key: _dentalDocPanelKey,
+                                      appointmentId: widget.appointment.id,
+                                      brand: brand,
+                                      onUnsavedChanged: (v) =>
+                                          setState(
+                                            () => _hasUnsavedChanges = v,
+                                          ),
+                                    ),
+                                  )
+                                else
+                                  const Expanded(child: SizedBox.shrink()),
                                 if (_beforeTreatmentImages.isNotEmpty ||
                                     _afterTreatmentImages.isNotEmpty)
                                   Padding(
@@ -2583,24 +2602,19 @@ class _InPersonAppointmentScreenState
                                   ),
                               ],
                             )
-                              : _documentationType == 'dental'
-                              ? (_dentalDocumentationFullScreen
-                                  ? const SizedBox.shrink()
-                                  : DentalVisitDocumentationPanel(
-                                      key: _dentalDocPanelKey,
-                                      appointmentId: widget.appointment.id,
-                                      brand: brand,
-                                      onUnsavedChanged: (v) =>
-                                          setState(
-                                            () => _hasUnsavedChanges = v,
-                                          ),
-                                    ))
                               : (_form0252DocumentationFullScreen
                                   ? const SizedBox.shrink()
-                                  : _build0252Panel(
-                                      brand,
-                                      patientId,
-                                      patientIdAsync,
+                                  : LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        return SizedBox(
+                                          height: constraints.maxHeight,
+                                          child: _build0252Panel(
+                                            brand,
+                                            patientId,
+                                            patientIdAsync,
+                                          ),
+                                        );
+                                      },
                                     )),
                     ),
                   ),

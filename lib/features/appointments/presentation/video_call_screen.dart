@@ -223,6 +223,23 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     _soapPlan.clear();
   }
 
+  void _appendToActiveDocumentationNotes(String toAdd) {
+    if (toAdd.trim().isEmpty) return;
+    if (_documentationType == 'dental') {
+      _dentalDocPanelKey.currentState?.appendClinicalNotes(toAdd);
+      setState(() => _hasUnsavedChanges = true);
+      return;
+    }
+    if (_notesController.text.trim().isNotEmpty) {
+      _notesController.text += '\n\n';
+    }
+    _notesController.text += toAdd;
+    _markUnsaved();
+  }
+
+  bool get _showDocumentationNoteHelpers =>
+      _documentationType == 'general' || _documentationType == 'dental';
+
   /// [ref.listen] does not fire when [profileAllProvider] is already loaded; sync from [ref.watch] instead.
   void _applyProfessionDocumentationDefaultIfReady(Map<String, dynamic> profile) {
     if (_documentationProfessionDefaultApplied) return;
@@ -1749,9 +1766,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                                 context,
                                               )!;
                                               return [
-                                                // Show helpers (only in general mode)
-                                                if (_documentationType ==
-                                                    'general') ...[
+                                                // Show helpers (general + dental modes)
+                                                if (_showDocumentationNoteHelpers) ...[
                                                   PopupMenuItem(
                                                     value: 'show_ai',
                                                     child: Row(
@@ -2095,8 +2111,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                     itemBuilder: (context) {
                       final l10n = AppLocalizations.of(context)!;
                       return [
-                        // Show helpers (only in general mode)
-                        if (_documentationType == 'general') ...[
+                        // Show helpers (general + dental modes)
+                        if (_showDocumentationNoteHelpers) ...[
                           PopupMenuItem(
                             value: 'show_ai',
                             child: Row(
@@ -2219,7 +2235,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   }
 
   Widget _buildNotesPanelChild(Color brand, String? patientId) {
-    if (_documentationType == 'general') {
+    if (_showDocumentationNoteHelpers) {
       final consultationNotesAsync = ref.watch(
         consultationNotesForAppointmentProvider(widget.appointment.id),
       );
@@ -2634,11 +2650,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                             onPressed: () {
                               final toAdd = n.displayText;
                               if (toAdd.trim().isEmpty) return;
-                              if (_notesController.text.trim().isNotEmpty) {
-                                _notesController.text += '\n\n';
-                              }
-                              _notesController.text += toAdd;
-                              _markUnsaved();
+                              _appendToActiveDocumentationNotes(toAdd);
                               setState(() => _notesSectionsExpanded = false);
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -2784,13 +2796,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                   icon: const Icon(Icons.add, size: 18),
                                   onPressed: () {
                                     if (toAdd.trim().isEmpty) return;
-                                    if (_notesController.text
-                                        .trim()
-                                        .isNotEmpty) {
-                                      _notesController.text += '\n\n';
-                                    }
-                                    _notesController.text += toAdd;
-                                    _markUnsaved();
+                                    _appendToActiveDocumentationNotes(toAdd);
                                     setState(
                                       () => _notesSectionsExpanded = false,
                                     );
@@ -2827,48 +2833,58 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                       error: (_, __) => const SizedBox.shrink(),
                     ),
           ],
-          ConsultationSoapSection(
-            l10n: AppLocalizations.of(context)!,
-            subjective: _soapSubjective,
-            objective: _soapObjective,
-            assessment: _soapAssessment,
-            plan: _soapPlan,
-            onTranscriptAppended: _markUnsaved,
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.07),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 2),
+          if (_documentationType == 'general') ...[
+            ConsultationSoapSection(
+              l10n: AppLocalizations.of(context)!,
+              subjective: _soapSubjective,
+              objective: _soapObjective,
+              assessment: _soapAssessment,
+              plan: _soapPlan,
+              onTranscriptAppended: _markUnsaved,
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.07),
                   ),
-                ],
-              ),
-              child: DoctorSpeechTextField(
-                controller: _notesController,
-                style: DoctorSpeechInputStyle.borderlessExpanding,
-                expands: true,
-                maxLines: null,
-                textAlignVertical: TextAlignVertical.top,
-                textStyle: const TextStyle(fontSize: 17, height: 1.45),
-                onTranscriptAppended: _markUnsaved,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.enterNotes,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.fromLTRB(4, 8, 44, 8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: DoctorSpeechTextField(
+                  controller: _notesController,
+                  style: DoctorSpeechInputStyle.borderlessExpanding,
+                  expands: true,
+                  maxLines: null,
+                  textAlignVertical: TextAlignVertical.top,
+                  textStyle: const TextStyle(fontSize: 17, height: 1.45),
+                  onTranscriptAppended: _markUnsaved,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.enterNotes,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.fromLTRB(4, 8, 44, 8),
+                  ),
                 ),
               ),
             ),
-          ),
+          ] else
+            Expanded(
+              child: DentalVisitDocumentationPanel(
+                key: _dentalDocPanelKey,
+                appointmentId: widget.appointment.id,
+                brand: brand,
+                onUnsavedChanged: (v) => setState(() => _hasUnsavedChanges = v),
+              ),
+            ),
           if (_beforeTreatmentImages.isNotEmpty ||
               _afterTreatmentImages.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -2912,14 +2928,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
             ),
           ],
         ],
-      );
-    }
-    if (_documentationType == 'dental') {
-      return DentalVisitDocumentationPanel(
-        key: _dentalDocPanelKey,
-        appointmentId: widget.appointment.id,
-        brand: brand,
-        onUnsavedChanged: (v) => setState(() => _hasUnsavedChanges = v),
       );
     }
     if (patientId == null || patientId.isEmpty) {
