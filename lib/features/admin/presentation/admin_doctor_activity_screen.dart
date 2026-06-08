@@ -36,6 +36,8 @@ class AdminDoctorActivityScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityScreen> {
+  static const _monthlyChargesUsd = [15, 20, 25, 30, 35, 40, 45, 50];
+
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _tableHorizontalCtrl = ScrollController();
   final _tableVerticalCtrl = ScrollController();
@@ -52,6 +54,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
   bool _sortDesc = true;
   int? _selectedDoctorId;
   int? _contractPdfLoadingDoctorId;
+  int? _billingUpdateLoadingDoctorId;
 
   @override
   void initState() {
@@ -195,9 +198,100 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     }
   }
 
+  String _formatDateJoined(String? iso) {
+    if (iso == null || iso.length < 10) return '—';
+    return iso.substring(0, 10);
+  }
+
+  Future<void> _updateSubscriptionBilling(
+    AdminDoctorActivityRow row, {
+    int? trialPeriodMonths,
+    int? monthlyChargeUsd,
+  }) async {
+    if (_billingUpdateLoadingDoctorId != null) return;
+    setState(() => _billingUpdateLoadingDoctorId = row.doctorId);
+    try {
+      final actions = ref.read(adminActionsProvider);
+      await actions.updateDoctorSubscriptionBilling(
+        doctorId: row.doctorId,
+        trialPeriodMonths: trialPeriodMonths,
+        monthlyChargeUsd: monthlyChargeUsd,
+      );
+      ref.invalidate(adminDoctorActivityProvider(_params()));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Billing update failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _billingUpdateLoadingDoctorId = null);
+    }
+  }
+
+  Widget _trialDropdown(AdminDoctorActivityRow row) {
+    final loading = _billingUpdateLoadingDoctorId == row.doctorId;
+    if (loading) {
+      return const SizedBox(
+        width: 72,
+        child: Center(
+          child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      );
+    }
+    return SizedBox(
+      width: 72,
+      child: DropdownButton<int>(
+        value: row.trialPeriodMonths,
+        isDense: true,
+        isExpanded: true,
+        underline: const SizedBox.shrink(),
+        style: const TextStyle(fontSize: 13, color: Colors.black87),
+        items: List.generate(
+          12,
+          (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1} mo')),
+        ),
+        onChanged: (value) {
+          if (value != null && value != row.trialPeriodMonths) {
+            _updateSubscriptionBilling(row, trialPeriodMonths: value);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _monthlyChargeDropdown(AdminDoctorActivityRow row) {
+    final loading = _billingUpdateLoadingDoctorId == row.doctorId;
+    if (loading) {
+      return const SizedBox(
+        width: 64,
+        child: Center(
+          child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      );
+    }
+    return SizedBox(
+      width: 64,
+      child: DropdownButton<int>(
+        value: row.monthlyChargeUsd,
+        isDense: true,
+        isExpanded: true,
+        underline: const SizedBox.shrink(),
+        style: const TextStyle(fontSize: 13, color: Colors.black87),
+        items: _monthlyChargesUsd
+            .map((charge) => DropdownMenuItem(value: charge, child: Text('\$$charge')))
+            .toList(),
+        onChanged: (value) {
+          if (value != null && value != row.monthlyChargeUsd) {
+            _updateSubscriptionBilling(row, monthlyChargeUsd: value);
+          }
+        },
+      ),
+    );
+  }
+
   Future<void> _exportCsv(List<AdminDoctorActivityRow> rows) async {
     const header =
-        'doctorId,doctorName,clinicName,smsAllowed,smsSent,smsOwedMinor,smsCurrency,appointmentsBooked,appointmentsCompleted,cancelPct,videoAppts,activePatients,patientsCreated,documents,treatmentPlans,remoteTasks,consultNotes,forms,aiRequests,aiDrafts,lastActive';
+        'doctorId,doctorName,clinicName,dateJoined,trialPeriodMonths,monthlyChargeUsd,monthsAfterTrial,totalDebtUsd,smsAllowed,smsSent,smsOwedMinor,smsCurrency,appointmentsBooked,appointmentsCompleted,cancelPct,videoAppts,activePatients,patientsCreated,documents,treatmentPlans,remoteTasks,consultNotes,forms,aiRequests,aiDrafts,lastActive';
     final sb = StringBuffer(header);
     for (final r in rows) {
       sb.writeln();
@@ -212,6 +306,11 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
         r.doctorId,
         csvCell(r.doctorName),
         csvCell(r.clinicName),
+        csvCell(r.dateJoinedAt),
+        r.trialPeriodMonths,
+        r.monthlyChargeUsd,
+        r.monthsAfterTrial,
+        r.totalDebtUsd,
         r.smsRemindersAllowed,
         r.smsSentCount,
         r.smsOwedMinor,
@@ -377,6 +476,10 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                         columns: [
                           _sortCol('Doctor', 'name'),
                           const DataColumn(label: Text('Clinic')),
+                          const DataColumn(label: Text('Date joined')),
+                          const DataColumn(label: Text('Trial')),
+                          const DataColumn(label: Text('Monthly \$')),
+                          const DataColumn(label: Text('Total debt')),
                           const DataColumn(label: Text('SMS on')),
                           const DataColumn(label: Text('SMS sent')),
                           const DataColumn(label: Text('SMS owed')),
@@ -404,6 +507,10 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                             cells: [
                               DataCell(Text(r.doctorName)),
                               DataCell(Text(r.clinicName ?? '—')),
+                              DataCell(Text(_formatDateJoined(r.dateJoinedAt))),
+                              DataCell(_trialDropdown(r)),
+                              DataCell(_monthlyChargeDropdown(r)),
+                              DataCell(Text('\$${r.totalDebtUsd}')),
                               DataCell(Text(r.smsRemindersAllowed ? 'Yes' : 'No')),
                               DataCell(Text('${r.smsSentCount}')),
                               DataCell(Text('${r.smsOwedMinor} ${r.smsCurrency}')),

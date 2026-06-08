@@ -478,6 +478,11 @@ class AdminDoctorActivityRow {
   final int smsOwedMinor;
   final String smsCurrency;
   final int smsPricePerUnitMinor;
+  final String? dateJoinedAt;
+  final int trialPeriodMonths;
+  final int monthlyChargeUsd;
+  final int monthsAfterTrial;
+  final int totalDebtUsd;
 
   AdminDoctorActivityRow({
     required this.doctorId,
@@ -506,6 +511,11 @@ class AdminDoctorActivityRow {
     this.smsOwedMinor = 0,
     this.smsCurrency = 'UZS',
     this.smsPricePerUnitMinor = 500,
+    this.dateJoinedAt,
+    this.trialPeriodMonths = 6,
+    this.monthlyChargeUsd = 30,
+    this.monthsAfterTrial = 0,
+    this.totalDebtUsd = 0,
   });
 
   factory AdminDoctorActivityRow.fromJson(Map<String, dynamic> json) {
@@ -536,6 +546,11 @@ class AdminDoctorActivityRow {
       smsOwedMinor: (json['smsOwedMinor'] as num?)?.toInt() ?? 0,
       smsCurrency: json['smsCurrency']?.toString() ?? 'UZS',
       smsPricePerUnitMinor: (json['smsPricePerUnitMinor'] as num?)?.toInt() ?? 500,
+      dateJoinedAt: json['dateJoinedAt'] as String?,
+      trialPeriodMonths: (json['trialPeriodMonths'] as num?)?.toInt() ?? 6,
+      monthlyChargeUsd: (json['monthlyChargeUsd'] as num?)?.toInt() ?? 30,
+      monthsAfterTrial: (json['monthsAfterTrial'] as num?)?.toInt() ?? 0,
+      totalDebtUsd: (json['totalDebtUsd'] as num?)?.toInt() ?? 0,
     );
   }
 }

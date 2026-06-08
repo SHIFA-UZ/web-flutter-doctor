@@ -556,6 +556,25 @@ class AdminActions {
     }
   }
 
+  Future<void> updateDoctorSubscriptionBilling({
+    required int doctorId,
+    int? trialPeriodMonths,
+    int? monthlyChargeUsd,
+  }) async {
+    final body = <String, dynamic>{};
+    if (trialPeriodMonths != null) body['trialPeriodMonths'] = trialPeriodMonths;
+    if (monthlyChargeUsd != null) body['monthlyChargeUsd'] = monthlyChargeUsd;
+    if (body.isEmpty) return;
+
+    final response = await apiClient.patch(
+      '/api/admin/doctors/$doctorId/subscription-billing',
+      body,
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to update subscription billing: ${response.body}');
+    }
+  }
+
   /// Allocate or refresh early-partner contract (sequential number for new doctors).
   Future<dynamic> issueEarlyPartnerContract(int doctorId) async {
     final response = await apiClient.post(
