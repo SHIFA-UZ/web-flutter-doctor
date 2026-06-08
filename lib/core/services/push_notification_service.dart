@@ -19,6 +19,7 @@ class PushNotificationService {
 
   String? _fcmToken;
   void Function(Map<String, dynamic>)? _onNotificationTap;
+  void Function(Map<String, dynamic>)? _onForegroundDataRefresh;
   void Function(String token)? _onFcmTokenReady;
   RemoteMessage? _pendingInitialMessage;
   Map<String, dynamic>? _pendingLocalNotificationTap;
@@ -143,6 +144,8 @@ class PushNotificationService {
       return;
     }
 
+    _onForegroundDataRefresh?.call(data);
+
     await _showLocalNotification(
       title: message.notification?.title ?? 'New Notification',
       body: message.notification?.body ?? '',
@@ -208,6 +211,10 @@ class PushNotificationService {
 
   void setOnNotificationTap(void Function(Map<String, dynamic>) callback) {
     _onNotificationTap = callback;
+  }
+
+  void setOnForegroundDataRefresh(void Function(Map<String, dynamic>) callback) {
+    _onForegroundDataRefresh = callback;
   }
 
   void deliverPayloadFromApp(Map<String, dynamic> data) {

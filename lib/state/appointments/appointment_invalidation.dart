@@ -12,7 +12,18 @@ import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
+import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+
+/// FCM types that change calendar/home appointment lists.
+const appointmentCalendarPushTypes = <String>{
+  'APPOINTMENT_BOOKED_BY_PATIENT',
+  'APPOINTMENT_CANCELLED_BY_PATIENT',
+  'APPOINTMENT_CANCELLED',
+  'APPOINTMENT_CHANGED',
+  'APPOINTMENT_RESCHEDULED_BY_PATIENT',
+  'APPOINTMENT_ASSIGNED',
+};
 
 /// Refreshes **today** in [calendarProvider], then invalidates today list + analytics.
 ///
@@ -80,6 +91,59 @@ Future<void> invalidateAppointmentRelatedProviders(
     }
   } catch (e) {
     debugPrint('refreshClinicFinancialData failed: $e');
+  }
+}
+
+/// Refreshes home + calendar after a foreground FCM about an appointment change.
+/// [invalidateAppointmentRelatedProviders] always refreshes today; when
+/// [appointmentStartAt] points at another day, that day is force-refreshed too.
+Future<void> refreshCalendarFromPushPayload(
+  dynamic ref,
+  Map<String, dynamic> data,
+) async {
+  final type = data['type'] as String?;
+  if (type == null || !appointmentCalendarPushTypes.contains(type)) return;
+
+  try {
+    ref.invalidate(doctorNotificationsProvider);
+    ref.invalidate(doctorNotificationsUnreadCountProvider);
+  } catch (e) {
+    debugPrint('refreshCalendarFromPushPayload notifications: $e');
+  }
+
+  await invalidateAppointmentRelatedProviders(ref);
+
+  final startAtRaw = data['appointmentStartAt'];
+  if (startAtRaw == null || startAtRaw.toString().trim().isEmpty) return;
+
+  try {
+    String? doctorTimeZone;
+    try {
+      final me = await ref.read(meProfileProvider.future);
+      doctorTimeZone = me.timeZone;
+    } catch (_) {
+      try {
+        final profile = await ref.read(profileAllProvider.future);
+        doctorTimeZone = profile.profile['timeZone'] as String?;
+      } catch (_) {}
+    }
+    if (doctorTimeZone == null || doctorTimeZone.isEmpty) return;
+
+    final utc = DateTime.parse(startAtRaw.toString());
+    final inTz = utcToTimezone(utc, doctorTimeZone);
+    final dayKey = DateTime(inTz.year, inTz.month, inTz.day);
+
+    final todayInDoctorZone = getTodayInTimezone(doctorTimeZone);
+    final todayKey = DateTime(
+      todayInDoctorZone.year,
+      todayInDoctorZone.month,
+      todayInDoctorZone.day,
+    );
+    if (dayKey == todayKey) return;
+
+    await refreshCalendarDay(ref, dayKey, doctorTimeZone);
+  } catch (e) {
+    debugPrint('refreshCalendarFromPushPayload: $e');
   }
 }
 

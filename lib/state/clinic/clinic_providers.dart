@@ -9,10 +9,16 @@ import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
+/// Last known clinic-workspace visibility (survives reload/error so nav does not flicker off).
+final clinicWorkspaceKnownProvider = StateProvider<bool?>((ref) => null);
+
 /// Reload clinic list when auth token is set.
 final myClinicsProvider = FutureProvider<List<MyClinicSummary>>((ref) async {
   final token = ref.watch(authTokenProvider);
-  if (token == null || token.isEmpty) return [];
+  if (token == null || token.isEmpty) {
+    ref.read(clinicWorkspaceKnownProvider.notifier).state = null;
+    return [];
+  }
 
   final api = ref.watch(doctorApiClientProvider);
   final res = await api.get('/api/me/clinics');
@@ -20,16 +26,24 @@ final myClinicsProvider = FutureProvider<List<MyClinicSummary>>((ref) async {
     throw Exception('Failed to load clinics (${res.statusCode})');
   }
   final list = json.decode(utf8.decode(res.bodyBytes));
-  if (list is! List) return [];
-  return list
+  if (list is! List) {
+    ref.read(clinicWorkspaceKnownProvider.notifier).state = false;
+    return [];
+  }
+  final clinics = list
       .whereType<Map>()
       .map((e) => MyClinicSummary.fromJson(Map<String, dynamic>.from(e)))
       .toList();
+  ref.read(clinicWorkspaceKnownProvider.notifier).state = clinics.isNotEmpty;
+  return clinics;
 });
 
 final hasClinicWorkspaceProvider = Provider<bool>((ref) {
   final async = ref.watch(myClinicsProvider);
-  return async.maybeWhen(data: (l) => l.isNotEmpty, orElse: () => false);
+  return async.maybeWhen(
+    data: (l) => l.isNotEmpty,
+    orElse: () => ref.watch(clinicWorkspaceKnownProvider) ?? false,
+  );
 });
 
 class SelectedClinicIdNotifier extends StateNotifier<int?> {

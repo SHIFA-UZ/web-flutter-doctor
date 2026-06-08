@@ -218,6 +218,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       // and notifications screen stay in sync with backend state.
       ref.invalidate(doctorNotificationsProvider);
       ref.invalidate(doctorNotificationsUnreadCountProvider);
+      ref.invalidate(myClinicsProvider);
       unawaited(invalidateAppointmentRelatedProviders(ref));
       if (ref.read(doctorAppJwtRoleProvider) != DoctorAppJwtRole.clinicStaff) {
         _loadActiveLocationLabel();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -237,6 +238,10 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
         if (!mounted) return;
         _pushTapSetup = true;
         final pushService = PushNotificationService();
+        pushService.setOnForegroundDataRefresh((data) {
+          if (!ref.read(authProvider).isAuthenticated) return;
+          unawaited(refreshCalendarFromPushPayload(ref, data));
+        });
         pushService.setOnNotificationTap((data) {
           debugPrint('═══ NOTIFICATION TAP HANDLER (FCM) ═══');
           debugPrint('Notification tapped - payload: $data');

@@ -6,6 +6,7 @@ import '../../core/util/admin_host.dart';
 import '../../core/util/jwt_utils.dart';
 import '../../core/utils/secure_token_storage.dart';
 import '../profile/profile_providers.dart';
+import '../clinic/clinic_providers.dart';
 import '../appointments/appointment_invalidation.dart';
 import '../patients/patients_provider.dart';
 import '../../core/providers/language_provider.dart';
@@ -390,6 +391,8 @@ class AuthController extends StateNotifier<AuthState> {
     // Clear doctor-scoped cached data so next login never sees stale data.
     ref.invalidate(profileAllProvider);
     ref.invalidate(meProfileProvider);
+    ref.read(clinicWorkspaceKnownProvider.notifier).state = null;
+    ref.invalidate(myClinicsProvider);
     unawaited(invalidateAppointmentRelatedProviders(ref));
     ref.invalidate(patientsProvider);
     ref.invalidate(patientByIdProvider);
