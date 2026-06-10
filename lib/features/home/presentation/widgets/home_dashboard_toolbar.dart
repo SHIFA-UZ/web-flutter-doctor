@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
@@ -44,7 +45,7 @@ class HomeDashboardToolbar extends ConsumerWidget {
     final locale = ref.watch(languageProvider).locale.toString();
     final rangeLabel = formatDashboardDateRange(range, locale);
 
-    if (Responsive.isMobile(context)) {
+    if (PlatformLayout.useCompactToolbar(context)) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

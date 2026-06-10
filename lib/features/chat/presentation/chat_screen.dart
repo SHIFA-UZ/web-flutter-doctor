@@ -18,6 +18,7 @@ import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/typing_indic
 import 'package:shifa_doc_app_v1/core/widgets/inline_voice_recorder_bar.dart';
 import 'package:shifa_doc_app_v1/features/chat/services/image_compression_service.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patient.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
@@ -599,15 +600,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     final brand = Theme.of(context).colorScheme.primary;
     final conversationsAsync = ref.watch(conversationsProvider);
     final searchQuery = _searchCtrl.text.trim();
-    final isMobile = Responsive.isMobile(context);
+    final useSinglePane = PlatformLayout.useSinglePane(context);
     final showConversation =
-        !isMobile || _selectedConversationId != null;
+        !useSinglePane || _selectedConversationId != null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
         padding: Responsive.screenPadding(context),
-        child: isMobile
+        child: useSinglePane
             ? (showConversation
                 ? _buildChatPane(context, brand)
                 : _buildConversationsPane(
@@ -807,7 +808,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
             )
           : Column(
               children: [
-                if (Responsive.isMobile(context))
+                if (PlatformLayout.useSinglePane(context))
                   Material(
                     color: Colors.white,
                     child: InkWell(

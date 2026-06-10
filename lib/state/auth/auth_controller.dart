@@ -138,17 +138,30 @@ class AuthController extends StateNotifier<AuthState> {
   /// Admin panel step 1: validate password and send email OTP. Returns masked email hint from backend.
   Future<String?> requestAdminLoginOtp(String username, String password) async {
     final api = ref.read(adminApiClientProvider);
-    final res = await api.post('/api/auth/admin/request-login-otp', {
-      'username': username,
-      'password': password,
-    });
-    final body = _tryDecodeJson(res.body);
-    if (res.statusCode == 200) {
-      return body?['emailHint'] as String?;
+    try {
+      final res = await api.post('/api/auth/admin/request-login-otp', {
+        'username': username,
+        'password': password,
+      });
+      final body = _tryDecodeJson(res.body);
+      if (res.statusCode == 200) {
+        return body?['emailHint'] as String?;
+      }
+      throw Exception(
+        body?['message']?.toString() ?? body?['error']?.toString() ?? 'Request failed (${res.statusCode})',
+      );
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('Connection reset') ||
+          msg.contains('Connection closed') ||
+          msg.contains('Failed host lookup') ||
+          msg.contains('timed out')) {
+        throw Exception(
+          'Cannot reach the Shifa API (${api.baseUrl}). The server may be restarting — try again in a minute.',
+        );
+      }
+      rethrow;
     }
-    throw Exception(
-      body?['message']?.toString() ?? body?['error']?.toString() ?? 'Request failed (${res.statusCode})',
-    );
   }
 
   /// Admin panel step 2: verify email code and complete sign-in (stores admin token).

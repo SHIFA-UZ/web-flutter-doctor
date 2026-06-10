@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/profile/presentation/location_picker_widget.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
@@ -108,6 +109,8 @@ class _DoctorLocationsScreenState extends ConsumerState<DoctorLocationsScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(l10n.translate('manageLocations')),
         foregroundColor: Colors.black,
         backgroundColor: Colors.transparent,

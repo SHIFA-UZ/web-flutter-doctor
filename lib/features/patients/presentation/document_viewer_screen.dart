@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -92,7 +93,11 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: Text(widget.title)),
+        appBar: AppBar(
+          leading: appBarBackLeading(context),
+          automaticallyImplyLeading: false,
+          title: Text(widget.title),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -102,7 +107,11 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           ? _error!
           : (l10n.translate('couldNotLoadDocument') ?? 'Could not load document');
       return Scaffold(
-        appBar: AppBar(title: Text(widget.title)),
+        appBar: AppBar(
+          leading: appBarBackLeading(context),
+          automaticallyImplyLeading: false,
+          title: Text(widget.title),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -127,11 +136,9 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(widget.title),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
       ),
       body: isImage
           ? _buildImageView(bytes)

@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as latlong;
 import 'package:geolocator/geolocator.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/services/google_geocoding_service.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
@@ -494,6 +495,8 @@ class _MapPickerScreenState extends State<_MapPickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(l10n.selectLocationOnMap),
         actions: [
           IconButton(

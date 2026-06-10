@@ -771,6 +771,7 @@
   "failedToCreateTask": "Failed to create task",
   "failedToUpdateTask": "Failed to update task",
   "selectPatient": "Select Patient",
+  "selectPatientHint": "Select a patient to view details",
   "tapToSearch": "Tap to search and select patient",
   "searchByNameOrId": "Search by name or ID",
   "taskDetails": "Task Details",

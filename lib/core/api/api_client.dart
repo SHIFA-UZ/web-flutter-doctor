@@ -8,6 +8,8 @@ typedef UnauthorizedCallback = void Function();
 enum ApiClientScope { doctor, admin }
 
 class ApiClient {
+  static const Duration defaultTimeout = Duration(seconds: 30);
+
   final String baseUrl;
   final ApiClientScope scope;
   String? _jwt;
@@ -123,7 +125,14 @@ class ApiClient {
     } else {
       print('API GET $path: WARNING - No Authorization header! Token: ${_jwt != null ? "exists" : "null"}');
     }
-    final response = await http.get(uri, headers: headers);
+    final response = await http
+        .get(uri, headers: headers)
+        .timeout(
+          defaultTimeout,
+          onTimeout: () => throw Exception(
+            'Request timed out after ${defaultTimeout.inSeconds}s',
+          ),
+        );
     _checkUnauthorized(response, path: path);
     return response;
   }
@@ -169,7 +178,14 @@ class ApiClient {
     print('========================================');
     
     try {
-      final response = await http.post(uri, headers: _headers(), body: jsonEncode(body));
+      final response = await http
+          .post(uri, headers: _headers(), body: jsonEncode(body))
+          .timeout(
+            defaultTimeout,
+            onTimeout: () => throw Exception(
+              'Request timed out after ${defaultTimeout.inSeconds}s',
+            ),
+          );
       
       // Log response for debugging
       print('========================================');

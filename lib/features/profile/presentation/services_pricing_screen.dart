@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
@@ -474,6 +475,8 @@ class _ServicesPricingScreenState extends ConsumerState<ServicesPricingScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(
           l10n.translate('servicesPricing'),
         ),

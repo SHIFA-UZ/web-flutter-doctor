@@ -7,7 +7,9 @@ import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provid
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 
 /// Notifications screen for the doctor app.
@@ -34,7 +36,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final controller = ref.read(doctorNotificationsControllerProvider);
     final unreadCount = unreadCountAsync.valueOrNull ?? 0;
 
-    final isMobile = Responsive.isMobile(context);
+    final compactToolbar = PlatformLayout.useCompactToolbar(context);
+    final showRouteBack = appCanPop(context);
 
     return Scaffold(
       body: SafeArea(
@@ -43,10 +46,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           children: [
             Padding(
               padding: Responsive.screenPadding(context).copyWith(bottom: 8),
-              child: isMobile
+              child: compactToolbar
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (showRouteBack)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: AppPageBackButton(label: l10n.back),
+                          ),
                         Text(
                           unreadCount > 0
                               ? '${l10n.notifications} ($unreadCount)'
@@ -79,14 +87,20 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          unreadCount > 0
-                              ? '${l10n.notifications} ($unreadCount)'
-                              : l10n.notifications,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (showRouteBack) AppPageBackButton(label: l10n.back),
+                            Text(
+                              unreadCount > 0
+                                  ? '${l10n.notifications} ($unreadCount)'
+                                  : l10n.notifications,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -113,7 +127,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 12 : 20,
+                horizontal: compactToolbar ? 12 : 20,
               ),
               child: Row(
                 children: [
@@ -165,9 +179,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     },
                     child: ListView.builder(
                     padding: EdgeInsets.fromLTRB(
-                      isMobile ? 12 : 20,
+                      compactToolbar ? 12 : 20,
                       0,
-                      isMobile ? 12 : 20,
+                      compactToolbar ? 12 : 20,
                       Responsive.bottomNavClearance(context) + 24,
                     ),
                     itemCount: grouped.length,

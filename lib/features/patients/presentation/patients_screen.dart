@@ -36,6 +36,8 @@ import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider
 import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_doctor_schedule_page.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_schedule_return_info.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_form_models.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
@@ -48,8 +50,10 @@ import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dar
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/utils/error_formatter.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/multiple_phone_fields.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/document_category.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
@@ -589,6 +593,7 @@ class PatientsScreen extends ConsumerStatefulWidget {
     this.initialDocumentTitle,
     this.initialOpenDocumentViewer = false,
     this.clinicWorkspaceId,
+    this.clinicScheduleReturn,
   }) : super(key: key);
 
   /// When set (e.g. from chat header tap), this patient is selected when the screen loads.
@@ -605,6 +610,9 @@ class PatientsScreen extends ConsumerStatefulWidget {
 
   /// When set (e.g. opened from clinic workspace roster), loads patient/documents/prophylaxis with clinic scope.
   final int? clinicWorkspaceId;
+
+  /// When set, back restores the clinic doctor schedule opened before this screen.
+  final ClinicScheduleReturnInfo? clinicScheduleReturn;
 
   @override
   ConsumerState<PatientsScreen> createState() => _PatientsScreenState();
@@ -624,17 +632,20 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     final patients = ref.read(patientsProvider);
     final initialId = widget.initialSelectedId;
     final clinicWs = widget.clinicWorkspaceId;
-    if (initialId != null && patients.any((p) => p.id == initialId)) {
+    if (initialId != null) {
       _selectedId = initialId;
-    } else if (initialId != null && clinicWs != null) {
-      _selectedId = initialId;
-      _loadClinicOverlayPatient(initialId, clinicWs);
+      if (!patients.any((p) => p.id == initialId)) {
+        _loadOverlayPatient(initialId, clinicId: clinicWs);
+      }
     }
     // First patient auto-select runs in build via ref.listen (desktop only).
 
   }
 
-  Future<void> _loadClinicOverlayPatient(String patientId, int clinicId) async {
+  Future<void> _loadOverlayPatient(
+    String patientId, {
+    int? clinicId,
+  }) async {
     try {
       final client = ref.read(apiClientProvider);
       final p = await fetchPatientWithClient(
@@ -724,26 +735,56 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
-    final isMobile = Responsive.isMobile(context);
+    final useSinglePane = PlatformLayout.useSinglePane(context);
 
     ref.listen<List<Patient>>(patientsProvider, (prev, next) {
-      if (!mounted || isMobile) return;
-      if (_selectedId != null || widget.initialSelectedId != null) return;
+      if (!mounted || useSinglePane) return;
+
+      final initialId = widget.initialSelectedId;
+      if (initialId != null) {
+        if (_selectedId != initialId) {
+          setState(() => _selectedId = initialId);
+        }
+        if (!next.any((p) => p.id == initialId) &&
+            _overlayPatient?.id != initialId) {
+          _loadOverlayPatient(initialId, clinicId: widget.clinicWorkspaceId);
+        }
+        return;
+      }
+
+      if (_selectedId != null) return;
       if (next.isNotEmpty) {
         setState(() => _selectedId = next.first.id);
       }
     });
 
+    final showRouteBack = (appCanPop(context) ||
+            widget.initialSelectedId != null ||
+            widget.clinicScheduleReturn != null) &&
+        !(useSinglePane && _selectedId != null);
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       body: Padding(
         padding: Responsive.screenPadding(context),
-        child: LayoutBuilder(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showRouteBack)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppPageBackButton(
+                  label: l10n.back,
+                  onPressed: () => _handlePatientsRouteBack(context),
+                ),
+              ),
+            Expanded(
+              child: LayoutBuilder(
           builder: (context, constraints) {
-            final isWide =
-                constraints.maxWidth >= Responsive.tabletBreakpoint;
+            final isWide = constraints.maxWidth >=
+                (Responsive.splitPaneBreakpoint - 48);
 
-            if (isMobile && _selectedId != null) {
+            if (useSinglePane && _selectedId != null) {
               return _buildMobilePatientDetail(context, l10n, brand);
             }
 
@@ -828,30 +869,61 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                 const SizedBox(width: AppDesignSystem.sectionGap),
                 Expanded(
                   flex: 13,
-                  child: PatientDetailPanel(
-                    patient: _selected,
-                    brand: brand,
-                    clinicWorkspaceId: widget.clinicWorkspaceId,
-                    isFavorite: _selectedId != null &&
-                        _favoriteIds.contains(_selectedId),
-                    onToggleFavorite: _selectedId == null
-                        ? null
-                        : () => _toggleFavorite(_selectedId!),
-                    onUploadOptions: (p) => _showUploadOptions(context, p),
-                    onCreateForm: (p) =>
-                        showPatientFormTemplateSheet(context, p),
-                    formatDate: _formatDate,
-                    selectedDocumentId: widget.initialDocumentIdToSelect,
-                    documentTitleForViewer: widget.initialDocumentTitle,
-                    openDocumentViewer: widget.initialOpenDocumentViewer,
-                  ),
+                  child: _selectedId != null && _selected == null
+                      ? Container(
+                          decoration: AppDesignSystem.cardDecoration(),
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(),
+                        )
+                      : PatientDetailPanel(
+                          patient: _selected,
+                          brand: brand,
+                          clinicWorkspaceId: widget.clinicWorkspaceId,
+                          isFavorite: _selectedId != null &&
+                              _favoriteIds.contains(_selectedId),
+                          onToggleFavorite: _selectedId == null
+                              ? null
+                              : () => _toggleFavorite(_selectedId!),
+                          onUploadOptions: (p) => _showUploadOptions(context, p),
+                          onCreateForm: (p) =>
+                              showPatientFormTemplateSheet(context, p),
+                          formatDate: _formatDate,
+                          selectedDocumentId: widget.initialDocumentIdToSelect,
+                          documentTitleForViewer: widget.initialDocumentTitle,
+                          openDocumentViewer: widget.initialOpenDocumentViewer,
+                        ),
                 ),
               ],
             );
           },
         ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  void _handlePatientsRouteBack(BuildContext context) {
+    final restore = widget.clinicScheduleReturn;
+    if (appCanPop(context)) {
+      appPop(context);
+    }
+    if (restore == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => ClinicDoctorScheduleRoute(
+            doctorProfileId: restore.doctorProfileId,
+            doctorDisplayName: restore.doctorDisplayName,
+            clinicScheduleTimeZone: restore.clinicScheduleTimeZone,
+            clinicStreetAddress: restore.clinicStreetAddress,
+          ),
+        ),
+      );
+    });
   }
 
   void _toggleFavorite(String patientId) {
@@ -881,7 +953,13 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
-              onPressed: () => setState(() => _selectedId = null),
+              onPressed: () {
+                if (_selectedId != null) {
+                  setState(() => _selectedId = null);
+                } else if (appCanPop(context)) {
+                  appPop(context);
+                }
+              },
               icon: const Icon(Icons.arrow_back),
               label: Text(l10n.patients),
             ),
@@ -943,7 +1021,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     final emailCtrl = TextEditingController();
     final addressCtrl = TextEditingController();
     final allergiesCtrl = TextEditingController();
-    String? selectedLanguage = _patientLanguageOptions.first;
+    String? selectedLanguage = 'uzbek';
     String? selectedGender = '';
     String? selectedBloodGroup = '';
     DateTime? birthDate;
@@ -1030,7 +1108,9 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                         .map(
                           (g) => DropdownMenuItem<String>(
                             value: g,
-                            child: Text(g.isEmpty ? '—' : g),
+                            child: Text(
+                              g.isEmpty ? '—' : translateGenderValue(l10n, g),
+                            ),
                           ),
                         )
                         .toList(),

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SHIFA — Ustav kapitali ulushi shartnomasi — Shohruhmirzo Sharobov</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 20mm 16mm;
+    }
+
+    :root {
+      --shifa-teal: #00bbb0;
+      --shifa-teal-soft: rgba(0, 187, 176, 0.1);
+      --text: #1a1a1a;
+      --muted: #5c5c5c;
+      --border: #b8b8b8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      color: var(--text);
+      margin: 0;
+      background: #e8ecef;
+    }
+
+    .page {
+      position: relative;
+      max-width: 210mm;
+      margin: 12px auto;
+      padding: 14mm 14mm 16mm;
+      background: #fff;
+      box-shadow: 0 4px 24px rgba(0,0,0,.12);
+      overflow: hidden;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("../../assets/branding/shifa_logo.svg") center 42% / 42% no-repeat;
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page > * { position: relative; z-index: 1; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid var(--shifa-teal);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand img {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22pt;
+      letter-spacing: 0.04em;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+
+    .doc-meta {
+      text-align: right;
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+
+    .title {
+      text-align: center;
+      margin: 18px 0 12px;
+    }
+
+    .title h2 {
+      margin: 0;
+      font-size: 14pt;
+      letter-spacing: 0.02em;
+    }
+
+    .title p {
+      margin: 6px 0 0;
+      font-size: 9pt;
+      color: var(--muted);
+    }
+
+    .title hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin-top: 10px;
+    }
+
+    .meta-box {
+      border: 1.5px solid var(--shifa-teal);
+      background: var(--shifa-teal-soft);
+      padding: 12px 14px;
+      margin-bottom: 18px;
+    }
+
+    .meta-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+    }
+
+    .meta-box td:first-child {
+      width: 42%;
+      font-weight: 700;
+      padding: 3px 8px 3px 0;
+      vertical-align: top;
+    }
+
+    section {
+      margin-bottom: 14px;
+      break-inside: avoid-page;
+    }
+
+    .section-head {
+      background: #d9d9d9;
+      padding: 6px 10px;
+      font-weight: 700;
+      font-size: 10.5pt;
+    }
+
+    .section-body {
+      border: 1px solid var(--border);
+      border-top: none;
+      background: #fafafa;
+      padding: 12px 14px;
+    }
+
+    h3 {
+      margin: 10px 0 6px;
+      font-size: 10pt;
+      color: #333;
+    }
+
+    ul {
+      margin: 6px 0 8px;
+      padding-left: 1.2em;
+    }
+
+    li { margin-bottom: 4px; }
+
+    .field {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: flex-end;
+    }
+
+    .field label {
+      font-weight: 700;
+      white-space: nowrap;
+      min-width: 140px;
+    }
+
+    .field .line {
+      flex: 1;
+      border-bottom: 1px solid #666;
+      min-height: 1.2em;
+    }
+
+    .field .line.filled {
+      border-bottom: none;
+      font-weight: 600;
+    }
+
+    .kpi-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.5pt;
+      margin: 10px 0;
+    }
+
+    .kpi-table th,
+    .kpi-table td {
+      border: 1px solid var(--border);
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .kpi-table th {
+      background: var(--shifa-teal-soft);
+      font-weight: 700;
+    }
+
+    .kpi-table .num {
+      text-align: center;
+      width: 12%;
+      font-weight: 700;
+    }
+
+    .highlight-box {
+      border-left: 4px solid var(--shifa-teal);
+      background: #f5fffe;
+      padding: 10px 12px;
+      margin: 8px 0;
+      font-size: 10pt;
+    }
+
+    .progress-bar-wrap {
+      margin: 10px 0;
+      font-size: 9pt;
+    }
+
+    .progress-bar {
+      height: 14px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-bar span {
+      display: block;
+      height: 100%;
+      width: 3%;
+      background: var(--shifa-teal);
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .sig-box {
+      border: 1px solid var(--border);
+      padding: 12px;
+      min-height: 140px;
+    }
+
+    .sig-box h4 {
+      margin: 0 0 10px;
+      font-size: 10.5pt;
+    }
+
+    .sig-line {
+      margin-bottom: 10px;
+    }
+
+    .sig-line .lbl {
+      font-size: 8.5pt;
+      font-weight: 700;
+      display: block;
+    }
+
+    .sig-line .val {
+      border-bottom: 1px solid #333;
+      min-height: 1.3em;
+      margin-top: 2px;
+    }
+
+    .sig-pad {
+      margin-top: 14px;
+      border-bottom: 1px solid #333;
+      height: 28px;
+    }
+
+    .ack {
+      margin-top: 14px;
+      padding: 10px;
+      text-align: center;
+      font-style: italic;
+      font-size: 9.5pt;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+    }
+
+    .footer-note {
+      margin-top: 20px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      font-size: 8pt;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        max-width: none;
+        min-height: auto;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <p class="no-print" style="text-align:center;padding:8px;font-size:9pt;color:#555;">
+    Chop etish: Ctrl+P → «PDF sifatida saqlash». Logo va suv belgisi avtomatik qo‘llanadi.
+  </p>
+
+  <article class="page">
+    <header class="header">
+      <div class="brand">
+        <img src="../../assets/branding/shifa_logo.svg" alt="SHIFA" />
+        <div>
+          <h1>SHIFA</h1>
+          <p>Raqamli tibbiy platforma</p>
+        </div>
+      </div>
+      <div class="doc-meta">
+        <div>Hujjat turi: Ustav kapitali ulushi shartnomasi</div>
+        <div>Versiya: Strategik hamkor (KPI asosida)</div>
+      </div>
+    </header>
+
+    <div class="title">
+      <h2>SHIFA STRATEGIK HAMKORLIK VA USTAV KAPITALI ULUSHI SHARTNOMASI</h2>
+      <p>Asosiy samaradorlik ko'rsatkichlari (KPI) asosida shartli ulush berish</p>
+      <hr />
+    </div>
+
+    <div class="meta-box">
+      <table>
+        <tr><td>Shartnoma raqami:</td><td><strong>SHIFA-EQ-0001</strong></td></tr>
+        <tr><td>Kuchga kirish sanasi:</td><td><strong>10.06.2026</strong></td></tr>
+        <tr><td>KPI davri:</td><td><strong>10.06.2026 — 10.06.2029</strong> (3 yil)</td></tr>
+        <tr><td>Taklif qilinayotgan ulush:</td><td><strong>1,00%</strong> kompaniya ustav kapitali</td></tr>
+        <tr><td>Ulush berish sharti:</td><td>KPIlar to‘liq bajarilganda (4-bo‘lim)</td></tr>
+      </table>
+    </div>
+
+    <section>
+      <div class="section-head">TOMONLAR</div>
+      <div class="section-body">
+        <h3>Kompaniya (SHIFA)</h3>
+        <p>SHIFA raqamli tibbiy platformasi<br />
+        «Qobilov Bekzodbek Olimjon o'g'li» YaTT<br />
+        Istiqbol 30, Andijon, O'zbekiston<br />
+        <em>(keyingi o'rinlarda "SHIFA" yoki "Kompaniya" deb yuritiladi)</em></p>
+
+        <h3>Strategik hamkor</h3>
+        <div class="field"><label>F.I.Sh.</label><div class="line filled">Shohruhmirzo Sharobov</div></div>
+        <div class="field"><label>Bog'lanish telefoni</label><div class="line"></div></div>
+        <div class="field"><label>Elektron pochta</label><div class="line"></div></div>
+        <div class="field"><label>Passport seriyasi va raqami</label><div class="line"></div></div>
+        <p><em>(keyingi o'rinlarda "Hamkor" deb yuritiladi)</em></p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">1. MAQSAD VA UMUMIY QOIDALAR</div>
+      <div class="section-body">
+        <p>Mazkur Shartnoma SHIFA va Hamkor o'rtasida SHIFA stomatologik (shifokor va klinika) platformasini rivojlantirish, yangi mijozlarni jalb qilish, mavjud mijozlarni saqlab qolish va mahsulotni takomillashtirish bo'yicha strategik hamkorlikni, shuningdek Kompaniya ustav kapitalidagi <strong>1,00%</strong> ulushni KPI shartlari bajarilganda berish tartibini belgilaydi.</p>
+        <p>Hamkor ushbu ulushni <strong>pullik sotib olish emas</strong>, balki o'z hissasi (mehnat, tarmoq, maslahat va mijozlar jalbi) evaziga <strong>shartli ravishda</strong> olishga rozilik bildiradi. Ulush faqat ushbu Shartnomada ko'rsatilgan KPIlar va majburiyatlar bajarilganda tasdiqlanadi va rasmiylashtiriladi.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">2. OLDINGI TAN OLINGAN HISSA (RETROAKTIV TAN OLISH)</div>
+      <div class="section-body">
+        <p>SHIFA Hamkorning ushbu Shartnoma imzolanishidan oldingi hissasini tan oladi:</p>
+        <ul>
+          <li><strong>3 (uch) ta faol mijoz</strong> — stomatologik klinika yoki shifokorlarni SHIFA platformasiga jalb qilishda bevosita yordam berganligi uchun;</li>
+          <li><strong>Mahsulotni takomillashtirish</strong> — stomatologlar uchun platforma funksiyalari, ish jarayoni va foydalanuvchi tajribasi bo'yicha muhim fikr-mulohaza va amaliy yordam berganligi uchun.</li>
+        </ul>
+        <div class="highlight-box">
+          Ushbu 3 ta mijoz KPI hisobidagi <strong>100 ta mijoz</strong> maqsadiga <strong>avtomatik hisoblanadi</strong>.
+          Qolgan maqsad: <strong>97 ta yangi faol mijoz</strong> (3 yil ichida).
+        </div>
+        <div class="progress-bar-wrap">
+          Joriy progress (imzolash vaqtida): 3 / 100 mijoz (3%)
+          <div class="progress-bar"><span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">3. TAKLIF QILINAYOTGAN ULUSH</div>
+      <div class="section-body">
+        <h3>3.1 Ulush hajmi</h3>
+        <ul>
+          <li>Hamkorga <strong>1,00%</strong> ulush taklif etiladi — bu SHIFA kompaniyasining barcha imtiyozli ulushlar hisobga olingan holdagi ustav kapitalidagi ulush sifatida hisoblanadi.</li>
+          <li>Ulush <strong>pullik emas</strong>; u faqat KPIlar bajarilganda va 4-bo'limdagi shartlar qondirilganda beriladi.</li>
+          <li>Ulush rasmiylashtirilishi O'zbekiston Respublikasi qonunchiligiga muvofiq (ustav o'zgarishi, hamkorlik shartnomasi yoki ulush berish bitimi orqali) amalga oshiriladi.</li>
+        </ul>
+        <h3>3.2 Ulush berilmaydigan holatlar</h3>
+        <ul>
+          <li>3 yillik KPI davri tugagach ham 100 ta faol mijoz maqsadi bajarilmasa;</li>
+          <li>Hamkor majburiy majburiyatlarni (5-bo'lim) doimiy ravishda bajarmasa va yozma ogohlantirishdan keyin 30 kun ichida tuzatmasa;</li>
+          <li>Hamkor Shartnomani o'z xohishi bilan muddatidan oldin bekor qilsa (2-bo'limdagi tan olingan 3 mijoz hissi saqlanadi, lekin qo'shimcha ulush berilmaydi);</li>
+          <li>Hamkor maxfiylik yoki raqobat qoidalari (8-bo'lim) ni buzsa.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">4. ASOSIY KPI — MIJOZLAR JALBI (100 TA / 3 YIL)</div>
+      <div class="section-body">
+        <h3>4.1 Maqsad</h3>
+        <p>Hamkor 10.06.2026 dan 10.06.2029 gacha bo'lgan davrda jami <strong>100 ta faol mijoz</strong>ga erishishga majbur. Oldingi 3 ta mijoz bu hisobga kiritilgan; qolgan <strong>97 ta yangi faol mijoz</strong> jalb qilinishi kerak.</p>
+
+        <h3>4.2 "Faol mijoz" ta'rifi</h3>
+        <p><strong>Faol mijoz</strong> — har bir alohida stomatolog (shifokor) hisoblanadi. Quyidagi shartlarning barchasi bajarilgan holda:</p>
+        <ul>
+          <li>Stomatolog SHIFA shifokorlar ilovasida alohida hisob sifatida ro'yxatdan o'tgan (klinikadagi har bir shifokor alohida mijoz hisoblanadi);</li>
+          <li>Kamida bitta to'lovli obuna rejasi yoki pullik tarifga o'tgan (sinov yoki dastlabki hamkor bepul davri tugagan);</li>
+          <li>Ro'yxatdan o'tgan kundan boshlab kamida <strong>90 kun</strong> davomida faol holatda (kamida oyiga 1 ta qabul yoki tizimga kirish faolligi);</li>
+          <li>Hamkor tomonidan jalb qilinganligi SHIFA boshqaruv tizimida Hamkor sifatida belgilangan yoki yozma tasdiqlangan.</li>
+        </ul>
+
+        <h3>4.3 Hisoblash qoidalari</h3>
+        <ul>
+          <li>Har bir shifokor = bir mijoz (bir klinikadagi har bir ro'yxatdan o'tgan stomatolog alohida mijoz sifatida hisoblanadi);</li>
+          <li>Hamkor o'zi yaratgan yoki allaqachon faol bo'lgan hisob qayta hisoblanmaydi;</li>
+          <li>Mijoz 90 kun ichida faol bo'lmasa yoki obunani bekor qilsa, KPI hisobidan chiqariladi;</li>
+          <li>Har chorakda (90 kun) SHIFA va Hamkor KPI hisobotini birgalikda ko'rib chiqadi.</li>
+        </ul>
+
+        <table class="kpi-table">
+          <thead>
+            <tr>
+              <th class="num">#</th>
+              <th>KPI ko'rsatkichi</th>
+              <th>Maqsad</th>
+              <th>Muddat</th>
+              <th>Holat</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num">KPI-1</td>
+              <td>Jami faol mijozlar (oldingi hissasi bilan)</td>
+              <td><strong>100 ta</strong></td>
+              <td>10.06.2029 gacha</td>
+              <td>3 / 100 (boshlang'ich)</td>
+            </tr>
+            <tr>
+              <td class="num">KPI-2</td>
+              <td>Yangi jalb qilingan faol mijozlar</td>
+              <td><strong>97 ta</strong></td>
+              <td>10.06.2029 gacha</td>
+              <td>0 / 97</td>
+            </tr>
+            <tr>
+              <td class="num">KPI-3</td>
+              <td>Hamkor jalb qilgan mijozlarning yillik saqlanish darajasi</td>
+              <td><strong>≥ 80%</strong></td>
+              <td>Har yil</td>
+              <td>Kuzatiladi</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">5. DOIMIY MAJBURIYATLAR (KPI DAVRI BO'YLAB)</div>
+      <div class="section-body">
+        <p>Ulushni olish huquqini saqlab qolish uchun Hamkor quyidagi majburiyatlarni bajarishi shart:</p>
+
+        <h3>5.1 Mijozlar bilan ishlash va saqlab qolish</h3>
+        <ul>
+          <li>Hamkor o'zi jalb qilgan barcha mijozlar bilan muntazam aloqa qiladi (kamida oyiga 1 marta);</li>
+          <li>Mijozlarning fikr-mulohazalarini to'playdi va SHIFA mahsulot jamoasiga yetkazadi (yozma yoki haftalik hisobot orqali);</li>
+          <li>Mijozning muammosi yoki norozi ekanligi haqida 48 soat ichida SHIFA ga xabar beradi;</li>
+          <li>Mijozni platformadan ketish xavfi paydo bo'lsa, saqlab qolish choralarini ko'radi va SHIFA bilan muvofiqlashtiradi;</li>
+          <li>Har chorakda jalb qilgan mijozlar bo'yicha qisqa hisobot taqdim etadi (mijoz soni, faollik, asosiy fikrlar).</li>
+        </ul>
+
+        <h3>5.2 Mahsulotni takomillashtirish</h3>
+        <ul>
+          <li>Stomatologlar va klinikalar uchun platforma funksiyalari bo'yicha konstruktiv maslahat berishda davom etadi;</li>
+          <li>Haftasiga kamida bir (1) marta mahsulot jamoasi bilan 20–30 daqiqalik fikr-mulohaza sessiyasida ishtirok etadi (yoki yozma fikr-mulohaza taqdim etadi);</li>
+          <li>Yangi funksiyalarni sinovdan o'tkazishda real klinika kontekstida yordam beradi;</li>
+          <li>Aniqlangan xatolar va takliflarni 7 kun ichida SHIFA ga yetkazadi.</li>
+        </ul>
+
+        <h3>5.3 Vakillik va targ'ib</h3>
+        <ul>
+          <li>SHIFA platformasini stomatologik tarmoq va professional doiralarda halol va professional tarzda targ'ib qiladi;</li>
+          <li>SHIFA ruxsatisiz noto'g'ri yoki chalg'ituvchi da'volar qilmaydi;</li>
+          <li>Hamkorning shaxsiy brendi va SHIFA brendi o'zaro hurmat qilinadi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">6. ULUSHNI RASMIYLASHTIRISH TARTIBI</div>
+      <div class="section-body">
+        <ul>
+          <li>Barcha KPIlar (4-bo'lim) va doimiy majburiyatlar (5-bo'lim) bajarilgach, SHIFA 30 kun ichida ulushni rasmiylashtirish jarayonini boshlaydi;</li>
+          <li>Tomonlar ustav o'zgarishi, ulush berish bitimi yoki O'zbekiston qonunchiligiga muvofiq boshqa hujjatni imzolaydi;</li>
+          <li>1% ulush bir martalik to'liq beriladi (KPI bajarilganda 100% ulush huquqi); qisman ulush berish jadvali qo'llanilmaydi, agar tomonlar yozma ravishda boshqacha kelishmasa;</li>
+          <li>Soliq va davlat boji masalalari qonunchilikka muvofiq har bir tomonning zimmasida hal qilinadi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">7. AMAL QILISH MUDDATI VA BEKOR QILISH</div>
+      <div class="section-body">
+        <ul>
+          <li>Shartnoma 10.06.2026 dan kuchga kiradi va KPI maqsadlari bajarilguncha yoki 10.06.2029 gacha amal qiladi;</li>
+          <li>Har qanday tomon 30 kun oldin yozma xabardor qilish orqali Shartnomani bekor qilishi mumkin;</li>
+          <li>SHIFA Hamkorni ogohlantirmasdan va sabab ko'rsatmasdan bekor qila olmaydi, agar Hamkor majburiyatlarni bajaryapti.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">8. MAXFIYLIK, INTELLEKTUAL MULK VA RAQOBAT</div>
+      <div class="section-body">
+        <ul>
+          <li>Hamkor SHIFA ning tijorat sirlarini, texnik ma'lumotlarini, mijoz ma'lumotlarini va ichki strategiyalarini maxfiy saqlaydi;</li>
+          <li>SHIFA platformasi, kodi, dizayni va brendi SHIFA ning mutlaq mulki bo'lib qoladi;</li>
+          <li>Hamkorning taklif va fikrlari mahsulotni rivojlantirish uchun qo'shimcha to'lovsiz ishlatilishi mumkin;</li>
+          <li>Shartnoma tugagandan keyin ham maxfiylik majburiyati 2 yil davom etadi;</li>
+          <li>Hamkor Shartnoma davrida va undan keyin 12 oy davomida to'g'ridan-to'g'ri raqobatchi platforma yaratmaslik yoki unda ishlash majburiyatini oladi (stomatologik telemeditsina va elektron tibbiy kartalar sohasida).</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">9. HISOBOT VA TEKSHIRUV</div>
+      <div class="section-body">
+        <ul>
+          <li>SHIFA har chorakda Hamkorga KPI bajarilishi bo'yicha hisobot taqdim etadi;</li>
+          <li>Hamkor hisobotga 14 kun ichida e'tiroz bildirishi yoki tasdiqlashi mumkin;</li>
+          <li>Nizo bo'lsa, tomonlar boshqaruv tizimi ma'lumotlari va yozishmalar asosida hal qiladi;</li>
+          <li>Har yilning oxirida tomonlar yillik KPI ko'rib chiqish uchrashuvini o'tkazadi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">10. UMUMIY QOIDALAR</div>
+      <div class="section-body">
+        <ul>
+          <li>Mazkur Shartnoma tomonlar o'rtasidagi to'liq kelishuvni ifodalaydi;</li>
+          <li>Har qanday o'zgartirishlar faqat yozma shaklda va ikki tomon imzosi bilan amal qiladi;</li>
+          <li>Shartnoma O'zbekiston Respublikasi qonunchiligiga muvofiq tartibga solinadi;</li>
+          <li>Nizolar avvalo muzokaralar yo'li bilan hal qilinadi; 30 kun ichida hal bo'lmasa, Andijon viloyati sudlariga topshiriladi.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">IMZOLAR</div>
+      <div class="section-body">
+        <div class="signatures">
+          <div class="sig-box">
+            <h4>SHIFA nomidan</h4>
+            <div class="sig-line"><span class="lbl">Ism</span><div class="val">Bekzodbek Qobilov Olimjon O'g'li</div></div>
+            <div class="sig-line"><span class="lbl">Lavozim</span><div class="val">Bosh direktor, Asoschisi</div></div>
+            <div class="sig-line"><span class="lbl">Imzo</span><div class="sig-pad"></div></div>
+            <div class="sig-line"><span class="lbl">Sana</span><div class="val">10 Iyun 2026</div></div>
+          </div>
+          <div class="sig-box">
+            <h4>Strategik hamkor</h4>
+            <div class="sig-line"><span class="lbl">Ism</span><div class="val">Shohruhmirzo Sharobov</div></div>
+            <div class="sig-line"><span class="lbl">Imzo</span><div class="sig-pad"></div></div>
+            <div class="sig-line"><span class="lbl">Sana</span><div class="val"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="ack">Har ikki tomon ushbu Shartnoma shartlarini o'qib chiqqani, tushungani va ularga rozilik bildirganini tasdiqlaydi. Hamkor 1% ulush KPI shartlari bajarilguncha avtomatik berilmasligini tushunadi.</p>
+
+    <p class="footer-note">SHIFA — SHIFA-EQ-0001 · Shohruhmirzo Sharobov · Maxfiy hujjat. Ruxsatsiz tarqatish taqiqlanadi.</p>
+  </article>
+</body>
+</html>

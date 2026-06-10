@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/state/tasks/task_actions.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 
 class SelectTemplateScreen extends ConsumerStatefulWidget {
   const SelectTemplateScreen({Key? key}) : super(key: key);
@@ -57,6 +58,8 @@ class _SelectTemplateScreenState extends ConsumerState<SelectTemplateScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(l10n.translate('useTemplate') ?? 'Use a template'),
         backgroundColor: brand,
         foregroundColor: Colors.white,

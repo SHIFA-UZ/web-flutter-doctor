@@ -63,9 +63,6 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
         _documentSearchQuery = _documentSearchController.text;
       });
     });
-    if (widget.patient != null) {
-      ref.refresh(patientDocumentsProvider(_docKey(widget.patient!.id)));
-    }
   }
 
   void _syncTabController() {
@@ -1583,7 +1580,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
           Border.all(color: AppDesignSystem.border.withValues(alpha: 0.6)),
     );
 
-    if (Responsive.isMobile(context)) {
+    if (PlatformLayout.useSinglePane(context)) {
       final header = _buildPatientHeaderSection(
         context,
         p,
@@ -2892,7 +2889,9 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
                     .map(
                       (g) => DropdownMenuItem<String>(
                         value: g,
-                        child: Text(g.isEmpty ? 'â€”' : g),
+                        child: Text(
+                          g.isEmpty ? '—' : translateGenderValue(l10n, g),
+                        ),
                       ),
                     )
                     .toList(),

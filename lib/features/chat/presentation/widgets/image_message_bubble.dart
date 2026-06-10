@@ -1,5 +1,6 @@
 // lib/features/chat/presentation/widgets/image_message_bubble.dart
 import 'package:flutter/material.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shifa_doc_app_v1/features/chat/domain/chat_models.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
@@ -222,6 +223,8 @@ class _FullScreenImageViewer extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
       ),

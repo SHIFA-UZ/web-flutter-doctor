@@ -9,7 +9,9 @@ import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({Key? key}) : super(key: key);
@@ -71,11 +73,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     final overdueCount =
         tasks.where((t) => t.status == TaskStatus.expired).length;
 
-    final isMobile = Responsive.isMobile(context);
+    final compactToolbar = PlatformLayout.useCompactToolbar(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(l10n.remoteCareTasks),
         backgroundColor: brand,
         foregroundColor: Colors.white,
@@ -93,7 +97,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               ),
               children: [
                 // Header
-                if (isMobile)
+                if (compactToolbar)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -188,7 +192,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                 const SizedBox(height: 24),
 
                 // Summary cards
-                if (isMobile)
+                if (compactToolbar)
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
@@ -252,7 +256,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: isMobile
+                  child: compactToolbar
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [

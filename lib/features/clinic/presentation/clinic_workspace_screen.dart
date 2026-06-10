@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -877,7 +878,7 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
         }
 
         void ensureSelection() {
-          if (Responsive.isMobile(context)) return;
+          if (PlatformLayout.useSinglePane(context)) return;
           if (_selectedPatientId != null) return;
           final first = page.content.first;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1002,10 +1003,10 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final isMobile = Responsive.isMobile(context);
-            final wide = constraints.maxWidth >= 900;
+            final useSinglePane = PlatformLayout.useSinglePane(context);
+            final wide = constraints.maxWidth >= Responsive.splitPaneBreakpoint - 80;
 
-            if (isMobile && _selectedPatientId != null) {
+            if (useSinglePane && _selectedPatientId != null) {
               return SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.only(

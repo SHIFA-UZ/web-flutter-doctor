@@ -16,6 +16,7 @@ import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_controller.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_models.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_actions.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
@@ -671,6 +672,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(l10n.setupYourSchedule),
         backgroundColor: Colors.transparent,
         elevation: 0,

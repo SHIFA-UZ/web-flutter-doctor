@@ -263,6 +263,15 @@ String? detectMimeFromBytes(Uint8List bytes) {
 }
 
 /// Fetch list of documents for a patient (from patient_documents table).
+DateTime _parsePatientDocumentDate(dynamic raw) {
+  if (raw == null) return DateTime.now();
+  try {
+    return DateTime.parse(raw.toString());
+  } catch (_) {
+    return DateTime.now();
+  }
+}
+
 Future<List<PatientDocument>> fetchPatientDocumentsWithClient({
   required ApiClient client,
   required String patientId,
@@ -281,7 +290,7 @@ Future<List<PatientDocument>> fetchPatientDocumentsWithClient({
       return PatientDocument(
         id: j['id'].toString(),
         title: (j['title'] ?? '') as String,
-        date: DateTime.parse(j['date'] as String),
+        date: _parsePatientDocumentDate(j['date']),
         url: urlVal != null && (urlVal as String).isNotEmpty ? urlVal as String : null,
         filePath: null,
         canView: j['canView'] as bool? ?? true,
@@ -569,6 +578,54 @@ Future<List<PatientAssignmentItem>> fetchPatientsForAssignmentWithClient({
     } else {
       final preview = res.body.length > 200 ? '${res.body.substring(0, 200)}...' : res.body;
       throw Exception('Failed to load patients: ${res.statusCode} $preview');
+    }
+  }
+
+  final list = byId.values.toList()
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return list;
+}
+
+/// Fetch every patient in the logged-in doctor's directory (paginated API).
+Future<List<Patient>> fetchAllPatientsWithClient({
+  required ApiClient client,
+}) async {
+  const pageSize = 100;
+  final byId = <String, Patient>{};
+  var page = 0;
+
+  while (true) {
+    final res = await client.get('/api/patients', params: {
+      'page': '$page',
+      'size': '$pageSize',
+      'sort': 'fullName,asc',
+    });
+
+    if (res.statusCode == 200) {
+      final body = utf8.decode(res.bodyBytes);
+      if (body.trim().isEmpty) break;
+      final decoded = jsonDecode(body);
+      if (decoded is! List) {
+        throw Exception(
+          'Patients response expected a JSON list, got: ${decoded.runtimeType}',
+        );
+      }
+      if (decoded.isEmpty) break;
+
+      for (final raw in decoded) {
+        if (raw is! Map) continue;
+        final patient = Patient.fromApi(Map<String, dynamic>.from(raw));
+        byId[patient.id] = patient;
+      }
+
+      if (decoded.length < pageSize) break;
+      page++;
+    } else if (res.statusCode == 401) {
+      throw Exception('Unauthorized: Please login again.');
+    } else {
+      throw Exception(
+        'Failed to load patients: ${res.statusCode} ${res.body}',
+      );
     }
   }
 

@@ -67,28 +67,8 @@ DateTime? _dayFromAppointmentStartAt(WidgetRef ref, String appointmentStartAt) {
 /// if the shell's [Navigator] has not finished building yet, since
 /// [pushNamedAndRemoveUntil] only schedules MainShell to be built — the
 /// inner navigator is one frame behind.
-void _pushIntoShell(Object arguments, {int retriesLeft = 5}) {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    final navState = shellNavigatorKey.currentState;
-    if (navState != null) {
-      navState.pushNamed(
-        AppRoutes.patientsWithSelection,
-        arguments: arguments,
-      );
-      return;
-    }
-    if (retriesLeft > 0) {
-      _pushIntoShell(arguments, retriesLeft: retriesLeft - 1);
-    } else {
-      debugPrint(
-        '⚠ Shell navigator not ready after retries; falling back to outer navigator',
-      );
-      navigatorKey.currentState?.pushNamed(
-        AppRoutes.patientsWithSelection,
-        arguments: arguments,
-      );
-    }
-  });
+void _pushIntoShell(Object arguments) {
+  ShellScope.pushIntoShell(arguments);
 }
 
 /// Resolves appointment day, shows loading, then navigates to Calendar on that day (no "today" flash).

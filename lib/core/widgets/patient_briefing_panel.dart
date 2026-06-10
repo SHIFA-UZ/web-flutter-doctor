@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/utils/text_cleaner.dart';
@@ -33,17 +34,17 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
 
     final l10n = AppLocalizations.of(context)!;
     final screenSize = MediaQuery.sizeOf(context);
-    final isMobile = Responsive.isMobile(context);
-    final panelHeight = (screenSize.height * (isMobile ? 0.45 : 0.5))
-        .clamp(isMobile ? 220.0 : 280.0, isMobile ? 420.0 : 500.0);
-    final panelWidth = isMobile
+    final useSinglePane = PlatformLayout.useSinglePane(context);
+    final panelHeight = (screenSize.height * (useSinglePane ? 0.45 : 0.5))
+        .clamp(useSinglePane ? 220.0 : 280.0, useSinglePane ? 420.0 : 500.0);
+    final panelWidth = useSinglePane
         ? screenSize.width - 24
-        : 380.0;
+        : Responsive.overlayWidth(context, 380).clamp(280.0, 380.0);
 
     return Padding(
       padding: EdgeInsets.only(
         right: 12,
-        left: isMobile ? 12 : 0,
+        left: useSinglePane ? 12 : 0,
         bottom: widget.bottomInset,
       ),
       child: Material(

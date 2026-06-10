@@ -18,6 +18,8 @@ import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_schedule_return_info.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
@@ -26,6 +28,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:intl/intl.dart';
@@ -166,7 +169,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       if (next.hasValue) {
         final tz = next.value?.profile['timeZone'] as String?;
         final effectiveTz = (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
-        if (_selectedDay != null && mounted) {
+        if (_selectedDay != null &&
+            mounted &&
+            ref.read(shellProvider) == DoctorShellTab.calendar) {
           debugPrint(
             'CalendarScreen: Profile loaded (timezone: ${tz ?? "UTC fallback"}), loading calendar for $_selectedDay',
           );
@@ -180,11 +185,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       }
     }, fireImmediately: true);
 
-    /// Index of [CalendarScreen] in [MainShell] `screens` (0=Chat, 1=Home, 2=Calendar, â€¦).
-    const calendarShellTabIndex = 2;
     ref.listenManual(shellProvider, (previous, next) {
-      if (next == calendarShellTabIndex &&
-          previous != calendarShellTabIndex) {
+      if (next == DoctorShellTab.calendar &&
+          previous != DoctorShellTab.calendar) {
         ref.read(calendarProvider.notifier).setResourceDoctorId(null);
         if (_selectedDay != null && mounted) {
           final tz =
@@ -208,7 +211,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed && _selectedDay != null) {
+    if (state == AppLifecycleState.resumed &&
+        _selectedDay != null &&
+        ref.read(shellProvider) == DoctorShellTab.calendar) {
       // Refresh calendar when app resumes (throttled to avoid excessive API calls)
       final tz =
           ref.read(profileAllProvider).valueOrNull?.profile['timeZone']
@@ -485,13 +490,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         !_timeZoneHintDismissed &&
         _shouldShowTimeZoneMismatchHint(profileTimeZone);
 
-    final isMobile = Responsive.isMobile(context);
+    final useSinglePane = PlatformLayout.useSinglePane(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Padding(
         padding: Responsive.screenPadding(context),
-        child: isMobile && _selectedEntry != null
+        child: useSinglePane && _selectedEntry != null
             ? CalendarSlotDetailsPanel(
                 key: const ValueKey('details_mobile'),
                 entry: _selectedEntry!,
@@ -510,7 +515,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 },
                 onClose: _clearSelectedEntry,
               )
-            : isMobile
+            : useSinglePane
                 ? _buildMobileCalendar(context, l10n, brand, showTimeZoneHint, profileTimeZone)
                 : _buildDesktopCalendar(context, l10n, brand, showTimeZoneHint, profileTimeZone),
       ),
@@ -638,12 +643,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     AppLocalizations l10n,
     Color brand,
   ) {
-    final isMobile = Responsive.isMobile(context);
+    final compactToolbar = PlatformLayout.useCompactToolbar(context);
     final dateLabel = _selectedDay == null
         ? null
         : '${_selectedDay!.day} ${l10n.monthName(_selectedDay!.month)} ${_selectedDay!.year}';
 
-    final filterControl = isMobile
+    final filterControl = compactToolbar
         ? IconButton.filledTonal(
             onPressed: () => _showFilterDialog(context),
             icon: const Icon(Icons.tune),
@@ -655,7 +660,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             icon: Icons.tune,
           );
 
-    final blockControl = isMobile
+    final blockControl = compactToolbar
         ? IconButton.filledTonal(
             onPressed: _selectedDay == null
                 ? null
@@ -671,7 +676,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             icon: Icons.block,
           );
 
-    if (isMobile) {
+    if (compactToolbar) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1753,7 +1758,7 @@ class CalendarMonthPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final intlLocale = _tableCalendarIntlLocale(context);
     final entries = ref.watch(calendarProvider);
-    final isCompact = compact || Responsive.isMobile(context);
+    final isCompact = compact || PlatformLayout.useCompactToolbar(context);
 
     final headerStyle = HeaderStyle(
       formatButtonVisible: false,
@@ -2184,6 +2189,8 @@ class CalendarSlotDetailsPanel extends ConsumerStatefulWidget {
     this.scheduleTimeZone,
     this.primaryClinicVenueLabel,
     this.initialBookingPlace,
+    this.clinicDoctorProfileId,
+    this.clinicDoctorDisplayName,
     required this.onSavedSuccessfully,
     required this.onClose,
   }) : super(key: key);
@@ -2196,6 +2203,10 @@ class CalendarSlotDetailsPanel extends ConsumerStatefulWidget {
 
   /// Fallback label for clinic/in-person bookings (typically selected clinic street).
   final String? primaryClinicVenueLabel;
+
+  /// Set when this panel is shown inside [ClinicDoctorScheduleRoute].
+  final int? clinicDoctorProfileId;
+  final String? clinicDoctorDisplayName;
 
   /// Pre-selects clinic vs video when booking a free slot (e.g. quick action).
   final String? initialBookingPlace;
@@ -2303,15 +2314,33 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final patientId = widget.entry.patientId?.toString();
     if (patientId == null || patientId.trim().isEmpty) return;
 
-    ref.read(shellProvider.notifier).setTab(3);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ShellScope.pushNamed(
-        context,
-        AppRoutes.patientsWithSelection,
-        arguments: patientId,
-      );
-    });
+    final openedFromRootOverlay = ShellScope.of(context) == null;
+    Object pushArgs = patientId;
+
+    if (openedFromRootOverlay) {
+      final doctorId = widget.clinicDoctorProfileId;
+      final doctorName = widget.clinicDoctorDisplayName?.trim();
+      final timeZone = widget.scheduleTimeZone?.trim();
+      if (doctorId != null &&
+          doctorName != null &&
+          doctorName.isNotEmpty &&
+          timeZone != null &&
+          timeZone.isNotEmpty) {
+        pushArgs = <String, dynamic>{
+          'patientId': patientId,
+          'clinicScheduleReturn': ClinicScheduleReturnInfo(
+            doctorProfileId: doctorId,
+            doctorDisplayName: doctorName,
+            clinicScheduleTimeZone: timeZone,
+            clinicStreetAddress: widget.primaryClinicVenueLabel,
+          ).toMap(),
+        };
+      }
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+
+    ref.read(shellProvider.notifier).setTab(DoctorShellTab.patients);
+    ShellScope.pushIntoShell(pushArgs);
   }
 
   Future<void> _removeScheduleBlock() async {
@@ -3217,20 +3246,34 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
         return;
       }
 
-      ref.read(shellProvider.notifier).setTab(3);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ShellScope.pushNamed(
-          context,
-          AppRoutes.patientsWithSelection,
-          arguments: {
-            'patientId': patientId,
-            'documentId': doc.id,
-            'documentTitle': doc.title,
-            'openDocumentViewer': true,
-          },
-        );
-      });
+      final openedFromRootOverlay = ShellScope.of(context) == null;
+      final pushArgs = <String, dynamic>{
+        'patientId': patientId,
+        'documentId': doc.id,
+        'documentTitle': doc.title,
+        'openDocumentViewer': true,
+      };
+      if (openedFromRootOverlay) {
+        final doctorId = widget.clinicDoctorProfileId;
+        final doctorName = widget.clinicDoctorDisplayName?.trim();
+        final timeZone = widget.scheduleTimeZone?.trim();
+        if (doctorId != null &&
+            doctorName != null &&
+            doctorName.isNotEmpty &&
+            timeZone != null &&
+            timeZone.isNotEmpty) {
+          pushArgs['clinicScheduleReturn'] = ClinicScheduleReturnInfo(
+            doctorProfileId: doctorId,
+            doctorDisplayName: doctorName,
+            clinicScheduleTimeZone: timeZone,
+            clinicStreetAddress: widget.primaryClinicVenueLabel,
+          ).toMap();
+        }
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      ref.read(shellProvider.notifier).setTab(DoctorShellTab.patients);
+      ShellScope.pushIntoShell(pushArgs);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

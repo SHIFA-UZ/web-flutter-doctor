@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/services/timezone_service.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/utils/password_validation.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/profile/presentation/searchable_timezone_dropdown.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
@@ -141,6 +142,8 @@ class _ReceptionistCreateAccountScreenState
 
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title:
             Text(l10n.createAccount, style: const TextStyle(fontWeight: FontWeight.w700)),
         actions: const [

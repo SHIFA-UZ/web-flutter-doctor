@@ -34,7 +34,7 @@ Future<Patient?> showCreatePatientSheet(
   final phoneFieldsKey = GlobalKey<MultiplePhoneFieldsState>();
   final emailCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
-  String? selectedLanguage = patientLanguageOptions.first;
+  String? selectedLanguage = 'uzbek';
   DateTime? birthDate;
 
   final confirmed = await showScrollableFormBottomSheet<bool>(

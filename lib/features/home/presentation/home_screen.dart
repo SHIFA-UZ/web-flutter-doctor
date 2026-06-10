@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
@@ -45,8 +46,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Responsive.isMobile(context);
-    final isTablet = Responsive.isTabletOrMobile(context) && !isMobile;
+    final useSinglePane = PlatformLayout.useSinglePane(context);
+    final isTablet = Responsive.isTablet(context);
 
     return HomeSearchShortcut(
       child: Scaffold(
@@ -65,7 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onSearchTap: _openSearch,
                           onNotificationsTap: _openNotifications,
                         ),
-                        if (isMobile) ...[
+                        if (useSinglePane) ...[
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -85,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         SizedBox(height: AppDesignSystem.sectionGap),
 
                         // Row 2 — Timeline (70%) + AI Copilot (30%)
-                        if (isMobile)
+                        if (useSinglePane)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -138,7 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
 
-                        if (isMobile) ...[
+                        if (useSinglePane) ...[
                           const SizedBox(height: AppDesignSystem.sectionGap),
                           const HomeRemindersPanel(),
                         ],
@@ -146,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         SizedBox(height: AppDesignSystem.sectionGap),
 
                         // Row 3 — Attention + Activity feed
-                        if (isMobile)
+                        if (useSinglePane)
                           const Column(
                             children: [
                               HomeAttentionCenter(),
@@ -176,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
             Positioned(
-              right: Responsive.isMobile(context) ? 16 : 32,
+              right: useSinglePane ? 16 : 32,
               bottom: Responsive.bottomNavClearance(context) + 16,
               child: const HomeFloatingQuickActions(),
             ),

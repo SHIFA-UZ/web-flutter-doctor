@@ -743,6 +743,7 @@
   "failedToCreateTask": "Vazifa yaratishda xatolik",
   "failedToUpdateTask": "Vazifani yangilashda xatolik",
   "selectPatient": "Bemorni tanlash",
+  "selectPatientHint": "Tafsilotlarni ko'rish uchun bemorni tanlang",
   "tapToSearch": "Qidirish va tanlash uchun bosing",
   "searchByNameOrId": "Ism yoki ID bo'yicha qidirish",
   "taskDetails": "Vazifa tafsilotlari",

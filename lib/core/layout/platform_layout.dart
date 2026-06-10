@@ -15,8 +15,51 @@ class PlatformLayout {
     return Platform.isAndroid || Platform.isIOS;
   }
 
-  /// Use bottom navigation shell on native mobile or narrow web viewports.
-  static bool useMobileShell(BuildContext context) {
-    return isNativeMobile || Responsive.isMobile(context);
+  /// Use bottom navigation shell on native mobile or phone-sized web viewports.
+  /// iPad Safari (shortest side ≥ 600) keeps the sidebar even when width dips
+  /// below 768 px due to browser chrome.
+  static bool useMobileShell(BuildContext context) =>
+      Responsive.useMobileShell(context);
+
+  /// Sidebar width for the current shell mode (0 when bottom nav is shown).
+  static double sidebarWidth(BuildContext context) {
+    if (useMobileShell(context)) return 0;
+    return Responsive.sidebarWidthForViewport(Responsive.widthOf(context));
   }
+
+  /// Content area width inside [MainShell] after the sidebar.
+  static double contentWidth(BuildContext context) =>
+      Responsive.contentWidthOf(
+        context,
+        useMobileShell: useMobileShell(context),
+      );
+
+  static bool useSinglePane(BuildContext context) =>
+      Responsive.useSinglePane(context);
+
+  static bool useCompactToolbar(BuildContext context) =>
+      Responsive.useCompactToolbar(context);
+
+  static bool useCompactSidebar(BuildContext context) {
+    if (useMobileShell(context)) return false;
+    return Responsive.widthOf(context) < Responsive.compactSidebarBreakpoint;
+  }
+
+  static EdgeInsets screenPadding(BuildContext context) =>
+      Responsive.screenPadding(context);
+
+  static double sectionGap(BuildContext context) =>
+      Responsive.sectionGap(context);
+
+  static TextStyle pageTitleStyle(BuildContext context) =>
+      Responsive.pageTitleStyle(context);
+
+  static TextStyle pageSubtitleStyle(BuildContext context) =>
+      Responsive.pageSubtitleStyle(context);
+
+  static double bottomNavClearance(BuildContext context) =>
+      Responsive.bottomNavClearance(context);
+
+  static double mobileBottomSheetPadding(BuildContext context) =>
+      Responsive.mobileBottomSheetPadding(context);
 }

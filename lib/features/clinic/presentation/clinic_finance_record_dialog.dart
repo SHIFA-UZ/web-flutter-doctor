@@ -145,7 +145,7 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
       ),
     ];
 
-    if (Responsive.isMobile(context)) {
+    if (Responsive.useMobileShell(context)) {
       return Dialog.fullscreen(
         child: Scaffold(
           appBar: AppBar(

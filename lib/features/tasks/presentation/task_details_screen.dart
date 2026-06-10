@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
 import 'package:shifa_doc_app_v1/state/tasks/task_actions.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -52,6 +53,8 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(l10n.taskDetails),
         backgroundColor: brand,
         foregroundColor: Colors.white,

@@ -10,6 +10,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -77,7 +78,7 @@ class PatientHeroHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final status = patientStatus(patient, l10n);
     final hasRisk = patient.atRisk;
-    final isNarrow = Responsive.isMobile(context);
+    final isNarrow = PlatformLayout.useCompactToolbar(context);
 
     final nameBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,

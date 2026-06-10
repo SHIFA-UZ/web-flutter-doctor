@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
@@ -89,6 +90,8 @@ class _HomeGreetingHeaderState extends ConsumerState<HomeGreetingHeader> {
     final followUpCount = pendingTasks.length;
     final nextMinutes = _minutesUntilNext(ref, appointmentsAsync.valueOrNull);
 
+    final compactToolbar = PlatformLayout.useCompactToolbar(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -108,7 +111,7 @@ class _HomeGreetingHeaderState extends ConsumerState<HomeGreetingHeader> {
                 ],
               ),
             ),
-            if (!Responsive.isMobile(context))
+            if (!compactToolbar)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -126,7 +129,7 @@ class _HomeGreetingHeaderState extends ConsumerState<HomeGreetingHeader> {
               ),
           ],
         ),
-        if (Responsive.isMobile(context)) ...[
+        if (compactToolbar) ...[
           const SizedBox(height: 12),
           HomeDashboardToolbar(exporting: _exporting, onExport: _export),
         ],
@@ -134,7 +137,7 @@ class _HomeGreetingHeaderState extends ConsumerState<HomeGreetingHeader> {
         Text(
           '${_greeting(l10n)}, ${_doctorName(ref)} 👋',
           style: AppDesignSystem.h1(context).copyWith(
-            fontSize: Responsive.isMobile(context) ? 20 : 22,
+            fontSize: compactToolbar ? 20 : 22,
           ),
         ),
         const SizedBox(height: 8),

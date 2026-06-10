@@ -15,6 +15,7 @@ import 'package:shifa_doc_app_v1/state/patients/patient_forms_provider.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
@@ -1135,6 +1136,8 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       appBar: widget.isEmbedded
           ? null
           : AppBar(
+              leading: appBarBackLeading(context),
+              automaticallyImplyLeading: false,
               title: Text(widget.templateId == '025-2' ? l10n.form0252MedicalDocument : 'Form ${widget.templateId}'),
               actions: [
                 if (widget.existingForm != null)

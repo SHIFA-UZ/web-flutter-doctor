@@ -742,6 +742,7 @@
   "failedToCreateTask": "Не удалось создать задачу",
   "failedToUpdateTask": "Не удалось обновить задачу",
   "selectPatient": "Выбрать пациента",
+  "selectPatientHint": "Выберите пациента, чтобы просмотреть детали",
   "tapToSearch": "Нажмите для поиска и выбора пациента",
   "searchByNameOrId": "Поиск по имени или ID",
   "taskDetails": "Детали задачи",

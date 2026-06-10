@@ -836,6 +836,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 
 import '../../../state/profile/profile_actions.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'location_picker_widget.dart';
 import 'searchable_profession_dropdown.dart';
@@ -1095,7 +1096,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           backgroundColor: const Color(0xFFF5F5F5),
           body: Padding(
             padding: Responsive.screenPadding(context),
-            child: Responsive.isMobile(context)
+            child: PlatformLayout.useSinglePane(context)
                 ? (_mobileDetailOpen
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1171,7 +1172,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _selectProfilePanel(_ProfilePanel panel) {
     setState(() {
       _selected = panel;
-      if (Responsive.isMobile(context)) {
+      if (PlatformLayout.useSinglePane(context)) {
         _mobileDetailOpen = true;
       }
     });

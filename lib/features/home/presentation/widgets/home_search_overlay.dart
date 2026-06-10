@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
@@ -63,7 +64,7 @@ class _HomeSearchOverlayState extends ConsumerState<HomeSearchOverlay> {
           child: Material(
             color: Colors.transparent,
             child: Container(
-              width: 520,
+              width: Responsive.overlayWidth(context, 520),
               margin: const EdgeInsets.all(24),
               decoration: AppDesignSystem.cardDecoration(),
               child: Column(

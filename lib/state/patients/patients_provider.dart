@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
@@ -22,24 +21,12 @@ class PatientsController extends StateNotifier<List<Patient>> {
     }
   }
 
-  /// Load patients from backend API
+  /// Load patients from backend API (all pages — server defaults to 50 per page).
   Future<List<Patient>> loadPatients() async {
     final client = ref.read(apiClientProvider);
-    final response = await client.get('/api/patients');
-    if (response.statusCode == 200) {
-      final List data = json.decode(utf8.decode(response.bodyBytes)) as List;
-      final patients = data
-          .map((e) => Patient.fromApi(e as Map<String, dynamic>))
-          .toList();
-      state = patients;
-      return patients;
-    } else if (response.statusCode == 401) {
-      throw Exception('Unauthorized: Please login again.');
-    } else {
-      throw Exception(
-        'Failed to load patients: ${response.statusCode} ${response.body}',
-      );
-    }
+    final patients = await fetchAllPatientsWithClient(client: client);
+    state = patients;
+    return patients;
   }
 }
 

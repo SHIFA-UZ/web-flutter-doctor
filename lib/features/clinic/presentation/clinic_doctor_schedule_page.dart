@@ -3,9 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/features/calendar/presentation/calendar_screen.dart';
@@ -268,6 +270,8 @@ class _ClinicDoctorScheduleScaffoldState
       day: selected,
       scheduleTimeZone: _effectiveTz(),
       primaryClinicVenueLabel: widget.clinicStreetAddress,
+      clinicDoctorProfileId: ref.read(calendarProvider.notifier).resourceDoctorId,
+      clinicDoctorDisplayName: widget.doctorDisplayName,
       onSavedSuccessfully: () async {
         await _reloadDay(selected);
         if (mounted) setState(() => _selectedEntry = null);
@@ -305,13 +309,13 @@ class _ClinicDoctorScheduleScaffoldState
     BuildContext context,
     AppLocalizations l10n,
     Color brand, {
-    required bool isMobile,
+    required bool compactToolbar,
   }) {
     final selected = _selectedDay;
     final dateLabel =
         '${selected.day} ${l10n.monthName(selected.month)} ${selected.year}';
 
-    final filterControl = isMobile
+    final filterControl = compactToolbar
         ? IconButton.filledTonal(
             onPressed: _loadingDay ? null : _showFilterDialog,
             icon: const Icon(Icons.tune),
@@ -334,7 +338,7 @@ class _ClinicDoctorScheduleScaffoldState
           )
         : null;
 
-    if (isMobile) {
+    if (compactToolbar) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -409,7 +413,7 @@ class _ClinicDoctorScheduleScaffoldState
       children: [
         _buildDoctorHint(context),
         SizedBox(height: Responsive.sectionGap(context)),
-        _buildHeaderRow(context, l10n, brand, isMobile: true),
+        _buildHeaderRow(context, l10n, brand, compactToolbar: true),
         SizedBox(height: Responsive.sectionGap(context)),
         _buildMonthPanel(compact: true),
         SizedBox(height: Responsive.sectionGap(context)),
@@ -434,7 +438,7 @@ class _ClinicDoctorScheduleScaffoldState
             children: [
               _buildDoctorHint(context),
               const SizedBox(height: 16),
-              _buildHeaderRow(context, l10n, brand, isMobile: false),
+              _buildHeaderRow(context, l10n, brand, compactToolbar: false),
               const SizedBox(height: 16),
               Expanded(child: _buildEntriesList(brand)),
             ],
@@ -460,28 +464,24 @@ class _ClinicDoctorScheduleScaffoldState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
-    final isMobile = Responsive.isMobile(context);
+    final useSinglePane = PlatformLayout.useSinglePane(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(
           widget.doctorDisplayName,
           overflow: TextOverflow.ellipsis,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Padding(
           padding: Responsive.screenPadding(context),
-          child: isMobile && _selectedEntry != null
+          child: useSinglePane && _selectedEntry != null
               ? _buildSlotDetailsPanel()
-              : isMobile
+              : useSinglePane
                   ? _buildMobileBody(context, l10n, brand)
                   : _buildDesktopBody(context, l10n, brand),
         ),

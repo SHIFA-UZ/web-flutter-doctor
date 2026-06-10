@@ -15,6 +15,7 @@ import 'package:shifa_doc_app_v1/features/appointments/presentation/video_call_s
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_form_screen.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_schedule_return_info.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_form_models.dart';
 import 'package:shifa_doc_app_v1/features/admin/presentation/admin_login_screen.dart';
@@ -150,6 +151,7 @@ class AppRouter {
             initialDocumentTitle: rootDocumentTitle,
             initialOpenDocumentViewer: rootOpenDocumentViewer,
             clinicWorkspaceId: rootClinicId,
+            clinicScheduleReturn: ClinicScheduleReturnInfo.fromRouteArgs(rootArgs),
           ),
         );
 
@@ -264,6 +266,7 @@ class AppRouter {
             initialDocumentTitle: documentTitle,
             initialOpenDocumentViewer: openDocumentViewer,
             clinicWorkspaceId: clinicWorkspaceId,
+            clinicScheduleReturn: ClinicScheduleReturnInfo.fromRouteArgs(args),
           ),
         );
       default:

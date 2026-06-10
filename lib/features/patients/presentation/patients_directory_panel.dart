@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
@@ -38,9 +39,21 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
   static const int _pageSize = 10;
 
   @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(_onSearchQueryChanged);
+  }
+
+  @override
   void dispose() {
+    _searchCtrl.removeListener(_onSearchQueryChanged);
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _onSearchQueryChanged() {
+    if (!mounted) return;
+    setState(() => _page = 0);
   }
 
   List<Patient> get _visiblePatients {
@@ -100,7 +113,7 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
         ? 0
         : ((_page + 1) * _pageSize).clamp(0, visible);
 
-    if (Responsive.isMobile(context)) {
+    if (PlatformLayout.useCompactToolbar(context)) {
       return Container(
         decoration: AppDesignSystem.cardDecoration(
           borderOverride:
@@ -138,7 +151,6 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _searchCtrl,
-                      onChanged: (_) => setState(() => _page = 0),
                       decoration: InputDecoration(
                         hintText: l10n.translate('searchPatientsGlobalHint') ??
                             'Search patients, phone, ID...',
@@ -291,10 +303,13 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                l10n.patients,
-                                style: AppDesignSystem.display(context).copyWith(
-                                  fontSize: 24,
+                              Flexible(
+                                child: Text(
+                                  l10n.patients,
+                                  style: AppDesignSystem.display(context).copyWith(
+                                    fontSize: 24,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -318,7 +333,6 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
                           Expanded(
                             child: TextField(
                               controller: _searchCtrl,
-                              onChanged: (_) => setState(() => _page = 0),
                               decoration: InputDecoration(
                                 hintText: l10n.translate('searchPatientsGlobalHint') ??
                                     'Search patients, phone, ID...',

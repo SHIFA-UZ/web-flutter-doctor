@@ -371,19 +371,25 @@ class CalendarController
 
     final first = DateTime(month.year, month.month, 1);
     final last = DateTime(month.year, month.month + 1, 0);
-    final futures = <Future<void>>[];
+    final daysToLoad = <DateTime>[];
 
     for (var d = first; !d.isAfter(last); d = d.add(const Duration(days: 1))) {
       final key = _dayKey(d);
       if (!state.containsKey(key)) {
-        futures.add(
-          loadDay(day: d, doctorTimeZone: doctorTimeZone).catchError((_) {}),
-        );
+        daysToLoad.add(d);
       }
     }
 
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
+    // Load in small batches so we do not saturate the browser connection pool
+    // and starve other screens (e.g. patient documents) on the same origin.
+    const batchSize = 4;
+    for (var i = 0; i < daysToLoad.length; i += batchSize) {
+      final batch = daysToLoad.skip(i).take(batchSize).toList();
+      await Future.wait(
+        batch.map(
+          (d) => loadDay(day: d, doctorTimeZone: doctorTimeZone).catchError((_) {}),
+        ),
+      );
     }
   }
 

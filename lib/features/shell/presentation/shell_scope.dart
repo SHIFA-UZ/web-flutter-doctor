@@ -57,6 +57,40 @@ class ShellScope extends InheritedWidget {
     return Navigator.push<T>(context, route);
   }
 
+  /// Whether the shell navigator or the nearest [Navigator] can pop one route.
+  static bool canPop(BuildContext context) {
+    if (shellNavigatorKey.currentState?.canPop() == true) {
+      return true;
+    }
+    final scope = ShellScope.of(context);
+    if (scope != null && scope.navigatorKey.currentState?.canPop() == true) {
+      return true;
+    }
+    return Navigator.of(context).canPop();
+  }
+
+  /// Pushes a route into the shell nested navigator (sidebar stays visible).
+  /// Use when [BuildContext] is outside [ShellScope] (e.g. clinic doctor schedule
+  /// on the root navigator).
+  static void pushIntoShell(
+    Object arguments, {
+    int retriesLeft = 5,
+  }) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navState = shellNavigatorKey.currentState;
+      if (navState != null) {
+        navState.pushNamed(
+          '/app/patients/selection',
+          arguments: arguments,
+        );
+        return;
+      }
+      if (retriesLeft > 0) {
+        pushIntoShell(arguments, retriesLeft: retriesLeft - 1);
+      }
+    });
+  }
+
   /// Pops the shell navigator when available.
   static void pop<T extends Object?>(BuildContext context, [T? result]) {
     final scope = ShellScope.of(context);

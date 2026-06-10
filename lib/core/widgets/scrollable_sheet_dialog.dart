@@ -102,7 +102,7 @@ Future<T?> showScrollableFormDialog<T>({
     return actions;
   }
 
-  if (Responsive.isMobile(context)) {
+  if (Responsive.useMobileShell(context)) {
     return showDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,

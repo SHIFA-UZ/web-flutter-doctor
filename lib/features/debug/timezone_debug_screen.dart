@@ -1,5 +1,6 @@
 // TEMPORARY DEBUG SCREEN - Remove after fixing timezone issue
 import 'package:flutter/material.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
@@ -16,7 +17,11 @@ class TimezoneDebugScreen extends ConsumerWidget {
     final appointmentsAsync = ref.watch(todayAppointmentsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Timezone Debug')),
+      appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
+        title: const Text('Timezone Debug'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

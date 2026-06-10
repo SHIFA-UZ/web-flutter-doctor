@@ -18,7 +18,8 @@ class AppConfig {
   /// Resolved API base URL for HTTP clients.
   static String get resolvedApiBaseUrl {
     if (apiBaseUrl.isNotEmpty) return apiBaseUrl;
-    if (kReleaseMode && !kIsWeb) return productionApiBaseUrl;
+    // Release web builds (e.g. admin.shifa.uz) must not fall back to localhost.
+    if (kReleaseMode || isProduction) return productionApiBaseUrl;
     return 'http://localhost:8080';
   }
 

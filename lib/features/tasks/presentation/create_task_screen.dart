@@ -9,6 +9,7 @@ import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
 /// Schedule mode for the create-task form.
@@ -248,6 +249,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: appBarBackLeading(context),
+        automaticallyImplyLeading: false,
         title: Text(l10n.createRemoteCareTask),
         backgroundColor: brand,
         foregroundColor: Colors.white,

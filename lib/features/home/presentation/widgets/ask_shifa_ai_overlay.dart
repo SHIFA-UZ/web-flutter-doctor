@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_message.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
@@ -211,7 +212,7 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
           child: Material(
             color: Colors.transparent,
             child: Container(
-              width: 560,
+              width: Responsive.overlayWidth(context, 560),
               constraints: BoxConstraints(maxHeight: maxHeight),
               margin: const EdgeInsets.all(24),
               decoration: AppDesignSystem.aiCardDecoration(),

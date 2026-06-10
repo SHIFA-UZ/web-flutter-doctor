@@ -5,7 +5,9 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
+import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -212,7 +214,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
 
   Future<void> _leaveAppointmentScreen() async {
     await _persistAppointmentDrafts();
-    if (mounted) Navigator.pop(context);
+    if (mounted) appPop(context);
   }
 
   void _clearGeneralNoteFields() {
@@ -1255,12 +1257,11 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                   padding: Responsive.screenPadding(context).copyWith(bottom: 0),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final isMobile =
-                          constraints.maxWidth < Responsive.mobileBreakpoint;
-                      final gap = isMobile ? 12.0 : 24.0;
+                      final stackVertically = PlatformLayout.useSinglePane(context);
+                      final gap = stackVertically ? 12.0 : 24.0;
                       return Flex(
                         direction:
-                            isMobile ? Axis.vertical : Axis.horizontal,
+                            stackVertically ? Axis.vertical : Axis.horizontal,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                       // Left: video canvas + controls
@@ -1421,8 +1422,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                       ),
 
                       SizedBox(
-                        width: isMobile ? 0 : gap,
-                        height: isMobile ? gap : 0,
+                        width: stackVertically ? 0 : gap,
+                        height: stackVertically ? gap : 0,
                       ),
 
                       // Right: Documents + Notes

@@ -347,6 +347,8 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     }
 
     final isMobile = PlatformLayout.useMobileShell(context);
+    final compactSidebar = PlatformLayout.useCompactSidebar(context);
+    final sidebarWidth = PlatformLayout.sidebarWidth(context);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -354,9 +356,9 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!isMobile)
-          // ───────────────── Sidebar (screenshot-style labeled nav) ─────────────────
+          // ───────────────── Sidebar (labeled on desktop, icon rail on tablet) ─────────────────
           Container(
-            width: 260,
+            width: sidebarWidth,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -369,8 +371,19 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                 children: [
                   const SizedBox(height: 20),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compactSidebar ? 8 : 20,
+                    ),
+                    child: compactSidebar
+                        ? Center(
+                            child: Image.asset(
+                              'assets/branding/shifa_logo.png',
+                              width: 36,
+                              height: 36,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
@@ -414,38 +427,60 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                       ],
                     ),
                   ),
+                  if (compactSidebar) ...[
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Tooltip(
+                        message: l10n.translate('search'),
+                        child: Material(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            onTap: () => HomeSearchOverlay.show(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Icon(Icons.search, color: Colors.white, size: 22),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compactSidebar ? 6 : 12,
+                      ),
                       child: Column(
                         children: [
                           if (isClinicStaff) ...[
-                            _buildDarkNavItem(context, ref, Icons.chat_bubble_outline, l10n.chat, 0, brand, selectedIndex),
-                            _buildDarkNavItem(context, ref, Icons.local_hospital_outlined, l10n.translate('clinicNavClinic'), 1, brand, selectedIndex),
-                            _buildDarkNotificationsNavItem(context, ref, 2, brand, selectedIndex),
+                            _buildDarkNavItem(context, ref, Icons.chat_bubble_outline, l10n.chat, 0, brand, selectedIndex, compact: compactSidebar),
+                            _buildDarkNavItem(context, ref, Icons.local_hospital_outlined, l10n.translate('clinicNavClinic'), 1, brand, selectedIndex, compact: compactSidebar),
+                            _buildDarkNotificationsNavItem(context, ref, 2, brand, selectedIndex, compact: compactSidebar),
                           ] else ...[
-                            _buildDarkNavItem(context, ref, Icons.home_outlined, l10n.home, DoctorShellTab.home, brand, selectedIndex),
-                            _buildDarkNavItem(context, ref, Icons.calendar_today_outlined, l10n.translate('navAppointments'), DoctorShellTab.calendar, brand, selectedIndex),
-                            _buildDarkNavItem(context, ref, Icons.people_outline, l10n.patients, DoctorShellTab.patients, brand, selectedIndex),
+                            _buildDarkNavItem(context, ref, Icons.home_outlined, l10n.home, DoctorShellTab.home, brand, selectedIndex, compact: compactSidebar),
+                            _buildDarkNavItem(context, ref, Icons.calendar_today_outlined, l10n.translate('navAppointments'), DoctorShellTab.calendar, brand, selectedIndex, compact: compactSidebar),
+                            _buildDarkNavItem(context, ref, Icons.people_outline, l10n.patients, DoctorShellTab.patients, brand, selectedIndex, compact: compactSidebar),
                             if (hasClinicWorkspace)
-                              _buildDarkNavItem(context, ref, Icons.medical_services_outlined, l10n.translate('clinicNavClinic'), DoctorShellTab.clinic, brand, selectedIndex),
+                              _buildDarkNavItem(context, ref, Icons.medical_services_outlined, l10n.translate('clinicNavClinic'), DoctorShellTab.clinic, brand, selectedIndex, compact: compactSidebar),
                             if (canUseTasks)
-                              _buildDarkTasksNavItem(context, ref, DoctorShellTab.tasks, brand, selectedIndex),
-                            _buildDarkNavItem(context, ref, Icons.analytics_outlined, l10n.translate('navReports'), DoctorShellTab.reports, brand, selectedIndex),
+                              _buildDarkTasksNavItem(context, ref, DoctorShellTab.tasks, brand, selectedIndex, compact: compactSidebar),
+                            _buildDarkNavItem(context, ref, Icons.analytics_outlined, l10n.translate('navReports'), DoctorShellTab.reports, brand, selectedIndex, compact: compactSidebar),
                             if (hasClinicWorkspace)
-                              _buildDarkNavItem(context, ref, Icons.account_balance_wallet_outlined, l10n.translate('navFinance'), DoctorShellTab.clinic, brand, selectedIndex),
-                            _buildDarkNavItem(context, ref, Icons.settings_outlined, l10n.translate('navSettings'), DoctorShellTab.profile, brand, selectedIndex),
+                              _buildDarkNavItem(context, ref, Icons.account_balance_wallet_outlined, l10n.translate('navFinance'), DoctorShellTab.clinic, brand, selectedIndex, compact: compactSidebar),
+                            _buildDarkNavItem(context, ref, Icons.settings_outlined, l10n.translate('navSettings'), DoctorShellTab.profile, brand, selectedIndex, compact: compactSidebar),
                           ],
                         ],
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(compactSidebar ? 6 : 12),
                     child: Column(
                       children: [
-                        if (!isClinicStaff)
+                        if (!isClinicStaff && !compactSidebar)
                           _SidebarAiCard(
                             brand: brand,
                             onTap: () {
@@ -460,16 +495,67 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                               AskShifaAiOverlay.show(context);
                             },
                           ),
-                        if (!isClinicStaff) const SizedBox(height: 12),
-                        _SidebarDoctorProfile(
-                          brand: brand,
-                          photoUrl: avatarUrl,
-                          onTap: () => _goToTab(isClinicStaff ? 3 : DoctorShellTab.profile),
-                        ),
-                        const SizedBox(height: 8),
-                        const LanguageMiniToggle(),
-                        const SizedBox(height: 8),
-                        _LogoutButtonDark(brand: brand),
+                        if (!isClinicStaff && compactSidebar)
+                          Tooltip(
+                            message: l10n.translate('sidebarAiTitle'),
+                            child: Material(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                onTap: () {
+                                  if (!ref.read(
+                                    doctorFeatureProvider(DoctorFeature.askShifaAi),
+                                  )) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(l10n.error)),
+                                    );
+                                    return;
+                                  }
+                                  AskShifaAiOverlay.show(context);
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: Icon(
+                                    Icons.auto_awesome,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (!isClinicStaff) SizedBox(height: compactSidebar ? 8 : 12),
+                        compactSidebar
+                            ? Tooltip(
+                                message: l10n.profile,
+                                child: _SidebarDoctorProfile(
+                                  brand: brand,
+                                  photoUrl: avatarUrl,
+                                  compact: true,
+                                  onTap: () => _goToTab(
+                                    isClinicStaff ? 3 : DoctorShellTab.profile,
+                                  ),
+                                ),
+                              )
+                            : _SidebarDoctorProfile(
+                                brand: brand,
+                                photoUrl: avatarUrl,
+                                onTap: () => _goToTab(
+                                  isClinicStaff ? 3 : DoctorShellTab.profile,
+                                ),
+                              ),
+                        if (!compactSidebar) ...[
+                          const SizedBox(height: 8),
+                          const LanguageMiniToggle(),
+                        ],
+                        SizedBox(height: compactSidebar ? 4 : 8),
+                        compactSidebar
+                            ? Tooltip(
+                                message: l10n.signOut,
+                                child: _LogoutButtonDark(brand: brand, compact: true),
+                              )
+                            : _LogoutButtonDark(brand: brand),
                       ],
                     ),
                   ),
@@ -516,7 +602,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                       bottomInset: Responsive.bottomNavClearance(context),
                     ),
                   ),
-                if (isMobile)
+                if (isMobile || compactSidebar)
                   Positioned(
                     top: 0,
                     right: 0,
@@ -680,9 +766,34 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     String label,
     int index,
     Color brand,
-    int selectedIndex,
-  ) {
+    int selectedIndex, {
+    bool compact = false,
+  }) {
     final isSelected = selectedIndex == index;
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Tooltip(
+          message: label,
+          child: Material(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => _goToTab(index),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Icon(
+                  icon,
+                  color: isSelected ? brand : Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
@@ -720,11 +831,56 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     WidgetRef ref,
     int index,
     Color brand,
-    int selectedIndex,
-  ) {
+    int selectedIndex, {
+    bool compact = false,
+  }) {
     final l10n = AppLocalizations.of(context)!;
     final isSelected = selectedIndex == index;
     final count = ref.watch(tasksProvider).where((t) => t.status == TaskStatus.active).length;
+
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Tooltip(
+          message: l10n.tasks,
+          child: Material(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => _goToTab(index),
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.task_alt_outlined,
+                      color: isSelected ? brand : Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: isSelected ? brand : Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -780,11 +936,56 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     WidgetRef ref,
     int index,
     Color brand,
-    int selectedIndex,
-  ) {
+    int selectedIndex, {
+    bool compact = false,
+  }) {
     final l10n = AppLocalizations.of(context)!;
     final isSelected = selectedIndex == index;
     final unread = ref.watch(doctorNotificationsUnreadCountProvider).valueOrNull ?? 0;
+
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Tooltip(
+          message: l10n.notifications,
+          child: Material(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => _goToTab(index),
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: isSelected ? brand : Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -1371,11 +1572,13 @@ class _SidebarDoctorProfile extends ConsumerWidget {
     required this.brand,
     required this.photoUrl,
     required this.onTap,
+    this.compact = false,
   });
 
   final Color brand;
   final String? photoUrl;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1399,6 +1602,28 @@ class _SidebarDoctorProfile extends ConsumerWidget {
       }
     }
     final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
+
+    if (compact) {
+      return Material(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              backgroundImage: hasPhoto ? NetworkImage(photoUrl!) : null,
+              child: hasPhoto
+                  ? null
+                  : const Icon(Icons.person, color: Colors.white, size: 18),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Material(
       color: Colors.white.withValues(alpha: 0.1),
@@ -1449,42 +1674,63 @@ class _SidebarDoctorProfile extends ConsumerWidget {
 }
 
 class _LogoutButtonDark extends ConsumerWidget {
-  const _LogoutButtonDark({required this.brand});
+  const _LogoutButtonDark({required this.brand, this.compact = false});
 
   final Color brand;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    return TextButton.icon(
-      onPressed: () {
-        showDialog(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(l10n.signOut),
-            content: Text(l10n.signOutConfirm),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  ref.read(authProvider.notifier).logout();
-                  ref.invalidate(profileAllProvider);
-                  ref.invalidate(meProfileProvider);
-                  ref.invalidate(shellProvider);
-                  unawaited(invalidateAppointmentRelatedProviders(ref));
-                  ref.invalidate(patientsProvider);
-                  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
-                },
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: Text(l10n.signOut),
-              ),
-            ],
+    if (compact) {
+      return Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _confirmLogout(context, ref, l10n),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Icon(
+              Icons.logout,
+              size: 20,
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
           ),
-        );
-      },
+        ),
+      );
+    }
+    return TextButton.icon(
+      onPressed: () => _confirmLogout(context, ref, l10n),
       icon: Icon(Icons.logout, size: 18, color: Colors.white.withValues(alpha: 0.85)),
       label: Text(l10n.signOut, style: TextStyle(color: Colors.white.withValues(alpha: 0.85))),
+    );
+  }
+
+  void _confirmLogout(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.signOut),
+        content: Text(l10n.signOutConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ref.read(authProvider.notifier).logout();
+              ref.invalidate(profileAllProvider);
+              ref.invalidate(meProfileProvider);
+              ref.invalidate(shellProvider);
+              unawaited(invalidateAppointmentRelatedProviders(ref));
+              ref.invalidate(patientsProvider);
+              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.signOut),
+          ),
+        ],
+      ),
     );
   }
 }

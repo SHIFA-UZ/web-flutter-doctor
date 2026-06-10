@@ -87,16 +87,17 @@ String patientGenderLabel(
   String? fromForm,
 }) {
   if (fromForm != null && fromForm.trim().isNotEmpty) {
-    return _translateGenderValue(l10n, fromForm.trim());
+    return translateGenderValue(l10n, fromForm.trim());
   }
   final gender = patient.general.gender;
   if (gender != null && gender.trim().isNotEmpty) {
-    return _translateGenderValue(l10n, gender.trim());
+    return translateGenderValue(l10n, gender.trim());
   }
   return '—';
 }
 
-String _translateGenderValue(AppLocalizations l10n, String raw) {
+/// Translates a raw gender value (e.g. 'Male') into the current locale.
+String translateGenderValue(AppLocalizations l10n, String raw) {
   switch (raw.toLowerCase()) {
     case 'male':
       return l10n.translate('genderMale');
