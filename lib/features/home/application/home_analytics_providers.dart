@@ -1,6 +1,5 @@
 // Analytics providers: fetch from API and expose to home screen. Loading/error handled by widgets.
 
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/features/home/application/doctor_analytics_service.dart';
 import 'package:shifa_doc_app_v1/features/home/domain/analytics_models.dart';
@@ -15,22 +14,9 @@ final doctorAnalyticsOverviewProvider =
   }
   final service = ref.watch(doctorAnalyticsServiceProvider);
   
-  // Watch appointments to auto-refresh KPIs when appointments change
+  // Refetch KPIs when today's calendar loads or changes (no background polling).
   ref.watch(todayAppointmentsProvider);
-  
-  // Refresh when today's calendar loads/changes; soft fallback every 5 min (was 30s).
-  final timer = Timer.periodic(const Duration(minutes: 5), (_) {
-    try {
-      ref.invalidateSelf();
-    } catch (_) {
-      // Provider already disposed, ignore
-    }
-  });
-  
-  ref.onDispose(() {
-    timer.cancel();
-  });
-  
+
   return service.getOverview();
 });
 
