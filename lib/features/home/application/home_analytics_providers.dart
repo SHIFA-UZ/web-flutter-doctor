@@ -18,8 +18,8 @@ final doctorAnalyticsOverviewProvider =
   // Watch appointments to auto-refresh KPIs when appointments change
   ref.watch(todayAppointmentsProvider);
   
-  // Auto-refresh every 30 seconds for real-time updates
-  final timer = Timer.periodic(const Duration(seconds: 30), (_) {
+  // Refresh when today's calendar loads/changes; soft fallback every 5 min (was 30s).
+  final timer = Timer.periodic(const Duration(minutes: 5), (_) {
     try {
       ref.invalidateSelf();
     } catch (_) {

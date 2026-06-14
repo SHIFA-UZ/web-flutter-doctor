@@ -56,6 +56,12 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
   int? _contractPdfLoadingDoctorId;
   int? _billingUpdateLoadingDoctorId;
 
+  /// Incremented only when the user clicks Refresh (or after a row mutation).
+  int _refreshToken = 0;
+  bool _listLoading = false;
+  Object? _listError;
+  Map<String, dynamic>? _listData;
+
   @override
   void initState() {
     super.initState();
@@ -128,6 +134,38 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     );
   }
 
+  Future<void> _loadDoctorActivity() async {
+    if (_listLoading) return;
+    setState(() {
+      _listLoading = true;
+      _listError = null;
+    });
+    final p = _params();
+    try {
+      final data = await ref.read(adminActionsProvider).listDoctorActivity(
+            fromIso: p.fromIso,
+            toIso: p.toIso,
+            search: p.search,
+            sort: p.sort,
+            dir: p.dir,
+            page: p.page,
+            size: p.size,
+          );
+      if (!mounted) return;
+      setState(() {
+        _listData = data;
+        _listLoading = false;
+        _refreshToken++;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _listError = e;
+        _listLoading = false;
+      });
+    }
+  }
+
   void _toggleSort(String field) {
     setState(() {
       if (_sort == field) {
@@ -182,7 +220,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
       final result = await adminGenerateEarlyPartnerContractPdf(actions, row.doctorId);
       final filename = earlyPartnerContractPdfFilename(result.contractNumber, row.doctorName);
       await dl.downloadPdfBytes(result.bytes, filename: filename);
-      ref.invalidate(adminDoctorActivityProvider(_params()));
+      await _loadDoctorActivity();
       if (!mounted) return;
       final msg = result.newAllocation
           ? 'Contract ${result.contractNumber} created — PDF opened'
@@ -217,7 +255,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
         trialPeriodMonths: trialPeriodMonths,
         monthlyChargeUsd: monthlyChargeUsd,
       );
-      ref.invalidate(adminDoctorActivityProvider(_params()));
+      await _loadDoctorActivity();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -363,8 +401,6 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final p = _params();
-    final snap = ref.watch(adminDoctorActivityProvider(p));
 
     return Scaffold(
       key: _scaffoldKey,
@@ -383,6 +419,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                 doctorId: _selectedDoctorId!,
                 fromIso: _rangeIso().from,
                 toIso: _rangeIso().to,
+                refreshToken: _refreshToken,
                 contractPdfLoading: _contractPdfLoadingDoctorId == _selectedDoctorId,
                 onDownloadContract: (row) => _downloadContractPdf(row),
                 onClose: () {
@@ -424,10 +461,12 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                       ),
                     ),
                   ),
-                  ShifaSecondaryButton(label: 'Refresh', onPressed: () => ref.invalidate(adminDoctorActivityProvider(p))),
+                  ShifaSecondaryButton(label: 'Refresh', onPressed: _loadDoctorActivity),
                   ShifaSecondaryButton(
                     label: 'Export CSV',
-                    onPressed: () => snap.whenData((d) => _exportCsv(d['content'] as List<AdminDoctorActivityRow>)),
+                    onPressed: _listData == null
+                        ? null
+                        : () => _exportCsv(_listData!['content'] as List<AdminDoctorActivityRow>),
                   ),
                 ],
               ),
@@ -437,178 +476,196 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: snap.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('${l10n.error}: $e')),
-                data: (data) {
-                  final rows = data['content'] as List<AdminDoctorActivityRow>;
-                  final totalPages = ((data['totalPages'] as num?)?.toInt() ?? 1).clamp(1, 100000);
-
-                  final table = ScrollConfiguration(
-                    behavior: _DoctorActivityTableScrollBehavior(),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Scrollbar(
-                          controller: _tableHorizontalCtrl,
-                          thumbVisibility: true,
-                          scrollbarOrientation: ScrollbarOrientation.bottom,
-                          child: Scrollbar(
-                            controller: _tableVerticalCtrl,
-                            thumbVisibility: true,
-                            scrollbarOrientation: ScrollbarOrientation.right,
-                            child: SingleChildScrollView(
-                              controller: _tableHorizontalCtrl,
-                              scrollDirection: Axis.horizontal,
-                              primary: false,
-                              physics: const ClampingScrollPhysics(),
-                              child: SingleChildScrollView(
-                                controller: _tableVerticalCtrl,
-                                primary: false,
-                                physics: const ClampingScrollPhysics(),
-                                child: DataTable(
-                        headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
-                        columns: [
-                          _sortCol('Doctor', 'name'),
-                          const DataColumn(label: Text('Clinic')),
-                          const DataColumn(label: Text('Date joined')),
-                          const DataColumn(label: Text('Trial')),
-                          const DataColumn(label: Text('Monthly \$')),
-                          const DataColumn(label: Text('Total debt')),
-                          const DataColumn(label: Text('SMS on')),
-                          const DataColumn(label: Text('SMS sent')),
-                          const DataColumn(label: Text('SMS owed')),
-                          _sortCol('Booked', 'appointments'),
-                          _sortCol('Done', 'completed'),
-                          const DataColumn(label: Text('Cncl %')),
-                          const DataColumn(label: Text('Act pt')),
-                          _sortCol('Pt new', 'patientscreated'),
-                          const DataColumn(label: Text('Docs')),
-                          const DataColumn(label: Text('Plans')),
-                          const DataColumn(label: Text('Tasks')),
-                          const DataColumn(label: Text('Notes')),
-                          const DataColumn(label: Text('Forms')),
-                          _sortCol('AI req', 'airequests'),
-                          const DataColumn(label: Text('Drafts')),
-                          const DataColumn(label: Text('Video')),
-                          _sortCol('Last act', 'lastactive'),
-                          const DataColumn(label: Text('Contract')),
-                        ],
-                        rows: rows.map((r) {
-                          final la = r.lastActiveAt == null ? '—' : (r.lastActiveAt!.length >= 16 ? r.lastActiveAt!.substring(0, 16) : r.lastActiveAt!);
-                          final loadingPdf = _contractPdfLoadingDoctorId == r.doctorId;
-                          return DataRow(
-                            selected: _selectedDoctorId == r.doctorId,
-                            cells: [
-                              DataCell(Text(r.doctorName)),
-                              DataCell(Text(r.clinicName ?? '—')),
-                              DataCell(Text(_formatDateJoined(r.dateJoinedAt))),
-                              DataCell(_trialDropdown(r)),
-                              DataCell(_monthlyChargeDropdown(r)),
-                              DataCell(Text('\$${r.totalDebtUsd}')),
-                              DataCell(Text(r.smsRemindersAllowed ? 'Yes' : 'No')),
-                              DataCell(Text('${r.smsSentCount}')),
-                              DataCell(Text('${r.smsOwedMinor} ${r.smsCurrency}')),
-                              DataCell(Text('${r.appointmentsBooked}')),
-                              DataCell(Text('${r.appointmentsCompleted}')),
-                              DataCell(Text('${(r.cancellationRate * 100).toStringAsFixed(1)}%')),
-                              DataCell(Text('${r.activePatients}')),
-                              DataCell(Text('${r.patientsCreated}')),
-                              DataCell(Text('${r.documentsUploaded}')),
-                              DataCell(Text('${r.treatmentPlans}')),
-                              DataCell(Text('${r.remoteTasks}')),
-                              DataCell(Text('${r.consultationNotes}')),
-                              DataCell(Text('${r.patientForms}')),
-                              DataCell(Text('${r.aiRequests}')),
-                              DataCell(Text('${r.aiDraftNotes}')),
-                              DataCell(Text('${r.videoAppointments}')),
-                              DataCell(Text(la)),
-                              DataCell(
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (r.earlyPartnerContractNumber != null)
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 6),
-                                        child: Text(
-                                          r.earlyPartnerContractNumber!,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.grey.shade700,
-                                          ),
-                                        ),
-                                      ),
-                                    Tooltip(
-                                      message: r.earlyPartnerContractNumber == null
-                                          ? 'Issue contract PDF (new number)'
-                                          : 'Regenerate contract PDF (${r.earlyPartnerContractNumber})',
-                                      child: IconButton(
-                                        icon: loadingPdf
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child: CircularProgressIndicator(strokeWidth: 2),
-                                              )
-                                            : const Icon(Icons.picture_as_pdf_outlined, size: 22),
-                                        color: Colors.red.shade700,
-                                        onPressed: loadingPdf ? null : () => _downloadContractPdf(r),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            onSelectChanged: (_) {
-                              setState(() => _selectedDoctorId = r.doctorId);
-                              WidgetsBinding.instance.addPostFrameCallback((__) {
-                                _scaffoldKey.currentState?.openEndDrawer();
-                              });
-                            },
-                          );
-                        }).toList(),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-
-                  return Column(
-                    children: [
-                      Expanded(child: rows.isEmpty ? const Center(child: Text('No results')) : table),
-                      if (totalPages > 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.chevron_left),
-                                onPressed: _page > 0 ? () => setState(() => _page--) : null,
-                              ),
-                              Text('${_page + 1} / $totalPages'),
-                              IconButton(
-                                icon: const Icon(Icons.chevron_right),
-                                onPressed: _page < totalPages - 1 ? () => setState(() => _page++) : null,
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
+              child: _buildListBody(l10n),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildListBody(AppLocalizations l10n) {
+    if (_listLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_listError != null) {
+      return Center(child: Text('${l10n.error}: $_listError'));
+    }
+    if (_listData == null) {
+      return Center(
+        child: Text(
+          'Click Refresh to load doctor activity.',
+          style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+        ),
+      );
+    }
+
+    final data = _listData!;
+    final rows = data['content'] as List<AdminDoctorActivityRow>;
+    final totalPages = ((data['totalPages'] as num?)?.toInt() ?? 1).clamp(1, 100000);
+
+    final table = ScrollConfiguration(
+      behavior: _DoctorActivityTableScrollBehavior(),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Scrollbar(
+            controller: _tableHorizontalCtrl,
+            thumbVisibility: true,
+            scrollbarOrientation: ScrollbarOrientation.bottom,
+            child: Scrollbar(
+              controller: _tableVerticalCtrl,
+              thumbVisibility: true,
+              scrollbarOrientation: ScrollbarOrientation.right,
+              child: SingleChildScrollView(
+                controller: _tableHorizontalCtrl,
+                scrollDirection: Axis.horizontal,
+                primary: false,
+                physics: const ClampingScrollPhysics(),
+                child: SingleChildScrollView(
+                  controller: _tableVerticalCtrl,
+                  primary: false,
+                  physics: const ClampingScrollPhysics(),
+                  child: DataTable(
+                    headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
+                    columns: [
+                      _sortCol('Doctor', 'name'),
+                      const DataColumn(label: Text('Clinic')),
+                      const DataColumn(label: Text('Date joined')),
+                      const DataColumn(label: Text('Trial')),
+                      const DataColumn(label: Text('Monthly \$')),
+                      const DataColumn(label: Text('Total debt')),
+                      const DataColumn(label: Text('SMS on')),
+                      const DataColumn(label: Text('SMS sent')),
+                      const DataColumn(label: Text('SMS owed')),
+                      _sortCol('Booked', 'appointments'),
+                      _sortCol('Done', 'completed'),
+                      const DataColumn(label: Text('Cncl %')),
+                      const DataColumn(label: Text('Act pt')),
+                      _sortCol('Pt new', 'patientscreated'),
+                      const DataColumn(label: Text('Docs')),
+                      const DataColumn(label: Text('Plans')),
+                      const DataColumn(label: Text('Tasks')),
+                      const DataColumn(label: Text('Notes')),
+                      const DataColumn(label: Text('Forms')),
+                      _sortCol('AI req', 'airequests'),
+                      const DataColumn(label: Text('Drafts')),
+                      const DataColumn(label: Text('Video')),
+                      _sortCol('Last act', 'lastactive'),
+                      const DataColumn(label: Text('Contract')),
+                    ],
+                    rows: rows.map((r) {
+                      final la = r.lastActiveAt == null
+                          ? '—'
+                          : (r.lastActiveAt!.length >= 16
+                              ? r.lastActiveAt!.substring(0, 16)
+                              : r.lastActiveAt!);
+                      final loadingPdf = _contractPdfLoadingDoctorId == r.doctorId;
+                      return DataRow(
+                        selected: _selectedDoctorId == r.doctorId,
+                        cells: [
+                          DataCell(Text(r.doctorName)),
+                          DataCell(Text(r.clinicName ?? '—')),
+                          DataCell(Text(_formatDateJoined(r.dateJoinedAt))),
+                          DataCell(_trialDropdown(r)),
+                          DataCell(_monthlyChargeDropdown(r)),
+                          DataCell(Text('\$${r.totalDebtUsd}')),
+                          DataCell(Text(r.smsRemindersAllowed ? 'Yes' : 'No')),
+                          DataCell(Text('${r.smsSentCount}')),
+                          DataCell(Text('${r.smsOwedMinor} ${r.smsCurrency}')),
+                          DataCell(Text('${r.appointmentsBooked}')),
+                          DataCell(Text('${r.appointmentsCompleted}')),
+                          DataCell(Text('${(r.cancellationRate * 100).toStringAsFixed(1)}%')),
+                          DataCell(Text('${r.activePatients}')),
+                          DataCell(Text('${r.patientsCreated}')),
+                          DataCell(Text('${r.documentsUploaded}')),
+                          DataCell(Text('${r.treatmentPlans}')),
+                          DataCell(Text('${r.remoteTasks}')),
+                          DataCell(Text('${r.consultationNotes}')),
+                          DataCell(Text('${r.patientForms}')),
+                          DataCell(Text('${r.aiRequests}')),
+                          DataCell(Text('${r.aiDraftNotes}')),
+                          DataCell(Text('${r.videoAppointments}')),
+                          DataCell(Text(la)),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (r.earlyPartnerContractNumber != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Text(
+                                      r.earlyPartnerContractNumber!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                Tooltip(
+                                  message: r.earlyPartnerContractNumber == null
+                                      ? 'Issue contract PDF (new number)'
+                                      : 'Regenerate contract PDF (${r.earlyPartnerContractNumber})',
+                                  child: IconButton(
+                                    icon: loadingPdf
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : const Icon(Icons.picture_as_pdf_outlined, size: 22),
+                                    color: Colors.red.shade700,
+                                    onPressed: loadingPdf ? null : () => _downloadContractPdf(r),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onSelectChanged: (_) {
+                          setState(() => _selectedDoctorId = r.doctorId);
+                          WidgetsBinding.instance.addPostFrameCallback((__) {
+                            _scaffoldKey.currentState?.openEndDrawer();
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return Column(
+      children: [
+        Expanded(child: rows.isEmpty ? const Center(child: Text('No results')) : table),
+        if (totalPages > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: _page > 0 ? () => setState(() => _page--) : null,
+                ),
+                Text('${_page + 1} / $totalPages'),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: _page < totalPages - 1 ? () => setState(() => _page++) : null,
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

@@ -6,13 +6,14 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_actions.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
-import 'package:shifa_doc_app_v1/state/admin/admin_provider_params.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
 
-class AdminDoctorActivityDetailPanel extends ConsumerWidget {
+class AdminDoctorActivityDetailPanel extends ConsumerStatefulWidget {
   final int doctorId;
   final String? fromIso;
   final String? toIso;
+  /// Matches parent list refresh; detail loads only after Refresh was clicked.
+  final int refreshToken;
   final VoidCallback onClose;
   final Future<void> Function(AdminDoctorActivityRow row)? onDownloadContract;
   final bool contractPdfLoading;
@@ -22,10 +23,71 @@ class AdminDoctorActivityDetailPanel extends ConsumerWidget {
     required this.doctorId,
     required this.fromIso,
     required this.toIso,
+    required this.refreshToken,
     required this.onClose,
     this.onDownloadContract,
     this.contractPdfLoading = false,
   });
+
+  @override
+  ConsumerState<AdminDoctorActivityDetailPanel> createState() =>
+      _AdminDoctorActivityDetailPanelState();
+}
+
+class _AdminDoctorActivityDetailPanelState extends ConsumerState<AdminDoctorActivityDetailPanel> {
+  bool _loading = false;
+  Object? _error;
+  AdminDoctorActivityDetail? _detail;
+  int _loadedForToken = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeLoadDetail();
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminDoctorActivityDetailPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshToken != oldWidget.refreshToken ||
+        widget.doctorId != oldWidget.doctorId) {
+      _maybeLoadDetail();
+    }
+  }
+
+  Future<void> _maybeLoadDetail() async {
+    if (widget.refreshToken <= 0 || _loading) return;
+    if (_loadedForToken == widget.refreshToken &&
+        _detail != null &&
+        _detail!.row.doctorId == widget.doctorId) {
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final detail = await ref.read(adminActionsProvider).getDoctorActivityDetail(
+            doctorId: widget.doctorId,
+            fromIso: widget.fromIso,
+            toIso: widget.toIso,
+          );
+      if (!mounted) return;
+      setState(() {
+        _detail = detail;
+        _loading = false;
+        _loadedForToken = widget.refreshToken;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
 
   Widget _pill(String t) {
     return Chip(
@@ -86,88 +148,119 @@ class AdminDoctorActivityDetailPanel extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final params = DoctorActivityDetailParams(doctorId: doctorId, fromIso: fromIso, toIso: toIso);
-    final async = ref.watch(adminDoctorActivityDetailProvider(params));
+  Widget build(BuildContext context) {
+    if (widget.refreshToken <= 0) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Expanded(child: Text('Doctor detail')),
+                  IconButton(icon: const Icon(Icons.close), onPressed: widget.onClose),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Click Refresh on the list to load activity data.',
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_loading && _detail == null) {
+      return const SafeArea(child: Center(child: CircularProgressIndicator()));
+    }
+    if (_error != null && _detail == null) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Detail error: $_error'),
+        ),
+      );
+    }
+
+    final detail = _detail;
+    if (detail == null) {
+      return const SafeArea(child: Center(child: CircularProgressIndicator()));
+    }
+
+    final row = detail.row;
+    final series = detail.dailySeries;
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: async.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Detail error: $e'),
-          data: (detail) {
-            final row = detail.row;
-            final series = detail.dailySeries;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(child: Text(row.doctorName, style: Theme.of(context).textTheme.titleMedium)),
-                    IconButton(icon: const Icon(Icons.close), onPressed: onClose),
-                  ],
-                ),
-                Text(row.clinicName ?? '—', style: TextStyle(color: Colors.grey.shade700)),
-                if (row.earlyPartnerContractNumber != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'Contract: ${row.earlyPartnerContractNumber}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                _AdminSmsRemindersToggle(
-                  doctorId: doctorId,
-                  initialAllowed: row.smsRemindersAllowed,
-                  smsSentCount: row.smsSentCount,
-                  smsOwedMinor: row.smsOwedMinor,
-                  smsCurrency: row.smsCurrency,
-                  pricePerSmsMinor: row.smsPricePerUnitMinor,
-                  onChanged: () {
-                    ref.invalidate(adminDoctorActivityDetailProvider(params));
-                  },
-                ),
-                if (onDownloadContract != null) ...[
-                  const SizedBox(height: 12),
-                  ShifaSecondaryButton(
-                    label: contractPdfLoading ? 'Generating PDF…' : 'Partnership contract PDF',
-                    onPressed: contractPdfLoading ? null : () => onDownloadContract!(row),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _pill('Booked ${row.appointmentsBooked}'),
-                    _pill('Completed ${row.appointmentsCompleted}'),
-                    _pill('AI req ${row.aiRequests}'),
-                    _pill('Video ${row.videoAppointments}'),
-                  ],
-                ),
-                const Divider(height: 24),
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _trend(context, 'Appointments / day', series['appointments'] ?? const []),
-                      _trend(context, 'Completed / day', series['completed'] ?? const []),
-                      _trend(context, 'AI requests / day', series['aiRequests'] ?? const []),
-                      _trend(context, 'Documents', series['documents'] ?? const []),
-                      _trend(context, 'Treatment plans', series['treatmentPlans'] ?? const []),
-                      _trend(context, 'Remote tasks', series['remoteTasks'] ?? const []),
-                      _trend(context, 'Consultation notes', series['consultationNotes'] ?? const []),
-                    ],
-                  ),
-                ),
+                Expanded(child: Text(row.doctorName, style: Theme.of(context).textTheme.titleMedium)),
+                IconButton(icon: const Icon(Icons.close), onPressed: widget.onClose),
               ],
-            );
-          },
+            ),
+            Text(row.clinicName ?? '—', style: TextStyle(color: Colors.grey.shade700)),
+            if (row.earlyPartnerContractNumber != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Contract: ${row.earlyPartnerContractNumber}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            _AdminSmsRemindersToggle(
+              doctorId: widget.doctorId,
+              initialAllowed: row.smsRemindersAllowed,
+              smsSentCount: row.smsSentCount,
+              smsOwedMinor: row.smsOwedMinor,
+              smsCurrency: row.smsCurrency,
+              pricePerSmsMinor: row.smsPricePerUnitMinor,
+              onChanged: () => _maybeLoadDetail(),
+            ),
+            if (widget.onDownloadContract != null) ...[
+              const SizedBox(height: 12),
+              ShifaSecondaryButton(
+                label: widget.contractPdfLoading ? 'Generating PDF…' : 'Partnership contract PDF',
+                onPressed: widget.contractPdfLoading ? null : () => widget.onDownloadContract!(row),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _pill('Booked ${row.appointmentsBooked}'),
+                _pill('Completed ${row.appointmentsCompleted}'),
+                _pill('AI req ${row.aiRequests}'),
+                _pill('Video ${row.videoAppointments}'),
+              ],
+            ),
+            const Divider(height: 24),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _trend(context, 'Appointments / day', series['appointments'] ?? const []),
+                  _trend(context, 'Completed / day', series['completed'] ?? const []),
+                  _trend(context, 'AI requests / day', series['aiRequests'] ?? const []),
+                  _trend(context, 'Documents', series['documents'] ?? const []),
+                  _trend(context, 'Treatment plans', series['treatmentPlans'] ?? const []),
+                  _trend(context, 'Remote tasks', series['remoteTasks'] ?? const []),
+                  _trend(context, 'Consultation notes', series['consultationNotes'] ?? const []),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -267,7 +360,7 @@ class _AdminSmsRemindersToggleState extends ConsumerState<_AdminSmsRemindersTogg
           const SizedBox(height: 4),
           Text(
             'Period: ${widget.smsSentCount} sent · ${widget.smsOwedMinor} ${widget.smsCurrency} owed',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
