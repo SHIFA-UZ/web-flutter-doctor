@@ -478,6 +478,8 @@ class CalendarController
     return [];
   }
 
+  int? _actingDoctorId(int? override) => override ?? _resourceDoctorId;
+
   /// Book a FREE_SLOT on the backend, then refresh the day.
   /// [doctorTimeZone] is used for post-book refresh; caller must pass it.
   ///
@@ -492,6 +494,7 @@ class CalendarController
     String? reason,
     bool isVideo = false,
     TimeOfDay? endExclusive,
+    int? actingAsDoctorProfileId,
   }) async {
     assert(slot.type == EntryType.freeSlot, 'Can only book a free slot');
     final startAtUtc = slot.startAtUtc;
@@ -540,8 +543,8 @@ class CalendarController
     if (!isVideo && slot.locationId != null) {
       body['locationId'] = slot.locationId;
     }
-    if (_resourceDoctorId != null) {
-      body['resourceDoctorId'] = _resourceDoctorId;
+    if (_actingDoctorId(actingAsDoctorProfileId) != null) {
+      body['resourceDoctorId'] = _actingDoctorId(actingAsDoctorProfileId);
     }
 
     final res = await client.post('/api/schedule/book', body);
@@ -669,6 +672,7 @@ class CalendarController
     String? reason,
     bool cancelOverlappingAppointments = false,
     DateTime? refreshThroughDay,
+    int? actingAsDoctorProfileId,
   }) async {
     final client = ref.read(apiClientProvider);
     final body = <String, dynamic>{
@@ -676,7 +680,8 @@ class CalendarController
       'endAt': endAtUtc,
       'cancelOverlappingAppointments': cancelOverlappingAppointments,
       if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
-      if (_resourceDoctorId != null) 'resourceDoctorId': _resourceDoctorId,
+      if (_actingDoctorId(actingAsDoctorProfileId) != null)
+        'resourceDoctorId': _actingDoctorId(actingAsDoctorProfileId),
     };
     final res = await client.post('/api/schedule/blocks', body);
     if (res.statusCode != 200 && res.statusCode != 201) {
@@ -710,14 +715,16 @@ class CalendarController
   Future<int> countOverlappingAppointmentsForBlock({
     required String startAtUtc,
     required String endAtUtc,
+    int? actingAsDoctorProfileId,
   }) async {
     final client = ref.read(apiClientProvider);
     final params = <String, String>{
       'startAt': startAtUtc,
       'endAt': endAtUtc,
     };
-    if (_resourceDoctorId != null) {
-      params['doctorId'] = _resourceDoctorId.toString();
+    if (_actingDoctorId(actingAsDoctorProfileId) != null) {
+      params['doctorId'] =
+          _actingDoctorId(actingAsDoctorProfileId).toString();
     }
     final res = await client.get('/api/schedule/blocks/overlapping-count', params: params);
     if (res.statusCode != 200) {
@@ -737,10 +744,12 @@ class CalendarController
     required int blockId,
     required DateTime day,
     required String doctorTimeZone,
+    int? actingAsDoctorProfileId,
   }) async {
     final client = ref.read(apiClientProvider);
-    final path = _resourceDoctorId != null
-        ? '/api/schedule/blocks/$blockId?doctorId=$_resourceDoctorId'
+    final actingId = _actingDoctorId(actingAsDoctorProfileId);
+    final path = actingId != null
+        ? '/api/schedule/blocks/$blockId?doctorId=$actingId'
         : '/api/schedule/blocks/$blockId';
     final res = await client.delete(path);
     if (res.statusCode != 200 && res.statusCode != 204) {

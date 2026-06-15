@@ -9,6 +9,12 @@ import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_day_occupancy.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/consecutive_slot_range.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_staff_colors.dart';
+import 'package:shifa_doc_app_v1/features/calendar/presentation/calendar_week_grid_view.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/finance_shared.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
@@ -52,6 +58,11 @@ String _tableCalendarIntlLocale(BuildContext context) {
 /// Block-time dialog modes on [CalendarScreen].
 enum _ScheduleBlockMode { entireDay, timeRange, dateRange }
 
+/// Desktop calendar header split: title on the left, toolbar on the right.
+enum _CalendarHeaderPart { title, toolbar, combined }
+
+const double _kCalendarDesktopHeaderMinHeight = 52;
+
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
 
@@ -73,6 +84,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   bool _showFreeSlots = true;
   bool _showBlockedTime = true;
 
+  /// Number of consecutive days shown in the grid (1–5).
+  int _dayViewCount = 1;
+
+  /// Clinic staff whose grids are visible (always includes self once initialized).
+  final Set<int> _visibleStaffDoctorIds = {};
+
+  /// Cached calendar rows for colleagues (own schedule stays in [calendarProvider]).
+  final Map<int, Map<DateTime, List<CalendarEntry>>> _staffEntriesByDoctor = {};
+
+  /// Doctor profile id for the currently selected slot row.
+  int? _selectedEntryDoctorProfileId;
+
+  /// Avoid re-applying persisted staff selection for the same clinic.
+  int? _staffPrefsRestoredForClinicId;
+
   /// When true, profile listener skips loading "today" so go-to-appointment can load the target day only.
   bool _skipInitialProfileLoad = false;
 
@@ -88,18 +114,209 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   DateTime _dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
   String _two(int n) => n.toString().padLeft(2, '0');
 
+  List<DateTime> get _visibleDays {
+    if (_selectedDay == null) return const [];
+    final start = _dayKey(_selectedDay!);
+    return List.generate(
+      _dayViewCount,
+      (i) => DateTime(start.year, start.month, start.day + i),
+    );
+  }
+
+  String? _calendarDateRangeLabel(AppLocalizations l10n) {
+    if (_selectedDay == null) return null;
+    final days = _visibleDays;
+    if (days.isEmpty) return null;
+    if (days.length == 1) {
+      final d = days.first;
+      return '${d.day} ${l10n.monthName(d.month)} ${d.year}';
+    }
+    final first = days.first;
+    final last = days.last;
+    if (first.month == last.month && first.year == last.year) {
+      return '${first.day}–${last.day} ${l10n.monthName(first.month)} ${first.year}';
+    }
+    if (first.year == last.year) {
+      return '${first.day} ${l10n.monthName(first.month)} – '
+          '${last.day} ${l10n.monthName(last.month)} ${last.year}';
+    }
+    return '${first.day} ${l10n.monthName(first.month)} ${first.year} – '
+        '${last.day} ${l10n.monthName(last.month)} ${last.year}';
+  }
+
   List<CalendarEntry> _entriesFor(DateTime? day) {
     if (day == null) return [];
-    final entries = ref.watch(calendarProvider);
-    final allEntries = entries[_dayKey(day)] ?? [];
+    return _entriesForDoctor(day, _ownDoctorProfileId());
+  }
 
-    // Apply filters
+  List<CalendarEntry> _entriesForDoctor(DateTime? day, int? doctorProfileId) {
+    if (day == null) return [];
+    final key = _dayKey(day);
+    final ownId = _ownDoctorProfileId();
+    final List<CalendarEntry> allEntries;
+    if (doctorProfileId == null || doctorProfileId == ownId) {
+      final entries = ref.watch(calendarProvider);
+      allEntries = entries[key] ?? [];
+    } else {
+      allEntries = _staffEntriesByDoctor[doctorProfileId]?[key] ?? [];
+    }
+
     return allEntries.where((e) {
       if (e.type == EntryType.appointment) return _showAppointments;
       if (e.type == EntryType.freeSlot) return _showFreeSlots;
       if (e.type == EntryType.blocked) return _showBlockedTime;
       return true;
     }).toList();
+  }
+
+  int? _ownDoctorProfileId() {
+    final profile = ref.read(profileAllProvider).valueOrNull?.profile;
+    final id = profile?['id'] ?? profile?['doctorId'] ?? profile?['doctorProfileId'];
+    if (id is int) return id;
+    if (id is num) return id.toInt();
+    return int.tryParse(id?.toString() ?? '');
+  }
+
+  List<ClinicMember> _schedulableStaff(List<ClinicMember> members) {
+    const roles = {'DOCTOR', 'OWNER'};
+    return members
+        .where((m) => roles.contains(m.membershipRole))
+        .toList()
+      ..sort(
+        (a, b) =>
+            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+      );
+  }
+
+  void _ensureOwnStaffSelected() {
+    final ownId = _ownDoctorProfileId();
+    if (ownId != null && _visibleStaffDoctorIds.isEmpty) {
+      _visibleStaffDoctorIds.add(ownId);
+    }
+  }
+
+  List<int> get _orderedVisibleStaffDoctorIds {
+    _ensureOwnStaffSelected();
+    final ownId = _ownDoctorProfileId();
+    final ids = _visibleStaffDoctorIds.toList();
+    ids.sort((a, b) {
+      if (ownId != null && a == ownId) return -1;
+      if (ownId != null && b == ownId) return 1;
+      return a.compareTo(b);
+    });
+    return ids;
+  }
+
+  String _staffDisplayName(int doctorProfileId, List<ClinicMember> members) {
+    if (doctorProfileId == _ownDoctorProfileId()) {
+      final l10n = AppLocalizations.of(context)!;
+      return l10n.translate('mySchedule') ?? 'My schedule';
+    }
+    return doctorNameFromClinicMembers(doctorProfileId, members);
+  }
+
+  String _scheduleTimeZoneForStaff(int? doctorProfileId) {
+    if (doctorProfileId == null || doctorProfileId == _ownDoctorProfileId()) {
+      return _effectiveProfileTimeZone();
+    }
+    final clinic = ref.read(selectedClinicProvider);
+    final tz = clinic?.timeZone.trim();
+    return (tz != null && tz.isNotEmpty) ? tz : _effectiveProfileTimeZone();
+  }
+
+  List<int> _staffRosterIds(List<ClinicMember> staff) =>
+      staff.map((m) => m.doctorProfileId).toList();
+
+  Color _staffAccentColor(
+    int doctorProfileId,
+    List<ClinicMember> staff,
+    Color brand,
+  ) {
+    if (staff.length < 2) return brand;
+    return CalendarStaffColors.forDoctorInRoster(
+      doctorProfileId,
+      _staffRosterIds(staff),
+      fallback: brand,
+    );
+  }
+
+  Future<String> _staffSelectionPrefsKey(int clinicId) async {
+    final profile = ref.read(profileAllProvider).valueOrNull?.profile;
+    final id = profile?['id'] ?? profile?['doctorId'] ?? profile?['doctorProfileId'];
+    return 'calendar_visible_staff_v1:$id:$clinicId';
+  }
+
+  Future<void> _savePersistedStaffSelection() async {
+    final clinic = ref.read(selectedClinicProvider);
+    if (clinic == null || _visibleStaffDoctorIds.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = await _staffSelectionPrefsKey(clinic.clinicId);
+      await prefs.setStringList(
+        key,
+        _visibleStaffDoctorIds.map((id) => id.toString()).toList(),
+      );
+    } catch (e) {
+      debugPrint('CalendarScreen: failed to save staff selection: $e');
+    }
+  }
+
+  Future<void> _restoreStaffSelectionIfNeeded() async {
+    final clinic = ref.read(selectedClinicProvider);
+    if (clinic == null) {
+      _ensureOwnStaffSelected();
+      return;
+    }
+    if (_staffPrefsRestoredForClinicId == clinic.clinicId) return;
+
+    List<ClinicMember> members;
+    try {
+      members = await ref.read(clinicMembersProvider(clinic.clinicId).future);
+    } catch (e) {
+      debugPrint('CalendarScreen: staff roster unavailable: $e');
+      _ensureOwnStaffSelected();
+      _staffPrefsRestoredForClinicId = clinic.clinicId;
+      return;
+    }
+
+    final staff = _schedulableStaff(members);
+    _staffPrefsRestoredForClinicId = clinic.clinicId;
+
+    if (staff.length < 2) {
+      _ensureOwnStaffSelected();
+      return;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = await _staffSelectionPrefsKey(clinic.clinicId);
+      final raw = prefs.getStringList(key);
+      if (raw == null || raw.isEmpty) {
+        _ensureOwnStaffSelected();
+        return;
+      }
+
+      final validIds = staff.map((m) => m.doctorProfileId).toSet();
+      final restored = raw
+          .map(int.tryParse)
+          .whereType<int>()
+          .where(validIds.contains)
+          .toSet();
+      if (restored.isEmpty) {
+        _ensureOwnStaffSelected();
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _visibleStaffDoctorIds
+          ..clear()
+          ..addAll(restored);
+      });
+    } catch (e) {
+      debugPrint('CalendarScreen: failed to restore staff selection: $e');
+      _ensureOwnStaffSelected();
+    }
   }
 
   // Get RAW entries without filters (for checking if data actually has free slots)
@@ -175,8 +392,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
           debugPrint(
             'CalendarScreen: Profile loaded (timezone: ${tz ?? "UTC fallback"}), loading calendar for $_selectedDay',
           );
-          _loadDay(_selectedDay!, effectiveTz);
-          _loadMonth(_focusedDay, effectiveTz);
+          Future.microtask(() async {
+            if (!mounted) return;
+            await _restoreStaffSelectionIfNeeded();
+            if (!mounted ||
+                _selectedDay == null ||
+                ref.read(shellProvider) != DoctorShellTab.calendar) {
+              return;
+            }
+            _reloadCalendar(effectiveTz);
+            _loadMonth(_focusedDay, effectiveTz);
+          });
         }
       } else if (next.isLoading) {
         debugPrint('CalendarScreen: Waiting for profile to load...');
@@ -195,8 +421,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                   as String?;
           final effectiveTz =
               (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
-          _loadDay(_selectedDay!, effectiveTz);
-          _loadMonth(_focusedDay, effectiveTz);
+          Future.microtask(() async {
+            if (!mounted) return;
+            await _restoreStaffSelectionIfNeeded();
+            if (!mounted) return;
+            _reloadCalendar(effectiveTz);
+            _loadMonth(_focusedDay, effectiveTz);
+          });
         }
       }
     });
@@ -222,10 +453,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       final now = getNowInTimezone(effectiveTz);
       if (_lastRefreshTime == null ||
           now.difference(_lastRefreshTime!).inSeconds > 5) {
-        _loadDay(_selectedDay!, effectiveTz);
+        _reloadCalendar(effectiveTz);
         _lastRefreshTime = now;
       }
     }
+  }
+
+  Future<void> _fetchDay(DateTime day, String doctorTimeZone) async {
+    await ref
+        .read(calendarProvider.notifier)
+        .loadDay(day: day, doctorTimeZone: doctorTimeZone);
+    _lastRefreshTime = getNowInTimezone(doctorTimeZone);
   }
 
   Future<void> _loadDay(DateTime day, String doctorTimeZone) async {
@@ -234,11 +472,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       debugPrint(
         'CalendarScreen: Loading day ${_ymd(day)} with timezone $doctorTimeZone',
       );
-      await ref
-          .read(calendarProvider.notifier)
-          .loadDay(day: day, doctorTimeZone: doctorTimeZone);
-      // Record refresh time in doctor's timezone for consistency
-      _lastRefreshTime = getNowInTimezone(doctorTimeZone);
+      await _fetchDay(day, doctorTimeZone);
       debugPrint('CalendarScreen: Successfully loaded day ${_ymd(day)}');
     } catch (e) {
       debugPrint('CalendarScreen: Failed to load day ${_ymd(day)}: $e');
@@ -254,6 +488,118 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     } finally {
       if (mounted) setState(() => _loadingDay = false);
     }
+  }
+
+  Future<void> _loadVisibleDays(String doctorTimeZone) async {
+    final days = _visibleDays;
+    if (days.isEmpty) return;
+    _ensureOwnStaffSelected();
+    setState(() => _loadingDay = true);
+    try {
+      final ownId = _ownDoctorProfileId();
+      final futures = <Future<void>>[];
+      for (final doctorId in _visibleStaffDoctorIds) {
+        if (doctorId == ownId) {
+          futures.addAll(
+            days.map(
+              (day) => ref.read(calendarProvider.notifier).loadDay(
+                    day: day,
+                    doctorTimeZone: doctorTimeZone,
+                  ),
+            ),
+          );
+        } else {
+          futures.addAll(
+            days.map((day) => _loadStaffDoctorDay(doctorId, day, doctorTimeZone)),
+          );
+        }
+      }
+      await Future.wait(futures);
+      _lastRefreshTime = getNowInTimezone(doctorTimeZone);
+    } catch (e) {
+      debugPrint('CalendarScreen: Failed to load visible days: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.translate('failedToLoad') ?? 'Failed to load'}: $e',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingDay = false);
+    }
+  }
+
+  Future<void> _loadStaffDoctorDay(
+    int doctorProfileId,
+    DateTime day,
+    String doctorTimeZone,
+  ) async {
+    try {
+      final entries = await ref
+          .read(calendarProvider.notifier)
+          .previewDayForDoctorProfile(
+            day: day,
+            doctorTimeZone: doctorTimeZone,
+            doctorProfileId: doctorProfileId,
+          );
+      if (!mounted) return;
+      setState(() {
+        _staffEntriesByDoctor.putIfAbsent(doctorProfileId, () => {});
+        _staffEntriesByDoctor[doctorProfileId]![_dayKey(day)] = entries;
+      });
+    } catch (e) {
+      debugPrint(
+        'CalendarScreen: Failed to load staff day '
+        '$doctorProfileId ${_ymd(day)}: $e',
+      );
+    }
+  }
+
+  Future<void> _reloadDoctorCalendar(int? doctorProfileId, String tz) async {
+    final ownId = _ownDoctorProfileId();
+    if (doctorProfileId == null || doctorProfileId == ownId) {
+      await _reloadCalendar(tz);
+      return;
+    }
+    setState(() => _loadingDay = true);
+    try {
+      await Future.wait(
+        _visibleDays.map((day) => _loadStaffDoctorDay(doctorProfileId, day, tz)),
+      );
+    } finally {
+      if (mounted) setState(() => _loadingDay = false);
+    }
+  }
+
+  Future<void> _reloadCalendar(String doctorTimeZone) async {
+    if (!mounted || _selectedDay == null) return;
+    _ensureOwnStaffSelected();
+
+    if (PlatformLayout.useSinglePane(context)) {
+      setState(() => _loadingDay = true);
+      try {
+        final ownId = _ownDoctorProfileId();
+        final futures = <Future<void>>[];
+        for (final doctorId in _visibleStaffDoctorIds) {
+          if (doctorId == ownId) {
+            futures.add(_fetchDay(_selectedDay!, doctorTimeZone));
+          } else {
+            futures.add(
+              _loadStaffDoctorDay(doctorId, _selectedDay!, doctorTimeZone),
+            );
+          }
+        }
+        await Future.wait(futures);
+      } finally {
+        if (mounted) setState(() => _loadingDay = false);
+      }
+      return;
+    }
+
+    await _loadVisibleDays(doctorTimeZone);
   }
 
   String _effectiveProfileTimeZone() {
@@ -284,9 +630,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   void _selectCalendarEntry(
     CalendarEntry entry, {
     String? initialBookingPlace,
+    int? doctorProfileId,
   }) {
     setState(() {
       _selectedEntry = entry;
+      _selectedEntryDoctorProfileId = doctorProfileId ?? _ownDoctorProfileId();
       _initialBookingPlaceForSelection = initialBookingPlace;
     });
   }
@@ -294,8 +642,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   void _clearSelectedEntry() {
     setState(() {
       _selectedEntry = null;
+      _selectedEntryDoctorProfileId = null;
       _initialBookingPlaceForSelection = null;
     });
+  }
+
+  void _toggleStaffDoctor(int doctorProfileId, String doctorTimeZone) {
+    setState(() {
+      if (_visibleStaffDoctorIds.contains(doctorProfileId)) {
+        if (_visibleStaffDoctorIds.length <= 1) return;
+        _visibleStaffDoctorIds.remove(doctorProfileId);
+        _staffEntriesByDoctor.remove(doctorProfileId);
+        if (_selectedEntryDoctorProfileId == doctorProfileId) {
+          _selectedEntry = null;
+          _selectedEntryDoctorProfileId = null;
+          _initialBookingPlaceForSelection = null;
+        }
+      } else {
+        _visibleStaffDoctorIds.add(doctorProfileId);
+      }
+    });
+    _reloadCalendar(doctorTimeZone);
+    _savePersistedStaffSelection();
   }
 
   Future<void> _handleQuickBookIntent(CalendarQuickBookIntent intent) async {
@@ -448,7 +816,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               .where((e) => e.appointmentId == appointmentId)
               .toList();
           if (match.isNotEmpty && mounted) {
-            setState(() => _selectedEntry = match.first);
+            setState(() {
+              _selectedEntry = match.first;
+              _selectedEntryDoctorProfileId = _ownDoctorProfileId();
+            });
           }
           _skipInitialProfileLoad = false;
         } catch (e) {
@@ -497,24 +868,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       body: Padding(
         padding: Responsive.screenPadding(context),
         child: useSinglePane && _selectedEntry != null
-            ? CalendarSlotDetailsPanel(
-                key: const ValueKey('details_mobile'),
-                entry: _selectedEntry!,
-                day: _selectedDay!,
-                initialBookingPlace: _initialBookingPlaceForSelection,
-                onSavedSuccessfully: () async {
-                  final tz = ref
-                          .read(profileAllProvider)
-                          .valueOrNull
-                          ?.profile['timeZone']
-                      as String?;
-                  if (tz != null && tz.trim().isNotEmpty) {
-                    await _loadDay(_selectedDay!, tz);
-                  }
-                  if (mounted) _clearSelectedEntry();
-                },
-                onClose: _clearSelectedEntry,
-              )
+            ? _buildSlotDetailsPanel(key: const ValueKey('details_mobile'))
             : useSinglePane
                 ? _buildMobileCalendar(context, l10n, brand, showTimeZoneHint, profileTimeZone)
                 : _buildDesktopCalendar(context, l10n, brand, showTimeZoneHint, profileTimeZone),
@@ -533,7 +887,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showTimeZoneHint) _buildTimeZoneHint(context, l10n, profileTimeZone),
-        _buildCalendarHeaderRow(context, l10n, brand),
+        _buildCalendarHeaderRow(
+          context,
+          l10n,
+          brand,
+          part: _CalendarHeaderPart.combined,
+        ),
         SizedBox(height: Responsive.sectionGap(context)),
         CalendarMonthPanel(
           compact: true,
@@ -547,6 +906,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               _selectedDay = DateTime(d.year, d.month, d.day);
               _focusedDay = _selectedDay!;
               _selectedEntry = null;
+              _selectedEntryDoctorProfileId = null;
               _initialBookingPlaceForSelection = null;
             });
             final tz = ref
@@ -556,7 +916,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 as String?;
             final effectiveTz =
                 (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
-            _loadDay(_selectedDay!, effectiveTz);
+            _reloadCalendar(effectiveTz);
           },
           onFocusedDayChanged: (d) {
             setState(() => _focusedDay = d);
@@ -581,6 +941,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     String? profileTimeZone,
   ) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           flex: 3,
@@ -588,7 +949,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (showTimeZoneHint) _buildTimeZoneHint(context, l10n, profileTimeZone),
-              _buildCalendarHeaderRow(context, l10n, brand),
+              _buildCalendarHeaderRow(
+                context,
+                l10n,
+                brand,
+                part: _CalendarHeaderPart.title,
+              ),
               const SizedBox(height: 16),
               Expanded(child: _buildCalendarEntriesList(context, l10n, brand)),
             ],
@@ -597,7 +963,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         const SizedBox(width: 24),
         Expanded(
           flex: 2,
-          child: _buildCalendarRightPanel(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildCalendarHeaderRow(
+                context,
+                l10n,
+                brand,
+                part: _CalendarHeaderPart.toolbar,
+              ),
+              const SizedBox(height: 16),
+              Expanded(child: _buildCalendarRightPanel(context)),
+            ],
+          ),
         ),
       ],
     );
@@ -641,12 +1019,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   Widget _buildCalendarHeaderRow(
     BuildContext context,
     AppLocalizations l10n,
-    Color brand,
-  ) {
+    Color brand, {
+    _CalendarHeaderPart part = _CalendarHeaderPart.combined,
+  }) {
     final compactToolbar = PlatformLayout.useCompactToolbar(context);
-    final dateLabel = _selectedDay == null
-        ? null
-        : '${_selectedDay!.day} ${l10n.monthName(_selectedDay!.month)} ${_selectedDay!.year}';
+    final useGrid = !PlatformLayout.useSinglePane(context);
+    final dateLabel = _calendarDateRangeLabel(l10n);
 
     final filterControl = compactToolbar
         ? IconButton.filledTonal(
@@ -676,6 +1054,76 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             icon: Icons.block,
           );
 
+    final dayViewControl = useGrid
+        ? _DayViewCountSelector(
+            value: _dayViewCount,
+            brand: brand,
+            compact: compactToolbar,
+            onChanged: (count) {
+              setState(() => _dayViewCount = count);
+              _reloadCalendar(_effectiveProfileTimeZone());
+            },
+          )
+        : null;
+
+    final loadingIndicator = _loadingDay
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : null;
+
+    if (part == _CalendarHeaderPart.title) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: _kCalendarDesktopHeaderMinHeight,
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Row(
+            children: [
+              Text(l10n.calendar, style: Responsive.pageTitleStyle(context)),
+              if (dateLabel != null) ...[
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    dateLabel,
+                    style: Responsive.pageSubtitleStyle(context),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (part == _CalendarHeaderPart.toolbar) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: _kCalendarDesktopHeaderMinHeight,
+        ),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              blockControl,
+              if (dayViewControl != null) dayViewControl,
+              filterControl,
+              if (loadingIndicator != null) loadingIndicator,
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Mobile / combined: title and toolbar on one row.
     if (compactToolbar) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -696,16 +1144,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               ],
             ),
           ),
-          if (_loadingDay)
-            const Padding(
-              padding: EdgeInsets.only(right: 4),
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+          if (loadingIndicator != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: loadingIndicator,
             ),
           blockControl,
+          if (dayViewControl != null) dayViewControl,
           const SizedBox(width: 4),
           filterControl,
         ],
@@ -725,7 +1170,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             ),
           ),
         const Spacer(),
-        if (_loadingDay)
+        if (loadingIndicator != null)
           const Padding(
             padding: EdgeInsets.only(right: 8.0),
             child: SizedBox(
@@ -736,6 +1181,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
           ),
         const SizedBox(width: 8),
         blockControl,
+        if (dayViewControl != null) dayViewControl,
         const SizedBox(width: 8),
         filterControl,
       ],
@@ -821,7 +1267,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
           as String?;
       final effectiveTz = (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
       if (_selectedDay != null) {
-        await _loadDay(_selectedDay!, effectiveTz);
+        await _reloadCalendar(effectiveTz);
       }
     }
   }
@@ -1304,15 +1750,273 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     AppLocalizations l10n,
     Color brand,
   ) {
-    return _selectedDay == null
-        ? _EmptyCalendarHint(brand: brand)
-        : CalendarDayEntriesList(
-            entries: _entriesFor(_selectedDay),
-            onTap: (entry) => _selectCalendarEntry(entry),
-            selected: _selectedEntry,
-            brand: brand,
-            loading: _loadingDay || _isWaitingForProfile,
+    if (_selectedDay == null) {
+      return _EmptyCalendarHint(brand: brand);
+    }
+
+    final clinic = ref.watch(selectedClinicProvider);
+    final staffMembers = clinic == null
+        ? const <ClinicMember>[]
+        : (ref.watch(clinicMembersProvider(clinic.clinicId)).valueOrNull ??
+            const <ClinicMember>[]);
+    final staff = _schedulableStaff(staffMembers);
+    final visibleDoctorIds = _orderedVisibleStaffDoctorIds;
+    final useGrid = !PlatformLayout.useSinglePane(context);
+    final loading = _loadingDay || _isWaitingForProfile;
+
+    void onTapEntry(CalendarEntry entry, DateTime day, int doctorProfileId) {
+      setState(() => _selectedDay = _dayKey(day));
+      _selectCalendarEntry(entry, doctorProfileId: doctorProfileId);
+    }
+
+    Widget buildGridForDoctor(int doctorProfileId, {required bool shrinkWrap}) {
+      final accent = _staffAccentColor(doctorProfileId, staff, brand);
+      return CalendarWeekGridView(
+        days: _visibleDays,
+        entriesForDay: (day) => _entriesForDoctor(day, doctorProfileId),
+        onTapEntry: (entry, day) => onTapEntry(entry, day, doctorProfileId),
+        selectedEntry: _selectedEntryDoctorProfileId == doctorProfileId
+            ? _selectedEntry
+            : null,
+        brand: accent,
+        loading: loading,
+        shrinkWrap: shrinkWrap,
+      );
+    }
+
+    Widget buildListForDoctor(int doctorProfileId) {
+      final accent = _staffAccentColor(doctorProfileId, staff, brand);
+      return CalendarDayEntriesList(
+        entries: _entriesForDoctor(_selectedDay, doctorProfileId),
+        onTap: (entry) => _selectCalendarEntry(
+          entry,
+          doctorProfileId: doctorProfileId,
+        ),
+        selected: _selectedEntryDoctorProfileId == doctorProfileId
+            ? _selectedEntry
+            : null,
+        brand: accent,
+        loading: loading,
+      );
+    }
+
+    Widget staffHeader(int doctorProfileId) {
+      final accent = _staffAccentColor(doctorProfileId, staff, brand);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _staffDisplayName(doctorProfileId, staff),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: accent.withOpacity(0.95),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final staffBar = staff.length >= 2
+        ? _buildStaffDoctorBar(staff, brand)
+        : null;
+
+    if (useGrid) {
+      if (visibleDoctorIds.length <= 1) {
+        final doctorId =
+            visibleDoctorIds.isNotEmpty ? visibleDoctorIds.first : _ownDoctorProfileId();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (staffBar != null) staffBar,
+            Expanded(
+              child: buildGridForDoctor(
+                doctorId ?? _ownDoctorProfileId() ?? 0,
+                shrinkWrap: false,
+              ),
+            ),
+          ],
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (staffBar != null) staffBar,
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < visibleDoctorIds.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 20),
+                    staffHeader(visibleDoctorIds[i]),
+                    buildGridForDoctor(visibleDoctorIds[i], shrinkWrap: true),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (visibleDoctorIds.length <= 1) {
+      final doctorId =
+          visibleDoctorIds.isNotEmpty ? visibleDoctorIds.first : _ownDoctorProfileId();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (staffBar != null) staffBar,
+          Expanded(
+            child: buildListForDoctor(doctorId ?? _ownDoctorProfileId() ?? 0),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (staffBar != null) staffBar,
+        Expanded(
+          child: ListView.separated(
+            itemCount: visibleDoctorIds.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final doctorId = visibleDoctorIds[index];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  staffHeader(doctorId),
+                  buildListForDoctor(doctorId),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStaffDoctorBar(List<ClinicMember> staff, Color brand) {
+    final l10n = AppLocalizations.of(context)!;
+    final tz = _effectiveProfileTimeZone();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.translate('calendarStaffCalendars') ?? 'Staff calendars',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final member in staff)
+                Builder(
+                  builder: (context) {
+                    final accent =
+                        _staffAccentColor(member.doctorProfileId, staff, brand);
+                    final selected =
+                        _visibleStaffDoctorIds.contains(member.doctorProfileId);
+                    return FilterChip(
+                      showCheckmark: false,
+                      avatar: CircleAvatar(
+                        backgroundColor: accent,
+                        radius: 8,
+                        child: selected
+                            ? Icon(Icons.check, size: 12, color: Colors.white)
+                            : null,
+                      ),
+                      label: Text(_staffDisplayName(member.doctorProfileId, staff)),
+                      selected: selected,
+                      onSelected: (_) =>
+                          _toggleStaffDoctor(member.doctorProfileId, tz),
+                      selectedColor: accent.withOpacity(0.16),
+                      checkmarkColor: accent,
+                      labelStyle: TextStyle(
+                        color: selected ? accent.withOpacity(0.95) : null,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                      side: BorderSide(
+                        color: selected ? accent.withOpacity(0.55) : Colors.grey.shade300,
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  ({
+    int? clinicDoctorProfileId,
+    String? clinicDoctorDisplayName,
+    String? scheduleTimeZone,
+    String? primaryClinicVenueLabel,
+  }) _slotPanelClinicContext(List<ClinicMember> staff) {
+    final ownId = _ownDoctorProfileId();
+    final selectedId = _selectedEntryDoctorProfileId;
+    final clinic = ref.read(selectedClinicProvider);
+    final isOther = selectedId != null && selectedId != ownId;
+    return (
+      clinicDoctorProfileId: isOther ? selectedId : null,
+      clinicDoctorDisplayName:
+          isOther ? _staffDisplayName(selectedId!, staff) : null,
+      scheduleTimeZone: _scheduleTimeZoneForStaff(selectedId),
+      primaryClinicVenueLabel: clinic?.address,
+    );
+  }
+
+  Widget _buildSlotDetailsPanel({Key? key}) {
+    final clinic = ref.watch(selectedClinicProvider);
+    final staff = clinic == null
+        ? const <ClinicMember>[]
+        : _schedulableStaff(
+            ref.watch(clinicMembersProvider(clinic.clinicId)).valueOrNull ??
+                const <ClinicMember>[],
           );
+    final ctx = _slotPanelClinicContext(staff);
+    final tz = ctx.scheduleTimeZone ?? _effectiveProfileTimeZone();
+
+    return CalendarSlotDetailsPanel(
+      key: key,
+      entry: _selectedEntry!,
+      day: _selectedDay!,
+      initialBookingPlace: _initialBookingPlaceForSelection,
+      clinicDoctorProfileId: ctx.clinicDoctorProfileId,
+      clinicDoctorDisplayName: ctx.clinicDoctorDisplayName,
+      scheduleTimeZone: ctx.scheduleTimeZone,
+      primaryClinicVenueLabel: ctx.primaryClinicVenueLabel,
+      onSavedSuccessfully: () async {
+        if (tz.trim().isNotEmpty) {
+          await _reloadDoctorCalendar(_selectedEntryDoctorProfileId, tz);
+        }
+        if (mounted) _clearSelectedEntry();
+      },
+      onClose: _clearSelectedEntry,
+    );
   }
 
   Widget _buildCalendarRightPanel(BuildContext context) {
@@ -1332,6 +2036,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                   _selectedDay = DateTime(d.year, d.month, d.day);
                   _focusedDay = _selectedDay!;
                   _selectedEntry = null;
+                  _selectedEntryDoctorProfileId = null;
                   _initialBookingPlaceForSelection = null;
                 });
                 final tz = ref
@@ -1341,7 +2046,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                     as String?;
                 final effectiveTz =
                     (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
-                _loadDay(_selectedDay!, effectiveTz);
+                _reloadCalendar(effectiveTz);
               },
               onFocusedDayChanged: (d) {
               setState(() => _focusedDay = d);
@@ -1352,24 +2057,51 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 ShellScope.pushNamed(context, AppRoutes.setupSchedule);
               },
             )
-          : CalendarSlotDetailsPanel(
-              key: const ValueKey('details'),
-              entry: _selectedEntry!,
-              day: _selectedDay!,
-              initialBookingPlace: _initialBookingPlaceForSelection,
-              onSavedSuccessfully: () async {
-                final tz = ref
-                        .read(profileAllProvider)
-                        .valueOrNull
-                        ?.profile['timeZone']
-                    as String?;
-                if (tz != null && tz.trim().isNotEmpty) {
-                  await _loadDay(_selectedDay!, tz);
-                }
-                if (mounted) _clearSelectedEntry();
-              },
-              onClose: _clearSelectedEntry,
+          : _buildSlotDetailsPanel(key: const ValueKey('details')),
+    );
+  }
+}
+
+/// Segmented control for 1–5 day grid width on desktop calendar.
+class _DayViewCountSelector extends StatelessWidget {
+  const _DayViewCountSelector({
+    required this.value,
+    required this.brand,
+    required this.compact,
+    required this.onChanged,
+  });
+
+  final int value;
+  final Color brand;
+  final bool compact;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final tooltip =
+        l10n.translate('calendarDayViewCount') ?? 'Days shown in grid';
+
+    return Tooltip(
+      message: tooltip,
+      child: SegmentedButton<int>(
+        segments: [
+          for (var i = 1; i <= 5; i++)
+            ButtonSegment(
+              value: i,
+              label: Text('$i', style: TextStyle(fontSize: compact ? 12 : 13)),
             ),
+        ],
+        selected: {value},
+        onSelectionChanged: (selected) {
+          if (selected.isNotEmpty) onChanged(selected.first);
+        },
+        style: ButtonStyle(
+          visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        showSelectedIcon: false,
+      ),
     );
   }
 }
@@ -1822,6 +2554,7 @@ class CalendarMonthPanel extends ConsumerWidget {
       locale: intlLocale,
       firstDay: DateTime(2020),
       lastDay: DateTime(2030),
+      startingDayOfWeek: StartingDayOfWeek.monday,
       focusedDay: focusedDay,
       rowHeight: isCompact ? 36 : 48,
       daysOfWeekHeight: isCompact ? 24 : 20,
@@ -1944,6 +2677,17 @@ class CalendarMonthPanel extends ConsumerWidget {
           child: calendar,
         ),
         const SizedBox(height: 12),
+        if (!isCompact)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 4),
+            child: Text(
+              AppLocalizations.of(context)!
+                      .translate('calendarOccupancyLegend') ??
+                  'Dark = fully booked · No fill = open availability',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+          ),
         if (showUpdateCard) ...[
           Container(
             padding: const EdgeInsets.all(12),
@@ -2249,6 +2993,9 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
   int _todMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
+  String _defaultClinicPlace(AppLocalizations l10n) =>
+      l10n.translate('clinicAddress') ?? 'Clinic Address';
+
   /// End time for bookings from the tapped slot row until multi-slot selection confirms.
   TimeOfDay get _effectiveBookingEnd =>
       _bookingEndExclusive ?? widget.entry.end;
@@ -2377,6 +3124,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
             blockId: blockId,
             day: widget.day,
             doctorTimeZone: doctorTimeZone,
+            actingAsDoctorProfileId: widget.clinicDoctorProfileId,
           );
       await widget.onSavedSuccessfully();
       if (mounted) {
@@ -2488,14 +3236,16 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   }
 
   void _seedStateFromEntry() {
+    final l10n = AppLocalizations.of(context)!;
+    final clinicPlace = _defaultClinicPlace(l10n);
     if (_isAppointment) {
       _selectedPlace = widget.entry.location.toLowerCase().contains('video')
-          ? 'Video Consultation'
-          : 'Clinic Address';
+          ? l10n.videoCall
+          : clinicPlace;
     } else {
-      _selectedPlace = widget.initialBookingPlace;
+      _selectedPlace = widget.initialBookingPlace ?? clinicPlace;
     }
-    _initialPlace = _selectedPlace ?? '';
+    _initialPlace = _selectedPlace ?? clinicPlace;
     final seedReason = widget.entry.reason.trim().isEmpty
         ? 'Check Up'
         : widget.entry.reason.trim();
@@ -3017,12 +3767,24 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   Future<List<CalendarEntry>> _loadAvailableSlots(DateTime day) async {
     final tz = _calendarTz();
     try {
-      await ref
-          .read(calendarProvider.notifier)
-          .loadDay(day: day, doctorTimeZone: tz);
-      final entries =
-          ref.read(calendarProvider)[DateTime(day.year, day.month, day.day)] ??
-          [];
+      final doctorId = widget.clinicDoctorProfileId;
+      final List<CalendarEntry> entries;
+      if (doctorId != null) {
+        entries = await ref
+            .read(calendarProvider.notifier)
+            .previewDayForDoctorProfile(
+              day: day,
+              doctorTimeZone: tz,
+              doctorProfileId: doctorId,
+            );
+      } else {
+        await ref
+            .read(calendarProvider.notifier)
+            .loadDay(day: day, doctorTimeZone: tz);
+        entries =
+            ref.read(calendarProvider)[DateTime(day.year, day.month, day.day)] ??
+                [];
+      }
       return entries.where((e) => e.type == EntryType.freeSlot).toList();
     } catch (e) {
       return [];
@@ -3102,6 +3864,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
             reason: reason,
             isVideo: isVideo,
             endExclusive: _effectiveBookingEnd,
+            actingAsDoctorProfileId: widget.clinicDoctorProfileId,
           );
 
       // Refresh Home's "Today" list and this day in calendar
@@ -3572,13 +4335,12 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
     // Build Dropdown items for place selection
     final placeOptions = <String>{
-      l10n.translate('clinicAddress') ?? 'Clinic Address',
+      _defaultClinicPlace(l10n),
       l10n.videoCall,
     }.where((v) => v.trim().isNotEmpty).toList(growable: false);
-    final selectedPlaceValue =
-        _selectedPlace != null && placeOptions.contains(_selectedPlace)
+    final selectedPlaceValue = placeOptions.contains(_selectedPlace)
         ? _selectedPlace
-        : null;
+        : _defaultClinicPlace(l10n);
 
     final calendarDayKey =
         DateTime(widget.day.year, widget.day.month, widget.day.day);
