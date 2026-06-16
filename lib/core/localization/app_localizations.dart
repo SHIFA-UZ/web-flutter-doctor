@@ -793,7 +793,10 @@ class AppLocalizations {
       'encryptedDocuments': 'Encrypted Documents',
       'updateOrChangeSchedule': 'Update or change your schedule',
       'changeOrResetPassword': 'Change or reset your password here',
-      'settingsSubtitle': 'Country, Language, 2FA, Encrypted Docs',
+      'settingsSubtitle': 'Country, Language, Starting screen, 2FA, Encrypted Docs',
+      'startingScreen': 'Starting screen',
+      'startingScreenHint':
+          'Main tab when you open the app. Notifications still open the relevant screen.',
       'extendedProfileSubtitle':
           'Biography, Services, Certificates, Social Media',
       'phone': 'Phone',
@@ -2605,7 +2608,10 @@ class AppLocalizations {
       'updateOrChangeSchedule': 'Jadvalni yangilang yoki o\'zgartiring',
       'changeOrResetPassword': 'Parolni o\'zgartiring yoki tiklang',
       'settingsSubtitle':
-          'Mamlakat, Til, Ikki bosqichli autentifikatsiya, Shifrlangan hujjatlar',
+          'Mamlakat, Til, Boshlang\'ich ekran, Ikki bosqichli autentifikatsiya, Shifrlangan hujjatlar',
+      'startingScreen': 'Boshlang\'ich ekran',
+      'startingScreenHint':
+          'Ilovani ochganda ko\'rsatiladigan asosiy bo\'lim. Bildirishnomalar tegishli ekranni ochadi.',
       'extendedProfileSubtitle':
           'Biografiya, Xizmatlar, Sertifikatlar, Ijtimoiy tarmoqlar',
       'phone': 'Telefon',
@@ -4411,7 +4417,10 @@ class AppLocalizations {
       'encryptedDocuments': 'Зашифрованные документы',
       'updateOrChangeSchedule': 'Обновить или изменить расписание',
       'changeOrResetPassword': 'Изменить или сбросить пароль здесь',
-      'settingsSubtitle': 'Страна, Язык, 2FA, Зашифрованные документы',
+      'settingsSubtitle': 'Страна, Язык, Стартовый экран, 2FA, Зашифрованные документы',
+      'startingScreen': 'Стартовый экран',
+      'startingScreenHint':
+          'Главная вкладка при запуске приложения. Уведомления по-прежнему открывают нужный экран.',
       'extendedProfileSubtitle':
           'Биография, Услуги, Сертификаты, Социальные сети',
       'phone': 'Телефон',

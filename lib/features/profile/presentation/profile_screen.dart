@@ -844,6 +844,9 @@ import 'searchable_timezone_dropdown.dart';
 import 'services_pricing_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shifa_doc_app_v1/features/settings/presentation/app_lock_settings_section.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_start_tab.dart';
+import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
+import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -894,6 +897,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final parts = iso.split('-'); // yyyy-MM-dd
     if (parts.length != 3) return '';
     return '${parts[2]}.${parts[1]}.${parts[0]}';
+  }
+
+  String _startTabLabel(AppLocalizations l10n, String key) {
+    return switch (key) {
+      DoctorStartTab.chat => l10n.chat,
+      DoctorStartTab.home => l10n.home,
+      DoctorStartTab.calendar => l10n.translate('navAppointments'),
+      DoctorStartTab.patients => l10n.patients,
+      DoctorStartTab.clinic => l10n.translate('clinicNavClinic'),
+      DoctorStartTab.tasks => l10n.tasks,
+      DoctorStartTab.reports => l10n.translate('navReports'),
+      DoctorStartTab.notifications => l10n.notifications,
+      DoctorStartTab.profile => l10n.profile,
+      _ => l10n.home,
+    };
   }
 
   Future<void> _saveCurrentSectionBackend({
@@ -1767,6 +1785,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           final country = (settings['country'] as String?) ?? 'Uzbekistan';
           final twoFA = (settings['twoFA'] == true);
           final encDocs = (settings['encryptedDocs'] != false);
+          final canUseTasks =
+              ref.watch(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
+          final defaultStartTab = DoctorStartTab.normalize(
+            settings['defaultStartTab'] as String?,
+            isClinicStaff: false,
+          );
+          final startTabOptions = DoctorStartTab.doctorKeys
+              .where((key) => key != DoctorStartTab.tasks || canUseTasks)
+              .toList();
+          final selectedStartTab = startTabOptions.contains(defaultStartTab)
+              ? defaultStartTab
+              : DoctorStartTab.defaultKey;
 
           return _panelWrapper(
             profile: profile,
@@ -1799,7 +1829,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                   onChanged: (v) {
-                    patchSettings(ref, {'country': v, 'language': currentLanguageTag, 'twoFA': twoFA, 'encryptedDocs': encDocs});
+                    patchSettings(
+                      ref,
+                      buildDoctorSettingsPatch(
+                        settings: settings,
+                        currentLanguageTag: currentLanguageTag,
+                        country: v,
+                        twoFA: twoFA,
+                        encryptedDocs: encDocs,
+                        defaultStartTab: selectedStartTab,
+                      ),
+                    );
                   },
                   decoration: InputDecoration(hintText: l10n.translate('country') ?? 'Country'),
                 ),
@@ -1834,6 +1874,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   },
                   decoration: InputDecoration(hintText: l10n.language),
                 ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedStartTab,
+                  items: startTabOptions
+                      .map(
+                        (key) => DropdownMenuItem(
+                          value: key,
+                          child: Text(_startTabLabel(l10n, key)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v == null) return;
+                    patchSettings(
+                      ref,
+                      buildDoctorSettingsPatch(
+                        settings: settings,
+                        currentLanguageTag: currentLanguageTag,
+                        country: country,
+                        twoFA: twoFA,
+                        encryptedDocs: encDocs,
+                        defaultStartTab: v,
+                      ),
+                    );
+                  },
+                  decoration: InputDecoration(
+                    labelText: l10n.translate('startingScreen'),
+                    helperText: l10n.translate('startingScreenHint'),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
@@ -1841,7 +1911,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   value: twoFA,
                   activeColor: brand,
                   onChanged: (v) {
-                    patchSettings(ref, {'country': country, 'language': currentLanguageTag, 'twoFA': v, 'encryptedDocs': encDocs});
+                    patchSettings(
+                      ref,
+                      buildDoctorSettingsPatch(
+                        settings: settings,
+                        currentLanguageTag: currentLanguageTag,
+                        country: country,
+                        twoFA: v,
+                        encryptedDocs: encDocs,
+                        defaultStartTab: selectedStartTab,
+                      ),
+                    );
                   },
                 ),
                 SwitchListTile(
@@ -1850,7 +1930,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   value: encDocs,
                   activeColor: brand,
                   onChanged: (v) {
-                    patchSettings(ref, {'country': country, 'language': currentLanguageTag, 'twoFA': twoFA, 'encryptedDocs': v});
+                    patchSettings(
+                      ref,
+                      buildDoctorSettingsPatch(
+                        settings: settings,
+                        currentLanguageTag: currentLanguageTag,
+                        country: country,
+                        twoFA: twoFA,
+                        encryptedDocs: v,
+                        defaultStartTab: selectedStartTab,
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: 12),

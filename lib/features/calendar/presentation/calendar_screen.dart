@@ -74,6 +74,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     with WidgetsBindingObserver {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  /// First column of the multi-day grid; stays fixed when tapping slots in-grid.
+  DateTime? _viewAnchorDay;
   CalendarEntry? _selectedEntry;
   bool _loadingDay = false;
   DateTime? _lastRefreshTime;
@@ -84,7 +86,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   bool _showFreeSlots = true;
   bool _showBlockedTime = true;
 
-  /// Number of consecutive days shown in the grid (1–5).
+  /// Number of consecutive days shown in the grid (1–7).
   int _dayViewCount = 1;
 
   /// Clinic staff whose grids are visible (always includes self once initialized).
@@ -115,8 +117,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   String _two(int n) => n.toString().padLeft(2, '0');
 
   List<DateTime> get _visibleDays {
-    if (_selectedDay == null) return const [];
-    final start = _dayKey(_selectedDay!);
+    final anchor = _viewAnchorDay ?? _selectedDay;
+    if (anchor == null) return const [];
+    final start = _dayKey(anchor);
     return List.generate(
       _dayViewCount,
       (i) => DateTime(start.year, start.month, start.day + i),
@@ -366,6 +369,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     if (goToDay != null && goToId != null && goToId > 0) {
       _skipInitialProfileLoad = true;
       _selectedDay = DateTime(goToDay.year, goToDay.month, goToDay.day);
+      _viewAnchorDay = _selectedDay;
       _focusedDay = _selectedDay!;
     } else {
       final doctorTz =
@@ -373,6 +377,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               as String?;
       final today = getTodayInTimezone(doctorTz);
       _selectedDay = DateTime(today.year, today.month, today.day);
+      _viewAnchorDay = _selectedDay;
       _focusedDay = _selectedDay!;
     }
 
@@ -714,12 +719,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     if (!mounted) return;
 
     if (picked != null && pickedDay != null) {
+      final day = pickedDay;
       setState(() {
-        _selectedDay = DateTime(
-          pickedDay!.year,
-          pickedDay.month,
-          pickedDay.day,
-        );
+        _selectedDay = DateTime(day.year, day.month, day.day);
+        _viewAnchorDay = _selectedDay;
         _focusedDay = _selectedDay!;
         _selectedEntry = picked;
         _initialBookingPlaceForSelection = initialPlace;
@@ -798,6 +801,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             _selectedDay!.day != day.day) {
           setState(() {
             _selectedDay = day;
+            _viewAnchorDay = day;
             _focusedDay = day;
           });
         }
@@ -904,6 +908,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
           onChanged: (d) {
             setState(() {
               _selectedDay = DateTime(d.year, d.month, d.day);
+              _viewAnchorDay = _selectedDay;
               _focusedDay = _selectedDay!;
               _selectedEntry = null;
               _selectedEntryDoctorProfileId = null;
@@ -2034,6 +2039,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
               onChanged: (d) {
                 setState(() {
                   _selectedDay = DateTime(d.year, d.month, d.day);
+                  _viewAnchorDay = _selectedDay;
                   _focusedDay = _selectedDay!;
                   _selectedEntry = null;
                   _selectedEntryDoctorProfileId = null;
@@ -2062,7 +2068,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   }
 }
 
-/// Segmented control for 1–5 day grid width on desktop calendar.
+/// Segmented control for 1–7 day grid width on desktop calendar.
 class _DayViewCountSelector extends StatelessWidget {
   const _DayViewCountSelector({
     required this.value,
@@ -2086,7 +2092,7 @@ class _DayViewCountSelector extends StatelessWidget {
       message: tooltip,
       child: SegmentedButton<int>(
         segments: [
-          for (var i = 1; i <= 5; i++)
+          for (var i = 1; i <= 7; i++)
             ButtonSegment(
               value: i,
               label: Text('$i', style: TextStyle(fontSize: compact ? 12 : 13)),
@@ -2982,8 +2988,11 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   String _initialPlace = '';
 
   TimeOfDay? _bookingEndExclusive;
+  /// When booking a free slot, user may pick a different start row than [widget.entry].
+  CalendarEntry? _bookingFreeSlot;
   TimeOfDay? _adjustedAppointmentEndExclusive;
   int _initialFreeSlotEndRepr = -1;
+  int _initialFreeSlotStartRepr = -1;
   int _initialAppointmentEndRepr = -1;
 
   String _two(int n) => n.toString().padLeft(2, '0');
@@ -2996,9 +3005,14 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   String _defaultClinicPlace(AppLocalizations l10n) =>
       l10n.translate('clinicAddress') ?? 'Clinic Address';
 
+  /// Active free-slot row for booking (start anchor for API + end chaining).
+  CalendarEntry get _effectiveFreeSlot => _bookingFreeSlot ?? widget.entry;
+
+  TimeOfDay get _effectiveBookingStart => _effectiveFreeSlot.start;
+
   /// End time for bookings from the tapped slot row until multi-slot selection confirms.
   TimeOfDay get _effectiveBookingEnd =>
-      _bookingEndExclusive ?? widget.entry.end;
+      _bookingEndExclusive ?? _effectiveFreeSlot.end;
 
   /// Preview header end for appointments when adjusting length.
   TimeOfDay get _detailHeaderEnd {
@@ -3254,8 +3268,10 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     _hasUnsavedChanges = false;
     _showAiSummary = false;
     if (!_isAppointment) {
+      _bookingFreeSlot = null;
       _bookingEndExclusive = null;
       _initialFreeSlotEndRepr = _todMinutes(widget.entry.end);
+      _initialFreeSlotStartRepr = _todMinutes(widget.entry.start);
     } else {
       _adjustedAppointmentEndExclusive = null;
       _initialAppointmentEndRepr = _todMinutes(widget.entry.end);
@@ -3292,6 +3308,10 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   }
 
   void _syncDirtyState() {
+    final bookingFreeStartDirty =
+        widget.entry.type == EntryType.freeSlot &&
+        (_initialFreeSlotStartRepr < 0 ||
+            _todMinutes(_effectiveBookingStart) != _initialFreeSlotStartRepr);
     final bookingFreeEndDirty =
         widget.entry.type == EntryType.freeSlot &&
         (_initialFreeSlotEndRepr < 0 ||
@@ -3299,6 +3319,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final isDirty =
         (_reasonCtrl.text.trim() != _initialReason) ||
         ((_selectedPlace ?? '').trim() != _initialPlace) ||
+        bookingFreeStartDirty ||
         bookingFreeEndDirty ||
         (_canAdjustAppointmentDuration && _appointmentDurationDirty);
     if (isDirty != _hasUnsavedChanges && mounted) {
@@ -3857,7 +3878,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
           .read(calendarProvider.notifier)
           .bookFreeSlotRemote(
             day: widget.day,
-            slot: widget.entry,
+            slot: _effectiveFreeSlot,
             patientId: _selectedPatientId!,
             doctorTimeZone: doctorTimeZone,
             location: location,
@@ -4347,13 +4368,37 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final dayEntriesList =
         ref.watch(calendarProvider)[calendarDayKey] ?? <CalendarEntry>[];
 
+    final freeSlotStartOptions = widget.entry.type == EntryType.freeSlot
+        ? (dayEntriesList
+              .where(
+                (e) =>
+                    e.type == EntryType.freeSlot &&
+                    e.locationId == widget.entry.locationId,
+              )
+              .toList()
+            ..sort(
+              (a, b) => _todMinutes(a.start).compareTo(_todMinutes(b.start)),
+            ))
+        : <CalendarEntry>[];
+
     final freeSlotEndOptions = widget.entry.type == EntryType.freeSlot
         ? consecutiveEndTimesForFreeSlot(
             dayEntries: dayEntriesList,
-            startSlot: widget.entry,
+            startSlot: _effectiveFreeSlot,
             doctorTimeZone: _calendarTz(),
           )
         : const <TimeOfDay>[];
+
+    CalendarEntry? _matchingFreeSlotStart(List<CalendarEntry> opts) {
+      if (opts.isEmpty) return null;
+      final target = _todMinutes(_effectiveBookingStart);
+      for (final o in opts) {
+        if (_todMinutes(o.start) == target) return o;
+      }
+      return opts.first;
+    }
+
+    final freeStartDropdownValue = _matchingFreeSlotStart(freeSlotStartOptions);
 
     TimeOfDay _matchingTod(TimeOfDay needle, List<TimeOfDay> opts) {
       if (opts.isEmpty) return needle;
@@ -4406,7 +4451,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${_fmtDate(context, widget.day)} â€¢ ${_fmtTime(widget.entry.start)} - ${_fmtTime(_detailHeaderEnd)}',
+                      '${_fmtDate(context, widget.day)} â€¢ ${_fmtTime(_effectiveBookingStart)} - ${_fmtTime(_detailHeaderEnd)}',
                       style: TextStyle(
                         color: subtleText,
                         fontSize: 12,
@@ -4415,7 +4460,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${t('durationLabelShort', 'Duration')}: ${_durationLabel(widget.entry.start, _detailHeaderEnd)}',
+                      '${t('durationLabelShort', 'Duration')}: ${_durationLabel(_effectiveBookingStart, _detailHeaderEnd)}',
                       style: TextStyle(
                         color: subtleText,
                         fontSize: 11,
@@ -4911,6 +4956,60 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     ),
                   ),
                   const SizedBox(height: 10),
+                  if (freeSlotStartOptions.isNotEmpty) ...[
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.translate('startTime') ?? 'Start time',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<CalendarEntry>(
+                              isExpanded: true,
+                              value: freeStartDropdownValue,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),
+                              items: [
+                                for (final o in freeSlotStartOptions)
+                                  DropdownMenuItem<CalendarEntry>(
+                                    value: o,
+                                    child: Text(_fmtTime(o.start)),
+                                  ),
+                              ],
+                              onChanged: (entry) {
+                                if (entry == null) return;
+                                setState(() {
+                                  _bookingFreeSlot = entry;
+                                  _bookingEndExclusive = null;
+                                });
+                                _syncDirtyState();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   if (freeSlotEndOptions.isNotEmpty) ...[
                     Card(
                       shape: RoundedRectangleBorder(
@@ -4958,7 +5057,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              '${t('durationLabelShort', 'Duration')}: ${_durationLabel(widget.entry.start, freeEndDropdownValue)}',
+                              '${t('durationLabelShort', 'Duration')}: ${_durationLabel(_effectiveBookingStart, freeEndDropdownValue)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey.shade600,
@@ -5018,7 +5117,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    '${_fmtDate(context, widget.day)}, ${_fmtTime(widget.entry.start)} - ${_fmtTime(_detailHeaderEnd)}',
+                    '${_fmtDate(context, widget.day)}, ${_fmtTime(_effectiveBookingStart)} - ${_fmtTime(_detailHeaderEnd)}',
                     style: TextStyle(color: Colors.grey.shade700),
                   ),
                   trailing: const Icon(Icons.chevron_right),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import '../../core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_start_tab.dart';
 import 'package:http/http.dart' as http;
 
 Future<void> patchProfile(WidgetRef ref, Map<String, dynamic> body) async {
@@ -68,6 +69,26 @@ Future<void> patchSettings(WidgetRef ref, Map<String, dynamic> body) async {
   final res = await api.patch('/api/doctors/me/settings', body);
   if (res.statusCode != 200) throw Exception('Save failed: ${res.body}');
   await ref.refresh(profileAllProvider.future);
+}
+
+/// Builds a PATCH body for `/api/doctors/me/settings`, preserving existing values.
+Map<String, dynamic> buildDoctorSettingsPatch({
+  required Map<String, dynamic> settings,
+  required String currentLanguageTag,
+  String? country,
+  String? language,
+  bool? twoFA,
+  bool? encryptedDocs,
+  String? defaultStartTab,
+}) {
+  return {
+    'country': country ?? settings['country'] ?? 'Uzbekistan',
+    'language': language ?? currentLanguageTag,
+    'twoFA': twoFA ?? settings['twoFA'] == true,
+    'encryptedDocs': encryptedDocs ?? settings['encryptedDocs'] != false,
+    'defaultStartTab':
+        defaultStartTab ?? settings['defaultStartTab'] ?? DoctorStartTab.defaultKey,
+  };
 }
 
 // Existing patch... (unchanged)

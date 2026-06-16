@@ -19,6 +19,7 @@ import 'package:shifa_doc_app_v1/features/notifications/presentation/notificatio
 import 'package:shifa_doc_app_v1/features/reports/presentation/reports_screen.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_workspace_screen.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_start_tab.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 
@@ -183,6 +184,41 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     }
   }
 
+  Future<void> _applyPreferredStartTabIfNeeded() async {
+    if (!mounted) return;
+
+    final isClinicStaff =
+        ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff;
+    if (isClinicStaff) return;
+
+    final factoryDefault = DoctorStartTab.factoryDefaultIndex(isClinicStaff: false);
+    if (ref.read(shellProvider) != factoryDefault) return;
+
+    if (ref.read(notificationPendingTaskIdProvider) != null) return;
+    if (ref.read(notificationPendingConversationIdProvider) != null) return;
+
+    Map<String, dynamic> settings;
+    try {
+      final all = await ref.read(profileAllProvider.future);
+      settings = all.settings;
+    } catch (_) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    final canUseTasks =
+        ref.read(doctorFeatureProvider(DoctorFeature.remoteCareTasks));
+    final preferredIndex = DoctorStartTab.resolveShellIndex(
+      rawKey: settings['defaultStartTab'] as String?,
+      isClinicStaff: false,
+      canUseTasks: canUseTasks,
+    );
+    if (preferredIndex != factoryDefault) {
+      ref.read(shellProvider.notifier).setTab(preferredIndex);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -192,6 +228,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
       if (ref.read(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
         return;
       }
+      unawaited(_applyPreferredStartTabIfNeeded());
       _loadActiveLocationLabel();
       ref.read(tasksProvider.notifier).loadTasks();
     });
