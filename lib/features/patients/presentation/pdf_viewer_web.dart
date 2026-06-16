@@ -37,8 +37,11 @@ class _PdfViewerWebState extends State<PdfViewerWeb> {
         final iframe = html.IFrameElement()
           ..src = dataUrl
           ..style.border = 'none'
+          ..style.display = 'block'
           ..style.width = '100%'
-          ..style.height = '100%';
+          ..style.height = '100%'
+          ..style.minHeight = '100%'
+          ..allowFullscreen = true;
         return iframe;
       },
     )) {
@@ -48,6 +51,11 @@ class _PdfViewerWebState extends State<PdfViewerWeb> {
 
   @override
   Widget build(BuildContext context) {
-    return HtmlElementView(viewType: _viewType);
+    return SizedBox.expand(
+      child: HtmlElementView(
+        viewType: _viewType,
+        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+      ),
+    );
   }
 }

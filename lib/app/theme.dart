@@ -7,6 +7,15 @@ ThemeData buildTheme() {
     primaryColor: AppColors.primaryTeal,
     scaffoldBackgroundColor: AppColors.scaffoldBackground,
     fontFamily: 'SF Pro Display',
+    fontFamilyFallback: const [
+      '.AppleSystemUIFont',
+      'BlinkMacSystemFont',
+      'Segoe UI',
+      'Roboto',
+      'Helvetica Neue',
+      'Arial',
+      'sans-serif',
+    ],
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primaryTeal,
       primary: AppColors.primaryTeal,

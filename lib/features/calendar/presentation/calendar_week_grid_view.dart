@@ -448,9 +448,11 @@ class _DayColumn extends StatelessWidget {
               top: nowTop,
               left: 0,
               right: 0,
-              child: Container(
-                height: 2,
-                color: Colors.red.shade400,
+              child: IgnorePointer(
+                child: Container(
+                  height: 2,
+                  color: Colors.red.shade400,
+                ),
               ),
             ),
         ],

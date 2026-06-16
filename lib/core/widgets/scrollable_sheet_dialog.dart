@@ -20,7 +20,11 @@ Future<T?> showScrollableFormBottomSheet<T>({
     showDragHandle: showDragHandle,
     builder: (ctx) {
       final bottomInset = MediaQuery.viewInsetsOf(ctx).bottom;
-      final maxHeight = MediaQuery.sizeOf(ctx).height * maxHeightFactor;
+      final viewPadding = MediaQuery.viewPaddingOf(ctx);
+      final maxHeight = (MediaQuery.sizeOf(ctx).height -
+              viewPadding.top -
+              viewPadding.bottom) *
+          maxHeightFactor;
       return Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: ConstrainedBox(

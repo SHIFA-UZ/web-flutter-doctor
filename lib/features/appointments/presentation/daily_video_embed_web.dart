@@ -42,9 +42,11 @@ class _DailyVideoEmbedWebState extends State<DailyVideoEmbedWeb> {
         final iframe = html.IFrameElement()
           ..src = iframeUrl
           ..style.border = 'none'
+          ..style.display = 'block'
           ..style.width = '100%'
           ..style.height = '100%'
-          ..allow = 'camera; microphone; display-capture'
+          ..style.minHeight = '100%'
+          ..allow = 'camera; microphone; display-capture; autoplay; fullscreen'
           ..allowFullscreen = true;
         return iframe;
       },
@@ -53,6 +55,11 @@ class _DailyVideoEmbedWebState extends State<DailyVideoEmbedWeb> {
 
   @override
   Widget build(BuildContext context) {
-    return HtmlElementView(viewType: _viewType);
+    return SizedBox.expand(
+      child: HtmlElementView(
+        viewType: _viewType,
+        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+      ),
+    );
   }
 }

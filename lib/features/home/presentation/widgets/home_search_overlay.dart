@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/core/widgets/safari_safe_dialog.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 
@@ -27,6 +28,14 @@ class HomeSearchOverlay extends ConsumerStatefulWidget {
 class _HomeSearchOverlayState extends ConsumerState<HomeSearchOverlay> {
   final _query = TextEditingController();
   final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
+  }
 
   @override
   void dispose() {
@@ -60,16 +69,13 @@ class _HomeSearchOverlayState extends ConsumerState<HomeSearchOverlay> {
             },
           ),
         },
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: Responsive.overlayWidth(context, 520),
-              margin: const EdgeInsets.all(24),
-              decoration: AppDesignSystem.cardDecoration(),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+        child: SafariSafeDialog(
+          child: Container(
+            width: Responsive.overlayWidth(context, 520),
+            decoration: AppDesignSystem.cardDecoration(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: TextField(
@@ -111,8 +117,7 @@ class _HomeSearchOverlayState extends ConsumerState<HomeSearchOverlay> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                ],
-              ),
+              ],
             ),
           ),
         ),

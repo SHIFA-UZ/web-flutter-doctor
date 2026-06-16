@@ -15,6 +15,7 @@ import 'package:shifa_doc_app_v1/core/services/push_notification_service.dart';
 import 'package:shifa_doc_app_v1/core/util/admin_host.dart' show isAdminHost;
 import 'package:shifa_doc_app_v1/core/util/set_web_title.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/core/layout/shifa_scroll_behavior.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_lock_layer.dart';
 import 'package:shifa_doc_app_v1/core/widgets/activity_tracker.dart';
 export 'package:shifa_doc_app_v1/core/util/admin_host.dart';
@@ -377,7 +378,9 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
     
     return AppLockLifecycleLayer(
       child: ActivityTracker(
-      child: MaterialApp(
+      child: ScrollConfiguration(
+        behavior: const ShifaScrollBehavior(),
+        child: MaterialApp(
         navigatorKey: navigatorKey,
         title: 'Shifa Doctor',
         debugShowCheckedModeBanner: false,
@@ -398,6 +401,7 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
         onGenerateRoute: AppRouter.onGenerateRoute,
         // Admin URL: start at admin login. Doctor URL: start at splash -> login
         initialRoute: isAdminHost ? AppRoutes.adminLogin : AppRoutes.splash,
+      ),
       ),
     ),
     );

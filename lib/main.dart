@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'app/app.dart';
+import 'core/layout/browser_compat.dart';
 import 'core/services/push_notification_service.dart';
 import 'firebase_options.dart';
 
@@ -33,6 +34,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    BrowserCompat.bootstrap();
+  }
   tz.initializeTimeZones();
   // Initialize date formatting for calendar day/month names (en, uz, ru)
   await Future.wait([

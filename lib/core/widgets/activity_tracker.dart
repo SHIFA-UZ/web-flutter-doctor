@@ -69,17 +69,11 @@ class _ActivityTrackerState extends ConsumerState<ActivityTracker>
     ref.watch(inactivityTimerProvider);
     
     return Listener(
+      behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => _resetTimer(),
       onPointerMove: (_) => _resetTimer(),
       onPointerUp: (_) => _resetTimer(),
-      child: GestureDetector(
-        onTap: () => _resetTimer(),
-        onPanStart: (_) => _resetTimer(),
-        onPanUpdate: (_) => _resetTimer(),
-        onPanEnd: (_) => _resetTimer(),
-        behavior: HitTestBehavior.translucent,
-        child: widget.child,
-      ),
+      child: widget.child,
     );
   }
 }

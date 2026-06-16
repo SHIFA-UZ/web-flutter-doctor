@@ -19,6 +19,8 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:shifa_doc_app_v1/core/layout/shifa_scroll_behavior.dart';
+
 /// Layout shell for a clinic data-table screen.
 ///
 /// Renders [toolbar] in a sticky strip at the top followed by the supplied
@@ -177,7 +179,9 @@ class _ClinicDataTableState extends State<_ClinicDataTable> {
         final available = maxWidth.isFinite && maxWidth > 16
             ? maxWidth - 16
             : MediaQuery.of(ctx).size.width - 16;
-        return Scrollbar(
+        return ScrollConfiguration(
+          behavior: const ShifaScrollBehavior(),
+          child: Scrollbar(
           controller: _v,
           thumbVisibility: true,
           child: SingleChildScrollView(
@@ -210,6 +214,7 @@ class _ClinicDataTableState extends State<_ClinicDataTable> {
               ),
             ),
           ),
+        ),
         );
       },
     );

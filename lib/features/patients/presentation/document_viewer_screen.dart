@@ -168,7 +168,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 <!DOCTYPE html>
 <html>
 <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0;height:100vh;">
+<body style="margin:0;height:100dvh;height:100vh;">
 <embed type="application/pdf" src="data:application/pdf;base64,$base64" width="100%" height="100%" />
 </body>
 </html>''';

@@ -170,7 +170,10 @@ class _ConsultationDocumentUploadStripState
                   ),
                 ),
                 if (kIsWeb && _webViewType != null)
-                  HtmlElementView(viewType: _webViewType!),
+                  HtmlElementView(
+                    viewType: _webViewType!,
+                    hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+                  ),
                 if (!kIsWeb)
                   Material(
                     color: Colors.transparent,

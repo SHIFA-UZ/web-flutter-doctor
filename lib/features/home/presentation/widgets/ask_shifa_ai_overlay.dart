@@ -16,6 +16,7 @@ import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
+import 'package:shifa_doc_app_v1/core/widgets/safari_safe_dialog.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_context_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
@@ -208,17 +209,14 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
             },
           ),
         },
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: Responsive.overlayWidth(context, 560),
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              margin: const EdgeInsets.all(24),
-              decoration: AppDesignSystem.aiCardDecoration(),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+        child: SafariSafeDialog(
+          child: Container(
+            width: Responsive.overlayWidth(context, 560),
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            decoration: AppDesignSystem.aiCardDecoration(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
                     child: Row(
@@ -338,7 +336,6 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
                 ],
               ),
             ),
-          ),
         ),
       ),
     );

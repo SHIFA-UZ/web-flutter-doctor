@@ -2,9 +2,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shifa_doc_app_v1/core/layout/shifa_scroll_behavior.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/features/admin/presentation/admin_doctor_activity_detail_panel.dart';
@@ -16,17 +16,6 @@ import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 
 enum _PresetRange { last7, last30, last90, custom, all }
-
-/// Allows horizontal drag-scroll with mouse / trackpad (important on Flutter web/desktop).
-class _DoctorActivityTableScrollBehavior extends MaterialScrollBehavior {
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.trackpad,
-      };
-}
 
 class AdminDoctorActivityScreen extends ConsumerStatefulWidget {
   const AdminDoctorActivityScreen({super.key});
@@ -505,7 +494,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     final totalPages = ((data['totalPages'] as num?)?.toInt() ?? 1).clamp(1, 100000);
 
     final table = ScrollConfiguration(
-      behavior: _DoctorActivityTableScrollBehavior(),
+      behavior: const ShifaScrollBehavior(),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: Colors.white,

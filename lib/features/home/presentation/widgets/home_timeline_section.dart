@@ -1,8 +1,8 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/app/router.dart';
+import 'package:shifa_doc_app_v1/core/layout/shifa_scroll_behavior.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
@@ -468,7 +468,7 @@ class _UpcomingAppointmentsStripState extends State<_UpcomingAppointmentsStrip> 
     return SizedBox(
       height: _UpcomingAppointmentsStrip._height,
       child: ScrollConfiguration(
-        behavior: _MouseDragScrollBehavior(),
+        behavior: const ShifaScrollBehavior(),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -508,16 +508,6 @@ class _UpcomingAppointmentsStripState extends State<_UpcomingAppointmentsStrip> 
       ),
     );
   }
-}
-
-class _MouseDragScrollBehavior extends MaterialScrollBehavior {
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.trackpad,
-      };
 }
 
 class _UpcomingScrollArrow extends StatelessWidget {

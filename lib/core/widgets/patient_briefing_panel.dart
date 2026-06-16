@@ -50,6 +50,7 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
       child: Material(
         elevation: 8,
         borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           width: panelWidth,

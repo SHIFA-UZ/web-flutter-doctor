@@ -35,6 +35,56 @@
 
   <title>Shifa Doctor - Staging</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* Cross-browser baseline (Safari/macOS focus: viewport, fonts, hit targets). */
+    html {
+      height: 100%;
+      height: 100dvh;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent;
+      text-size-adjust: 100%;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    flutter-view,
+    flt-glass-pane,
+    flt-scene-host,
+    flt-scene {
+      height: 100%;
+      height: 100dvh;
+    }
+
+    /* Updated from Dart for Safari dynamic toolbar (see BrowserCompat.bootstrap). */
+    @supports (height: calc(var(--vh) * 100)) {
+      html,
+      body,
+      flutter-view,
+      flt-glass-pane,
+      flt-scene-host,
+      flt-scene {
+        height: calc(var(--vh, 1vh) * 100);
+      }
+    }
+
+    /* Platform views (PDF iframe, video embed, file drop) must fill their slot. */
+    flt-platform-view,
+    flt-platform-view iframe,
+    flt-platform-view div {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
   <!--
