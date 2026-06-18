@@ -529,7 +529,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                                 );
                                 return;
                               }
-                              AskShifaAiOverlay.show(context);
+                              AskShifaAiOverlay.open(ref);
                             },
                           ),
                         if (!isClinicStaff && compactSidebar)
@@ -548,7 +548,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                                     );
                                     return;
                                   }
-                                  AskShifaAiOverlay.show(context);
+                                  AskShifaAiOverlay.open(ref);
                                 },
                                 borderRadius: BorderRadius.circular(12),
                                 child: const Padding(
@@ -638,6 +638,12 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     child: PatientBriefingPanel(
                       bottomInset: Responsive.bottomNavClearance(context),
                     ),
+                  ),
+                if (!isClinicStaff)
+                  Positioned(
+                    right: PlatformLayout.useSinglePane(context) ? 16 : 24,
+                    bottom: Responsive.bottomNavClearance(context) + 16,
+                    child: const AskShifaAiOverlay(),
                   ),
                 if (isMobile || compactSidebar)
                   Positioned(

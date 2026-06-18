@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_message.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
+import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
@@ -16,22 +17,18 @@ import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
-import 'package:shifa_doc_app_v1/core/widgets/safari_safe_dialog.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/state/ask_shifa_ai_panel_provider.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_context_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
-/// Full-screen-style AI chat overlay — opened from sidebar or home copilot.
+/// Floating AI chat widget anchored bottom-right — opened from sidebar or shell.
 class AskShifaAiOverlay extends ConsumerStatefulWidget {
   const AskShifaAiOverlay({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (_) => const AskShifaAiOverlay(),
-    );
+  static void open(WidgetRef ref) {
+    ref.read(askShifaAiPanelProvider.notifier).open();
   }
 
   @override
@@ -191,10 +188,29 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final panelState = ref.watch(askShifaAiPanelProvider);
+    if (panelState == AskShifaAiPanelState.closed) {
+      return const SizedBox.shrink();
+    }
+
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
-    final patients = ref.watch(patientsProvider);
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
+    final useSinglePane = PlatformLayout.useSinglePane(context);
+    final screenSize = MediaQuery.sizeOf(context);
+
+    if (panelState == AskShifaAiPanelState.minimized) {
+      return _MinimizedBubble(
+        brand: brand,
+        tooltip: l10n.translate('sidebarAiTitle'),
+        onTap: () => ref.read(askShifaAiPanelProvider.notifier).restore(),
+      );
+    }
+
+    final panelWidth = useSinglePane
+        ? screenSize.width - 24
+        : Responsive.overlayWidth(context, 400).clamp(320.0, 420.0);
+    final panelHeight = (screenSize.height * (useSinglePane ? 0.62 : 0.58))
+        .clamp(useSinglePane ? 360.0 : 420.0, useSinglePane ? 520.0 : 580.0);
 
     return Shortcuts(
       shortcuts: {
@@ -204,138 +220,126 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
         actions: {
           _DismissIntent: CallbackAction<_DismissIntent>(
             onInvoke: (_) {
-              Navigator.pop(context);
+              ref.read(askShifaAiPanelProvider.notifier).close();
               return null;
             },
           ),
         },
-        child: SafariSafeDialog(
-          child: Container(
-            width: Responsive.overlayWidth(context, 560),
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            decoration: AppDesignSystem.aiCardDecoration(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [brand, AppDesignSystem.primaryAi],
-                            ),
+        child: Focus(
+          autofocus: true,
+          child: AnimatedScale(
+            scale: 1,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            child: Material(
+              elevation: 12,
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                width: panelWidth,
+                height: panelHeight,
+                decoration: AppDesignSystem.aiCardDecoration().copyWith(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    _ChatHeader(
+                      brand: brand,
+                      title: l10n.translate('sidebarAiTitle'),
+                      subtitle: l10n.translate('aiCommandCenterSubtitle'),
+                      onMinimize: () =>
+                          ref.read(askShifaAiPanelProvider.notifier).minimize(),
+                      onClose: () =>
+                          ref.read(askShifaAiPanelProvider.notifier).close(),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedPatientId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          hintText: l10n.allPatients,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome,
-                            color: Colors.white,
-                            size: 18,
+                            borderSide:
+                                BorderSide(color: AppDesignSystem.border),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.translate('sidebarAiTitle'),
-                                style: AppDesignSystem.h2(context),
+                        items: [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(l10n.allPatients),
+                          ),
+                          ...ref.watch(patientsProvider).map(
+                                (p) => DropdownMenuItem(
+                                  value: p.id.toString(),
+                                  child: Text(
+                                    p.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ),
-                              Text(
-                                l10n.translate('aiCommandCenterSubtitle'),
-                                style: AppDesignSystem.body2(context),
+                        ],
+                        onChanged: _onPatientChanged,
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppDesignSystem.border),
+                        ),
+                        child: SingleChildScrollView(
+                          controller: _aiScroll,
+                          child: _buildConversation(context, l10n),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          DoctorSpeechTextField(
+                            controller: _aiController,
+                            maxLines: 3,
+                            minLines: 2,
+                            textCapitalization: TextCapitalization.sentences,
+                            decoration: InputDecoration(
+                              hintText: l10n.translate('askShifaAi'),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedPatientId,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        hintText: l10n.allPatients,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppDesignSystem.border),
-                        ),
-                      ),
-                      items: [
-                        DropdownMenuItem(value: null, child: Text(l10n.allPatients)),
-                        ...patients.map(
-                          (p) => DropdownMenuItem(
-                            value: p.id.toString(),
-                            child: Text(p.name, overflow: TextOverflow.ellipsis),
-                          ),
-                        ),
-                      ],
-                      onChanged: _onPatientChanged,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Flexible(
-                    child: Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppDesignSystem.border),
-                      ),
-                      child: SingleChildScrollView(
-                        controller: _aiScroll,
-                        child: _buildConversation(context, l10n),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        DoctorSpeechTextField(
-                          controller: _aiController,
-                          maxLines: 3,
-                          minLines: 2,
-                          textCapitalization: TextCapitalization.sentences,
-                          decoration: InputDecoration(
-                            hintText: l10n.translate('askShifaAi'),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              filled: true,
+                              fillColor: Colors.white,
                             ),
-                            filled: true,
-                            fillColor: Colors.white,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        ShifaPrimaryButton(
-                          label: l10n.translate('askShifaAi'),
-                          icon: Icons.send_rounded,
-                          onPressed: _aiLoading ? null : _askAi,
-                          width: ButtonWidth.fill,
-                        ),
-                      ],
+                          const SizedBox(height: 10),
+                          ShifaPrimaryButton(
+                            label: l10n.translate('askShifaAi'),
+                            icon: Icons.send_rounded,
+                            onPressed: _aiLoading ? null : _askAi,
+                            width: ButtonWidth.fill,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+          ),
         ),
       ),
     );
@@ -366,7 +370,7 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
             child: AiResponseText(
               text: msg.content,
               style: const TextStyle(fontSize: 13),
-              maxWidth: 460,
+              maxWidth: 360,
             ),
           ),
         if (_streamingAiText.isNotEmpty)
@@ -375,10 +379,133 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
             child: AiResponseText(
               text: _streamingAiText,
               style: const TextStyle(fontSize: 13),
-              maxWidth: 460,
+              maxWidth: 360,
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ChatHeader extends StatelessWidget {
+  const _ChatHeader({
+    required this.brand,
+    required this.title,
+    required this.subtitle,
+    required this.onMinimize,
+    required this.onClose,
+  });
+
+  final Color brand;
+  final String title;
+  final String subtitle;
+  final VoidCallback onMinimize;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [brand, AppDesignSystem.primaryAi],
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppDesignSystem.h2(context).copyWith(
+                    color: Colors.white,
+                    fontSize: 15,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  style: AppDesignSystem.body2(context).copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onMinimize,
+            icon: const Icon(Icons.remove, color: Colors.white),
+            visualDensity: VisualDensity.compact,
+          ),
+          IconButton(
+            onPressed: onClose,
+            icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MinimizedBubble extends StatelessWidget {
+  const _MinimizedBubble({
+    required this.brand,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final Color brand;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        elevation: 8,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Ink(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [brand, AppDesignSystem.primaryAi],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

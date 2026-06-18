@@ -8,53 +8,17 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_plan_readonly_view.dart';
 import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_data.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_actions.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
 
-/// FDI-style quadrant codes in the same order as form 025-2 (patient-facing chart).
-const List<String> kFdiTeethOrder = [
-  'UR 8',
-  'UR 7',
-  'UR 6',
-  'UR 5',
-  'UR 4',
-  'UR 3',
-  'UR 2',
-  'UR 1',
-  'UL 1',
-  'UL 2',
-  'UL 3',
-  'UL 4',
-  'UL 5',
-  'UL 6',
-  'UL 7',
-  'UL 8',
-  'LR 8',
-  'LR 7',
-  'LR 6',
-  'LR 5',
-  'LR 4',
-  'LR 3',
-  'LR 2',
-  'LR 1',
-  'LL 1',
-  'LL 2',
-  'LL 3',
-  'LL 4',
-  'LL 5',
-  'LL 6',
-  'LL 7',
-  'LL 8',
-];
-
-/// Normalizes tooth key for API (no spaces): UR8, UL1, …
-String toothKeyCompact(String spaced) => spaced.replaceAll(' ', '');
-
-/// Display label with space for readability in UI.
-String toothKeyDisplay(String compactOrSpaced) {
-  final s = compactOrSpaced.replaceAll(' ', '');
-  if (s.length < 3) return s;
-  return '${s.substring(0, 2)} ${s.substring(2)}';
+/// Display label for a tooth or general-services key in UI/PDF.
+String toothKeyDisplay(String key, {DentalDentition dentition = DentalDentition.permanent}) {
+  if (key == DentalChartCodec.generalServicesKey) return key;
+  return DentalChartCodec.toFdiDisplay(key, dentitionHint: dentition);
 }
 
 class _ServiceOption {
@@ -109,12 +73,38 @@ class DentalVisitDocumentationPanel extends ConsumerStatefulWidget {
     required this.brand,
     this.registerSaveHandler,
     this.onUnsavedChanged,
+    this.activePlanId,
+    this.planTitle,
+    this.dentalPlanDocumentation,
+    this.planLines = const [],
+    this.fulfillmentCandidates = const [],
+    this.fulfilledLineIds = const [],
+    this.linesTotalCount = 0,
+    this.linesCompletedCount = 0,
+    this.loadingPlanContext = false,
+    this.planSummary,
+    this.onFulfillmentChanged,
+    this.onRetryLoadPlan,
   });
 
   final String appointmentId;
   final Color brand;
   final void Function(Future<bool> Function() fn)? registerSaveHandler;
   final ValueChanged<bool>? onUnsavedChanged;
+
+  /// When set, chart shows plan lines to fulfill (plan-only mode).
+  final int? activePlanId;
+  final String? planTitle;
+  final String? dentalPlanDocumentation;
+  final List<LineDetailDto> planLines;
+  final List<FulfillmentCandidateDto> fulfillmentCandidates;
+  final List<int> fulfilledLineIds;
+  final int linesTotalCount;
+  final int linesCompletedCount;
+  final bool loadingPlanContext;
+  final TreatmentPlanSummaryDto? planSummary;
+  final VoidCallback? onFulfillmentChanged;
+  final VoidCallback? onRetryLoadPlan;
 
   @override
   ConsumerState<DentalVisitDocumentationPanel> createState() =>
@@ -134,22 +124,84 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
   bool _dirty = false;
   Timer? _autosaveTimer;
   ApiClient? _apiClient;
+  DentalDentition _dentition = DentalDentition.permanent;
+  final Set<int> _selectedLineIds = {};
+
+  bool get _isPlanMode => widget.activePlanId != null;
+
+  int get _appointmentIdInt => int.tryParse(widget.appointmentId) ?? 0;
+
+  Set<int> get _pendingFulfillLineIds => _selectedLineIds
+      .where((id) => !widget.fulfilledLineIds.contains(id))
+      .toSet();
+
+  bool get hasPendingFulfillment => _isPlanMode && _pendingFulfillLineIds.isNotEmpty;
 
   static const _autosaveDelay = Duration(milliseconds: 1200);
 
-  int get _version => 1;
+  int get _version => 2;
+
+  void _initTeethKeys() {
+    for (final d in DentalDentition.values) {
+      for (final fdi in DentalChartCodec.visitDocTeethOrder(d)) {
+        _teeth.putIfAbsent(fdi, () => []);
+      }
+    }
+    _teeth.putIfAbsent(DentalChartCodec.generalServicesKey, () => []);
+  }
+
+  /// Resolves stored/API key to canonical map key (FDI or general).
+  String _resolveKey(String raw, {DentalDentition? dentitionHint}) {
+    final s = raw.replaceAll(' ', '');
+    if (s == DentalChartCodec.generalServicesKey) return s;
+    return DentalChartCodec.normalizeToothKey(
+      s,
+      dentition: dentitionHint ?? _dentition,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant DentalVisitDocumentationPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fulfilledLineIds != widget.fulfilledLineIds) {
+      _selectedLineIds.removeWhere(
+        (id) => widget.fulfilledLineIds.contains(id),
+      );
+    }
+    if (_isPlanMode) {
+      _applyPlanDentitionFromDoc();
+    }
+  }
+
+  void _applyPlanDentitionFromDoc() {
+    final raw = widget.dentalPlanDocumentation;
+    if (raw == null || raw.trim().isEmpty) return;
+    try {
+      final doc = jsonDecode(raw) as Map<String, dynamic>?;
+      final dentRaw = doc?['dentition']?.toString().trim().toLowerCase();
+      _dentition = dentRaw == 'primary'
+          ? DentalDentition.primary
+          : DentalDentition.permanent;
+    } catch (_) {}
+  }
 
   @override
   void initState() {
     super.initState();
-    for (final t in kFdiTeethOrder) {
-      _teeth[toothKeyCompact(t)] = [];
-    }
+    _initTeethKeys();
     _discountCtrl.addListener(_touch);
     _notesCtrl.addListener(_touch);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _apiClient = ref.read(apiClientProvider);
       widget.registerSaveHandler?.call(requestSave);
+      if (_isPlanMode) {
+        _applyPlanDentitionFromDoc();
+        _hydrating = false;
+        _loaded = true;
+        _dirty = false;
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+      _apiClient = ref.read(apiClientProvider);
       await Future.wait([_loadServices(), _loadSaved()]);
       _hydrating = false;
       _loaded = true;
@@ -286,14 +338,35 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     try {
       final map = jsonDecode(utf8.decode(res.bodyBytes));
       if (map is! Map || map.isEmpty) return;
+
+      final dentRaw = map['dentition']?.toString().trim().toLowerCase();
+      if (dentRaw == 'primary') {
+        _dentition = DentalDentition.primary;
+      } else {
+        _dentition = DentalDentition.permanent;
+      }
+
+      for (final e in _teeth.keys) {
+        _teeth[e] = [];
+      }
+
       final teethRaw = map['teeth'];
       if (teethRaw is Map) {
-        for (final e in _teeth.keys) {
-          _teeth[e] = [];
-        }
         teethRaw.forEach((k, v) {
-          final key = k.toString().replaceAll(' ', '');
-          if (!_teeth.containsKey(key)) return;
+          final key = _resolveKey(k.toString());
+          if (!_teeth.containsKey(key)) {
+            // Legacy key from another dentition — migrate if possible.
+            final migrated = _resolveKey(k.toString(), dentitionHint: DentalDentition.permanent);
+            if (!_teeth.containsKey(migrated)) return;
+            if (v is! List) return;
+            final lines = <Map<String, dynamic>>[];
+            for (final item in v) {
+              if (item is! Map) continue;
+              lines.add(Map<String, dynamic>.from(item));
+            }
+            _teeth[migrated] = lines;
+            return;
+          }
           if (v is! List) return;
           final lines = <Map<String, dynamic>>[];
           for (final item in v) {
@@ -324,8 +397,320 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     return false;
   }
 
-  bool get hasBillableContent =>
-      hasDentalChartContent || _notesCtrl.text.trim().isNotEmpty;
+  bool get hasBillableContent {
+    if (_isPlanMode) {
+      return hasPendingFulfillment ||
+          widget.fulfilledLineIds.isNotEmpty ||
+          _notesCtrl.text.trim().isNotEmpty;
+    }
+    return hasDentalChartContent || _notesCtrl.text.trim().isNotEmpty;
+  }
+
+  /// Apply checked plan lines before completing the visit.
+  Future<bool> applyPendingIfNeeded({bool silent = false}) async {
+    if (!_isPlanMode || widget.activePlanId == null) return true;
+    final pending = _pendingFulfillLineIds.toList();
+    if (pending.isEmpty) return true;
+
+    setState(() => _saving = true);
+    try {
+      final result = await fulfillTreatmentPlanLines(
+        ref,
+        planId: widget.activePlanId!,
+        appointmentId: _appointmentIdInt,
+        lineIds: pending,
+      );
+      if (result == null) return false;
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('appointmentPlanApplied'),
+            ),
+          ),
+        );
+      }
+      widget.onFulfillmentChanged?.call();
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  AppointmentPdfTreatmentPlanSection? buildPlanPdfSection({
+    int? sessionPaymentMinor,
+    String? sessionPaymentMethod,
+  }) {
+    if (!_isPlanMode || widget.activePlanId == null) return null;
+    final summary = widget.planSummary;
+    if (summary == null) return null;
+
+    final fulfilledLines = <AppointmentPdfDentalLine>[];
+    for (final lineId in widget.fulfilledLineIds) {
+      LineDetailDto? line;
+      for (final l in widget.planLines) {
+        if (l.id == lineId) {
+          line = l;
+          break;
+        }
+      }
+      if (line == null) continue;
+      var tooth = '';
+      final meta = line.specialtyMetadata;
+      if (meta != null && meta.isNotEmpty) {
+        try {
+          final m = jsonDecode(meta) as Map<String, dynamic>?;
+          tooth = m?['fdi']?.toString() ?? '';
+        } catch (_) {}
+      }
+      fulfilledLines.add(
+        AppointmentPdfDentalLine(
+          tooth: tooth,
+          serviceTitle: line.title,
+          amountMinor: line.lineTotalMinor,
+          currency: line.currency,
+        ),
+      );
+    }
+
+    return AppointmentPdfTreatmentPlanSection(
+      planId: '${widget.activePlanId}',
+      planTitle: widget.planTitle ?? summary.title,
+      planTotalMinor: summary.totalMinor,
+      planPaidMinor: summary.paidMinor,
+      planOwedMinor: summary.owedMinor,
+      currency: summary.currency,
+      fulfilledThisVisit: fulfilledLines,
+      sessionPaymentMinor: sessionPaymentMinor,
+      sessionPaymentMethod: sessionPaymentMethod,
+    );
+  }
+
+  Map<String, DentalToothPlanState> _planToothStates() {
+    final states = DentalPlanReadonlyView.toothStatesFromLines(widget.planLines);
+    for (final c in widget.fulfillmentCandidates) {
+      if (!_selectedLineIds.contains(c.lineId)) continue;
+      final fdi = c.fdi;
+      if (fdi == null || fdi.isEmpty) continue;
+      final current = states[fdi];
+      if (current == DentalToothPlanState.planned ||
+          current == DentalToothPlanState.partial) {
+        states[fdi] = DentalToothPlanState.partial;
+      }
+    }
+    return states;
+  }
+
+  Map<String, int> _planServiceCounts() {
+    final counts = <String, int>{};
+    final raw = widget.dentalPlanDocumentation;
+    if (raw == null || raw.trim().isEmpty) return counts;
+    try {
+      final doc = jsonDecode(raw) as Map<String, dynamic>?;
+      final teethRaw = doc?['teeth'];
+      if (teethRaw is Map) {
+        teethRaw.forEach((k, v) {
+          if (k.toString() == DentalChartCodec.generalServicesKey) return;
+          if (v is List && v.isNotEmpty) {
+            counts[k.toString()] = v.length;
+          }
+        });
+      }
+    } catch (_) {}
+    return counts;
+  }
+
+  List<FulfillmentCandidateDto> _candidatesForTooth(String fdi) {
+    return widget.fulfillmentCandidates.where((c) => c.fdi == fdi).toList();
+  }
+
+  List<FulfillmentCandidateDto> get _generalCandidates {
+    return widget.fulfillmentCandidates
+        .where((c) => c.fdi == null || c.fdi!.isEmpty)
+        .toList();
+  }
+
+  Future<void> _openPlanFulfillSheet(
+    String toothKey, {
+    required String titlePrefix,
+  }) async {
+    if (widget.activePlanId == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final isGeneral = toothKey == DentalChartCodec.generalServicesKey;
+    final candidates = isGeneral
+        ? _generalCandidates
+        : _candidatesForTooth(toothKey);
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.translate('appointmentPlanNoLinesOnTooth'))),
+      );
+      return;
+    }
+
+    final display = isGeneral
+        ? l10n.translate('dentalGeneralServices')
+        : toothKeyDisplay(toothKey, dentition: _dentition);
+
+    await showScrollableFormBottomSheetWithFooter<void>(
+      context: context,
+      includeBottomNavClearance: false,
+      bodyBuilder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  isGeneral ? display : '$titlePrefix $display',
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.translate('appointmentPlanFulfillSheetHint'),
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                for (final c in candidates) ...[
+                  CheckboxListTile(
+                    value: _selectedLineIds.contains(c.lineId) ||
+                        widget.fulfilledLineIds.contains(c.lineId),
+                    onChanged: widget.fulfilledLineIds.contains(c.lineId)
+                        ? null
+                        : (v) {
+                            setLocal(() {
+                              if (v == true) {
+                                _selectedLineIds.add(c.lineId);
+                              } else {
+                                _selectedLineIds.remove(c.lineId);
+                              }
+                            });
+                            setState(() {});
+                            widget.onFulfillmentChanged?.call();
+                          },
+                    title: Text(c.title),
+                    subtitle: Text(
+                      '${(c.lineTotalMinor / 100).toStringAsFixed(2)} ${c.currency}',
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+      },
+      footer: Builder(
+        builder: (sheetCtx) => FilledButton(
+          onPressed: () => Navigator.pop(sheetCtx),
+          child: Text(l10n.save),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlanEmptyBanner(AppLocalizations l10n) {
+    if (widget.loadingPlanContext) {
+      return const LinearProgressIndicator(minHeight: 2);
+    }
+    final total = widget.linesTotalCount;
+    final done = widget.linesCompletedCount;
+    if (total > 0 && done >= total) {
+      return Card(
+        color: Colors.green.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(l10n.translate('appointmentPlanAllDone')),
+        ),
+      );
+    }
+    if (total > done && widget.fulfillmentCandidates.isEmpty) {
+      return Card(
+        color: Colors.orange.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(l10n.translate('appointmentPlanLoadFailed')),
+              ),
+              TextButton(
+                onPressed: widget.onRetryLoadPlan,
+                child: Text(l10n.retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (widget.fulfillmentCandidates.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(l10n.translate('appointmentPlanNoOpenLines')),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildPlanModeBody(AppLocalizations l10n) {
+    final toothStates = _planToothStates();
+    final serviceCounts = _planServiceCounts();
+    final generalCount = _generalCandidates.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.translate('appointmentPlanChartIntro'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 8),
+        _buildPlanEmptyBanner(l10n),
+        const SizedBox(height: 8),
+        DentalFdiChart(
+          brand: widget.brand,
+          dentition: _dentition,
+          showDentitionToggle: false,
+          toothServiceCounts: serviceCounts,
+          toothPlanStates: toothStates,
+          onDentitionChanged: null,
+          onToothTap: (fdi) => _openPlanFulfillSheet(
+            fdi,
+            titlePrefix: l10n.translate('dentalToothServices'),
+          ),
+          showTitle: false,
+        ),
+        if (generalCount > 0) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => _openPlanFulfillSheet(
+              DentalChartCodec.generalServicesKey,
+              titlePrefix: l10n.translate('dentalGeneralServices'),
+            ),
+            icon: const Icon(Icons.medical_services_outlined),
+            label: Text(
+              '${l10n.translate('dentalGeneralServices')} ($generalCount)',
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        DoctorSpeechTextField(
+          controller: _notesCtrl,
+          minLines: 2,
+          maxLines: 5,
+          onTranscriptAppended: _touch,
+          decoration: InputDecoration(
+            labelText: l10n.translate('dentalClinicalNotes'),
+            alignLabelWithHint: true,
+          ),
+        ),
+      ],
+    );
+  }
 
   /// Appends text to clinical notes (e.g. from last 025-2 form or Shifa AI).
   void appendClinicalNotes(String text) {
@@ -378,6 +763,7 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     });
     return {
       'version': _version,
+      'dentition': _dentition == DentalDentition.primary ? 'primary' : 'permanent',
       'teeth': teethOut,
       'discountPercent': _discountValue(),
       'notes': _notesCtrl.text.trim(),
@@ -454,11 +840,16 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
   AppointmentPdfDentalBilling? buildDentalPdfBilling(AppLocalizations l10n) {
     final (sub, ccy, _) = _computeSubtotal();
     final lines = <AppointmentPdfDentalLine>[];
-    for (final key in kFdiTeethOrder) {
-      final c = toothKeyCompact(key);
-      final list = _teeth[c] ?? const [];
+    final order = [
+      ...DentalChartCodec.visitDocTeethOrder(_dentition),
+      DentalChartCodec.generalServicesKey,
+    ];
+    for (final key in order) {
+      final list = _teeth[key] ?? const [];
       if (list.isEmpty) continue;
-      final toothLabel = toothKeyDisplay(c);
+      final toothLabel = key == DentalChartCodec.generalServicesKey
+          ? l10n.translate('dentalGeneralServicesShort')
+          : toothKeyDisplay(key, dentition: _dentition);
       for (final line in list) {
         final title = line['title']?.toString() ?? '';
         final am = (line['amountMinor'] as num?)?.toInt() ?? 0;
@@ -487,10 +878,14 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     );
   }
 
-  Future<void> _openToothEditor(String compactKey) async {
+  Future<void> _openServicesEditor(String toothKey, {required String titlePrefix}) async {
     final l10n = AppLocalizations.of(context)!;
-    final display = toothKeyDisplay(compactKey);
-    final list = List<Map<String, dynamic>>.from(_teeth[compactKey] ?? []);
+    final resolved = _resolveKey(toothKey);
+    final isGeneral = resolved == DentalChartCodec.generalServicesKey;
+    final display = isGeneral
+        ? ''
+        : toothKeyDisplay(resolved, dentition: _dentition);
+    final list = List<Map<String, dynamic>>.from(_teeth[resolved] ?? []);
 
     await showScrollableFormBottomSheetWithFooter<void>(
       context: context,
@@ -504,7 +899,7 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  '${l10n.translate('dentalToothServices')} $display',
+                  isGeneral ? titlePrefix : '$titlePrefix $display',
                   style: Theme.of(ctx).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
@@ -644,8 +1039,7 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
                 if (list.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(
-                    l10n.translate('dentalSelectedServices') ??
-                        'Selected services',
+                    l10n.translate('dentalSelectedServices'),
                     style: Theme.of(ctx).textTheme.labelLarge,
                   ),
                   const SizedBox(height: 4),
@@ -685,7 +1079,7 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
         builder: (sheetCtx) => FilledButton(
           onPressed: () {
             setState(() {
-              _teeth[compactKey] = List<Map<String, dynamic>>.from(list);
+              _teeth[resolved] = List<Map<String, dynamic>>.from(list);
             });
             Navigator.pop(sheetCtx);
           },
@@ -705,9 +1099,34 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
       );
     }
 
+    if (_isPlanMode) {
+      return Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: _buildPlanModeBody(l10n),
+          ),
+          if (_saving)
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: Center(
+                  child: SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     final (sub, ccy, lineCount) = _computeSubtotal();
     final total = _totalAfterDiscount(sub);
     final disc = _discountValue();
+    final generalCount =
+        (_teeth[DentalChartCodec.generalServicesKey] ?? const []).length;
 
     return Stack(
       children: [
@@ -723,12 +1142,41 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
               const SizedBox(height: 12),
               DentalFdiChart(
                 brand: widget.brand,
-                toothServiceCounts: {
-                  for (final e in _teeth.entries)
-                    if (e.value.isNotEmpty) e.key: e.value.length,
+                dentition: _dentition,
+                onDentitionChanged: (d) {
+                  setState(() => _dentition = d);
+                  _touch();
                 },
-                onToothTap: _openToothEditor,
+                toothServiceCounts: {
+                  for (final fdi in DentalChartCodec.visitDocTeethOrder(_dentition))
+                    if ((_teeth[fdi] ?? const []).isNotEmpty)
+                      fdi: (_teeth[fdi] ?? const []).length,
+                },
+                onToothTap: (fdi) => _openServicesEditor(
+                  fdi,
+                  titlePrefix: l10n.translate('dentalToothServices'),
+                ),
                 showTitle: false,
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => _openServicesEditor(
+                  DentalChartCodec.generalServicesKey,
+                  titlePrefix: l10n.translate('dentalGeneralServices'),
+                ),
+                icon: const Icon(Icons.medical_services_outlined),
+                label: Text(
+                  generalCount > 0
+                      ? '${l10n.translate('dentalGeneralServices')} ($generalCount)'
+                      : l10n.translate('dentalGeneralServices'),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.translate('dentalGeneralServicesHint'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey.shade700,
+                    ),
               ),
               const SizedBox(height: 16),
               TextField(

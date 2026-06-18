@@ -44,6 +44,14 @@ class AppointmentPdfTranslations {
   final String discountRow;
   final String totalRow;
 
+  final String treatmentPlanSection;
+  final String treatmentPlanTitle;
+  final String planTotalRow;
+  final String planPaidRow;
+  final String planOutstandingRow;
+  final String fulfilledThisVisit;
+  final String sessionPaymentRow;
+
   const AppointmentPdfTranslations({
     required this.appointmentSummary,
     required this.patientName,
@@ -83,6 +91,13 @@ class AppointmentPdfTranslations {
     required this.subtotalRow,
     required this.discountRow,
     required this.totalRow,
+    required this.treatmentPlanSection,
+    required this.treatmentPlanTitle,
+    required this.planTotalRow,
+    required this.planPaidRow,
+    required this.planOutstandingRow,
+    required this.fulfilledThisVisit,
+    required this.sessionPaymentRow,
   });
 
   static const Map<String, AppointmentPdfTranslations> _byLocale = {
@@ -125,6 +140,13 @@ class AppointmentPdfTranslations {
       subtotalRow: 'Subtotal',
       discountRow: 'Discount',
       totalRow: 'Total payment',
+      treatmentPlanSection: 'Treatment plan',
+      treatmentPlanTitle: 'Plan',
+      planTotalRow: 'Plan total',
+      planPaidRow: 'Paid',
+      planOutstandingRow: 'Outstanding',
+      fulfilledThisVisit: 'Completed this visit',
+      sessionPaymentRow: 'Payment this visit',
     ),
     'uz': AppointmentPdfTranslations(
       appointmentSummary: 'Qabul Xulosasi',
@@ -165,6 +187,13 @@ class AppointmentPdfTranslations {
       subtotalRow: 'Oraliq jami',
       discountRow: 'Chegirma',
       totalRow: 'To\'lov',
+      treatmentPlanSection: 'Davolash rejasi',
+      treatmentPlanTitle: 'Reja',
+      planTotalRow: 'Reja jami',
+      planPaidRow: 'To\'langan',
+      planOutstandingRow: 'Qoldiq',
+      fulfilledThisVisit: 'Ushbu qabulda bajarildi',
+      sessionPaymentRow: 'Ushbu qabulda to\'langan pul miqdori',
     ),
   };
 

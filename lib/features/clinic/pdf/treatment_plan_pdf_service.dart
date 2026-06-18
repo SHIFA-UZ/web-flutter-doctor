@@ -166,7 +166,63 @@ List<pw.Widget> _planContentWidgets({
     ]);
   }
 
-  if (data.lines.isNotEmpty) {
+  if (data.dentalToothSections.isNotEmpty) {
+    ch.addAll([
+      _formalSection(t.procedures, font),
+      for (final section in data.dentalToothSections) ...[
+        pw.SizedBox(height: 8),
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.only(bottom: 4),
+          child: pw.Text(
+            section.sectionLabel,
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+        _sectionBody(
+          child: _linesTableForRows(section.lines, t, font),
+        ),
+      ],
+      if (data.lines.length > data.dentalToothSections.fold<int>(
+            0,
+            (sum, s) => sum + s.lines.length,
+          )) ...[
+        pw.SizedBox(height: 12),
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.only(bottom: 4),
+          child: pw.Text(
+            t.otherServicesSection,
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+        _sectionBody(
+          child: _linesTableForRows(
+            () {
+              final dentalIndices = data.dentalToothSections
+                  .expand((s) => s.lines)
+                  .map((l) => l.displayIndex)
+                  .toSet();
+              return data.lines
+                  .where((ln) => !dentalIndices.contains(ln.displayIndex))
+                  .toList();
+            }(),
+            t,
+            font,
+          ),
+        ),
+      ],
+      pw.SizedBox(height: 16),
+    ]);
+  } else if (data.lines.isNotEmpty) {
     ch.addAll([
       _formalSection(t.procedures, font),
       _sectionBody(child: _linesTable(data, t, font)),
@@ -387,6 +443,14 @@ pw.Widget _summaryCard(
 
 pw.Widget _linesTable(
     TreatmentPlanPdfData data, TreatmentPlanPdfTranslations t, pw.Font font) {
+  return _linesTableForRows(data.lines, t, font);
+}
+
+pw.Widget _linesTableForRows(
+  List<TreatmentPlanPdfLineRow> lines,
+  TreatmentPlanPdfTranslations t,
+  pw.Font font,
+) {
   pw.Widget cell(String text, {bool bold = false, pw.TextAlign a = pw.TextAlign.left}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(5),
@@ -426,9 +490,9 @@ pw.Widget _linesTable(
     ]),
   ];
 
-  for (var i = 0; i < data.lines.length; i++) {
+  for (var i = 0; i < lines.length; i++) {
     final zebra = i.isOdd ? PdfColors.grey50 : null;
-    final ln = data.lines[i];
+    final ln = lines[i];
     rows.add(pw.TableRow(
       children: [
         pw.Container(color: zebra, child: cell('${ln.displayIndex}', bold: false)),

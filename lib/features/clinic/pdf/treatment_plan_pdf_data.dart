@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
 
 import 'treatment_plan_pdf_translations.dart';
@@ -31,6 +33,17 @@ class TreatmentPlanPdfInstallmentPlanSection {
     required this.totalAmountDisplay,
     required this.numInstallments,
     required this.scheduleRows,
+  });
+}
+
+/// Grouped dental lines for PDF (by FDI tooth or general services).
+class TreatmentPlanPdfToothSection {
+  final String sectionLabel;
+  final List<TreatmentPlanPdfLineRow> lines;
+
+  const TreatmentPlanPdfToothSection({
+    required this.sectionLabel,
+    required this.lines,
   });
 }
 
@@ -84,6 +97,7 @@ class TreatmentPlanPdfData {
   final String updatedAtDisplay;
 
   final List<TreatmentPlanPdfLineRow> lines;
+  final List<TreatmentPlanPdfToothSection> dentalToothSections;
   final List<TreatmentPlanPdfInstallmentPlanSection> installmentPlans;
 
   const TreatmentPlanPdfData({
@@ -107,6 +121,7 @@ class TreatmentPlanPdfData {
     required this.createdAtDisplay,
     required this.updatedAtDisplay,
     required this.lines,
+    required this.dentalToothSections,
     required this.installmentPlans,
   });
 
@@ -173,26 +188,40 @@ class TreatmentPlanPdfData {
       });
 
     final lineRows = <TreatmentPlanPdfLineRow>[];
+    final grouped = <String, List<TreatmentPlanPdfLineRow>>{};
     for (var i = 0; i < sortedLines.length; i++) {
       final L = sortedLines[i];
-      lineRows.add(
-        TreatmentPlanPdfLineRow(
-          displayIndex: i + 1,
-          title: L.title,
-          quantityDisplay: '${L.quantity}',
-          unitPriceDisplay: minorToMoney(L.unitPriceMinor, L.currency),
-          discountDisplay: minorToMoney(L.discountMinor, L.currency),
-          lineTotalDisplay: minorToMoney(L.lineTotalMinor, L.currency),
-          lineStatusDisplay: t.labelLineStatus(L.status),
-          linkedVisitDisplay: L.linkedAppointment != null
-              ? formatLinkedVisit(
-                  ap: L.linkedAppointment!,
-                  languageCode: languageCode,
-                )
-              : null,
-        ),
+      final row = TreatmentPlanPdfLineRow(
+        displayIndex: i + 1,
+        title: L.title,
+        quantityDisplay: '${L.quantity}',
+        unitPriceDisplay: minorToMoney(L.unitPriceMinor, L.currency),
+        discountDisplay: minorToMoney(L.discountMinor, L.currency),
+        lineTotalDisplay: minorToMoney(L.lineTotalMinor, L.currency),
+        lineStatusDisplay: t.labelLineStatus(L.status),
+        linkedVisitDisplay: L.linkedAppointment != null
+            ? formatLinkedVisit(
+                ap: L.linkedAppointment!,
+                languageCode: languageCode,
+              )
+            : null,
       );
+      lineRows.add(row);
+      final fdi = _parseFdi(L.specialtyMetadata);
+      if (fdi != null) {
+        grouped.putIfAbsent(fdi, () => []).add(row);
+      }
     }
+
+    final dentalToothSections = grouped.entries
+        .map(
+          (e) => TreatmentPlanPdfToothSection(
+            sectionLabel: t.toothSection(e.key),
+            lines: e.value,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => a.sectionLabel.compareTo(b.sectionLabel));
 
     final instSections = detail.installmentPlans.map((ip) {
       final scheduled = ip.scheduleRows
@@ -240,7 +269,22 @@ class TreatmentPlanPdfData {
       createdAtDisplay: formatShortDate(s.createdAt),
       updatedAtDisplay: formatShortDate(s.updatedAt),
       lines: lineRows,
+      dentalToothSections: dentalToothSections,
       installmentPlans: instSections,
     );
+  }
+
+  static String? _parseFdi(String? specialtyMetadata) {
+    if (specialtyMetadata == null || specialtyMetadata.trim().isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(specialtyMetadata);
+      if (decoded is! Map) return null;
+      final fdi = decoded['fdi']?.toString().trim();
+      return fdi != null && fdi.isNotEmpty ? fdi : null;
+    } catch (_) {
+      return null;
+    }
   }
 }

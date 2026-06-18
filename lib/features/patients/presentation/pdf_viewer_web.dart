@@ -52,10 +52,7 @@ class _PdfViewerWebState extends State<PdfViewerWeb> {
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
-      child: HtmlElementView(
-        viewType: _viewType,
-        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-      ),
+      child: HtmlElementView(viewType: _viewType),
     );
   }
 }

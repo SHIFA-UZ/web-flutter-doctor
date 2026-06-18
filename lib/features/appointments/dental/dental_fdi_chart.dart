@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 
-/// Same FDI tooth diagram as form 025-2 (Roman quadrants I–IV, anatomy labels, [DentalToothPainter] shapes).
+/// FDI tooth diagram (Roman quadrants I–IV, anatomy labels, [DentalToothPainter] shapes).
+/// Supports permanent (32 teeth) and primary/deciduous (20 teeth) dentition.
 /// For visit documentation, each tooth is tappable and shows a service-count badge when applicable.
+/// Visual state for read-only plan progress on the FDI chart.
+enum DentalToothPlanState { none, planned, completed, partial }
+
 class DentalFdiChart extends StatelessWidget {
   const DentalFdiChart({
     super.key,
@@ -11,33 +15,71 @@ class DentalFdiChart extends StatelessWidget {
     required this.toothServiceCounts,
     required this.onToothTap,
     this.showTitle = false,
+    this.dentition = DentalDentition.permanent,
+    this.onDentitionChanged,
+    this.showDentitionToggle = true,
+    this.toothPlanStates = const {},
   });
 
   final Color brand;
   final Map<String, int> toothServiceCounts;
+  /// Callback receives canonical FDI key ("11", "51", …) or legacy compact key.
   final ValueChanged<String> onToothTap;
   final bool showTitle;
+  final DentalDentition dentition;
+  final ValueChanged<DentalDentition>? onDentitionChanged;
+  final bool showDentitionToggle;
+  /// Optional per-tooth plan progress (read-only treatment plan views).
+  final Map<String, DentalToothPlanState> toothPlanStates;
+
+  int _countFor(String fdi, String legacy) =>
+      toothServiceCounts[fdi] ?? toothServiceCounts[legacy] ?? 0;
+
+  DentalToothPlanState _planStateFor(String fdi, String legacy) =>
+      toothPlanStates[fdi] ??
+      toothPlanStates[legacy] ??
+      DentalToothPlanState.none;
 
   @override
   Widget build(BuildContext context) {
     final themeBrand = Theme.of(context).colorScheme.primary;
     final paintBrand = brand;
+    final l10n = AppLocalizations.of(context)!;
+    final rowWidth = DentalChartCodec.quadrantRowWidth(dentition);
+    final rightNums = DentalChartCodec.rightQuadrantToothNums(dentition);
+    final leftNums = DentalChartCodec.leftQuadrantToothNums(dentition);
 
     Widget buildTooth(String quadrant, int toothNum, {required bool isUpper}) {
       final legacy = '$quadrant$toothNum';
-      final fdi = DentalChartCodec.fdiKey(quadrant, toothNum);
-      final count = toothServiceCounts[fdi] ?? toothServiceCounts[legacy] ?? 0;
+      final fdi = DentalChartCodec.fdiKey(quadrant, toothNum, dentition: dentition);
+      final count = _countFor(fdi, legacy);
       final has = count > 0;
+      final planState = _planStateFor(fdi, legacy);
+      final fillColor = switch (planState) {
+        DentalToothPlanState.completed => paintBrand.withValues(alpha: 0.28),
+        DentalToothPlanState.planned => paintBrand.withValues(alpha: 0.12),
+        DentalToothPlanState.partial => Colors.orange.withValues(alpha: 0.22),
+        DentalToothPlanState.none =>
+          has ? paintBrand.withValues(alpha: 0.15) : Colors.grey.shade50,
+      };
+      final borderColor = switch (planState) {
+        DentalToothPlanState.completed => paintBrand,
+        DentalToothPlanState.planned => paintBrand.withValues(alpha: 0.55),
+        DentalToothPlanState.partial => Colors.orange.shade700,
+        DentalToothPlanState.none => has ? paintBrand : Colors.grey.shade400,
+      };
+      final borderWidth = has || planState != DentalToothPlanState.none ? 2.0 : 1.5;
       final isIncisor = toothNum == 1 || toothNum == 2;
       final isCanine = toothNum == 3;
-      final isPremolar = toothNum == 4 || toothNum == 5;
-      final isMolar = toothNum >= 6;
+      final isPremolar = dentition == DentalDentition.permanent && (toothNum == 4 || toothNum == 5);
+      final isMolar = dentition == DentalDentition.primary
+          ? toothNum >= 4
+          : toothNum >= 6;
 
-      final toothLabel = fdi;
       return Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => onToothTap(legacy),
+          onTap: () => onToothTap(fdi),
           borderRadius: BorderRadius.only(
             topLeft: isUpper ? const Radius.circular(20) : const Radius.circular(4),
             topRight: isUpper ? const Radius.circular(20) : const Radius.circular(4),
@@ -49,10 +91,10 @@ class DentalFdiChart extends StatelessWidget {
             height: 60,
             margin: const EdgeInsets.all(2),
             decoration: BoxDecoration(
-              color: has ? paintBrand.withValues(alpha: 0.15) : Colors.grey.shade50,
+              color: fillColor,
               border: Border.all(
-                color: has ? paintBrand : Colors.grey.shade400,
-                width: has ? 2 : 1.5,
+                color: borderColor,
+                width: borderWidth,
               ),
               borderRadius: BorderRadius.only(
                 topLeft: isUpper ? const Radius.circular(20) : const Radius.circular(4),
@@ -80,7 +122,7 @@ class DentalFdiChart extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      toothLabel,
+                      fdi,
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
@@ -113,6 +155,19 @@ class DentalFdiChart extends StatelessWidget {
       );
     }
 
+    String anatomyLabel(int num, {required bool isRightSide}) {
+      if (dentition == DentalDentition.primary) {
+        if (num == 1 || num == 2) return 'incisors';
+        if (num == 3) return 'Canine';
+        return 'molars';
+      }
+      if (num == 8) return 'wisdom';
+      if (num >= 6) return 'molars';
+      if (num >= 4) return 'pre-molars';
+      if (num == 3) return 'Canine';
+      return 'incisors';
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
@@ -122,7 +177,7 @@ class DentalFdiChart extends StatelessWidget {
           children: [
             if (showTitle) ...[
               Text(
-                AppLocalizations.of(context)!.toothMap.toUpperCase(),
+                l10n.toothMap.toUpperCase(),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -130,6 +185,26 @@ class DentalFdiChart extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
+            ],
+            if (showDentitionToggle && onDentitionChanged != null) ...[
+              Align(
+                alignment: Alignment.center,
+                child: SegmentedButton<DentalDentition>(
+                  segments: [
+                    ButtonSegment(
+                      value: DentalDentition.permanent,
+                      label: Text(l10n.translate('dentalDentitionPermanent')),
+                    ),
+                    ButtonSegment(
+                      value: DentalDentition.primary,
+                      label: Text(l10n.translate('dentalDentitionPrimary')),
+                    ),
+                  ],
+                  selected: {dentition},
+                  onSelectionChanged: (s) => onDentitionChanged!(s.first),
+                ),
+              ),
+              const SizedBox(height: 12),
             ],
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -140,7 +215,7 @@ class DentalFdiChart extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
-                        width: 49 * 8,
+                        width: rowWidth,
                         child: Text(
                           'I',
                           style: TextStyle(
@@ -153,7 +228,7 @@ class DentalFdiChart extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
-                        width: 49 * 8,
+                        width: rowWidth,
                         child: Text(
                           'II',
                           style: TextStyle(
@@ -170,34 +245,20 @@ class DentalFdiChart extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ...[8, 7, 6, 5, 4, 3, 2, 1]
-                          .map((num) => buildTooth('UR', num, isUpper: true)),
+                      ...rightNums.map((num) => buildTooth('UR', num, isUpper: true)),
                       const SizedBox(width: 16),
-                      ...[1, 2, 3, 4, 5, 6, 7, 8]
-                          .map((num) => buildTooth('UL', num, isUpper: true)),
+                      ...leftNums.map((num) => buildTooth('UL', num, isUpper: true)),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ...[8, 7, 6, 5, 4, 3, 2, 1].map((num) {
-                        String label;
-                        if (num == 8) {
-                          label = 'wisdom';
-                        } else if (num >= 6) {
-                          label = 'molars';
-                        } else if (num >= 4) {
-                          label = 'pre-molars';
-                        } else if (num == 3) {
-                          label = 'Canine';
-                        } else {
-                          label = 'incisors';
-                        }
+                      ...rightNums.map((num) {
                         return SizedBox(
                           width: 49,
                           child: Text(
-                            label,
+                            anatomyLabel(num, isRightSide: true),
                             style: TextStyle(
                               fontSize: 8,
                               color: Colors.grey.shade600,
@@ -207,22 +268,11 @@ class DentalFdiChart extends StatelessWidget {
                         );
                       }),
                       const SizedBox(width: 16),
-                      ...[1, 2, 3, 4, 5, 6, 7, 8].map((num) {
-                        String label = 'incisors';
-                        if (num == 1 || num == 2) {
-                          label = 'incisors';
-                        } else if (num == 3) {
-                          label = 'Canine';
-                        } else if (num == 4 || num == 5) {
-                          label = 'pre-molars';
-                        } else if (num >= 6) {
-                          label = 'molars';
-                        }
-                        if (num == 8) label = 'wisdom';
+                      ...leftNums.map((num) {
                         return SizedBox(
                           width: 49,
                           child: Text(
-                            label,
+                            anatomyLabel(num, isRightSide: false),
                             style: TextStyle(
                               fontSize: 8,
                               color: Colors.grey.shade600,
@@ -237,11 +287,9 @@ class DentalFdiChart extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ...[8, 7, 6, 5, 4, 3, 2, 1]
-                          .map((num) => buildTooth('LR', num, isUpper: false)),
+                      ...rightNums.map((num) => buildTooth('LR', num, isUpper: false)),
                       const SizedBox(width: 16),
-                      ...[1, 2, 3, 4, 5, 6, 7, 8]
-                          .map((num) => buildTooth('LL', num, isUpper: false)),
+                      ...leftNums.map((num) => buildTooth('LL', num, isUpper: false)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -249,7 +297,7 @@ class DentalFdiChart extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
-                        width: 49 * 8,
+                        width: rowWidth,
                         child: Text(
                           'IV',
                           style: TextStyle(
@@ -262,7 +310,7 @@ class DentalFdiChart extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
-                        width: 49 * 8,
+                        width: rowWidth,
                         child: Text(
                           'III',
                           style: TextStyle(

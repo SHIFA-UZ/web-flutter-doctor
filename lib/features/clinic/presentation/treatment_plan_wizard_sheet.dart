@@ -14,8 +14,13 @@ import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_documentation_professions.dart';
+import 'package:shifa_doc_app_v1/features/appointments/dental/dental_plan_editor_panel.dart';
+import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 enum _WizardPayMode { unpaid, full, installments }
+enum _ServiceEntryMode { chart, list }
 
 /// Two-step wizard:
 /// 1. live-search a patient (skipped when [initialPatientId] is provided)
@@ -83,6 +88,9 @@ class _TreatmentPlanWizardDialogState
   // (`doctor:<docId>:service:<svcId>`) in the same state without colliding.
   final Map<String, bool> _servicePick = {};
   final Map<String, int> _serviceQty = {};
+  _ServiceEntryMode _serviceEntryMode = _ServiceEntryMode.chart;
+  final GlobalKey<DentalPlanEditorPanelState> _dentalEditorKey =
+      GlobalKey<DentalPlanEditorPanelState>();
   /// Per-service "Link to visit" selection. Either an existing appointment id
   /// (kind = `existing`) or a tentative tempId pointing at a [_PickedSlot]
   /// from [_doctorSlots] (kind = `tentative`).
@@ -96,6 +104,9 @@ class _TreatmentPlanWizardDialogState
   _WizardPayMode _payMode = _WizardPayMode.unpaid;
   String _payMethod = 'CASH';
   final _payMemoCtrl = TextEditingController();
+  final _initialPayAmtCtrl = TextEditingController();
+  String _initialPayMethod = 'CASH';
+  final _initialPayMemoCtrl = TextEditingController();
   final List<TextEditingController> _instDueCtrls = [
     TextEditingController(),
     TextEditingController(),
@@ -131,6 +142,8 @@ class _TreatmentPlanWizardDialogState
     _diagnosisCtrl.dispose();
     _notesCtrl.dispose();
     _payMemoCtrl.dispose();
+    _initialPayAmtCtrl.dispose();
+    _initialPayMemoCtrl.dispose();
     _searchCtrl.dispose();
     for (final c in _instDueCtrls) {
       c.dispose();
@@ -283,10 +296,23 @@ class _TreatmentPlanWizardDialogState
     return (lines, serviceKeyByOrder);
   }
 
+  (List<Map<String, dynamic>>, List<String>) _buildLineRequestsForSave(
+    List<PlanServiceOption> services,
+  ) {
+    if (_serviceEntryMode == _ServiceEntryMode.chart) {
+      final lines = _dentalEditorKey.currentState?.buildLineRequests() ?? [];
+      return (lines, const []);
+    }
+    return _buildLineRequests(services);
+  }
+
   /// Live total (minor units) for the currently picked services. Used by the
   /// installment editor so amounts can be checked against the plan total
   /// without having to first save the plan.
   int _liveTotalMinor() {
+    if (_serviceEntryMode == _ServiceEntryMode.chart) {
+      return _dentalEditorKey.currentState?.totalMinor ?? 0;
+    }
     final services = _readPlanServices();
     var total = 0;
     for (final key in _servicePick.keys.where((k) => _servicePick[k] == true)) {
@@ -306,6 +332,9 @@ class _TreatmentPlanWizardDialogState
   }
 
   String _liveCurrency() {
+    if (_serviceEntryMode == _ServiceEntryMode.chart) {
+      return _dentalEditorKey.currentState?.currency ?? 'UZS';
+    }
     final services = _readPlanServices();
     for (final key in _servicePick.keys.where((k) => _servicePick[k] == true)) {
       for (final s in services) {
@@ -313,6 +342,25 @@ class _TreatmentPlanWizardDialogState
       }
     }
     return 'UZS';
+  }
+
+  /// Desk payment collected while the plan is being created (major units → minor).
+  int _initialPaymentMinor() {
+    final raw = _initialPayAmtCtrl.text.trim().replaceAll(',', '.');
+    if (raw.isEmpty) return 0;
+    final major = double.tryParse(raw);
+    if (major == null || major < 0) return -1;
+    if (major == 0) return 0;
+    return (major * 100).round();
+  }
+
+  /// Plan total minus any initial desk payment (floor at 0).
+  int _balanceAfterInitialMinor() {
+    final total = _liveTotalMinor();
+    final initial = _initialPaymentMinor();
+    if (initial < 0) return total;
+    final r = total - initial;
+    return r < 0 ? 0 : r;
   }
 
   /// Sum of installment rows the user has already filled in (in minor units).
@@ -326,10 +374,9 @@ class _TreatmentPlanWizardDialogState
     return sum;
   }
 
-  /// Total - already allocated. Floored at 0 so the user never sees a
-  /// negative remaining label.
+  /// Balance after initial payment minus installment allocations. Floored at 0.
   int _remainingMinor() {
-    final r = _liveTotalMinor() - _allocatedMinor();
+    final r = _balanceAfterInitialMinor() - _allocatedMinor();
     return r < 0 ? 0 : r;
   }
 
@@ -390,6 +437,12 @@ class _TreatmentPlanWizardDialogState
     final pid = _patientId;
     if (pid == null) return;
 
+    final initialPaymentDefaultMemo = tr(
+      context,
+      'treatmentPlanWizardInitialPaymentMemoDefault',
+      'Initial payment at desk',
+    );
+
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -414,7 +467,7 @@ class _TreatmentPlanWizardDialogState
         services = const <PlanServiceOption>[];
       }
     }
-    final (lineReqs, serviceKeysByOrder) = _buildLineRequests(services);
+    final (lineReqs, serviceKeysByOrder) = _buildLineRequestsForSave(services);
     if (lineReqs.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -422,6 +475,34 @@ class _TreatmentPlanWizardDialogState
           content: Text(
             tr(context, 'treatmentPlanWizardPickServices',
                 'Select at least one catalog service'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Pre-validate initial desk payment before we mutate any data.
+    final initialMinor = _initialPaymentMinor();
+    if (initialMinor < 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            tr(context, 'treatmentPlanWizardInitialPaymentInvalid',
+                'Enter a valid initial payment amount (0 or more)'),
+          ),
+        ),
+      );
+      return;
+    }
+    final liveTotal = _liveTotalMinor();
+    if (initialMinor > liveTotal && liveTotal > 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            tr(context, 'treatmentPlanWizardInitialPaymentExceedsTotal',
+                'Initial payment cannot exceed the plan total'),
           ),
         ),
       );
@@ -462,6 +543,9 @@ class _TreatmentPlanWizardDialogState
       final reminder = _reminderDays;
       final primaryDoctorId =
           _selectedDoctorIds.isEmpty ? null : _selectedDoctorIds.first;
+      final dentalDocJson = _serviceEntryMode == _ServiceEntryMode.chart
+          ? _dentalEditorKey.currentState?.buildDocumentationJson()
+          : null;
       final created = await createTreatmentPlan(
         ref,
         clinicId: widget.clinicId,
@@ -475,6 +559,7 @@ class _TreatmentPlanWizardDialogState
         attendingDoctorIds: _selectedDoctorIds.isEmpty
             ? null
             : List<int>.from(_selectedDoctorIds),
+        dentalPlanDocumentation: dentalDocJson,
       );
       if (created == null) {
         if (mounted) {
@@ -514,6 +599,39 @@ class _TreatmentPlanWizardDialogState
           );
         }
         return;
+      }
+
+      // Link existing patient appointments to freshly-created lines.
+      if (serviceKeysByOrder.isNotEmpty) {
+        final detailForLink = await fetchTreatmentPlanDetail(ref, planId);
+        if (detailForLink != null) {
+          final lineIdByServiceKey = <String, int>{};
+          for (var i = 0;
+              i < serviceKeysByOrder.length && i < detailForLink.lines.length;
+              i++) {
+            lineIdByServiceKey[serviceKeysByOrder[i]] =
+                detailForLink.lines[i].id;
+          }
+          final linkPairs = <Map<String, dynamic>>[];
+          for (final entry in _serviceLink.entries) {
+            final linkRef = entry.value;
+            if (linkRef == null || !linkRef.existing) continue;
+            final apptId = linkRef.appointmentId;
+            if (apptId == null) continue;
+            final lineId = lineIdByServiceKey[entry.key];
+            if (lineId == null) continue;
+            linkPairs.add({'lineId': lineId, 'appointmentId': apptId});
+          }
+          if (linkPairs.isNotEmpty) {
+            try {
+              await linkTreatmentPlanAppointments(
+                ref,
+                planId: planId,
+                pairs: linkPairs,
+              );
+            } catch (_) {}
+          }
+        }
       }
 
       // Now that lines exist, book any tentative slots and (when a service
@@ -577,8 +695,42 @@ class _TreatmentPlanWizardDialogState
       }
 
       final detail = await fetchTreatmentPlanDetail(ref, planId);
-      final owed = detail?.summary.owedMinor ?? summary.owedMinor;
+      var owed = detail?.summary.owedMinor ?? summary.owedMinor;
       final currency = detail?.summary.currency ?? summary.currency;
+
+      // Record desk payment collected while planning (before full/installments).
+      if (initialMinor > 0) {
+        try {
+          await recordClinicPayment(
+            ref,
+            clinicId: widget.clinicId,
+            treatmentPlanId: planId,
+            amountMinor: initialMinor,
+            currency: currency,
+            method: _initialPayMethod,
+            memo: _initialPayMemoCtrl.text.trim().isEmpty
+                ? initialPaymentDefaultMemo
+                : _initialPayMemoCtrl.text.trim(),
+          );
+          final afterInitial = await fetchTreatmentPlanDetail(ref, planId);
+          if (afterInitial != null) {
+            owed = afterInitial.summary.owedMinor;
+          } else {
+            owed = (owed - initialMinor).clamp(0, owed);
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${tr(context, 'treatmentPlanWizardInitialPaymentFailed', 'Could not record initial payment')}: $e',
+                ),
+                backgroundColor: Colors.red.shade800,
+              ),
+            );
+          }
+        }
+      }
 
       if (_payMode == _WizardPayMode.full && owed > 0) {
         try {
@@ -688,12 +840,14 @@ class _TreatmentPlanWizardDialogState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final membersAsync = ref.watch(clinicMembersProvider(widget.clinicId));
-    // Unified service catalog (clinic catalog + doctor-only profile services)
-    // filtered by the currently selected attending doctors. When no doctors
-    // are selected the picker shows the full clinic catalog so users can
-    // start picking services before naming the care team.
+    // Service list mode filters by selected attending doctors. Tooth-chart mode
+    // uses the full clinic catalog so planners can assign any procedure to a
+    // tooth regardless of care-team selection.
     final planServicesAsync =
         ref.watch(planServicesProvider(_planServicesKey));
+    final fullClinicPlanServicesAsync = ref.watch(
+      planServicesProvider(PlanServicesKey(clinicId: widget.clinicId)),
+    );
 
     return Dialog.fullscreen(
       child: Scaffold(
@@ -725,6 +879,7 @@ class _TreatmentPlanWizardDialogState
                         l10n,
                         membersAsync,
                         planServicesAsync,
+                        fullClinicPlanServicesAsync,
                       ),
               ),
               const SizedBox(height: 12),
@@ -817,7 +972,12 @@ class _TreatmentPlanWizardDialogState
     AppLocalizations l10n,
     AsyncValue<List<ClinicMember>> membersAsync,
     AsyncValue<List<PlanServiceOption>> planServicesAsync,
+    AsyncValue<List<PlanServiceOption>> fullClinicPlanServicesAsync,
   ) {
+    final profession =
+        ref.watch(profileAllProvider).valueOrNull?.profile['profession'] as String?;
+    final showDentalChart = isDentalDocumentationProfession(profession);
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -909,6 +1069,39 @@ class _TreatmentPlanWizardDialogState
               'Pick from clinic catalog. Optionally assign each line to a visit.',
             ),
             children: [
+              if (showDentalChart) ...[
+                SegmentedButton<_ServiceEntryMode>(
+                  segments: [
+                    ButtonSegment(
+                      value: _ServiceEntryMode.chart,
+                      label: Text(tr(context, 'treatmentPlanWizardByTooth', 'By tooth (FDI)')),
+                      icon: const Icon(Icons.grid_on, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: _ServiceEntryMode.list,
+                      label: Text(tr(context, 'treatmentPlanWizardByList', 'Service list')),
+                      icon: const Icon(Icons.list, size: 18),
+                    ),
+                  ],
+                  selected: {_serviceEntryMode},
+                  onSelectionChanged: (s) =>
+                      setState(() => _serviceEntryMode = s.first),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (showDentalChart && _serviceEntryMode == _ServiceEntryMode.chart)
+                fullClinicPlanServicesAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('$e'),
+                  data: (items) => DentalPlanEditorPanel(
+                    key: _dentalEditorKey,
+                    brand: AppColors.primaryTeal,
+                    catalog: items.where((c) => c.active).toList(),
+                    showFullClinicCatalogHint: _selectedDoctorIds.isNotEmpty,
+                    onChanged: () => setState(() {}),
+                  ),
+                )
+              else ...[
               if (_loadingAppts)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
@@ -946,6 +1139,7 @@ class _TreatmentPlanWizardDialogState
                   );
                 },
               ),
+              ],
             ],
           ),
 
@@ -953,6 +1147,93 @@ class _TreatmentPlanWizardDialogState
           _Section(
             title: tr(context, 'treatmentPlanWizardSectionPayment', 'Payment'),
             children: [
+              if (_liveTotalMinor() > 0) ...[
+                _buildPaymentSummary(context),
+                const SizedBox(height: 12),
+              ],
+              Text(
+                tr(context, 'treatmentPlanWizardInitialPaymentSection',
+                    'Initial payment at desk'),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                tr(
+                  context,
+                  'treatmentPlanWizardInitialPaymentHint',
+                  'Optional payment collected while creating the plan.',
+                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _initialPayAmtCtrl,
+                decoration: InputDecoration(
+                  labelText: tr(context, 'treatmentPlanWizardInitialPaymentAmount',
+                      'Initial payment amount'),
+                  hintText: tr(context, 'treatmentPlanWizardInitialPaymentAmountHint',
+                      '0 if none'),
+                  isDense: true,
+                ),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _initialPayMethod,
+                decoration: InputDecoration(
+                  labelText: tr(
+                    context,
+                    'treatmentPlanWizardInitialPaymentMethod',
+                    'Initial payment method',
+                  ),
+                  isDense: true,
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: 'CASH',
+                    child: Text(l10n.clinicPaymentMethodLabel('CASH')),
+                  ),
+                  DropdownMenuItem(
+                    value: 'TRANSFER',
+                    child: Text(l10n.clinicPaymentMethodLabel('TRANSFER')),
+                  ),
+                  DropdownMenuItem(
+                    value: 'CARD_EXTERNAL',
+                    child: Text(l10n.clinicPaymentMethodLabel('CARD_EXTERNAL')),
+                  ),
+                ],
+                onChanged: (v) =>
+                    setState(() => _initialPayMethod = v ?? 'CASH'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _initialPayMemoCtrl,
+                decoration: InputDecoration(
+                  labelText: tr(
+                    context,
+                    'treatmentPlanWizardInitialPaymentMemo',
+                    'Initial payment memo (optional)',
+                  ),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                tr(context, 'treatmentPlanWizardRemainingPaymentSection',
+                    'Remaining balance'),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
               _payRadio(
                 _WizardPayMode.unpaid,
                 tr(context, 'treatmentPlanWizardPayUnpaid', 'Leave unpaid'),
@@ -1027,9 +1308,78 @@ class _TreatmentPlanWizardDialogState
     );
   }
 
-  Widget _buildInstallmentSummary(BuildContext context) {
+  Widget _buildPaymentSummary(BuildContext context) {
     final currency = _liveCurrency();
     final total = _liveTotalMinor();
+    final initial = _initialPaymentMinor();
+    final initialValid = initial >= 0;
+    final initialDisplay = initialValid ? initial : 0;
+    final overshoot = initialValid && initial > total && total > 0;
+    final remaining = overshoot ? 0 : (total - initialDisplay).clamp(0, total);
+
+    Color remainingColor() {
+      if (total <= 0) return Colors.grey.shade600;
+      if (overshoot) return Colors.red.shade700;
+      if (remaining == 0) return Colors.green.shade700;
+      return Colors.orange.shade700;
+    }
+
+    Widget cell(String label, String value, {Color? valueColor}) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: valueColor,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          cell(
+            tr(context, 'treatmentPlanWizardInstallTotal', 'Plan total'),
+            _formatMoney(total, currency),
+          ),
+          cell(
+            tr(context, 'treatmentPlanWizardInitialPaymentSummary', 'Initial'),
+            initialValid
+                ? _formatMoney(initialDisplay, currency)
+                : '—',
+          ),
+          cell(
+            overshoot
+                ? tr(context, 'treatmentPlanWizardInstallOver', 'Over by')
+                : tr(context, 'treatmentPlanWizardBalancePreview', 'Balance'),
+            overshoot
+                ? _formatMoney(initial - total, currency)
+                : _formatMoney(remaining, currency),
+            valueColor: remainingColor(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstallmentSummary(BuildContext context) {
+    final currency = _liveCurrency();
+    final total = _balanceAfterInitialMinor();
     final allocated = _allocatedMinor();
     final remaining = total - allocated;
     final overshoot = remaining < 0;
@@ -1071,7 +1421,7 @@ class _TreatmentPlanWizardDialogState
       child: Row(
         children: [
           cell(
-            tr(context, 'treatmentPlanWizardInstallTotal', 'Plan total'),
+            tr(context, 'treatmentPlanWizardInstallTotal', 'Balance due'),
             _formatMoney(total, currency),
           ),
           cell(

@@ -27,6 +27,7 @@ import 'package:shifa_doc_app_v1/features/tasks/presentation/task_details_screen
 import 'package:shifa_doc_app_v1/features/tasks/presentation/select_template_screen.dart';
 import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
 import 'package:shifa_doc_app_v1/features/notifications/presentation/notifications_screen.dart';
+import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_treatment_plan_detail_screen.dart';
 
 /// Central list of route names used across the app.
 class AppRoutes {
@@ -49,6 +50,8 @@ class AppRoutes {
   static const selectTemplate = '/tasks/templates';
   static const taskDetails = '/tasks/:id';
   static const notifications = '/app/notifications';
+  /// Treatment plan detail (arguments: [int] planId).
+  static const clinicTreatmentPlanDetail = '/app/clinic/treatment-plan';
   static const adminLogin = '/admin/login';
   static const adminForgotPassword = '/admin/forgot-password';
   static const adminShell = '/admin';
@@ -122,6 +125,15 @@ class AppRouter {
 
       case AppRoutes.notifications:
         return MaterialPageRoute(builder: (_) => const NotificationsScreen());
+
+      case AppRoutes.clinicTreatmentPlanDetail:
+        final planId = _parsePlanId(settings.arguments);
+        if (planId == null) {
+          return MaterialPageRoute(builder: (_) => const MainShell());
+        }
+        return MaterialPageRoute(
+          builder: (_) => ClinicTreatmentPlanDetailScreen(planId: planId),
+        );
 
       case AppRoutes.patientsWithSelection:
         final rootArgs = settings.arguments;
@@ -269,8 +281,19 @@ class AppRouter {
             clinicScheduleReturn: ClinicScheduleReturnInfo.fromRouteArgs(args),
           ),
         );
+      case AppRoutes.clinicTreatmentPlanDetail:
+        final planId = _parsePlanId(settings.arguments);
+        if (planId == null) return null;
+        return MaterialPageRoute(
+          builder: (_) => ClinicTreatmentPlanDetailScreen(planId: planId),
+        );
       default:
         return null;
     }
+  }
+
+  static int? _parsePlanId(Object? arguments) {
+    if (arguments is int) return arguments;
+    return int.tryParse(arguments?.toString() ?? '');
   }
 }

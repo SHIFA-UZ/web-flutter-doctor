@@ -282,6 +282,53 @@ class AppLocalizations {
       'treatmentPlanWizardSectionServices': 'Treatments / services',
       'treatmentPlanWizardSectionServicesHint':
           'Pick from clinic catalog. Optionally assign each line to a visit.',
+      'treatmentPlanWizardByTooth': 'By tooth (FDI)',
+      'treatmentPlanWizardByList': 'Service list',
+      'dentalPlanEditorIntro':
+          'Plan procedures on the teeth chart. Each tooth can have multiple catalog services.',
+      'dentalPlanEditorCatalogHint':
+          'Showing the full clinic catalog (not limited to selected doctors).',
+      'dentalPlanEditorNoSearchMatches': 'No services match your search.',
+      'dentalPlanEditorTotal': 'Planned total',
+      'dentalPlanProgress': '{{done}}/{{total}} planned items completed',
+      'dentalPlanLegendPlanned': 'Planned',
+      'dentalPlanLegendCompleted': 'Completed',
+      'dentalPlanLegendPartial': 'Partially completed',
+      'dentalPlanEditorNotes': 'Plan notes',
+      'appointmentPlanExtraIncrease':
+          'Plan total will increase by {{amount}} {{currency}} (new total {{newTotal}} {{currency}})',
+      'appointmentPlanApplyFailed':
+          'Could not apply treatment plan changes. Appointment was not completed.',
+      'appointmentTreatmentPlanTitle': 'Treatment plan for this visit',
+      'appointmentTreatmentPlanPick': 'Active comprehensive plan',
+      'appointmentTreatmentPlanNone': 'None / bill separately',
+      'appointmentPlanModeFulfill': 'Fulfill planned items',
+      'appointmentPlanModeExtra': 'Add extra (not in plan)',
+      'appointmentPlanNoOpenLines': 'No open planned lines on this plan.',
+      'appointmentPlanApply': 'Apply to plan',
+      'appointmentPlanApplied': 'Treatment plan updated for this visit.',
+      'appointmentLinkedPlanBanner': 'Part of plan #{{id}} — {{title}}',
+      'appointmentTreatmentPlanChartHint':
+          'Tick planned items on the teeth chart below.',
+      'appointmentPlanFinanceTitle': 'Plan finances',
+      'appointmentPlanFinanceTotal': 'Plan total',
+      'appointmentPlanFinancePaid': 'Paid',
+      'appointmentPlanFinanceOutstanding': 'Outstanding',
+      'appointmentPlanFinanceSessionPayment': 'Payment this visit',
+      'appointmentPlanFinanceAmount': 'Amount',
+      'appointmentPlanFinanceMethod': 'Method',
+      'appointmentPlanFinanceRecorded': 'Recorded: {{amount}}',
+      'appointmentPlanFinanceLoadFailed': 'Could not load plan finances.',
+      'appointmentPlanPaymentFailed':
+          'Could not record payment. Appointment was not completed.',
+      'appointmentPlanChartIntro':
+          'Tap a tooth to mark planned procedures as completed.',
+      'appointmentPlanFulfillSheetHint':
+          'Select the planned lines completed during this visit.',
+      'appointmentPlanNoLinesOnTooth': 'No open planned lines for this tooth.',
+      'appointmentPlanAllDone': 'All planned items on this plan are completed.',
+      'appointmentPlanLoadFailed':
+          'Could not load open plan lines. Try again.',
       'treatmentPlanWizardSectionCareTeam': 'Care team & visits',
       'treatmentPlanWizardSectionCareTeamHint':
           'Add every doctor involved. Pick free slots per doctor to schedule visits for this patient.',
@@ -541,6 +588,22 @@ class AppLocalizations {
       'clinicActionSuccess': 'Done',
       'clinicActionFailed': 'Failed',
       'treatmentPlanWizardPaymentFailed': 'Could not record payment',
+      'treatmentPlanWizardInitialPaymentSection': 'Initial payment at desk',
+      'treatmentPlanWizardInitialPaymentHint':
+          'Optional payment collected while creating the plan.',
+      'treatmentPlanWizardInitialPaymentAmount': 'Initial payment amount',
+      'treatmentPlanWizardInitialPaymentAmountHint': '0 if none',
+      'treatmentPlanWizardInitialPaymentMethod': 'Initial payment method',
+      'treatmentPlanWizardInitialPaymentMemo': 'Initial payment memo (optional)',
+      'treatmentPlanWizardInitialPaymentSummary': 'Initial',
+      'treatmentPlanWizardBalancePreview': 'Balance',
+      'treatmentPlanWizardRemainingPaymentSection': 'Remaining balance',
+      'treatmentPlanWizardInitialPaymentInvalid':
+          'Enter a valid initial payment amount (0 or more)',
+      'treatmentPlanWizardInitialPaymentExceedsTotal':
+          'Initial payment cannot exceed the plan total',
+      'treatmentPlanWizardInitialPaymentFailed': 'Could not record initial payment',
+      'treatmentPlanWizardInitialPaymentMemoDefault': 'Initial payment at desk',
       'clinicPatientNumber': 'Patient #{{id}}',
       'clinicWorkspaceFinance': 'Finance',
       'clinicWorkspaceInvitations': 'Invitations',
@@ -1332,10 +1395,17 @@ class AppLocalizations {
       'dentalLineItems': 'line items',
       'dentalToothServices': 'Services for tooth',
       'dentalAddService': 'Add service',
+      'dentalSelectedServices': 'Selected services',
       'dentalNoServices': 'Define services under Services & Pricing first.',
       'dentalDocSaved': 'Dental visit documentation saved',
       'dentalDocSaveFailed': 'Could not save dental documentation',
       'dentalPdfHeader': 'DENTAL VISIT — Procedures by tooth',
+      'dentalGeneralServices': 'General / non-tooth services',
+      'dentalGeneralServicesShort': 'General',
+      'dentalGeneralServicesHint':
+          'Procedures not tied to a specific tooth (e.g. lip frenectomy, consultation).',
+      'dentalDentitionPermanent': 'Adult teeth',
+      'dentalDentitionPrimary': 'Primary (child) teeth',
       'openForm0252': 'Open Form 025-2',
       'fileAttachmentComingSoon': 'File attachment coming soon',
 
@@ -2122,7 +2192,7 @@ class AppLocalizations {
       'treatmentPlanWizardFillBasics': 'Sarlavha kiriting',
       'treatmentPlanWizardPickServices': 'Kamida bitta xizmatni tanlang',
       'treatmentPlanWizardNeedTwoInstallments': 'Kamida 2 to\'lov qatori',
-      'treatmentPlanWizardPayUnpaid': 'To\'lansiz (faollashtirish)',
+      'treatmentPlanWizardPayUnpaid': 'To\'lovsiz faollashtirish',
       'treatmentPlanWizardPayFull': 'To\'liq to\'lash',
       'treatmentPlanWizardPayInstallments': 'Bo\'lib to\'lash',
       'treatmentPlanWizardMethod': 'Usul',
@@ -2142,6 +2212,53 @@ class AppLocalizations {
       'treatmentPlanWizardSectionServices': 'Davolash / xizmatlar',
       'treatmentPlanWizardSectionServicesHint':
           'Katalogdan tanlang. Har bir qatorga (xohlasangiz) qabul biriktiring.',
+      'treatmentPlanWizardByTooth': 'Tish bo\'yicha (FDI)',
+      'treatmentPlanWizardByList': 'Xizmatlar ro\'yxati',
+      'dentalPlanEditorIntro':
+          'Tishlar sxemasida rejalashtiring. Har bir tishga bir nechta katalog xizmati qo\'shish mumkin.',
+      'dentalPlanEditorCatalogHint':
+          'Klinikaning to\'liq xizmatlar katalogi ko\'rsatilmoqda (tanlangan shifokorlar bilan cheklanmagan).',
+      'dentalPlanEditorNoSearchMatches': 'Qidiruvga mos xizmat topilmadi.',
+      'dentalPlanEditorTotal': 'Reja jami',
+      'dentalPlanProgress': '{{done}}/{{total}} reja bandi bajarildi',
+      'dentalPlanLegendPlanned': 'Rejalashtirilgan',
+      'dentalPlanLegendCompleted': 'Bajarilgan',
+      'dentalPlanLegendPartial': 'Qisman bajarilgan',
+      'dentalPlanEditorNotes': 'Reja izohlari',
+      'appointmentPlanExtraIncrease':
+          'Reja jami {{amount}} {{currency}} ga oshadi (yangi jami {{newTotal}} {{currency}})',
+      'appointmentPlanApplyFailed':
+          'Davolash rejasini qo\'llab bo\'lmadi. Qabul yakunlanmadi.',
+      'appointmentTreatmentPlanTitle': 'Ushbu qabul uchun davolash rejasi',
+      'appointmentTreatmentPlanPick': 'Faol kompleks reja',
+      'appointmentTreatmentPlanNone': 'Yo\'q / alohida hisoblash',
+      'appointmentPlanModeFulfill': 'Rejadagi bandlarni bajarish',
+      'appointmentPlanModeExtra': 'Qo\'shimcha (rejada yo\'q)',
+      'appointmentPlanNoOpenLines': 'Bu rejada ochiq bandlar yo\'q.',
+      'appointmentPlanApply': 'Rejaga qo\'llash',
+      'appointmentPlanApplied': 'Ushbu qabul uchun davolash rejasi yangilandi.',
+      'appointmentLinkedPlanBanner': 'Reja #{{id}} qismi — {{title}}',
+      'appointmentTreatmentPlanChartHint':
+          'Quyidagi tish sxemasida reja bandlarini belgilang.',
+      'appointmentPlanFinanceTitle': 'Reja moliyasi',
+      'appointmentPlanFinanceTotal': 'Reja jami',
+      'appointmentPlanFinancePaid': 'To\'langan',
+      'appointmentPlanFinanceOutstanding': 'Qoldiq',
+      'appointmentPlanFinanceSessionPayment': 'Ushbu qabul to\'lovi',
+      'appointmentPlanFinanceAmount': 'Summa',
+      'appointmentPlanFinanceMethod': 'Usul',
+      'appointmentPlanFinanceRecorded': 'Qayd etildi: {{amount}}',
+      'appointmentPlanFinanceLoadFailed': 'Reja moliyasini yuklab bo\'lmadi.',
+      'appointmentPlanPaymentFailed':
+          'To\'lovni qayd etib bo\'lmadi. Qabul yakunlanmadi.',
+      'appointmentPlanChartIntro':
+          'Rejadagi protseduralarni bajarilgan deb belgilash uchun tishni bosing.',
+      'appointmentPlanFulfillSheetHint':
+          'Ushbu qabulda bajarilgan reja bandlarini tanlang.',
+      'appointmentPlanNoLinesOnTooth': 'Bu tish uchun ochiq reja bandlari yo\'q.',
+      'appointmentPlanAllDone': 'Ushbu rejadagi barcha bandlar bajarilgan.',
+      'appointmentPlanLoadFailed':
+          'Ochiq reja bandlarini yuklab bo\'lmadi. Qayta urinib ko\'ring.',
       'treatmentPlanWizardSectionCareTeam': 'Shifokorlar va qabullar',
       'treatmentPlanWizardSectionCareTeamHint':
           'Ishtirok etadigan barcha shifokorlarni qo\'shing. Har bir shifokor uchun bo\'sh vaqt oraliqlarini tanlab, bemorga qabullar biriktiring.',
@@ -2400,6 +2517,22 @@ class AppLocalizations {
       'clinicActionSuccess': 'Bajarildi',
       'clinicActionFailed': 'Bajarilmadi',
       'treatmentPlanWizardPaymentFailed': 'To\'lovni qayd etib bo\'lmadi',
+      'treatmentPlanWizardInitialPaymentSection': 'Stolda boshlang\'ich to\'lov',
+      'treatmentPlanWizardInitialPaymentHint':
+          'Reja tuzilayotganda olingan ixtiyoriy to\'lov.',
+      'treatmentPlanWizardInitialPaymentAmount': 'Boshlang\'ich to\'lov summasi',
+      'treatmentPlanWizardInitialPaymentAmountHint': 'Yo\'q bo\'lsa 0',
+      'treatmentPlanWizardInitialPaymentMethod': 'Boshlang\'ich to\'lov usuli',
+      'treatmentPlanWizardInitialPaymentMemo': 'Boshlang\'ich to\'lov izohi (ixtiyoriy)',
+      'treatmentPlanWizardInitialPaymentSummary': 'Boshlang\'ich',
+      'treatmentPlanWizardBalancePreview': 'Qoldiq',
+      'treatmentPlanWizardRemainingPaymentSection': 'Qolgan balans',
+      'treatmentPlanWizardInitialPaymentInvalid':
+          'To\'g\'ri boshlang\'ich to\'lov summasini kiriting (0 yoki undan ko\'p)',
+      'treatmentPlanWizardInitialPaymentExceedsTotal':
+          'Boshlang\'ich to\'lov reja jami summasidan oshmasligi kerak',
+      'treatmentPlanWizardInitialPaymentFailed': 'Boshlang\'ich to\'lovni qayd etib bo\'lmadi',
+      'treatmentPlanWizardInitialPaymentMemoDefault': 'Stolda boshlang\'ich to\'lov',
       'clinicPatientNumber': 'Bemor #{{id}}',
       'createTreatmentPlan': 'Davolash rejasi yaratish',
       'treatmentPlanTitle': 'Sarlavha',
@@ -3317,10 +3450,17 @@ class AppLocalizations {
       'dentalLineItems': 'qatorma-qator',
       'dentalToothServices': 'Tish uchun xizmatlar',
       'dentalAddService': 'Xizmat qo\'shish',
+      'dentalSelectedServices': 'Tanlangan xizmatlar',
       'dentalNoServices': 'Avvalo «Xizmatlar va narxlar»da xizmatlarni kiriting.',
       'dentalDocSaved': 'Stomatologik hujjat saqlandi',
       'dentalDocSaveFailed': 'Stomatologik hujjatni saqlab bo\'lmadi',
       'dentalPdfHeader': 'STOMATOLOGIK QABUL — tishlar bo\'yicha',
+      'dentalGeneralServices': 'Umumiy / tishga bog\'liq bo\'lmagan xizmatlar',
+      'dentalGeneralServicesShort': 'Umumiy',
+      'dentalGeneralServicesHint':
+          'Muayyan tishga bog\'liq bo\'lmagan protseduralar (masalan, lab frenektomiyasi).',
+      'dentalDentitionPermanent': 'Kattalar tishlari',
+      'dentalDentitionPrimary': 'Sut (bolalar) tishlari',
       'unsavedChangesSwitch':
           'Saqlanmagan o\'zgarishlar bor. Almashishdan oldin saqlaysizmi?',
       'saveAndSwitch': 'Saqlash va almashtirish',
@@ -3947,6 +4087,53 @@ class AppLocalizations {
       'treatmentPlanWizardSectionServices': 'Лечение / услуги',
       'treatmentPlanWizardSectionServicesHint':
           'Выберите из каталога. По желанию свяжите каждую строку с приёмом.',
+      'treatmentPlanWizardByTooth': 'По зубу (FDI)',
+      'treatmentPlanWizardByList': 'Список услуг',
+      'dentalPlanEditorIntro':
+          'Планируйте процедуры на схеме зубов. На каждый зуб можно добавить несколько услуг из каталога.',
+      'dentalPlanEditorCatalogHint':
+          'Показан полный каталог клиники (без ограничения выбранными врачами).',
+      'dentalPlanEditorNoSearchMatches': 'Нет услуг по вашему запросу.',
+      'dentalPlanEditorTotal': 'Сумма плана',
+      'dentalPlanProgress': '{{done}}/{{total}} пунктов плана выполнено',
+      'dentalPlanLegendPlanned': 'Запланировано',
+      'dentalPlanLegendCompleted': 'Выполнено',
+      'dentalPlanLegendPartial': 'Частично выполнено',
+      'dentalPlanEditorNotes': 'Примечания к плану',
+      'appointmentPlanExtraIncrease':
+          'Сумма плана увеличится на {{amount}} {{currency}} (новая сумма {{newTotal}} {{currency}})',
+      'appointmentPlanApplyFailed':
+          'Не удалось применить изменения плана. Приём не завершён.',
+      'appointmentTreatmentPlanTitle': 'План лечения на этот приём',
+      'appointmentTreatmentPlanPick': 'Активный комплексный план',
+      'appointmentTreatmentPlanNone': 'Нет / считать отдельно',
+      'appointmentPlanModeFulfill': 'Выполнить запланированное',
+      'appointmentPlanModeExtra': 'Добавить сверх плана',
+      'appointmentPlanNoOpenLines': 'Нет открытых пунктов в этом плане.',
+      'appointmentPlanApply': 'Применить к плану',
+      'appointmentPlanApplied': 'План лечения обновлён для этого приёма.',
+      'appointmentLinkedPlanBanner': 'Часть плана #{{id}} — {{title}}',
+      'appointmentTreatmentPlanChartHint':
+          'Отмечайте пункты плана на схеме зубов ниже.',
+      'appointmentPlanFinanceTitle': 'Финансы плана',
+      'appointmentPlanFinanceTotal': 'Сумма плана',
+      'appointmentPlanFinancePaid': 'Оплачено',
+      'appointmentPlanFinanceOutstanding': 'Остаток',
+      'appointmentPlanFinanceSessionPayment': 'Оплата на этом приёме',
+      'appointmentPlanFinanceAmount': 'Сумма',
+      'appointmentPlanFinanceMethod': 'Способ',
+      'appointmentPlanFinanceRecorded': 'Записано: {{amount}}',
+      'appointmentPlanFinanceLoadFailed': 'Не удалось загрузить финансы плана.',
+      'appointmentPlanPaymentFailed':
+          'Не удалось записать оплату. Приём не завершён.',
+      'appointmentPlanChartIntro':
+          'Нажмите на зуб, чтобы отметить выполненные процедуры плана.',
+      'appointmentPlanFulfillSheetHint':
+          'Выберите пункты плана, выполненные на этом приёме.',
+      'appointmentPlanNoLinesOnTooth': 'Нет открытых пунктов для этого зуба.',
+      'appointmentPlanAllDone': 'Все пункты этого плана выполнены.',
+      'appointmentPlanLoadFailed':
+          'Не удалось загрузить открытые пункты плана. Повторите.',
       'treatmentPlanWizardSectionCareTeam': 'Команда врачей и приёмы',
       'treatmentPlanWizardSectionCareTeamHint':
           'Добавьте всех участвующих врачей. Для каждого врача выбирайте свободные слоты — мы создадим приёмы для пациента.',
@@ -4209,6 +4396,22 @@ class AppLocalizations {
       'clinicActionSuccess': 'Готово',
       'clinicActionFailed': 'Не удалось',
       'treatmentPlanWizardPaymentFailed': 'Не удалось записать оплату',
+      'treatmentPlanWizardInitialPaymentSection': 'Первоначальная оплата на стойке',
+      'treatmentPlanWizardInitialPaymentHint':
+          'Необязательная оплата, полученная при составлении плана.',
+      'treatmentPlanWizardInitialPaymentAmount': 'Сумма первоначальной оплаты',
+      'treatmentPlanWizardInitialPaymentAmountHint': '0, если нет',
+      'treatmentPlanWizardInitialPaymentMethod': 'Способ первоначальной оплаты',
+      'treatmentPlanWizardInitialPaymentMemo': 'Комментарий к первоначальной оплате (необяз.)',
+      'treatmentPlanWizardInitialPaymentSummary': 'Первонач.',
+      'treatmentPlanWizardBalancePreview': 'Остаток',
+      'treatmentPlanWizardRemainingPaymentSection': 'Оставшийся баланс',
+      'treatmentPlanWizardInitialPaymentInvalid':
+          'Введите корректную сумму первоначальной оплаты (0 или больше)',
+      'treatmentPlanWizardInitialPaymentExceedsTotal':
+          'Первоначальная оплата не может превышать сумму плана',
+      'treatmentPlanWizardInitialPaymentFailed': 'Не удалось записать первоначальную оплату',
+      'treatmentPlanWizardInitialPaymentMemoDefault': 'Первоначальная оплата на стойке',
       'clinicPatientNumber': 'Пациент #{{id}}',
       'createTreatmentPlan': 'Создать план лечения',
       'treatmentPlanTitle': 'Название',
@@ -4979,10 +5182,17 @@ class AppLocalizations {
       'dentalLineItems': 'поз.',
       'dentalToothServices': 'Услуги для зуба',
       'dentalAddService': 'Добавить услугу',
+      'dentalSelectedServices': 'Выбранные услуги',
       'dentalNoServices': 'Сначала задайте услуги в разделе «Услуги и цены».',
       'dentalDocSaved': 'Стоматологическая документация сохранена',
       'dentalDocSaveFailed': 'Не удалось сохранить стоматологическую документацию',
       'dentalPdfHeader': 'СТОМАТОЛОГИЧЕСКИЙ ПРИЁМ — по зубам',
+      'dentalGeneralServices': 'Общие / не привязанные к зубу услуги',
+      'dentalGeneralServicesShort': 'Общие',
+      'dentalGeneralServicesHint':
+          'Процедуры, не связанные с конкретным зубом (например, френулотомия губы).',
+      'dentalDentitionPermanent': 'Постоянные зубы',
+      'dentalDentitionPrimary': 'Молочные (детские) зубы',
       'unsavedChangesSwitch':
           'У вас есть несохраненные изменения. Сохранить перед переключением?',
       'saveAndSwitch': 'Сохранить и переключить',

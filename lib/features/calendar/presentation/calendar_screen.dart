@@ -1,4 +1,4 @@
-﻿// lib/features/calendar/presentation/calendar_screen.dart
+// lib/features/calendar/presentation/calendar_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2218,6 +2218,8 @@ class CalendarDayEntriesList extends StatelessWidget {
         final isVideoLocation = (e.location).toLowerCase().contains('video');
         final locationLabel = isVideoLocation ? l10n.videoCall : e.location;
         final isBlocked = e.type == EntryType.blocked;
+        final isCompleted = e.type == EntryType.appointment &&
+            (e.status?.trim().toUpperCase() ?? '') == 'COMPLETED';
 
         return Container(
           decoration: BoxDecoration(
@@ -2251,8 +2253,10 @@ class CalendarDayEntriesList extends StatelessWidget {
                   ),
                   // ListTile clamps trailing height to its tile computation; time + badge + reason
                   // overflows by a few px. IntrinsicHeight lets the row grow with the tallest column.
-                  child: IntrinsicHeight(
-                    child: Row(
+                  child: Stack(
+                    children: [
+                      IntrinsicHeight(
+                        child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         e.type == EntryType.freeSlot
@@ -2319,8 +2323,13 @@ class CalendarDayEntriesList extends StatelessWidget {
                                             AppLocalizations.of(
                                                   context,
                                                 )!.appointments,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w600,
+                                          decoration: isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          decorationColor:
+                                              Colors.grey.shade600,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -2392,7 +2401,13 @@ class CalendarDayEntriesList extends StatelessWidget {
                             children: [
                             Text(
                               _fmtRange(e.start, e.end),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                decoration: isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                decorationColor: Colors.grey.shade600,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -2447,6 +2462,22 @@ class CalendarDayEntriesList extends StatelessWidget {
                         ),
                       ],
                     ),
+                      ),
+                      if (isCompleted)
+                        Positioned.fill(
+                          child: Center(
+                            child: IgnorePointer(
+                              child: Container(
+                                height: 1,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                color: Colors.grey.shade500.withOpacity(0.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -2994,6 +3025,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   int _initialFreeSlotEndRepr = -1;
   int _initialFreeSlotStartRepr = -1;
   int _initialAppointmentEndRepr = -1;
+  bool _seededFromDependencies = false;
 
   String _two(int n) => n.toString().padLeft(2, '0');
   String _fmtDate(BuildContext context, DateTime d) =>
@@ -3282,8 +3314,16 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   void initState() {
     super.initState();
     _reasonCtrl = TextEditingController();
-    _seedStateFromEntry();
     _reasonCtrl.addListener(_syncDirtyState);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_seededFromDependencies) {
+      _seededFromDependencies = true;
+      _seedStateFromEntry();
+    }
   }
 
   @override

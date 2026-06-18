@@ -7,11 +7,21 @@ Future<List<TreatmentPlanSummaryDto>> fetchTreatmentPlansForPatient(
   dynamic ref, {
   required int clinicId,
   required int patientId,
+  String? status,
+  String? planKind,
 }) async {
   final api = ref.read(doctorApiClientProvider);
-  final res = await api.get(
-    '/api/treatment-plans?clinicId=$clinicId&patientId=$patientId',
-  );
+  final parts = <String>[
+    'clinicId=$clinicId',
+    'patientId=$patientId',
+  ];
+  if (status != null && status.isNotEmpty) {
+    parts.add('status=${Uri.encodeQueryComponent(status)}');
+  }
+  if (planKind != null && planKind.isNotEmpty) {
+    parts.add('planKind=${Uri.encodeQueryComponent(planKind)}');
+  }
+  final res = await api.get('/api/treatment-plans?${parts.join('&')}');
   if (res.statusCode != 200) {
     throw Exception('Plans ${res.statusCode}');
   }
@@ -32,11 +42,15 @@ Future<List<TreatmentPlanSummaryDto>> fetchTreatmentPlansForClinic(
   required int clinicId,
   String? status,
   String? query,
+  String? planKind,
 }) async {
   final api = ref.read(doctorApiClientProvider);
   final parts = <String>['clinicId=$clinicId'];
   if (status != null && status.isNotEmpty) {
     parts.add('status=${Uri.encodeQueryComponent(status)}');
+  }
+  if (planKind != null && planKind.isNotEmpty) {
+    parts.add('planKind=${Uri.encodeQueryComponent(planKind)}');
   }
   if (query != null && query.trim().isNotEmpty) {
     parts.add('q=${Uri.encodeQueryComponent(query.trim())}');
@@ -62,6 +76,23 @@ Future<TreatmentPlanDetailDto?> fetchTreatmentPlanDetail(dynamic ref, int planId
   return TreatmentPlanDetailDto.fromJson(Map<String, dynamic>.from(m));
 }
 
+Future<List<TreatmentPlanVisitDto>> fetchTreatmentPlanVisits(
+  dynamic ref,
+  int planId,
+) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.get('/api/treatment-plans/$planId/visits');
+  if (res.statusCode != 200) {
+    throw Exception('Plan visits ${res.statusCode}');
+  }
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => TreatmentPlanVisitDto.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
+
 Future<TreatmentPlanSummaryDto?> createTreatmentPlan(
   dynamic ref, {
   required int clinicId,
@@ -73,6 +104,7 @@ Future<TreatmentPlanSummaryDto?> createTreatmentPlan(
   int? attendingDoctorId,
   List<int>? attendingDoctorIds,
   List<String>? symptoms,
+  String? dentalPlanDocumentation,
 }) async {
   final api = ref.read(doctorApiClientProvider);
   final body = <String, dynamic>{
@@ -88,6 +120,9 @@ Future<TreatmentPlanSummaryDto?> createTreatmentPlan(
     body['attendingDoctorIds'] = attendingDoctorIds;
   }
   if (symptoms != null && symptoms.isNotEmpty) body['symptoms'] = symptoms;
+  if (dentalPlanDocumentation != null && dentalPlanDocumentation.isNotEmpty) {
+    body['dentalPlanDocumentation'] = dentalPlanDocumentation;
+  }
 
   final res = await api.post('/api/treatment-plans', body);
   if (res.statusCode != 200) return null;
@@ -105,6 +140,7 @@ Future<TreatmentPlanSummaryDto?> patchTreatmentPlan(
   int? paymentReminderDays,
   int? attendingDoctorId,
   List<String>? symptoms,
+  String? dentalPlanDocumentation,
 }) async {
   final api = ref.read(doctorApiClientProvider);
   final body = <String, dynamic>{};
@@ -114,6 +150,9 @@ Future<TreatmentPlanSummaryDto?> patchTreatmentPlan(
   if (paymentReminderDays != null) body['paymentReminderDays'] = paymentReminderDays;
   if (attendingDoctorId != null) body['attendingDoctorId'] = attendingDoctorId;
   if (symptoms != null) body['symptoms'] = symptoms;
+  if (dentalPlanDocumentation != null) {
+    body['dentalPlanDocumentation'] = dentalPlanDocumentation;
+  }
 
   final res = await api.patch('/api/treatment-plans/$planId', body);
   if (res.statusCode != 200) return null;
@@ -247,4 +286,58 @@ Future<List<ClinicPatientAppointmentDto>> fetchPatientAppointments(
       .whereType<Map>()
       .map((e) => ClinicPatientAppointmentDto.fromJson(Map<String, dynamic>.from(e)))
       .toList();
+}
+
+Future<List<FulfillmentCandidateDto>> fetchFulfillmentCandidates(
+  dynamic ref, {
+  required int planId,
+  int? appointmentId,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final q = appointmentId != null ? '?appointmentId=$appointmentId' : '';
+  final res = await api.get('/api/treatment-plans/$planId/fulfillment-candidates$q');
+  if (res.statusCode != 200) return [];
+  final list = json.decode(utf8.decode(res.bodyBytes));
+  if (list is! List) return [];
+  return list
+      .whereType<Map>()
+      .map((e) => FulfillmentCandidateDto.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
+
+Future<TreatmentPlanDetailDto?> fulfillTreatmentPlanLines(
+  dynamic ref, {
+  required int planId,
+  required int appointmentId,
+  required List<int> lineIds,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.post(
+    '/api/treatment-plans/$planId/appointments/$appointmentId/fulfill',
+    {'lineIds': lineIds},
+  );
+  if (res.statusCode != 200) return null;
+  final m = json.decode(utf8.decode(res.bodyBytes));
+  if (m is! Map) return null;
+  return TreatmentPlanDetailDto.fromJson(Map<String, dynamic>.from(m));
+}
+
+Future<TreatmentPlanDetailDto?> appendTreatmentPlanLines(
+  dynamic ref, {
+  required int planId,
+  int? appointmentId,
+  required List<Map<String, dynamic>> lines,
+}) async {
+  final api = ref.read(doctorApiClientProvider);
+  final res = await api.post(
+    '/api/treatment-plans/$planId/lines/append',
+    {
+      if (appointmentId != null) 'appointmentId': appointmentId,
+      'lines': lines,
+    },
+  );
+  if (res.statusCode != 200) return null;
+  final m = json.decode(utf8.decode(res.bodyBytes));
+  if (m is! Map) return null;
+  return TreatmentPlanDetailDto.fromJson(Map<String, dynamic>.from(m));
 }

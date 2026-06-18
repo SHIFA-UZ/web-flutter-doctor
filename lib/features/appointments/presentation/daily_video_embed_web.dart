@@ -56,10 +56,7 @@ class _DailyVideoEmbedWebState extends State<DailyVideoEmbedWeb> {
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
-      child: HtmlElementView(
-        viewType: _viewType,
-        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-      ),
+      child: HtmlElementView(viewType: _viewType),
     );
   }
 }

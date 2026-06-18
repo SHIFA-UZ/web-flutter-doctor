@@ -17,6 +17,31 @@ class AppointmentPdfDentalLine {
   });
 }
 
+/// Comprehensive treatment plan section for appointment PDF (fulfillment + payment).
+class AppointmentPdfTreatmentPlanSection {
+  final String planId;
+  final String? planTitle;
+  final int planTotalMinor;
+  final int planPaidMinor;
+  final int planOwedMinor;
+  final String currency;
+  final List<AppointmentPdfDentalLine> fulfilledThisVisit;
+  final int? sessionPaymentMinor;
+  final String? sessionPaymentMethod;
+
+  const AppointmentPdfTreatmentPlanSection({
+    required this.planId,
+    this.planTitle,
+    required this.planTotalMinor,
+    required this.planPaidMinor,
+    required this.planOwedMinor,
+    required this.currency,
+    this.fulfilledThisVisit = const [],
+    this.sessionPaymentMinor,
+    this.sessionPaymentMethod,
+  });
+}
+
 /// Structured stomatological billing section (replaces embedding plain text in notes).
 class AppointmentPdfDentalBilling {
   final String header;
@@ -66,6 +91,9 @@ class AppointmentPdfData {
   /// Optional structured dental billing table (shown when non-null with lines).
   final AppointmentPdfDentalBilling? dentalBilling;
 
+  /// Linked comprehensive treatment plan summary and visit fulfillment.
+  final AppointmentPdfTreatmentPlanSection? treatmentPlan;
+
   /// Optional sections (render only if non-empty).
   final String? diagnosis;
   final String? diagnosisCode;
@@ -100,6 +128,7 @@ class AppointmentPdfData {
     required this.appointmentDate,
     this.notes,
     this.dentalBilling,
+    this.treatmentPlan,
     this.diagnosis,
     this.diagnosisCode,
     this.diagnosisDisplay,

@@ -16,9 +16,12 @@ final treatmentPlansForPatientProvider =
   },
 );
 
-final treatmentPlanDetailProvider =
-    FutureProvider.autoDispose.family<TreatmentPlanDetailDto?, int>(
-  (ref, planId) => fetchTreatmentPlanDetail(ref, planId),
+final treatmentPlanDetailProvider = FutureProvider.autoDispose
+    .family<TreatmentPlanDetailDto?, int>(
+  (ref, planId) {
+    ref.keepAlive();
+    return fetchTreatmentPlanDetail(ref, planId);
+  },
 );
 
 /// Filter inputs for [treatmentPlansForClinicProvider]. Implements value
@@ -28,11 +31,13 @@ class ClinicPlansFilter {
   final int clinicId;
   final String? status;
   final String? query;
+  final String? planKind;
 
   const ClinicPlansFilter({
     required this.clinicId,
     this.status,
     this.query,
+    this.planKind,
   });
 
   @override
@@ -41,11 +46,23 @@ class ClinicPlansFilter {
       other is ClinicPlansFilter &&
           other.clinicId == clinicId &&
           other.status == status &&
-          other.query == query;
+          other.query == query &&
+          other.planKind == planKind;
 
   @override
-  int get hashCode => Object.hash(clinicId, status, query);
+  int get hashCode => Object.hash(clinicId, status, query, planKind);
 }
+
+/// Visits for one treatment plan. Loaded on demand when the user expands a
+/// plan row. [keepAlive] avoids refetching when the row is collapsed and
+/// re-expanded during the same session.
+final treatmentPlanVisitsProvider = FutureProvider.autoDispose
+    .family<List<TreatmentPlanVisitDto>, int>(
+  (ref, planId) {
+    ref.keepAlive();
+    return fetchTreatmentPlanVisits(ref, planId);
+  },
+);
 
 /// Clinic-wide plan list (no patient required), with optional filters.
 final treatmentPlansForClinicProvider = FutureProvider.autoDispose
@@ -55,5 +72,6 @@ final treatmentPlansForClinicProvider = FutureProvider.autoDispose
     clinicId: f.clinicId,
     status: f.status,
     query: f.query,
+    planKind: f.planKind,
   ),
 );

@@ -157,6 +157,15 @@ List<pw.Widget> _buildReportContentAsList({
     children.add(pw.SizedBox(height: 16));
   }
 
+  final plan = data.treatmentPlan;
+  if (plan != null) {
+    children.add(_buildFormalSectionBar(t.treatmentPlanSection, font));
+    children.add(_sectionBodyBox(
+      child: _buildTreatmentPlanContent(plan, t, font),
+    ));
+    children.add(pw.SizedBox(height: 16));
+  }
+
   final hasIcd = (data.diagnosisCode != null &&
       data.diagnosisCode!.trim().isNotEmpty &&
       data.diagnosisDisplay != null &&
@@ -425,6 +434,93 @@ pw.Widget _buildDentalBillingContent(
         ),
       ),
     ],
+  );
+}
+
+pw.Widget _buildTreatmentPlanContent(
+  AppointmentPdfTreatmentPlanSection plan,
+  AppointmentPdfTranslations t,
+  pw.Font font,
+) {
+  final amtStyle = pw.TextStyle(font: font, fontSize: 10);
+  String money(int minor) =>
+      '${(minor / 100).toStringAsFixed(2)} ${plan.currency}';
+
+  pw.Widget summaryRow(String label, int minor, {bool bold = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            label,
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
+          pw.Text(
+            money(minor),
+            style: pw.TextStyle(
+              font: font,
+              fontSize: 10,
+              fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  final children = <pw.Widget>[
+    pw.Text(
+      plan.planTitle != null && plan.planTitle!.trim().isNotEmpty
+          ? '${t.treatmentPlanTitle} #${plan.planId} — ${plan.planTitle}'
+          : '${t.treatmentPlanTitle} #${plan.planId}',
+      style: pw.TextStyle(font: font, fontSize: 11, fontWeight: pw.FontWeight.bold),
+    ),
+    pw.SizedBox(height: 8),
+    summaryRow(t.planTotalRow, plan.planTotalMinor),
+    summaryRow(t.planPaidRow, plan.planPaidMinor),
+    summaryRow(t.planOutstandingRow, plan.planOwedMinor, bold: true),
+  ];
+
+  if (plan.fulfilledThisVisit.isNotEmpty) {
+    children.add(pw.SizedBox(height: 10));
+    children.add(pw.Text(
+      t.fulfilledThisVisit,
+      style: pw.TextStyle(font: font, fontSize: 10, fontWeight: pw.FontWeight.bold),
+    ));
+    children.add(pw.SizedBox(height: 6));
+    for (final line in plan.fulfilledThisVisit) {
+      final toothPart =
+          line.tooth.trim().isNotEmpty ? '${line.tooth} — ' : '';
+      children.add(pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 3),
+        child: pw.Text(
+          '$toothPart${line.serviceTitle}: ${money(line.amountMinor)}',
+          style: amtStyle,
+        ),
+      ));
+    }
+  }
+
+  if (plan.sessionPaymentMinor != null && plan.sessionPaymentMinor! > 0) {
+    children.add(pw.SizedBox(height: 8));
+    final method = plan.sessionPaymentMethod?.trim();
+    final methodSuffix =
+        method != null && method.isNotEmpty ? ' ($method)' : '';
+    children.add(summaryRow(
+      '${t.sessionPaymentRow}$methodSuffix',
+      plan.sessionPaymentMinor!,
+      bold: true,
+    ));
+  }
+
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: children,
   );
 }
 

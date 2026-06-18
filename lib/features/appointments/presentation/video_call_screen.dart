@@ -33,6 +33,11 @@ import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_
 import 'package:shifa_doc_app_v1/features/appointments/services/appointment_pdf_translations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/appointment_treatment_plan_panel.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/appointment_plan_finance_card.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_actions.dart';
+import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_models.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/appointment_form_0252_panel.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
@@ -158,6 +163,17 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       GlobalKey<AppointmentForm0252PanelState>();
   final GlobalKey<DentalVisitDocumentationPanelState> _dentalDocPanelKey =
       GlobalKey<DentalVisitDocumentationPanelState>();
+  final GlobalKey<AppointmentTreatmentPlanPanelState> _treatmentPlanPanelKey =
+      GlobalKey<AppointmentTreatmentPlanPanelState>();
+  final GlobalKey<AppointmentPlanFinanceCardState> _planFinanceKey =
+      GlobalKey<AppointmentPlanFinanceCardState>();
+  int? _linkedPlanId;
+  String? _linkedPlanTitle;
+  List<int> _fulfilledLineIds = const [];
+  int? _activePlanId;
+  TreatmentPlanDetailDto? _activePlanDetail;
+  List<FulfillmentCandidateDto> _fulfillmentCandidates = const [];
+  bool _loadingPlanContext = false;
   bool _notesPanelFullScreen = false;
   int _consultationNoteIndex = 0;
 
@@ -294,6 +310,19 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         final rawImg = map['patientSignatureImageBase64'];
         _patientSignatureImageBase64 =
             (rawImg is String && rawImg.trim().isNotEmpty) ? rawImg : null;
+        _linkedPlanId = (map['linkedPlanId'] as num?)?.toInt();
+        _linkedPlanTitle = map['linkedPlanTitle'] as String?;
+        final fulfilledRaw = map['fulfilledLineIds'];
+        _fulfilledLineIds = fulfilledRaw is List
+            ? fulfilledRaw
+                .whereType<num>()
+                .map((e) => e.toInt())
+                .toList()
+            : const [];
+        if (_linkedPlanId != null && _activePlanId != _linkedPlanId) {
+          _activePlanId = _linkedPlanId;
+          unawaited(_loadActivePlanContext(_linkedPlanId));
+        }
         if (_signatureRequested && _patientSignedAt == null) {
           _startSignaturePolling();
         } else {
@@ -303,6 +332,90 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     } catch (e) {
       debugPrint('Fetch signature status: $e');
     }
+  }
+
+  Future<void> _onPlanSelected(int? planId) async {
+    setState(() => _activePlanId = planId);
+    await _loadActivePlanContext(planId);
+  }
+
+  Future<void> _loadActivePlanContext(int? planId) async {
+    if (planId == null) {
+      if (mounted) {
+        setState(() {
+          _activePlanDetail = null;
+          _fulfillmentCandidates = const [];
+          _loadingPlanContext = false;
+        });
+      }
+      return;
+    }
+    setState(() => _loadingPlanContext = true);
+    try {
+      final appointmentIdInt = int.tryParse(widget.appointment.id) ?? 0;
+      final detail = await fetchTreatmentPlanDetail(ref, planId);
+      final candidates = await fetchFulfillmentCandidates(
+        ref,
+        planId: planId,
+        appointmentId: appointmentIdInt,
+      );
+      if (!mounted) return;
+      setState(() {
+        _activePlanDetail = detail;
+        _fulfillmentCandidates = candidates;
+        _loadingPlanContext = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _activePlanDetail = null;
+          _fulfillmentCandidates = const [];
+          _loadingPlanContext = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildDentalDocumentationColumn(Color brand, int? clinicId) {
+    final detail = _activePlanDetail;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: DentalVisitDocumentationPanel(
+            key: _dentalDocPanelKey,
+            appointmentId: widget.appointment.id,
+            brand: brand,
+            onUnsavedChanged: (v) => setState(() => _hasUnsavedChanges = v),
+            activePlanId: _activePlanId,
+            planTitle: _linkedPlanTitle ?? detail?.summary.title,
+            dentalPlanDocumentation: detail?.dentalPlanDocumentation,
+            planLines: detail?.lines ?? const [],
+            fulfillmentCandidates: _fulfillmentCandidates,
+            fulfilledLineIds: _fulfilledLineIds,
+            linesTotalCount: detail?.summary.linesTotalCount ?? 0,
+            linesCompletedCount: detail?.summary.linesCompletedCount ?? 0,
+            loadingPlanContext: _loadingPlanContext,
+            planSummary: detail?.summary,
+            onFulfillmentChanged: () => setState(() {}),
+            onRetryLoadPlan: () => _loadActivePlanContext(_activePlanId),
+          ),
+        ),
+        if (_activePlanId != null && clinicId != null) ...[
+          const SizedBox(height: 8),
+          AppointmentPlanFinanceCard(
+            key: _planFinanceKey,
+            clinicId: clinicId,
+            planId: _activePlanId!,
+            appointmentId: widget.appointment.id,
+            brand: brand,
+            onTotalsRefreshed: () {
+              if (mounted) setState(() {});
+            },
+          ),
+        ],
+      ],
+    );
   }
 
   void _startSignaturePolling() {
@@ -942,11 +1055,70 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         return;
       }
 
-      // Generate professional appointment summary PDF (localized, branded)
+      final cidForComplete = ref.read(selectedClinicIdProvider);
+
       try {
-        // Refetch appointment so PDF gets latest patient signature from server
+        final planApplied =
+            await _dentalDocPanelKey.currentState?.applyPendingIfNeeded(
+                  silent: true,
+                ) ??
+                true;
+        if (!planApplied && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('appointmentPlanApplyFailed'),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        final paymentOk =
+            await _planFinanceKey.currentState?.recordSessionPaymentIfNeeded() ??
+                true;
+        if (!paymentOk && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('appointmentPlanPaymentFailed'),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        try {
+          final completePayload = cidForComplete != null
+              ? <String, dynamic>{'clinicId': cidForComplete}
+              : <String, dynamic>{};
+          await api.put(
+            '/api/appointments/${widget.appointment.id}/complete',
+            completePayload,
+          );
+          debugPrint(
+            'Appointment ${widget.appointment.id} marked as completed',
+          );
+        } catch (e) {
+          debugPrint('Error marking appointment as completed: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.somethingWentWrong),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
         String? pdfSignatureBase64;
         String? pdfSignedAtStr;
+        List<int> fulfilledForPdf = _fulfilledLineIds;
         try {
           final res = await api.get(
             '/api/appointments/${widget.appointment.id}',
@@ -968,9 +1140,85 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                       rawAt != 'null')
                   ? rawAt
                   : null;
+              final fulfilledRaw = map['fulfilledLineIds'];
+              fulfilledForPdf = fulfilledRaw is List
+                  ? fulfilledRaw
+                      .whereType<num>()
+                      .map((e) => e.toInt())
+                      .toList()
+                  : fulfilledForPdf;
             }
           }
         } catch (_) {}
+
+        TreatmentPlanDetailDto? planDetailForPdf = _activePlanDetail;
+        if (_activePlanId != null) {
+          try {
+            planDetailForPdf =
+                await fetchTreatmentPlanDetail(ref, _activePlanId!);
+          } catch (_) {}
+        }
+
+        final sessionPaymentMinor =
+            _planFinanceKey.currentState?.recordedPaymentMinor;
+        final sessionPaymentMethod =
+            _planFinanceKey.currentState?.recordedPaymentMethod;
+
+        var dentalNotesForPdfFinal = dentalNotesForPdf;
+        AppointmentPdfDentalBilling? dentalBillingFinal = dentalBilling;
+        AppointmentPdfTreatmentPlanSection? planPdfSection;
+        if (_documentationType == 'dental' && _activePlanId != null) {
+          dentalBillingFinal = null;
+          final lines = planDetailForPdf?.lines ?? const [];
+          final summary = planDetailForPdf?.summary;
+          if (summary != null) {
+            final fulfilledLines = <AppointmentPdfDentalLine>[];
+            for (final lineId in fulfilledForPdf) {
+              LineDetailDto? line;
+              for (final l in lines) {
+                if (l.id == lineId) {
+                  line = l;
+                  break;
+                }
+              }
+              if (line == null) continue;
+              var tooth = '';
+              final meta = line.specialtyMetadata;
+              if (meta != null && meta.isNotEmpty) {
+                try {
+                  final m = jsonDecode(meta) as Map<String, dynamic>?;
+                  tooth = m?['fdi']?.toString() ?? '';
+                } catch (_) {}
+              }
+              fulfilledLines.add(
+                AppointmentPdfDentalLine(
+                  tooth: tooth,
+                  serviceTitle: line.title,
+                  amountMinor: line.lineTotalMinor,
+                  currency: line.currency,
+                ),
+              );
+            }
+            planPdfSection = AppointmentPdfTreatmentPlanSection(
+              planId: '${_activePlanId}',
+              planTitle: _linkedPlanTitle ?? summary.title,
+              planTotalMinor: summary.totalMinor,
+              planPaidMinor: summary.paidMinor,
+              planOwedMinor: summary.owedMinor,
+              currency: summary.currency,
+              fulfilledThisVisit: fulfilledLines,
+              sessionPaymentMinor: sessionPaymentMinor,
+              sessionPaymentMethod: sessionPaymentMethod,
+            );
+          }
+        }
+
+        final combinedNotesFinal = [
+          if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
+          if (structuredAndFree.isNotEmpty) structuredAndFree,
+          if (dentalNotesForPdfFinal.isNotEmpty) dentalNotesForPdfFinal,
+        ].join('\n\n').trim();
+        final hasNotesFinal = combinedNotesFinal.isNotEmpty;
 
         final languageCode = ref.read(languageProvider).locale.languageCode;
         final t = AppointmentPdfTranslations.forLanguage(languageCode);
@@ -995,7 +1243,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         if (pdfSignatureBase64 != null &&
             pdfSignatureBase64.trim().isNotEmpty) {
           try {
-            signatureBytes = base64Decode(pdfSignatureBase64);
+            signatureBytes = Uint8List.fromList(
+              base64Decode(pdfSignatureBase64),
+            );
           } catch (_) {}
         }
         if (pdfSignedAtStr != null) {
@@ -1007,29 +1257,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
             signedAt = DateTime.tryParse(cleaned);
           }
         }
-
-        // Phase 4: include structured diagnosis (ICD-10) and free-text diagnosis (if present)
-        // from the latest saved 025-2 form for this patient.
-        String? dxCode;
-        String? dxDisplay;
-        String? dxSystem;
-        String? dxFreeText;
-        try {
-          final forms = await ref.read(patientFormsProvider(patientId).future);
-          final o252 = forms.where((f) => f.templateId == '025-2').toList()
-            ..sort((a, b) {
-              final dateCmp = b.date.compareTo(a.date);
-              if (dateCmp != 0) return dateCmp;
-              final idA = int.tryParse(a.id ?? '0') ?? 0;
-              final idB = int.tryParse(b.id ?? '0') ?? 0;
-              return idB.compareTo(idA);
-            });
-          final latest = o252.isNotEmpty ? o252.first : null;
-          dxCode = latest?.diagnosisCode;
-          dxDisplay = latest?.diagnosisDisplay;
-          dxSystem = latest?.diagnosisSystem;
-          dxFreeText = latest?.diagnosis;
-        } catch (_) {}
 
         final pdfData = AppointmentPdfData(
           appointmentId: widget.appointment.id,
@@ -1052,12 +1279,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           dateStr: dateStr,
           timeStr: timeStr,
           appointmentDate: now,
-          notes: hasNotes ? combinedNotes : null,
-          dentalBilling: dentalBilling,
-          diagnosis: dxFreeText,
-          diagnosisCode: dxCode,
-          diagnosisDisplay: dxDisplay,
-          diagnosisSystem: dxSystem,
+          notes: hasNotesFinal ? combinedNotesFinal : null,
+          dentalBilling: dentalBillingFinal,
+          treatmentPlan: planPdfSection,
           prescriptions: null,
           recommendations: null,
           followUpDate: null,
@@ -1085,33 +1309,16 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           fileBytes: combinedPdf,
           fileName: 'appointment_${now.millisecondsSinceEpoch}.pdf',
           title: title,
-          // Appointment notes stay doctor-private under the new visibility
-          // rules; tag the upload so the document list shows the type.
           category: 'APPOINTMENT_NOTE',
         );
 
         debugPrint('Combined PDF saved successfully');
 
-        // Mark appointment as completed in backend
         try {
-          await api.put(
-            '/api/appointments/${widget.appointment.id}/complete',
-            {},
+          await invalidateAppointmentRelatedProviders(
+            ref,
+            clinicWorkspaceId: cidForComplete,
           );
-          debugPrint(
-            'Appointment ${widget.appointment.id} marked as completed',
-          );
-        } catch (e) {
-          debugPrint('Error marking appointment as completed: $e');
-          // Continue even if status update fails
-        }
-
-        // Refresh appointments, analytics, and documents. These are best-effort
-        // side effects — the appointment has already been completed on the
-        // backend and the PDF uploaded, so a stale-cache refresh failure must
-        // not surface as a user-facing error.
-        try {
-          await invalidateAppointmentRelatedProviders(ref);
         } catch (e) {
           debugPrint('Post-complete provider refresh failed (ignored): $e');
         }
@@ -1134,7 +1341,6 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          // Pop back to shell (Home/Calendar), not to waiting room
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } catch (e, stackTrace) {
@@ -1515,9 +1721,44 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                             const SizedBox(height: 24),
                             // Documentation (general notes or 025-2 form)
                             Expanded(
-                              child: _notesPanelFullScreen
-                                  ? const SizedBox.shrink()
-                                  : DocumentationSectionCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (!widget.appointment.isCompleted &&
+                                      !_notesPanelFullScreen)
+                                    Builder(
+                                      builder: (context) {
+                                        final clinicId =
+                                            ref.watch(selectedClinicIdProvider);
+                                        final pidInt = patientId != null
+                                            ? int.tryParse(patientId)
+                                            : null;
+                                        if (clinicId == null || pidInt == null) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 8),
+                                          child: AppointmentTreatmentPlanPanel(
+                                            key: _treatmentPlanPanelKey,
+                                            clinicId: clinicId,
+                                            patientId: pidInt,
+                                            appointmentId:
+                                                widget.appointment.id,
+                                            brand: brand,
+                                            linkedPlanId: _linkedPlanId,
+                                            linkedPlanTitle: _linkedPlanTitle,
+                                            fulfilledLineIds: _fulfilledLineIds,
+                                            onPlanSelected: _onPlanSelected,
+                                            onPlanLinked: _fetchSignatureStatus,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  Expanded(
+                                    child: _notesPanelFullScreen
+                                        ? const SizedBox.shrink()
+                                        : DocumentationSectionCard(
                                       title: _documentationType == 'general'
                                           ? AppLocalizations.of(context)!.notes
                                           : _documentationType == 'dental'
@@ -1889,6 +2130,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                                         patientId,
                                       ),
                                     ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -2879,11 +3123,11 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
             ),
           ] else
             Expanded(
-              child: DentalVisitDocumentationPanel(
-                key: _dentalDocPanelKey,
-                appointmentId: widget.appointment.id,
-                brand: brand,
-                onUnsavedChanged: (v) => setState(() => _hasUnsavedChanges = v),
+              child: Builder(
+                builder: (context) {
+                  final clinicId = ref.watch(selectedClinicIdProvider);
+                  return _buildDentalDocumentationColumn(brand, clinicId);
+                },
               ),
             ),
           if (_beforeTreatmentImages.isNotEmpty ||

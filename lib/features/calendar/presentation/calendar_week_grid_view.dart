@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_grid_display.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
+import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_overlap_layout.dart';
 
 /// Google Calendar–style week grid: hour labels on the left, day columns on top.
 class CalendarWeekGridView extends StatelessWidget {
@@ -370,93 +371,109 @@ class _DayColumn extends StatelessWidget {
               e.type == EntryType.appointment || e.type == EntryType.blocked,
         )
         .toList();
+    final cardLayouts = layoutOverlappingCalendarEntries(cardEntries);
     final freeRanges = mergeFreeSlotRanges(entries);
 
-    return SizedBox(
-      height: gridHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columnWidth = constraints.maxWidth;
+
+        return SizedBox(
+          height: gridHeight,
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
             children: [
-              for (var h = startHour; h < endHour; h++)
-                Container(
-                  height: hourHeight,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Colors.grey.shade200, width: 1),
+              Column(
+                children: [
+                  for (var h = startHour; h < endHour; h++)
+                    Container(
+                      height: hourHeight,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Colors.grey.shade200, width: 1),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              for (final range in freeRanges)
+                Builder(
+                  builder: (context) {
+                    final startMin =
+                        range.start.hour * 60 + range.start.minute;
+                    final endMin = range.end.hour * 60 + range.end.minute;
+                    final top =
+                        (startMin - gridStartMinutes) / 60.0 * hourHeight + 1;
+                    final height =
+                        ((endMin - startMin) / 60.0 * hourHeight - 2)
+                            .clamp(8.0, 9999.0);
+                    final isSelected =
+                        identical(range.anchorEntry, selectedEntry);
+
+                    return Positioned(
+                      top: top,
+                      left: 2,
+                      right: 2,
+                      height: height,
+                      child: _FreeSlotHitTarget(
+                        brand: brand,
+                        isSelected: isSelected,
+                        onTap: () => onTapEntry(range.anchorEntry),
+                      ),
+                    );
+                  },
+                ),
+              for (final layout in cardLayouts)
+                Builder(
+                  builder: (context) {
+                    final e = layout.entry;
+                    final startMin = e.start.hour * 60 + e.start.minute;
+                    final endMin = e.end.hour * 60 + e.end.minute;
+                    final top =
+                        (startMin - gridStartMinutes) / 60.0 * hourHeight + 1;
+                    final height =
+                        ((endMin - startMin) / 60.0 * hourHeight - 2)
+                            .clamp(22.0, 9999.0);
+                    final isSelected = identical(e, selectedEntry);
+                    const horizontalInset = 2.0;
+                    const columnGap = 2.0;
+                    final usableWidth = columnWidth - horizontalInset * 2;
+                    final colWidth = usableWidth / layout.columnCount;
+                    final left =
+                        horizontalInset + layout.columnIndex * colWidth;
+                    final width = colWidth -
+                        (layout.columnCount > 1 ? columnGap : 0);
+
+                    return Positioned(
+                      top: top,
+                      left: left,
+                      width: width,
+                      height: height,
+                      child: _GridEntryBlock(
+                        entry: e,
+                        brand: brand,
+                        isSelected: isSelected,
+                        onTap: () => onTapEntry(e),
+                      ),
+                    );
+                  },
+                ),
+              if (showNowLine)
+                Positioned(
+                  top: nowTop,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      height: 2,
+                      color: Colors.red.shade400,
                     ),
                   ),
                 ),
             ],
           ),
-          for (final range in freeRanges)
-            Builder(
-              builder: (context) {
-                final startMin =
-                    range.start.hour * 60 + range.start.minute;
-                final endMin = range.end.hour * 60 + range.end.minute;
-                final top =
-                    (startMin - gridStartMinutes) / 60.0 * hourHeight + 1;
-                final height =
-                    ((endMin - startMin) / 60.0 * hourHeight - 2)
-                        .clamp(8.0, 9999.0);
-                final isSelected =
-                    identical(range.anchorEntry, selectedEntry);
-
-                return Positioned(
-                  top: top,
-                  left: 2,
-                  right: 2,
-                  height: height,
-                  child: _FreeSlotHitTarget(
-                    brand: brand,
-                    isSelected: isSelected,
-                    onTap: () => onTapEntry(range.anchorEntry),
-                  ),
-                );
-              },
-            ),
-          for (final e in cardEntries)
-            Builder(
-              builder: (context) {
-                final startMin = e.start.hour * 60 + e.start.minute;
-                final endMin = e.end.hour * 60 + e.end.minute;
-                final top =
-                    (startMin - gridStartMinutes) / 60.0 * hourHeight + 1;
-                final height =
-                    ((endMin - startMin) / 60.0 * hourHeight - 2)
-                        .clamp(22.0, 9999.0);
-                final isSelected = identical(e, selectedEntry);
-
-                return Positioned(
-                  top: top,
-                  left: 2,
-                  right: 2,
-                  height: height,
-                  child: _GridEntryBlock(
-                    entry: e,
-                    brand: brand,
-                    isSelected: isSelected,
-                    onTap: () => onTapEntry(e),
-                  ),
-                );
-              },
-            ),
-          if (showNowLine)
-            Positioned(
-              top: nowTop,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                child: Container(
-                  height: 2,
-                  color: Colors.red.shade400,
-                ),
-              ),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -513,6 +530,10 @@ class _GridEntryBlock extends StatelessWidget {
       '${_two(entry.start.hour)}:${_two(entry.start.minute)} – '
       '${_two(entry.end.hour)}:${_two(entry.end.minute)}';
 
+  bool get _isCompleted =>
+      entry.type == EntryType.appointment &&
+      (entry.status?.trim().toUpperCase() ?? '') == 'COMPLETED';
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -561,39 +582,62 @@ class _GridEntryBlock extends StatelessWidget {
             ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
             children: [
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 12, color: textColor),
-                    const SizedBox(width: 4),
-                  ],
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
+                  Row(
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, size: 12, color: textColor),
+                        const SizedBox(width: 4),
+                      ],
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                            decoration: _isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                            decorationColor: textColor.withOpacity(0.7),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                  Text(
+                    _timeRange(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: textColor.withOpacity(0.85),
+                      decoration: _isCompleted
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: textColor.withOpacity(0.7),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-              Text(
-                _timeRange(),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: textColor.withOpacity(0.85),
+              if (_isCompleted)
+                Positioned.fill(
+                  child: Center(
+                    child: IgnorePointer(
+                      child: Container(
+                        height: 1,
+                        color: textColor.withOpacity(0.45),
+                      ),
+                    ),
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
             ],
           ),
         ),

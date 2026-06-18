@@ -923,6 +923,19 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
   pw.Widget _buildDentalChartPortraitPdf(Map<String, String> chart, pw.Font? font) {
     const boxSize = 26.0;
     final cellStyle = pw.TextStyle(fontSize: 9, font: font);
+    final dentition = DentalChartCodec.dentitionFromChart(chart);
+    final cellsPerRow = DentalChartCodec.cellsPerJawRowFor(dentition);
+    final teethPerQuad = DentalChartCodec.teethPerQuadrant(dentition);
+    final rightNums = DentalChartCodec.rightQuadrantToothNums(dentition)
+        .map((n) => n.toString())
+        .toList();
+    final leftNums = DentalChartCodec.leftQuadrantToothNums(dentition)
+        .map((n) => n.toString())
+        .toList();
+    final upperRightFdi = DentalChartCodec.fdiUpperRightFor(dentition);
+    final upperLeftFdi = DentalChartCodec.fdiUpperLeftFor(dentition);
+    final lowerRightFdi = DentalChartCodec.fdiLowerRightFor(dentition);
+    final lowerLeftFdi = DentalChartCodec.fdiLowerLeftFor(dentition);
 
     pw.Widget cell(String? code) {
       final text = (code != null && code.isNotEmpty) ? code : '';
@@ -946,21 +959,18 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
       );
     }
 
-    const rightNums = ['8', '7', '6', '5', '4', '3', '2', '1'];
-    const leftNums = ['1', '2', '3', '4', '5', '6', '7', '8'];
-
     pw.Widget rowOfCellsFromList(List<String> values) {
-      final list = List<String>.filled(16, '');
-      for (var i = 0; i < values.length && i < 16; i++) list[i] = values[i];
+      final list = List<String>.filled(cellsPerRow, '');
+      for (var i = 0; i < values.length && i < cellsPerRow; i++) list[i] = values[i];
       return pw.Row(
         mainAxisSize: pw.MainAxisSize.min,
         mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
-          ...List.generate(8, (i) => cell(list[i])),
+          ...List.generate(teethPerQuad, (i) => cell(list[i])),
           pw.SizedBox(width: 4),
           pw.Container(width: 2, height: boxSize, color: PdfColors.grey400),
           pw.SizedBox(width: 4),
-          ...List.generate(8, (i) => cell(list[8 + i])),
+          ...List.generate(teethPerQuad, (i) => cell(list[teethPerQuad + i])),
         ],
       );
     }
@@ -968,8 +978,8 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     pw.Widget rowOfCellsFromChart(Map<String, String> pdfChart, String rightQuad, String leftQuad) {
       String toothCode(String quad, String nStr) {
         final n = int.tryParse(nStr) ?? 0;
-        if (n < 1 || n > 8) return '';
-        return DentalChartCodec.toothValue(pdfChart, quad, n);
+        if (n < 1 || n > teethPerQuad) return '';
+        return DentalChartCodec.toothValue(pdfChart, quad, n, dentition: dentition);
       }
 
       return pw.Row(
@@ -984,11 +994,6 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
         ],
       );
     }
-
-    const upperRightFdi = ['18', '17', '16', '15', '14', '13', '12', '11'];
-    const upperLeftFdi = ['21', '22', '23', '24', '25', '26', '27', '28'];
-    const lowerRightFdi = ['48', '47', '46', '45', '44', '43', '42', '41'];
-    const lowerLeftFdi = ['31', '32', '33', '34', '35', '36', '37', '38'];
 
     pw.Widget fdiNumberRow(List<String> right, List<String> left) {
       return pw.Row(
@@ -1603,7 +1608,37 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
   List<DentalHistRowSnapshot> _histTopRows = [];
   List<DentalHistRowSnapshot> _histBottomRows = [];
 
-  static const int _cellsPerRow = DentalChartCodec.cellsPerJawRow;
+  DentalDentition get _dentition => DentalChartCodec.dentitionFromChart(widget.value);
+  int get _cellsPerRow => DentalChartCodec.cellsPerJawRowFor(_dentition);
+  int get _teethPerQuadrant => DentalChartCodec.teethPerQuadrant(_dentition);
+  double get _quadrantRowWidth => DentalChartCodec.quadrantRowWidth(_dentition);
+  List<int> get _rightToothNums => DentalChartCodec.rightQuadrantToothNums(_dentition);
+  List<int> get _leftToothNums => DentalChartCodec.leftQuadrantToothNums(_dentition);
+
+  void _setDentition(DentalDentition d) {
+    final updated = Map<String, String>.from(widget.value);
+    updated[DentalChartCodec.dentitionMetaKey] =
+        d == DentalDentition.primary ? 'primary' : 'permanent';
+    widget.onChanged(updated);
+    setState(() {
+      _topInputRows.clear();
+      _bottomInputRows.clear();
+      _loadInputs();
+    });
+  }
+
+  String _anatomyLabel(int num) {
+    if (_dentition == DentalDentition.primary) {
+      if (num == 1 || num == 2) return 'incisors';
+      if (num == 3) return 'Canine';
+      return 'molars';
+    }
+    if (num == 8) return 'wisdom';
+    if (num >= 6) return 'molars';
+    if (num >= 4) return 'pre-molars';
+    if (num == 3) return 'Canine';
+    return 'incisors';
+  }
 
   String _histMetaText(DentalHistRowSnapshot h) {
     final d = DentalChartCodec.formatHistDateForDisplay(h.dateIso);
@@ -1624,6 +1659,15 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
   void didUpdateWidget(covariant _DentalChartGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value == widget.value) return;
+    final dentitionChanged =
+        DentalChartCodec.dentitionFromChart(oldWidget.value) !=
+            DentalChartCodec.dentitionFromChart(widget.value);
+    if (dentitionChanged) {
+      _topInputRows.clear();
+      _bottomInputRows.clear();
+      _loadInputs();
+      return;
+    }
     final topRowIndices = widget.value.keys
         .where((k) => DentalChartCodec.isEditableRowDataKey(k) && k.startsWith('TOP_'))
         .map((k) {
@@ -1761,14 +1805,22 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
     // FDI tooth labels: 11–18, 21–28, 41–48, 31–38 (display); map supports legacy UR/UL keys.
 
     Widget buildTooth(String quadrant, int toothNum, {bool isUpper = true}) {
-      final current = DentalChartCodec.toothValue(widget.value, quadrant, toothNum);
-      final toothLabel = DentalChartCodec.fdiKey(quadrant, toothNum);
+      final current = DentalChartCodec.toothValue(
+        widget.value,
+        quadrant,
+        toothNum,
+        dentition: _dentition,
+      );
+      final toothLabel = DentalChartCodec.fdiKey(quadrant, toothNum, dentition: _dentition);
 
       // Determine tooth shape based on type
       bool isIncisor = toothNum == 1 || toothNum == 2;
       bool isCanine = toothNum == 3;
-      bool isPremolar = toothNum == 4 || toothNum == 5;
-      bool isMolar = toothNum >= 6;
+      bool isPremolar =
+          _dentition == DentalDentition.permanent && (toothNum == 4 || toothNum == 5);
+      bool isMolar = _dentition == DentalDentition.primary
+          ? toothNum >= 4
+          : toothNum >= 6;
 
       return Container(
           width: 45,
@@ -1917,13 +1969,32 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
             Builder(
               builder: (context) {
                 final l10n = AppLocalizations.of(context)!;
-                return Text(
-                  l10n.toothMap.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: brand,
-                  ),
+                return Column(
+                  children: [
+                    SegmentedButton<DentalDentition>(
+                      segments: [
+                        ButtonSegment(
+                          value: DentalDentition.permanent,
+                          label: Text(l10n.translate('dentalDentitionPermanent')),
+                        ),
+                        ButtonSegment(
+                          value: DentalDentition.primary,
+                          label: Text(l10n.translate('dentalDentitionPrimary')),
+                        ),
+                      ],
+                      selected: {_dentition},
+                      onSelectionChanged: (s) => _setDentition(s.first),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.toothMap.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: brand,
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -1940,7 +2011,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     children: [
                       // UR8 to UR1 section label
                       SizedBox(
-                        width: 49 * 8, // 8 teeth * width
+                        width: _quadrantRowWidth,
                         child: Text(
                           'I',
                           style: TextStyle(
@@ -1954,7 +2025,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                       const SizedBox(width: 16),
                       // UL1 to UL8 section label
                       SizedBox(
-                        width: 49 * 8, // 8 teeth * width
+                        width: _quadrantRowWidth,
                         child: Text(
                           'II',
                           style: TextStyle(
@@ -1975,7 +2046,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ...([8, 7, 6, 5, 4, 3, 2, 1].asMap().entries.map((entry) {
+                          ...(_rightToothNums.asMap().entries.map((entry) {
                             final urIndex = entry.key;
                             return buildInputCell(
                               value: hist.cells[urIndex],
@@ -1987,8 +2058,8 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                             );
                           })),
                           const SizedBox(width: 16),
-                          ...([1, 2, 3, 4, 5, 6, 7, 8].asMap().entries.map((entry) {
-                            final ulIndex = entry.key + 8;
+                          ...(_leftToothNums.asMap().entries.map((entry) {
+                            final ulIndex = entry.key + _teethPerQuadrant;
                             return buildInputCell(
                               value: hist.cells[ulIndex],
                               onAdd: _addTopRow,
@@ -2019,7 +2090,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ...DentalChartCodec.fdiUpperRightDisplay.map(
+                        ...DentalChartCodec.fdiUpperRightFor(_dentition).map(
                           (n) => SizedBox(
                             width: 49,
                             child: Text(
@@ -2034,7 +2105,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        ...DentalChartCodec.fdiUpperLeftDisplay.map(
+                        ...DentalChartCodec.fdiUpperLeftFor(_dentition).map(
                           (n) => SizedBox(
                             width: 49,
                             child: Text(
@@ -2065,7 +2136,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           // UR8 to UR1 cells
-                          ...([8, 7, 6, 5, 4, 3, 2, 1].asMap().entries.map((entry) {
+                          ...(_rightToothNums.asMap().entries.map((entry) {
                             final urIndex = entry.key; // 0-7
                             return buildInputCell(
                               value: row[urIndex],
@@ -2077,8 +2148,8 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                           })),
                           const SizedBox(width: 16),
                           // UL1 to UL8 cells
-                          ...([1, 2, 3, 4, 5, 6, 7, 8].asMap().entries.map((entry) {
-                            final ulIndex = entry.key + 8; // 8-15
+                          ...(_leftToothNums.asMap().entries.map((entry) {
+                            final ulIndex = entry.key + _teethPerQuadrant;
                             return buildInputCell(
                               value: row[ulIndex],
                               onAdd: _addTopRow,
@@ -2099,7 +2170,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
-                            width: 49 * 8 + 16 + 49 * 8,
+                            width: _quadrantRowWidth + 16 + _quadrantRowWidth,
                             child: Center(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2136,7 +2207,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
-                            width: 49 * 8 + 16 + 49 * 8,
+                            width: _quadrantRowWidth + 16 + _quadrantRowWidth,
                             child: Center(
                               child: IconButton(
                                 icon: Icon(Icons.add_circle, color: brand, size: 28),
@@ -2154,10 +2225,9 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // UR8 to UR1
-                      ...([8, 7, 6, 5, 4, 3, 2, 1].map((num) => buildTooth('UR', num, isUpper: true))),
+                      ...(_rightToothNums.map((num) => buildTooth('UR', num, isUpper: true))),
                       const SizedBox(width: 16),
-                      // UL1 to UL8
-                      ...([1, 2, 3, 4, 5, 6, 7, 8].map((num) => buildTooth('UL', num, isUpper: true))),
+                      ...(_leftToothNums.map((num) => buildTooth('UL', num, isUpper: true))),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -2166,17 +2236,11 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // UR8 to UR1 labels
-                      ...([8, 7, 6, 5, 4, 3, 2, 1].map((num) {
-                        String label = '';
-                        if (num == 8) label = 'wisdom';
-                        else if (num >= 6) label = 'molars';
-                        else if (num >= 4) label = 'pre-molars';
-                        else if (num == 3) label = 'Canine';
-                        else label = 'incisors';
+                      ...(_rightToothNums.map((num) {
                         return SizedBox(
                           width: 49,
                           child: Text(
-                            label,
+                            _anatomyLabel(num),
                             style: TextStyle(
                               fontSize: 8,
                               color: Colors.grey.shade600,
@@ -2186,18 +2250,11 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         );
                       })),
                       const SizedBox(width: 16),
-                      // UL1 to UL8 labels
-                      ...([1, 2, 3, 4, 5, 6, 7, 8].map((num) {
-                        String label = '';
-                        if (num == 1 || num == 2) label = 'incisors';
-                        else if (num == 3) label = 'Canine';
-                        else if (num == 4 || num == 5) label = 'pre-molars';
-                        else if (num >= 6) label = 'molars';
-                        if (num == 8) label = 'wisdom';
+                      ...(_leftToothNums.map((num) {
                         return SizedBox(
                           width: 49,
                           child: Text(
-                            label,
+                            _anatomyLabel(num),
                             style: TextStyle(
                               fontSize: 8,
                               color: Colors.grey.shade600,
@@ -2214,10 +2271,9 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // LR8 to LR1
-                      ...([8, 7, 6, 5, 4, 3, 2, 1].map((num) => buildTooth('LR', num, isUpper: false))),
+                      ...(_rightToothNums.map((num) => buildTooth('LR', num, isUpper: false))),
                       const SizedBox(width: 16),
-                      // LL1 to LL8
-                      ...([1, 2, 3, 4, 5, 6, 7, 8].map((num) => buildTooth('LL', num, isUpper: false))),
+                      ...(_leftToothNums.map((num) => buildTooth('LL', num, isUpper: false))),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -2226,7 +2282,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
-                        width: 49 * 8,
+                        width: _quadrantRowWidth,
                         child: Text(
                           'IV',
                           style: TextStyle(
@@ -2239,7 +2295,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
-                        width: 49 * 8,
+                        width: _quadrantRowWidth,
                         child: Text(
                           'III',
                           style: TextStyle(
@@ -2258,7 +2314,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ...DentalChartCodec.fdiLowerRightDisplay.map(
+                        ...DentalChartCodec.fdiLowerRightFor(_dentition).map(
                           (n) => SizedBox(
                             width: 49,
                             child: Text(
@@ -2273,7 +2329,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        ...DentalChartCodec.fdiLowerLeftDisplay.map(
+                        ...DentalChartCodec.fdiLowerLeftFor(_dentition).map(
                           (n) => SizedBox(
                             width: 49,
                             child: Text(
@@ -2301,7 +2357,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ...([8, 7, 6, 5, 4, 3, 2, 1].asMap().entries.map((entry) {
+                          ...(_rightToothNums.asMap().entries.map((entry) {
                             final lrIndex = entry.key;
                             return buildInputCell(
                               value: hist.cells[lrIndex],
@@ -2313,8 +2369,8 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                             );
                           })),
                           const SizedBox(width: 16),
-                          ...([1, 2, 3, 4, 5, 6, 7, 8].asMap().entries.map((entry) {
-                            final llIndex = entry.key + 8;
+                          ...(_leftToothNums.asMap().entries.map((entry) {
+                            final llIndex = entry.key + _teethPerQuadrant;
                             return buildInputCell(
                               value: hist.cells[llIndex],
                               onAdd: _addBottomRow,
@@ -2350,7 +2406,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           // LR8 to LR1 cells
-                          ...([8, 7, 6, 5, 4, 3, 2, 1].asMap().entries.map((entry) {
+                          ...(_rightToothNums.asMap().entries.map((entry) {
                             final lrIndex = entry.key; // 0-7
                             return buildInputCell(
                               value: row[lrIndex],
@@ -2362,8 +2418,8 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                           })),
                           const SizedBox(width: 16),
                           // LL1 to LL8 cells
-                          ...([1, 2, 3, 4, 5, 6, 7, 8].asMap().entries.map((entry) {
-                            final llIndex = entry.key + 8; // 8-15
+                          ...(_leftToothNums.asMap().entries.map((entry) {
+                            final llIndex = entry.key + _teethPerQuadrant;
                             return buildInputCell(
                               value: row[llIndex],
                               onAdd: _addBottomRow,
@@ -2384,7 +2440,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
-                            width: 49 * 8 + 16 + 49 * 8,
+                            width: _quadrantRowWidth + 16 + _quadrantRowWidth,
                             child: Center(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2421,7 +2477,7 @@ class _DentalChartGridState extends State<_DentalChartGrid> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
-                            width: 49 * 8 + 16 + 49 * 8,
+                            width: _quadrantRowWidth + 16 + _quadrantRowWidth,
                             child: Center(
                               child: IconButton(
                                 icon: Icon(Icons.add_circle, color: brand, size: 28),

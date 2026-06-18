@@ -337,6 +337,12 @@ class TreatmentPlanPdfTranslations {
         : 'Schedule #$installmentPlanId — installments by due date';
   }
 
+  String toothSection(String fdi) =>
+      _lbl('Tooth $fdi (FDI)', 'Tish $fdi (FDI)');
+
+  String get otherServicesSection =>
+      _lbl('Other services', 'Boshqa xizmatlar');
+
   String labelInstallmentItemStatus(String raw) {
     switch (raw.toUpperCase()) {
       case 'PENDING':

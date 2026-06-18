@@ -202,6 +202,9 @@ class PlanServiceOption {
   final bool active;
   final List<int> offeredByDoctorIds;
   final List<String> offeredByDoctorNames;
+  final int? groupId;
+  final String? groupName;
+  final int groupSortOrder;
 
   const PlanServiceOption({
     required this.key,
@@ -215,6 +218,9 @@ class PlanServiceOption {
     required this.active,
     required this.offeredByDoctorIds,
     required this.offeredByDoctorNames,
+    this.groupId,
+    this.groupName,
+    this.groupSortOrder = 2147483647,
   });
 
   bool get isClinicCatalog => kind == kindClinicCatalog;
@@ -247,6 +253,9 @@ class PlanServiceOption {
       active: json['active'] as bool? ?? true,
       offeredByDoctorIds: intList(json['offeredByDoctorIds']),
       offeredByDoctorNames: stringList(json['offeredByDoctorNames']),
+      groupId: (json['groupId'] as num?)?.toInt(),
+      groupName: json['groupName'] as String?,
+      groupSortOrder: (json['groupSortOrder'] as num?)?.toInt() ?? 2147483647,
     );
   }
 }

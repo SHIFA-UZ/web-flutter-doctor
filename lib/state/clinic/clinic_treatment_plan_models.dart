@@ -91,6 +91,9 @@ class TreatmentPlanSummaryDto {
   final int owedMinor;
   final String currency;
   final String planPaymentStatus;
+  final int visitCount;
+  final int linesCompletedCount;
+  final int linesTotalCount;
   final String? createdAt;
   final String? updatedAt;
 
@@ -114,6 +117,9 @@ class TreatmentPlanSummaryDto {
     required this.owedMinor,
     required this.currency,
     required this.planPaymentStatus,
+    this.visitCount = 0,
+    this.linesCompletedCount = 0,
+    this.linesTotalCount = 0,
     this.createdAt,
     this.updatedAt,
   });
@@ -145,6 +151,9 @@ class TreatmentPlanSummaryDto {
       owedMinor: (json['owedMinor'] as num?)?.toInt() ?? 0,
       currency: json['currency']?.toString() ?? 'UZS',
       planPaymentStatus: json['planPaymentStatus']?.toString() ?? '',
+      visitCount: (json['visitCount'] as num?)?.toInt() ?? 0,
+      linesCompletedCount: (json['linesCompletedCount'] as num?)?.toInt() ?? 0,
+      linesTotalCount: (json['linesTotalCount'] as num?)?.toInt() ?? 0,
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
     );
@@ -192,6 +201,9 @@ class LineDetailDto {
   final String status;
   final AppointmentSummaryDto? linkedAppointment;
   final int lineTotalMinor;
+  final String? specialtyMetadata;
+  final int? assignedDoctorId;
+  final String? notes;
 
   LineDetailDto({
     required this.id,
@@ -205,6 +217,9 @@ class LineDetailDto {
     required this.status,
     this.linkedAppointment,
     required this.lineTotalMinor,
+    this.specialtyMetadata,
+    this.assignedDoctorId,
+    this.notes,
   });
 
   factory LineDetailDto.fromJson(Map<String, dynamic> json) {
@@ -223,6 +238,9 @@ class LineDetailDto {
           ? AppointmentSummaryDto.fromJson(Map<String, dynamic>.from(ap))
           : null,
       lineTotalMinor: (json['lineTotalMinor'] as num?)?.toInt() ?? 0,
+      specialtyMetadata: json['specialtyMetadata'] as String?,
+      assignedDoctorId: (json['assignedDoctorId'] as num?)?.toInt(),
+      notes: json['notes'] as String?,
     );
   }
 }
@@ -298,11 +316,13 @@ class TreatmentPlanDetailDto {
   final TreatmentPlanSummaryDto summary;
   final List<LineDetailDto> lines;
   final List<InstallmentPlanSummaryDto> installmentPlans;
+  final String? dentalPlanDocumentation;
 
   TreatmentPlanDetailDto({
     required this.summary,
     required this.lines,
     required this.installmentPlans,
+    this.dentalPlanDocumentation,
   });
 
   factory TreatmentPlanDetailDto.fromJson(Map<String, dynamic> json) {
@@ -326,8 +346,52 @@ class TreatmentPlanDetailDto {
                   InstallmentPlanSummaryDto.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      dentalPlanDocumentation: json['dentalPlanDocumentation'] as String?,
     );
   }
+}
+
+class FulfillmentCandidateDto {
+  final int lineId;
+  final String title;
+  final String? fdi;
+  final String? dentition;
+  final int unitPriceMinor;
+  final int quantity;
+  final int discountMinor;
+  final String currency;
+  final int lineTotalMinor;
+  final String status;
+  final bool toothMatch;
+
+  const FulfillmentCandidateDto({
+    required this.lineId,
+    required this.title,
+    this.fdi,
+    this.dentition,
+    required this.unitPriceMinor,
+    required this.quantity,
+    required this.discountMinor,
+    required this.currency,
+    required this.lineTotalMinor,
+    required this.status,
+    required this.toothMatch,
+  });
+
+  factory FulfillmentCandidateDto.fromJson(Map<String, dynamic> json) =>
+      FulfillmentCandidateDto(
+        lineId: (json['lineId'] as num?)?.toInt() ?? 0,
+        title: json['title']?.toString() ?? '',
+        fdi: json['fdi'] as String?,
+        dentition: json['dentition'] as String?,
+        unitPriceMinor: (json['unitPriceMinor'] as num?)?.toInt() ?? 0,
+        quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+        discountMinor: (json['discountMinor'] as num?)?.toInt() ?? 0,
+        currency: json['currency']?.toString() ?? 'UZS',
+        lineTotalMinor: (json['lineTotalMinor'] as num?)?.toInt() ?? 0,
+        status: json['status']?.toString() ?? '',
+        toothMatch: json['toothMatch'] == true,
+      );
 }
 
 class ClinicPatientAppointmentDto {
@@ -432,6 +496,66 @@ class AppointmentLedgerServiceLineDto {
       lineTotalMinor: (json['lineTotalMinor'] as num?)?.toInt() ?? 0,
     );
   }
+}
+
+/// One appointment linked to a comprehensive treatment plan (doctor API).
+class TreatmentPlanVisitDto {
+  final int appointmentId;
+  final String startAt;
+  final String endAt;
+  final String status;
+  final int doctorProfileId;
+  final String doctorName;
+  final String location;
+  final List<String> services;
+  final int visitTotalMinor;
+  final int visitCollectedMinor;
+  final int visitOwedMinor;
+  final String currency;
+  final String visitPaymentStatus;
+  /// UPCOMING | PAST | CANCELLED
+  final String timing;
+
+  TreatmentPlanVisitDto({
+    required this.appointmentId,
+    required this.startAt,
+    required this.endAt,
+    required this.status,
+    required this.doctorProfileId,
+    required this.doctorName,
+    required this.location,
+    required this.services,
+    required this.visitTotalMinor,
+    required this.visitCollectedMinor,
+    required this.visitOwedMinor,
+    required this.currency,
+    required this.visitPaymentStatus,
+    required this.timing,
+  });
+
+  factory TreatmentPlanVisitDto.fromJson(Map<String, dynamic> json) {
+    final servicesRaw = json['services'];
+    return TreatmentPlanVisitDto(
+      appointmentId: (json['appointmentId'] as num?)?.toInt() ?? 0,
+      startAt: json['startAt']?.toString() ?? '',
+      endAt: json['endAt']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      doctorProfileId: (json['doctorProfileId'] as num?)?.toInt() ?? 0,
+      doctorName: json['doctorName']?.toString() ?? '',
+      location: json['location']?.toString() ?? '',
+      services: servicesRaw is List
+          ? servicesRaw.map((e) => e.toString()).toList()
+          : const [],
+      visitTotalMinor: (json['visitTotalMinor'] as num?)?.toInt() ?? 0,
+      visitCollectedMinor: (json['visitCollectedMinor'] as num?)?.toInt() ?? 0,
+      visitOwedMinor: (json['visitOwedMinor'] as num?)?.toInt() ?? 0,
+      currency: json['currency']?.toString() ?? 'UZS',
+      visitPaymentStatus: json['visitPaymentStatus']?.toString() ?? '',
+      timing: json['timing']?.toString() ?? 'PAST',
+    );
+  }
+
+  bool get isVideo => location.toLowerCase().contains('video');
 }
 
 class DoctorEarningRowDto {

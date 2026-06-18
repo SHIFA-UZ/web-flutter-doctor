@@ -77,10 +77,9 @@ Future<void> invalidateAppointmentRelatedProviders(
     debugPrint('invalidate(doctorAnalyticsOverviewProvider) failed: $e');
   }
   // Treatment plan auto-completion runs server-side when an appointment is
-  // completed (see TreatmentPlanStatusService), so the list of plans + the
-  // finance dashboards may have moved. Invalidate them here so the next
-  // navigation to the Clinic workspace shows the up-to-date status without
-  // requiring a manual refresh.
+  // completed, but only if every non-cancelled plan line is already COMPLETED
+  // (see TreatmentPlanStatusService). Invalidate clinic/finance providers so
+  // the next navigation shows up-to-date plan status without a manual refresh.
   try {
     final clinicId = clinicWorkspaceId ?? ref.read(selectedClinicIdProvider);
     if (clinicId != null) {

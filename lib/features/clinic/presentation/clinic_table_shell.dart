@@ -109,17 +109,9 @@ class ClinicTableSearchField extends StatelessWidget {
 
 /// Spreadsheet-style [DataTable] wrapped in nested scroll views.
 ///
-/// Routes through [_ClinicDataTable] so the table can own its own pair of
-/// [ScrollController]s (vertical + horizontal). Owning the controllers lets
-/// us:
-///
-///   * Show always-visible [Scrollbar]s on both axes (critical on web where
-///     mouse-wheel doesn't trigger horizontal scrolling and there is no
-///     touch affordance).
-///   * Constrain the min-width to the **parent's** available width via
-///     [LayoutBuilder] instead of the whole screen, so tables hosted inside
-///     split panes (e.g. the Patients tab list pane) correctly overflow and
-///     become scrollable instead of pretending to fit.
+/// Horizontal scroll is the **outer** axis so its scrollbar stays pinned to
+/// the bottom of the visible table viewport. Vertical scroll is inner so
+/// long lists do not push the horizontal bar below the fold.
 Widget clinicDataTable({
   required BuildContext context,
   required int? sortColumnIndex,
@@ -127,6 +119,8 @@ Widget clinicDataTable({
   required List<DataColumn> columns,
   required List<DataRow> rows,
   EdgeInsetsGeometry padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  double dataRowMinHeight = 52,
+  double dataRowMaxHeight = 64,
 }) {
   return _ClinicDataTable(
     sortColumnIndex: sortColumnIndex,
@@ -134,6 +128,8 @@ Widget clinicDataTable({
     columns: columns,
     rows: rows,
     padding: padding,
+    dataRowMinHeight: dataRowMinHeight,
+    dataRowMaxHeight: dataRowMaxHeight,
   );
 }
 
@@ -143,6 +139,8 @@ class _ClinicDataTable extends StatefulWidget {
   final List<DataColumn> columns;
   final List<DataRow> rows;
   final EdgeInsetsGeometry padding;
+  final double dataRowMinHeight;
+  final double dataRowMaxHeight;
 
   const _ClinicDataTable({
     required this.sortColumnIndex,
@@ -150,6 +148,8 @@ class _ClinicDataTable extends StatefulWidget {
     required this.columns,
     required this.rows,
     required this.padding,
+    required this.dataRowMinHeight,
+    required this.dataRowMaxHeight,
   });
 
   @override
@@ -182,39 +182,37 @@ class _ClinicDataTableState extends State<_ClinicDataTable> {
         return ScrollConfiguration(
           behavior: const ShifaScrollBehavior(),
           child: Scrollbar(
-          controller: _v,
-          thumbVisibility: true,
-          child: SingleChildScrollView(
-            controller: _v,
-            child: Scrollbar(
+            controller: _h,
+            thumbVisibility: true,
+            // Horizontal bar is on the outer viewport so it stays at the
+            // bottom of the visible table area (not below all rows).
+            child: SingleChildScrollView(
               controller: _h,
-              thumbVisibility: true,
-              // The outer (vertical) Scrollbar would otherwise also fire on
-              // horizontal notifications from this inner SCSV. Each Scrollbar
-              // is bound to its own controller via [controller:], which is
-              // the proper isolation, so no notificationPredicate is needed.
-              child: SingleChildScrollView(
-                controller: _h,
-                scrollDirection: Axis.horizontal,
-                padding: widget.padding,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: available),
-                  child: DataTable(
-                    sortColumnIndex: widget.sortColumnIndex,
-                    sortAscending: widget.sortAscending,
-                    headingRowHeight: 44,
-                    dataRowMinHeight: 52,
-                    dataRowMaxHeight: 64,
-                    columnSpacing: 24,
-                    showCheckboxColumn: false,
-                    columns: widget.columns,
-                    rows: widget.rows,
+              scrollDirection: Axis.horizontal,
+              padding: widget.padding,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: available),
+                child: Scrollbar(
+                  controller: _v,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _v,
+                    child: DataTable(
+                      sortColumnIndex: widget.sortColumnIndex,
+                      sortAscending: widget.sortAscending,
+                      headingRowHeight: 44,
+                      dataRowMinHeight: widget.dataRowMinHeight,
+                      dataRowMaxHeight: widget.dataRowMaxHeight,
+                      columnSpacing: 24,
+                      showCheckboxColumn: false,
+                      columns: widget.columns,
+                      rows: widget.rows,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
         );
       },
     );
