@@ -58,6 +58,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     final n = _todayUtc();
     _customFromUtc = n.subtract(const Duration(days: 29));
     _customToUtc = n;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDoctorActivity());
   }
 
   @override
@@ -74,7 +75,13 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     _debounce = Timer(const Duration(milliseconds: 400), () {
       if (!mounted) return;
       setState(() => _page = 0);
+      _loadDoctorActivity();
     });
+  }
+
+  void _goToPage(int page) {
+    setState(() => _page = page);
+    _loadDoctorActivity();
   }
 
   DateTime _todayUtc() {
@@ -124,7 +131,6 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
   }
 
   Future<void> _loadDoctorActivity() async {
-    if (_listLoading) return;
     setState(() {
       _listLoading = true;
       _listError = null;
@@ -165,6 +171,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
       }
       _page = 0;
     });
+    _loadDoctorActivity();
   }
 
   DataColumn _sortCol(String title, String field) {
@@ -199,6 +206,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
       _customToUtc = DateTime.utc(picked.end.year, picked.end.month, picked.end.day);
       _page = 0;
     });
+    _loadDoctorActivity();
   }
 
   Future<void> _downloadContractPdf(AdminDoctorActivityRow row) async {
@@ -379,10 +387,13 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
       child: FilterChip(
         label: Text(label),
         selected: sel,
-        onSelected: (_) => setState(() {
-          _preset = preset;
-          _page = 0;
-        }),
+        onSelected: (_) {
+          setState(() {
+            _preset = preset;
+            _page = 0;
+          });
+          _loadDoctorActivity();
+        },
       ),
     );
   }
@@ -480,10 +491,10 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     if (_listError != null) {
       return Center(child: Text('${l10n.error}: $_listError'));
     }
-    if (_listData == null) {
+    if (_listData == null && !_listLoading) {
       return Center(
         child: Text(
-          'Click Refresh to load doctor activity.',
+          'Loading doctor activity…',
           style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
         ),
       );
@@ -492,6 +503,7 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
     final data = _listData!;
     final rows = data['content'] as List<AdminDoctorActivityRow>;
     final totalPages = ((data['totalPages'] as num?)?.toInt() ?? 1).clamp(1, 100000);
+    final totalElements = (data['totalElements'] as num?)?.toInt() ?? rows.length;
 
     final table = ScrollConfiguration(
       behavior: const ShifaScrollBehavior(),
@@ -616,12 +628,14 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
                             ),
                           ),
                         ],
-                        onSelectChanged: (_) {
-                          setState(() => _selectedDoctorId = r.doctorId);
-                          WidgetsBinding.instance.addPostFrameCallback((__) {
-                            _scaffoldKey.currentState?.openEndDrawer();
-                          });
-                        },
+                        onSelectChanged: r.doctorId > 0
+                            ? (_) {
+                                setState(() => _selectedDoctorId = r.doctorId);
+                                WidgetsBinding.instance.addPostFrameCallback((__) {
+                                  _scaffoldKey.currentState?.openEndDrawer();
+                                });
+                              }
+                            : null,
                       );
                     }).toList(),
                   ),
@@ -644,12 +658,12 @@ class _AdminDoctorActivityScreenState extends ConsumerState<AdminDoctorActivityS
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
-                  onPressed: _page > 0 ? () => setState(() => _page--) : null,
+                  onPressed: _page > 0 ? () => _goToPage(_page - 1) : null,
                 ),
-                Text('${_page + 1} / $totalPages'),
+                Text('Page ${_page + 1} of $totalPages ($totalElements doctors)'),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
-                  onPressed: _page < totalPages - 1 ? () => setState(() => _page++) : null,
+                  onPressed: _page < totalPages - 1 ? () => _goToPage(_page + 1) : null,
                 ),
               ],
             ),

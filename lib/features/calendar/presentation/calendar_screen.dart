@@ -155,9 +155,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   List<CalendarEntry> _entriesForDoctor(DateTime? day, int? doctorProfileId) {
     if (day == null) return [];
     final key = _dayKey(day);
-    final ownId = _ownDoctorProfileId();
     final List<CalendarEntry> allEntries;
-    if (doctorProfileId == null || doctorProfileId == ownId) {
+    if (_isOwnDoctorCalendar(doctorProfileId)) {
       final entries = ref.watch(calendarProvider);
       allEntries = entries[key] ?? [];
     } else {
@@ -178,6 +177,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     if (id is int) return id;
     if (id is num) return id.toInt();
     return int.tryParse(id?.toString() ?? '');
+  }
+
+  /// True when [doctorProfileId] refers to the logged-in doctor's own schedule
+  /// ([calendarProvider]). Colleague grids use [_staffEntriesByDoctor] instead.
+  bool _isOwnDoctorCalendar(int? doctorProfileId) {
+    if (doctorProfileId == null || doctorProfileId <= 0) return true;
+    final ownId = _ownDoctorProfileId();
+    if (ownId == null) return true;
+    return doctorProfileId == ownId;
+  }
+
+  /// Clears multi-staff selection when the doctor practises alone (no clinic or
+  /// sole clinician). Prevents stale colleague ids from blocking own schedule loads.
+  void _resetStaffSelectionForSoloPractice() {
+    _staffEntriesByDoctor.clear();
+    _visibleStaffDoctorIds.clear();
+    _ensureOwnStaffSelected();
   }
 
   List<ClinicMember> _schedulableStaff(List<ClinicMember> members) {
@@ -202,6 +218,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     _ensureOwnStaffSelected();
     final ownId = _ownDoctorProfileId();
     final ids = _visibleStaffDoctorIds.toList();
+    if (ids.isEmpty && ownId != null) {
+      return [ownId];
+    }
     ids.sort((a, b) {
       if (ownId != null && a == ownId) return -1;
       if (ownId != null && b == ownId) return 1;
@@ -209,6 +228,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     });
     return ids;
   }
+
+  /// Doctor profile id for the primary (own) grid when practising alone.
+  int? get _primaryOwnDoctorProfileId => _ownDoctorProfileId();
 
   String _staffDisplayName(int doctorProfileId, List<ClinicMember> members) {
     if (doctorProfileId == _ownDoctorProfileId()) {
@@ -267,7 +289,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   Future<void> _restoreStaffSelectionIfNeeded() async {
     final clinic = ref.read(selectedClinicProvider);
     if (clinic == null) {
-      _ensureOwnStaffSelected();
+      if (!mounted) return;
+      setState(_resetStaffSelectionForSoloPractice);
       return;
     }
     if (_staffPrefsRestoredForClinicId == clinic.clinicId) return;
@@ -277,7 +300,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       members = await ref.read(clinicMembersProvider(clinic.clinicId).future);
     } catch (e) {
       debugPrint('CalendarScreen: staff roster unavailable: $e');
-      _ensureOwnStaffSelected();
+      if (!mounted) return;
+      setState(_resetStaffSelectionForSoloPractice);
       _staffPrefsRestoredForClinicId = clinic.clinicId;
       return;
     }
@@ -286,7 +310,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     _staffPrefsRestoredForClinicId = clinic.clinicId;
 
     if (staff.length < 2) {
-      _ensureOwnStaffSelected();
+      if (!mounted) return;
+      setState(_resetStaffSelectionForSoloPractice);
       return;
     }
 
@@ -503,21 +528,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     try {
       final ownId = _ownDoctorProfileId();
       final futures = <Future<void>>[];
+
+      // Always refresh the logged-in doctor in [calendarProvider], even when
+      // staff selection is empty or profile id is missing (solo practitioners).
+      futures.addAll(
+        days.map(
+          (day) => ref.read(calendarProvider.notifier).loadDay(
+                day: day,
+                doctorTimeZone: doctorTimeZone,
+              ),
+        ),
+      );
+
       for (final doctorId in _visibleStaffDoctorIds) {
-        if (doctorId == ownId) {
-          futures.addAll(
-            days.map(
-              (day) => ref.read(calendarProvider.notifier).loadDay(
-                    day: day,
-                    doctorTimeZone: doctorTimeZone,
-                  ),
-            ),
-          );
-        } else {
-          futures.addAll(
-            days.map((day) => _loadStaffDoctorDay(doctorId, day, doctorTimeZone)),
-          );
-        }
+        if (ownId != null && doctorId == ownId) continue;
+        futures.addAll(
+          days.map((day) => _loadStaffDoctorDay(doctorId, day, doctorTimeZone)),
+        );
       }
       await Future.wait(futures);
       _lastRefreshTime = getNowInTimezone(doctorTimeZone);
@@ -587,15 +614,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       setState(() => _loadingDay = true);
       try {
         final ownId = _ownDoctorProfileId();
-        final futures = <Future<void>>[];
+        final futures = <Future<void>>[
+          _fetchDay(_selectedDay!, doctorTimeZone),
+        ];
         for (final doctorId in _visibleStaffDoctorIds) {
-          if (doctorId == ownId) {
-            futures.add(_fetchDay(_selectedDay!, doctorTimeZone));
-          } else {
-            futures.add(
-              _loadStaffDoctorDay(doctorId, _selectedDay!, doctorTimeZone),
-            );
-          }
+          if (ownId != null && doctorId == ownId) continue;
+          futures.add(
+            _loadStaffDoctorDay(doctorId, _selectedDay!, doctorTimeZone),
+          );
         }
         await Future.wait(futures);
       } finally {
@@ -1769,44 +1795,70 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     final useGrid = !PlatformLayout.useSinglePane(context);
     final loading = _loadingDay || _isWaitingForProfile;
 
-    void onTapEntry(CalendarEntry entry, DateTime day, int doctorProfileId) {
+    void onTapEntry(CalendarEntry entry, DateTime day, int? doctorProfileId) {
       setState(() => _selectedDay = _dayKey(day));
       _selectCalendarEntry(entry, doctorProfileId: doctorProfileId);
     }
 
-    Widget buildGridForDoctor(int doctorProfileId, {required bool shrinkWrap}) {
-      final accent = _staffAccentColor(doctorProfileId, staff, brand);
+    Widget buildGridForDoctor(int? doctorProfileId, {required bool shrinkWrap}) {
+      final accent = _staffAccentColor(
+        doctorProfileId ?? _primaryOwnDoctorProfileId ?? 0,
+        staff,
+        brand,
+      );
       return CalendarWeekGridView(
         days: _visibleDays,
         entriesForDay: (day) => _entriesForDoctor(day, doctorProfileId),
-        onTapEntry: (entry, day) => onTapEntry(entry, day, doctorProfileId),
-        selectedEntry: _selectedEntryDoctorProfileId == doctorProfileId
-            ? _selectedEntry
-            : null,
+        onTapEntry: (entry, day) => onTapEntry(
+          entry,
+          day,
+          doctorProfileId ?? _primaryOwnDoctorProfileId,
+        ),
+        selectedEntry: _isOwnDoctorCalendar(doctorProfileId)
+            ? (_selectedEntryDoctorProfileId == null ||
+                    _isOwnDoctorCalendar(_selectedEntryDoctorProfileId))
+                ? _selectedEntry
+                : null
+            : _selectedEntryDoctorProfileId == doctorProfileId
+                ? _selectedEntry
+                : null,
         brand: accent,
         loading: loading,
         shrinkWrap: shrinkWrap,
       );
     }
 
-    Widget buildListForDoctor(int doctorProfileId) {
-      final accent = _staffAccentColor(doctorProfileId, staff, brand);
+    Widget buildListForDoctor(int? doctorProfileId) {
+      final accent = _staffAccentColor(
+        doctorProfileId ?? _primaryOwnDoctorProfileId ?? 0,
+        staff,
+        brand,
+      );
       return CalendarDayEntriesList(
         entries: _entriesForDoctor(_selectedDay, doctorProfileId),
         onTap: (entry) => _selectCalendarEntry(
           entry,
-          doctorProfileId: doctorProfileId,
+          doctorProfileId: doctorProfileId ?? _primaryOwnDoctorProfileId,
         ),
-        selected: _selectedEntryDoctorProfileId == doctorProfileId
-            ? _selectedEntry
-            : null,
+        selected: _isOwnDoctorCalendar(doctorProfileId)
+            ? (_selectedEntryDoctorProfileId == null ||
+                    _isOwnDoctorCalendar(_selectedEntryDoctorProfileId))
+                ? _selectedEntry
+                : null
+            : _selectedEntryDoctorProfileId == doctorProfileId
+                ? _selectedEntry
+                : null,
         brand: accent,
         loading: loading,
       );
     }
 
-    Widget staffHeader(int doctorProfileId) {
-      final accent = _staffAccentColor(doctorProfileId, staff, brand);
+    Widget staffHeader(int? doctorProfileId) {
+      final accent = _staffAccentColor(
+        doctorProfileId ?? _primaryOwnDoctorProfileId ?? 0,
+        staff,
+        brand,
+      );
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Row(
@@ -1819,7 +1871,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                _staffDisplayName(doctorProfileId, staff),
+                doctorProfileId == null
+                    ? (AppLocalizations.of(context)!.translate('mySchedule') ??
+                        'My schedule')
+                    : _staffDisplayName(doctorProfileId, staff),
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
@@ -1838,15 +1893,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
 
     if (useGrid) {
       if (visibleDoctorIds.length <= 1) {
-        final doctorId =
-            visibleDoctorIds.isNotEmpty ? visibleDoctorIds.first : _ownDoctorProfileId();
+        final doctorId = visibleDoctorIds.isNotEmpty
+            ? visibleDoctorIds.first
+            : _primaryOwnDoctorProfileId;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (staffBar != null) staffBar,
             Expanded(
               child: buildGridForDoctor(
-                doctorId ?? _ownDoctorProfileId() ?? 0,
+                doctorId,
                 shrinkWrap: false,
               ),
             ),
@@ -1878,14 +1934,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     }
 
     if (visibleDoctorIds.length <= 1) {
-      final doctorId =
-          visibleDoctorIds.isNotEmpty ? visibleDoctorIds.first : _ownDoctorProfileId();
+      final doctorId = visibleDoctorIds.isNotEmpty
+          ? visibleDoctorIds.first
+          : _primaryOwnDoctorProfileId;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (staffBar != null) staffBar,
           Expanded(
-            child: buildListForDoctor(doctorId ?? _ownDoctorProfileId() ?? 0),
+            child: buildListForDoctor(doctorId),
           ),
         ],
       );
