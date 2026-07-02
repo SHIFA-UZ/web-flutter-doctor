@@ -7,6 +7,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import 'early_partner_contract_pdf_data.dart';
+import 'early_partner_signature.dart';
+import 'partner_signature_image.dart';
 
 const double _marginPt = 40;
 
@@ -25,6 +27,18 @@ Future<Uint8List> generateEarlyPartnerContractPdf({
 }) async {
   final fontData = await rootBundle.load('assets/fonts/DejaVuSans.ttf');
   final font = pw.Font.ttf(fontData);
+
+  Uint8List? partnerSignatureImage;
+  if (data.autoSignPartner) {
+    final signatureText = buildPartnerSignatureText(
+      firstName: data.partnerFirstName,
+      lastName: data.partnerLastName,
+      fullName: data.partnerFullName,
+    );
+    if (signatureText.isNotEmpty) {
+      partnerSignatureImage = await renderPartnerSignatureImage(signatureText);
+    }
+  }
 
   pw.ImageProvider? logoImage;
   try {
@@ -59,7 +73,7 @@ Future<Uint8List> generateEarlyPartnerContractPdf({
     pw.MultiPage(
       pageTheme: pageTheme,
       maxPages: 12,
-      build: (ctx) => _contractBody(data, font, logoImage),
+      build: (ctx) => _contractBody(data, font, logoImage, partnerSignatureImage),
       footer: (ctx) => _footer(font, ctx.pageNumber, ctx.pagesCount, data),
     ),
   );
@@ -72,6 +86,7 @@ List<pw.Widget> _contractBody(
   EarlyPartnerContractPdfData data,
   pw.Font font,
   pw.ImageProvider? logoImage,
+  Uint8List? partnerSignatureImage,
 ) {
   return [
     _header(font, logoImage, data),
@@ -194,7 +209,7 @@ List<pw.Widget> _contractBody(
     pw.SizedBox(height: 18),
     _partiesBlock(data, font),
     pw.SizedBox(height: 16),
-    _signaturesBlock(data, font),
+    _signaturesBlock(data, font, partnerSignatureImage),
     pw.SizedBox(height: 14),
     _acknowledgement(font),
   ];
@@ -409,7 +424,11 @@ pw.Widget _labelLine(pw.Font font, String label, String? value) {
   );
 }
 
-pw.Widget _signaturesBlock(EarlyPartnerContractPdfData data, pw.Font font) {
+pw.Widget _signaturesBlock(
+  EarlyPartnerContractPdfData data,
+  pw.Font font,
+  Uint8List? partnerSignatureImage,
+) {
   String fmt(DateTime? d) {
     if (d == null) return '________________';
     return '${d.day.toString().padLeft(2, '0')} ${_monthUz(d.month)} ${d.year}';
@@ -438,7 +457,8 @@ pw.Widget _signaturesBlock(EarlyPartnerContractPdfData data, pw.Font font) {
               : null,
           roleLabel: null,
           role: null,
-          date: null,
+          date: fmt(data.partnerSignedDate ?? data.effectiveDate),
+          signatureImageBytes: partnerSignatureImage,
         )),
       ],
     ),
@@ -461,6 +481,7 @@ pw.Widget _sigColumn(
   String? roleLabel,
   String? role,
   String? date,
+  Uint8List? signatureImageBytes,
 }) {
   pw.Widget line(String label, String? value) {
     final v = (value != null && value.trim().isNotEmpty) ? value.trim() : '_______________________________';
@@ -512,8 +533,20 @@ pw.Widget _sigColumn(
             fontWeight: pw.FontWeight.bold,
           ),
         ),
-        pw.SizedBox(height: 18),
-        pw.Container(height: 1, color: PdfColors.grey800),
+        pw.SizedBox(height: 4),
+        if (signatureImageBytes != null && signatureImageBytes.isNotEmpty) ...[
+          pw.SizedBox(
+            height: 44,
+            child: pw.Image(
+              pw.MemoryImage(signatureImageBytes),
+              fit: pw.BoxFit.contain,
+              alignment: pw.Alignment.centerLeft,
+            ),
+          ),
+        ] else ...[
+          pw.SizedBox(height: 18),
+          pw.Container(height: 1, color: PdfColors.grey800),
+        ],
         pw.SizedBox(height: 8),
         pw.Text(
           'Sana: ${date ?? '_______________________________'}',

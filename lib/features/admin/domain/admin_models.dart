@@ -57,9 +57,16 @@ class AdminUser {
   final Map<String, dynamic>? profile;
 
   /// Admin-managed subscription tier (BASIC | PRO | PREMIUM).
-  /// ADMIN role users always behave as PREMIUM and the value is informational.
-  /// PATIENT users are restricted to PRO or PREMIUM by the backend.
   final String subscriptionTier;
+
+  /// Device registered via mobile app (FCM token present).
+  final bool deviceRegistered;
+
+  /// Whether a role-specific profile exists.
+  final bool hasProfile;
+
+  final String? createdAt;
+  final bool emailVerified;
 
   AdminUser({
     required this.id,
@@ -72,6 +79,10 @@ class AdminUser {
     this.lockedUntil,
     this.profile,
     this.subscriptionTier = 'PREMIUM',
+    this.deviceRegistered = false,
+    this.hasProfile = false,
+    this.createdAt,
+    this.emailVerified = false,
   });
 
   factory AdminUser.fromJson(Map<String, dynamic> json) {
@@ -87,6 +98,10 @@ class AdminUser {
       profile: json['profile'] as Map<String, dynamic>?,
       subscriptionTier:
           (json['subscriptionTier'] as String?)?.toUpperCase() ?? 'PREMIUM',
+      deviceRegistered: json['deviceRegistered'] as bool? ?? false,
+      hasProfile: json['hasProfile'] as bool? ?? false,
+      createdAt: json['createdAt'] as String?,
+      emailVerified: json['emailVerified'] as bool? ?? false,
     );
   }
 
@@ -334,6 +349,77 @@ class ActivityLogEntry {
       success: json['success'] as bool,
       failureReason: json['failureReason'] as String?,
       createdAt: json['createdAt'] as String,
+    );
+  }
+}
+
+class UserManagementStats {
+  final int totalUsers;
+  final int totalDoctors;
+  final int activeDoctors;
+  final int disabledDoctors;
+  final int patientAppUsers;
+  final int activePatientUsers;
+  final int totalAdmins;
+  final int totalPatientProfiles;
+  final int profilesWithoutAppAccount;
+  final int profilesWithAppAccount;
+  final int patientsWithDevice;
+  final int patientAppUsersWithoutDevice;
+  final int doctorsWithDevice;
+  final int doctorsWithoutDevice;
+  final int patientsNeverLoggedIn;
+  final int patientsLoggedIn;
+  final int doctorsNeverLoggedIn;
+  final int deviceActivationRate;
+
+  UserManagementStats({
+    required this.totalUsers,
+    required this.totalDoctors,
+    required this.activeDoctors,
+    required this.disabledDoctors,
+    required this.patientAppUsers,
+    required this.activePatientUsers,
+    required this.totalAdmins,
+    required this.totalPatientProfiles,
+    required this.profilesWithoutAppAccount,
+    required this.profilesWithAppAccount,
+    required this.patientsWithDevice,
+    required this.patientAppUsersWithoutDevice,
+    required this.doctorsWithDevice,
+    required this.doctorsWithoutDevice,
+    required this.patientsNeverLoggedIn,
+    required this.patientsLoggedIn,
+    required this.doctorsNeverLoggedIn,
+    required this.deviceActivationRate,
+  });
+
+  factory UserManagementStats.fromJson(Map<String, dynamic> json) {
+    int i(dynamic v) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v?.toString() ?? '') ?? 0;
+    }
+
+    return UserManagementStats(
+      totalUsers: i(json['totalUsers']),
+      totalDoctors: i(json['totalDoctors']),
+      activeDoctors: i(json['activeDoctors']),
+      disabledDoctors: i(json['disabledDoctors']),
+      patientAppUsers: i(json['patientAppUsers']),
+      activePatientUsers: i(json['activePatientUsers']),
+      totalAdmins: i(json['totalAdmins']),
+      totalPatientProfiles: i(json['totalPatientProfiles']),
+      profilesWithoutAppAccount: i(json['profilesWithoutAppAccount']),
+      profilesWithAppAccount: i(json['profilesWithAppAccount']),
+      patientsWithDevice: i(json['patientsWithDevice']),
+      patientAppUsersWithoutDevice: i(json['patientAppUsersWithoutDevice']),
+      doctorsWithDevice: i(json['doctorsWithDevice']),
+      doctorsWithoutDevice: i(json['doctorsWithoutDevice']),
+      patientsNeverLoggedIn: i(json['patientsNeverLoggedIn']),
+      patientsLoggedIn: i(json['patientsLoggedIn']),
+      doctorsNeverLoggedIn: i(json['doctorsNeverLoggedIn']),
+      deviceActivationRate: i(json['deviceActivationRate']),
     );
   }
 }

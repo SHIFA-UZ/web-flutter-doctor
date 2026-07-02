@@ -21,6 +21,16 @@ class AdminActions {
     return DashboardStats.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  Future<UserManagementStats> getUserManagementStats() async {
+    final response = await apiClient.get('/api/admin/users/stats');
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load user management stats: ${response.body}');
+    }
+
+    return UserManagementStats.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
   // ==================== TOKEN MANAGEMENT ====================
 
   Future<AdminToken> generateToken({
@@ -151,6 +161,7 @@ class AdminActions {
     String? role,
     bool? enabled,
     String? search,
+    bool? deviceRegistered,
     int page = 0,
     int size = 20,
   }) async {
@@ -161,6 +172,7 @@ class AdminActions {
     if (role != null) queryParams['role'] = role;
     if (enabled != null) queryParams['enabled'] = enabled.toString();
     if (search != null && search.trim().isNotEmpty) queryParams['search'] = search.trim();
+    if (deviceRegistered != null) queryParams['deviceRegistered'] = deviceRegistered.toString();
 
     final response = await apiClient.get('/api/admin/users', params: queryParams);
 

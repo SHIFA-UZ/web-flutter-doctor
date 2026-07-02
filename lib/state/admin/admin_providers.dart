@@ -25,12 +25,18 @@ final adminTokensProvider = FutureProvider.family<Map<String, dynamic>, TokensPr
   );
 });
 
+final userManagementStatsProvider = FutureProvider<UserManagementStats>((ref) async {
+  final actions = ref.watch(adminActionsProvider);
+  return actions.getUserManagementStats();
+});
+
 final adminUsersProvider = FutureProvider.family<Map<String, dynamic>, UsersProviderParams>((ref, params) async {
   final actions = ref.watch(adminActionsProvider);
   return actions.listUsers(
     role: params.role,
     enabled: params.enabled,
     search: params.search,
+    deviceRegistered: params.deviceRegistered,
     page: params.page,
     size: params.size,
   );

@@ -7,6 +7,8 @@ class EarlyPartnerContractPdfData {
   final int termMonths;
 
   final String? partnerFullName;
+  final String? partnerFirstName;
+  final String? partnerLastName;
   final String? partnerClinic;
   final bool roleDoctor;
   final bool rolePatient;
@@ -19,12 +21,18 @@ class EarlyPartnerContractPdfData {
   final String shifaSignatoryName;
   final String shifaSignatoryTitle;
   final DateTime? shifaSignedDate;
+  final DateTime? partnerSignedDate;
+
+  /// When true, renders an auto-generated cursive signature for the partner (doctor).
+  final bool autoSignPartner;
 
   const EarlyPartnerContractPdfData({
     this.contractNumber = 'SHIFA-0461',
     required this.effectiveDate,
     this.termMonths = 6,
     this.partnerFullName,
+    this.partnerFirstName,
+    this.partnerLastName,
     this.partnerClinic,
     this.roleDoctor = false,
     this.rolePatient = false,
@@ -37,6 +45,8 @@ class EarlyPartnerContractPdfData {
     this.shifaSignatoryName = 'Bekzodbek Qobilov Olimjon O\'g\'li',
     this.shifaSignatoryTitle = 'CEO, Founder',
     this.shifaSignedDate,
+    this.partnerSignedDate,
+    this.autoSignPartner = true,
   });
 
   /// Blank template for printing and handwriting partner details.

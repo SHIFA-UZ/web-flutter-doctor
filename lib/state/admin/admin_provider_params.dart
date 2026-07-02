@@ -32,6 +32,7 @@ class UsersProviderParams {
   final String? role;
   final bool? enabled;
   final String? search;
+  final bool? deviceRegistered;
   final int page;
   final int size;
 
@@ -39,6 +40,7 @@ class UsersProviderParams {
     this.role,
     this.enabled,
     this.search,
+    this.deviceRegistered,
     this.page = 0,
     this.size = 20,
   });
@@ -51,11 +53,18 @@ class UsersProviderParams {
           role == other.role &&
           enabled == other.enabled &&
           search == other.search &&
+          deviceRegistered == other.deviceRegistered &&
           page == other.page &&
           size == other.size;
 
   @override
-  int get hashCode => role.hashCode ^ enabled.hashCode ^ search.hashCode ^ page.hashCode ^ size.hashCode;
+  int get hashCode =>
+      role.hashCode ^
+      enabled.hashCode ^
+      search.hashCode ^
+      deviceRegistered.hashCode ^
+      page.hashCode ^
+      size.hashCode;
 }
 
 class AuditLogsProviderParams {

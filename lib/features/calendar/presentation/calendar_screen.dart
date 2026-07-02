@@ -913,54 +913,66 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     bool showTimeZoneHint,
     String? profileTimeZone,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (showTimeZoneHint) _buildTimeZoneHint(context, l10n, profileTimeZone),
-        _buildCalendarHeaderRow(
-          context,
-          l10n,
-          brand,
-          part: _CalendarHeaderPart.combined,
-        ),
-        SizedBox(height: Responsive.sectionGap(context)),
-        CalendarMonthPanel(
-          compact: true,
-          key: ValueKey(
-            'calendar_mobile_${_selectedDay?.year ?? _focusedDay.year}_${_selectedDay?.month ?? _focusedDay.month}',
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(
+        bottom: Responsive.bottomNavClearance(context) + 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showTimeZoneHint)
+            _buildTimeZoneHint(context, l10n, profileTimeZone),
+          _buildCalendarHeaderRow(
+            context,
+            l10n,
+            brand,
+            part: _CalendarHeaderPart.combined,
           ),
-          focusedDay: _focusedDay,
-          selectedDay: _selectedDay,
-          onChanged: (d) {
-            setState(() {
-              _selectedDay = DateTime(d.year, d.month, d.day);
-              _viewAnchorDay = _selectedDay;
-              _focusedDay = _selectedDay!;
-              _selectedEntry = null;
-              _selectedEntryDoctorProfileId = null;
-              _initialBookingPlaceForSelection = null;
-            });
-            final tz = ref
-                    .read(profileAllProvider)
-                    .valueOrNull
-                    ?.profile['timeZone']
-                as String?;
-            final effectiveTz =
-                (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
-            _reloadCalendar(effectiveTz);
-          },
-          onFocusedDayChanged: (d) {
-            setState(() => _focusedDay = d);
-            _loadMonth(d, _effectiveProfileTimeZone());
-          },
-          showUpdateCard: _shouldShowUpdateScheduleCard,
-          onGoToSchedule: () {
-            ShellScope.pushNamed(context, AppRoutes.setupSchedule);
-          },
-        ),
-        SizedBox(height: Responsive.sectionGap(context)),
-        Expanded(child: _buildCalendarEntriesList(context, l10n, brand)),
-      ],
+          SizedBox(height: Responsive.sectionGap(context)),
+          CalendarMonthPanel(
+            compact: true,
+            key: ValueKey(
+              'calendar_mobile_${_selectedDay?.year ?? _focusedDay.year}_${_selectedDay?.month ?? _focusedDay.month}',
+            ),
+            focusedDay: _focusedDay,
+            selectedDay: _selectedDay,
+            onChanged: (d) {
+              setState(() {
+                _selectedDay = DateTime(d.year, d.month, d.day);
+                _viewAnchorDay = _selectedDay;
+                _focusedDay = _selectedDay!;
+                _selectedEntry = null;
+                _selectedEntryDoctorProfileId = null;
+                _initialBookingPlaceForSelection = null;
+              });
+              final tz = ref
+                      .read(profileAllProvider)
+                      .valueOrNull
+                      ?.profile['timeZone']
+                  as String?;
+              final effectiveTz =
+                  (tz != null && tz.trim().isNotEmpty) ? tz : 'UTC';
+              _reloadCalendar(effectiveTz);
+            },
+            onFocusedDayChanged: (d) {
+              setState(() => _focusedDay = d);
+              _loadMonth(d, _effectiveProfileTimeZone());
+            },
+            showUpdateCard: _shouldShowUpdateScheduleCard,
+            onGoToSchedule: () {
+              ShellScope.pushNamed(context, AppRoutes.setupSchedule);
+            },
+          ),
+          SizedBox(height: Responsive.sectionGap(context)),
+          _buildCalendarEntriesList(
+            context,
+            l10n,
+            brand,
+            scrollEmbedded: true,
+          ),
+        ],
+      ),
     );
   }
 
@@ -1779,8 +1791,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   Widget _buildCalendarEntriesList(
     BuildContext context,
     AppLocalizations l10n,
-    Color brand,
-  ) {
+    Color brand, {
+    bool scrollEmbedded = false,
+  }) {
     if (_selectedDay == null) {
       return _EmptyCalendarHint(brand: brand);
     }
@@ -1828,7 +1841,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       );
     }
 
-    Widget buildListForDoctor(int? doctorProfileId) {
+    Widget buildListForDoctor(int? doctorProfileId, {bool shrinkWrap = false}) {
       final accent = _staffAccentColor(
         doctorProfileId ?? _primaryOwnDoctorProfileId ?? 0,
         staff,
@@ -1850,6 +1863,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
                 : null,
         brand: accent,
         loading: loading,
+        shrinkWrap: shrinkWrap,
       );
     }
 
@@ -1937,6 +1951,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       final doctorId = visibleDoctorIds.isNotEmpty
           ? visibleDoctorIds.first
           : _primaryOwnDoctorProfileId;
+      if (scrollEmbedded) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (staffBar != null) staffBar,
+            buildListForDoctor(doctorId, shrinkWrap: true),
+          ],
+        );
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1944,6 +1968,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
           Expanded(
             child: buildListForDoctor(doctorId),
           ),
+        ],
+      );
+    }
+
+    if (scrollEmbedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (staffBar != null) staffBar,
+          for (var i = 0; i < visibleDoctorIds.length; i++) ...[
+            if (i > 0) const SizedBox(height: 16),
+            staffHeader(visibleDoctorIds[i]),
+            buildListForDoctor(visibleDoctorIds[i], shrinkWrap: true),
+          ],
         ],
       );
     }
@@ -2219,6 +2258,7 @@ class CalendarDayEntriesList extends StatelessWidget {
     required this.selected,
     required this.brand,
     this.loading = false,
+    this.shrinkWrap = false,
   }) : super(key: key);
 
   final List<CalendarEntry> entries;
@@ -2226,6 +2266,7 @@ class CalendarDayEntriesList extends StatelessWidget {
   final CalendarEntry? selected;
   final Color brand;
   final bool loading;
+  final bool shrinkWrap;
 
   String _two(int n) => n.toString().padLeft(2, '0');
   String _fmtRange(TimeOfDay s, TimeOfDay e) =>
@@ -2250,18 +2291,29 @@ class CalendarDayEntriesList extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     if (loading) {
-      return const Center(child: CircularProgressIndicator());
+      return shrinkWrap
+          ? const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : const Center(child: CircularProgressIndicator());
     }
     if (entries.isEmpty) {
-      return Center(
-        child: Text(
-          l10n.translate('noItemsForThisDay') ?? 'No items for this day',
-          style: TextStyle(color: Colors.grey.shade600),
-        ),
+      final empty = Text(
+        l10n.translate('noItemsForThisDay') ?? 'No items for this day',
+        style: TextStyle(color: Colors.grey.shade600),
+        textAlign: TextAlign.center,
       );
+      return shrinkWrap
+          ? Padding(padding: const EdgeInsets.all(32), child: empty)
+          : Center(child: empty);
     }
 
     return ListView.separated(
+      shrinkWrap: shrinkWrap,
+      physics: shrinkWrap
+          ? const NeverScrollableScrollPhysics()
+          : null,
       itemCount: entries.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, i) {

@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/state/admin/admin_provider_params.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/admin/presentation/admin_user_stats_panel.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 class AdminUsersScreen extends ConsumerStatefulWidget {
@@ -20,10 +21,33 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   int _currentPage = 0;
   String? _filterRole;
   bool? _filterEnabled;
+  bool? _filterDeviceRegistered;
   String _searchQuery = '';
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
   Timer? _debounceTimer;
+
+  UsersProviderParams get _usersParams => UsersProviderParams(
+        role: _filterRole,
+        enabled: _filterEnabled,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        deviceRegistered: _filterDeviceRegistered,
+        page: _currentPage,
+        size: 20,
+      );
+
+  void _applyQuickFilter({String? role, bool? deviceRegistered}) {
+    setState(() {
+      _filterRole = role;
+      _filterDeviceRegistered = deviceRegistered;
+      _currentPage = 0;
+    });
+  }
+
+  void _refreshUsers() {
+    ref.invalidate(adminUsersProvider(_usersParams));
+    ref.invalidate(userManagementStatsProvider);
+  }
 
   @override
   void initState() {
@@ -57,18 +81,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final searchParam = _searchQuery.isEmpty ? null : _searchQuery;
-    final usersAsync = ref.watch(
-      adminUsersProvider(
-        UsersProviderParams(
-          role: _filterRole,
-          enabled: _filterEnabled,
-          search: searchParam,
-          page: _currentPage,
-          size: 20,
-        ),
-      ),
-    );
+    final usersAsync = ref.watch(adminUsersProvider(_usersParams));
+    final statsAsync = ref.watch(userManagementStatsProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -80,6 +94,28 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
       ),
       body: Column(
         children: [
+          // Metrics overview
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            color: Colors.grey.shade50,
+            child: statsAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (stats) => AdminUserStatsPanel(
+                stats: stats,
+                onFilterPatients: () => _applyQuickFilter(role: 'PATIENT', deviceRegistered: null),
+                onFilterPatientsWithDevice: () =>
+                    _applyQuickFilter(role: 'PATIENT', deviceRegistered: true),
+                onFilterPatientsWithoutDevice: () =>
+                    _applyQuickFilter(role: 'PATIENT', deviceRegistered: false),
+                onFilterDoctors: () => _applyQuickFilter(role: 'DOCTOR', deviceRegistered: null),
+              ),
+            ),
+          ),
           // Search and filters
           Container(
             padding: const EdgeInsets.all(16),
@@ -154,17 +190,23 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                         _currentPage = 0;
                       }),
                     ),
+                    const SizedBox(width: 16),
+                    DropdownButton<bool?>(
+                      value: _filterDeviceRegistered,
+                      hint: Text(l10n.translate('filterByDevice')),
+                      items: [
+                        DropdownMenuItem(value: null, child: Text(l10n.all)),
+                        DropdownMenuItem(value: true, child: Text(l10n.translate('withDevice'))),
+                        DropdownMenuItem(value: false, child: Text(l10n.translate('withoutDevice'))),
+                      ],
+                      onChanged: (v) => setState(() {
+                        _filterDeviceRegistered = v;
+                        _currentPage = 0;
+                      }),
+                    ),
                     const Spacer(),
                     ShifaPrimaryButton(
-                      onPressed: () => ref.invalidate(adminUsersProvider(
-                        UsersProviderParams(
-                          role: _filterRole,
-                          enabled: _filterEnabled,
-                          search: searchParam,
-                          page: _currentPage,
-                          size: 20,
-                        ),
-                      )),
+                      onPressed: _refreshUsers,
                       icon: Icons.refresh,
                       label: l10n.refresh,
                     ),
@@ -181,8 +223,22 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
               data: (data) {
                 final users = data['content'] as List<AdminUser>;
                 final totalPages = data['totalPages'] as int;
+                final totalElements = data['totalElements'] as int;
                 return Column(
                   children: [
+                    if (totalElements > 0)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            l10n.translate('showingUsersCount')
+                                .replaceAll('{count}', users.length.toString())
+                                .replaceAll('{total}', totalElements.toString()),
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          ),
+                        ),
+                      ),
                     Expanded(
                       child: users.isEmpty
                           ? Center(child: Text(l10n.translate('noUsersFound')))
@@ -192,13 +248,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                               itemBuilder: (context, i) => _UserCard(
                                 user: users[i],
                                 ref: ref,
-                                usersParams: UsersProviderParams(
-                                  role: _filterRole,
-                                  enabled: _filterEnabled,
-                                  search: searchParam,
-                                  page: _currentPage,
-                                  size: 20,
-                                ),
+                                usersParams: _usersParams,
                               ),
                             ),
                     ),
@@ -325,35 +375,82 @@ class _UserCard extends ConsumerWidget {
                   if (user.lastLoginAt != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      '${l10n.translate('lastLogin')}: ${DateTime.parse(user.lastLoginAt!).toLocal()}',
+                      '${l10n.translate('lastLogin')}: ${_formatDateTime(user.lastLoginAt!)}',
                       style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
+                    ),
+                  ] else if (user.role == 'PATIENT' || user.role == 'DOCTOR') ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.translate('neverLoggedIn'),
+                      style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
+                    ),
+                  ],
+                  if (user.createdAt != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${l10n.translate('joined')}: ${_formatDateTime(user.createdAt!)}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
                   ],
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
-            // ADMIN role users always behave as PREMIUM — hide the chip there
-            // to avoid the impression that admins can be downgraded.
-            if (user.role != 'ADMIN') ...[
-              Chip(
-                label: Text(_tierLabel(user.subscriptionTier, l10n)),
-                backgroundColor: _tierColor(user.subscriptionTier),
-                labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-              const SizedBox(width: 6),
-            ],
-            Chip(
-              label: Text(user.enabled ? l10n.translate('enabled') : l10n.translate('disabled')),
-              backgroundColor: user.enabled ? Colors.green : Colors.red,
-              labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-            PopupMenuButton(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    if (user.role == 'PATIENT' || user.role == 'DOCTOR')
+                      Chip(
+                        avatar: Icon(
+                          user.deviceRegistered ? Icons.phone_android : Icons.phone_disabled,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          user.deviceRegistered
+                              ? l10n.translate('withDevice')
+                              : l10n.translate('withoutDevice'),
+                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                        ),
+                        backgroundColor: user.deviceRegistered ? Colors.teal : Colors.orange.shade700,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    if (user.isLocked)
+                      Chip(
+                        label: Text(l10n.translate('locked')),
+                        backgroundColor: AppColors.destructiveRed,
+                        labelStyle: const TextStyle(color: Colors.white, fontSize: 11),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    if (user.role != 'ADMIN') ...[
+                      Chip(
+                        label: Text(_tierLabel(user.subscriptionTier, l10n)),
+                        backgroundColor: _tierColor(user.subscriptionTier),
+                        labelStyle: const TextStyle(color: Colors.white, fontSize: 11),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ],
+                    Chip(
+                      label: Text(user.enabled ? l10n.translate('enabled') : l10n.translate('disabled')),
+                      backgroundColor: user.enabled ? Colors.green : Colors.red,
+                      labelStyle: const TextStyle(color: Colors.white, fontSize: 11),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ],
+                ),
+                PopupMenuButton(
               itemBuilder: (context) {
                 // Build menu items list
                 final items = <PopupMenuEntry>[
@@ -554,6 +651,12 @@ class _UserCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  static String _formatDateTime(String iso) {
+    final dt = DateTime.parse(iso).toLocal();
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   static String _tierLabel(String tier, AppLocalizations l10n) {

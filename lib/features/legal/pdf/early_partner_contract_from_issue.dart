@@ -22,6 +22,8 @@ EarlyPartnerContractPdfData earlyPartnerContractPdfDataFromIssue(
     effectiveDate: effective,
     termMonths: (json['termMonths'] as num?)?.toInt() ?? 6,
     partnerFullName: json['partnerFullName'] as String?,
+    partnerFirstName: json['partnerFirstName'] as String?,
+    partnerLastName: json['partnerLastName'] as String?,
     partnerClinic: json['partnerClinic'] as String?,
     roleDoctor: json['roleDoctor'] as bool? ?? true,
     rolePatient: json['rolePatient'] as bool? ?? false,
@@ -29,5 +31,7 @@ EarlyPartnerContractPdfData earlyPartnerContractPdfDataFromIssue(
     partnerPhone: json['partnerPhone'] as String?,
     partnerEmail: json['partnerEmail'] as String?,
     shifaSignedDate: DateTime.now(),
+    partnerSignedDate: DateTime.now(),
+    autoSignPartner: true,
   );
 }

@@ -20,11 +20,14 @@ void main() {
           contractNumber: 'SHIFA-0461',
           effectiveDate: DateTime(2026, 6, 1),
           partnerFullName: 'Karimov Alisher',
+          partnerFirstName: 'Alisher',
+          partnerLastName: 'Karimov',
           partnerClinic: 'Andijon Dental',
           roleDoctor: true,
           partnerPhone: '+998 90 123 45 67',
           partnerEmail: 'partner@example.com',
           shifaSignedDate: DateTime(2026, 5, 25),
+          partnerSignedDate: DateTime(2026, 5, 25),
         ),
       );
       expect(bytes.length, greaterThan(2000));
