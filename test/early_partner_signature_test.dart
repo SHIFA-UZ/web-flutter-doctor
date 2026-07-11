@@ -25,4 +25,23 @@ void main() {
       expect(buildPartnerSignatureText(), '');
     });
   });
+
+  group('buildPartnerSignatureInkText', () {
+    test('abbreviates to first name and last initial', () {
+      expect(
+        buildPartnerSignatureInkText(
+          firstName: 'Shohruhmirzo',
+          lastName: 'Sharobov',
+        ),
+        'Shohruhmirzo S.',
+      );
+    });
+
+    test('parses full name when parts missing', () {
+      expect(
+        buildPartnerSignatureInkText(fullName: 'Alisher Karimov'),
+        'Alisher K.',
+      );
+    });
+  });
 }

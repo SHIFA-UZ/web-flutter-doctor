@@ -10,6 +10,8 @@ import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/admin/presentation/admin_user_stats_panel.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
+enum AdminUsersViewMode { appUsers, profileOnly }
+
 class AdminUsersScreen extends ConsumerStatefulWidget {
   const AdminUsersScreen({super.key});
 
@@ -19,6 +21,7 @@ class AdminUsersScreen extends ConsumerStatefulWidget {
 
 class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   int _currentPage = 0;
+  AdminUsersViewMode _viewMode = AdminUsersViewMode.appUsers;
   String? _filterRole;
   bool? _filterEnabled;
   bool? _filterDeviceRegistered;
@@ -36,16 +39,37 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         size: 20,
       );
 
+  PatientProfilesListParams get _profileListParams => PatientProfilesListParams(
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        page: _currentPage,
+        size: 20,
+      );
+
   void _applyQuickFilter({String? role, bool? deviceRegistered}) {
     setState(() {
+      _viewMode = AdminUsersViewMode.appUsers;
       _filterRole = role;
       _filterDeviceRegistered = deviceRegistered;
       _currentPage = 0;
     });
   }
 
+  void _applyProfileOnlyView() {
+    setState(() {
+      _viewMode = AdminUsersViewMode.profileOnly;
+      _filterRole = null;
+      _filterEnabled = null;
+      _filterDeviceRegistered = null;
+      _currentPage = 0;
+    });
+  }
+
   void _refreshUsers() {
-    ref.invalidate(adminUsersProvider(_usersParams));
+    if (_viewMode == AdminUsersViewMode.profileOnly) {
+      ref.invalidate(adminPatientProfilesWithoutAppProvider(_profileListParams));
+    } else {
+      ref.invalidate(adminUsersProvider(_usersParams));
+    }
     ref.invalidate(userManagementStatsProvider);
   }
 
@@ -81,8 +105,11 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final usersAsync = ref.watch(adminUsersProvider(_usersParams));
     final statsAsync = ref.watch(userManagementStatsProvider);
+    final isProfileOnly = _viewMode == AdminUsersViewMode.profileOnly;
+    final listAsync = isProfileOnly
+        ? ref.watch(adminPatientProfilesWithoutAppProvider(_profileListParams))
+        : ref.watch(adminUsersProvider(_usersParams));
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -92,194 +119,438 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         elevation: 0,
         foregroundColor: Colors.black87,
       ),
-      body: Column(
-        children: [
-          // Metrics overview
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            color: Colors.grey.shade50,
-            child: statsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
+      body: listAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('${l10n.error}: $e')),
+        data: (data) {
+          final totalPages = data['totalPages'] as int;
+          final totalElements = data['totalElements'] as int;
+
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  color: Colors.grey.shade50,
+                  child: statsAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data: (stats) => AdminUserStatsPanel(
+                      stats: stats,
+                      onFilterPatients: () =>
+                          _applyQuickFilter(role: 'PATIENT', deviceRegistered: null),
+                      onFilterPatientsWithDevice: () =>
+                          _applyQuickFilter(role: 'PATIENT', deviceRegistered: true),
+                      onFilterPatientsWithoutDevice: () =>
+                          _applyQuickFilter(role: 'PATIENT', deviceRegistered: false),
+                      onFilterProfilesWithoutApp: _applyProfileOnlyView,
+                      onFilterDoctors: () =>
+                          _applyQuickFilter(role: 'DOCTOR', deviceRegistered: null),
+                    ),
+                  ),
+                ),
               ),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (stats) => AdminUserStatsPanel(
-                stats: stats,
-                onFilterPatients: () => _applyQuickFilter(role: 'PATIENT', deviceRegistered: null),
-                onFilterPatientsWithDevice: () =>
-                    _applyQuickFilter(role: 'PATIENT', deviceRegistered: true),
-                onFilterPatientsWithoutDevice: () =>
-                    _applyQuickFilter(role: 'PATIENT', deviceRegistered: false),
-                onFilterDoctors: () => _applyQuickFilter(role: 'DOCTOR', deviceRegistered: null),
-              ),
-            ),
-          ),
-          // Search and filters
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Search bar
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        focusNode: _searchFocusNode,
-                        decoration: InputDecoration(
-                          hintText: l10n.translate('searchUsersPlaceholder'),
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _applySearch();
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocusNode,
+                              decoration: InputDecoration(
+                                hintText: l10n.translate('searchUsersPlaceholder'),
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          _applySearch();
+                                        },
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                              onSubmitted: (_) => _applySearch(),
+                            ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                        onChanged: (_) => setState(() {}),
-                        onSubmitted: (_) => _applySearch(),
+                          const SizedBox(width: 8),
+                          ShifaPrimaryButton(
+                            onPressed: _applySearch,
+                            icon: Icons.search,
+                            label: l10n.translate('search'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          DropdownButton<AdminUsersViewMode>(
+                            value: _viewMode,
+                            hint: Text(l10n.translate('filterByAccountType')),
+                            items: [
+                              DropdownMenuItem(
+                                value: AdminUsersViewMode.appUsers,
+                                child: Text(l10n.translate('appAccounts')),
+                              ),
+                              DropdownMenuItem(
+                                value: AdminUsersViewMode.profileOnly,
+                                child: Text(l10n.translate('profileOnlyNoApp')),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              if (v == null) return;
+                              setState(() {
+                                _viewMode = v;
+                                _currentPage = 0;
+                                if (v == AdminUsersViewMode.profileOnly) {
+                                  _filterRole = null;
+                                  _filterEnabled = null;
+                                  _filterDeviceRegistered = null;
+                                }
+                              });
+                            },
+                          ),
+                          if (!isProfileOnly) ...[
+                            DropdownButton<String?>(
+                              value: _filterRole,
+                              hint: Text(l10n.translate('filterByRole')),
+                              items: [
+                                DropdownMenuItem(
+                                  value: null,
+                                  child: Text(l10n.translate('allRoles')),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'DOCTOR',
+                                  child: Text(l10n.translate('doctors')),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'PATIENT',
+                                  child: Text(l10n.patients),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'ADMIN',
+                                  child: Text(l10n.translate('admins')),
+                                ),
+                              ],
+                              onChanged: (v) => setState(() {
+                                _filterRole = v;
+                                _currentPage = 0;
+                              }),
+                            ),
+                            DropdownButton<bool?>(
+                              value: _filterEnabled,
+                              hint: Text(l10n.translate('filterByStatus')),
+                              items: [
+                                DropdownMenuItem(value: null, child: Text(l10n.all)),
+                                DropdownMenuItem(
+                                  value: true,
+                                  child: Text(l10n.translate('enabled')),
+                                ),
+                                DropdownMenuItem(
+                                  value: false,
+                                  child: Text(l10n.translate('disabled')),
+                                ),
+                              ],
+                              onChanged: (v) => setState(() {
+                                _filterEnabled = v;
+                                _currentPage = 0;
+                              }),
+                            ),
+                            DropdownButton<bool?>(
+                              value: _filterDeviceRegistered,
+                              hint: Text(l10n.translate('filterByDevice')),
+                              items: [
+                                DropdownMenuItem(value: null, child: Text(l10n.all)),
+                                DropdownMenuItem(
+                                  value: true,
+                                  child: Text(l10n.translate('withDevice')),
+                                ),
+                                DropdownMenuItem(
+                                  value: false,
+                                  child: Text(l10n.translate('withoutDevice')),
+                                ),
+                              ],
+                              onChanged: (v) => setState(() {
+                                _filterDeviceRegistered = v;
+                                _currentPage = 0;
+                              }),
+                            ),
+                          ],
+                          ShifaPrimaryButton(
+                            onPressed: _refreshUsers,
+                            icon: Icons.refresh,
+                            label: l10n.refresh,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (totalElements > 0)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        isProfileOnly
+                            ? l10n.translate('showingProfilesCount')
+                                .replaceAll('{count}', (data['content'] as List).length.toString())
+                                .replaceAll('{total}', totalElements.toString())
+                            : l10n.translate('showingUsersCount')
+                                .replaceAll('{count}', (data['content'] as List).length.toString())
+                                .replaceAll('{total}', totalElements.toString()),
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    ShifaPrimaryButton(
-                      onPressed: _applySearch,
-                      icon: Icons.search,
-                      label: l10n.translate('search'),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    DropdownButton<String?>(
-                      value: _filterRole,
-                      hint: Text(l10n.translate('filterByRole')),
-                      items: [
-                        DropdownMenuItem(value: null, child: Text(l10n.translate('allRoles'))),
-                        DropdownMenuItem(value: 'DOCTOR', child: Text(l10n.translate('doctors'))),
-                        DropdownMenuItem(value: 'PATIENT', child: Text(l10n.patients)),
-                        DropdownMenuItem(value: 'ADMIN', child: Text(l10n.translate('admins'))),
+              if (isProfileOnly)
+                ..._buildProfileOnlySlivers(
+                  context,
+                  data['content'] as List<AdminPatientProfileRow>,
+                  totalElements,
+                  l10n,
+                )
+              else
+                ..._buildUserSlivers(
+                  context,
+                  data['content'] as List<AdminUser>,
+                  totalElements,
+                  l10n,
+                ),
+              if (totalPages > 1)
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left),
+                          onPressed: _currentPage > 0
+                              ? () => setState(() => _currentPage--)
+                              : null,
+                        ),
+                        Text(
+                          '${l10n.translate('page')} ${_currentPage + 1} ${l10n.translate('of')} $totalPages',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          onPressed: _currentPage < totalPages - 1
+                              ? () => setState(() => _currentPage++)
+                              : null,
+                        ),
                       ],
-                      onChanged: (v) => setState(() {
-                        _filterRole = v;
-                        _currentPage = 0;
-                      }),
                     ),
-                    const SizedBox(width: 16),
-                    DropdownButton<bool?>(
-                      value: _filterEnabled,
-                      hint: Text(l10n.translate('filterByStatus')),
-                      items: [
-                        DropdownMenuItem(value: null, child: Text(l10n.all)),
-                        DropdownMenuItem(value: true, child: Text(l10n.translate('enabled'))),
-                        DropdownMenuItem(value: false, child: Text(l10n.translate('disabled'))),
-                      ],
-                      onChanged: (v) => setState(() {
-                        _filterEnabled = v;
-                        _currentPage = 0;
-                      }),
-                    ),
-                    const SizedBox(width: 16),
-                    DropdownButton<bool?>(
-                      value: _filterDeviceRegistered,
-                      hint: Text(l10n.translate('filterByDevice')),
-                      items: [
-                        DropdownMenuItem(value: null, child: Text(l10n.all)),
-                        DropdownMenuItem(value: true, child: Text(l10n.translate('withDevice'))),
-                        DropdownMenuItem(value: false, child: Text(l10n.translate('withoutDevice'))),
-                      ],
-                      onChanged: (v) => setState(() {
-                        _filterDeviceRegistered = v;
-                        _currentPage = 0;
-                      }),
-                    ),
-                    const Spacer(),
-                    ShifaPrimaryButton(
-                      onPressed: _refreshUsers,
-                      icon: Icons.refresh,
-                      label: l10n.refresh,
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _buildUserSlivers(
+    BuildContext context,
+    List<AdminUser> users,
+    int totalElements,
+    AppLocalizations l10n,
+  ) {
+    if (users.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: Text(l10n.translate('noUsersFound'))),
+        ),
+      ];
+    }
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.all(16),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, i) => _UserCard(
+              user: users[i],
+              ref: ref,
+              usersParams: _usersParams,
+            ),
+            childCount: users.length,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildProfileOnlySlivers(
+    BuildContext context,
+    List<AdminPatientProfileRow> profiles,
+    int totalElements,
+    AppLocalizations l10n,
+  ) {
+    if (profiles.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: Text(l10n.translate('noProfilesFound'))),
+        ),
+      ];
+    }
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.all(16),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, i) => _ProfileOnlyCard(profile: profiles[i]),
+            childCount: profiles.length,
+          ),
+        ),
+      ),
+    ];
+  }
+}
+
+class _ProfileOnlyCard extends StatelessWidget {
+  final AdminPatientProfileRow profile;
+
+  const _ProfileOnlyCard({required this.profile});
+
+  static String _formatDateTime(String? iso) {
+    if (iso == null || iso.isEmpty) return '—';
+    final dt = DateTime.parse(iso).toLocal();
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final name = profile.fullName.trim();
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final secondaryStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Colors.grey.shade700,
+          fontSize: 13,
+        );
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.indigo.shade50,
+              child: Text(initial, style: TextStyle(color: Colors.indigo.shade700)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name.isNotEmpty ? name : l10n.translate('noContact'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    l10n.translate('patient'),
+                    style: secondaryStyle,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    profile.email?.isNotEmpty == true
+                        ? profile.email!
+                        : l10n.translate('noEmail'),
+                    style: secondaryStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    profile.phone?.isNotEmpty == true
+                        ? profile.phone!
+                        : l10n.translate('noPhone'),
+                    style: secondaryStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (profile.createdByDoctorName?.isNotEmpty == true) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${l10n.translate('createdByDoctor')}: ${profile.createdByDoctorName}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  if (profile.createdAt != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${l10n.translate('profileCreated')}: ${_formatDateTime(profile.createdAt)}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '${l10n.translate('profileId')}: ${profile.patientProfileId}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Chip(
+                  avatar: const Icon(Icons.person_outline, size: 14, color: Colors.white),
+                  label: Text(
+                    l10n.translate('profileOnlyNoApp'),
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                  backgroundColor: Colors.indigo,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                const SizedBox(height: 6),
+                Chip(
+                  label: Text(
+                    l10n.translate('noAppAccount'),
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
+                  backgroundColor: Colors.orange.shade700,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ],
             ),
-          ),
-          // Users List
-          Expanded(
-            child: usersAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('${l10n.error}: $e')),
-              data: (data) {
-                final users = data['content'] as List<AdminUser>;
-                final totalPages = data['totalPages'] as int;
-                final totalElements = data['totalElements'] as int;
-                return Column(
-                  children: [
-                    if (totalElements > 0)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            l10n.translate('showingUsersCount')
-                                .replaceAll('{count}', users.length.toString())
-                                .replaceAll('{total}', totalElements.toString()),
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                          ),
-                        ),
-                      ),
-                    Expanded(
-                      child: users.isEmpty
-                          ? Center(child: Text(l10n.translate('noUsersFound')))
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: users.length,
-                              itemBuilder: (context, i) => _UserCard(
-                                user: users[i],
-                                ref: ref,
-                                usersParams: _usersParams,
-                              ),
-                            ),
-                    ),
-                    if (totalPages > 1)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: _currentPage > 0
-                                  ? () => setState(() => _currentPage--)
-                                  : null,
-                            ),
-                            Text('${l10n.translate('page')} ${_currentPage + 1} ${l10n.translate('of')} $totalPages'),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: _currentPage < totalPages - 1
-                                  ? () => setState(() => _currentPage++)
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

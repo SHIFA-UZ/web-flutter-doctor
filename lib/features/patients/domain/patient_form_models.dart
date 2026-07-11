@@ -1,3 +1,5 @@
+import 'package:shifa_doc_app_v1/features/clinical_engine/domain/clinical_engine_models.dart';
+
 class PatientForm {
   final String? id; // null for new forms, set when saved
   final String patientId;
@@ -33,6 +35,8 @@ class PatientForm {
   final bool signatureRequested;
   final String? patientSignedAt;
   final String? patientSignatureImageBase64;
+  final String? clinicalDiseaseId;
+  final List<ClinicalChipSelection> clinicalChipSelections;
 
   PatientForm({
     this.id,
@@ -67,8 +71,11 @@ class PatientForm {
     this.signatureRequested = false,
     this.patientSignedAt,
     this.patientSignatureImageBase64,
+    this.clinicalDiseaseId,
+    List<ClinicalChipSelection>? clinicalChipSelections,
   })  : dentalChart = dentalChart ?? const {},
-        followups = followups ?? const [];
+        followups = followups ?? const [],
+        clinicalChipSelections = clinicalChipSelections ?? const [];
 
   PatientForm copyWith({
     String? id,
@@ -103,6 +110,8 @@ class PatientForm {
     bool? signatureRequested,
     String? patientSignedAt,
     String? patientSignatureImageBase64,
+    String? clinicalDiseaseId,
+    List<ClinicalChipSelection>? clinicalChipSelections,
   }) {
     return PatientForm(
       id: id ?? this.id,
@@ -138,6 +147,8 @@ class PatientForm {
       patientSignedAt: patientSignedAt ?? this.patientSignedAt,
       patientSignatureImageBase64:
           patientSignatureImageBase64 ?? this.patientSignatureImageBase64,
+      clinicalDiseaseId: clinicalDiseaseId ?? this.clinicalDiseaseId,
+      clinicalChipSelections: clinicalChipSelections ?? this.clinicalChipSelections,
     );
   }
 
@@ -180,6 +191,9 @@ class PatientForm {
       if (followups.isNotEmpty)
         'followups': followups.map((f) => f.toJson()).toList(),
       if (documentId != null) 'documentId': int.parse(documentId!),
+      if (clinicalDiseaseId != null) 'clinicalDiseaseId': clinicalDiseaseId,
+      if (clinicalChipSelections.isNotEmpty)
+        'clinicalChipSelections': clinicalChipSelections.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -258,8 +272,18 @@ class PatientForm {
       signatureRequested: json['signatureRequested'] == true,
       patientSignedAt: json['patientSignedAt']?.toString(),
       patientSignatureImageBase64: json['patientSignatureImageBase64']?.toString(),
+      clinicalDiseaseId: json['clinicalDiseaseId']?.toString(),
+      clinicalChipSelections: _parseChipSelections(json['clinicalChipSelections']),
     );
   }
+}
+
+List<ClinicalChipSelection> _parseChipSelections(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map>()
+      .map((e) => ClinicalChipSelection.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
 }
 
 class PatientFormFollowup {

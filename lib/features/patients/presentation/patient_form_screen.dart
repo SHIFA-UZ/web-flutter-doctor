@@ -22,6 +22,9 @@ import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
+import 'package:shifa_doc_app_v1/features/clinical_engine/data/clinical_engine_api.dart';
+import 'package:shifa_doc_app_v1/features/clinical_engine/domain/clinical_engine_models.dart';
+import 'package:shifa_doc_app_v1/features/clinical_engine/presentation/clinical_engine_panel.dart';
 
 /// Uzbek-only labels for Form 025-2 PDF (no English in output).
 abstract class _Form0252PdfUz {
@@ -131,6 +134,9 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
   bool _icdSearching = false;
   List<_IcdSearchItem> _icdResults = const [];
 
+  String? _clinicalDiseaseId;
+  List<ClinicalChipSelection> _clinicalChipSelections = const [];
+
   Future<void> _checkChronicDiseaseWarning() async {
     if (_warningShown) return;
     
@@ -207,6 +213,8 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     _diagnosisCode = widget.existingForm?.diagnosisCode;
     _diagnosisDisplay = widget.existingForm?.diagnosisDisplay;
     _diagnosisSystem = widget.existingForm?.diagnosisSystem;
+    _clinicalDiseaseId = widget.existingForm?.clinicalDiseaseId;
+    _clinicalChipSelections = widget.existingForm?.clinicalChipSelections ?? const [];
     _complaintsCtrl = TextEditingController(text: widget.existingForm?.complaints ?? '');
     _otherIllnessesCtrl =
         TextEditingController(text: widget.existingForm?.otherIllnesses ?? '');
@@ -350,6 +358,55 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
     if (mounted) setState(() {});
   }
 
+  void _onClinicalEngineApplied({
+    required ClinicalDiseaseDetail disease,
+    required Map<String, String> synthesizedFields,
+    required List<ClinicalChipSelection> allSelections,
+  }) {
+    final locale = ref.read(languageProvider).locale.languageCode;
+    setState(() {
+      _clinicalDiseaseId = disease.diseaseId;
+      _clinicalChipSelections = allSelections;
+      if (synthesizedFields.isNotEmpty) {
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.complaints, _complaintsCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.morbi, _moreDetailsCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.objective, _visualCheckupCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.occlusion, _occlusionCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.oralCavity, _oralCavityCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.xray, _xrayLabCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.treatment1, _treatmentCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.treatment2, _treatmentResultCtrl);
+        _applySynthesizedField(synthesizedFields, ClinicalFieldMapping.recommendations, _recommendationsCtrl);
+      }
+      final diseaseLabel = disease.names.forLocale(locale);
+      if (synthesizedFields.isNotEmpty || _diagnosisCtrl.text.trim().isEmpty) {
+        _diagnosisCtrl.text = diseaseLabel;
+        if (disease.icdCodes.isNotEmpty) {
+          _diagnosisCode = disease.icdCodes.first;
+          _diagnosisDisplay = diseaseLabel;
+          _diagnosisSystem = 'ICD-10';
+        }
+      }
+    });
+    widget.onUnsavedChange?.call(true);
+  }
+
+  void _onClinicalSelectionsChanged(List<ClinicalChipSelection> selections) {
+    _clinicalChipSelections = selections;
+    widget.onUnsavedChange?.call(true);
+  }
+
+  void _applySynthesizedField(
+    Map<String, String> fields,
+    String key,
+    TextEditingController controller,
+  ) {
+    final value = fields[key];
+    if (value != null && value.trim().isNotEmpty) {
+      controller.text = value.trim();
+    }
+  }
+
   /// Continuity: when creating a new 025-2 form, pre-fill the teeth diagram from the **most recent**
   /// 025-2 for this patient (any doctor). Prior rows are merged into read-only history (`TOP_HIST` / `BOTTOM_HIST`)
   /// with that form’s date and doctor name. No other fields are copied. If none exists, leave diagram empty.
@@ -455,6 +512,8 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
         signatureRequested: _signatureRequested,
         patientSignedAt: _patientSignedAt,
         patientSignatureImageBase64: _patientSignatureImageBase64,
+        clinicalDiseaseId: _clinicalDiseaseId,
+        clinicalChipSelections: _clinicalChipSelections,
       );
 
       // Save form data to backend (create or update)
@@ -1340,6 +1399,16 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                 const SizedBox(height: 16),
               ] else
                 const SizedBox(height: 16),
+              if (widget.templateId == '025-2') ...[
+                ClinicalEnginePanel(
+                  api: ClinicalEngineApi(ref.read(apiClientProvider)),
+                  locale: ref.watch(languageProvider).locale.languageCode,
+                  initialDiseaseId: _clinicalDiseaseId,
+                  initialSelections: _clinicalChipSelections,
+                  onSelectionsChanged: _onClinicalSelectionsChanged,
+                  onApplied: _onClinicalEngineApplied,
+                ),
+              ],
               DoctorSpeechTextField(
                 controller: _complaintsCtrl,
                 onTranscriptAppended: _onDoctorSpeechAppended,

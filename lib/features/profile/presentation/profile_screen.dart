@@ -654,7 +654,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _panelTitle('Password'),
+                _panelTitle(l10n.password),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _currentPassCtrl,
@@ -1075,6 +1075,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final brand = Theme.of(context).colorScheme.primary;
+    // Rebuild section labels when the app locale changes (IndexedStack keeps this screen alive).
+    ref.watch(languageProvider);
     if (ref.watch(doctorAppJwtRoleProvider) == DoctorAppJwtRole.clinicStaff) {
       return const _ClinicStaffProfileShell();
     }
@@ -1201,6 +1203,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required Map<String, dynamic> contact,
     required Map<String, dynamic> billing,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final fullName = [
       profile['firstName'] ?? '',
       profile['lastName'] ?? '',
@@ -1214,12 +1217,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return ListView(
       children: [
         Text(
-          AppLocalizations.of(context)!.profile,
+          l10n.profile,
           style: Responsive.pageTitleStyle(context),
         ),
         SizedBox(height: Responsive.sectionGap(context)),
         _SectionCard(
-          title: AppLocalizations.of(context)!.profileInformation,
+          title: l10n.profileInformation,
           subtitleLines: [
             fullName.isEmpty ? '—' : fullName,
             dobLabel ?? '—',
@@ -1232,7 +1235,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         const SizedBox(height: 10),
         _SectionCard(
-          title: AppLocalizations.of(context)!.contactDetails,
+          title: l10n.contactDetails,
           subtitleLines: [
             (contact['phone'] as String?)?.isNotEmpty == true
                 ? contact['phone'] as String
@@ -1246,7 +1249,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         const SizedBox(height: 10),
         _SectionCard(
-          title: AppLocalizations.of(context)!.paymentAndInvoicing,
+          title: l10n.paymentAndInvoicing,
           subtitleLines: [
             (billing['billingName'] as String?)?.isNotEmpty == true
                 ? billing['billingName'] as String
@@ -1266,39 +1269,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         const SizedBox(height: 10),
         _SectionCard(
-          title: AppLocalizations.of(context)!.settings,
+          title: l10n.settings,
           subtitleLines: [
-            AppLocalizations.of(context)!.settingsSubtitle,
+            l10n.settingsSubtitle,
           ],
           selected: _selected == _ProfilePanel.settings,
           onTap: () => _selectProfilePanel(_ProfilePanel.settings),
         ),
         const SizedBox(height: 10),
         _SectionCard(
-          title: AppLocalizations.of(context)!.translate('servicesPricing') ??
-              'Services & Pricing',
+          title: l10n.servicesPricing,
           subtitleLines: [
-            AppLocalizations.of(context)!
-                    .translate('servicesPricingSubtitle') ??
-                'Manage service titles, prices, currencies and descriptions',
+            l10n.servicesPricingSubtitle,
           ],
           selected: _selected == _ProfilePanel.servicesPricing,
           onTap: () => _selectProfilePanel(_ProfilePanel.servicesPricing),
         ),
         const SizedBox(height: 10),
         _SectionCard(
-          title: AppLocalizations.of(context)!.extendedProfile,
+          title: l10n.extendedProfile,
           subtitleLines: [
-            AppLocalizations.of(context)!.extendedProfileSubtitle,
+            l10n.extendedProfileSubtitle,
           ],
           selected: _selected == _ProfilePanel.extended,
           onTap: () => _selectProfilePanel(_ProfilePanel.extended),
         ),
         const SizedBox(height: 10),
         _SectionCard(
-          title: AppLocalizations.of(context)!.schedule,
+          title: l10n.schedule,
           subtitleLines: [
-            AppLocalizations.of(context)!.updateOrChangeSchedule,
+            l10n.updateOrChangeSchedule,
           ],
           onTap: () => Navigator.push(
             context,
@@ -1309,9 +1309,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         const SizedBox(height: 10),
         _SectionCard(
-          title: AppLocalizations.of(context)!.password,
+          title: l10n.password,
           subtitleLines: [
-            AppLocalizations.of(context)!.changeOrResetPassword,
+            l10n.changeOrResetPassword,
           ],
           selected: _selected == _ProfilePanel.password,
           onTap: () => _selectProfilePanel(_ProfilePanel.password),
@@ -1388,6 +1388,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required String? photoUrl,
     Key? key,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final profession = (profile['profession'] as String?) ?? '';
     switch (_selected) {
       case _ProfilePanel.profile:
@@ -2185,15 +2186,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _panelTitle(AppLocalizations.of(context)!
-                      .translate('servicesPricing') ??
-                  'Services & Pricing'),
+              _panelTitle(l10n.servicesPricing),
               const SizedBox(height: 12),
-              Text(
-                AppLocalizations.of(context)!
-                        .translate('servicesPricingPanelDesc') ??
-                    'Define billable services with descriptions and multi-currency prices.',
-              ),
+              Text(l10n.servicesPricingPanelDesc),
               const SizedBox(height: 16),
               ShifaPrimaryButton(
                 onPressed: () {
@@ -2201,9 +2196,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     MaterialPageRoute(builder: (_) => const ServicesPricingScreen()),
                   );
                 },
-                label: AppLocalizations.of(context)!
-                        .translate('openServicesPricing') ??
-                    'Open Services & Pricing',
+                label: l10n.openServicesPricing,
                 icon: Icons.medical_services_outlined,
                 width: ButtonWidth.hug,
               ),
@@ -2221,7 +2214,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _panelTitle('Password'),
+                _panelTitle(l10n.password),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _currentPassCtrl,

@@ -5570,7 +5570,13 @@ class AppLocalizations {
     final embeddedEn = _localizedValues['en'];
 
     String? resolveFromAsset() => assetMap?[key];
-    String? resolveFromEmbedded() => embedded?[key] ?? embeddedEn?[key];
+    String? resolveFromEmbedded() {
+      final localized = embedded?[key];
+      if (localized != null) return localized;
+      // Avoid leaking English strings into uz/ru when a key is missing.
+      if (lc != 'en') return null;
+      return embeddedEn?[key];
+    }
 
     if (lc == 'uz' && (locale.scriptCode ?? '') == 'Cyrl') {
       final uzVal = resolveFromAsset() ?? resolveFromEmbedded();
@@ -5860,6 +5866,10 @@ class AppLocalizations {
   String get removeService => translate('removeService');
   String get openServicesPricingToManageEntries =>
       translate('openServicesPricingToManageEntries');
+  String get servicesPricing => translate('servicesPricing');
+  String get servicesPricingSubtitle => translate('servicesPricingSubtitle');
+  String get servicesPricingPanelDesc => translate('servicesPricingPanelDesc');
+  String get openServicesPricing => translate('openServicesPricing');
   String get enterService => translate('enterService');
 
   // Home

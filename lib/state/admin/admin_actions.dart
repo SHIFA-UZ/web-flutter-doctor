@@ -191,6 +191,39 @@ class AdminActions {
     };
   }
 
+  Future<Map<String, dynamic>> listPatientProfilesWithoutAppAccount({
+    String? search,
+    int page = 0,
+    int size = 20,
+  }) async {
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      'size': size.toString(),
+    };
+    if (search != null && search.trim().isNotEmpty) {
+      queryParams['search'] = search.trim();
+    }
+
+    final response = await apiClient.get(
+      '/api/admin/users/patient-profiles/without-app-account',
+      params: queryParams,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to list patient profiles: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return {
+      'content': (json['content'] as List)
+          .map((e) => AdminPatientProfileRow.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      'totalElements': json['totalElements'] as int,
+      'totalPages': json['totalPages'] as int,
+      'number': json['number'] as int,
+    };
+  }
+
   Future<AdminUser> getUser(int userId) async {
     final response = await apiClient.get('/api/admin/users/$userId');
 

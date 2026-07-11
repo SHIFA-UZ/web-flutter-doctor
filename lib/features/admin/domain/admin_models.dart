@@ -137,6 +137,45 @@ class AdminUser {
   }
 }
 
+class AdminPatientProfileRow {
+  final int patientProfileId;
+  final String fullName;
+  final String? phone;
+  final String? email;
+  final String? createdAt;
+  final int? createdByDoctorId;
+  final String? createdByDoctorName;
+
+  AdminPatientProfileRow({
+    required this.patientProfileId,
+    required this.fullName,
+    this.phone,
+    this.email,
+    this.createdAt,
+    this.createdByDoctorId,
+    this.createdByDoctorName,
+  });
+
+  factory AdminPatientProfileRow.fromJson(Map<String, dynamic> json) {
+    int? parseNullableInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString());
+    }
+
+    return AdminPatientProfileRow(
+      patientProfileId: parseNullableInt(json['patientProfileId']) ?? 0,
+      fullName: json['fullName']?.toString() ?? '',
+      phone: json['phone'] as String?,
+      email: json['email'] as String?,
+      createdAt: json['createdAt'] as String?,
+      createdByDoctorId: parseNullableInt(json['createdByDoctorId']),
+      createdByDoctorName: json['createdByDoctorName'] as String?,
+    );
+  }
+}
+
 class AdminClinicSummary {
   final int id;
   final String name;

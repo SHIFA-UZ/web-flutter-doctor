@@ -67,6 +67,30 @@ class UsersProviderParams {
       size.hashCode;
 }
 
+class PatientProfilesListParams {
+  final String? search;
+  final int page;
+  final int size;
+
+  PatientProfilesListParams({
+    this.search,
+    this.page = 0,
+    this.size = 20,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PatientProfilesListParams &&
+          runtimeType == other.runtimeType &&
+          search == other.search &&
+          page == other.page &&
+          size == other.size;
+
+  @override
+  int get hashCode => search.hashCode ^ page.hashCode ^ size.hashCode;
+}
+
 class AuditLogsProviderParams {
   final int? adminUserId;
   final String? entityType;

@@ -30,6 +30,16 @@ final userManagementStatsProvider = FutureProvider<UserManagementStats>((ref) as
   return actions.getUserManagementStats();
 });
 
+final adminPatientProfilesWithoutAppProvider =
+    FutureProvider.family<Map<String, dynamic>, PatientProfilesListParams>((ref, params) async {
+  final actions = ref.watch(adminActionsProvider);
+  return actions.listPatientProfilesWithoutAppAccount(
+    search: params.search,
+    page: params.page,
+    size: params.size,
+  );
+});
+
 final adminUsersProvider = FutureProvider.family<Map<String, dynamic>, UsersProviderParams>((ref, params) async {
   final actions = ref.watch(adminActionsProvider);
   return actions.listUsers(

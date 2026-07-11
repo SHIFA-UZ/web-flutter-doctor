@@ -30,13 +30,17 @@ Future<Uint8List> generateEarlyPartnerContractPdf({
 
   Uint8List? partnerSignatureImage;
   if (data.autoSignPartner) {
-    final signatureText = buildPartnerSignatureText(
+    final inkText = buildPartnerSignatureInkText(
       firstName: data.partnerFirstName,
       lastName: data.partnerLastName,
       fullName: data.partnerFullName,
     );
-    if (signatureText.isNotEmpty) {
-      partnerSignatureImage = await renderPartnerSignatureImage(signatureText);
+    if (inkText.isNotEmpty) {
+      partnerSignatureImage = await renderPartnerSignatureImage(
+        firstName: data.partnerFirstName,
+        lastName: data.partnerLastName,
+        inkText: inkText,
+      );
     }
   }
 
@@ -536,7 +540,7 @@ pw.Widget _sigColumn(
         pw.SizedBox(height: 4),
         if (signatureImageBytes != null && signatureImageBytes.isNotEmpty) ...[
           pw.SizedBox(
-            height: 44,
+            height: 52,
             child: pw.Image(
               pw.MemoryImage(signatureImageBytes),
               fit: pw.BoxFit.contain,

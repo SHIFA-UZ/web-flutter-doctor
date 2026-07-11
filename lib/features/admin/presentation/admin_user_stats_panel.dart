@@ -8,6 +8,7 @@ class AdminUserStatsPanel extends StatelessWidget {
   final VoidCallback? onFilterPatients;
   final VoidCallback? onFilterPatientsWithDevice;
   final VoidCallback? onFilterPatientsWithoutDevice;
+  final VoidCallback? onFilterProfilesWithoutApp;
   final VoidCallback? onFilterDoctors;
 
   const AdminUserStatsPanel({
@@ -16,6 +17,7 @@ class AdminUserStatsPanel extends StatelessWidget {
     this.onFilterPatients,
     this.onFilterPatientsWithDevice,
     this.onFilterPatientsWithoutDevice,
+    this.onFilterProfilesWithoutApp,
     this.onFilterDoctors,
   });
 
@@ -67,7 +69,7 @@ class AdminUserStatsPanel extends StatelessWidget {
               subtitle: '${stats.profilesWithAppAccount} ${l10n.translate('withAppAccount')} · ${stats.profilesWithoutAppAccount} ${l10n.translate('doctorCreatedOnly')}',
               icon: Icons.folder_shared,
               color: Colors.indigo,
-              onTap: onFilterPatients,
+              onTap: onFilterProfilesWithoutApp ?? onFilterPatients,
             ),
             _StatTile(
               title: l10n.translate('patientsWithDevice'),
