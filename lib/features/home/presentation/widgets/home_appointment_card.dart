@@ -84,6 +84,7 @@ class HomeAppointmentCard extends StatelessWidget {
     required this.onTap,
     required this.onStart,
     this.onBriefing,
+    this.onVisitBriefing,
     this.compact = false,
   });
 
@@ -97,6 +98,7 @@ class HomeAppointmentCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onStart;
   final VoidCallback? onBriefing;
+  final VoidCallback? onVisitBriefing;
   final bool compact;
 
   @override
@@ -203,6 +205,36 @@ class HomeAppointmentCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   Wrap(spacing: 6, runSpacing: 6, children: alertChips),
                 ],
+                if (appointment.hasVisitBriefing) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      if (appointment.attachmentCount > 0)
+                        PatientAlertChip(
+                          label:
+                              '${l10n.translate('attachmentsAttached')}: ${appointment.attachmentCount}',
+                          variant: AlertChipVariant.info,
+                        ),
+                      if (appointment.briefingStatus == 'READY')
+                        PatientAlertChip(
+                          label: l10n.translate('viewVisitBriefing'),
+                          variant: AlertChipVariant.info,
+                        ),
+                      if (appointment.briefingStatus == 'PENDING')
+                        PatientAlertChip(
+                          label: l10n.translate('visitBriefingPending'),
+                          variant: AlertChipVariant.warning,
+                        ),
+                      if (appointment.briefingStatus == 'FAILED')
+                        PatientAlertChip(
+                          label: l10n.translate('visitBriefingFailed'),
+                          variant: AlertChipVariant.danger,
+                        ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -253,6 +285,20 @@ class HomeAppointmentCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      if (onVisitBriefing != null &&
+                          appointment.hasVisitBriefing) ...[
+                        const SizedBox(width: 8),
+                        IconButton.outlined(
+                          onPressed: onVisitBriefing,
+                          icon: Icon(Icons.auto_awesome_outlined,
+                              size: 18, color: brand),
+                          tooltip: l10n.translate('viewVisitBriefing'),
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(40, 40),
+                            side: BorderSide(color: AppDesignSystem.border),
+                          ),
+                        ),
+                      ],
                       if (onBriefing != null && appointment.patientId != null) ...[
                         const SizedBox(width: 8),
                         IconButton.outlined(
@@ -270,13 +316,30 @@ class HomeAppointmentCard extends StatelessWidget {
                   ),
                 ] else if (!isCompleted) ...[
                   const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ShifaActionButton(
-                      label: l10n.start,
-                      onPressed: startButtonEnabled ? onStart : null,
-                      actionStyle: ActionButtonStyle.primary,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ShifaActionButton(
+                          label: l10n.start,
+                          onPressed: startButtonEnabled ? onStart : null,
+                          actionStyle: ActionButtonStyle.primary,
+                        ),
+                      ),
+                      if (onVisitBriefing != null &&
+                          appointment.hasVisitBriefing) ...[
+                        const SizedBox(width: 8),
+                        IconButton.outlined(
+                          onPressed: onVisitBriefing,
+                          icon: Icon(Icons.auto_awesome_outlined,
+                              size: 18, color: brand),
+                          tooltip: l10n.translate('viewVisitBriefing'),
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(40, 40),
+                            side: BorderSide(color: AppDesignSystem.border),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ],

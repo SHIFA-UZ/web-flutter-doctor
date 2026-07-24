@@ -68,10 +68,10 @@ class _ActivityTrackerState extends ConsumerState<ActivityTracker>
     // Listen to timer provider to ensure it's created when authenticated
     ref.watch(inactivityTimerProvider);
     
+    // Only pointer down/up — not move — to avoid timer/disk churn during mouse hover or scroll.
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => _resetTimer(),
-      onPointerMove: (_) => _resetTimer(),
       onPointerUp: (_) => _resetTimer(),
       child: widget.child,
     );

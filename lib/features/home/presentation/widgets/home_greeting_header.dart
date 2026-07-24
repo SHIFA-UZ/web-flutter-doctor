@@ -230,7 +230,7 @@ class _HeaderIconButtons extends StatelessWidget {
       children: [
         IconButton.outlined(
           onPressed: onSearchTap,
-          tooltip: '⌘K',
+          tooltip: AppLocalizations.of(context)?.translate('search') ?? 'Search',
           icon: const Icon(Icons.search, size: 20),
           style: IconButton.styleFrom(
             minimumSize: const Size(40, 40),

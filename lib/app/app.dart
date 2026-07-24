@@ -25,6 +25,7 @@ import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
+import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
@@ -221,6 +222,16 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
         final pushService = PushNotificationService();
         pushService.setOnForegroundDataRefresh((data) {
           if (!ref.read(authProvider).isAuthenticated) return;
+          // Invalidate notification lists once; appointment pushes still go
+          // through refreshCalendarFromPushPayload for calendar/analytics.
+          // Skip duplicate notification invalidation inside that helper by
+          // handling feeds here for every push type.
+          try {
+            ref.invalidate(doctorNotificationsProvider);
+            ref.invalidate(doctorNotificationsUnreadCountProvider);
+          } catch (e) {
+            debugPrint('Foreground notification invalidate failed: $e');
+          }
           unawaited(refreshCalendarFromPushPayload(ref, data));
         });
         pushService.setOnNotificationTap((data) {

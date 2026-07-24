@@ -6,6 +6,7 @@ import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
+import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_refresh.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_activity_feed.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_ai_copilot.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_analytics_section.dart';
@@ -44,24 +45,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _openNotifications() =>
       ref.read(shellProvider.notifier).setTab(DoctorShellTab.notifications);
 
+  Future<void> _refreshHome() => refreshHomeDashboard(ref);
+
+  void _refreshHomeOnTabFocus() {
+    // Fire-and-forget; cooldown inside prevents rapid repeated work.
+    refreshHomeDashboardOnTabFocus(ref);
+  }
+
   @override
   Widget build(BuildContext context) {
     final useSinglePane = PlatformLayout.useSinglePane(context);
     final isTablet = Responsive.isTablet(context);
+
+    // Home stays mounted in IndexedStack — lightly refresh feeds when returning,
+    // with an in-function cooldown so tab spam cannot spike CPU/network.
+    ref.listen<int>(shellProvider, (prev, next) {
+      if (next == DoctorShellTab.home && prev != DoctorShellTab.home) {
+        _refreshHomeOnTabFocus();
+      }
+    });
 
     return HomeSearchShortcut(
       child: Scaffold(
         backgroundColor: AppColors.scaffoldBackground,
         body: Stack(
           children: [
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: Responsive.screenPadding(context),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+            RefreshIndicator(
+              onRefresh: _refreshHome,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: Responsive.screenPadding(context),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                         HomeGreetingHeader(
                           onSearchTap: _openSearch,
                           onNotificationsTap: _openNotifications,
@@ -175,6 +194,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ],
+              ),
             ),
             Positioned(
               right: useSinglePane ? 16 : 32,

@@ -28,6 +28,8 @@ import 'package:shifa_doc_app_v1/features/tasks/presentation/select_template_scr
 import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
 import 'package:shifa_doc_app_v1/features/notifications/presentation/notifications_screen.dart';
 import 'package:shifa_doc_app_v1/features/clinic/presentation/clinic_treatment_plan_detail_screen.dart';
+import 'package:shifa_doc_app_v1/features/care_partnerships/presentation/care_partnership_screens.dart';
+import 'package:shifa_doc_app_v1/features/care_partnerships/presentation/find_therapy_partner_screen.dart';
 
 /// Central list of route names used across the app.
 class AppRoutes {
@@ -52,6 +54,9 @@ class AppRoutes {
   static const notifications = '/app/notifications';
   /// Treatment plan detail (arguments: [int] planId).
   static const clinicTreatmentPlanDetail = '/app/clinic/treatment-plan';
+  static const findTherapyPartner = '/app/care-partnerships/find';
+  static const carePartnerships = '/app/care-partnerships';
+  static const carePartnershipDetail = '/app/care-partnerships/detail';
   static const adminLogin = '/admin/login';
   static const adminForgotPassword = '/admin/forgot-password';
   static const adminShell = '/admin';
@@ -133,6 +138,28 @@ class AppRouter {
         }
         return MaterialPageRoute(
           builder: (_) => ClinicTreatmentPlanDetailScreen(planId: planId),
+        );
+
+      case AppRoutes.findTherapyPartner:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => FindTherapyPartnerScreen(
+            patientId: (args['patientId'] as num).toInt(),
+            patientName: args['patientName'] as String? ?? 'Patient',
+          ),
+        );
+
+      case AppRoutes.carePartnerships:
+        return MaterialPageRoute(
+          builder: (_) => const CarePartnershipsListScreen(),
+        );
+
+      case AppRoutes.carePartnershipDetail:
+        final id = settings.arguments is int
+            ? settings.arguments as int
+            : int.tryParse(settings.arguments?.toString() ?? '') ?? 0;
+        return MaterialPageRoute(
+          builder: (_) => CarePartnershipDetailScreen(partnershipId: id),
         );
 
       case AppRoutes.patientsWithSelection:

@@ -591,7 +591,7 @@ class AppointmentConsultationHeader extends StatelessWidget {
           parts.isEmpty
               ? const SizedBox.shrink()
               : Text(
-                parts.join(' • '),
+                parts.join(' - '),
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               );
     }

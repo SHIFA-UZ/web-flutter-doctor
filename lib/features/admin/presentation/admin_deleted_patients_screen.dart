@@ -232,7 +232,7 @@ class _AdminDeletedPatientsScreenState extends ConsumerState<AdminDeletedPatient
                   return Card(
                     child: ListTile(
                       title: Text('PatientProfile: ${m.patientProfileId}'),
-                      subtitle: Text('Matched by ${m.matchedBy} • Deleted at: ${m.deletedAt ?? "n/a"}'),
+                      subtitle: Text('Matched by ${m.matchedBy} - Deleted at: ${m.deletedAt ?? "n/a"}'),
                       trailing: SizedBox(
                         width: 220,
                         child: Wrap(

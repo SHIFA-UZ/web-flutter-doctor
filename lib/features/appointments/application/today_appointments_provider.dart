@@ -38,6 +38,8 @@ final todayAppointmentsProvider = FutureProvider<List<Appointment>>((ref) async 
             status: AppointmentStatus.fromString(e.status) ?? AppointmentStatus.confirmed,
             photoUrl: e.photoUrl,
             reason: e.reason.isNotEmpty ? e.reason : null,
+            briefingStatus: e.briefingStatus,
+            attachmentCount: e.attachmentCount,
           ))
       .toList()
     ..sort((a, b) {

@@ -348,13 +348,9 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
   Future<void> _askAi() async {
     final question = _aiController.text.trim();
     if (question.isEmpty || _aiLoading) return;
-    if (widget.selectedPatientId != null) {
-      await ref
-          .read(patientBriefingContextProvider.notifier)
-          .ensureLoaded(widget.selectedPatientId!);
-    }
 
-    final aiApi = ref.read(aiApiProvider);
+    // Lock UI immediately so repeated Enter presses cannot queue duplicates
+    // while patient briefing (or the AI stream) is still loading.
     final next = [..._conversation, AiMessage(role: 'user', content: question)];
     setState(() {
       _conversation = next;
@@ -363,6 +359,14 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
       _aiLoading = true;
     });
     _aiController.clear();
+
+    if (widget.selectedPatientId != null) {
+      await ref
+          .read(patientBriefingContextProvider.notifier)
+          .ensureLoaded(widget.selectedPatientId!);
+    }
+
+    final aiApi = ref.read(aiApiProvider);
     _aiSub?.cancel();
     _aiSub = aiApi
         .streamAi(

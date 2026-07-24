@@ -1535,14 +1535,6 @@ class _SidebarSearchButtonDark extends StatelessWidget {
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                 ),
               ),
-              Text(
-                '⌘K',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.65),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ],
           ),
         ),
@@ -1803,14 +1795,6 @@ class _SidebarSearchButton extends StatelessWidget {
                 child: Text(
                   l10n.translate('search') ?? 'Search',
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                ),
-              ),
-              Text(
-                '⌘K',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade400,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

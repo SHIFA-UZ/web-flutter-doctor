@@ -265,7 +265,9 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     if (prof == null || prof.trim().isEmpty) return;
     _documentationProfessionDefaultApplied = true;
     if (_userSelectedDocumentationType) return;
-    final mode = isDentalDocumentationProfession(prof) ? 'dental' : 'general';
+    final mode = documentationTemplateForProfession(prof) == DocumentationTemplate.dental
+        ? 'dental'
+        : 'general';
     if (_documentationType == mode) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

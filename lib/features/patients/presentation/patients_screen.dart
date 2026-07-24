@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -28,7 +28,7 @@ import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart'
         fetchProphylaxisSettingsWithClient,
         upsertProphylaxisSettingsWithClient;
 import 'package:shifa_doc_app_v1/features/patients/presentation/document_viewer_screen.dart';
-import 'package:flutter/services.dart'; // âœ… for Clipboard
+import 'package:flutter/services.dart'; // OK for Clipboard
 import 'package:shifa_doc_app_v1/state/patients/patient_documents_provider.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';

@@ -1166,7 +1166,7 @@
   "errorSavingDocumentation": "Hujjatlarni saqlashda xatolik",
   "errorPickingImage": "Rasmni tanlashda xatolik",
   "errorLoadingPatientId": "Bemor ID ni yuklashda xatolik",
-  "consultationScheduleLine": "{start} – {end} • Konsultatsiya",
+  "consultationScheduleLine": "{start} - {end} - Konsultatsiya",
   "patientIdLabel": "ID #{id}",
   "patientAgeYears": "{age} yosh",
   "appointmentStatusRequested": "So'ralgan",

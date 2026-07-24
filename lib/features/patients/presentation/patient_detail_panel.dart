@@ -155,6 +155,29 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                   ref.read(patientBriefingProvider.notifier).generate(p.id, p.name);
                 },
               ),
+            ListTile(
+              leading: Icon(Icons.handshake_outlined, color: brand),
+              title: Text(l10n.translate('findTherapyPartner')),
+              onTap: () {
+                Navigator.pop(ctx);
+                ShellScope.pushNamed(
+                  context,
+                  AppRoutes.findTherapyPartner,
+                  arguments: {
+                    'patientId': int.parse(p.id),
+                    'patientName': p.name,
+                  },
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.groups_outlined, color: brand),
+              title: Text(l10n.translate('carePartnerships')),
+              onTap: () {
+                Navigator.pop(ctx);
+                ShellScope.pushNamed(context, AppRoutes.carePartnerships);
+              },
+            ),
           ],
         ),
       ),
@@ -171,7 +194,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     final stats = [
       PatientSummaryStat(
         label: l10n.translate('age') ?? 'Age',
-        value: age?.toString() ?? 'â€”',
+        value: age?.toString() ?? '-',
       ),
       PatientSummaryStat(
         label: l10n.gender,
@@ -402,7 +425,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                   final dateLine =
                       '${two(start.day)}.${two(start.month)}.${start.year}';
                   final timeLine =
-                      '${two(start.hour)}:${two(start.minute)} â€“ ${two(end.hour)}:${two(end.minute)}';
+                      '${two(start.hour)}:${two(start.minute)} - ${two(end.hour)}:${two(end.minute)}';
                   final location = appt.isVideo
                       ? l10n.videoCall
                       : ((appt.location ?? '').trim().isNotEmpty
@@ -926,7 +949,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
                               SnackBar(
                                 content: Text(
                                   l10n.translate('bookingRangeUnavailable') ??
-                                      'Selected time range is no longer fully available â€” calendar refreshed.',
+                                      'Selected time range is no longer fully available - calendar refreshed.',
                                 ),
                               ),
                             );
@@ -1077,7 +1100,7 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     final end = appt.endAt.toLocal();
     final dateLine = '${two(start.day)}.${two(start.month)}.${start.year}';
     final timeLine =
-        '${two(start.hour)}:${two(start.minute)} â€“ ${two(end.hour)}:${two(end.minute)}';
+        '${two(start.hour)}:${two(start.minute)} - ${two(end.hour)}:${two(end.minute)}';
     final location = appt.isVideo
         ? l10n.videoCall
         : ((appt.location ?? '').trim().isNotEmpty
@@ -2934,7 +2957,7 @@ class _GeneralInfoState extends ConsumerState<_GeneralInfo> {
                     .map(
                       (g) => DropdownMenuItem<String>(
                         value: g,
-                        child: Text(g.isEmpty ? 'â€”' : g),
+                        child: Text(g.isEmpty ? '-' : g),
                       ),
                     )
                     .toList(),

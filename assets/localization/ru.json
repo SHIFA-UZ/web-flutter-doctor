@@ -1014,7 +1014,7 @@
   "errorSavingDocumentation": "Ошибка при сохранении документации",
   "errorPickingImage": "Ошибка при выборе изображения",
   "errorLoadingPatientId": "Ошибка при загрузке ID пациента",
-  "consultationScheduleLine": "{start} – {end} • Консультация",
+  "consultationScheduleLine": "{start} - {end} - Консультация",
   "patientIdLabel": "ID №{id}",
   "patientAgeYears": "{age} лет",
   "appointmentStatusRequested": "Запрошен",

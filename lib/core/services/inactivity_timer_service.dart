@@ -1,13 +1,27 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../state/auth/auth_controller.dart';
 import '../util/jwt_utils.dart';
 
 const String _lastActivityStorageKey = 'shifa_doctor_last_activity_ms';
 
-/// Service that tracks user inactivity and automatically logs out after 1 hour.
+/// Web sessions expire after 1 hour of inactivity (shared browsers).
+/// Native/desktop apps (Windows, macOS, Linux, mobile) stay signed in for 30 days.
+const Duration webSessionInactivityTimeout = Duration(hours: 1);
+const Duration nativeSessionInactivityTimeout = Duration(days: 30);
+
+Duration sessionInactivityTimeout() =>
+    kIsWeb ? webSessionInactivityTimeout : nativeSessionInactivityTimeout;
+
+/// How often to persist last-activity to disk (avoids SharedPreferences writes on every tap).
+const Duration inactivityPersistThrottle = Duration(minutes: 5);
+
+/// Service that tracks user inactivity and automatically logs out when idle too long.
 /// Persists last activity so background/throttled browser tabs still enforce timeout on resume.
 class InactivityTimerService {
   Timer? _timer;
@@ -15,19 +29,28 @@ class InactivityTimerService {
   final VoidCallback _onTimeout;
   final VoidCallback? _onJwtExpired;
   DateTime? _lastActivityTime;
+  DateTime? _lastPersistAt;
 
   InactivityTimerService({
     Duration? timeoutDuration,
     required VoidCallback onTimeout,
     VoidCallback? onJwtExpired,
-  })  : _timeoutDuration = timeoutDuration ?? const Duration(hours: 1),
+  })  : _timeoutDuration = timeoutDuration ?? sessionInactivityTimeout(),
         _onTimeout = onTimeout,
         _onJwtExpired = onJwtExpired;
 
   /// Reset the inactivity timer (call this on user activity).
+  /// Disk persistence is throttled; the in-memory timer always restarts so idle timeout stays accurate.
   void resetTimer() {
-    _lastActivityTime = DateTime.now();
-    unawaited(_persistLastActivity(_lastActivityTime!));
+    final now = DateTime.now();
+    _lastActivityTime = now;
+
+    if (_lastPersistAt == null ||
+        now.difference(_lastPersistAt!) >= inactivityPersistThrottle) {
+      _lastPersistAt = now;
+      unawaited(_persistLastActivity(now));
+    }
+
     _timer?.cancel();
     _timer = Timer(_timeoutDuration, _onTimeout);
   }
@@ -53,6 +76,7 @@ class InactivityTimerService {
     _timer?.cancel();
     _timer = null;
     _lastActivityTime = null;
+    _lastPersistAt = null;
     unawaited(_clearLastActivity());
   }
 
