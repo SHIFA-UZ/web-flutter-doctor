@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
@@ -85,6 +86,7 @@ class DentalVisitDocumentationPanel extends ConsumerStatefulWidget {
     this.planSummary,
     this.onFulfillmentChanged,
     this.onRetryLoadPlan,
+    this.primaryScroll = true,
   });
 
   final String appointmentId;
@@ -105,6 +107,9 @@ class DentalVisitDocumentationPanel extends ConsumerStatefulWidget {
   final TreatmentPlanSummaryDto? planSummary;
   final VoidCallback? onFulfillmentChanged;
   final VoidCallback? onRetryLoadPlan;
+
+  /// When false, content is not wrapped in its own scroll view (parent scrolls).
+  final bool primaryScroll;
 
   @override
   ConsumerState<DentalVisitDocumentationPanel> createState() =>
@@ -700,8 +705,8 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
         const SizedBox(height: 16),
         DoctorSpeechTextField(
           controller: _notesCtrl,
-          minLines: 2,
-          maxLines: 5,
+          minLines: Responsive.useCompactToolbar(context) ? 4 : 2,
+          maxLines: Responsive.useCompactToolbar(context) ? 10 : 5,
           onTranscriptAppended: _touch,
           decoration: InputDecoration(
             labelText: l10n.translate('dentalClinicalNotes'),
@@ -1100,12 +1105,16 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     }
 
     if (_isPlanMode) {
+      final planBody = Padding(
+        padding: EdgeInsets.only(bottom: widget.primaryScroll ? 24 : 8),
+        child: _buildPlanModeBody(l10n),
+      );
       return Stack(
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: _buildPlanModeBody(l10n),
-          ),
+          if (widget.primaryScroll)
+            SingleChildScrollView(child: planBody)
+          else
+            planBody,
           if (_saving)
             const Positioned.fill(
               child: IgnorePointer(
@@ -1128,107 +1137,109 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     final generalCount =
         (_teeth[DentalChartCodec.generalServicesKey] ?? const []).length;
 
+    final body = Padding(
+      padding: EdgeInsets.only(bottom: widget.primaryScroll ? 24 : 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.translate('dentalDocIntro'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          DentalFdiChart(
+            brand: widget.brand,
+            dentition: _dentition,
+            onDentitionChanged: (d) {
+              setState(() => _dentition = d);
+              _touch();
+            },
+            toothServiceCounts: {
+              for (final fdi in DentalChartCodec.visitDocTeethOrder(_dentition))
+                if ((_teeth[fdi] ?? const []).isNotEmpty)
+                  fdi: (_teeth[fdi] ?? const []).length,
+            },
+            onToothTap: (fdi) => _openServicesEditor(
+              fdi,
+              titlePrefix: l10n.translate('dentalToothServices'),
+            ),
+            showTitle: false,
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => _openServicesEditor(
+              DentalChartCodec.generalServicesKey,
+              titlePrefix: l10n.translate('dentalGeneralServices'),
+            ),
+            icon: const Icon(Icons.medical_services_outlined),
+            label: Text(
+              generalCount > 0
+                  ? '${l10n.translate('dentalGeneralServices')} ($generalCount)'
+                  : l10n.translate('dentalGeneralServices'),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.translate('dentalGeneralServicesHint'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade700,
+                ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _discountCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: l10n.translate('dentalDiscountPercent'),
+              suffixText: '%',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          DoctorSpeechTextField(
+            controller: _notesCtrl,
+            minLines: Responsive.useCompactToolbar(context) ? 4 : 2,
+            maxLines: Responsive.useCompactToolbar(context) ? 10 : 5,
+            onTranscriptAppended: _touch,
+            decoration: InputDecoration(
+              labelText: l10n.translate('dentalClinicalNotes'),
+              alignLabelWithHint: true,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '${l10n.translate('dentalSubtotal')}: ${(sub / 100).toStringAsFixed(2)} $ccy · $lineCount ${l10n.translate('dentalLineItems')}',
+                  ),
+                  if (disc > 0)
+                    Text(
+                      '${l10n.translate('dentalDiscount')}: ${disc.toStringAsFixed(1)}%',
+                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${l10n.translate('dentalTotal')}: ${(total / 100).toStringAsFixed(2)} $ccy',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: widget.brand,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Stack(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                l10n.translate('dentalDocIntro'),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 12),
-              DentalFdiChart(
-                brand: widget.brand,
-                dentition: _dentition,
-                onDentitionChanged: (d) {
-                  setState(() => _dentition = d);
-                  _touch();
-                },
-                toothServiceCounts: {
-                  for (final fdi in DentalChartCodec.visitDocTeethOrder(_dentition))
-                    if ((_teeth[fdi] ?? const []).isNotEmpty)
-                      fdi: (_teeth[fdi] ?? const []).length,
-                },
-                onToothTap: (fdi) => _openServicesEditor(
-                  fdi,
-                  titlePrefix: l10n.translate('dentalToothServices'),
-                ),
-                showTitle: false,
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => _openServicesEditor(
-                  DentalChartCodec.generalServicesKey,
-                  titlePrefix: l10n.translate('dentalGeneralServices'),
-                ),
-                icon: const Icon(Icons.medical_services_outlined),
-                label: Text(
-                  generalCount > 0
-                      ? '${l10n.translate('dentalGeneralServices')} ($generalCount)'
-                      : l10n.translate('dentalGeneralServices'),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.translate('dentalGeneralServicesHint'),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _discountCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: l10n.translate('dentalDiscountPercent'),
-                  suffixText: '%',
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 12),
-              DoctorSpeechTextField(
-                controller: _notesCtrl,
-                minLines: 2,
-                maxLines: 5,
-                onTranscriptAppended: _touch,
-                decoration: InputDecoration(
-                  labelText: l10n.translate('dentalClinicalNotes'),
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        '${l10n.translate('dentalSubtotal')}: ${(sub / 100).toStringAsFixed(2)} $ccy · $lineCount ${l10n.translate('dentalLineItems')}',
-                      ),
-                      if (disc > 0)
-                        Text(
-                          '${l10n.translate('dentalDiscount')}: ${disc.toStringAsFixed(1)}%',
-                        ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${l10n.translate('dentalTotal')}: ${(total / 100).toStringAsFixed(2)} $ccy',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: widget.brand,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        if (widget.primaryScroll) SingleChildScrollView(child: body) else body,
         if (_saving)
           const Positioned.fill(
             child: IgnorePointer(

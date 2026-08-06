@@ -49,7 +49,9 @@ class ClinicInvitationsTab extends ConsumerWidget {
           content: TextField(
             controller: emailCtrl,
             autofocus: true,
-            decoration: InputDecoration(labelText: l10n.translate('clinicInviteEmailLabel')),
+            decoration: InputDecoration(
+              labelText: l10n.translate('clinicInviteEmailLabel'),
+            ),
             keyboardType: TextInputType.emailAddress,
           ),
           actions: [
@@ -74,117 +76,115 @@ class ClinicInvitationsTab extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final invitations = ref.watch(clinicInvitationsProvider(clinicId));
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFA),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(clinicInvitationsProvider(clinicId));
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: invitations.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => ListView(children: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(clinicInvitationsProvider(clinicId));
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: invitations.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => ListView(
+            children: [
               Center(child: Text('${l10n.error}: $e')),
-            ]),
-            data: (rows) {
-              return CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: ShifaPrimaryButton(
-                        label: l10n.translate('clinicInviteCreateTitle'),
-                        icon: Icons.person_add_alt_1_outlined,
-                        width: ButtonWidth.fill,
-                        onPressed: () => _openInviteDialog(context, ref),
-                      ),
+            ],
+          ),
+          data: (rows) {
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: ShifaPrimaryButton(
+                      label: l10n.translate('clinicInviteCreateTitle'),
+                      icon: Icons.person_add_alt_1_outlined,
+                      width: ButtonWidth.fill,
+                      onPressed: () => _openInviteDialog(context, ref),
                     ),
                   ),
-                  if (rows.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Text(l10n.translate('clinicInviteEmpty')),
-                      ),
-                    )
-                  else
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (ctx, idx) {
-                          final row = rows[idx];
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: idx == rows.length - 1 ? 0 : 12,
-                            ),
-                            child: Card(
-                              child: ListTile(
-                                title: Text(
-                                  (row.emailSentTo != null &&
-                                          row.emailSentTo!.isNotEmpty)
-                                      ? row.emailSentTo!
-                                      : '${l10n.translate('clinicInviteEmailLabel')} —',
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if ((row.expiresAt ?? '').isNotEmpty)
-                                      Text(
-                                        '${l10n.translate('clinicInviteExpires')}: ${row.expiresAt}',
-                                      ),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          row.consumed
-                                              ? Icons.check_circle
-                                              : Icons.hourglass_bottom,
-                                          size: 16,
-                                          color: row.pending
-                                              ? AppColors.primaryTeal
-                                              : Colors.grey,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          row.consumed
-                                              ? l10n.translate(
-                                                  'clinicInviteConsumed',
-                                                )
-                                              : l10n.translate(
-                                                  'clinicInvitePending',
-                                                ),
-                                        ),
-                                      ],
+                ),
+                if (rows.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text(l10n.translate('clinicInviteEmpty')),
+                    ),
+                  )
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, idx) {
+                        final row = rows[idx];
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: idx == rows.length - 1 ? 0 : 12,
+                          ),
+                          child: Card(
+                            child: ListTile(
+                              title: Text(
+                                (row.emailSentTo != null &&
+                                        row.emailSentTo!.isNotEmpty)
+                                    ? row.emailSentTo!
+                                    : '${l10n.translate('clinicInviteEmailLabel')} —',
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if ((row.expiresAt ?? '').isNotEmpty)
+                                    Text(
+                                      '${l10n.translate('clinicInviteExpires')}: ${row.expiresAt}',
                                     ),
-                                  ],
-                                ),
-                                trailing: IconButton(
-                                  tooltip: l10n.translate(
-                                    'clinicInviteRevokeTooltip',
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        row.consumed
+                                            ? Icons.check_circle
+                                            : Icons.hourglass_bottom,
+                                        size: 16,
+                                        color: row.pending
+                                            ? AppColors.primaryTeal
+                                            : Colors.grey,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        row.consumed
+                                            ? l10n.translate(
+                                                'clinicInviteConsumed',
+                                              )
+                                            : l10n.translate(
+                                                'clinicInvitePending',
+                                              ),
+                                      ),
+                                    ],
                                   ),
-                                  onPressed: !row.pending
-                                      ? null
-                                      : () async {
-                                          await revokeClinicInvitation(
-                                            ref,
-                                            clinicId: clinicId,
-                                            invitationId: row.id,
-                                          );
-                                        },
-                                  icon:
-                                      const Icon(Icons.cancel_outlined),
+                                ],
+                              ),
+                              trailing: IconButton(
+                                tooltip: l10n.translate(
+                                  'clinicInviteRevokeTooltip',
                                 ),
+                                onPressed: !row.pending
+                                    ? null
+                                    : () async {
+                                        await revokeClinicInvitation(
+                                          ref,
+                                          clinicId: clinicId,
+                                          invitationId: row.id,
+                                        );
+                                      },
+                                icon: const Icon(Icons.cancel_outlined),
                               ),
                             ),
-                          );
-                        },
-                        childCount: rows.length,
-                      ),
+                          ),
+                        );
+                      },
+                      childCount: rows.length,
                     ),
-                ],
-              );
-            },
-          ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

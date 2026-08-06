@@ -19,6 +19,7 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/layout/shifa_scroll_behavior.dart';
 
 /// Layout shell for a clinic data-table screen.
@@ -56,6 +57,142 @@ class ClinicTableShell extends StatelessWidget {
         const Divider(height: 1),
         Expanded(child: body),
       ],
+    );
+  }
+}
+
+/// Search + trailing actions that stack on phones instead of overflowing.
+///
+/// On compact toolbars the search sits full-width and [actions] wrap below.
+/// On wider layouts they sit on one row (search expands, actions trail).
+class ClinicTableToolbar extends StatelessWidget {
+  final Widget search;
+  final List<Widget> actions;
+  final Widget? below;
+
+  const ClinicTableToolbar({
+    super.key,
+    required this.search,
+    this.actions = const [],
+    this.below,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.useCompactToolbar(context);
+    final actionRow = actions.isEmpty
+        ? null
+        : Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: compact ? WrapAlignment.end : WrapAlignment.start,
+            children: actions,
+          );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          search,
+          if (actionRow != null) ...[
+            const SizedBox(height: 8),
+            actionRow,
+          ],
+          if (below != null) ...[
+            const SizedBox(height: 8),
+            below!,
+          ],
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: search),
+            if (actionRow != null) ...[
+              const SizedBox(width: 8),
+              actionRow,
+            ],
+          ],
+        ),
+        if (below != null) ...[
+          const SizedBox(height: 8),
+          below!,
+        ],
+      ],
+    );
+  }
+}
+
+/// Hint / callout strip that stacks the CTA under the text on narrow widths.
+class ClinicHintBanner extends StatelessWidget {
+  final String message;
+  final Widget? action;
+
+  const ClinicHintBanner({
+    super.key,
+    required this.message,
+    this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.useCompactToolbar(context);
+    final text = Expanded(
+      child: Text(
+        message,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey.shade800,
+        ),
+      ),
+    );
+    final icon = Icon(
+      Icons.info_outline,
+      size: 16,
+      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
+    );
+
+    return Material(
+      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      icon,
+                      const SizedBox(width: 8),
+                      text,
+                    ],
+                  ),
+                  if (action != null) ...[
+                    const SizedBox(height: 8),
+                    Align(alignment: Alignment.centerRight, child: action),
+                  ],
+                ],
+              )
+            : Row(
+                children: [
+                  icon,
+                  const SizedBox(width: 8),
+                  text,
+                  if (action != null) ...[
+                    const SizedBox(width: 8),
+                    action!,
+                  ],
+                ],
+              ),
+      ),
     );
   }
 }
@@ -179,11 +316,12 @@ class _ClinicDataTableState extends State<_ClinicDataTable> {
         final available = maxWidth.isFinite && maxWidth > 16
             ? maxWidth - 16
             : MediaQuery.of(ctx).size.width - 16;
+        final compact = Responsive.useCompactToolbar(ctx);
         return ScrollConfiguration(
           behavior: const ShifaScrollBehavior(),
           child: Scrollbar(
             controller: _h,
-            thumbVisibility: true,
+            thumbVisibility: !compact,
             // Horizontal bar is on the outer viewport so it stays at the
             // bottom of the visible table area (not below all rows).
             child: SingleChildScrollView(
@@ -194,16 +332,21 @@ class _ClinicDataTableState extends State<_ClinicDataTable> {
                 constraints: BoxConstraints(minWidth: available),
                 child: Scrollbar(
                   controller: _v,
-                  thumbVisibility: true,
+                  thumbVisibility: !compact,
                   child: SingleChildScrollView(
                     controller: _v,
                     child: DataTable(
                       sortColumnIndex: widget.sortColumnIndex,
                       sortAscending: widget.sortAscending,
-                      headingRowHeight: 44,
-                      dataRowMinHeight: widget.dataRowMinHeight,
-                      dataRowMaxHeight: widget.dataRowMaxHeight,
-                      columnSpacing: 24,
+                      headingRowHeight: compact ? 40 : 44,
+                      dataRowMinHeight: compact
+                          ? 56
+                          : widget.dataRowMinHeight,
+                      dataRowMaxHeight: compact
+                          ? 72
+                          : widget.dataRowMaxHeight,
+                      columnSpacing: compact ? 16 : 24,
+                      horizontalMargin: compact ? 12 : 24,
                       showCheckboxColumn: false,
                       columns: widget.columns,
                       rows: widget.rows,

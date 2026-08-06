@@ -23,9 +23,8 @@ class HomeActivityFeed extends ConsumerWidget {
     final notificationsAsync = ref.watch(doctorNotificationsProvider);
 
     return DashboardCard(
-      title: l10n.translate('patientActivity') ?? 'Patient activity',
-      subtitle: l10n.translate('patientActivitySubtitle') ??
-          'Live updates from your clinic',
+      title: l10n.translate('patientActivity'),
+      subtitle: l10n.translate('patientActivitySubtitle'),
       child: notificationsAsync.when(
         loading: () => const DashboardSkeleton(height: 180, lines: 4),
         error: (_, __) => Text(l10n.error),

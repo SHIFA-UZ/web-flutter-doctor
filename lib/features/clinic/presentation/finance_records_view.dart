@@ -118,70 +118,56 @@ class FinanceRecordsViewState extends ConsumerState<FinanceRecordsView> {
       data: (records) {
         final filtered = _apply(records);
         final canManage = ref.watch(canManageFinanceProvider);
-        final toolbar = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClinicTableSearchField(
-                    controller: _searchCtrl,
-                    hint: l10n.translate('clinicRecordsSearchHint'),
-                    onChanged: (v) => setState(() => _search = v),
-                  ),
-                  const SizedBox(height: 8),
-                  ClinicFilterChips<String>(
-                    selected: _statusFilter,
-                    onSelected: (v) => setState(() => _statusFilter = v),
-                    options: [
-                      (
-                        value: 'ALL',
-                        label: l10n.translate('clinicTreatmentPlansAll'),
-                      ),
-                      (
-                        value: 'ISSUED',
-                        label: l10n.clinicRecordStatusLabel('ISSUED'),
-                      ),
-                      (
-                        value: 'PAID',
-                        label: l10n.clinicRecordStatusLabel('PAID'),
-                      ),
-                      (
-                        value: 'PARTIALLY_PAID',
-                        label: l10n.clinicRecordStatusLabel('PARTIALLY_PAID'),
-                      ),
-                      (
-                        value: 'OVERDUE',
-                        label: l10n.clinicRecordStatusLabel('OVERDUE'),
-                      ),
-                      (
-                        value: 'VOID',
-                        label: l10n.clinicRecordStatusLabel('VOID'),
-                      ),
-                    ],
-                  ),
-                ],
+        final toolbar = ClinicTableToolbar(
+          search: ClinicTableSearchField(
+            controller: _searchCtrl,
+            hint: l10n.translate('clinicRecordsSearchHint'),
+            onChanged: (v) => setState(() => _search = v),
+          ),
+          actions: [
+            if (canManage)
+              FilledButton.icon(
+                icon: const Icon(Icons.add, size: 20),
+                onPressed: () {
+                  showClinicFinanceRecordDialog(
+                    context: context,
+                    ref: ref,
+                    clinicId: widget.clinicId,
+                  );
+                },
+                label: Text(l10n.translate('clinicRecordsNewRecord')),
               ),
-            ),
-            if (canManage) ...[
-              const SizedBox(width: 12),
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.add, size: 20),
-                  onPressed: () {
-                    showClinicFinanceRecordDialog(
-                      context: context,
-                      ref: ref,
-                      clinicId: widget.clinicId,
-                    );
-                  },
-                  label: Text(l10n.translate('clinicRecordsNewRecord')),
-                ),
+          ],
+          below: ClinicFilterChips<String>(
+            selected: _statusFilter,
+            onSelected: (v) => setState(() => _statusFilter = v),
+            options: [
+              (
+                value: 'ALL',
+                label: l10n.translate('clinicTreatmentPlansAll'),
+              ),
+              (
+                value: 'ISSUED',
+                label: l10n.clinicRecordStatusLabel('ISSUED'),
+              ),
+              (
+                value: 'PAID',
+                label: l10n.clinicRecordStatusLabel('PAID'),
+              ),
+              (
+                value: 'PARTIALLY_PAID',
+                label: l10n.clinicRecordStatusLabel('PARTIALLY_PAID'),
+              ),
+              (
+                value: 'OVERDUE',
+                label: l10n.clinicRecordStatusLabel('OVERDUE'),
+              ),
+              (
+                value: 'VOID',
+                label: l10n.clinicRecordStatusLabel('VOID'),
               ),
             ],
-          ],
+          ),
         );
 
         Widget body;

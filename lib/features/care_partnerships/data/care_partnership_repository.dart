@@ -52,6 +52,7 @@ class CarePartnership {
     this.originatingAppointmentId,
     required this.createdAt,
     required this.updatedAt,
+    this.viewerRole,
   });
 
   final int id;
@@ -67,6 +68,11 @@ class CarePartnership {
   final int? originatingAppointmentId;
   final String createdAt;
   final String updatedAt;
+  /// INITIATOR | PARTNER from the backend for the requesting doctor.
+  final String? viewerRole;
+
+  bool get iAmInitiator => viewerRole == 'INITIATOR';
+  bool get iAmPartner => viewerRole == 'PARTNER';
 
   factory CarePartnership.fromJson(Map<String, dynamic> json) => CarePartnership(
         id: (json['id'] as num).toInt(),
@@ -83,6 +89,7 @@ class CarePartnership {
             (json['originatingAppointmentId'] as num?)?.toInt(),
         createdAt: json['createdAt'] as String? ?? '',
         updatedAt: json['updatedAt'] as String? ?? '',
+        viewerRole: json['viewerRole'] as String?,
       );
 }
 
@@ -193,6 +200,14 @@ class CarePartnershipRepository {
   Future<CarePartnership> decline(int id) async {
     final res = await _api.post('/api/care-partnerships/$id/decline', {});
     if (res.statusCode != 200) throw Exception('Decline failed');
+    return CarePartnership.fromJson(
+      jsonDecode(res.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<CarePartnership> cancel(int id) async {
+    final res = await _api.post('/api/care-partnerships/$id/cancel', {});
+    if (res.statusCode != 200) throw Exception('Cancel failed');
     return CarePartnership.fromJson(
       jsonDecode(res.body) as Map<String, dynamic>,
     );

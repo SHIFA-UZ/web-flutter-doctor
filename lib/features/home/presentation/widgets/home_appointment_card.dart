@@ -222,7 +222,8 @@ class HomeAppointmentCard extends StatelessWidget {
                           label: l10n.translate('viewVisitBriefing'),
                           variant: AlertChipVariant.info,
                         ),
-                      if (appointment.briefingStatus == 'PENDING')
+                      if (appointment.briefingStatus == 'PENDING' ||
+                          appointment.briefingStatus == 'GENERATING')
                         PatientAlertChip(
                           label: l10n.translate('visitBriefingPending'),
                           variant: AlertChipVariant.warning,

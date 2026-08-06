@@ -795,16 +795,13 @@ class _ClinicTreatmentPlansTabState
     final toolbar = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: ClinicTableSearchField(
-                controller: _filterCtrl,
-                hint: l10n.translate('clinicTreatmentPlansFilterHint'),
-                onChanged: _onSearchChanged,
-              ),
-            ),
-            const SizedBox(width: 8),
+        ClinicTableToolbar(
+          search: ClinicTableSearchField(
+            controller: _filterCtrl,
+            hint: l10n.translate('clinicTreatmentPlansFilterHint'),
+            onChanged: _onSearchChanged,
+          ),
+          actions: [
             FilledButton.icon(
               onPressed: () => TreatmentPlanWizardSheet.show(
                 context,

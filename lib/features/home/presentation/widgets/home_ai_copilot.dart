@@ -54,6 +54,8 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
 
   bool _aiLoading = false;
   bool _chatExpanded = false;
+  bool _insightsExpanded = true;
+  bool _answerExpanded = false;
   String _streamingAiText = '';
   String? _aiError;
   List<AiMessage> _conversation = [];
@@ -63,7 +65,27 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
 
   static const int _maxConversationMessages = 15;
   static const String _conversationStoragePrefix = 'ask_shifa_ai_conversation_v1';
+  static const String _insightsExpandedPrefsKey = 'home_ai_insights_expanded_v1';
   static const String _aiLangUzbekCyrillic = 'UZ_CYRL';
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreInsightsExpanded();
+  }
+
+  Future<void> _restoreInsightsExpanded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool(_insightsExpandedPrefsKey);
+    if (saved == null || !mounted) return;
+    setState(() => _insightsExpanded = saved);
+  }
+
+  Future<void> _setInsightsExpanded(bool expanded) async {
+    setState(() => _insightsExpanded = expanded);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_insightsExpandedPrefsKey, expanded);
+  }
 
   @override
   void dispose() {
@@ -150,23 +172,43 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
               ],
             ),
             const SizedBox(height: 16),
-            ...insights.map(
-              (insight) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _InsightRow(
-                  insight: insight,
-                  brand: brand,
-                  onTap: insight.onTap,
-                ),
+            if (insights.isNotEmpty) ...[
+              _InsightsHeader(
+                brand: brand,
+                expanded: _insightsExpanded,
+                count: insights.length,
+                onToggle: () => _setInsightsExpanded(!_insightsExpanded),
               ),
-            ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: _insightsExpanded
+                    ? Column(
+                        children: [
+                          const SizedBox(height: 8),
+                          ...insights.map(
+                            (insight) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _InsightRow(
+                                insight: insight,
+                                brand: brand,
+                                onTap: insight.onTap,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
             if (_chatExpanded) ...[
               const SizedBox(height: 12),
               _buildChatArea(context, l10n, brand),
             ] else ...[
               const SizedBox(height: 8),
               ShifaSecondaryButton(
-                label: l10n.translate('askShifaAi') ?? 'Ask Shifa AI',
+                label: l10n.translate('askShifaAi'),
                 onPressed: () {
                   setState(() => _chatExpanded = true);
                   _loadConversationForCurrentContext();
@@ -276,61 +318,127 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          constraints: const BoxConstraints(minHeight: 100, maxHeight: 200),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppDesignSystem.border),
-          ),
-          child: SingleChildScrollView(
-            controller: _aiScroll,
-            child: _aiError != null
-                ? Text(_aiError!, style: TextStyle(color: Theme.of(context).colorScheme.error))
-                : (_conversation.where((m) => m.role != 'system').isEmpty &&
-                        _streamingAiText.isEmpty)
-                    ? Text(
-                        l10n.translate('aiWillRespondHere') ?? 'AI will respond here…',
-                        style: AppDesignSystem.body2(context),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ..._conversation
-                              .where((m) => m.role != 'system')
-                              .map((m) => _AiChatBubble(
-                                    role: m.role,
-                                    child: AiResponseText(
-                                      text: m.content,
-                                      style: const TextStyle(fontSize: 13),
-                                      maxWidth: 400,
-                                    ),
-                                  )),
-                          if (_streamingAiText.isNotEmpty)
-                            _AiChatBubble(
-                              role: 'assistant',
-                              child: AiResponseText(
-                                text: _streamingAiText,
-                                style: const TextStyle(fontSize: 13),
-                                maxWidth: 400,
-                              ),
+        GestureDetector(
+          onLongPress: () {
+            setState(() => _answerExpanded = !_answerExpanded);
+            // Keep latest answer in view after resize.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!_aiScroll.hasClients) return;
+              _aiScroll.animateTo(
+                _aiScroll.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+              );
+            });
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            constraints: BoxConstraints(
+              minHeight: _answerExpanded ? 220 : 100,
+              maxHeight: _answerExpanded
+                  ? (MediaQuery.sizeOf(context).height * 0.55).clamp(280.0, 520.0)
+                  : 200,
+            ),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _answerExpanded
+                    ? brand.withValues(alpha: 0.45)
+                    : AppDesignSystem.border,
+              ),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _aiScroll,
+                    child: _aiError != null
+                        ? Text(
+                            _aiError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
                             ),
-                        ],
+                          )
+                        : (_conversation
+                                    .where((m) => m.role != 'system')
+                                    .isEmpty &&
+                                _streamingAiText.isEmpty)
+                            ? Text(
+                                l10n.translate('aiWillRespondHere'),
+                                style: AppDesignSystem.body2(context),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  ..._conversation
+                                      .where((m) => m.role != 'system')
+                                      .map(
+                                        (m) => _AiChatBubble(
+                                          role: m.role,
+                                          child: AiResponseText(
+                                            text: m.content,
+                                            style: const TextStyle(fontSize: 13),
+                                            maxWidth: 400,
+                                          ),
+                                        ),
+                                      ),
+                                  if (_streamingAiText.isNotEmpty)
+                                    _AiChatBubble(
+                                      role: 'assistant',
+                                      child: AiResponseText(
+                                        text: _streamingAiText,
+                                        style: const TextStyle(fontSize: 13),
+                                        maxWidth: 400,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _answerExpanded
+                          ? Icons.vertical_align_center
+                          : Icons.unfold_more,
+                      size: 14,
+                      color: AppDesignSystem.textTertiary,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _answerExpanded
+                            ? l10n.translate('holdToCollapseAnswer')
+                            : l10n.translate('holdToExpandAnswer'),
+                        style: AppDesignSystem.caption(context),
+                        textAlign: TextAlign.center,
                       ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _aiController,
           decoration: InputDecoration(
-            hintText: l10n.translate('askShifaAi') ?? 'Ask Shifa AI',
+            hintText: l10n.translate('askShifaAi'),
             suffixIcon: IconButton(
               icon: _aiLoading
                   ? SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: brand),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: brand,
+                      ),
                     )
                   : Icon(Icons.send, color: brand),
               onPressed: _aiLoading ? null : _askAi,
@@ -454,6 +562,65 @@ class _AiInsight {
   final String text;
   final String action;
   final VoidCallback onTap;
+}
+
+class _InsightsHeader extends StatelessWidget {
+  const _InsightsHeader({
+    required this.brand,
+    required this.expanded,
+    required this.count,
+    required this.onToggle,
+  });
+
+  final Color brand;
+  final bool expanded;
+  final int count;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final label = expanded
+        ? l10n.translate('hideAiReminders')
+        : l10n
+            .translate('showAiReminders')
+            .replaceAll('{count}', count.toString());
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.tips_and_updates_outlined,
+                size: 16,
+                color: brand,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppDesignSystem.body2(context).copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignSystem.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(
+                expanded ? Icons.expand_less : Icons.expand_more,
+                color: brand,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _InsightRow extends StatelessWidget {

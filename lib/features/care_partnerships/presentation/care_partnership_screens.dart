@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/features/care_partnerships/data/care_partnership_repository.dart';
 import 'package:shifa_doc_app_v1/features/care_partnerships/presentation/find_therapy_partner_screen.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
+import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
 class CarePartnershipsListScreen extends ConsumerStatefulWidget {
   const CarePartnershipsListScreen({super.key});
@@ -50,6 +51,26 @@ class _CarePartnershipsListScreenState
     }
   }
 
+  int? _myDoctorId() {
+    final profile = ref.watch(profileAllProvider).valueOrNull?.profile;
+    final raw =
+        profile?['id'] ?? profile?['doctorId'] ?? profile?['doctorProfileId'];
+    if (raw is num) return raw.toInt();
+    return int.tryParse(raw?.toString() ?? '');
+  }
+
+  bool _iAmPartner(CarePartnership p) {
+    if (p.viewerRole != null) return p.iAmPartner;
+    final myId = _myDoctorId();
+    return myId != null && myId == p.partnerDoctorId;
+  }
+
+  bool _iAmInitiator(CarePartnership p) {
+    if (p.viewerRole != null) return p.iAmInitiator;
+    final myId = _myDoctorId();
+    return myId != null && myId == p.initiatingDoctorId;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -81,10 +102,15 @@ class _CarePartnershipsListScreenState
                           separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (context, i) {
                             final p = _items[i];
+                            final roleLabel = _iAmPartner(p)
+                                ? l10n.translate('partnershipRoleInvitee')
+                                : l10n.translate('partnershipRoleSender');
                             return ListTile(
-                              title: Text(p.patientName ?? 'Patient #${p.patientId}'),
+                              title: Text(
+                                p.patientName ?? 'Patient #${p.patientId}',
+                              ),
                               subtitle: Text(
-                                '${p.status} · ${p.initiatingDoctorName} ↔ ${p.partnerDoctorName}',
+                                '${p.status} · $roleLabel · ${p.initiatingDoctorName} ↔ ${p.partnerDoctorName}',
                               ),
                               onTap: () => ShellScope.pushNamed(
                                 context,
@@ -127,6 +153,26 @@ class _CarePartnershipDetailScreenState
   void dispose() {
     _progressCtrl.dispose();
     super.dispose();
+  }
+
+  int? _myDoctorId() {
+    final profile = ref.watch(profileAllProvider).valueOrNull?.profile;
+    final raw =
+        profile?['id'] ?? profile?['doctorId'] ?? profile?['doctorProfileId'];
+    if (raw is num) return raw.toInt();
+    return int.tryParse(raw?.toString() ?? '');
+  }
+
+  bool _iAmPartner(CarePartnership p) {
+    if (p.viewerRole != null) return p.iAmPartner;
+    final myId = _myDoctorId();
+    return myId != null && myId == p.partnerDoctorId;
+  }
+
+  bool _iAmInitiator(CarePartnership p) {
+    if (p.viewerRole != null) return p.iAmInitiator;
+    final myId = _myDoctorId();
+    return myId != null && myId == p.initiatingDoctorId;
   }
 
   Future<void> _load() async {
@@ -182,6 +228,9 @@ class _CarePartnershipDetailScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final p = _partnership;
+    final iAmPartner = p != null && _iAmPartner(p);
+    final iAmInitiator = p != null && _iAmInitiator(p);
+
     return Scaffold(
       appBar: AppBar(
         leading: const AppPageBackButton(),
@@ -214,11 +263,36 @@ class _CarePartnershipDetailScreenState
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Text(p.message!),
                                 ),
+                              if (p.status == 'PENDING' && iAmInitiator) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  l10n
+                                      .translate('inviteSentWaiting')
+                                      .replaceAll(
+                                        '{name}',
+                                        p.partnerDoctorName,
+                                      ),
+                                  style: AppDesignSystem.body1(context),
+                                ),
+                              ],
+                              if (p.status == 'PENDING' && iAmPartner) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  l10n
+                                      .translate('inviteReceivedFrom')
+                                      .replaceAll(
+                                        '{name}',
+                                        p.initiatingDoctorName,
+                                      ),
+                                  style: AppDesignSystem.body1(context),
+                                ),
+                              ],
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 8,
+                                runSpacing: 8,
                                 children: [
-                                  if (p.status == 'PENDING') ...[
+                                  if (p.status == 'PENDING' && iAmPartner) ...[
                                     FilledButton(
                                       onPressed: () => _act(
                                         () => ref
@@ -227,7 +301,9 @@ class _CarePartnershipDetailScreenState
                                             )
                                             .accept(p.id),
                                       ),
-                                      child: Text(l10n.translate('acceptInvite')),
+                                      child: Text(
+                                        l10n.translate('acceptInvite'),
+                                      ),
                                     ),
                                     OutlinedButton(
                                       onPressed: () => _act(
@@ -237,10 +313,26 @@ class _CarePartnershipDetailScreenState
                                             )
                                             .decline(p.id),
                                       ),
-                                      child: Text(l10n.translate('declineInvite')),
+                                      child: Text(
+                                        l10n.translate('declineInvite'),
+                                      ),
                                     ),
                                   ],
-                                  if (p.status == 'ACTIVE')
+                                  if (p.status == 'PENDING' && iAmInitiator)
+                                    OutlinedButton(
+                                      onPressed: () => _act(
+                                        () => ref
+                                            .read(
+                                              carePartnershipRepositoryProvider,
+                                            )
+                                            .cancel(p.id),
+                                      ),
+                                      child: Text(
+                                        l10n.translate('cancelPartnerInvite'),
+                                      ),
+                                    ),
+                                  if (p.status == 'ACTIVE' &&
+                                      (iAmPartner || iAmInitiator))
                                     OutlinedButton(
                                       onPressed: () => _act(
                                         () => ref
@@ -290,7 +382,8 @@ class _CarePartnershipDetailScreenState
                             },
                           ),
                         ),
-                        if (p.status == 'ACTIVE')
+                        if (p.status == 'ACTIVE' &&
+                            (iAmPartner || iAmInitiator))
                           SafeArea(
                             child: Padding(
                               padding: const EdgeInsets.all(12),

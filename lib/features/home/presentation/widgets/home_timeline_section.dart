@@ -75,10 +75,20 @@ class HomeTimelineSection extends ConsumerWidget {
                   now: now,
                   onStart: () => _startAppointment(context, ref, hero),
                   onOpenChart: hero.patientId != null
-                      ? () => ref.read(shellProvider.notifier).setTab(3)
+                      ? () {
+                          ref
+                              .read(shellProvider.notifier)
+                              .setTab(DoctorShellTab.patients);
+                          ShellScope.pushIntoShell(hero.patientId.toString());
+                        }
                       : null,
                   onOpenDocuments: hero.patientId != null
-                      ? () => ref.read(shellProvider.notifier).setTab(3)
+                      ? () {
+                          ref
+                              .read(shellProvider.notifier)
+                              .setTab(DoctorShellTab.patients);
+                          ShellScope.pushIntoShell(hero.patientId.toString());
+                        }
                       : null,
                   onVisitBriefing: hero.hasVisitBriefing
                       ? () => showAppointmentBriefingSheet(

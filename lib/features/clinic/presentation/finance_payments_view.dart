@@ -215,35 +215,30 @@ class FinancePaymentsViewState extends ConsumerState<FinancePaymentsView> {
           children: [
             FinanceMonthFilterBar(clinicId: widget.clinicId),
             const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ClinicTableSearchField(
-                    controller: _searchCtrl,
-                    hint: l10n.translate('clinicPaymentsSearchHint'),
-                    onChanged: (v) => setState(() => _search = v),
-                  ),
-                ),
-                if (filtered.isNotEmpty) ...[
-                  const SizedBox(width: 12),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Tooltip(
-                      message: l10n.translate('clinicPaymentsTotals'),
-                      child: Chip(
-                        avatar:
-                            Icon(Icons.summarize_outlined, size: 18, color: Colors.grey.shade700),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        labelPadding: EdgeInsets.zero,
-                        label: Text(
-                          '${filtered.length} · ${formatFinanceMoney(totalsMinor, currency)}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
+            ClinicTableToolbar(
+              search: ClinicTableSearchField(
+                controller: _searchCtrl,
+                hint: l10n.translate('clinicPaymentsSearchHint'),
+                onChanged: (v) => setState(() => _search = v),
+              ),
+              actions: [
+                if (filtered.isNotEmpty)
+                  Tooltip(
+                    message: l10n.translate('clinicPaymentsTotals'),
+                    child: Chip(
+                      avatar: Icon(
+                        Icons.summarize_outlined,
+                        size: 18,
+                        color: Colors.grey.shade700,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      labelPadding: EdgeInsets.zero,
+                      label: Text(
+                        '${filtered.length} · ${formatFinanceMoney(totalsMinor, currency)}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
-                ],
               ],
             ),
             const SizedBox(height: 8),

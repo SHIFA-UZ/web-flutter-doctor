@@ -314,6 +314,31 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => ClinicTreatmentPlanDetailScreen(planId: planId),
         );
+      case AppRoutes.findTherapyPartner:
+        final args = settings.arguments;
+        final map = args is Map ? Map<String, dynamic>.from(args) : <String, dynamic>{};
+        final patientId = (map['patientId'] as num?)?.toInt() ??
+            int.tryParse(map['patientId']?.toString() ?? '') ??
+            0;
+        if (patientId <= 0) return null;
+        return MaterialPageRoute(
+          builder: (_) => FindTherapyPartnerScreen(
+            patientId: patientId,
+            patientName: map['patientName']?.toString() ?? 'Patient',
+          ),
+        );
+      case AppRoutes.carePartnerships:
+        return MaterialPageRoute(
+          builder: (_) => const CarePartnershipsListScreen(),
+        );
+      case AppRoutes.carePartnershipDetail:
+        final id = settings.arguments is int
+            ? settings.arguments as int
+            : int.tryParse(settings.arguments?.toString() ?? '') ?? 0;
+        if (id <= 0) return null;
+        return MaterialPageRoute(
+          builder: (_) => CarePartnershipDetailScreen(partnershipId: id),
+        );
       default:
         return null;
     }

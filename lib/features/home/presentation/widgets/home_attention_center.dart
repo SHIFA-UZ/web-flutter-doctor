@@ -42,9 +42,8 @@ class _HomeAttentionCenterState extends ConsumerState<HomeAttentionCenter> {
     final tasks = ref.watch(tasksProvider);
 
     return DashboardCard(
-      title: l10n.translate('attentionRequired') ?? 'Attention required',
-      subtitle: l10n.translate('attentionRequiredSubtitle') ??
-          'Items that need your action',
+      title: l10n.translate('attentionRequired'),
+      subtitle: l10n.translate('attentionRequiredSubtitle'),
       child: notificationsAsync.when(
         loading: () => const DashboardSkeleton(height: 160, lines: 3),
         error: (_, __) => Text(l10n.error),
@@ -66,7 +65,7 @@ class _HomeAttentionCenterState extends ConsumerState<HomeAttentionCenter> {
                         size: 40, color: AppDesignSystem.success),
                     const SizedBox(height: 8),
                     Text(
-                      l10n.translate('allCaughtUp') ?? 'All caught up!',
+                      l10n.translate('allCaughtUp'),
                       style: AppDesignSystem.body1(context),
                     ),
                   ],

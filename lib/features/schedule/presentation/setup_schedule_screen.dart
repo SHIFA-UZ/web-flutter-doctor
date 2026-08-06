@@ -16,6 +16,7 @@ import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_controller.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_models.dart';
 import 'package:shifa_doc_app_v1/state/schedule/schedule_actions.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
@@ -668,6 +669,13 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     final schedule = ref.watch(scheduleProvider); // ScheduleState
     final slotsByDay = schedule.slots; // Map<String, List<TimeSlot>>
     final l10n = AppLocalizations.of(context)!;
+    final narrow = MediaQuery.sizeOf(context).width < 720;
+    // Nested under shell bottom nav — keep sticky save clear of it.
+    final stickyBottomPad = Responsive.isMobile(context)
+        ? 12.0
+        : (MediaQuery.paddingOf(context).bottom > 0
+            ? MediaQuery.paddingOf(context).bottom
+            : 4.0);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -689,42 +697,55 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
-            : Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      l10n.selectWorkingDaysAndDefineSlots,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
+            : Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        narrow ? 16 : 24,
+                        8,
+                        narrow ? 16 : 24,
+                        16,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            l10n.selectWorkingDaysAndDefineSlots,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
 
-                    // Location selector — hidden for doctors with 0/1 location.
-                    if (_locations.length > 1) ...[
-                      _LocationSelector(
-                        locations: _locations,
-                        selectedId: _selectedLocationId,
-                        onChanged: _onLocationChanged,
-                        onManage: _openLocationsScreen,
-                      ),
-                      const SizedBox(height: 16),
-                    ] else if (_locations.isEmpty) ...[
-                      _NoLocationsHint(onManage: _openLocationsScreen),
-                      const SizedBox(height: 16),
-                    ],
+                          // Location selector — hidden for doctors with 0/1 location.
+                          if (_locations.length > 1) ...[
+                            _LocationSelector(
+                              locations: _locations,
+                              selectedId: _selectedLocationId,
+                              onChanged: _onLocationChanged,
+                              onManage: _openLocationsScreen,
+                            ),
+                            const SizedBox(height: 16),
+                          ] else if (_locations.isEmpty) ...[
+                            _NoLocationsHint(onManage: _openLocationsScreen),
+                            const SizedBox(height: 16),
+                          ] else ...[
+                            // Single location still needs a visible manage entry on mobile.
+                            _LocationSelector(
+                              locations: _locations,
+                              selectedId: _selectedLocationId,
+                              onChanged: _onLocationChanged,
+                              onManage: _openLocationsScreen,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
 
-                    // Existing calendar periods (multiple allowed)
-                    if (_existingValidityPeriods.isNotEmpty) ...[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          // Existing calendar periods (multiple allowed)
+                          if (_existingValidityPeriods.isNotEmpty) ...[
                             Text(
                               l10n.existingCalendarPeriods,
                               style: const TextStyle(
@@ -742,7 +763,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                                     '${p.validFrom} – ${p.validUntil}',
                                     style: const TextStyle(fontSize: 12),
                                   ),
-                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 );
                               }).toList(),
                             ),
@@ -755,117 +777,128 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
+                            const SizedBox(height: 12),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
 
-                    // Schedule validity: add new period (from when — until when)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
+                          // Schedule validity: add new period
                           Text(
                             _existingValidityPeriods.isEmpty
                                 ? l10n.scheduleValidFrom
                                 : l10n.scheduleValidFromNew,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          ShifaSecondaryButton(
-                            label: schedule.startDate != null
-                                ? '${schedule.startDate!.year}-'
-                                  '${schedule.startDate!.month.toString().padLeft(2, '0')}-'
-                                  '${schedule.startDate!.day.toString().padLeft(2, '0')}'
-                                : l10n.selectDate,
-                            onPressed: _pickStartDate,
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              ShifaSecondaryButton(
+                                label: schedule.startDate != null
+                                    ? '${schedule.startDate!.year}-'
+                                        '${schedule.startDate!.month.toString().padLeft(2, '0')}-'
+                                        '${schedule.startDate!.day.toString().padLeft(2, '0')}'
+                                    : l10n.selectDate,
+                                onPressed: _pickStartDate,
+                              ),
+                              Text(
+                                l10n.scheduleValidUntil,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              ShifaSecondaryButton(
+                                label:
+                                    '${schedule.endDate.year}-'
+                                    '${schedule.endDate.month.toString().padLeft(2, '0')}-'
+                                    '${schedule.endDate.day.toString().padLeft(2, '0')}',
+                                onPressed: _pickEndDate,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 16),
-                          Text(
-                            l10n.scheduleValidUntil,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+
+                          const SizedBox(height: 20),
+
+                          _ExpandScheduleSection(
+                            brand: brand,
+                            dateSpecificRules: _dateSpecificRules,
+                            isExpanded: _expandSectionOpen,
+                            onToggle: () => setState(
+                              () => _expandSectionOpen = !_expandSectionOpen,
+                            ),
+                            onAddExpansion: _addExpansion,
+                            onDeleteRule: _deleteDateSpecificRule,
                           ),
-                          ShifaSecondaryButton(
-                            label: '${schedule.endDate.year}-'
-                              '${schedule.endDate.month.toString().padLeft(2, '0')}-'
-                              '${schedule.endDate.day.toString().padLeft(2, '0')}',
-                            onPressed: _pickEndDate,
+                          const SizedBox(height: 20),
+
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final cross = narrow ? 1 : 2;
+                              const spacing = 12.0;
+                              final tileWidth = cross == 1
+                                  ? constraints.maxWidth
+                                  : (constraints.maxWidth -
+                                          spacing * (cross - 1)) /
+                                      cross;
+                              return Wrap(
+                                spacing: spacing,
+                                runSpacing: spacing,
+                                children: _daysOfWeek.map((day) {
+                                  final isSelected =
+                                      slotsByDay.containsKey(day);
+                                  final isExpanded = _expanded[day] ?? false;
+                                  final slots = slotsByDay[day] ??
+                                      const <TimeSlot>[];
+                                  return SizedBox(
+                                    width: tileWidth,
+                                    child: _DayCard(
+                                      day: day,
+                                      isSelected: isSelected,
+                                      isExpanded: isExpanded,
+                                      slots: slots,
+                                      brand: brand,
+                                      onToggle: (val) => _toggleDay(day, val),
+                                      onAdd: () => _addSlot(day),
+                                      onEdit: (i, s) => _editSlot(day, i, s),
+                                      onDelete: (i) => _removeSlot(day, i),
+                                      onExpand: () => setState(
+                                        () => _expanded[day] = !isExpanded,
+                                      ),
+                                      onCopyFromPrevious: () =>
+                                          _copyFromPreviousDay(day),
+                                      onCopyFromOther: () =>
+                                          _copyFromOtherDay(day),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
                           ),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // Expand schedule for specific dates
-                    _ExpandScheduleSection(
-                      brand: brand,
-                      dateSpecificRules: _dateSpecificRules,
-                      isExpanded: _expandSectionOpen,
-                      onToggle: () => setState(() => _expandSectionOpen = !_expandSectionOpen),
-                      onAddExpansion: _addExpansion,
-                      onDeleteRule: _deleteDateSpecificRule,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Days grid with editors
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            const cross = 2;
-                            const spacing = 16.0;
-                            final tileWidth =
-                                (constraints.maxWidth - spacing * (cross - 1)) /
-                                cross;
-                            return Wrap(
-                              spacing: spacing,
-                              runSpacing: spacing,
-                              children: _daysOfWeek.map((day) {
-                                final isSelected = slotsByDay.containsKey(day);
-                                final isExpanded = _expanded[day] ?? false;
-                                final slots =
-                                    slotsByDay[day] ?? const <TimeSlot>[];
-                                return SizedBox(
-                                  width: tileWidth,
-                                  child: _DayCard(
-                                    day: day,
-                                    isSelected: isSelected,
-                                    isExpanded: isExpanded,
-                                    slots: slots,
-                                    brand: brand,
-                                    onToggle: (val) => _toggleDay(day, val),
-                                    onAdd: () => _addSlot(day),
-                                    onEdit: (i, s) => _editSlot(day, i, s),
-                                    onDelete: (i) => _removeSlot(day, i),
-                                    onExpand: () => setState(
-                                      () => _expanded[day] = !isExpanded,
-                                    ),
-                                    onCopyFromPrevious: () => _copyFromPreviousDay(day),
-                                    onCopyFromOther: () => _copyFromOtherDay(day),
-                                  ),
-                                );
-                              }).toList(),
-                            );
-                          },
-                        ),
+                  ),
+                  // Sticky save — always reachable on mobile
+                  Material(
+                    elevation: 8,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        narrow ? 16 : 24,
+                        12,
+                        narrow ? 16 : 24,
+                        stickyBottomPad,
+                      ),
+                      child: ShifaPrimaryButton(
+                        label: l10n.complete,
+                        onPressed: _saving ? null : _save,
+                        width: ButtonWidth.fill,
+                        isLoading: _saving,
                       ),
                     ),
-
-                    const SizedBox(height: 12),
-
-                    // Save
-                    ShifaPrimaryButton(
-                      label: l10n.complete,
-                      onPressed: _saving ? null : _save,
-                      width: ButtonWidth.fill,
-                      isLoading: _saving,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
       ),
     );
@@ -1301,123 +1334,123 @@ class _SlotEditorInline extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Slots list
-          SizedBox(
-            height: 220,
-            child: slots.isEmpty
-                ? Center(child: Text(l10n.noSlotsYet))
-                : ListView.separated(
-                    itemCount: slots.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final slot = slots[index];
-                      return Card(
-                        elevation: 0,
-                        margin: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.timePeriod,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: () => onEdit(index, slot),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '${_fmt(slot.start)} - ${_fmt(slot.end)}',
-                                      ),
-                                      const Icon(Icons.edit, size: 18),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              Text(
-                                l10n.slotTimeframe,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: () => onEdit(index, slot),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '${slot.slotDuration.inMinutes} ${l10n.minutes}',
-                                      ),
-                                      const Icon(Icons.edit, size: 18),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton.icon(
-                                  onPressed: () => onDelete(index),
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: AppColors.destructiveRed,
-                                  ),
-                                  label: Text(
-                                    l10n.remove,
-                                    style: const TextStyle(color: AppColors.destructiveRed),
-                                  ),
-                                ),
-                              ),
-                            ],
+          // Slots list — no nested scroll (outer page scroll owns gestures)
+          if (slots.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: Text(l10n.noSlotsYet)),
+            )
+          else
+            ...List.generate(slots.length, (index) {
+              final slot = slots[index];
+              return Padding(
+                padding: EdgeInsets.only(bottom: index == slots.length - 1 ? 0 : 12),
+                child: Card(
+                  elevation: 0,
+                  margin: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.timePeriod,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      );
-                    },
+                        const SizedBox(height: 8),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => onEdit(index, slot),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${_fmt(slot.start)} - ${_fmt(slot.end)}',
+                                ),
+                                const Icon(Icons.edit, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.slotTimeframe,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => onEdit(index, slot),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${slot.slotDuration.inMinutes} ${l10n.minutes}',
+                                ),
+                                const Icon(Icons.edit, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () => onDelete(index),
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.destructiveRed,
+                            ),
+                            label: Text(
+                              l10n.remove,
+                              style: const TextStyle(
+                                color: AppColors.destructiveRed,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-          ),
+                ),
+              );
+            }),
 
           const SizedBox(height: 8),
 

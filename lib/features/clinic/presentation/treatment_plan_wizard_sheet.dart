@@ -1325,7 +1325,8 @@ class _TreatmentPlanWizardDialogState
     }
 
     Widget cell(String label, String value, {Color? valueColor}) {
-      return Expanded(
+      return SizedBox(
+        width: 110,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1351,7 +1352,9 @@ class _TreatmentPlanWizardDialogState
         border: Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
         children: [
           cell(
             tr(context, 'treatmentPlanWizardInstallTotal', 'Plan total'),
@@ -1392,7 +1395,8 @@ class _TreatmentPlanWizardDialogState
     }
 
     Widget cell(String label, String value, {Color? valueColor}) {
-      return Expanded(
+      return SizedBox(
+        width: 110,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1418,7 +1422,9 @@ class _TreatmentPlanWizardDialogState
         border: Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
         children: [
           cell(
             tr(context, 'treatmentPlanWizardInstallTotal', 'Balance due'),
@@ -1430,8 +1436,7 @@ class _TreatmentPlanWizardDialogState
           ),
           cell(
             overshoot
-                ? tr(context, 'treatmentPlanWizardInstallOver',
-                    'Over by')
+                ? tr(context, 'treatmentPlanWizardInstallOver', 'Over by')
                 : tr(context, 'treatmentPlanWizardInstallRemaining',
                     'Remaining'),
             _formatMoney(remaining.abs(), currency),
@@ -1446,83 +1451,103 @@ class _TreatmentPlanWizardDialogState
     final dueText = _instDueCtrls[i].text.trim();
     final hasDate = dueText.isNotEmpty;
     final canRemove = _instAmtCtrls.length > 2;
+    final compact = MediaQuery.sizeOf(context).width < 720;
+
+    final numberChip = Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Text(
+        '${i + 1}',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+
+    final dueField = InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () => _pickInstallmentDate(i),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText:
+              tr(context, 'treatmentPlanWizardInstallDue', 'Due date'),
+          isDense: true,
+          suffixIcon: const Icon(Icons.calendar_today, size: 18),
+        ),
+        child: Text(
+          hasDate
+              ? dueText
+              : tr(context, 'treatmentPlanWizardInstallTapDate', 'Tap to pick'),
+          style: TextStyle(
+            color: hasDate ? null : Colors.grey.shade500,
+          ),
+        ),
+      ),
+    );
+
+    final amountField = TextField(
+      controller: _instAmtCtrls[i],
+      decoration: InputDecoration(
+        labelText:
+            tr(context, 'treatmentPlanWizardInstallAmount', 'Amount'),
+        isDense: true,
+      ),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (_) => setState(() {}),
+    );
+
+    final removeBtn = IconButton(
+      tooltip: canRemove
+          ? tr(context, 'treatmentPlanWizardInstallRemove', 'Remove row')
+          : null,
+      icon: Icon(
+        Icons.delete_outline,
+        color: canRemove ? Colors.grey.shade700 : Colors.grey.shade300,
+      ),
+      onPressed: canRemove ? () => _removeInstallmentRow(i) : null,
+    );
+
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                numberChip,
+                const Spacer(),
+                removeBtn,
+              ],
+            ),
+            dueField,
+            const SizedBox(height: 8),
+            amountField,
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Numbered chip
           Padding(
             padding: const EdgeInsets.only(top: 14, right: 8),
-            child: Container(
-              width: 22,
-              height: 22,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Text(
-                '${i + 1}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
+            child: numberChip,
           ),
-          // Due date picker (tap to open)
-          Expanded(
-            flex: 5,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(4),
-              onTap: () => _pickInstallmentDate(i),
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  labelText: tr(context, 'treatmentPlanWizardInstallDue',
-                      'Due date'),
-                  isDense: true,
-                  suffixIcon: const Icon(Icons.calendar_today, size: 18),
-                ),
-                child: Text(
-                  hasDate
-                      ? dueText
-                      : tr(context, 'treatmentPlanWizardInstallTapDate',
-                          'Tap to pick'),
-                  style: TextStyle(
-                    color: hasDate ? null : Colors.grey.shade500,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          Expanded(flex: 5, child: dueField),
           const SizedBox(width: 8),
-          // Amount (live-updates remaining)
-          Expanded(
-            flex: 4,
-            child: TextField(
-              controller: _instAmtCtrls[i],
-              decoration: InputDecoration(
-                labelText: tr(context, 'treatmentPlanWizardInstallAmount',
-                    'Amount'),
-                isDense: true,
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-          // Remove row
-          IconButton(
-            tooltip: canRemove
-                ? tr(context, 'treatmentPlanWizardInstallRemove',
-                    'Remove row')
-                : null,
-            icon: Icon(Icons.delete_outline,
-                color: canRemove ? Colors.grey.shade700 : Colors.grey.shade300),
-            onPressed: canRemove ? () => _removeInstallmentRow(i) : null,
-          ),
+          Expanded(flex: 4, child: amountField),
+          removeBtn,
         ],
       ),
     );

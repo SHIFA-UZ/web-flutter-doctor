@@ -777,23 +777,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   String _timeZoneMismatchHintMessage({
     required String scheduleTimeZone,
   }) {
-    final localeCode = Localizations.localeOf(context).languageCode.toLowerCase();
-    if (localeCode == 'uz') {
-      return _latinUzbekForDisplay(
-        context,
-        'Joriy qurilma vaqt zonasi ($scheduleTimeZone bilan) mos emas. '
-            'Siz slotlarni bir vaqt zonasida belgilagansiz, hozir esa boshqa vaqt zonasidasiz. '
-            'Iltimos, uchrashuvlar bilan ishlaganda buni inobatga oling.',
-      );
-    }
-    if (localeCode == 'ru') {
-      return 'Текущий часовой пояс устройства не совпадает с часовым поясом расписания ($scheduleTimeZone). '
-          'Слоты были заданы в одном часовом поясе, а сейчас вы в другом. '
-          'Пожалуйста, учитывайте это при работе с приёмами.';
-    }
-    return 'Your current device timezone does not match the calendar schedule timezone ($scheduleTimeZone). '
-        'Your slots were defined in one timezone, but you are currently in another. '
-        'Please keep this in mind while managing appointments.';
+    final l10n = AppLocalizations.of(context)!;
+    return l10n
+        .translate('calendarTimezoneMismatchHint')
+        .replaceAll('{scheduleTimeZone}', scheduleTimeZone);
   }
 
   @override
@@ -2437,8 +2424,8 @@ class CalendarDayEntriesList extends StatelessWidget {
                                           decoration: isCompleted
                                               ? TextDecoration.lineThrough
                                               : null,
-                                          decorationColor:
-                                              Colors.grey.shade600,
+                                          decorationColor: Colors.red.shade700,
+                                          decorationThickness: 2.5,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -2515,7 +2502,8 @@ class CalendarDayEntriesList extends StatelessWidget {
                                 decoration: isCompleted
                                     ? TextDecoration.lineThrough
                                     : null,
-                                decorationColor: Colors.grey.shade600,
+                                decorationColor: Colors.red.shade700,
+                                decorationThickness: 2.5,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -2577,11 +2565,11 @@ class CalendarDayEntriesList extends StatelessWidget {
                           child: Center(
                             child: IgnorePointer(
                               child: Container(
-                                height: 1,
+                                height: 2.5,
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                 ),
-                                color: Colors.grey.shade500.withOpacity(0.5),
+                                color: Colors.red.shade700,
                               ),
                             ),
                           ),
@@ -4243,10 +4231,9 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
   Widget _buildStatusChip(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
     String t(String key, String fallback) {
       final v = l10n.translate(key);
-      if (v == null || v.trim().isEmpty || v.trim() == key) return fallback;
+      if (v.trim().isEmpty || v.trim() == key) return fallback;
       return v;
     }
 
@@ -4276,10 +4263,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       icon = Icons.verified_outlined;
       bg = Colors.amber.shade50;
       fg = Colors.amber.shade800;
-      final confirmedFallback = lang == 'uz'
-          ? _latinUzbekForDisplay(context, 'Tasdiqlangan')
-          : (lang == 'ru' ? 'Подтверждено' : 'Confirmed');
-      label = t('confirmed', confirmedFallback);
+      label = t('confirmed', 'Confirmed');
     }
 
     return Container(
@@ -4478,21 +4462,14 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
     final subtleText = Colors.grey.shade600;
-    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
-    final aiDocsFallback = lang == 'uz'
-        ? _latinUzbekForDisplay(context, 'Uchrashuv hujjatlari')
-        : (lang == 'ru' ? 'Документация приёма' : 'Appointment Documentation');
-    final notesTabFallback = lang == 'uz'
-        ? _latinUzbekForDisplay(context, 'Uchrashuv yozuvlari')
-        : (lang == 'ru' ? 'Записи приёма' : 'Appointment Notes');
-    final summaryPdfTabFallback = lang == 'uz'
-        ? _latinUzbekForDisplay(context, 'Xulosa PDF')
-        : (lang == 'ru' ? 'PDF сводка' : 'Summary PDF');
     String t(String key, String fallback) {
       final v = l10n.translate(key);
-      if (v == null || v.trim().isEmpty || v.trim() == key) return fallback;
+      if (v.trim().isEmpty || v.trim() == key) return fallback;
       return v;
     }
+    final aiDocsFallback = t('appointmentDocumentation', 'Appointment Documentation');
+    final notesTabFallback = t('appointmentNotes', 'Appointment Notes');
+    final summaryPdfTabFallback = t('summaryPdf', 'Summary PDF');
 
     final appointmentId = widget.entry.appointmentId?.toString();
     final consultationNotesAsync = appointmentId == null

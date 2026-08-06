@@ -646,7 +646,8 @@ class _GridEntryBlock extends StatelessWidget {
                             decoration: _isCompleted
                                 ? TextDecoration.lineThrough
                                 : null,
-                            decorationColor: textColor.withOpacity(0.7),
+                            decorationColor: Colors.red.shade700,
+                            decorationThickness: 2.5,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -662,7 +663,8 @@ class _GridEntryBlock extends StatelessWidget {
                       decoration: _isCompleted
                           ? TextDecoration.lineThrough
                           : null,
-                      decorationColor: textColor.withOpacity(0.7),
+                      decorationColor: Colors.red.shade700,
+                      decorationThickness: 2.5,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -674,8 +676,8 @@ class _GridEntryBlock extends StatelessWidget {
                   child: Center(
                     child: IgnorePointer(
                       child: Container(
-                        height: 1,
-                        color: textColor.withOpacity(0.45),
+                        height: 2.5,
+                        color: Colors.red.shade700,
                       ),
                     ),
                   ),

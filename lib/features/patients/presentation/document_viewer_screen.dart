@@ -1,21 +1,20 @@
 // lib/features/patients/presentation/document_viewer_screen.dart
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
-// On web, webview_flutter does not work; use iframe-based PDF viewer instead.
+// On web, use iframe-based PDF viewer (pdfx is native-oriented).
 import 'package:shifa_doc_app_v1/features/patients/presentation/pdf_viewer_stub.dart'
     if (dart.library.html) 'package:shifa_doc_app_v1/features/patients/presentation/pdf_viewer_web.dart' as pdf_viewer;
 
-/// In-app document viewer: opens PDF or image in a browser-like window (no download, no external app).
+/// In-app document viewer: opens PDF or image inside the app (no download, no external app).
 class DocumentViewerScreen extends ConsumerStatefulWidget {
   const DocumentViewerScreen({
     super.key,
@@ -31,7 +30,8 @@ class DocumentViewerScreen extends ConsumerStatefulWidget {
   final int? clinicWorkspaceId;
 
   @override
-  ConsumerState<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
+  ConsumerState<DocumentViewerScreen> createState() =>
+      _DocumentViewerScreenState();
 }
 
 class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
@@ -40,11 +40,18 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   String? _contentType;
   String? _error;
   bool _loading = true;
+  PdfControllerPinch? _pdfController;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _pdfController?.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -56,25 +63,43 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       clinicId: widget.clinicWorkspaceId,
     );
     if (!mounted) return;
+
+    if (result == null || result.bytes.isEmpty) {
+      setState(() {
+        _loading = false;
+        _error = '';
+      });
+      return;
+    }
+
+    final bytes = result.bytes;
+    final isImage = _isImage(
+      bytes: bytes,
+      filename: result.filename,
+      contentType: result.contentType,
+    );
+
+    _pdfController?.dispose();
+    _pdfController = null;
+    if (!isImage && !kIsWeb) {
+      _pdfController = PdfControllerPinch(
+        document: PdfDocument.openData(bytes),
+        initialPage: 1,
+      );
+    }
+
     setState(() {
       _loading = false;
-      if (result != null && result.bytes.isNotEmpty) {
-        _bytes = result.bytes;
-        _filename = result.filename;
-        _contentType = result.contentType;
-      } else {
-        // Resolved against AppLocalizations in build() since context isn't
-        // safe to use synchronously here.
-        _error = '';
-      }
+      _bytes = bytes;
+      _filename = result.filename;
+      _contentType = result.contentType;
+      _error = null;
     });
   }
 
   /// True when the underlying bytes are an image we can render with
   /// `Image.memory`. We trust the byte signature first (most reliable),
   /// then the response Content-Type, and finally the filename extension.
-  /// This avoids falling back to the PDF embed when Content-Disposition is
-  /// stripped by CORS or encoded via RFC 5987.
   static bool _isImage({
     required Uint8List bytes,
     String? filename,
@@ -86,7 +111,11 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     if (ct != null && ct.startsWith('image/')) return true;
     if (filename == null) return false;
     final ext = filename.toLowerCase().split('.').last;
-    return ext == 'jpg' || ext == 'jpeg' || ext == 'png' || ext == 'gif' || ext == 'webp';
+    return ext == 'jpg' ||
+        ext == 'jpeg' ||
+        ext == 'png' ||
+        ext == 'gif' ||
+        ext == 'webp';
   }
 
   @override
@@ -105,7 +134,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       final l10n = AppLocalizations.of(context)!;
       final message = _error!.isNotEmpty
           ? _error!
-          : (l10n.translate('couldNotLoadDocument') ?? 'Could not load document');
+          : (l10n.translate('couldNotLoadDocument'));
       return Scaffold(
         appBar: AppBar(
           leading: appBarBackLeading(context),
@@ -121,6 +150,17 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                 Icon(Icons.error_outline, size: 48, color: Colors.grey.shade600),
                 const SizedBox(height: 16),
                 Text(message, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _loading = true;
+                      _error = null;
+                    });
+                    _load();
+                  },
+                  child: Text(l10n.retry),
+                ),
               ],
             ),
           ),
@@ -144,7 +184,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           ? _buildImageView(bytes)
           : kIsWeb
               ? pdf_viewer.PdfViewerWeb(bytes: bytes)
-              : _buildPdfView(bytes),
+              : _buildNativePdfView(),
     );
   }
 
@@ -156,30 +196,18 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         child: Image.memory(
           bytes,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48),
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.broken_image, size: 48),
         ),
       ),
     );
   }
 
-  Widget _buildPdfView(Uint8List bytes) {
-    final base64 = base64Encode(bytes);
-    final html = '''
-<!DOCTYPE html>
-<html>
-<head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0;height:100dvh;height:100vh;">
-<embed type="application/pdf" src="data:application/pdf;base64,$base64" width="100%" height="100%" />
-</body>
-</html>''';
-    final uri = Uri.dataFromString(
-      html,
-      mimeType: 'text/html',
-      encoding: utf8,
-    );
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..loadRequest(uri);
-    return WebViewWidget(controller: controller);
+  Widget _buildNativePdfView() {
+    final controller = _pdfController;
+    if (controller == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return PdfViewPinch(controller: controller);
   }
 }

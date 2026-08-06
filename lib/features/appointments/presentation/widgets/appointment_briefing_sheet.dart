@@ -116,7 +116,7 @@ class _AppointmentBriefingSheetState
         _result = result;
         _loading = false;
       });
-      if (result.status == 'PENDING') {
+      if (result.status == 'PENDING' || result.status == 'GENERATING') {
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) _load();
         });
@@ -143,7 +143,7 @@ class _AppointmentBriefingSheetState
         _result = result;
         _loading = false;
       });
-      if (result.status == 'PENDING') {
+      if (result.status == 'PENDING' || result.status == 'GENERATING') {
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) _load();
         });
@@ -205,7 +205,7 @@ class _AppointmentBriefingSheetState
     if (r == null || r.status == 'NONE' || r.status == 'SKIPPED') {
       return Text(l10n.translate('visitBriefingEmpty'));
     }
-    if (r.status == 'PENDING') {
+    if (r.status == 'PENDING' || r.status == 'GENERATING') {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

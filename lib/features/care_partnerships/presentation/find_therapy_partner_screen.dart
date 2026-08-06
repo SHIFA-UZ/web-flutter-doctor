@@ -6,6 +6,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/features/care_partnerships/data/care_partnership_repository.dart';
+import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 
 final carePartnershipRepositoryProvider = Provider<CarePartnershipRepository>(
   (ref) => CarePartnershipRepository(ref.watch(apiClientProvider)),
@@ -97,7 +98,8 @@ class _FindTherapyPartnerScreenState
         SnackBar(content: Text(l10n.translate('partnerInviteSent'))),
       );
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(
+      ShellScope.pushReplacementNamed(
+        context,
         AppRoutes.carePartnershipDetail,
         arguments: created.id,
       );

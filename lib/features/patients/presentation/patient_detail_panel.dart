@@ -1,4 +1,4 @@
-﻿part of 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart';
+part of 'package:shifa_doc_app_v1/features/patients/presentation/patients_screen.dart';
 
 /// Right-hand patient detail workspace matching the Patients mockup layout.
 class PatientDetailPanel extends ConsumerStatefulWidget {
@@ -160,14 +160,17 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
               title: Text(l10n.translate('findTherapyPartner')),
               onTap: () {
                 Navigator.pop(ctx);
-                ShellScope.pushNamed(
-                  context,
-                  AppRoutes.findTherapyPartner,
-                  arguments: {
-                    'patientId': int.parse(p.id),
-                    'patientName': p.name,
-                  },
-                );
+                // Defer until after the bottom sheet route is fully dismissed.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ShellScope.pushNamed(
+                    context,
+                    AppRoutes.findTherapyPartner,
+                    arguments: {
+                      'patientId': int.parse(p.id),
+                      'patientName': p.name,
+                    },
+                  );
+                });
               },
             ),
             ListTile(
@@ -175,7 +178,9 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
               title: Text(l10n.translate('carePartnerships')),
               onTap: () {
                 Navigator.pop(ctx);
-                ShellScope.pushNamed(context, AppRoutes.carePartnerships);
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ShellScope.pushNamed(context, AppRoutes.carePartnerships);
+                });
               },
             ),
           ],

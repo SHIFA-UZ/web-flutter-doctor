@@ -204,6 +204,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   StreamSubscription? _eventSubscription; // CallEvent on mobile, null on web
   String? _roomUrl; // For web
   String? _token; // For web
+  final Map<String, VideoViewController> _videoControllers = {};
 
   // Helper to reliably detect if we're on web platform
   // Uses state variables as fallback since kIsWeb might not work in production builds
@@ -519,18 +520,33 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           _isVideoLoading = false;
         });
       } else {
-        // Mobile/Desktop: Use CallClient
-        _callClient = CallClient();
+        // Mobile/Desktop: Use CallClient (daily_flutter 0.37+)
+        final client = await CallClient.create();
+        _callClient = client;
 
-        // Set up event listeners
-        _eventSubscription = (_callClient as CallClient).events.listen((event) {
-          _handleCallEvent(event);
-        });
+        _eventSubscription = client.events.listen(_handleCallEvent);
 
-        // Join the call
-        await (_callClient as CallClient).join(
-          roomUrl: tokenData.roomUrl,
+        await client.join(
+          url: Uri.parse(tokenData.roomUrl),
           token: tokenData.token,
+          clientSettings: ClientSettingsUpdate.set(
+            inputs: InputSettingsUpdate.set(
+              camera: CameraInputSettingsUpdate.set(
+                isEnabled: BoolUpdate.set(true),
+              ),
+              microphone: MicrophoneInputSettingsUpdate.set(
+                isEnabled: BoolUpdate.set(true),
+              ),
+            ),
+            publishing: PublishingSettingsUpdate.set(
+              camera: CameraPublishingSettingsUpdate.set(
+                isPublishing: BoolUpdate.set(true),
+              ),
+              microphone: MicrophonePublishingSettingsUpdate.set(
+                isPublishing: BoolUpdate.set(true),
+              ),
+            ),
+          ),
         );
 
         setState(() {
@@ -577,35 +593,43 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       return;
     }
 
-    // Mobile: Handle CallEvent
-    if (event is CallStateUpdated) {
-      final state = event.state;
-      if (state == CallState.left) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.videoCallEnded),
-            ),
-          );
-        }
-      } else if (state == CallState.error) {
-        if (mounted) {
-          setState(() {
-            _videoErrorRaw = 'Call error occurred';
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.callErrorOccurred),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } else if (event is ParticipantJoined) {
-      debugPrint('Participant joined: ${event.participant.id}');
-    } else if (event is ParticipantLeft) {
-      debugPrint('Participant left: ${event.participant.id}');
-    }
+    // daily_flutter Event is a freezed union — use dynamic whenOrNull
+    event.whenOrNull?.call(
+      callStateUpdated: (stateData) {
+        stateData.whenOrNull?.call(
+          left: () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.videoCallEnded),
+                ),
+              );
+            }
+          },
+        );
+      },
+      inputsUpdated: (inputs) {
+        if (!mounted) return;
+        setState(() {
+          _isVideoOff = !inputs.camera.isEnabled;
+          _isMuted = !inputs.microphone.isEnabled;
+        });
+      },
+      participantJoined: (participant) {
+        debugPrint('Participant joined: ${participant.id}');
+        if (mounted) setState(() {});
+      },
+      participantUpdated: (participant) {
+        if (mounted) setState(() {});
+      },
+      participantLeft: (participant) {
+        debugPrint('Participant left: ${participant.id}');
+        final controller =
+            _videoControllers.remove(participant.id.toString());
+        controller?.dispose();
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   Future<void> _toggleMute() async {
@@ -615,13 +639,19 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       return;
     }
 
-    if (_callClient != null) {
-      try {
-        await (_callClient as CallClient).setLocalAudio(!_isMuted);
-        setState(() => _isMuted = !_isMuted);
-      } catch (e) {
-        debugPrint('Failed to toggle mute: $e');
-      }
+    if (_callClient == null) return;
+    try {
+      final client = _callClient as CallClient;
+      await client.updateInputs(
+        inputs: InputSettingsUpdate.set(
+          microphone: MicrophoneInputSettingsUpdate.set(
+            isEnabled: BoolUpdate.set(!_isMuted),
+          ),
+        ),
+      );
+      setState(() => _isMuted = !_isMuted);
+    } catch (e) {
+      debugPrint('Failed to toggle mute: $e');
     }
   }
 
@@ -632,34 +662,28 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       return;
     }
 
-    if (_callClient != null) {
-      try {
-        await (_callClient as CallClient).setLocalVideo(!_isVideoOff);
-        setState(() => _isVideoOff = !_isVideoOff);
-      } catch (e) {
-        debugPrint('Failed to toggle video: $e');
-      }
+    if (_callClient == null) return;
+    try {
+      final client = _callClient as CallClient;
+      await client.updateInputs(
+        inputs: InputSettingsUpdate.set(
+          camera: CameraInputSettingsUpdate.set(
+            isEnabled: BoolUpdate.set(!_isVideoOff),
+          ),
+        ),
+      );
+      setState(() => _isVideoOff = !_isVideoOff);
+    } catch (e) {
+      debugPrint('Failed to toggle video: $e');
     }
   }
 
   Future<void> _toggleScreenShare() async {
-    if (_isWebPlatform) {
-      // Web: Controls are handled by Daily.co Prebuilt UI
-      setState(() => _isScreenSharing = !_isScreenSharing);
-      return;
-    }
-
-    if (_callClient != null) {
-      try {
-        if (_isScreenSharing) {
-          await (_callClient as CallClient).stopScreenShare();
-        } else {
-          await (_callClient as CallClient).startScreenShare();
-        }
-        setState(() => _isScreenSharing = !_isScreenSharing);
-      } catch (e) {
-        debugPrint('Failed to toggle screen share: $e');
-      }
+    // Screen share is not exposed on daily_flutter 0.37 CallClient for native.
+    // Web Prebuilt handles its own controls; on mobile keep UI state only.
+    setState(() => _isScreenSharing = !_isScreenSharing);
+    if (!_isWebPlatform) {
+      debugPrint('Screen share toggle is not supported on native Daily SDK yet');
     }
   }
 
@@ -678,6 +702,10 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       try {
         await (_callClient as CallClient).leave();
         await _eventSubscription?.cancel();
+        for (final controller in _videoControllers.values) {
+          controller.dispose();
+        }
+        _videoControllers.clear();
         _callClient = null;
         _eventSubscription = null;
         setState(() {
@@ -737,28 +765,18 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         return const Center(child: CircularProgressIndicator());
       }
 
-      // Get participants and render their video tracks
-      final participants = (_callClient as CallClient).participants();
+      final participantsObj = (_callClient as CallClient).participants;
+      final localParticipant = participantsObj.local;
+      final remoteParticipants = participantsObj.remote.values.toList();
 
-      if (participants.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(AppLocalizations.of(context)!.waitingForParticipants),
-            ],
-          ),
-        );
-      }
-
-      // Render video tracks for each participant
       return Container(
         color: Colors.black,
-        child: participants.length == 1
-            ? _buildSingleParticipantView(participants.first)
-            : _buildMultipleParticipantsView(participants),
+        child: remoteParticipants.isEmpty
+            ? _buildSingleParticipantView(localParticipant)
+            : _buildMultipleParticipantsView(
+                localParticipant,
+                remoteParticipants,
+              ),
       );
     }
   }
@@ -775,65 +793,94 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     );
   }
 
-  Widget _buildSingleParticipantView(Participant participant) {
+  Widget _buildSingleParticipantView(Participant? participant) {
+    if (participant == null) {
+      return const Center(
+        child: Icon(Icons.person, size: 100, color: Colors.white54),
+      );
+    }
+
+    final participantId = participant.id.toString();
+    final controller = _videoControllers.putIfAbsent(
+      participantId,
+      VideoViewController.new,
+    );
+
+    final videoTrack = participant.media?.camera.track;
+    if (videoTrack != null) {
+      controller.setTrack(videoTrack);
+    }
+
     return Center(
-      child: participant.videoTrack != null
-          ? VideoView(
-              track: participant.videoTrack!,
-              mirror: participant.isLocal,
-            )
+      child: videoTrack != null
+          ? VideoView(controller: controller)
           : const Center(
               child: Icon(Icons.person, size: 100, color: Colors.white54),
             ),
     );
   }
 
-  Widget _buildMultipleParticipantsView(List<Participant> participants) {
-    // Show local participant small, remote participant large
-    final localParticipant = participants.firstWhere(
-      (p) => p.isLocal,
-      orElse: () => participants.first,
+  Widget _buildMultipleParticipantsView(
+    Participant? localParticipant,
+    List<Participant> remoteParticipants,
+  ) {
+    if (remoteParticipants.isEmpty) {
+      return _buildSingleParticipantView(localParticipant);
+    }
+
+    final remoteParticipant = remoteParticipants.first;
+    final remoteId = remoteParticipant.id.toString();
+    final remoteController = _videoControllers.putIfAbsent(
+      remoteId,
+      VideoViewController.new,
     );
-    final remoteParticipant = participants.firstWhere(
-      (p) => !p.isLocal,
-      orElse: () => participants.last,
-    );
+
+    final remoteVideoTrack = remoteParticipant.media?.camera.track;
+    if (remoteVideoTrack != null) {
+      remoteController.setTrack(remoteVideoTrack);
+    }
+
+    VideoViewController? localController;
+    MediaStreamTrack? localVideoTrack;
+    if (localParticipant != null) {
+      final localId = localParticipant.id.toString();
+      localController = _videoControllers.putIfAbsent(
+        localId,
+        VideoViewController.new,
+      );
+      localVideoTrack = localParticipant.media?.camera.track;
+      if (localVideoTrack != null) {
+        localController.setTrack(localVideoTrack);
+      }
+    }
 
     return Stack(
       children: [
-        // Remote participant (large)
         Positioned.fill(
-          child: remoteParticipant.videoTrack != null
-              ? VideoView(track: remoteParticipant.videoTrack!)
+          child: remoteVideoTrack != null
+              ? VideoView(controller: remoteController)
               : const Center(
                   child: Icon(Icons.person, size: 100, color: Colors.white54),
                 ),
         ),
-        // Local participant (small, bottom right)
-        Positioned(
-          bottom: 100,
-          right: 16,
-          child: Container(
-            width: 120,
-            height: 160,
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white, width: 2),
+        if (localController != null && localVideoTrack != null)
+          Positioned(
+            bottom: 100,
+            right: 16,
+            child: Container(
+              width: 120,
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: VideoView(controller: localController),
+              ),
             ),
-            child: localParticipant.videoTrack != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: VideoView(
-                      track: localParticipant.videoTrack!,
-                      mirror: true,
-                    ),
-                  )
-                : const Center(
-                    child: Icon(Icons.person, size: 60, color: Colors.white54),
-                  ),
           ),
-        ),
       ],
     );
   }
@@ -843,6 +890,10 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     _signaturePollTimer?.cancel();
     _endVideoCall();
     _eventSubscription?.cancel();
+    for (final controller in _videoControllers.values) {
+      controller.dispose();
+    }
+    _videoControllers.clear();
     _notesController.removeListener(_markUnsaved);
     _soapSubjective.removeListener(_markUnsaved);
     _soapObjective.removeListener(_markUnsaved);
@@ -1639,7 +1690,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                         flex: 2,
                         child: Column(
                           children: [
-                            // Documents
+                            // Documents stay desktop/tablet-only on phones.
+                            if (!stackVertically) ...[
                             Expanded(
                               child: DocumentationSectionCard(
                                 title: AppLocalizations.of(context)!.documents,
@@ -1721,6 +1773,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
                               ),
                             ),
                             const SizedBox(height: 24),
+                            ],
                             // Documentation (general notes or 025-2 form)
                             Expanded(
                               child: Column(

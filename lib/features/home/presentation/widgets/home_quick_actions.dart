@@ -16,14 +16,12 @@ class HomeQuickActions extends ConsumerWidget {
     final actions = [
       _QuickAction(
         icon: Icons.add_circle_outline,
-        label: l10n.translate('newAppointment') ?? 'New appointment',
+        label: l10n.translate('newAppointment'),
         onTap: () => openCalendarForNewAppointment(ref),
       ),
       _QuickAction(
         icon: Icons.person_add_outlined,
-        label: l10n.translate('addPatient') ??
-            l10n.translate('newPatient') ??
-            'Add patient',
+        label: l10n.translate('addPatient'),
         onTap: () => openCreatePatientForm(context, ref),
       ),
       _QuickAction(
@@ -33,17 +31,17 @@ class HomeQuickActions extends ConsumerWidget {
       ),
       _QuickAction(
         icon: Icons.upload_file_outlined,
-        label: l10n.translate('uploadDocument') ?? 'Upload document',
+        label: l10n.translate('uploadDocument'),
         onTap: () => openPatientsForDocumentUpload(ref),
       ),
       _QuickAction(
         icon: Icons.medical_services_outlined,
-        label: l10n.translate('createTreatmentPlan') ?? 'Treatment plan',
+        label: l10n.translate('createTreatmentPlan'),
         onTap: () => openCreateTreatmentPlanForm(context, ref),
       ),
       _QuickAction(
         icon: Icons.medication_outlined,
-        label: l10n.translate('issuePrescription') ?? 'Prescription',
+        label: l10n.translate('issuePrescription'),
         onTap: () => openCreateRemoteCareTaskForm(context, ref),
       ),
     ];

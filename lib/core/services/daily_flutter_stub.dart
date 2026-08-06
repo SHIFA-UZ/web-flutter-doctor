@@ -1,51 +1,110 @@
-// lib/core/services/daily_flutter_stub.dart
-// Stub file for web platform - daily_flutter doesn't support web
+// Stub for web — daily_flutter is native-only. Keep API surface aligned with
+// daily_flutter 0.37 usage in video_call_screen.dart so web still analyzes.
 import 'package:flutter/widgets.dart';
 
-// These are just type stubs to prevent compilation errors on web
 class CallClient {
+  CallClient._();
+  static Future<CallClient> create() async => CallClient._();
+
   Stream<dynamic> get events => const Stream.empty();
-  Future<void> join({required String roomUrl, required String token}) async {}
+  Participants get participants => Participants(local: Participant(id: 'local'));
+  dynamic get inputs => null;
+  dynamic get availableDevices => null;
+
+  Future<void> join({
+    required Uri url,
+    String? token,
+    dynamic clientSettings,
+  }) async {}
+
   Future<void> leave() async {}
-  Future<void> setLocalAudio(bool enabled) async {}
-  Future<void> setLocalVideo(bool enabled) async {}
-  Future<void> startScreenShare() async {}
-  Future<void> stopScreenShare() async {}
-  List<Participant> participants() => [];
+
+  Future<void> updateInputs({required dynamic inputs}) async {}
+
+  Future<void> updatePublishing({required dynamic publishing}) async {}
+
+  Future<void> setAudioDevice({required dynamic deviceId}) async {}
+
+  Future<void> setInputsEnabled({bool? camera, bool? microphone}) async {}
+
+  Future<void> dispose() async {}
 }
 
-class CallEvent {}
-class CallStateUpdated extends CallEvent {
-  final CallState state;
-  CallStateUpdated(this.state);
-}
-class ParticipantJoined extends CallEvent {
-  final Participant participant;
-  ParticipantJoined(this.participant);
-}
-class ParticipantLeft extends CallEvent {
-  final Participant participant;
-  ParticipantLeft(this.participant);
+class Participants {
+  final Participant local;
+  final Map<dynamic, Participant> remote;
+  Participants({required this.local, Map<dynamic, Participant>? remote})
+      : remote = remote ?? {};
 }
 
 class Participant {
-  final String id;
-  final bool isLocal;
-  final dynamic videoTrack;
-  Participant({required this.id, required this.isLocal, this.videoTrack});
+  final dynamic id;
+  final ParticipantInfo info;
+  final ParticipantMedia? media;
+  Participant({required this.id, ParticipantInfo? info, this.media})
+      : info = info ?? ParticipantInfo(isLocal: true);
 }
 
-class CallState {
-  static const left = CallState._('left');
-  static const error = CallState._('error');
-  final String value;
-  const CallState._(this.value);
+class ParticipantInfo {
+  final bool isLocal;
+  ParticipantInfo({this.isLocal = false});
+}
+
+class ParticipantMedia {
+  final ParticipantMediaTrack camera;
+  ParticipantMedia({ParticipantMediaTrack? camera})
+      : camera = camera ?? ParticipantMediaTrack();
+}
+
+class ParticipantMediaTrack {
+  final dynamic track;
+  ParticipantMediaTrack({this.track});
+}
+
+class VideoViewController {
+  void setTrack(dynamic track) {}
+  void dispose() {}
 }
 
 class VideoView extends StatelessWidget {
-  final dynamic track;
-  final bool mirror;
-  const VideoView({Key? key, required this.track, this.mirror = false}) : super(key: key);
+  final VideoViewController controller;
+  final dynamic fit;
+  const VideoView({super.key, required this.controller, this.fit});
   @override
-  Widget build(BuildContext context) => Container();
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
+
+// Settings update stubs used at call sites (web never executes them).
+class BoolUpdate {
+  static dynamic set(bool value) => value;
+}
+
+class CameraInputSettingsUpdate {
+  static dynamic set({dynamic isEnabled}) => null;
+}
+
+class MicrophoneInputSettingsUpdate {
+  static dynamic set({dynamic isEnabled}) => null;
+}
+
+class InputSettingsUpdate {
+  static dynamic set({dynamic camera, dynamic microphone}) => null;
+}
+
+class CameraPublishingSettingsUpdate {
+  static dynamic set({dynamic isPublishing}) => null;
+}
+
+class MicrophonePublishingSettingsUpdate {
+  static dynamic set({dynamic isPublishing}) => null;
+}
+
+class PublishingSettingsUpdate {
+  static dynamic set({dynamic camera, dynamic microphone}) => null;
+}
+
+class ClientSettingsUpdate {
+  static dynamic set({dynamic inputs, dynamic publishing}) => null;
+}
+
+typedef MediaStreamTrack = dynamic;

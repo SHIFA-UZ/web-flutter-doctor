@@ -271,46 +271,41 @@ class FinanceInstallmentsViewState extends ConsumerState<FinanceInstallmentsView
             children: [
               FinanceMonthFilterBar(clinicId: widget.clinicId),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  // Search box
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      onChanged: (v) => setState(() => _search = v),
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        hintText: l10n.translate(
-                          'clinicFinanceInstallSearchHint',
-                        ),
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        suffixIcon: _search.isEmpty
-                            ? null
-                            : IconButton(
-                                icon: const Icon(Icons.close, size: 18),
-                                onPressed: () {
-                                  _searchCtrl.clear();
-                                  setState(() => _search = '');
-                                },
-                              ),
-                      ),
+              ClinicTableToolbar(
+                search: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _search = v),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    hintText: l10n.translate(
+                      'clinicFinanceInstallSearchHint',
                     ),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    suffixIcon: _search.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _search = '');
+                            },
+                          ),
                   ),
-                  const SizedBox(width: 8),
-                  // Date range filter
+                ),
+                actions: [
                   OutlinedButton.icon(
                     onPressed: _pickDateRange,
                     icon: const Icon(Icons.date_range, size: 18),
                     label: Text(_formatDueRangeLabel()),
                   ),
-                  if (_dueFrom != null || _dueTo != null) ...[
+                  if (_dueFrom != null || _dueTo != null)
                     IconButton(
                       tooltip: l10n.translate('clinicFinanceInstallClearDates'),
                       icon: const Icon(Icons.clear, size: 18),
@@ -319,7 +314,6 @@ class FinanceInstallmentsViewState extends ConsumerState<FinanceInstallmentsView
                         _dueTo = null;
                       }),
                     ),
-                  ],
                 ],
               ),
               const SizedBox(height: 8),

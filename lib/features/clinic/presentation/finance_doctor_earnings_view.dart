@@ -361,14 +361,12 @@ class FinanceDoctorEarningsPaneState extends ConsumerState<FinanceDoctorEarnings
       children: [
         FinanceMonthFilterBar(clinicId: widget.clinicId),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                earningsHint,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-            ),
+        ClinicTableToolbar(
+          search: Text(
+            earningsHint,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+          actions: [
             IconButton(
               tooltip: l10n.refresh,
               onPressed: _refreshing ? null : _loadEarnings,

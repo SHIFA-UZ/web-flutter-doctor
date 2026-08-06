@@ -68,6 +68,7 @@ class Appointment {
   bool get hasVisitBriefing =>
       briefingStatus == 'READY' ||
       briefingStatus == 'PENDING' ||
+      briefingStatus == 'GENERATING' ||
       briefingStatus == 'FAILED' ||
       attachmentCount > 0;
 }
