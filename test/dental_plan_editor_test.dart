@@ -1,9 +1,28 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_plan_editor_panel.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
+
+/// Sync delegate so widget tests do not depend on asset bundle JSON load.
+class _SyncAppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _SyncAppLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) =>
+      ['en', 'uz', 'ru'].contains(locale.languageCode);
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async =>
+      AppLocalizations(locale);
+
+  @override
+  bool shouldReload(_SyncAppLocalizationsDelegate old) => false;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -23,8 +42,8 @@ void main() {
           defaultPriceMinor: 100000,
           currency: 'UZS',
           active: true,
-          offeredByDoctorIds: const [],
-          offeredByDoctorNames: const [],
+          offeredByDoctorIds: [],
+          offeredByDoctorNames: [],
         ),
         PlanServiceOption(
           key: 'svc-b',
@@ -36,8 +55,8 @@ void main() {
           defaultPriceMinor: 200000,
           currency: 'UZS',
           active: true,
-          offeredByDoctorIds: const [],
-          offeredByDoctorNames: const [],
+          offeredByDoctorIds: [],
+          offeredByDoctorNames: [],
         ),
       ];
 
@@ -60,17 +79,28 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('uz'), Locale('ru')],
+          localizationsDelegates: const [
+            _SyncAppLocalizationsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: Scaffold(
-            body: DentalPlanEditorPanel(
-              brand: Colors.teal,
-              catalog: catalog,
-              initialDocumentationJson: initialJson,
+            body: SingleChildScrollView(
+              child: DentalPlanEditorPanel(
+                brand: Colors.teal,
+                catalog: catalog,
+                initialDocumentationJson: initialJson,
+              ),
             ),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
+      expect(find.byType(DentalPlanEditorPanel), findsOneWidget);
       final state = tester.state<DentalPlanEditorPanelState>(
         find.byType(DentalPlanEditorPanel),
       );
