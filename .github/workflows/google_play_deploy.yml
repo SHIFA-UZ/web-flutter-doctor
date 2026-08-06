@@ -80,16 +80,54 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.DOCTOR_ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::DOCTOR_ANDROID_KEYSTORE_BASE64 secret not found!"
+            exit 1
+          fi
+          # Avoid echo mangling; strip whitespace/newlines from the secret.
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n\t ' | base64 --decode > android/app/upload-keystore.jks
+          if [ ! -s android/app/upload-keystore.jks ]; then
+            echo "::error::Decoded keystore is empty. Re-encode DOCTOR_ANDROID_KEYSTORE_BASE64."
+            exit 1
+          fi
 
       - name: Create key.properties
+        env:
+          STORE_PASSWORD: ${{ secrets.DOCTOR_ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DOCTOR_ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.DOCTOR_ANDROID_KEY_PASSWORD }}
         run: |
-          cat > android/key.properties << EOF
-          storeFile=upload-keystore.jks
-          storePassword=${{ secrets.DOCTOR_ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.DOCTOR_ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.DOCTOR_ANDROID_KEY_PASSWORD }}
-          EOF
+          if [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Missing DOCTOR_ANDROID_KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD secrets."
+            exit 1
+          fi
+          # Write via Python so passwords with $, !, etc. are not shell-expanded.
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          Path("android/key.properties").write_text(
+              "storeFile=upload-keystore.jks\n"
+              f"storePassword={os.environ['STORE_PASSWORD']}\n"
+              f"keyAlias={os.environ['KEY_ALIAS']}\n"
+              f"keyPassword={os.environ['KEY_PASSWORD']}\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Verify keystore unlocks
+        env:
+          STORE_PASSWORD: ${{ secrets.DOCTOR_ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DOCTOR_ANDROID_KEY_ALIAS }}
+        run: |
+          if ! keytool -list \
+            -keystore android/app/upload-keystore.jks \
+            -storepass "$STORE_PASSWORD" \
+            -alias "$KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Cannot unlock keystore with DOCTOR_ANDROID_KEYSTORE_PASSWORD + DOCTOR_ANDROID_KEY_ALIAS."
+            echo "Local check: keytool -list -keystore shifa-doc-upload-keystore.jks -alias YOUR_ALIAS"
+            exit 1
+          fi
+          echo "Keystore unlock OK for alias=$KEY_ALIAS"
 
       - name: Build Android App Bundle
         run: |
