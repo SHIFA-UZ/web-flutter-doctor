@@ -43,6 +43,10 @@ class CalendarEntry {
   /// Practice venue from GET /api/calendar (`locationId` JSON); null for video / legacy.
   final int? locationId;
 
+  /// Pre-appointment AI briefing status from calendar API.
+  final String? briefingStatus;
+  final int attachmentCount;
+
   CalendarEntry.appointment({
     required this.start,
     required this.end,
@@ -58,6 +62,8 @@ class CalendarEntry {
     this.status,
     this.paymentStatus,
     this.locationId,
+    this.briefingStatus,
+    this.attachmentCount = 0,
   })  : type = EntryType.appointment,
         blockId = null,
         blockReason = null;
@@ -79,7 +85,9 @@ class CalendarEntry {
         blockReason = null,
         patientId = null,
         status = null,
-        paymentStatus = null;
+        paymentStatus = null,
+        briefingStatus = null,
+        attachmentCount = 0;
 
   CalendarEntry.blocked({
     required this.start,
@@ -98,7 +106,9 @@ class CalendarEntry {
         patientId = null,
         status = null,
         paymentStatus = null,
-        locationId = null;
+        locationId = null,
+        briefingStatus = null,
+        attachmentCount = 0;
 
   /// Converts ISO 8601 UTC string to TimeOfDay in [doctorTimeZone]. Use for consistent display (Today list and Calendar).
   static TimeOfDay utcIsoToTimeOfDayInZone(String isoUtc, String? doctorTimeZone) {
@@ -186,6 +196,8 @@ class CalendarEntry {
         status: status,
         paymentStatus: paymentStatus,
         locationId: _intFromJson(j['locationId']),
+        briefingStatus: j['briefingStatus'] as String?,
+        attachmentCount: _intFromJson(j['attachmentCount']) ?? 0,
       );
     }
 

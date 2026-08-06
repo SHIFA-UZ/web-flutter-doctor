@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_models.dart';
 
 class FinanceKpiCard extends StatelessWidget {
@@ -26,6 +28,12 @@ class FinanceKpiCard extends StatelessWidget {
     final backgroundColor = selected
         ? color.withValues(alpha: 0.16)
         : color.withValues(alpha: 0.08);
+    final compact = Responsive.useCompactToolbar(context);
+    final screenW = MediaQuery.sizeOf(context).width;
+    // Two cards per row on phones; fixed desktop tile otherwise.
+    final cardWidth = compact
+        ? ((screenW - 48) / 2).clamp(140.0, 200.0)
+        : 200.0;
 
     return Material(
       color: Colors.transparent,
@@ -34,7 +42,7 @@ class FinanceKpiCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: 200,
+          width: cardWidth,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: backgroundColor,
@@ -69,7 +77,7 @@ class FinanceKpiCard extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: compact ? 18 : 22,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
@@ -171,7 +179,8 @@ class FinanceStatusPill extends StatelessWidget {
     if (!enabled || entries.isEmpty) return pill;
 
     return PopupMenuButton<String>(
-      tooltip: 'Change status',
+      tooltip: AppLocalizations.of(context)?.translate('clinicChangeStatus') ??
+          'Change status',
       onSelected: onSelected,
       itemBuilder: (_) => entries,
       child: pill,

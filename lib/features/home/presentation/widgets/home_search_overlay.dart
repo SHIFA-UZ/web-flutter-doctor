@@ -83,8 +83,7 @@ class _HomeSearchOverlayState extends ConsumerState<HomeSearchOverlay> {
                       focusNode: _focus,
                       autofocus: true,
                       decoration: InputDecoration(
-                        hintText: l10n.translate('searchPatients') ??
-                            'Search patients, appointments…',
+                        hintText: l10n.translate('searchPatientsAppointmentsHint'),
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),

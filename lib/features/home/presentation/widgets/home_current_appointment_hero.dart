@@ -24,6 +24,7 @@ class HomeCurrentAppointmentHero extends StatelessWidget {
     this.onOpenDocuments,
     this.onMessagePatient,
     this.onBriefing,
+    this.onVisitBriefing,
   });
 
   final Appointment appointment;
@@ -37,6 +38,7 @@ class HomeCurrentAppointmentHero extends StatelessWidget {
   final VoidCallback? onOpenDocuments;
   final VoidCallback? onMessagePatient;
   final VoidCallback? onBriefing;
+  final VoidCallback? onVisitBriefing;
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +172,14 @@ class HomeCurrentAppointmentHero extends StatelessWidget {
               width: ButtonWidth.fill,
             ),
           ),
+          if (appointment.hasVisitBriefing) ...[
+            const SizedBox(height: 10),
+            ShifaSecondaryButton(
+              label: l10n.translate('viewVisitBriefing'),
+              onPressed: onVisitBriefing,
+              width: ButtonWidth.fill,
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -274,6 +284,7 @@ class HomeUpcomingTimelineCard extends StatelessWidget {
     required this.videoTooltip,
     required this.onTap,
     required this.onStart,
+    this.onVisitBriefing,
   });
 
   final Appointment appointment;
@@ -283,6 +294,7 @@ class HomeUpcomingTimelineCard extends StatelessWidget {
   final String videoTooltip;
   final VoidCallback onTap;
   final VoidCallback onStart;
+  final VoidCallback? onVisitBriefing;
 
   @override
   Widget build(BuildContext context) {
@@ -298,6 +310,7 @@ class HomeUpcomingTimelineCard extends StatelessWidget {
         patient: patient,
         onTap: onTap,
         onStart: onStart,
+        onVisitBriefing: onVisitBriefing,
         compact: true,
       ),
     );

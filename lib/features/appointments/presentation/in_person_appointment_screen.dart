@@ -244,7 +244,9 @@ class _InPersonAppointmentScreenState
     if (prof == null || prof.trim().isEmpty) return;
     _documentationProfessionDefaultApplied = true;
     if (_userSelectedDocumentationType) return;
-    final mode = isDentalDocumentationProfession(prof) ? 'dental' : 'general';
+    final mode = documentationTemplateForProfession(prof) == DocumentationTemplate.dental
+        ? 'dental'
+        : 'general';
     if (_documentationType == mode) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -422,34 +424,33 @@ class _InPersonAppointmentScreenState
     }
   }
 
-  Widget _buildDentalDocumentationColumn(Color brand, int? clinicId) {
+  Widget _buildDentalDocumentationColumn(
+    Color brand,
+    int? clinicId, {
+    bool expand = true,
+  }) {
     final detail = _activePlanDetail;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: DentalVisitDocumentationPanel(
-            key: _dentalDocPanelKey,
-            appointmentId: widget.appointment.id,
-            brand: brand,
-            onUnsavedChanged: (v) => setState(() => _hasUnsavedChanges = v),
-            activePlanId: _activePlanId,
-            planTitle: _linkedPlanTitle ?? detail?.summary.title,
-            dentalPlanDocumentation: detail?.dentalPlanDocumentation,
-            planLines: detail?.lines ?? const [],
-            fulfillmentCandidates: _fulfillmentCandidates,
-            fulfilledLineIds: _fulfilledLineIds,
-            linesTotalCount: detail?.summary.linesTotalCount ?? 0,
-            linesCompletedCount: detail?.summary.linesCompletedCount ?? 0,
-            loadingPlanContext: _loadingPlanContext,
-            planSummary: detail?.summary,
-            onFulfillmentChanged: () => setState(() {}),
-            onRetryLoadPlan: () => _loadActivePlanContext(_activePlanId),
-          ),
-        ),
-        if (_activePlanId != null && clinicId != null) ...[
-          const SizedBox(height: 8),
-          AppointmentPlanFinanceCard(
+    final panel = DentalVisitDocumentationPanel(
+      key: _dentalDocPanelKey,
+      appointmentId: widget.appointment.id,
+      brand: brand,
+      onUnsavedChanged: (v) => setState(() => _hasUnsavedChanges = v),
+      activePlanId: _activePlanId,
+      planTitle: _linkedPlanTitle ?? detail?.summary.title,
+      dentalPlanDocumentation: detail?.dentalPlanDocumentation,
+      planLines: detail?.lines ?? const [],
+      fulfillmentCandidates: _fulfillmentCandidates,
+      fulfilledLineIds: _fulfilledLineIds,
+      linesTotalCount: detail?.summary.linesTotalCount ?? 0,
+      linesCompletedCount: detail?.summary.linesCompletedCount ?? 0,
+      loadingPlanContext: _loadingPlanContext,
+      planSummary: detail?.summary,
+      onFulfillmentChanged: () => setState(() {}),
+      onRetryLoadPlan: () => _loadActivePlanContext(_activePlanId),
+      primaryScroll: expand,
+    );
+    final finance = (_activePlanId != null && clinicId != null)
+        ? AppointmentPlanFinanceCard(
             key: _planFinanceKey,
             clinicId: clinicId,
             planId: _activePlanId!,
@@ -459,7 +460,30 @@ class _InPersonAppointmentScreenState
             onTotalsRefreshed: () {
               if (mounted) setState(() {});
             },
-          ),
+          )
+        : null;
+
+    if (!expand) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          panel,
+          if (finance != null) ...[
+            const SizedBox(height: 8),
+            finance,
+          ],
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: panel),
+        if (finance != null) ...[
+          const SizedBox(height: 8),
+          finance,
         ],
       ],
     );
@@ -1328,204 +1352,32 @@ class _InPersonAppointmentScreenState
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final stackVertically = PlatformLayout.useSinglePane(context);
+                      final expandPanels = !stackVertically;
                       final gap = stackVertically ? 12.0 : 24.0;
                       final docCollapsed = _docPanelCollapsed &&
                           (!stackVertically || _documentationType == '025-2');
-                      return Flex(
-                        direction:
-                            stackVertically ? Axis.vertical : Axis.horizontal,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                  // Documents (collapsible)
-                  docCollapsed
-                      ? Container(
-                          width: 52,
-                          margin: EdgeInsets.only(right: stackVertically ? 0 : 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.black.withValues(alpha: 0.06),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () =>
-                                  setState(() => _docPanelCollapsed = false),
-                              borderRadius: BorderRadius.circular(16),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.chevron_right,
-                                    color: brand,
-                                    size: 28,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  RotatedBox(
-                                    quarterTurns: 3,
-                                    child: Text(
-                                      AppLocalizations.of(context)!.documents,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )
-                      : Expanded(
-                          child: DocumentationSectionCard(
-                            title: AppLocalizations.of(context)!.documents,
-                            titleTrailing: IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: () =>
-                                  setState(() => _docPanelCollapsed = true),
-                              tooltip: AppLocalizations.of(context)!.collapse,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: () {
-                                    // Check if we're still loading patientId
-                                    if (patientIdAsync != null) {
-                                      return patientIdAsync.when(
-                                        data: (id) {
-                                          if (id == null || id.isEmpty) {
-                                            return Center(
-                                              child: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                )!.patientIdNotAvailable,
-                                              ),
-                                            );
-                                          }
-                                          final docsAsync = ref.watch(
-                                            patientDocumentsProvider(PatientDocumentsKey(patientId: id)),
-                                          );
-                                          return docsAsync.when(
-                                            data: (docs) =>
-                                                GroupedPatientDocumentsList(
-                                                  documents: docs,
-                                                  brand: brand,
-                                                  patientId: id,
-                                                  onRequestAccess: (doc) async {
-                                                    final client = ref.read(
-                                                      apiClientProvider,
-                                                    );
-                                                    await requestDocumentAccessWithClient(
-                                                      client: client,
-                                                      patientId: id,
-                                                      documentId: doc.id,
-                                                    );
-                                                    ref.refresh(
-                                                      patientDocumentsProvider(
-                                                        PatientDocumentsKey(patientId: id),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                            loading: () => const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
-                                            error: (err, _) => Center(
-                                              child: Text(
-                                                '${AppLocalizations.of(context)!.error}: $err',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        loading: () => const Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                        error: (err, _) => Center(
-                                          child: Text(
-                                            '${AppLocalizations.of(context)!.errorLoadingPatientId}: $err',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                    // If patientId is already available, use documentsAsync
-                                    if (documentsAsync == null) {
-                                      return Center(
-                                        child: Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.patientIdNotAvailable,
-                                        ),
-                                      );
-                                    }
-                                    return documentsAsync.when(
-                                      data: (docs) {
-                                        final pid = patientId!;
-                                        return GroupedPatientDocumentsList(
-                                            documents: docs,
-                                            brand: brand,
-                                            patientId: pid,
-                                            onRequestAccess: (doc) async {
-                                              final client = ref.read(
-                                                apiClientProvider,
-                                              );
-                                              await requestDocumentAccessWithClient(
-                                                client: client,
-                                                patientId: pid,
-                                                documentId: doc.id,
-                                              );
-                                              ref.refresh(
-                                                patientDocumentsProvider(
-                                                  PatientDocumentsKey(patientId: pid),
-                                                ),
-                                              );
-                                            },
-                                          );
-                                      },
-                                      loading: () => const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                      error: (err, _) => Center(
-                                        child: Text(
-                                          '${AppLocalizations.of(context)!.error}: $err',
-                                        ),
-                                      ),
-                                    );
-                                  }(),
-                                ),
-                                ConsultationDocumentUploadStrip(
-                                  patientId: patientId,
-                                  brand: brand,
-                                  enabled: consultationUploadEnabled,
-                                ),
-                                const SizedBox(height: 10),
-                                _documentsFinalizeHintRow(context),
-                              ],
-                            ),
-                          ),
-                        ),
-                  SizedBox(
-                    width: stackVertically ? 0 : gap,
-                    height: stackVertically ? gap : 0,
-                  ),
-                  // Documentation (general notes or 025-2 form)
-                  Expanded(
-                    child: DocumentationSectionCard(
+                      Widget flexChild({required Widget child}) =>
+                          expandPanels ? Expanded(child: child) : child;
+
+                      final footer = ConsultationStickyFooter(
+                        pinned: expandPanels,
+                        hasPatientSignature: _hasPatientSignature,
+                        signatureRequested: _signatureRequested,
+                        showRequestSignatureButton:
+                            !_hasPatientSignature && !_signatureRequested,
+                        isRequestingSignature: _isRequestingSignature,
+                        onRequestSignature: _requestSignature,
+                        isEndingAppointment: _isSaving,
+                        onEndAppointment: _endAppointment,
+                      );
+
+                      final notesCard = DocumentationSectionCard(
                       title: _documentationType == 'general'
                           ? AppLocalizations.of(context)!.notes
                           : _documentationType == 'dental'
                               ? AppLocalizations.of(context)!.docModeDental
                               : AppLocalizations.of(context)!.docMode0252,
+                      expandBody: expandPanels,
                       titleTrailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1796,10 +1648,13 @@ class _InPersonAppointmentScreenState
                                 );
                               },
                             ),
-                          Expanded(
+                          flexChild(
                             child: _showDocumentationNoteHelpers
                           ? Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
+                              mainAxisSize: expandPanels
+                                  ? MainAxisSize.max
+                                  : MainAxisSize.min,
                               children: [
                                 if (_notesSectionsExpanded) ...[
                                   // From Shifa AI – only when AI source is selected
@@ -2691,8 +2546,11 @@ class _InPersonAppointmentScreenState
                                   onTranscriptAppended: _markUnsaved,
                                 ),
                                 const SizedBox(height: 8),
-                                Expanded(
+                                flexChild(
                                   child: Container(
+                                    constraints: expandPanels
+                                        ? null
+                                        : const BoxConstraints(minHeight: 160),
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF9FAFB),
@@ -2714,10 +2572,13 @@ class _InPersonAppointmentScreenState
                                     ),
                                     child: DoctorSpeechTextField(
                                       controller: _notesController,
-                                      style:
-                                          DoctorSpeechInputStyle.borderlessExpanding,
-                                      expands: true,
-                                      maxLines: null,
+                                      style: expandPanels
+                                          ? DoctorSpeechInputStyle
+                                              .borderlessExpanding
+                                          : DoctorSpeechInputStyle.standard,
+                                      expands: expandPanels,
+                                      minLines: expandPanels ? null : 6,
+                                      maxLines: expandPanels ? null : 12,
                                       textAlignVertical:
                                           TextAlignVertical.top,
                                       textStyle: const TextStyle(
@@ -2773,7 +2634,7 @@ class _InPersonAppointmentScreenState
                                           width: ButtonWidth.fill,
                                         ),
                                 ] else if (!_dentalDocumentationFullScreen)
-                                  Expanded(
+                                  flexChild(
                                     child: Builder(
                                       builder: (context) {
                                         final clinicId =
@@ -2781,12 +2642,15 @@ class _InPersonAppointmentScreenState
                                         return _buildDentalDocumentationColumn(
                                           brand,
                                           clinicId,
+                                          expand: expandPanels,
                                         );
                                       },
                                     ),
                                   )
+                                else if (expandPanels)
+                                  const Expanded(child: SizedBox.shrink())
                                 else
-                                  const Expanded(child: SizedBox.shrink()),
+                                  const SizedBox.shrink(),
                                 if (_beforeTreatmentImages.isNotEmpty ||
                                     _afterTreatmentImages.isNotEmpty)
                                   Padding(
@@ -2844,39 +2708,192 @@ class _InPersonAppointmentScreenState
                             )
                               : (_form0252DocumentationFullScreen
                                   ? const SizedBox.shrink()
-                                  : LayoutBuilder(
-                                      builder: (context, constraints) {
-                                        return SizedBox(
-                                          height: constraints.maxHeight,
-                                          child: _build0252Panel(
-                                            brand,
-                                            patientId,
-                                            patientIdAsync,
-                                          ),
-                                        );
-                                      },
-                                    )),
+                                  : expandPanels
+                                      ? LayoutBuilder(
+                                          builder: (context, constraints) {
+                                            return SizedBox(
+                                              height: constraints.maxHeight,
+                                              child: _build0252Panel(
+                                                brand,
+                                                patientId,
+                                                patientIdAsync,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : _build0252Panel(
+                                          brand,
+                                          patientId,
+                                          patientIdAsync,
+                                        )),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
+                      );
+
+                      if (stackVertically) {
+                        return SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              notesCard,
+                              const SizedBox(height: 12),
+                              footer,
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Flex(
+                        direction: Axis.horizontal,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          docCollapsed
+                              ? Container(
+                                  width: 52,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.black.withValues(alpha: 0.06),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.05),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () => setState(
+                                        () => _docPanelCollapsed = false,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.chevron_right,
+                                            color: brand,
+                                            size: 28,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          RotatedBox(
+                                            quarterTurns: 3,
+                                            child: Text(
+                                              AppLocalizations.of(context)!
+                                                  .documents,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Expanded(
+                                  child: DocumentationSectionCard(
+                                    title: AppLocalizations.of(context)!
+                                        .documents,
+                                    titleTrailing: IconButton(
+                                      icon: const Icon(Icons.chevron_left),
+                                      onPressed: () => setState(
+                                        () => _docPanelCollapsed = true,
+                                      ),
+                                      tooltip: AppLocalizations.of(context)!
+                                          .collapse,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(
+                                          child: documentsAsync == null
+                                              ? Center(
+                                                  child: Text(
+                                                    AppLocalizations.of(
+                                                      context,
+                                                    )!.patientIdNotAvailable,
+                                                  ),
+                                                )
+                                              : documentsAsync.when(
+                                                  data: (docs) {
+                                                    final pid = patientId!;
+                                                    return GroupedPatientDocumentsList(
+                                                      documents: docs,
+                                                      brand: brand,
+                                                      patientId: pid,
+                                                      onRequestAccess:
+                                                          (doc) async {
+                                                        final client = ref.read(
+                                                          apiClientProvider,
+                                                        );
+                                                        await requestDocumentAccessWithClient(
+                                                          client: client,
+                                                          patientId: pid,
+                                                          documentId: doc.id,
+                                                        );
+                                                        ref.invalidate(
+                                                          patientDocumentsProvider(
+                                                            PatientDocumentsKey(
+                                                              patientId: pid,
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                  loading: () => const Center(
+                                                    child:
+                                                        CircularProgressIndicator(),
+                                                  ),
+                                                  error: (err, _) => Center(
+                                                    child: Text(
+                                                      '${AppLocalizations.of(context)!.error}: $err',
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                        ConsultationDocumentUploadStrip(
+                                          patientId: patientId,
+                                          brand: brand,
+                                          enabled: consultationUploadEnabled,
+                                        ),
+                                        const SizedBox(height: 10),
+                                        _documentsFinalizeHintRow(context),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                          SizedBox(width: gap),
+                          Expanded(child: notesCard),
+                        ],
                       );
                     },
                   ),
                 ),
               ),
-          ConsultationStickyFooter(
-            hasPatientSignature: _hasPatientSignature,
-            signatureRequested: _signatureRequested,
-            showRequestSignatureButton:
-                !_hasPatientSignature && !_signatureRequested,
-            isRequestingSignature: _isRequestingSignature,
-            onRequestSignature: _requestSignature,
-            isEndingAppointment: _isSaving,
-            onEndAppointment: _endAppointment,
-          ),
+              if (!PlatformLayout.useSinglePane(context))
+                ConsultationStickyFooter(
+                  hasPatientSignature: _hasPatientSignature,
+                  signatureRequested: _signatureRequested,
+                  showRequestSignatureButton:
+                      !_hasPatientSignature && !_signatureRequested,
+                  isRequestingSignature: _isRequestingSignature,
+                  onRequestSignature: _requestSignature,
+                  isEndingAppointment: _isSaving,
+                  onEndAppointment: _endAppointment,
+                ),
             ],
           ),
           if (_documentationType == 'dental' &&

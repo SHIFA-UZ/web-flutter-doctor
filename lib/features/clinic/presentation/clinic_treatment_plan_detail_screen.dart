@@ -297,21 +297,35 @@ class _OverviewCard extends StatelessWidget {
   static Widget _kv(String k, String v, {TextStyle? valueStyle}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 150,
-            child: Text(
-              k,
-              style: const TextStyle(
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stack = constraints.maxWidth < 360;
+          final label = Text(
+            k,
+            style: const TextStyle(
+              color: Colors.black54,
+              fontWeight: FontWeight.w500,
             ),
-          ),
-          Expanded(child: Text(v, style: valueStyle)),
-        ],
+          );
+          final value = Text(v, style: valueStyle);
+          if (stack) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                label,
+                const SizedBox(height: 2),
+                value,
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 140, child: label),
+              Expanded(child: value),
+            ],
+          );
+        },
       ),
     );
   }
@@ -532,8 +546,9 @@ class _VisitsList extends StatelessWidget {
                 ),
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+            trailing: Wrap(
+              spacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _StatusPill(
                   label: _timingLabel(visit.timing),

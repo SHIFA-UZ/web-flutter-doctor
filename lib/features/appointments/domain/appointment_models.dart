@@ -42,6 +42,12 @@ class Appointment {
   /// ✅ New: optional public photo URL (CDN/Firebase/etc.)
   final String? photoUrl;
 
+  /// Pre-appointment AI briefing status: PENDING|READY|FAILED|SKIPPED|null
+  final String? briefingStatus;
+
+  /// Count of documents attached at booking time.
+  final int attachmentCount;
+
   const Appointment({
     required this.id,
     required this.patientName,
@@ -52,9 +58,17 @@ class Appointment {
     this.status,
     this.reason,
     this.photoUrl,
+    this.briefingStatus,
+    this.attachmentCount = 0,
   });
 
   bool get isVideo => location.toLowerCase().contains('video');
   bool get isCompleted => status == AppointmentStatus.completed;
   bool get isInProgress => status == AppointmentStatus.inProgress;
+  bool get hasVisitBriefing =>
+      briefingStatus == 'READY' ||
+      briefingStatus == 'PENDING' ||
+      briefingStatus == 'GENERATING' ||
+      briefingStatus == 'FAILED' ||
+      attachmentCount > 0;
 }

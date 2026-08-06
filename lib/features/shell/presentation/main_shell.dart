@@ -36,9 +36,12 @@ import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/patient_briefing_panel.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/features/settings/presentation/language_settings_screen.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/clinic_staff_web_only_screen.dart';
@@ -603,60 +606,69 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
           // ───────────────── Content (nested Navigator so sidebar stays visible) ─────────────────
           Expanded(
-            child: Stack(
-              children: [
-                ShellScope(
-                  navigatorKey: _shellNavKey,
-                  child: Navigator(
-                key: _shellNavKey,
-                initialRoute: '/',
-                onGenerateRoute: (RouteSettings settings) {
-                  final name = settings.name;
-                  if (name == null || name.isEmpty || name == '/') {
-                    return MaterialPageRoute<void>(
-                      builder: (_) => _ShellTabContent(
-                        screens: screens,
-                        isClinicStaff: isClinicStaff,
+            // Top inset for Android/iOS status bar. Web usually has padding.top == 0.
+            // bottom: false — Scaffold + bottomNavigationBar already own the bottom edge.
+            child: SafeArea(
+              top: true,
+              bottom: false,
+              left: false,
+              right: false,
+              child: Stack(
+                children: [
+                  ShellScope(
+                    navigatorKey: _shellNavKey,
+                    child: Navigator(
+                      key: _shellNavKey,
+                      initialRoute: '/',
+                      onGenerateRoute: (RouteSettings settings) {
+                        final name = settings.name;
+                        if (name == null || name.isEmpty || name == '/') {
+                          return MaterialPageRoute<void>(
+                            builder: (_) => _ShellTabContent(
+                              screens: screens,
+                              isClinicStaff: isClinicStaff,
+                            ),
+                          );
+                        }
+                        final route = AppRouter.shellOnGenerateRoute(settings);
+                        if (route != null) return route;
+                        return MaterialPageRoute<void>(
+                          builder: (_) => _ShellTabContent(
+                            screens: screens,
+                            isClinicStaff: isClinicStaff,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (!isClinicStaff && !PlatformLayout.isNativeMobile)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: PatientBriefingPanel(
+                        bottomInset: Responsive.bottomNavClearance(context),
                       ),
-                    );
-                  }
-                  final route = AppRouter.shellOnGenerateRoute(settings);
-                  if (route != null) return route;
-                  return MaterialPageRoute<void>(
-                    builder: (_) => _ShellTabContent(
-                      screens: screens,
-                      isClinicStaff: isClinicStaff,
                     ),
-                  );
-                },
-              ),
-                ),
-                if (!isClinicStaff && !PlatformLayout.isNativeMobile)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: PatientBriefingPanel(
-                      bottomInset: Responsive.bottomNavClearance(context),
+                  if (!isClinicStaff)
+                    Positioned(
+                      right: PlatformLayout.useSinglePane(context) ? 16 : 24,
+                      bottom: Responsive.bottomNavClearance(context) + 16,
+                      child: const AskShifaAiOverlay(),
                     ),
-                  ),
-                if (!isClinicStaff)
-                  Positioned(
-                    right: PlatformLayout.useSinglePane(context) ? 16 : 24,
-                    bottom: Responsive.bottomNavClearance(context) + 16,
-                    child: const AskShifaAiOverlay(),
-                  ),
-                if (isMobile || compactSidebar)
+                  if (isMobile || compactSidebar)
                   Positioned(
                     top: 0,
                     right: 0,
-                    child: SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4, right: 8),
-                        child: const LanguageMiniToggle(),
-                      ),
-                    ),
+                    child: (!isClinicStaff &&
+                            selectedIndex == DoctorShellTab.home)
+                        ? const SizedBox.shrink()
+                        : const Padding(
+                            padding: EdgeInsets.only(top: 4, right: 8),
+                            child: LanguageMiniToggle(),
+                          ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -698,6 +710,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     required bool locationIsVideo,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final shellContext = context;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -785,10 +798,35 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     },
                   ),
                   const Divider(),
-                  _MobileMoreSheetTile(
-                    leading: Icon(Icons.language, color: brand),
-                    title: Text(l10n.language),
-                    trailing: const LanguageMiniToggle(),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final locale = ref.watch(languageProvider).locale;
+                      final code = locale.isUzbekCyrillic
+                          ? 'ЎЗ'
+                          : locale.languageCode == 'uz'
+                              ? 'UZ'
+                              : locale.languageCode == 'ru'
+                                  ? 'RU'
+                                  : 'EN';
+                      return _MobileMoreSheetTile(
+                        leading: Icon(Icons.language, color: brand),
+                        title: Text(l10n.language),
+                        subtitle: Text(code),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey.shade500,
+                        ),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          ShellScope.push(
+                            shellContext,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const LanguageSettingsScreen(),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 8),
                   _MobileMoreLogoutButton(brand: brand),
@@ -1535,14 +1573,6 @@ class _SidebarSearchButtonDark extends StatelessWidget {
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                 ),
               ),
-              Text(
-                '⌘K',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.65),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ],
           ),
         ),
@@ -1803,14 +1833,6 @@ class _SidebarSearchButton extends StatelessWidget {
                 child: Text(
                   l10n.translate('search') ?? 'Search',
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                ),
-              ),
-              Text(
-                '⌘K',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade400,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -2240,42 +2262,76 @@ class _MobileBottomNav extends ConsumerWidget {
     }
 
     final navIndex = _doctorNavHighlight(selectedIndex);
-    return NavigationBar(
-      selectedIndex: navIndex,
-      onDestinationSelected: (index) {
-        if (index == 4) {
-          onShowMore();
-        } else {
-          final tab = _mobileTabFromNavIndex(index);
-          if (tab >= 0) onSelectTab(tab);
-        }
-      },
-      destinations: [
-        NavigationDestination(
-          icon: const Icon(Icons.home_outlined),
-          label: l10n.home,
+    return NavigationBarTheme(
+      data: NavigationBarThemeData(
+        height: 68,
+        backgroundColor: Colors.white,
+        indicatorColor: brand.withValues(alpha: 0.14),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        NavigationDestination(
-          icon: const Icon(Icons.calendar_today_outlined),
-          label: l10n.calendar,
-        ),
-        NavigationDestination(
-          icon: const Icon(Icons.people_outline),
-          label: l10n.patients,
-        ),
-        NavigationDestination(
-          icon: Badge(
-            isLabelVisible: unreadChat > 0,
-            label: Text('$unreadChat'),
-            child: const Icon(Icons.chat_bubble_outline),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? brand : AppDesignSystem.textSecondary,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            size: 24,
+            color: selected ? brand : AppDesignSystem.textSecondary,
+          );
+        }),
+      ),
+      child: NavigationBar(
+        selectedIndex: navIndex,
+        onDestinationSelected: (index) {
+          if (index == 4) {
+            onShowMore();
+          } else {
+            final tab = _mobileTabFromNavIndex(index);
+            if (tab >= 0) onSelectTab(tab);
+          }
+        },
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: brand),
+            label: l10n.home,
           ),
-          label: l10n.chat,
-        ),
-        NavigationDestination(
-          icon: const Icon(Icons.more_horiz),
-          label: l10n.translate('more') ?? 'More',
-        ),
-      ],
+          NavigationDestination(
+            icon: const Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today, color: brand),
+            label: l10n.calendar,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people, color: brand),
+            label: l10n.patients,
+          ),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: unreadChat > 0,
+              label: Text('$unreadChat'),
+              child: const Icon(Icons.chat_bubble_outline),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: unreadChat > 0,
+              label: Text('$unreadChat'),
+              child: Icon(Icons.chat_bubble, color: brand),
+            ),
+            label: l10n.chat,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.more_horiz),
+            selectedIcon: Icon(Icons.more_horiz, color: brand),
+            label: l10n.translate('more'),
+          ),
+        ],
+      ),
     );
   }
 }

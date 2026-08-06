@@ -124,7 +124,7 @@ The same Flutter codebase ships as native apps for doctors.
 
 | Platform | Bundle ID | App name |
 |----------|-----------|----------|
-| Android | `com.shifa.doctorapp` | Shifa Doctor |
+| Android | `com.shifa.doc` | Shifa Doc |
 | iOS | `com.shifa.doctorapp` | Shifa Doctor |
 
 ```bash
@@ -140,7 +140,7 @@ flutter build appbundle --release \
 
 CI workflows: `.github/workflows/flutter_ci.yml`, `google_play_deploy.yml`, `ios_testflight.yml`.
 
-**Note:** Register `com.shifa.doctorapp` in Firebase (`shifa-doctor-staging` / production) and provide `google-services.json` / `GoogleService-Info.plist` via CI secrets before store upload.
+**Note:** Register Android package `com.shifa.doc` in Firebase (and keep iOS as `com.shifa.doctorapp` unless changed) and provide `google-services.json` / `GoogleService-Info.plist` via CI secrets before store upload.
 
 Clinic staff (`CLINIC_STAFF` role) are blocked on native mobile in v1 — web portal only.
 

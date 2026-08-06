@@ -21,9 +21,8 @@ class HomeAnalyticsSection extends ConsumerWidget {
         ref.watch(doctorFeatureProvider(DoctorFeature.advancedAnalytics));
 
     return DashboardCard(
-      title: l10n.translate('clinicPerformance') ?? 'Clinic performance',
-      subtitle: l10n.translate('clinicPerformanceSubtitle') ??
-          'Analytics overview — patients first, insights second',
+      title: l10n.translate('clinicPerformance'),
+      subtitle: l10n.translate('clinicPerformanceSubtitle'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

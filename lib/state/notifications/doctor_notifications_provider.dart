@@ -1,25 +1,13 @@
-import 'dart:async';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/features/notifications/domain/notification_model.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notification_actions.dart';
 
-/// DISABLED: REST API polling for notifications
-/// Using Firebase FCM push notifications instead for real-time updates
-/// When watched (e.g. from MainShell), runs a 20s periodic timer that invalidates
-/// notifications so they auto-refresh without manual pull-to-refresh.
-final notificationAutoRefreshProvider = Provider.autoDispose<void>((ref) {
-  debugPrint('notificationAutoRefreshProvider: REST API polling DISABLED - using Firebase FCM only');
-  // DISABLED - no timer needed when using FCM
-  // final timer = Timer.periodic(const Duration(seconds: 20), (_) {
-  //   ref.invalidate(doctorNotificationsProvider);
-  //   ref.invalidate(doctorNotificationsUnreadCountProvider);
-  // });
-  // ref.onDispose(() => timer.cancel());
-});
+/// Intentionally no REST polling — FCM + home tab focus / pull-to-refresh
+/// keep feeds current without continuous background timers.
+final notificationAutoRefreshProvider = Provider.autoDispose<void>((ref) {});
+
 
 final doctorNotificationsProvider =
     FutureProvider.autoDispose<List<DoctorNotificationModel>>((ref) async {

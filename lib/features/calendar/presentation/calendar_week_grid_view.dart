@@ -372,7 +372,7 @@ class _DayColumn extends StatelessWidget {
         )
         .toList();
     final cardLayouts = layoutOverlappingCalendarEntries(cardEntries);
-    final freeRanges = mergeFreeSlotRanges(entries);
+    final freeSlots = sortedFreeSlots(entries);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -396,33 +396,16 @@ class _DayColumn extends StatelessWidget {
                     ),
                 ],
               ),
-              for (final range in freeRanges)
-                Builder(
-                  builder: (context) {
-                    final startMin =
-                        range.start.hour * 60 + range.start.minute;
-                    final endMin = range.end.hour * 60 + range.end.minute;
-                    final top =
-                        (startMin - gridStartMinutes) / 60.0 * hourHeight + 1;
-                    final height =
-                        ((endMin - startMin) / 60.0 * hourHeight - 2)
-                            .clamp(8.0, 9999.0);
-                    final isSelected =
-                        identical(range.anchorEntry, selectedEntry);
-
-                    return Positioned(
-                      top: top,
-                      left: 2,
-                      right: 2,
-                      height: height,
-                      child: _FreeSlotHitTarget(
-                        brand: brand,
-                        isSelected: isSelected,
-                        onTap: () => onTapEntry(range.anchorEntry),
-                      ),
-                    );
-                  },
+              Positioned.fill(
+                child: _FreeSlotTapLayer(
+                  freeSlots: freeSlots,
+                  gridStartMinutes: gridStartMinutes,
+                  hourHeight: hourHeight,
+                  brand: brand,
+                  selectedEntry: selectedEntry,
+                  onTapEntry: onTapEntry,
                 ),
+              ),
               for (final layout in cardLayouts)
                 Builder(
                   builder: (context) {
@@ -478,32 +461,91 @@ class _DayColumn extends StatelessWidget {
   }
 }
 
-/// Invisible tap target for merged free-slot ranges (Google Calendar style).
-class _FreeSlotHitTarget extends StatelessWidget {
-  const _FreeSlotHitTarget({
+/// Single hit-test layer for free slots — avoids dozens of Positioned/InkWell widgets per column.
+class _FreeSlotTapLayer extends StatelessWidget {
+  const _FreeSlotTapLayer({
+    required this.freeSlots,
+    required this.gridStartMinutes,
+    required this.hourHeight,
     required this.brand,
-    required this.isSelected,
-    required this.onTap,
+    required this.selectedEntry,
+    required this.onTapEntry,
   });
 
+  final List<CalendarEntry> freeSlots;
+  final int gridStartMinutes;
+  final double hourHeight;
   final Color brand;
-  final bool isSelected;
-  final VoidCallback onTap;
+  final CalendarEntry? selectedEntry;
+  final ValueChanged<CalendarEntry> onTapEntry;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
+    final highlight = selectedEntry != null &&
+            selectedEntry!.type == EntryType.freeSlot
+        ? selectedEntry
+        : null;
+
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (event) {
+            final slot = freeSlotAtVerticalPosition(
+              freeSlots: freeSlots,
+              localY: event.localPosition.dy,
+              gridStartMinutes: gridStartMinutes,
+              hourHeight: hourHeight,
+            );
+            if (slot != null) onTapEntry(slot);
+          },
+          child: const SizedBox.expand(),
+        ),
+        if (highlight != null)
+          _FreeSlotSelectionHighlight(
+            slot: highlight,
+            gridStartMinutes: gridStartMinutes,
+            hourHeight: hourHeight,
+            brand: brand,
+          ),
+      ],
+    );
+  }
+}
+
+class _FreeSlotSelectionHighlight extends StatelessWidget {
+  const _FreeSlotSelectionHighlight({
+    required this.slot,
+    required this.gridStartMinutes,
+    required this.hourHeight,
+    required this.brand,
+  });
+
+  final CalendarEntry slot;
+  final int gridStartMinutes;
+  final double hourHeight;
+  final Color brand;
+
+  @override
+  Widget build(BuildContext context) {
+    final startMin = todMinutes(slot.start);
+    final endMin = todMinutes(slot.end);
+    final top = (startMin - gridStartMinutes) / 60.0 * hourHeight + 1;
+    final height =
+        ((endMin - startMin) / 60.0 * hourHeight - 2).clamp(8.0, 9999.0);
+
+    return Positioned(
+      top: top,
+      left: 2,
+      right: 2,
+      height: height,
+      child: IgnorePointer(
         child: Container(
           decoration: BoxDecoration(
-            color: isSelected ? brand.withOpacity(0.08) : Colors.transparent,
+            color: brand.withOpacity(0.08),
             borderRadius: BorderRadius.circular(4),
-            border: isSelected
-                ? Border.all(color: brand, width: 2)
-                : Border.all(color: Colors.transparent, width: 0),
+            border: Border.all(color: brand, width: 2),
           ),
         ),
       ),
@@ -604,7 +646,8 @@ class _GridEntryBlock extends StatelessWidget {
                             decoration: _isCompleted
                                 ? TextDecoration.lineThrough
                                 : null,
-                            decorationColor: textColor.withOpacity(0.7),
+                            decorationColor: Colors.red.shade700,
+                            decorationThickness: 2.5,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -620,7 +663,8 @@ class _GridEntryBlock extends StatelessWidget {
                       decoration: _isCompleted
                           ? TextDecoration.lineThrough
                           : null,
-                      decorationColor: textColor.withOpacity(0.7),
+                      decorationColor: Colors.red.shade700,
+                      decorationThickness: 2.5,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -632,8 +676,8 @@ class _GridEntryBlock extends StatelessWidget {
                   child: Center(
                     child: IgnorePointer(
                       child: Container(
-                        height: 1,
-                        color: textColor.withOpacity(0.45),
+                        height: 2.5,
+                        color: Colors.red.shade700,
                       ),
                     ),
                   ),

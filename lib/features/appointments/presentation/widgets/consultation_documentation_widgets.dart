@@ -176,16 +176,22 @@ class DocumentationSectionCard extends StatelessWidget {
     required this.title,
     required this.child,
     this.titleTrailing,
+    this.expandBody = true,
   });
 
   final String title;
   final Widget child;
   final Widget? titleTrailing;
 
+  /// When false, the body is sized by its content so the whole card can live
+  /// inside a parent [SingleChildScrollView] (mobile consultation layout).
+  final bool expandBody;
+
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 720;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -200,33 +206,37 @@ class DocumentationSectionCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: expandBody ? MainAxisSize.max : MainAxisSize.min,
         children: [
           if (titleTrailing != null)
             Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 15 : 17,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 titleTrailing!,
               ],
             )
           else
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 17,
+              style: TextStyle(
+                fontSize: compact ? 15 : 17,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
               ),
             ),
-          const SizedBox(height: 12),
-          Expanded(child: child),
+          SizedBox(height: compact ? 8 : 12),
+          if (expandBody) Expanded(child: child) else child,
         ],
       ),
     );
@@ -591,7 +601,7 @@ class AppointmentConsultationHeader extends StatelessWidget {
           parts.isEmpty
               ? const SizedBox.shrink()
               : Text(
-                parts.join(' • '),
+                parts.join(' - '),
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               );
     }
@@ -722,6 +732,7 @@ class ConsultationStickyFooter extends StatelessWidget {
     required this.onRequestSignature,
     required this.isEndingAppointment,
     required this.onEndAppointment,
+    this.pinned = true,
   });
 
   final bool hasPatientSignature;
@@ -732,27 +743,54 @@ class ConsultationStickyFooter extends StatelessWidget {
   final bool isEndingAppointment;
   final VoidCallback onEndAppointment;
 
+  /// When false, renders as an in-flow action block (scrolls with content).
+  final bool pinned;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final compact = MediaQuery.sizeOf(context).width < 720;
+    final signatureBtn = showRequestSignatureButton
+        ? ShifaSecondaryButton(
+            label: l10n.requestSignature,
+            onPressed: isRequestingSignature ? null : onRequestSignature,
+            icon: Icons.draw,
+            isLoading: isRequestingSignature,
+            width: compact ? ButtonWidth.fill : ButtonWidth.hug,
+          )
+        : null;
+    final endBtn = ShifaPrimaryButton(
+      label: l10n.endAppointment,
+      onPressed: isEndingAppointment ? null : onEndAppointment,
+      variant: ButtonVariant.destructive,
+      isLoading: isEndingAppointment,
+      width: compact ? ButtonWidth.fill : ButtonWidth.hug,
+    );
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
-        ),
+        borderRadius: pinned
+            ? null
+            : BorderRadius.circular(16),
+        border: pinned
+            ? Border(
+                top: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+              )
+            : Border.all(color: Colors.black.withValues(alpha: 0.06)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.07),
-            blurRadius: 24,
-            offset: const Offset(0, -6),
+            color: Colors.black.withValues(alpha: pinned ? 0.07 : 0.04),
+            blurRadius: pinned ? 24 : 12,
+            offset: Offset(0, pinned ? -6 : 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+      padding: EdgeInsets.fromLTRB(compact ? 16 : 24, 12, compact ? 16 : 24, 12),
       child: SafeArea(
         top: false,
+        bottom: pinned,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -784,27 +822,28 @@ class ConsultationStickyFooter extends StatelessWidget {
                   style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
                 ),
               ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (showRequestSignatureButton)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: ShifaSecondaryButton(
-                      label: l10n.requestSignature,
-                      onPressed: isRequestingSignature ? null : onRequestSignature,
-                      icon: Icons.draw,
-                      isLoading: isRequestingSignature,
-                    ),
-                  ),
-                ShifaPrimaryButton(
-                  label: l10n.endAppointment,
-                  onPressed: isEndingAppointment ? null : onEndAppointment,
-                  variant: ButtonVariant.destructive,
-                  isLoading: isEndingAppointment,
-                ),
-              ],
-            ),
+            if (compact)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (signatureBtn != null) ...[
+                    signatureBtn,
+                    const SizedBox(height: 8),
+                  ],
+                  endBtn,
+                ],
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (signatureBtn != null) ...[
+                    signatureBtn,
+                    const SizedBox(width: 12),
+                  ],
+                  endBtn,
+                ],
+              ),
           ],
         ),
       ),

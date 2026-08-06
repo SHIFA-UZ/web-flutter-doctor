@@ -392,7 +392,7 @@ class _MetricCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: SizedBox(
-          width: 160,
+          width: Responsive.useCompactToolbar(context) ? 140 : 160,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -500,45 +500,21 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (canManage) ...[
-              Material(
-                color: AppColors.primaryTeal.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: AppColors.primaryTeal.withValues(alpha: 0.85),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          l10n.translate('clinicDoctorsRevenueShareHint'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade800,
-                          ),
+              ClinicHintBanner(
+                message: l10n.translate('clinicDoctorsRevenueShareHint'),
+                action: clinic == null
+                    ? null
+                    : OutlinedButton.icon(
+                        onPressed: () => showDefaultClinicRevenueShareDialog(
+                          context: context,
+                          ref: ref,
+                          clinic: clinic,
+                        ),
+                        icon: const Icon(Icons.tune, size: 16),
+                        label: Text(
+                          l10n.translate('clinicFinanceConfigureDefaultShare'),
                         ),
                       ),
-                      if (clinic != null) ...[
-                        const SizedBox(width: 8),
-                        OutlinedButton.icon(
-                          onPressed: () => showDefaultClinicRevenueShareDialog(
-                            context: context,
-                            ref: ref,
-                            clinic: clinic,
-                          ),
-                          icon: const Icon(Icons.tune, size: 16),
-                          label: Text(
-                            l10n.translate('clinicFinanceConfigureDefaultShare'),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
               ),
               const SizedBox(height: 8),
             ],
@@ -563,6 +539,7 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
           ],
         );
 
+        final compact = Responsive.useCompactToolbar(context);
         final Widget body = members.isEmpty || filtered.isEmpty
             ? ClinicTableEmpty(l10n.translate('clinicWorkspaceNoDoctors'))
             : clinicDataTable(
@@ -578,16 +555,18 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                     label: Text(l10n.translate('clinicDoctorsColRole')),
                     onSort: _onSort,
                   ),
-                  DataColumn(
-                    label: Text(l10n.translate('clinicDoctorsColProfileId')),
-                    numeric: true,
-                    onSort: _onSort,
-                  ),
-                  DataColumn(
-                    label: Text(l10n.translate('clinicDoctorsColUserId')),
-                    numeric: true,
-                    onSort: _onSort,
-                  ),
+                  if (!compact) ...[
+                    DataColumn(
+                      label: Text(l10n.translate('clinicDoctorsColProfileId')),
+                      numeric: true,
+                      onSort: _onSort,
+                    ),
+                    DataColumn(
+                      label: Text(l10n.translate('clinicDoctorsColUserId')),
+                      numeric: true,
+                      onSort: _onSort,
+                    ),
+                  ],
                   DataColumn(
                     label: Text(l10n.translate('clinicDoctorsColRevenueShare')),
                   ),
@@ -630,8 +609,10 @@ class _DoctorsTabState extends ConsumerState<_DoctorsTab> {
                         ),
                       ),
                       DataCell(Text(l10n.clinicMembershipRoleLabel(m.membershipRole))),
-                      DataCell(Text('#${m.doctorProfileId}')),
-                      DataCell(Text('#${m.userId}')),
+                      if (!compact) ...[
+                        DataCell(Text('#${m.doctorProfileId}')),
+                        DataCell(Text('#${m.userId}')),
+                      ],
                       DataCell(
                         canEditShare
                             ? InkWell(
@@ -928,16 +909,18 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
                       label: Text(l10n.translate('clinicPatientsColPhone')),
                       onSort: _onSort,
                     ),
-                    DataColumn(
-                      label: Text(l10n.translate('clinicPatientsColEmail')),
-                      onSort: _onSort,
-                    ),
+                    if (!Responsive.useCompactToolbar(context))
+                      DataColumn(
+                        label: Text(l10n.translate('clinicPatientsColEmail')),
+                        onSort: _onSort,
+                      ),
                     DataColumn(
                       label: Text(l10n.translate('clinicPatientsColActions')),
                     ),
                   ],
                   rows: filtered.map((p) {
                     final selected = _selectedPatientId == p.patientId;
+                    final compact = Responsive.useCompactToolbar(context);
                     return DataRow(
                       selected: selected,
                       onSelectChanged: (_) => _loadPatient(p.patientId),
@@ -952,9 +935,10 @@ class _PatientsTabState extends ConsumerState<_PatientsTab> {
                         DataCell(Text(p.phone?.trim().isNotEmpty == true
                             ? p.phone!.trim()
                             : '—')),
-                        DataCell(Text(p.email?.trim().isNotEmpty == true
-                            ? p.email!.trim()
-                            : '—')),
+                        if (!compact)
+                          DataCell(Text(p.email?.trim().isNotEmpty == true
+                              ? p.email!.trim()
+                              : '—')),
                         DataCell(
                           IconButton(
                             tooltip:
@@ -1252,7 +1236,7 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
                 existing == null ? l10n.translate('clinicServiceAddTitle') : l10n.translate('clinicServiceEditTitle'),
               ),
               content: SizedBox(
-                width: 420,
+                width: Responsive.dialogMaxWidth(ctx),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1379,16 +1363,13 @@ class _ServicesTabState extends ConsumerState<_ServicesTab> {
         final toolbar = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: ClinicTableSearchField(
-                    controller: _searchCtrl,
-                    hint: l10n.translate('clinicServicesSearchHint'),
-                    onChanged: (v) => setState(() => _search = v),
-                  ),
-                ),
-                const SizedBox(width: 8),
+            ClinicTableToolbar(
+              search: ClinicTableSearchField(
+                controller: _searchCtrl,
+                hint: l10n.translate('clinicServicesSearchHint'),
+                onChanged: (v) => setState(() => _search = v),
+              ),
+              actions: [
                 FilledButton.icon(
                   onPressed: () => _openEditor(context, ref, null),
                   icon: const Icon(Icons.add, size: 18),

@@ -15,6 +15,7 @@ import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patien
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_current_appointment_hero.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
+import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/appointment_briefing_sheet.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
@@ -74,10 +75,28 @@ class HomeTimelineSection extends ConsumerWidget {
                   now: now,
                   onStart: () => _startAppointment(context, ref, hero),
                   onOpenChart: hero.patientId != null
-                      ? () => ref.read(shellProvider.notifier).setTab(3)
+                      ? () {
+                          ref
+                              .read(shellProvider.notifier)
+                              .setTab(DoctorShellTab.patients);
+                          ShellScope.pushIntoShell(hero.patientId.toString());
+                        }
                       : null,
                   onOpenDocuments: hero.patientId != null
-                      ? () => ref.read(shellProvider.notifier).setTab(3)
+                      ? () {
+                          ref
+                              .read(shellProvider.notifier)
+                              .setTab(DoctorShellTab.patients);
+                          ShellScope.pushIntoShell(hero.patientId.toString());
+                        }
+                      : null,
+                  onVisitBriefing: hero.hasVisitBriefing
+                      ? () => showAppointmentBriefingSheet(
+                            context,
+                            ref,
+                            appointmentId: hero.id,
+                            initialStatus: hero.briefingStatus,
+                          )
                       : null,
                   onMessagePatient: hero.patientId != null
                       ? () => openChatWithPatient(ref, hero.patientId!)
@@ -214,6 +233,7 @@ class _HeroSlot extends ConsumerWidget {
     this.onOpenChart,
     this.onOpenDocuments,
     this.onMessagePatient,
+    this.onVisitBriefing,
   });
 
   final WidgetRef ref;
@@ -225,6 +245,7 @@ class _HeroSlot extends ConsumerWidget {
   final VoidCallback? onOpenChart;
   final VoidCallback? onOpenDocuments;
   final VoidCallback? onMessagePatient;
+  final VoidCallback? onVisitBriefing;
 
   @override
   Widget build(BuildContext context, WidgetRef _) {
@@ -244,6 +265,7 @@ class _HeroSlot extends ConsumerWidget {
       onOpenChart: onOpenChart,
       onOpenDocuments: onOpenDocuments,
       onMessagePatient: onMessagePatient,
+      onVisitBriefing: onVisitBriefing,
     );
   }
 }
@@ -282,6 +304,14 @@ class _UpcomingSlot extends ConsumerWidget {
       videoTooltip: timing.videoTooltip,
       onTap: onTap,
       onStart: onStart,
+      onVisitBriefing: appointment.hasVisitBriefing
+          ? () => showAppointmentBriefingSheet(
+                context,
+                ref,
+                appointmentId: appointment.id,
+                initialStatus: appointment.briefingStatus,
+              )
+          : null,
     );
   }
 }

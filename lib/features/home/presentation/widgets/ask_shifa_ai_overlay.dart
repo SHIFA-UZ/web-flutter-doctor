@@ -118,13 +118,8 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
     final question = _aiController.text.trim();
     if (question.isEmpty || _aiLoading) return;
 
-    if (_selectedPatientId != null) {
-      await ref
-          .read(patientBriefingContextProvider.notifier)
-          .ensureLoaded(_selectedPatientId!);
-    }
-
-    final aiApi = ref.read(aiApiProvider);
+    // Lock UI immediately so repeated sends cannot queue duplicates
+    // while patient briefing (or the AI stream) is still loading.
     final next = [..._conversation, AiMessage(role: 'user', content: question)];
     setState(() {
       _conversation = next;
@@ -133,6 +128,14 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
       _aiLoading = true;
     });
     _aiController.clear();
+
+    if (_selectedPatientId != null) {
+      await ref
+          .read(patientBriefingContextProvider.notifier)
+          .ensureLoaded(_selectedPatientId!);
+    }
+
+    final aiApi = ref.read(aiApiProvider);
     _aiSub?.cancel();
     _aiSub = aiApi
         .streamAi(

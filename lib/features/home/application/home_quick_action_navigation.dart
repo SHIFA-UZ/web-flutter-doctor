@@ -41,8 +41,7 @@ Future<void> openCreateTreatmentPlanForm(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          l10n.translate('clinicTreatmentPlansSelectPatient') ??
-              'Set up a clinic workspace to create treatment plans.',
+          l10n.translate('setUpClinicWorkspace'),
         ),
       ),
     );
@@ -59,8 +58,7 @@ Future<void> openCreateTreatmentPlanForm(
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              l10n.translate('clinicTreatmentPlansSelectPatient') ??
-                  'Set up a clinic workspace to create treatment plans.',
+              l10n.translate('setUpClinicWorkspace'),
             ),
           ),
         );

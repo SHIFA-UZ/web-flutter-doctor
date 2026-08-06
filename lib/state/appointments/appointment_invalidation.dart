@@ -12,7 +12,6 @@ import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_treatment_plan_providers.dart';
-import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
 /// FCM types that change calendar/home appointment lists.
@@ -103,12 +102,8 @@ Future<void> refreshCalendarFromPushPayload(
   final type = data['type'] as String?;
   if (type == null || !appointmentCalendarPushTypes.contains(type)) return;
 
-  try {
-    ref.invalidate(doctorNotificationsProvider);
-    ref.invalidate(doctorNotificationsUnreadCountProvider);
-  } catch (e) {
-    debugPrint('refreshCalendarFromPushPayload notifications: $e');
-  }
+  // Notification feeds are invalidated by the foreground FCM handler in app.dart
+  // for every push type — avoid a second invalidate here.
 
   await invalidateAppointmentRelatedProviders(ref);
 

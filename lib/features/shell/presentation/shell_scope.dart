@@ -45,6 +45,29 @@ class ShellScope extends InheritedWidget {
     return Navigator.pushNamed<T>(context, routeName, arguments: arguments);
   }
 
+  /// Replaces the current route using the shell navigator when available.
+  static Future<T?> pushReplacementNamed<T extends Object?, TO extends Object?>(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+    TO? result,
+  }) {
+    final scope = ShellScope.of(context);
+    if (scope != null) {
+      return scope.navigatorKey.currentState!.pushReplacementNamed<T, TO>(
+        routeName,
+        arguments: arguments,
+        result: result,
+      );
+    }
+    return Navigator.pushReplacementNamed<T, TO>(
+      context,
+      routeName,
+      arguments: arguments,
+      result: result,
+    );
+  }
+
   /// Pushes a route using the shell navigator when available.
   static Future<T?> push<T extends Object?>(
     BuildContext context,

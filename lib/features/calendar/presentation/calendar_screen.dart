@@ -47,7 +47,7 @@ String _latinUzbekForDisplay(BuildContext context, String latinUzbek) {
   return transliterateUzbekLatinToCyrillicUi(latinUzbek);
 }
 
-/// `intl` / [TableCalendar] only loads `en`, `uz`, `ru` in [main] â€” avoid invalid tags.
+/// `intl` / [TableCalendar] only loads `en`, `uz`, `ru` in [main] - avoid invalid tags.
 String _tableCalendarIntlLocale(BuildContext context) {
   final lc = Localizations.localeOf(context).languageCode.toLowerCase();
   if (lc == 'uz') return 'uz';
@@ -373,7 +373,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   }
 
   // Show update schedule warning only when the day looks like it has no schedule coverage
-  // (no bookable openings *and* no bookings). Fully booked days still have appointments â€”
+  // (no bookable openings *and* no bookings). Fully booked days still have appointments -
   // do not imply "extend your calendar horizon" in that case.
   bool get _shouldShowUpdateScheduleCard {
     if (_loadingDay || _isWaitingForProfile)
@@ -777,23 +777,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   String _timeZoneMismatchHintMessage({
     required String scheduleTimeZone,
   }) {
-    final localeCode = Localizations.localeOf(context).languageCode.toLowerCase();
-    if (localeCode == 'uz') {
-      return _latinUzbekForDisplay(
-        context,
-        'Joriy qurilma vaqt zonasi ($scheduleTimeZone bilan) mos emas. '
-            'Siz slotlarni bir vaqt zonasida belgilagansiz, hozir esa boshqa vaqt zonasidasiz. '
-            'Iltimos, uchrashuvlar bilan ishlaganda buni inobatga oling.',
-      );
-    }
-    if (localeCode == 'ru') {
-      return 'Ð¢ÐµÐºÑƒÑ‰Ð¸Ð¹ Ñ‡Ð°ÑÐ¾Ð²Ð¾Ð¹ Ð¿Ð¾ÑÑ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð° Ð½Ðµ ÑÐ¾Ð²Ð¿Ð°Ð´Ð°ÐµÑ‚ Ñ Ñ‡Ð°ÑÐ¾Ð²Ñ‹Ð¼ Ð¿Ð¾ÑÑÐ¾Ð¼ Ñ€Ð°ÑÐ¿Ð¸ÑÐ°Ð½Ð¸Ñ ($scheduleTimeZone). '
-          'Ð¡Ð»Ð¾Ñ‚Ñ‹ Ð±Ñ‹Ð»Ð¸ Ð·Ð°Ð´Ð°Ð½Ñ‹ Ð² Ð¾Ð´Ð½Ð¾Ð¼ Ñ‡Ð°ÑÐ¾Ð²Ð¾Ð¼ Ð¿Ð¾ÑÑÐµ, Ð° ÑÐµÐ¹Ñ‡Ð°Ñ Ð²Ñ‹ Ð² Ð´Ñ€ÑƒÐ³Ð¾Ð¼. '
-          'ÐŸÐ¾Ð¶Ð°Ð»ÑƒÐ¹ÑÑ‚Ð°, ÑƒÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°Ð¹Ñ‚Ðµ ÑÑ‚Ð¾ Ð¿Ñ€Ð¸ Ñ€Ð°Ð±Ð¾Ñ‚Ðµ Ñ Ð¿Ñ€Ð¸Ñ‘Ð¼Ð°Ð¼Ð¸.';
-    }
-    return 'Your current device timezone does not match the calendar schedule timezone ($scheduleTimeZone). '
-        'Your slots were defined in one timezone, but you are currently in another. '
-        'Please keep this in mind while managing appointments.';
+    final l10n = AppLocalizations.of(context)!;
+    return l10n
+        .translate('calendarTimezoneMismatchHint')
+        .replaceAll('{scheduleTimeZone}', scheduleTimeZone);
   }
 
   @override
@@ -2437,8 +2424,8 @@ class CalendarDayEntriesList extends StatelessWidget {
                                           decoration: isCompleted
                                               ? TextDecoration.lineThrough
                                               : null,
-                                          decorationColor:
-                                              Colors.grey.shade600,
+                                          decorationColor: Colors.red.shade700,
+                                          decorationThickness: 2.5,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -2515,7 +2502,8 @@ class CalendarDayEntriesList extends StatelessWidget {
                                 decoration: isCompleted
                                     ? TextDecoration.lineThrough
                                     : null,
-                                decorationColor: Colors.grey.shade600,
+                                decorationColor: Colors.red.shade700,
+                                decorationThickness: 2.5,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -2577,11 +2565,11 @@ class CalendarDayEntriesList extends StatelessWidget {
                           child: Center(
                             child: IgnorePointer(
                               child: Container(
-                                height: 1,
+                                height: 2.5,
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                 ),
-                                color: Colors.grey.shade500.withOpacity(0.5),
+                                color: Colors.red.shade700,
                               ),
                             ),
                           ),
@@ -3188,7 +3176,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   bool get _paymentPending =>
       (widget.entry.paymentStatus ?? '').trim().toUpperCase() == 'PENDING';
 
-  /// Video consult with unpaid balance â€” show "remind to pay" for the doctor.
+  /// Video consult with unpaid balance - show "remind to pay" for the doctor.
   bool get _canAdjustAppointmentDuration =>
       _isAppointment &&
       !_isPastAppointment &&
@@ -3203,7 +3191,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       _todMinutes(_adjustedAppointmentEndExclusive ?? widget.entry.end) !=
           _initialAppointmentEndRepr;
 
-  /// Video consult with unpaid balance â€” show "remind to pay" for the doctor.
+  /// Video consult with unpaid balance - show "remind to pay" for the doctor.
   bool get _shouldShowEncouragePayment =>
       _isVideoAppointment &&
       !_isPastAppointment &&
@@ -4065,7 +4053,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
         SnackBar(
           content: Text(
             l10n.translate('bookingRangeUnavailable') ??
-                'Selected time range is no longer fully available â€” calendar refreshed.',
+                'Selected time range is no longer fully available - calendar refreshed.',
           ),
         ),
       );
@@ -4111,7 +4099,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       l10n.appointmentDocumentation.toLowerCase(),
       'appointment documentation',
       'uchrashuv hujjatlari',
-      'Ð´Ð¾ÐºÑƒÐ¼ÐµÐ½Ñ‚Ð°Ñ†Ð¸Ñ Ð¿Ñ€Ð¸ÐµÐ¼Ð°',
+      'документация приёма',
     };
 
     final candidates = docs.where((d) {
@@ -4243,10 +4231,9 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
   Widget _buildStatusChip(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
     String t(String key, String fallback) {
       final v = l10n.translate(key);
-      if (v == null || v.trim().isEmpty || v.trim() == key) return fallback;
+      if (v.trim().isEmpty || v.trim() == key) return fallback;
       return v;
     }
 
@@ -4276,10 +4263,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       icon = Icons.verified_outlined;
       bg = Colors.amber.shade50;
       fg = Colors.amber.shade800;
-      final confirmedFallback = lang == 'uz'
-          ? _latinUzbekForDisplay(context, 'Tasdiqlangan')
-          : (lang == 'ru' ? 'ÐŸÐ¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ð¾' : 'Confirmed');
-      label = t('confirmed', confirmedFallback);
+      label = t('confirmed', 'Confirmed');
     }
 
     return Container(
@@ -4464,7 +4448,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
           const SizedBox(height: 8),
           SelectionArea(
             child: SelectableText(
-              body.trim().isEmpty ? 'â€”' : body,
+              body.trim().isEmpty ? '-' : body,
               style: const TextStyle(fontSize: 13, height: 1.35),
             ),
           ),
@@ -4478,21 +4462,14 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
     final subtleText = Colors.grey.shade600;
-    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
-    final aiDocsFallback = lang == 'uz'
-        ? _latinUzbekForDisplay(context, 'Uchrashuv hujjatlari')
-        : (lang == 'ru' ? 'Ð”Ð¾ÐºÑƒÐ¼ÐµÐ½Ñ‚Ð°Ñ†Ð¸Ñ Ð¿Ñ€Ð¸ÐµÐ¼Ð°' : 'Appointment Documentation');
-    final notesTabFallback = lang == 'uz'
-        ? _latinUzbekForDisplay(context, 'Uchrashuv yozuvlari')
-        : (lang == 'ru' ? 'Ð—Ð°Ð¿Ð¸ÑÐ¸ Ð¿Ñ€Ð¸ÐµÐ¼Ð°' : 'Appointment Notes');
-    final summaryPdfTabFallback = lang == 'uz'
-        ? _latinUzbekForDisplay(context, 'Xulosa PDF')
-        : (lang == 'ru' ? 'PDF ÑÐ²Ð¾Ð´ÐºÐ°' : 'Summary PDF');
     String t(String key, String fallback) {
       final v = l10n.translate(key);
-      if (v == null || v.trim().isEmpty || v.trim() == key) return fallback;
+      if (v.trim().isEmpty || v.trim() == key) return fallback;
       return v;
     }
+    final aiDocsFallback = t('appointmentDocumentation', 'Appointment Documentation');
+    final notesTabFallback = t('appointmentNotes', 'Appointment Notes');
+    final summaryPdfTabFallback = t('summaryPdf', 'Summary PDF');
 
     final appointmentId = widget.entry.appointmentId?.toString();
     final consultationNotesAsync = appointmentId == null
@@ -4600,7 +4577,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${_fmtDate(context, widget.day)} â€¢ ${_fmtTime(_effectiveBookingStart)} - ${_fmtTime(_detailHeaderEnd)}',
+                      '${_fmtDate(context, widget.day)} - ${_fmtTime(_effectiveBookingStart)} - ${_fmtTime(_detailHeaderEnd)}',
                       style: TextStyle(
                         color: subtleText,
                         fontSize: 12,
@@ -4984,7 +4961,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                               .read(patientsForAssignmentProvider.notifier)
                               .loadPatientsForAssignment();
                         } catch (e, st) {
-                          debugPrint('Assign patient â€“ load failed: $e');
+                          debugPrint('Assign patient - load failed: $e');
                           debugPrint('$st');
                           if (mounted) {
                             final msg = e is Exception ? e.toString() : '$e';
@@ -5007,7 +4984,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                                   'Failed to load patients. Please try again.';
                             } else {
                               display = msg.length > 80
-                                  ? '${msg.substring(0, 80)}â€¦'
+                                  ? '${msg.substring(0, 80)}...'
                                   : msg;
                             }
                             ScaffoldMessenger.of(
@@ -5248,7 +5225,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
               if (!_isBlocked) ...[
               const SizedBox(height: 10),
 
-              // Date & Time â€” tap opens Change Slot dialog for (non-past) appointments
+              // Date & Time - tap opens Change Slot dialog for (non-past) appointments
               Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -5346,7 +5323,7 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
               if (widget.entry.type == EntryType.appointment) ...[
                 const SizedBox(height: 10),
-                // Place (appointments only â€“ dropdown: doctor's clinic address or VIDEO CONSULTATION)
+                // Place (appointments only - dropdown: doctor's clinic address or VIDEO CONSULTATION)
                 AppointmentPlaceDropdown(
                   entry: widget.entry,
                   clinicVenueLabelOverride: widget.primaryClinicVenueLabel,
@@ -5691,7 +5668,7 @@ class _AssignPatientSheetState extends ConsumerState<_AssignPatientSheet> {
                   ),
                 ),
               ),
-              // Search bar â€“ always visible at top
+              // Search bar - always visible at top
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),

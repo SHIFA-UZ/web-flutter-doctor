@@ -5,7 +5,7 @@ import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/features/notifications/domain/notification_model.dart';
 
-/// Relative time for notifications: "5 min ago", "Yesterday 23:11", "Mar 5 • 23:11".
+/// Relative time for notifications: "5 min ago", "Yesterday 23:11", "Mar 5 - 23:11".
 String formatNotificationTime(DateTime dateTime, AppLocalizations l10n) {
   final now = DateTime.now();
   final local = dateTime.toLocal();
@@ -22,7 +22,7 @@ String formatNotificationTime(DateTime dateTime, AppLocalizations l10n) {
   if (diff.inHours < 24 && dtDate == today) return timeStr;
   if (dtDate == yesterday) return l10n.timeYesterday(timeStr);
   final monthStr = l10n.monthShort(local.month);
-  return '$monthStr ${local.day} • $timeStr';
+  return '$monthStr ${local.day} - $timeStr';
 }
 
 /// Section header: "Today", "Yesterday", or "Mar 5".
