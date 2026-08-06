@@ -7,20 +7,70 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:55173524197:android:18af2711f102062d92420c",
+        "mobilesdk_app_id": "1:55173524197:android:ae6db0bafed1c9f992420c",
         "android_client_info": {
-          "package_name": "com.shifa.doctorapp"
+          "package_name": "com.shifa.doc"
         }
       },
       "oauth_client": [],
       "api_key": [
+        {
+          "current_key": "AIzaSyDc2J-WCSxeDB-YwKb2REoHv15CYqxjQSw"
+        },
         {
           "current_key": "AIzaSyAONE8lrUzgurI9h0zpw9TqersE-1V5J-8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "55173524197-fs7bd76410je0pbh2aj29149s5b83b0k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "uz.shifa.patient"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:55173524197:android:ddadc878f20da52792420c",
+        "android_client_info": {
+          "package_name": "com.shifa.patientapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "55173524197-ppq6a0rod56h9s2fl9a9fj2glim7do07.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.shifa.patientapp",
+            "certificate_hash": "1c95573e3b2b68f53bdc43e91a03148697a9ea8a"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDc2J-WCSxeDB-YwKb2REoHv15CYqxjQSw"
+        },
+        {
+          "current_key": "AIzaSyAONE8lrUzgurI9h0zpw9TqersE-1V5J-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "55173524197-fs7bd76410je0pbh2aj29149s5b83b0k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "uz.shifa.patient"
+              }
+            }
+          ]
         }
       }
     }
