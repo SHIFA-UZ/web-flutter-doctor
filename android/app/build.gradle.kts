@@ -17,7 +17,7 @@ plugins {
 }
 
 android {
-    namespace = "com.shifa.doctorapp"
+    namespace = "com.shifa.doc"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.shifa.doctorapp"
+        applicationId = "com.shifa.doc"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

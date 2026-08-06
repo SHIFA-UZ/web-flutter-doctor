@@ -1,4 +1,4 @@
-package com.shifa.doctorapp
+package com.shifa.doc
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

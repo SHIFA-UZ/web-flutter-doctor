@@ -8,6 +8,14 @@ on:
         required: false
         type: boolean
         default: false
+      track:
+        description: 'Play track'
+        required: true
+        type: choice
+        options:
+          - internal
+          - beta
+        default: internal
 
 concurrency:
   group: doctor-play-${{ github.workflow }}-${{ github.ref }}
@@ -20,7 +28,7 @@ env:
 
 jobs:
   build-and-deploy:
-    name: Build & Deploy Shifa Doctor (Open Testing)
+    name: Build & Deploy Shifa Doctor
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -98,13 +106,13 @@ jobs:
         run: |
           echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64" | base64 --decode > google-play-service-account.json
 
-      - name: Upload to Google Play (Open Testing)
+      - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: google-play-service-account.json
-          packageName: com.shifa.doctorapp
+          packageName: com.shifa.doc
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: beta
+          track: ${{ inputs.track }}
           status: completed
 
       - name: Cleanup sensitive files
