@@ -19,7 +19,8 @@ plugins {
 android {
     namespace = "com.shifa.doc"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // daily_flutter requires NDK 27.3.x; Flutter default may be older.
+    ndkVersion = "27.3.13750724"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
