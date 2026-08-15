@@ -149,6 +149,7 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
     final l10n = AppLocalizations.of(context)!;
     final brand = Theme.of(context).colorScheme.primary;
     final appointmentsAsync = ref.watch(todayAppointmentsProvider);
+    final upcomingAsync = ref.watch(nextUpcomingAppointmentProvider);
     final unread =
         ref.watch(doctorNotificationsUnreadCountProvider).valueOrNull ?? 0;
     final followUps = ref.watch(tasksProvider).where(
@@ -168,10 +169,18 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
             as String?;
     final now = getNowInTimezone(doctorTimeZone);
     final classified = _classify(valid, now, doctorTimeZone);
-    final hero = classified.current ?? classified.nextUp;
+    final hero = classified.current ??
+        classified.nextUp ??
+        upcomingAsync.valueOrNull;
     final listItems = valid.where((a) => !a.isCompleted).toList();
-    final nextTimeLabel = hero?.start.format(context) ?? '—';
-    final nextMinutes = _minutesUntilNext(valid, now, doctorTimeZone);
+    final nextTimeLabel = hero == null
+        ? '—'
+        : _heroTimeLabel(context, hero, now);
+    final nextMinutes = _minutesUntilNext(
+      hero != null ? [hero] : valid,
+      now,
+      doctorTimeZone,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -291,8 +300,8 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
         ),
         const SizedBox(height: AppDesignSystem.sectionGap),
 
-        // Next patient hero
-        if (appointmentsAsync.isLoading)
+        // Next patient hero — remaining today, otherwise next upcoming day.
+        if (appointmentsAsync.isLoading || upcomingAsync.isLoading)
           const DashboardSkeleton(height: 180, lines: 4)
         else if (hero != null)
           _NextPatientSlot(
@@ -432,8 +441,9 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
     Appointment? nextUp;
     for (final appt in valid) {
       if (appt.isCompleted) continue;
-      final start = timeOfDayToDateTimeInZone(appt.start, now, doctorTimeZone);
-      final end = timeOfDayToDateTimeInZone(appt.end, now, doctorTimeZone);
+      final day = appt.day ?? DateTime(now.year, now.month, now.day);
+      final start = timeOfDayToDateTimeInZone(appt.start, day, doctorTimeZone);
+      final end = timeOfDayToDateTimeInZone(appt.end, day, doctorTimeZone);
       if (!now.isBefore(start) && now.isBefore(end)) {
         current = appt;
         break;
@@ -442,8 +452,9 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
     if (current == null) {
       for (final appt in valid) {
         if (appt.isCompleted) continue;
+        final day = appt.day ?? DateTime(now.year, now.month, now.day);
         final start =
-            timeOfDayToDateTimeInZone(appt.start, now, doctorTimeZone);
+            timeOfDayToDateTimeInZone(appt.start, day, doctorTimeZone);
         if (!start.isBefore(now)) {
           nextUp = appt;
           break;
@@ -461,11 +472,27 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
     int? best;
     for (final appt in appointments) {
       if (appt.isCompleted) continue;
-      final start = timeOfDayToDateTimeInZone(appt.start, now, doctorTimeZone);
+      final day = appt.day ?? DateTime(now.year, now.month, now.day);
+      final start = timeOfDayToDateTimeInZone(appt.start, day, doctorTimeZone);
       final diff = start.difference(now).inMinutes;
       if (diff >= 0 && (best == null || diff < best)) best = diff;
     }
     return best;
+  }
+
+  String _heroTimeLabel(
+    BuildContext context,
+    Appointment appointment,
+    DateTime now,
+  ) {
+    final time = appointment.start.format(context);
+    final day = appointment.day;
+    if (day == null) return time;
+    final today = DateTime(now.year, now.month, now.day);
+    final apptDay = DateTime(day.year, day.month, day.day);
+    if (apptDay == today) return time;
+    final loc = MaterialLocalizations.of(context);
+    return '${loc.formatShortDate(apptDay)} · $time';
   }
 }
 
@@ -491,13 +518,20 @@ class _NextPatientSlot extends ConsumerWidget {
     final patient = appointment.patientId != null
         ? ref.watch(patientByIdProvider(appointment.patientId!)).valueOrNull
         : null;
+    final startDay = appointment.day ?? DateTime(now.year, now.month, now.day);
     final start = timeOfDayToDateTimeInZone(
       appointment.start,
-      now,
+      startDay,
       doctorTimeZone,
     );
     final startEnabled =
         !start.isAfter(now.add(const Duration(minutes: 15))) || isNow;
+
+    final today = DateTime(now.year, now.month, now.day);
+    final apptDay = DateTime(startDay.year, startDay.month, startDay.day);
+    final dateLabel = apptDay == today
+        ? null
+        : MaterialLocalizations.of(context).formatMediumDate(apptDay);
 
     return NextPatientCard(
       appointment: appointment,
@@ -506,6 +540,7 @@ class _NextPatientSlot extends ConsumerWidget {
       startEnabled: startEnabled,
       onStart: onStart,
       onOpenChart: onOpenChart,
+      dateLabel: dateLabel,
     );
   }
 }

@@ -324,6 +324,27 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
             }
           }
 
+          // Priority 2c: Care partnership invite / updates
+          if (type != null && type.startsWith('CARE_PARTNERSHIP')) {
+            final pid = int.tryParse(data['partnershipId']?.toString() ?? '');
+            navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              AppRoutes.shell,
+              (route) => false,
+            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final shellNav = shellNavigatorKey.currentState;
+              if (pid != null && pid > 0) {
+                shellNav?.pushNamed(
+                  AppRoutes.carePartnershipDetail,
+                  arguments: pid,
+                );
+              } else {
+                shellNav?.pushNamed(AppRoutes.carePartnerships);
+              }
+            });
+            return;
+          }
+
           // Priority 3: Appointment (fetch day first, then navigate so calendar opens on correct date)
           if (appointmentId != null) {
             final id = int.tryParse(appointmentId.toString());

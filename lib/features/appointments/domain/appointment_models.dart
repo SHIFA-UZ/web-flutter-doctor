@@ -48,6 +48,10 @@ class Appointment {
   /// Count of documents attached at booking time.
   final int attachmentCount;
 
+  /// Calendar day in the doctor's timezone (date only). Used when the next
+  /// visit is not today so start/end TimeOfDay is applied to the right date.
+  final DateTime? day;
+
   const Appointment({
     required this.id,
     required this.patientName,
@@ -60,6 +64,7 @@ class Appointment {
     this.photoUrl,
     this.briefingStatus,
     this.attachmentCount = 0,
+    this.day,
   });
 
   bool get isVideo => location.toLowerCase().contains('video');

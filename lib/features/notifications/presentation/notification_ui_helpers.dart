@@ -256,6 +256,11 @@ String humanLabelForNotificationType(String type, AppLocalizations l10n) {
     case 'APPOINTMENT_BOOKED_BY_PATIENT':
     case 'APPOINTMENT_REMINDER':
       return l10n.notificationTypeAppointmentBooked;
+    case 'APPOINTMENT_RESCHEDULED_BY_PATIENT':
+    case 'APPOINTMENT_CHANGED':
+      return l10n.translate('notificationTypeAppointmentRescheduled');
+    case 'APPOINTMENT_PAID_BY_PATIENT':
+      return l10n.translate('notificationTypeAppointmentPaid');
     case 'APPOINTMENT_CANCELLED_BY_PATIENT':
     case 'APPOINTMENT_CANCELLED':
       return l10n.notificationTypeAppointmentCancelled;
@@ -271,6 +276,14 @@ String humanLabelForNotificationType(String type, AppLocalizations l10n) {
       return l10n.notificationTypeDocumentAccessRejected;
     case 'AI_SCRIBE_READY':
       return l10n.notificationTypeAiScribeReady;
+    case 'CARE_PARTNERSHIP_INVITE':
+      return l10n.translate('notificationTypePartnershipInvite');
+    case 'CARE_PARTNERSHIP_ACCEPTED':
+      return l10n.translate('notificationTypePartnershipAccepted');
+    case 'CARE_PARTNERSHIP_PROGRESS':
+      return l10n.translate('notificationTypePartnershipProgress');
+    case 'CHAT_MESSAGE':
+      return l10n.translate('notificationTypeChatMessage');
     default:
       return l10n.notificationGeneric;
   }
@@ -282,6 +295,11 @@ String humanLabelForNotificationType(String type, AppLocalizations l10n) {
     case 'APPOINTMENT_BOOKED_BY_PATIENT':
     case 'APPOINTMENT_REMINDER':
       return (color: const Color(0xFF1976D2), icon: Icons.calendar_today_rounded); // Blue
+    case 'APPOINTMENT_RESCHEDULED_BY_PATIENT':
+    case 'APPOINTMENT_CHANGED':
+      return (color: const Color(0xFF1565C0), icon: Icons.event_repeat_rounded);
+    case 'APPOINTMENT_PAID_BY_PATIENT':
+      return (color: const Color(0xFF2E7D32), icon: Icons.payments_rounded);
     case 'APPOINTMENT_CANCELLED_BY_PATIENT':
     case 'APPOINTMENT_CANCELLED':
       return (color: const Color(0xFFC62828), icon: Icons.event_busy_rounded); // Red
@@ -293,6 +311,12 @@ String humanLabelForNotificationType(String type, AppLocalizations l10n) {
     case 'DOCUMENT_ACCESS_APPROVED':
     case 'DOCUMENT_ACCESS_REJECTED':
       return (color: const Color(0xFF6A1B9A), icon: Icons.description_rounded); // Purple
+    case 'CARE_PARTNERSHIP_INVITE':
+    case 'CARE_PARTNERSHIP_ACCEPTED':
+    case 'CARE_PARTNERSHIP_PROGRESS':
+      return (color: const Color(0xFF00838F), icon: Icons.handshake_outlined);
+    case 'CHAT_MESSAGE':
+      return (color: const Color(0xFF1565C0), icon: Icons.chat_bubble_outline_rounded);
     case 'AI_SCRIBE_READY':
       return (color: AppColors.primaryTeal, icon: Icons.auto_awesome_rounded); // Teal
     default:
@@ -317,7 +341,10 @@ bool notificationMatchesFilter(String type, NotificationFilter filter) {
     case NotificationFilter.tasks:
       return type.startsWith('TASK_');
     case NotificationFilter.messages:
-      return type.contains('MESSAGE') || type == 'DOCUMENT_ACCESS_REQUEST' ||
-          type == 'DOCUMENT_ACCESS_APPROVED' || type == 'DOCUMENT_ACCESS_REJECTED';
+      return type.contains('MESSAGE') ||
+          type == 'DOCUMENT_ACCESS_REQUEST' ||
+          type == 'DOCUMENT_ACCESS_APPROVED' ||
+          type == 'DOCUMENT_ACCESS_REJECTED' ||
+          type.startsWith('CARE_PARTNERSHIP_');
   }
 }
