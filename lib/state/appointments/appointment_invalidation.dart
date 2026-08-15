@@ -22,6 +22,7 @@ const appointmentCalendarPushTypes = <String>{
   'APPOINTMENT_CHANGED',
   'APPOINTMENT_RESCHEDULED_BY_PATIENT',
   'APPOINTMENT_ASSIGNED',
+  'APPOINTMENT_PAID_BY_PATIENT',
 };
 
 /// Refreshes **today** in [calendarProvider], then invalidates today list + analytics.
@@ -67,6 +68,7 @@ Future<void> invalidateAppointmentRelatedProviders(
   // snackbar after the backend has already accepted the change.
   try {
     ref.invalidate(todayAppointmentsProvider);
+    ref.invalidate(nextUpcomingAppointmentProvider);
   } catch (e) {
     debugPrint('invalidate(todayAppointmentsProvider) failed: $e');
   }

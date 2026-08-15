@@ -45,8 +45,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAONE8lrUzgurI9h0zpw9TqersE-1V5J-8',
-    appId: '1:55173524197:android:18af2711f102062d92420c',
+    apiKey: 'AIzaSyDc2J-WCSxeDB-YwKb2REoHv15CYqxjQSw',
+    appId: '1:55173524197:android:ae6db0bafed1c9f992420c',
     messagingSenderId: '55173524197',
     projectId: 'shifa-doctor-staging',
     storageBucket: 'shifa-doctor-staging.firebasestorage.app',

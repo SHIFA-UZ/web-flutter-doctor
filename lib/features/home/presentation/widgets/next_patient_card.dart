@@ -17,6 +17,7 @@ class NextPatientCard extends StatelessWidget {
     required this.startEnabled,
     required this.onStart,
     this.onOpenChart,
+    this.dateLabel,
   });
 
   final Appointment appointment;
@@ -25,6 +26,8 @@ class NextPatientCard extends StatelessWidget {
   final bool startEnabled;
   final VoidCallback onStart;
   final VoidCallback? onOpenChart;
+  /// When set, the visit is not today (e.g. "Tue, 18 Aug").
+  final String? dateLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +98,8 @@ class NextPatientCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         [
+                          if (dateLabel != null && dateLabel!.isNotEmpty)
+                            dateLabel!,
                           appointment.start.format(context),
                           if (age != null)
                             '${l10n.translate('age')} $age',

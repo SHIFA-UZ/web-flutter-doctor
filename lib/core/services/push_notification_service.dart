@@ -28,6 +28,15 @@ class PushNotificationService {
   final Map<String, Map<String, dynamic>> _webNotificationPayloads = {};
 
   Future<void> initialize() async {
+    await _initializeLocalNotifications();
+
+    if (!kIsWeb) {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
+
     final settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -35,10 +44,14 @@ class PushNotificationService {
       provisional: false,
     );
 
-    if (settings.authorizationStatus != AuthorizationStatus.authorized) return;
+    if (kDebugMode) {
+      debugPrint(
+        'Doctor notification permission: ${settings.authorizationStatus}',
+      );
+    }
 
-    await _initializeLocalNotifications();
-
+    // Still register the token when the user has not granted alerts yet, so
+    // later permission grants and data-only messages can be delivered.
     _fcmToken = await _firebaseMessaging.getToken();
     if (kDebugMode) debugPrint('Doctor FCM Token: $_fcmToken');
     if (_fcmToken != null) _onFcmTokenReady?.call(_fcmToken!);
