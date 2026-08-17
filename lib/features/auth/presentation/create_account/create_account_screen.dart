@@ -260,7 +260,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
   Widget _buildExistingPatientConfirmView(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cardboard,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -415,7 +415,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
 
   Widget _buildCreateAccountForm(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cardboard,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

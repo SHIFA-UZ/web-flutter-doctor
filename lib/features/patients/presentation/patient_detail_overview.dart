@@ -42,10 +42,22 @@ class PatientSummaryStat extends StatelessWidget {
         children: [
           Text(label, style: AppDesignSystem.caption(context)),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: AppDesignSystem.h2(context).copyWith(fontSize: 15),
-            overflow: TextOverflow.ellipsis,
+          Tooltip(
+            message: value,
+            waitDuration: const Duration(milliseconds: 400),
+            child: SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: AppDesignSystem.h2(context).copyWith(fontSize: 15),
+                  maxLines: 1,
+                  softWrap: false,
+                ),
+              ),
+            ),
           ),
         ],
       ),

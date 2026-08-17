@@ -37,6 +37,7 @@ import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/core/utils/doctor_display_name.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/patient_briefing_panel.dart';
@@ -47,6 +48,7 @@ import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/clinic_staff_web_only_screen.dart';
 import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({Key? key}) : super(key: key);
@@ -392,6 +394,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: AppColors.cardboard,
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1663,15 +1666,18 @@ class _SidebarDoctorProfile extends ConsumerWidget {
     if (isClinicStaff) {
       final me = ref.watch(meProfileProvider).valueOrNull;
       if (me != null) {
-        name = '${me.firstName} ${me.lastName.isNotEmpty ? '${me.lastName[0]}.' : ''}'.trim();
+        name = formatDoctorMedName(
+          firstName: me.firstName,
+          lastName: me.lastName,
+          includePrefix: false,
+        );
       }
     } else {
       final profile = ref.watch(profileAllProvider).valueOrNull?.profile;
       final first = profile?['firstName'] as String? ?? '';
       final last = profile?['lastName'] as String? ?? '';
-      final title = profile?['title'] as String? ?? 'Dr.';
       if (first.isNotEmpty || last.isNotEmpty) {
-        name = '$title $first ${last.isNotEmpty ? '${last[0]}.' : ''}'.trim();
+        name = formatDoctorMedName(firstName: first, lastName: last);
       }
     }
     final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
@@ -1716,26 +1722,14 @@ class _SidebarDoctorProfile extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      l10n.translate('administrator'),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

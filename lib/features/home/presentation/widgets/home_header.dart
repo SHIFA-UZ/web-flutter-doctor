@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/core/utils/doctor_display_name.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/person_avatar.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
@@ -27,11 +28,8 @@ class HomeHeader extends ConsumerWidget {
 
     final first = profile?['firstName'] as String? ?? '';
     final last = profile?['lastName'] as String? ?? '';
-    final title = profile?['title'] as String? ?? 'Dr.';
     final photoUrl = profile?['photoUrl'] as String?;
-    final displayName = (first.isEmpty && last.isEmpty)
-        ? title
-        : '$title $first ${last.isNotEmpty ? '${last[0]}.' : ''}'.trim();
+    final displayName = formatDoctorMedName(firstName: first, lastName: last);
     final avatarName =
         '$first $last'.trim().isEmpty ? displayName : '$first $last'.trim();
 

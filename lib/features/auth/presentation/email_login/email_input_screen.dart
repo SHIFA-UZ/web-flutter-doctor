@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/email_login/email_otp_screen.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
@@ -61,7 +62,7 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cardboard,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

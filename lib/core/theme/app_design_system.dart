@@ -98,7 +98,7 @@ abstract final class AppDesignSystem {
 
   static BoxDecoration cardDecoration({Color? color, Border? borderOverride}) =>
       BoxDecoration(
-        color: color ?? background,
+        color: color ?? AppColors.card,
         borderRadius: BorderRadius.circular(cardRadius),
         border: borderOverride ?? Border.all(color: border, width: 1),
         boxShadow: cardShadow,

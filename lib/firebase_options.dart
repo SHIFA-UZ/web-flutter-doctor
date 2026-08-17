@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCSXfLL1xIcZVoj0xJZ05n_W81qTEFj6bc',
-    appId: '1:55173524197:ios:doctorapp000000092420c',
+    appId: '1:55173524197:ios:5baf27ea7be451bb92420c',
     messagingSenderId: '55173524197',
     projectId: 'shifa-doctor-staging',
     storageBucket: 'shifa-doctor-staging.firebasestorage.app',

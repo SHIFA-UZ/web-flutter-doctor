@@ -24,6 +24,7 @@ Future<PatientDocument?> uploadPatientDocumentWithClient({
   required String title,
   String? category,
   int? clinicId,
+  String? appointmentId,
 }) async {
   final lowerName = fileName.toLowerCase();
   // Use the actual MIME type when we can detect it from the filename so the
@@ -55,6 +56,9 @@ Future<PatientDocument?> uploadPatientDocumentWithClient({
   final fields = <String, String>{'title': title};
   if (category != null && category.isNotEmpty) {
     fields['category'] = category;
+  }
+  if (appointmentId != null && appointmentId.trim().isNotEmpty) {
+    fields['appointmentId'] = appointmentId.trim();
   }
 
   final streamed = await client.postMultipart(

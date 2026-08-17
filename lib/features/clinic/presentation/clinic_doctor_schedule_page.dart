@@ -9,6 +9,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/features/calendar/domain/calendar_models.dart';
 import 'package:shifa_doc_app_v1/features/calendar/presentation/calendar_screen.dart';
 import 'package:shifa_doc_app_v1/state/calendar/calendar_controller.dart';
@@ -467,7 +468,7 @@ class _ClinicDoctorScheduleScaffoldState
     final useSinglePane = PlatformLayout.useSinglePane(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.cardboard,
       appBar: AppBar(
         leading: appBarBackLeading(context),
         automaticallyImplyLeading: false,

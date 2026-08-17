@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 
 ThemeData buildTheme() {
   return ThemeData(
+    useMaterial3: true,
     // Core colors & fonts
     primaryColor: AppColors.primaryTeal,
-    scaffoldBackgroundColor: AppColors.scaffoldBackground,
+    scaffoldBackgroundColor: AppColors.cardboard,
+    canvasColor: AppColors.cardboard,
     fontFamily: 'SF Pro Display',
     fontFamilyFallback: const [
       '.AppleSystemUIFont',
@@ -20,6 +23,35 @@ ThemeData buildTheme() {
       seedColor: AppColors.primaryTeal,
       primary: AppColors.primaryTeal,
       secondary: AppColors.primaryTeal,
+      surface: AppColors.cardboard,
+      onSurface: AppDesignSystem.textPrimary,
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.cardboard,
+      foregroundColor: AppDesignSystem.textPrimary,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+    ),
+    cardTheme: CardThemeData(
+      color: AppColors.card,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDesignSystem.cardRadius),
+        side: const BorderSide(color: AppDesignSystem.border),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDesignSystem.cardRadius),
+      ),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColors.card,
+      surfaceTintColor: Colors.transparent,
     ),
 
     // Buttons — defaults kept for any raw Flutter button that slips through;
@@ -46,10 +78,10 @@ ThemeData buildTheme() {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(foregroundColor: AppColors.primaryTeal),
     ),
-    // Inputs
+    // Inputs sit on white cards, not on the cardboard board.
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.card,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

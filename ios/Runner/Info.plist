@@ -45,13 +45,39 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- Permissions for video calling -->
+	<!-- Firebase Phone Auth reCAPTCHA / APNs fallback URL scheme -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-55173524197-ios-5baf27ea7be451bb92420c</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Background modes for APNs (Firebase Phone Auth + FCM) and video audio -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+		<string>audio</string>
+	</array>
+	<!-- Export compliance: app only uses standard HTTPS encryption -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- Permissions for video calling, chat, and practice address -->
 	<key>NSCameraUsageDescription</key>
 	<string>We need camera access for video consultations and document capture</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need microphone access for video consultations and voice messages</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need photo library access to share images with patients</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need photo library access to save images from consultations</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location to set your practice address on the map</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Use Face ID to unlock the Shifa Doctor app</string>
 </dict>

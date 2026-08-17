@@ -18,5 +18,13 @@ abstract final class AppColors {
   // ── Neutral ───────────────────────────────────────────
   static const Color disabledGrey = Color(0xFFC6C6C6);
   static const Color white = Color(0xFFFFFFFF);
-  static const Color scaffoldBackground = Color(0xFFF5F5F5);
+
+  /// White fill for cards sitting on [cardboard].
+  static const Color card = white;
+
+  /// Page board behind cards (Home, lists, settings). Matches the Figma
+  /// cardboard / board surface used by the doctor mobile screens.
+  static const Color cardboard = Color(0xFFF5F5F5);
+
+  static const Color scaffoldBackground = cardboard;
 }

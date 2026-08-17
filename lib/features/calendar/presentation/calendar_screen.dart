@@ -881,7 +881,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     final useSinglePane = PlatformLayout.useSinglePane(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.cardboard,
       body: Padding(
         padding: Responsive.screenPadding(context),
         child: useSinglePane && _selectedEntry != null

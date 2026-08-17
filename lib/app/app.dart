@@ -153,6 +153,30 @@ class ShifaDoctorApp extends ConsumerStatefulWidget {
 class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
   bool _fcmTokenSetup = false;
   bool _pushTapSetup = false;
+  String? _syncedDoctorLanguage;
+
+  void _syncDoctorUiLanguage(String languageCode) {
+    if (isAdminHost) return;
+    if (!ref.read(authProvider).isAuthenticated) return;
+    if (_syncedDoctorLanguage == languageCode) return;
+    _syncedDoctorLanguage = languageCode;
+    unawaited(() async {
+      try {
+        await ref.read(doctorApiClientProvider).put(
+          '/api/doctors/me/language',
+          <String, dynamic>{'language': languageCode},
+        );
+        if (kDebugMode) {
+          debugPrint('Doctor UI language synced: $languageCode');
+        }
+      } catch (e) {
+        _syncedDoctorLanguage = null;
+        if (kDebugMode) {
+          debugPrint('Doctor UI language sync failed: $e');
+        }
+      }
+    }());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,6 +186,7 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
     // Listen to auth state changes and navigate to login on logout
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (previous?.isAuthenticated == true && !next.isAuthenticated) {
+        _syncedDoctorLanguage = null;
         // User was logged in but now logged out - navigate to correct login
         final route = isAdminHost ? AppRoutes.adminLogin : AppRoutes.login;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -170,8 +195,30 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
             (route) => false,
           );
         });
+      } else if (next.isAuthenticated && !isAdminHost) {
+        _syncDoctorUiLanguage(
+          ref.read(languageProvider).locale.backendLanguageCode,
+        );
       }
     });
+
+    ref.listen<LanguageState>(languageProvider, (previous, next) {
+      unawaited(PushNotificationService().refreshLocalizationCache());
+      if (ref.read(authProvider).isAuthenticated && !isAdminHost) {
+        _syncDoctorUiLanguage(next.locale.backendLanguageCode);
+      }
+    });
+
+    if (!isAdminHost &&
+        authState.isAuthenticated &&
+        _syncedDoctorLanguage == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncDoctorUiLanguage(
+          ref.read(languageProvider).locale.backendLanguageCode,
+        );
+      });
+    }
 
     // Set up FCM token upload when authenticated (and Firebase is available).
     // Admin app should NOT call doctor-only endpoints.

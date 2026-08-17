@@ -6,6 +6,7 @@ import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 
 class AppointmentBriefingResult {
   const AppointmentBriefingResult({
@@ -219,8 +220,8 @@ class _AppointmentBriefingSheetState
       return Text(r.error ?? l10n.translate('visitBriefingFailed'));
     }
     return SingleChildScrollView(
-      child: SelectableText(
-        r.briefingText ?? '',
+      child: AiResponseText(
+        text: r.briefingText ?? '',
         style: AppDesignSystem.body1(context),
       ),
     );

@@ -83,12 +83,43 @@ String localizedNotificationMessage(
 }) {
   final type = notification.type.trim();
   final message = notification.message.trim();
+  final name = _patientDisplayName(notification);
 
   switch (type) {
     case 'APPOINTMENT_BOOKED_BY_PATIENT':
       return _localizedPatientBooked(notification, l10n, timeZone: timeZone);
     case 'APPOINTMENT_REMINDER':
       return l10n.notificationMessageAppointmentReminder;
+    case 'APPOINTMENT_CANCELLED_BY_PATIENT':
+    case 'APPOINTMENT_CANCELLED':
+      return l10n.notificationMessagePatientCancelled(name);
+    case 'APPOINTMENT_PAID_BY_PATIENT':
+      return l10n.notificationMessagePatientPaid(name);
+    case 'APPOINTMENT_RESCHEDULED_BY_PATIENT':
+    case 'APPOINTMENT_CHANGED':
+      return l10n.notificationMessagePatientRescheduled(name);
+    case 'CHAT_MESSAGE':
+    case 'NEW_MESSAGE':
+      return l10n.notificationMessageChat;
+    case 'CARE_PARTNERSHIP_INVITE':
+      return l10n.notificationMessagePartnershipInvite;
+    case 'CARE_PARTNERSHIP_ACCEPTED':
+      return l10n.notificationMessagePartnershipAccepted;
+    case 'CARE_PARTNERSHIP_PROGRESS':
+      return l10n.notificationMessagePartnershipProgress;
+    case 'DOCUMENT_ACCESS_REQUEST':
+      return l10n.translate('documentAccessRequestDetail')
+          .replaceAll('{doctorName}', notification.requestingDoctorName ?? '')
+          .replaceAll('{documentTitle}', notification.documentTitle ?? '')
+          .replaceAll('{patientName}', name);
+    case 'DOCUMENT_ACCESS_APPROVED':
+      return l10n.translate('documentAccessApprovedDetail')
+          .replaceAll('{documentTitle}', notification.documentTitle ?? '')
+          .replaceAll('{patientName}', name);
+    case 'DOCUMENT_ACCESS_REJECTED':
+      return l10n.translate('documentAccessRejectedDetail')
+          .replaceAll('{documentTitle}', notification.documentTitle ?? '')
+          .replaceAll('{patientName}', name);
     default:
       break;
   }
@@ -100,13 +131,15 @@ String localizedNotificationMessage(
   }
   if (message.startsWith(_kEnglishPatientBookedPrefix) &&
       message.endsWith(_kEnglishPatientBookedSuffix)) {
-    final name = message
+    final parsedName = message
         .substring(
           _kEnglishPatientBookedPrefix.length,
           message.length - _kEnglishPatientBookedSuffix.length,
         )
         .trim();
-    return l10n.notificationMessagePatientBookedAppointmentNoTime(name.isEmpty ? 'Patient' : name);
+    return l10n.notificationMessagePatientBookedAppointmentNoTime(
+      parsedName.isEmpty ? 'Patient' : parsedName,
+    );
   }
   final parsed = _parseEnglishBookedWithDateTime(message);
   if (parsed != null) {
@@ -120,6 +153,55 @@ String localizedNotificationMessage(
   }
 
   return notification.message;
+}
+
+String _patientDisplayName(DoctorNotificationModel notification) {
+  final fromField = notification.patientName?.trim();
+  if (fromField != null && fromField.isNotEmpty) return fromField;
+  final message = notification.message.trim();
+  if (message.startsWith(_kEnglishPatientBookedPrefix)) {
+    final rest = message.substring(_kEnglishPatientBookedPrefix.length);
+    final cut = rest.split(RegExp(r' cancelled| booked| paid| moved| rescheduled')).first.trim();
+    if (cut.isNotEmpty) return cut;
+  }
+  return 'Patient';
+}
+
+/// Localized tray title/body for FCM (foreground local notification).
+({String title, String body}) localizedDoctorPushText({
+  required Map<String, dynamic> data,
+  required AppLocalizations l10n,
+  String? fallbackTitle,
+  String? fallbackBody,
+  String? timeZone,
+}) {
+  final type = (data['type']?.toString() ?? '').trim();
+  final model = DoctorNotificationModel(
+    id: int.tryParse('${data['id'] ?? data['notificationId'] ?? 0}') ?? 0,
+    title: (data['title'] ?? fallbackTitle ?? '').toString(),
+    message: (data['message'] ?? fallbackBody ?? '').toString(),
+    type: type.isEmpty ? 'GENERAL' : type,
+    appointmentId: int.tryParse('${data['appointmentId'] ?? ''}'),
+    patientId: int.tryParse('${data['patientId'] ?? ''}'),
+    documentId: int.tryParse('${data['documentId'] ?? ''}'),
+    documentAccessRequestId:
+        int.tryParse('${data['documentAccessRequestId'] ?? ''}'),
+    taskId: int.tryParse('${data['taskId'] ?? ''}'),
+    patientName: data['patientName']?.toString(),
+    documentTitle: data['documentTitle']?.toString(),
+    requestingDoctorName: data['requestingDoctorName']?.toString(),
+    createdAt: DateTime.tryParse('${data['createdAt'] ?? ''}') ?? DateTime.now(),
+  );
+  final title = localizedNotificationTitle(model, l10n);
+  final body = localizedNotificationMessage(model, l10n, timeZone: timeZone);
+  return (
+    title: title.trim().isNotEmpty
+        ? title
+        : (fallbackTitle?.trim().isNotEmpty == true
+            ? fallbackTitle!.trim()
+            : l10n.notificationGeneric),
+    body: body.trim().isNotEmpty ? body : (fallbackBody ?? ''),
+  );
 }
 
 /// Payload for the global notification tap handler (FCM + in-app taps).

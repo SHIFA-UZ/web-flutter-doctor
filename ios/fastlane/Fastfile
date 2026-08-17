@@ -1,0 +1,86 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload Shifa Doctor to TestFlight"
+  lane :beta do
+    key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
+    key_filepath = File.expand_path("~/private_keys/AuthKey_#{key_id}.p8")
+
+    api_key = app_store_connect_api_key(
+      key_id: key_id,
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_filepath: key_filepath,
+      in_house: false
+    )
+
+    version_number = ENV["VERSION_NUMBER"] || "1.0.0"
+    build_number = ENV["BUILD_NUMBER"] || "1"
+
+    puts "Building version #{version_number} (#{build_number})"
+
+    FileUtils.mkdir_p("./fastlane/profiles")
+
+    sigh(
+      api_key: api_key,
+      app_identifier: "com.shifa.doctorapp",
+      team_id: "NH97PGA9PT",
+      readonly: true,
+      platform: "ios",
+      filename: "appstore.mobileprovision",
+      output_path: "./fastlane/profiles"
+    )
+    main_profile_name = ENV['SIGH_NAME']
+    puts "Provisioning profile downloaded: #{main_profile_name}"
+    puts "Profile UUID: #{ENV['SIGH_UUID']}"
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      targets: ["Runner"],
+      path: "Runner.xcodeproj",
+      code_sign_identity: "Apple Distribution",
+      build_configurations: ["Release"],
+      profile_name: main_profile_name
+    )
+    puts "Signing configured with profile: #{main_profile_name}"
+
+    gym(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        teamID: "NH97PGA9PT",
+        uploadBitcode: false,
+        uploadSymbols: true,
+        compileBitcode: false,
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "com.shifa.doctorapp" => main_profile_name
+        }
+      },
+      output_directory: "./build/ipa",
+      output_name: "shifa_doctor.ipa",
+      clean: false,
+      skip_build_archive: false,
+      skip_codesigning: false,
+      build_path: "./build",
+      archive_path: "./build/Runner.xcarchive",
+      verbose: false,
+      buildlog_path: "./build/logs"
+    )
+
+    puts "Build complete: shifa_doctor.ipa"
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+      ipa: "./build/ipa/shifa_doctor.ipa",
+      wait_for_uploaded_build: false
+    )
+
+    puts "Successfully uploaded to TestFlight!"
+    puts "Version: #{version_number} (#{build_number})"
+  end
+end

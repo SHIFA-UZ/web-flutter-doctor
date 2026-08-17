@@ -15,6 +15,7 @@ import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provid
 import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
+import 'package:shifa_doc_app_v1/core/utils/doctor_display_name.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
 
 class HomeGreetingHeader extends ConsumerStatefulWidget {
@@ -45,9 +46,7 @@ class _HomeGreetingHeaderState extends ConsumerState<HomeGreetingHeader> {
     final profile = ref.watch(profileAllProvider).valueOrNull?.profile;
     final first = profile?['firstName'] as String? ?? '';
     final last = profile?['lastName'] as String? ?? '';
-    final title = profile?['title'] as String? ?? 'Dr.';
-    if (first.isEmpty && last.isEmpty) return title;
-    return '$title $first ${last.isNotEmpty ? '${last[0]}.' : ''}'.trim();
+    return formatDoctorMedName(firstName: first, lastName: last);
   }
 
   Future<void> _export() async {

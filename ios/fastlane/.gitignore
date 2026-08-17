@@ -1,0 +1,8 @@
+report.xml
+preview.html
+screenshots
+test_output
+*.app.dSYM.zip
+*.ipa
+logs
+profiles

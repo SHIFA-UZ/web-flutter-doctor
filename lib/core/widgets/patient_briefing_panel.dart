@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
-import 'package:shifa_doc_app_v1/core/utils/text_cleaner.dart';
+import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_provider.dart';
 import 'package:shifa_doc_app_v1/core/subscription/doctor_subscription.dart';
@@ -39,7 +39,7 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
         .clamp(useSinglePane ? 220.0 : 280.0, useSinglePane ? 420.0 : 500.0);
     final panelWidth = useSinglePane
         ? screenSize.width - 24
-        : Responsive.overlayWidth(context, 380).clamp(280.0, 380.0);
+        : Responsive.overlayWidth(context, 440).clamp(320.0, 460.0);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -191,20 +191,13 @@ class _PatientBriefingPanelState extends ConsumerState<PatientBriefingPanel> {
                                   Builder(
                                     builder: (context) {
                                       final raw = state.briefingText ?? '';
-                                      final cleaned = TextCleaner.clean(raw);
-                                      var display = cleaned.replaceAllMapped(
-                                        RegExp(r'\*\*(.*?)\*\*', dotAll: true),
-                                        (m) => m.group(1) ?? '',
-                                      );
-                                      display = display.replaceAll(
-                                        RegExp(r'^- ', multiLine: true),
-                                        '• ',
-                                      );
-                                      return SelectableText(
-                                        display.trim(),
+                                      return AiResponseText(
+                                        text: raw,
+                                        maxWidth: panelWidth - 32,
                                         style: const TextStyle(
                                           fontSize: 14,
-                                          height: 1.4,
+                                          height: 1.45,
+                                          color: Colors.black87,
                                         ),
                                       );
                                     },
