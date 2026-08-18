@@ -24,4 +24,9 @@ void main() {
     expect(text, contains('From Shifa AI'));
     expect(text, contains('Doctor notes'));
   });
+
+  test('stripScribeTranscript keeps SOAP and drops transcript', () {
+    const raw = 'SUBJECTIVE:\nPain\n\nTRANSCRIPT:\nlong dialogue';
+    expect(stripScribeTranscript(raw), 'SUBJECTIVE:\nPain');
+  });
 }

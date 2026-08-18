@@ -37,8 +37,11 @@ class ConsultationNoteDto {
   bool get isFromAi => source == 'AI_DRAFT';
 
   /// Display text: body if set, otherwise subjective/assessment/plan combined.
+  /// Transcripts are omitted so appointment cards show the clinical summary.
   String get displayText {
-    if (body != null && body!.trim().isNotEmpty) return body!;
+    if (body != null && body!.trim().isNotEmpty) {
+      return stripScribeTranscript(body!);
+    }
     final parts = <String>[];
     if (subjective != null && subjective!.trim().isNotEmpty) parts.add(subjective!);
     if (assessment != null && assessment!.trim().isNotEmpty) parts.add(assessment!);
@@ -239,6 +242,17 @@ Future<ScribeStatusDto> waitForScribeReady({
     );
   }
   return last;
+}
+
+/// SOAP / protocol only — drop the raw visit transcript from appointment-card display.
+String stripScribeTranscript(String text) {
+  final match = RegExp(
+    r'^TRANSCRIPT:\s*',
+    caseSensitive: false,
+    multiLine: true,
+  ).firstMatch(text);
+  if (match == null) return text.trim();
+  return text.substring(0, match.start).trim();
 }
 
 /// Scribe / AI notes first, then the doctor's own notes.

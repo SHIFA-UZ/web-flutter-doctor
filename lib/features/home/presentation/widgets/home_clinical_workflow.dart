@@ -6,13 +6,12 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/utils/patient_warning_utils.dart';
 import 'package:shifa_doc_app_v1/core/utils/timezone_utils.dart';
+import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/today_appointments_provider.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
-import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_export_service.dart';
 import 'package:shifa_doc_app_v1/features/home/application/home_quick_action_navigation.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/appointment_timeline_tile.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/dashboard_card.dart';
-import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_search_overlay.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/next_patient_card.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/overview_metric_card.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/quick_action_chip.dart';
@@ -24,8 +23,6 @@ import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
-import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
-import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_date_range_provider.dart';
 
 /// Mobile-first clinical workflow stack for the doctor Home screen.
 class HomeClinicalWorkflow extends ConsumerStatefulWidget {
@@ -44,57 +41,6 @@ class HomeClinicalWorkflow extends ConsumerStatefulWidget {
 }
 
 class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
-  bool _exporting = false;
-  final _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _export() async {
-    if (_exporting) return;
-    setState(() => _exporting = true);
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      await ref.read(homeDashboardExportServiceProvider).exportCsv();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.translate('exportStarted'))),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.translate('exportFailed')),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _exporting = false);
-    }
-  }
-
-  Future<void> _pickRange() async {
-    final l10n = AppLocalizations.of(context)!;
-    final current = ref.read(homeDashboardDateRangeProvider);
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
-      initialDateRange: DateTimeRange(start: current.start, end: current.end),
-      helpText: l10n.translate('selectDateRange'),
-    );
-    if (picked != null) {
-      ref
-          .read(homeDashboardDateRangeProvider.notifier)
-          .setRange(picked.start, picked.end);
-    }
-  }
-
   Future<void> _startAppointment(Appointment appt) async {
     if (appt.patientId != null) {
       try {
@@ -135,19 +81,9 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
     ShellScope.pushIntoShell(patientId);
   }
 
-  void _submitSearch(String query) {
-    final q = query.trim();
-    if (q.isEmpty) {
-      HomeSearchOverlay.show(context);
-      return;
-    }
-    ref.read(shellProvider.notifier).setTab(DoctorShellTab.patients);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final brand = Theme.of(context).colorScheme.primary;
     final appointmentsAsync = ref.watch(todayAppointmentsProvider);
     final upcomingAsync = ref.watch(nextUpcomingAppointmentProvider);
     final unread =
@@ -156,9 +92,6 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
           (t) =>
               t.status == TaskStatus.active || t.status == TaskStatus.draft,
         );
-    final range = ref.watch(homeDashboardDateRangeProvider);
-    final locale = ref.watch(languageProvider).locale.toString();
-    final rangeLabel = formatDashboardDateRange(range, locale);
 
     final appointments = appointmentsAsync.valueOrNull ?? const <Appointment>[];
     final valid = appointments
@@ -173,134 +106,53 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
         classified.nextUp ??
         upcomingAsync.valueOrNull;
     final listItems = valid.where((a) => !a.isCompleted).toList();
-    final nextTimeLabel = hero == null
-        ? '—'
-        : _heroTimeLabel(context, hero, now);
-    final nextMinutes = _minutesUntilNext(
-      hero != null ? [hero] : valid,
-      now,
-      doctorTimeZone,
-    );
+    final followUpCount = followUps.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Date chip + export icon
         Row(
           children: [
             Expanded(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _pickRange,
-                  borderRadius: BorderRadius.circular(24),
-                  child: Ink(
-                    height: 40,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: AppDesignSystem.background,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppDesignSystem.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_month_outlined,
-                            size: 18, color: brand),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            rangeLabel,
-                            style: AppDesignSystem.body2(context).copyWith(
-                              color: AppDesignSystem.textPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              child: OverviewMetricCard(
+                icon: Icons.event_available_outlined,
+                label: l10n.translate('metricToday'),
+                value: '${valid.length}',
+                secondary: l10n.visitsCountNoun(valid.length),
+                onTap: () => ref
+                    .read(shellProvider.notifier)
+                    .setTab(DoctorShellTab.calendar),
               ),
             ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton(
-                onPressed: _exporting ? null : _export,
-                tooltip: l10n.translate('export'),
-                style: IconButton.styleFrom(
-                  backgroundColor: brand.withValues(alpha: 0.1),
-                  foregroundColor: brand,
-                  minimumSize: const Size(44, 44),
-                ),
-                icon: _exporting
-                    ? SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: brand,
-                        ),
-                      )
-                    : const Icon(Icons.download_outlined, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OverviewMetricCard(
+                icon: Icons.notifications_outlined,
+                label: l10n.notifications,
+                value: '$unread',
+                secondary: l10n.translate('unreadCountLabel'),
+                onTap: () => ref
+                    .read(shellProvider.notifier)
+                    .setTab(DoctorShellTab.notifications),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: AppDesignSystem.itemGap),
-
-        // 2x2 metrics
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 1.45,
-          children: [
-            OverviewMetricCard(
-              icon: Icons.event_available_outlined,
-              label: l10n.translate('metricToday'),
-              value: '${valid.length}',
-              secondary: l10n.translate('appointmentsTodayShort'),
-              onTap: () =>
-                  ref.read(shellProvider.notifier).setTab(DoctorShellTab.calendar),
-            ),
-            OverviewMetricCard(
-              icon: Icons.description_outlined,
-              label: l10n.translate('metricReports'),
-              value: '$unread',
-              secondary: l10n.translate('pendingReports'),
-              onTap: () => ref
-                  .read(shellProvider.notifier)
-                  .setTab(DoctorShellTab.notifications),
-            ),
-            OverviewMetricCard(
-              icon: Icons.task_alt_outlined,
-              label: l10n.translate('metricFollowUp'),
-              value: '${followUps.length}',
-              secondary: l10n.translate('followUpTasks'),
-              onTap: () =>
-                  ref.read(shellProvider.notifier).setTab(DoctorShellTab.tasks),
-            ),
-            OverviewMetricCard(
-              icon: Icons.schedule,
-              label: l10n.translate('metricNext'),
-              value: nextTimeLabel,
-              secondary: nextMinutes == null
-                  ? l10n.translate('noNextPatient')
-                  : l10n
-                      .translate('nextAppointmentInMinutes')
-                      .replaceAll('{minutes}', '$nextMinutes'),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OverviewMetricCard(
+                icon: Icons.task_alt_outlined,
+                label: l10n.translate('metricFollowUp'),
+                value: '$followUpCount',
+                secondary: followUpCount == 1
+                    ? l10n.translate('followUpTask')
+                    : l10n.translate('followUpTasks'),
+                onTap: () =>
+                    ref.read(shellProvider.notifier).setTab(DoctorShellTab.tasks),
+              ),
             ),
           ],
         ),
         const SizedBox(height: AppDesignSystem.sectionGap),
 
-        // Next patient hero — remaining today, otherwise next upcoming day.
         if (appointmentsAsync.isLoading || upcomingAsync.isLoading)
           const DashboardSkeleton(height: 180, lines: 4)
         else if (hero != null)
@@ -313,11 +165,13 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
             onOpenChart: () => _openPatientCard(hero),
           )
         else
-          _EmptyNextPatient(l10n: l10n),
+          _EmptyNextPatient(
+            l10n: l10n,
+            onNewAppointment: () => openCalendarForNewAppointment(ref),
+          ),
 
         const SizedBox(height: AppDesignSystem.sectionGap),
 
-        // Quick actions (replaces FAB)
         Text(
           l10n.translate('quickActions'),
           style: AppDesignSystem.h2(context),
@@ -345,89 +199,37 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
                 label: l10n.translate('issuePrescription'),
                 onTap: () => openCreateRemoteCareTaskForm(context, ref),
               ),
-              const SizedBox(width: 8),
-              QuickActionChip(
-                icon: Icons.person_search_outlined,
-                label: l10n.translate('searchPatients'),
-                onTap: () => HomeSearchOverlay.show(context),
-              ),
             ],
           ),
         ),
-        const SizedBox(height: AppDesignSystem.sectionGap),
 
-        // Persistent search
-        TextField(
-          controller: _searchController,
-          textInputAction: TextInputAction.search,
-          onSubmitted: _submitSearch,
-          onTap: () {
-            // Keep field editable; also allow quick open of overlay via icon.
-          },
-          decoration: InputDecoration(
-            hintText: l10n.translate('searchPatientsHint'),
-            prefixIcon: const Icon(Icons.search, size: 20),
-            suffixIcon: IconButton(
-              tooltip: l10n.translate('scanMultiPage'),
-              onPressed: () =>
-                  ref.read(shellProvider.notifier).setTab(DoctorShellTab.patients),
-              icon: const Icon(Icons.document_scanner_outlined, size: 20),
-            ),
-            filled: true,
-            fillColor: AppDesignSystem.background,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppDesignSystem.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppDesignSystem.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: brand, width: 1.5),
-            ),
+        if (appointmentsAsync.hasError) ...[
+          const SizedBox(height: AppDesignSystem.sectionGap),
+          Text('${l10n.error}: ${appointmentsAsync.error}'),
+        ] else if (listItems.isNotEmpty) ...[
+          const SizedBox(height: AppDesignSystem.sectionGap),
+          Text(
+            l10n.translate('todaysSchedule'),
+            style: AppDesignSystem.h2(context),
           ),
-        ),
-        const SizedBox(height: AppDesignSystem.sectionGap),
-
-        // Schedule list
-        Text(
-          l10n.translate('todaysSchedule'),
-          style: AppDesignSystem.h2(context),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.translate('todayTimelineSubtitle'),
-          style: AppDesignSystem.body2(context),
-        ),
-        const SizedBox(height: 10),
-        if (appointmentsAsync.hasError)
-          Text('${l10n.error}: ${appointmentsAsync.error}')
-        else if (listItems.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Text(
-              l10n.translate('noAppointmentsToday'),
-              style: AppDesignSystem.body2(context),
-              textAlign: TextAlign.center,
-            ),
-          )
-        else
+          const SizedBox(height: 4),
+          Text(
+            l10n.translate('todayTimelineSubtitle'),
+            style: AppDesignSystem.body2(context),
+          ),
+          const SizedBox(height: 10),
           Column(
             children: [
               for (var i = 0; i < listItems.length; i++)
                 AppointmentTimelineTile(
                   appointment: listItems[i],
-                  selected:
-                      widget.selectedAppointmentId == listItems[i].id,
+                  selected: widget.selectedAppointmentId == listItems[i].id,
                   isLast: i == listItems.length - 1,
                   onTap: () => widget.onAppointmentSelected(listItems[i]),
                 ),
             ],
           ),
+        ],
       ],
     );
   }
@@ -462,37 +264,6 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
       }
     }
     return (current: current, nextUp: nextUp);
-  }
-
-  int? _minutesUntilNext(
-    List<Appointment> appointments,
-    DateTime now,
-    String? doctorTimeZone,
-  ) {
-    int? best;
-    for (final appt in appointments) {
-      if (appt.isCompleted) continue;
-      final day = appt.day ?? DateTime(now.year, now.month, now.day);
-      final start = timeOfDayToDateTimeInZone(appt.start, day, doctorTimeZone);
-      final diff = start.difference(now).inMinutes;
-      if (diff >= 0 && (best == null || diff < best)) best = diff;
-    }
-    return best;
-  }
-
-  String _heroTimeLabel(
-    BuildContext context,
-    Appointment appointment,
-    DateTime now,
-  ) {
-    final time = appointment.start.format(context);
-    final day = appointment.day;
-    if (day == null) return time;
-    final today = DateTime(now.year, now.month, now.day);
-    final apptDay = DateTime(day.year, day.month, day.day);
-    if (apptDay == today) return time;
-    final loc = MaterialLocalizations.of(context);
-    return '${loc.formatShortDate(apptDay)} · $time';
   }
 }
 
@@ -546,9 +317,13 @@ class _NextPatientSlot extends ConsumerWidget {
 }
 
 class _EmptyNextPatient extends StatelessWidget {
-  const _EmptyNextPatient({required this.l10n});
+  const _EmptyNextPatient({
+    required this.l10n,
+    required this.onNewAppointment,
+  });
 
   final AppLocalizations l10n;
+  final VoidCallback onNewAppointment;
 
   @override
   Widget build(BuildContext context) {
@@ -561,9 +336,15 @@ class _EmptyNextPatient extends StatelessWidget {
               size: 36, color: AppDesignSystem.textTertiary),
           const SizedBox(height: 8),
           Text(
-            l10n.translate('noNextPatient'),
+            l10n.translate('noAppointmentsToday'),
             style: AppDesignSystem.body1(context),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ShifaPrimaryButton(
+            label: l10n.translate('newAppointment'),
+            icon: Icons.add_circle_outline,
+            onPressed: onNewAppointment,
           ),
         ],
       ),

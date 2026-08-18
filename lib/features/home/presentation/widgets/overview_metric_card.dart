@@ -23,13 +23,13 @@ class OverviewMetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final brand = Theme.of(context).colorScheme.primary;
     final card = Container(
-      constraints: const BoxConstraints(minHeight: 96),
       padding: const EdgeInsets.all(14),
       decoration: AppDesignSystem.cardDecoration(
         color: AppDesignSystem.background,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -53,7 +53,7 @@ class OverviewMetricCard extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 10),
           Text(
             value,
             style: AppDesignSystem.h1(context).copyWith(

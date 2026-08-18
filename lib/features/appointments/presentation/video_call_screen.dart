@@ -1159,6 +1159,15 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           debugPrint(
             'Appointment ${widget.appointment.id} marked as completed',
           );
+          try {
+            await invalidateAppointmentRelatedProviders(
+              ref,
+              clinicWorkspaceId: cidForComplete,
+              appointmentDay: widget.appointment.day,
+            );
+          } catch (e) {
+            debugPrint('Post-complete provider refresh failed (ignored): $e');
+          }
         } catch (e) {
           debugPrint('Error marking appointment as completed: $e');
           if (mounted) {
@@ -1431,6 +1440,7 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
           await invalidateAppointmentRelatedProviders(
             ref,
             clinicWorkspaceId: cidForComplete,
+            appointmentDay: widget.appointment.day,
           );
         } catch (e) {
           debugPrint('Post-complete provider refresh failed (ignored): $e');

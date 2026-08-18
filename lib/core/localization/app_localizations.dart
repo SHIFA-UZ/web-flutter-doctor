@@ -84,6 +84,9 @@ class AppLocalizations {
       'metricReports': 'Reports',
       'metricFollowUp': 'Follow-up',
       'metricNext': 'Next',
+      'visitsCountLabel': 'visits',
+      'visitsCountLabelOne': 'visit',
+      'unreadCountLabel': 'unread',
       'onlineVisit': 'Online',
       'openPatientCard': 'Open chart',
       'noNextPatient': 'No upcoming appointments',
@@ -190,6 +193,7 @@ class AppLocalizations {
       'aiCommandCenterSubtitle': 'Proactive clinic intelligence',
       'aiInsightAppointments': 'You have {count} appointments remaining today.',
       'aiInsightNotifications': '{count} items require your attention.',
+      'aiInsightNotificationsOne': '1 item requires your attention.',
       'aiInsightTasks': '{count} follow-up tasks are pending.',
       'aiInsightAllClear': 'Your schedule looks clear. Ask me anything about your patients.',
       'review': 'Review',
@@ -2155,6 +2159,7 @@ class AppLocalizations {
       'aiCommandCenterSubtitle': 'Proaktiv klinika tahlili',
       'aiInsightAppointments': 'Bugun yana {count} ta uchrashuvingiz bor.',
       'aiInsightNotifications': '{count} ta element sizning e\'tiboringizni talab qiladi.',
+      'aiInsightNotificationsOne': '1 ta element sizning e\'tiboringizni talab qiladi.',
       'aiInsightTasks': '{count} ta kuzatuv vazifasi kutilmoqda.',
       'aiInsightAllClear': 'Jadvalingiz aniq. Bemorlar haqida istalgan savol bering.',
       'review': 'Ko\'rib chiqish',
@@ -3846,6 +3851,9 @@ class AppLocalizations {
       'metricReports': 'Hisobot',
       'metricFollowUp': 'Kuzatuv',
       'metricNext': 'Keyingi',
+      'visitsCountLabel': 'tashrif',
+      'visitsCountLabelOne': 'tashrif',
+      'unreadCountLabel': 'o\'qilmagan',
       'onlineVisit': 'Onlayn',
       'openPatientCard': 'Kartani ochish',
       'noNextPatient': 'Yaqin uchrashuvlar yo\'q',
@@ -4151,6 +4159,7 @@ class AppLocalizations {
       'aiCommandCenterSubtitle': 'Проактивная аналитика клиники',
       'aiInsightAppointments': 'Сегодня осталось {count} приёмов.',
       'aiInsightNotifications': '{count} элементов требуют внимания.',
+      'aiInsightNotificationsOne': '1 элемент требует внимания.',
       'aiInsightTasks': '{count} задач на контроль ожидают.',
       'aiInsightAllClear': 'Расписание свободно. Спросите о пациентах.',
       'review': 'Просмотр',
@@ -5796,6 +5805,9 @@ class AppLocalizations {
       'metricReports': 'Отчёты',
       'metricFollowUp': 'Контроль',
       'metricNext': 'След.',
+      'visitsCountLabel': 'визитов',
+      'visitsCountLabelOne': 'визит',
+      'unreadCountLabel': 'непрочитанных',
       'onlineVisit': 'Онлайн',
       'openPatientCard': 'Открыть карту',
       'noNextPatient': 'Нет ближайших записей',
@@ -6747,6 +6759,38 @@ class AppLocalizations {
     final mod100 = count % 100;
     if (mod10 == 1 && mod100 != 11) return 'пациента';
     return 'пациентов';
+  }
+
+  String visitsCountNoun(int count) => _visitsCountNoun(count);
+
+  String visitsCountBadge(int count) => '$count ${_visitsCountNoun(count)}';
+
+  String _visitsCountNoun(int count) {
+    switch (locale.languageCode) {
+      case 'ru':
+        return _ruNominativeVisitNoun(count);
+      case 'uz':
+        return translate('visitsCountLabel');
+      default:
+        return count == 1
+            ? translate('visitsCountLabelOne')
+            : translate('visitsCountLabel');
+    }
+  }
+
+  String _ruNominativeVisitNoun(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) return 'визит';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return 'визита';
+    }
+    return 'визитов';
+  }
+
+  String aiInsightNotificationsLabel(int count) {
+    if (count == 1) return translate('aiInsightNotificationsOne');
+    return translate('aiInsightNotifications').replaceAll('{count}', '$count');
   }
 
   String get soapNotesSectionTitle => translate('soapNotesSectionTitle');

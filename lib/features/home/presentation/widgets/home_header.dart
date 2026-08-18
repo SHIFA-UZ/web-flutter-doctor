@@ -5,12 +5,11 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/utils/doctor_display_name.dart';
-import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/person_avatar.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
-/// Compact home app bar: avatar, title, doctor name, notifications, language.
+/// Compact home app bar: avatar, title, doctor name, notifications.
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({
     super.key,
@@ -55,8 +54,6 @@ class HomeHeader extends ConsumerWidget {
             ],
           ),
         ),
-        const LanguageMiniToggle(),
-        const SizedBox(width: 4),
         _NotificationButton(
           unread: unread,
           onTap: onNotificationsTap,

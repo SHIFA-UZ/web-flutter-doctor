@@ -895,21 +895,6 @@ class _InPersonAppointmentScreenState
           (dentalState?.hasBillableContent ?? false);
       final hasExtras = hasBeforeImages || hasAfterImages || dentalHasWork;
 
-      if (structuredAndFree.trim().isEmpty &&
-          dentalNotesForPdf.isEmpty &&
-          !hasExtras &&
-          !_awaitingScribe) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.noItemsToSave),
-            ),
-          );
-          Navigator.pop(context);
-        }
-        return;
-      }
-
       final cidForComplete = ref.read(selectedClinicIdProvider);
 
       try {
@@ -959,6 +944,15 @@ class _InPersonAppointmentScreenState
           debugPrint(
             'Appointment ${widget.appointment.id} marked as completed',
           );
+          try {
+            await invalidateAppointmentRelatedProviders(
+              ref,
+              clinicWorkspaceId: cidForComplete,
+              appointmentDay: widget.appointment.day,
+            );
+          } catch (e) {
+            debugPrint('Post-complete provider refresh failed (ignored): $e');
+          }
         } catch (e) {
           debugPrint('Error marking appointment as completed: $e');
           if (mounted) {
@@ -1232,6 +1226,7 @@ class _InPersonAppointmentScreenState
           await invalidateAppointmentRelatedProviders(
             ref,
             clinicWorkspaceId: cidForComplete,
+            appointmentDay: widget.appointment.day,
           );
         } catch (e) {
           debugPrint('Post-complete provider refresh failed (ignored): $e');

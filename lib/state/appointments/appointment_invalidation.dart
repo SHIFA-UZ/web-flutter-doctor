@@ -38,6 +38,7 @@ const appointmentCalendarPushTypes = <String>{
 Future<void> invalidateAppointmentRelatedProviders(
   dynamic ref, {
   int? clinicWorkspaceId,
+  DateTime? appointmentDay,
 }) async {
   try {
     String? doctorTimeZone;
@@ -59,6 +60,16 @@ Future<void> invalidateAppointmentRelatedProviders(
         todayInDoctorZone.day,
       );
       await refreshCalendarDay(ref, todayKey, doctorTimeZone);
+      if (appointmentDay != null) {
+        final dayKey = DateTime(
+          appointmentDay.year,
+          appointmentDay.month,
+          appointmentDay.day,
+        );
+        if (dayKey != todayKey) {
+          await refreshCalendarDay(ref, dayKey, doctorTimeZone);
+        }
+      }
     }
   } catch (e) {
     debugPrint('invalidateAppointmentRelatedProviders: $e');
