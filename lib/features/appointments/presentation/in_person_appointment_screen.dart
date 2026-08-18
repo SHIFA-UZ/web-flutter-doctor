@@ -143,6 +143,7 @@ class _InPersonAppointmentScreenState
 
   /// When true, inline AI scribe recorder is shown instead of the Start AI Notes button.
   bool _aiInlineVoiceCapture = false;
+  bool _awaitingScribe = false;
   final _form0252PanelKey = GlobalKey<AppointmentForm0252PanelState>();
   bool _docPanelCollapsed = false;
 
@@ -719,6 +720,7 @@ class _InPersonAppointmentScreenState
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       if (response.statusCode == 202) {
+        _awaitingScribe = true;
         ref.invalidate(
           consultationNotesForAppointmentProvider(widget.appointment.id),
         );
@@ -762,6 +764,40 @@ class _InPersonAppointmentScreenState
             backgroundColor: Colors.red,
           ),
         );
+      }
+    }
+  }
+
+  Future<ScribeStatusDto> _waitForScribeUi() async {
+    if (!mounted) {
+      return const ScribeStatusDto(status: 'none');
+    }
+    final l10n = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            const SizedBox(width: 16),
+            Expanded(child: Text(l10n.preparingAiDocumentation)),
+          ],
+        ),
+      ),
+    );
+    try {
+      return await waitForScribeReady(
+        api: ref.read(apiClientProvider),
+        appointmentId: widget.appointment.id,
+      );
+    } finally {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
       }
     }
   }
@@ -831,20 +867,7 @@ class _InPersonAppointmentScreenState
           '${now.hour.toString().padLeft(2, '0')}:'
           '${now.minute.toString().padLeft(2, '0')}';
 
-      // Include consultation notes (e.g. From Shifa AI) in the saved documentation
-      List<ConsultationNoteDto> consultationNotes = [];
-      try {
-        consultationNotes = await ref.read(
-          consultationNotesForAppointmentProvider(widget.appointment.id).future,
-        );
-      } catch (_) {}
-
       final l10nForPdf = AppLocalizations.of(context)!;
-      final consultationNotesBlock = consultationNotes.isEmpty
-          ? ''
-          : consultationNotes
-                .map((n) => '${l10nForPdf.fromShifaAi}:\n${n.displayText}')
-                .join('\n\n');
       final structuredAndFree = _documentationType == 'general'
           ? composeConsultationNotesPdf(
               l10n: l10nForPdf,
@@ -865,30 +888,12 @@ class _InPersonAppointmentScreenState
         dentalBilling = dentalState?.buildDentalPdfBilling(l10nForPdf);
       }
 
-      final combinedNotes = [
-        if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
-        if (structuredAndFree.isNotEmpty) structuredAndFree,
-        if (dentalNotesForPdf.isNotEmpty) dentalNotesForPdf,
-      ].join('\n\n').trim();
-
-      final hasNotes = combinedNotes.isNotEmpty;
       final hasBeforeImages = _beforeTreatmentImages.isNotEmpty;
       final hasAfterImages = _afterTreatmentImages.isNotEmpty;
       final dentalState = _dentalDocPanelKey.currentState;
       final dentalHasWork = _documentationType == 'dental' &&
           (dentalState?.hasBillableContent ?? false);
-
-      if (!hasNotes && !hasBeforeImages && !hasAfterImages && !dentalHasWork) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.noItemsToSave),
-            ),
-          );
-          Navigator.pop(context);
-        }
-        return;
-      }
+      final hasExtras = hasBeforeImages || hasAfterImages || dentalHasWork;
 
       final cidForComplete = ref.read(selectedClinicIdProvider);
 
@@ -927,17 +932,27 @@ class _InPersonAppointmentScreenState
           return;
         }
 
+        var completeResult = const CompleteAppointmentResult();
         try {
-          final completePayload = cidForComplete != null
-              ? <String, dynamic>{'clinicId': cidForComplete}
-              : <String, dynamic>{};
-          await api.put(
-            '/api/appointments/${widget.appointment.id}/complete',
-            completePayload,
+          completeResult = await completeAppointmentVisit(
+            api: api,
+            appointmentId: widget.appointment.id,
+            clinicId: cidForComplete,
+            doctorNotes: structuredAndFree,
+            awaitingScribe: _awaitingScribe,
           );
           debugPrint(
             'Appointment ${widget.appointment.id} marked as completed',
           );
+          try {
+            await invalidateAppointmentRelatedProviders(
+              ref,
+              clinicWorkspaceId: cidForComplete,
+              appointmentDay: widget.appointment.day,
+            );
+          } catch (e) {
+            debugPrint('Post-complete provider refresh failed (ignored): $e');
+          }
         } catch (e) {
           debugPrint('Error marking appointment as completed: $e');
           if (mounted) {
@@ -949,6 +964,16 @@ class _InPersonAppointmentScreenState
             );
           }
           return;
+        }
+
+        var scribeStatus = ScribeStatusDto(
+          status: completeResult.hasScribeNote ? 'ready' : 'none',
+          hasDocumentation: completeResult.hasDocumentation,
+          hasScribeNote: completeResult.hasScribeNote,
+        );
+        if ((completeResult.scribePending || _awaitingScribe) &&
+            !completeResult.hasScribeNote) {
+          scribeStatus = await _waitForScribeUi();
         }
 
         String? pdfSignatureBase64;
@@ -1048,12 +1073,59 @@ class _InPersonAppointmentScreenState
           }
         }
 
+        List<ConsultationNoteDto> consultationNotes = [];
+        List<DraftNoteDto> draftNotes = [];
+        try {
+          ref.invalidate(
+            consultationNotesForAppointmentProvider(widget.appointment.id),
+          );
+          ref.invalidate(
+            draftNotesForAppointmentProvider(widget.appointment.id),
+          );
+          consultationNotes = await ref.read(
+            consultationNotesForAppointmentProvider(widget.appointment.id)
+                .future,
+          );
+          draftNotes = await ref.read(
+            draftNotesForAppointmentProvider(widget.appointment.id).future,
+          );
+        } catch (_) {}
+
         final combinedNotesFinal = [
-          if (consultationNotesBlock.isNotEmpty) consultationNotesBlock,
-          if (structuredAndFree.isNotEmpty) structuredAndFree,
+          composeVisitDocumentationText(
+            scribeHeading: l10nForPdf.fromShifaAi,
+            doctorHeading: l10nForPdf.doctorNotesSection,
+            notes: consultationNotes,
+            drafts: draftNotes,
+            extraDoctorNotes: consultationNotes.any((n) => !n.isFromAi)
+                ? ''
+                : structuredAndFree,
+          ),
           if (dentalNotesForPdfFinal.isNotEmpty) dentalNotesForPdfFinal,
-        ].join('\n\n').trim();
+        ].where((t) => t.trim().isNotEmpty).join('\n\n').trim();
         final hasNotesFinal = combinedNotesFinal.isNotEmpty;
+
+        if (!hasNotesFinal && !hasExtras) {
+          if (mounted) {
+            final savedOnBackend = scribeStatus.hasDocumentation ||
+                completeResult.hasDocumentation ||
+                scribeStatus.hasScribeNote;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  savedOnBackend
+                      ? l10nForPdf.appointmentEndedDocumentationSaved
+                      : (completeResult.scribePending || _awaitingScribe
+                          ? l10nForPdf.aiDocumentationWillAppearShortly
+                          : l10nForPdf.noItemsToSave),
+                ),
+                backgroundColor: savedOnBackend ? Colors.green : null,
+              ),
+            );
+            Navigator.pop(context);
+          }
+          return;
+        }
 
         final languageCode = ref.read(languageProvider).locale.languageCode;
         final t = AppointmentPdfTranslations.forLanguage(languageCode);
@@ -1145,6 +1217,7 @@ class _InPersonAppointmentScreenState
           fileName: 'appointment_${now.millisecondsSinceEpoch}.pdf',
           title: title,
           category: 'APPOINTMENT_NOTE',
+          appointmentId: widget.appointment.id,
         );
 
         debugPrint('Combined PDF saved successfully');
@@ -1153,6 +1226,7 @@ class _InPersonAppointmentScreenState
           await invalidateAppointmentRelatedProviders(
             ref,
             clinicWorkspaceId: cidForComplete,
+            appointmentDay: widget.appointment.day,
           );
         } catch (e) {
           debugPrint('Post-complete provider refresh failed (ignored): $e');

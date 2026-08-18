@@ -7,6 +7,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'push_notification_web_stub.dart'
     if (dart.library.html) 'push_notification_web.dart' as web_push;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/localization/localization_asset_loader.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/features/notifications/presentation/notification_ui_helpers.dart';
 
 /// Centralized notification service (FCM + local) for the doctor app.
 class PushNotificationService {
@@ -26,8 +31,10 @@ class PushNotificationService {
 
   final Set<String> _readNotificationIds = {};
   final Map<String, Map<String, dynamic>> _webNotificationPayloads = {};
+  AppLocalizations? _cachedL10n;
 
   Future<void> initialize() async {
+    await _warmLocalizationCache();
     await _initializeLocalNotifications();
 
     if (!kIsWeb) {
@@ -159,11 +166,42 @@ class PushNotificationService {
 
     _onForegroundDataRefresh?.call(data);
 
+    final l10n = await _localizations();
+    final localized = localizedDoctorPushText(
+      data: data,
+      l10n: l10n,
+      fallbackTitle: message.notification?.title,
+      fallbackBody: message.notification?.body,
+    );
     await _showLocalNotification(
-      title: message.notification?.title ?? 'New Notification',
-      body: message.notification?.body ?? '',
+      title: localized.title,
+      body: localized.body,
       data: data,
     );
+  }
+
+  Future<void> _warmLocalizationCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tag = prefs.getString('doctor_language') ?? 'en';
+      final locale = localeFromPersistenceTag(tag);
+      await LocalizationAssetLoader.load(locale.languageCode);
+      _cachedL10n = AppLocalizations(locale);
+    } catch (_) {
+      _cachedL10n = AppLocalizations(const Locale('en'));
+    }
+  }
+
+  Future<AppLocalizations> _localizations() async {
+    if (_cachedL10n != null) return _cachedL10n!;
+    await _warmLocalizationCache();
+    return _cachedL10n ?? AppLocalizations(const Locale('en'));
+  }
+
+  /// Reload tray strings after the doctor changes app language.
+  Future<void> refreshLocalizationCache() async {
+    _cachedL10n = null;
+    await _warmLocalizationCache();
   }
 
   Future<void> _showLocalNotification({

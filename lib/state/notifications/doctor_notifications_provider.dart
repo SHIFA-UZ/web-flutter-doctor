@@ -11,19 +11,25 @@ final notificationAutoRefreshProvider = Provider.autoDispose<void>((ref) {});
 
 final doctorNotificationsProvider =
     FutureProvider.autoDispose<List<DoctorNotificationModel>>((ref) async {
-  if (ref.read(authTokenProvider) == null || ref.read(authTokenProvider)!.isEmpty) {
-    throw StateError('Not authenticated');
+  final token = ref.watch(authTokenProvider);
+  if (token == null || token.isEmpty) {
+    return const [];
   }
   final client = ref.watch(apiClientProvider);
+  // IndexedStack keeps this screen alive; the API client listen can lag the
+  // first token write, so stamp the JWT before fetching.
+  client.setToken(token);
   return fetchDoctorNotificationsWithClient(client: client);
 });
 
 final doctorNotificationsUnreadCountProvider =
     FutureProvider.autoDispose<int>((ref) async {
-  if (ref.read(authTokenProvider) == null || ref.read(authTokenProvider)!.isEmpty) {
+  final token = ref.watch(authTokenProvider);
+  if (token == null || token.isEmpty) {
     return 0;
   }
   final client = ref.watch(apiClientProvider);
+  client.setToken(token);
   return fetchDoctorNotificationsUnreadCountWithClient(client: client);
 });
 

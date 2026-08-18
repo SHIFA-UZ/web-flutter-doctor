@@ -84,6 +84,9 @@ class AppLocalizations {
       'metricReports': 'Reports',
       'metricFollowUp': 'Follow-up',
       'metricNext': 'Next',
+      'visitsCountLabel': 'visits',
+      'visitsCountLabelOne': 'visit',
+      'unreadCountLabel': 'unread',
       'onlineVisit': 'Online',
       'openPatientCard': 'Open chart',
       'noNextPatient': 'No upcoming appointments',
@@ -190,6 +193,7 @@ class AppLocalizations {
       'aiCommandCenterSubtitle': 'Proactive clinic intelligence',
       'aiInsightAppointments': 'You have {count} appointments remaining today.',
       'aiInsightNotifications': '{count} items require your attention.',
+      'aiInsightNotificationsOne': '1 item requires your attention.',
       'aiInsightTasks': '{count} follow-up tasks are pending.',
       'aiInsightAllClear': 'Your schedule looks clear. Ask me anything about your patients.',
       'review': 'Review',
@@ -1567,6 +1571,19 @@ class AppLocalizations {
           'Patient {name} booked an appointment.',
       'notificationMessageAppointmentReminder':
           'Your appointment is in about 1 hour. Please be ready.',
+      'notificationMessagePatientCancelled':
+          'Patient {name} cancelled their appointment.',
+      'notificationMessagePatientPaid':
+          'Patient {name} paid for their appointment.',
+      'notificationMessagePatientRescheduled':
+          'Patient {name} rescheduled their appointment.',
+      'notificationMessageChat': 'You have a new patient message.',
+      'notificationMessagePartnershipInvite':
+          'A doctor invited you to co-treat a patient.',
+      'notificationMessagePartnershipAccepted':
+          'Your therapy partnership invite was accepted.',
+      'notificationMessagePartnershipProgress':
+          'There is a new partnership progress update.',
       'patientBriefingTitle': 'Patient briefing',
       'patientBriefingError': 'Could not generate briefing.',
       'patientBriefingSources': 'Based on {n} document(s).',
@@ -1723,6 +1740,11 @@ class AppLocalizations {
       'noItemsToSave': 'No items to save. Appointment ended.',
       'appointmentEndedDocumentationSaved':
           'Appointment ended. Documentation saved.',
+      'preparingAiDocumentation':
+          'Preparing AI scribe documentation from the recording…',
+      'aiDocumentationWillAppearShortly':
+          'Appointment ended. AI documentation will appear shortly.',
+      'doctorNotesSection': 'Doctor notes',
       'errorSavingDocumentation': 'Error saving documentation',
       'errorPickingImage': 'Error picking image',
       'errorLoadingPatientId': 'Error loading patient ID',
@@ -1925,8 +1947,10 @@ class AppLocalizations {
       'allPatients': 'All patients',
       'patientsPageSubtitle': 'Manage your patient directory and clinical records',
       'searchPatientsHint': 'Search by name, phone, or ID…',
+      'searchPatientsDirectoryHint': 'Name, phone, or ID',
       'searchPatientsGlobalHint': 'Search all patients…',
       'patientsCountLabel': 'patients',
+      'patientsCountLabelOne': 'patient',
       'recent': 'Recent',
       'favorites': 'Favorites',
       'followUps': 'Follow-ups',
@@ -1938,7 +1962,7 @@ class AppLocalizations {
       'sortNameAsc': 'Name (A–Z)',
       'sortNameDesc': 'Name (Z–A)',
       'sortRecent': 'Recent activity',
-      'patientsPagination': 'Showing {{start}} to {{end}} of {{total}} patients',
+      'patientsPagination': 'Showing {{start}} to {{end}} of {{total}} {{noun}}',
       'newPatient': 'New patient',
       'overview': 'Overview',
       'medicalInfo': 'Medical info',
@@ -2135,6 +2159,7 @@ class AppLocalizations {
       'aiCommandCenterSubtitle': 'Proaktiv klinika tahlili',
       'aiInsightAppointments': 'Bugun yana {count} ta uchrashuvingiz bor.',
       'aiInsightNotifications': '{count} ta element sizning e\'tiboringizni talab qiladi.',
+      'aiInsightNotificationsOne': '1 ta element sizning e\'tiboringizni talab qiladi.',
       'aiInsightTasks': '{count} ta kuzatuv vazifasi kutilmoqda.',
       'aiInsightAllClear': 'Jadvalingiz aniq. Bemorlar haqida istalgan savol bering.',
       'review': 'Ko\'rib chiqish',
@@ -3404,6 +3429,19 @@ class AppLocalizations {
           'Bemor {name} uchrashuvni band qildi.',
       'notificationMessageAppointmentReminder':
           'Uchrashuvingiz taxminan 1 soatdan keyin. Tayyor bo\'ling.',
+      'notificationMessagePatientCancelled':
+          'Bemor {name} uchrashuvni bekor qildi.',
+      'notificationMessagePatientPaid':
+          'Bemor {name} uchrashuv uchun to\'lov qildi.',
+      'notificationMessagePatientRescheduled':
+          'Bemor {name} uchrashuv vaqtini o\'zgartirdi.',
+      'notificationMessageChat': 'Bemordan yangi xabar bor.',
+      'notificationMessagePartnershipInvite':
+          'Shifokor sizni bemorni birga davolashga taklif qildi.',
+      'notificationMessagePartnershipAccepted':
+          'Hamkorlik taklifingiz qabul qilindi.',
+      'notificationMessagePartnershipProgress':
+          'Hamkorlik bo\'yicha yangi yangilanish bor.',
       'patientBriefingTitle': 'Bemor brifingi',
       'patientBriefingError': 'Brifing yaratib bo\'lmadi.',
       'patientBriefingSources': '{n} ta hujjat asosida.',
@@ -3557,6 +3595,11 @@ class AppLocalizations {
       'noItemsToSave': 'Saqlash uchun elementlar yo\'q. Uchrashuv yakunlandi.',
       'appointmentEndedDocumentationSaved':
           'Uchrashuv yakunlandi. Hujjatlar saqlandi.',
+      'preparingAiDocumentation':
+          'Yozuvdan AI bayonnoma tayyorlanmoqda…',
+      'aiDocumentationWillAppearShortly':
+          'Uchrashuv yakunlandi. AI hujjatlari tez orada paydo bo\'ladi.',
+      'doctorNotesSection': 'Shifokor izohlari',
       'errorSavingDocumentation': 'Hujjatlarni saqlashda xatolik',
       'errorPickingImage': 'Rasmni tanlashda xatolik',
       'errorLoadingPatientId': 'Bemor ID ni yuklashda xatolik',
@@ -3808,6 +3851,9 @@ class AppLocalizations {
       'metricReports': 'Hisobot',
       'metricFollowUp': 'Kuzatuv',
       'metricNext': 'Keyingi',
+      'visitsCountLabel': 'tashrif',
+      'visitsCountLabelOne': 'tashrif',
+      'unreadCountLabel': 'o\'qilmagan',
       'onlineVisit': 'Onlayn',
       'openPatientCard': 'Kartani ochish',
       'noNextPatient': 'Yaqin uchrashuvlar yo\'q',
@@ -3825,8 +3871,10 @@ class AppLocalizations {
       'allPatients': 'Barcha bemorlar',
       'patientsPageSubtitle': 'Bemorlar ro\'yxati va klinik yozuvlarni boshqaring',
       'searchPatientsHint': 'Ism, telefon yoki ID bo\'yicha qidirish…',
+      'searchPatientsDirectoryHint': 'Ism, telefon yoki ID',
       'searchPatientsGlobalHint': 'Barcha bemorlarni qidirish…',
       'patientsCountLabel': 'bemor',
+      'patientsCountLabelOne': 'bemor',
       'recent': 'So\'nggi',
       'favorites': 'Sevimlilar',
       'followUps': 'Kuzatuvlar',
@@ -3838,7 +3886,7 @@ class AppLocalizations {
       'sortNameAsc': 'Ism (A–Z)',
       'sortNameDesc': 'Ism (Z–A)',
       'sortRecent': 'So\'nggi faoliyat',
-      'patientsPagination': '{{total}} bemorning {{start}}–{{end}} ko\'rsatilmoqda',
+      'patientsPagination': '{{total}} {{noun}}ning {{start}}–{{end}} ko\'rsatilmoqda',
       'newPatient': 'Yangi bemor',
       'overview': 'Umumiy',
       'medicalInfo': 'Tibbiy ma\'lumot',
@@ -4111,6 +4159,7 @@ class AppLocalizations {
       'aiCommandCenterSubtitle': 'Проактивная аналитика клиники',
       'aiInsightAppointments': 'Сегодня осталось {count} приёмов.',
       'aiInsightNotifications': '{count} элементов требуют внимания.',
+      'aiInsightNotificationsOne': '1 элемент требует внимания.',
       'aiInsightTasks': '{count} задач на контроль ожидают.',
       'aiInsightAllClear': 'Расписание свободно. Спросите о пациентах.',
       'review': 'Просмотр',
@@ -5280,6 +5329,19 @@ class AppLocalizations {
           'Пациент {name} записался на приём.',
       'notificationMessageAppointmentReminder':
           'Ваш приём примерно через 1 час. Пожалуйста, будьте готовы.',
+      'notificationMessagePatientCancelled':
+          'Пациент {name} отменил запись.',
+      'notificationMessagePatientPaid':
+          'Пациент {name} оплатил приём.',
+      'notificationMessagePatientRescheduled':
+          'Пациент {name} перенёс запись.',
+      'notificationMessageChat': 'Новое сообщение от пациента.',
+      'notificationMessagePartnershipInvite':
+          'Врач пригласил вас совместно вести пациента.',
+      'notificationMessagePartnershipAccepted':
+          'Ваше приглашение в партнёрство принято.',
+      'notificationMessagePartnershipProgress':
+          'Есть новое обновление по партнёрству.',
       'patientBriefingTitle': 'Брифинг пациента',
       'patientBriefingError': 'Не удалось создать брифинг.',
       'patientBriefingSources': 'На основе {n} документ(ов).',
@@ -5394,6 +5456,11 @@ class AppLocalizations {
       'noItemsToSave': 'Нет элементов для сохранения. Прием завершен.',
       'appointmentEndedDocumentationSaved':
           'Прием завершен. Документация сохранена.',
+      'preparingAiDocumentation':
+          'Готовим документацию AI-секретаря из записи…',
+      'aiDocumentationWillAppearShortly':
+          'Прием завершен. Документация ИИ появится в ближайшее время.',
+      'doctorNotesSection': 'Заметки врача',
       'errorSavingDocumentation': 'Ошибка при сохранении документации',
       'errorPickingImage': 'Ошибка при выборе изображения',
       'errorLoadingPatientId': 'Ошибка при загрузке ID пациента',
@@ -5738,6 +5805,9 @@ class AppLocalizations {
       'metricReports': 'Отчёты',
       'metricFollowUp': 'Контроль',
       'metricNext': 'След.',
+      'visitsCountLabel': 'визитов',
+      'visitsCountLabelOne': 'визит',
+      'unreadCountLabel': 'непрочитанных',
       'onlineVisit': 'Онлайн',
       'openPatientCard': 'Открыть карту',
       'noNextPatient': 'Нет ближайших записей',
@@ -5755,8 +5825,10 @@ class AppLocalizations {
       'allPatients': 'Все пациенты',
       'patientsPageSubtitle': 'Управление списком пациентов и клиническими записями',
       'searchPatientsHint': 'Поиск по имени, телефону или ID…',
+      'searchPatientsDirectoryHint': 'Имя, телефон или ID',
       'searchPatientsGlobalHint': 'Поиск по всем пациентам…',
       'patientsCountLabel': 'пациентов',
+      'patientsCountLabelOne': 'пациент',
       'recent': 'Недавние',
       'favorites': 'Избранные',
       'followUps': 'Наблюдение',
@@ -5768,7 +5840,7 @@ class AppLocalizations {
       'sortNameAsc': 'Имя (А–Я)',
       'sortNameDesc': 'Имя (Я–А)',
       'sortRecent': 'Недавняя активность',
-      'patientsPagination': 'Показано {{start}}–{{end}} из {{total}} пациентов',
+      'patientsPagination': 'Показано {{start}}–{{end}} из {{total}} {{noun}}',
       'newPatient': 'Новый пациент',
       'overview': 'Обзор',
       'medicalInfo': 'Мед. информация',
@@ -6475,6 +6547,19 @@ class AppLocalizations {
           .replaceAll('{name}', name);
   String get notificationMessageAppointmentReminder =>
       translate('notificationMessageAppointmentReminder');
+  String notificationMessagePatientCancelled(String name) =>
+      translate('notificationMessagePatientCancelled').replaceAll('{name}', name);
+  String notificationMessagePatientPaid(String name) =>
+      translate('notificationMessagePatientPaid').replaceAll('{name}', name);
+  String notificationMessagePatientRescheduled(String name) =>
+      translate('notificationMessagePatientRescheduled').replaceAll('{name}', name);
+  String get notificationMessageChat => translate('notificationMessageChat');
+  String get notificationMessagePartnershipInvite =>
+      translate('notificationMessagePartnershipInvite');
+  String get notificationMessagePartnershipAccepted =>
+      translate('notificationMessagePartnershipAccepted');
+  String get notificationMessagePartnershipProgress =>
+      translate('notificationMessagePartnershipProgress');
   String get patientBriefingTitle => translate('patientBriefingTitle');
   String get patientBriefingError => translate('patientBriefingError');
   String patientBriefingSources(int n) =>
@@ -6551,6 +6636,10 @@ class AppLocalizations {
   String get noItemsToSave => translate('noItemsToSave');
   String get appointmentEndedDocumentationSaved =>
       translate('appointmentEndedDocumentationSaved');
+  String get preparingAiDocumentation => translate('preparingAiDocumentation');
+  String get aiDocumentationWillAppearShortly =>
+      translate('aiDocumentationWillAppearShortly');
+  String get doctorNotesSection => translate('doctorNotesSection');
   String get errorSavingDocumentation => translate('errorSavingDocumentation');
   String get errorPickingImage => translate('errorPickingImage');
   String get errorLoadingPatientId => translate('errorLoadingPatientId');
@@ -6621,6 +6710,87 @@ class AppLocalizations {
       return 'Загружено $n файла.';
     }
     return 'Загружено $n файлов.';
+  }
+
+  /// Nominative noun for a patient count badge, e.g. "1 patient" / "2 patients".
+  String patientsCountBadge(int count) => '$count ${_patientsCountNoun(count)}';
+
+  String patientsPaginationLabel({
+    required int start,
+    required int end,
+    required int total,
+  }) {
+    final noun = locale.languageCode == 'ru'
+        ? _ruPatientNounAfterIz(total)
+        : _patientsCountNoun(total);
+    return translate('patientsPagination')
+        .replaceAll('{{start}}', '$start')
+        .replaceAll('{{end}}', '$end')
+        .replaceAll('{{total}}', '$total')
+        .replaceAll('{{noun}}', noun);
+  }
+
+  String _patientsCountNoun(int count) {
+    switch (locale.languageCode) {
+      case 'ru':
+        return _ruNominativePatientNoun(count);
+      case 'uz':
+        return translate('patientsCountLabel');
+      default:
+        return count == 1
+            ? translate('patientsCountLabelOne')
+            : translate('patientsCountLabel');
+    }
+  }
+
+  String _ruNominativePatientNoun(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) return 'пациент';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return 'пациента';
+    }
+    return 'пациентов';
+  }
+
+  /// Genitive after "из N …" in the pagination footer.
+  String _ruPatientNounAfterIz(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) return 'пациента';
+    return 'пациентов';
+  }
+
+  String visitsCountNoun(int count) => _visitsCountNoun(count);
+
+  String visitsCountBadge(int count) => '$count ${_visitsCountNoun(count)}';
+
+  String _visitsCountNoun(int count) {
+    switch (locale.languageCode) {
+      case 'ru':
+        return _ruNominativeVisitNoun(count);
+      case 'uz':
+        return translate('visitsCountLabel');
+      default:
+        return count == 1
+            ? translate('visitsCountLabelOne')
+            : translate('visitsCountLabel');
+    }
+  }
+
+  String _ruNominativeVisitNoun(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod10 == 1 && mod100 != 11) return 'визит';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return 'визита';
+    }
+    return 'визитов';
+  }
+
+  String aiInsightNotificationsLabel(int count) {
+    if (count == 1) return translate('aiInsightNotificationsOne');
+    return translate('aiInsightNotifications').replaceAll('{count}', '$count');
   }
 
   String get soapNotesSectionTitle => translate('soapNotesSectionTitle');

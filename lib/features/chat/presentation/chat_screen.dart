@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/state/chat/chat_actions.dart';
 import 'package:shifa_doc_app_v1/state/chat/chat_providers.dart';
 import 'package:characters/characters.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/widgets/text_message_bubble.dart';
@@ -605,7 +606,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         !useSinglePane || _selectedConversationId != null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.cardboard,
       body: Padding(
         padding: Responsive.screenPadding(context),
         child: useSinglePane

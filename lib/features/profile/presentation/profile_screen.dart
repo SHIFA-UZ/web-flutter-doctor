@@ -10,6 +10,7 @@ import 'package:shifa_doc_app_v1/state/profile/profile_actions.dart';
 import 'package:shifa_doc_app_v1/features/schedule/presentation/setup_schedule_screen.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -134,7 +135,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         }
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF5F5F5),
+          backgroundColor: AppColors.cardboard,
           body: Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
@@ -833,6 +834,7 @@ import 'package:shifa_doc_app_v1/state/auth/doctor_jwt_role_provider.dart';
 import 'package:shifa_doc_app_v1/features/schedule/presentation/setup_schedule_screen.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 import '../../../state/profile/profile_actions.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
@@ -1113,7 +1115,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             : null;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF5F5F5),
+          backgroundColor: AppColors.cardboard,
           body: Padding(
             padding: Responsive.screenPadding(context),
             child: PlatformLayout.useSinglePane(context)
@@ -2334,7 +2336,7 @@ class _ClinicStaffProfileShellState
             : '—';
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF5F5F5),
+          backgroundColor: AppColors.cardboard,
           body: Padding(
             padding: Responsive.screenPadding(context),
             child: ListView(

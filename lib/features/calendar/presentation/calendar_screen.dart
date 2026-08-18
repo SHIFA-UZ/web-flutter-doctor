@@ -1,4 +1,5 @@
 // lib/features/calendar/presentation/calendar_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -881,7 +882,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     final useSinglePane = PlatformLayout.useSinglePane(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.cardboard,
       body: Padding(
         padding: Responsive.screenPadding(context),
         child: useSinglePane && _selectedEntry != null
@@ -3123,6 +3124,8 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   int _initialFreeSlotStartRepr = -1;
   int _initialAppointmentEndRepr = -1;
   bool _seededFromDependencies = false;
+  Timer? _scribePollTimer;
+  int _scribePollTicks = 0;
 
   String _two(int n) => n.toString().padLeft(2, '0');
   String _fmtDate(BuildContext context, DateTime d) =>
@@ -3164,14 +3167,28 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
 
   bool get _isAppointment => widget.entry.type == EntryType.appointment;
   bool get _isBlocked => widget.entry.type == EntryType.blocked;
-  String get _statusUpper => (widget.entry.status ?? '').trim().toUpperCase();
+
+  /// Prefer the calendar cache so status updates after End Appointment.
+  CalendarEntry get _liveEntry {
+    final id = widget.entry.appointmentId;
+    if (id == null) return widget.entry;
+    final key = DateTime(widget.day.year, widget.day.month, widget.day.day);
+    final list = ref.read(calendarProvider)[key];
+    if (list == null) return widget.entry;
+    for (final e in list) {
+      if (e.appointmentId == id) return e;
+    }
+    return widget.entry;
+  }
+
+  String get _statusUpper => (_liveEntry.status ?? '').trim().toUpperCase();
   bool get _isCompletedStatus => _statusUpper == 'COMPLETED';
   bool get _isCancelledStatus => _statusUpper == 'CANCELLED';
   bool get _isInProgressStatus => _statusUpper == 'IN_PROGRESS';
   bool get _isVideoAppointment =>
       _isAppointment &&
-      (widget.entry.isVideo ||
-          widget.entry.location.toLowerCase().contains('video'));
+      (_liveEntry.isVideo ||
+          _liveEntry.location.toLowerCase().contains('video'));
 
   bool get _paymentPending =>
       (widget.entry.paymentStatus ?? '').trim().toUpperCase() == 'PENDING';
@@ -3420,6 +3437,11 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     if (!_seededFromDependencies) {
       _seededFromDependencies = true;
       _seedStateFromEntry();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _isAppointment) {
+          _refreshAppointmentDocs(startPoll: true);
+        }
+      });
     }
   }
 
@@ -3434,14 +3456,47 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
         oldWidget.initialBookingPlace != widget.initialBookingPlace;
     if (changed) {
       _seedStateFromEntry();
+      _refreshAppointmentDocs(startPoll: true);
     }
   }
 
   @override
   void dispose() {
+    _scribePollTimer?.cancel();
     _reasonCtrl.removeListener(_syncDirtyState);
     _reasonCtrl.dispose();
     super.dispose();
+  }
+
+  void _refreshAppointmentDocs({bool startPoll = false}) {
+    final id = widget.entry.appointmentId?.toString();
+    if (id != null && id.isNotEmpty) {
+      ref.invalidate(consultationNotesForAppointmentProvider(id));
+      ref.invalidate(draftNotesForAppointmentProvider(id));
+    }
+    final pid = widget.entry.patientId?.toString();
+    if (pid != null && pid.isNotEmpty) {
+      ref.invalidate(
+        patientDocumentsProvider(PatientDocumentsKey(patientId: pid)),
+      );
+    }
+    if (startPoll) {
+      _startScribePoll();
+    }
+  }
+
+  void _startScribePoll() {
+    _scribePollTimer?.cancel();
+    _scribePollTicks = 0;
+    if (!_isAppointment) return;
+    _scribePollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _scribePollTicks++;
+      if (!mounted || _scribePollTicks > 30) {
+        _scribePollTimer?.cancel();
+        return;
+      }
+      _refreshAppointmentDocs();
+    });
   }
 
   void _syncDirtyState() {
@@ -4063,23 +4118,25 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   }
 
   Appointment _toAppointment() {
+    final entry = _liveEntry;
     return Appointment(
-      id: widget.entry.appointmentId.toString(),
-      patientName: widget.entry.patientName ?? 'Patient',
-      patientId: widget.entry.patientId?.toString(),
-      location: widget.entry.location,
-      start: widget.entry.start,
-      end: widget.entry.end,
+      id: entry.appointmentId.toString(),
+      patientName: entry.patientName ?? 'Patient',
+      patientId: entry.patientId?.toString(),
+      location: entry.location,
+      start: entry.start,
+      end: entry.end,
       status:
-          AppointmentStatus.fromString(widget.entry.status) ??
+          AppointmentStatus.fromString(entry.status) ??
           AppointmentStatus.confirmed,
-      photoUrl: widget.entry.photoUrl,
-      reason: widget.entry.reason.isNotEmpty ? widget.entry.reason : null,
+      photoUrl: entry.photoUrl,
+      reason: entry.reason.isNotEmpty ? entry.reason : null,
+      day: DateTime(widget.day.year, widget.day.month, widget.day.day),
     );
   }
 
   Future<void> _openAppointmentWorkspace() async {
-    if (!_isAppointment || _isCancelledStatus) return;
+    if (!_isAppointment || _isCancelledStatus || _isCompletedStatus) return;
     final appt = _toAppointment();
     if (!mounted) return;
     await ShellScope.pushNamed(
@@ -4087,6 +4144,9 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       appt.isVideo ? AppRoutes.videoCall : AppRoutes.inPerson,
       arguments: appt,
     );
+    if (!mounted) return;
+    await refreshCalendarDay(ref, widget.day, _calendarTz());
+    _refreshAppointmentDocs(startPoll: true);
   }
 
   PatientDocument? _pickSavedAppointmentSummaryDoc(
@@ -4095,6 +4155,9 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
   ) {
     if (docs.isEmpty) return null;
 
+    final byCategory = docs
+        .where((d) => (d.category ?? '').toUpperCase() == 'APPOINTMENT_NOTE')
+        .toList();
     final titlePrefixes = <String>{
       l10n.appointmentDocumentation.toLowerCase(),
       'appointment documentation',
@@ -4102,11 +4165,13 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       'документация приёма',
     };
 
-    final candidates = docs.where((d) {
+    final byTitle = docs.where((d) {
       final title = d.title.trim().toLowerCase();
       if (title.isEmpty) return false;
       return titlePrefixes.any(title.contains);
     }).toList();
+
+    final candidates = byCategory.isNotEmpty ? byCategory : byTitle;
 
     if (candidates.isEmpty) return null;
 
@@ -4402,6 +4467,85 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     );
   }
 
+  Widget _buildAppointmentNotesPane({
+    required AsyncValue<List<ConsultationNoteDto>> notesAsync,
+    required AsyncValue<List<DraftNoteDto>> draftsAsync,
+    required Color brand,
+    required AppLocalizations l10n,
+    required String Function(String key, String fallback) t,
+  }) {
+    if ((notesAsync.isLoading && notesAsync.valueOrNull == null) &&
+        (draftsAsync.isLoading && draftsAsync.valueOrNull == null)) {
+      return const Center(
+        child: SizedBox(
+          height: 18,
+          width: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (notesAsync.hasError && draftsAsync.hasError) {
+      return Align(
+        alignment: Alignment.topLeft,
+        child: Text(
+          l10n.translate('failedToLoad') ?? 'Failed to load',
+          style: TextStyle(color: Colors.red.shade600),
+        ),
+      );
+    }
+
+    final notes = notesAsync.valueOrNull ?? const <ConsultationNoteDto>[];
+    final drafts = notesAsync.valueOrNull == null
+        ? (draftsAsync.valueOrNull ?? const <DraftNoteDto>[])
+        : notes.any((n) => n.isFromAi)
+            ? const <DraftNoteDto>[]
+            : (draftsAsync.valueOrNull ?? const <DraftNoteDto>[]);
+    final cards = <Widget>[
+      ...drafts.map(
+        (d) => _docCard(
+          title: t('fromShifaAi', 'From Shifa AI'),
+          subtitle: _compactDateTime(d.createdAt),
+          body: stripScribeTranscript(d.body),
+          brand: brand,
+          l10n: l10n,
+        ),
+      ),
+      ...notes.map(
+        (n) => _docCard(
+          title: n.isFromAi
+              ? t('fromShifaAi', 'From Shifa AI')
+              : t('appointmentNote', 'Appointment Note'),
+          subtitle: _compactDateTime(n.createdAt),
+          body: n.displayText,
+          brand: brand,
+          l10n: l10n,
+        ),
+      ),
+    ];
+
+    if (cards.isEmpty) {
+      final waiting = _isInProgressStatus || _isCompletedStatus;
+      return Align(
+        alignment: Alignment.topLeft,
+        child: Text(
+          waiting
+              ? t(
+                  'preparingAiDocumentation',
+                  'Preparing AI scribe documentation from the recording…',
+                )
+              : t('noSummaryYet', 'No summary yet'),
+          style: TextStyle(color: Colors.grey.shade600),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: cards.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, i) => cards[i],
+    );
+  }
+
   Widget _docCard({
     required String title,
     required String subtitle,
@@ -4475,6 +4619,9 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
     final consultationNotesAsync = appointmentId == null
         ? const AsyncValue.data(<ConsultationNoteDto>[])
         : ref.watch(consultationNotesForAppointmentProvider(appointmentId));
+    final draftNotesAsync = appointmentId == null
+        ? const AsyncValue.data(<DraftNoteDto>[])
+        : ref.watch(draftNotesForAppointmentProvider(appointmentId));
     final patientId = widget.entry.patientId?.toString();
     final patientDocsAsync = patientId == null
         ? const AsyncValue.data(<PatientDocument>[])
@@ -4556,46 +4703,33 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       children: [
         Align(
           alignment: Alignment.centerLeft,
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _isAppointment
-                          ? t('appointmentDetails', 'Appointment Details')
-                          : _isBlocked
-                          ? (l10n.translate('blockTimeTitle') ?? 'Block time')
-                          : (l10n.translate('slotDetails') ?? 'Slot details'),
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.grey.shade900,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${_fmtDate(context, widget.day)} - ${_fmtTime(_effectiveBookingStart)} - ${_fmtTime(_detailHeaderEnd)}',
-                      style: TextStyle(
-                        color: subtleText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${t('durationLabelShort', 'Duration')}: ${_durationLabel(_effectiveBookingStart, _detailHeaderEnd)}',
-                      style: TextStyle(
-                        color: subtleText,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+              Padding(
+                // Leave room for the shell language toggle overlaid top-right.
+                padding: EdgeInsets.only(
+                  right: PlatformLayout.useSinglePane(context) ? 72 : 0,
+                ),
+                child: Text(
+                  _isAppointment
+                      ? t('appointmentDetails', 'Appointment Details')
+                      : _isBlocked
+                      ? (l10n.translate('blockTimeTitle') ?? 'Block time')
+                      : (l10n.translate('slotDetails') ?? 'Slot details'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.grey.shade900,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                    height: 1.2,
+                  ),
                 ),
               ),
-              if (_isAppointment)
+              if (_isAppointment) ...[
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -4604,6 +4738,24 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                     if (_isVideoAppointment) _buildPaymentChip(context),
                   ],
                 ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                '${_fmtDate(context, widget.day)} - ${_fmtTime(_effectiveBookingStart)} - ${_fmtTime(_detailHeaderEnd)}',
+                style: TextStyle(
+                  color: subtleText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${t('durationLabelShort', 'Duration')}: ${_durationLabel(_effectiveBookingStart, _detailHeaderEnd)}',
+                style: TextStyle(
+                  color: subtleText,
+                  fontSize: 11,
+                ),
+              ),
             ],
           ),
         ),
@@ -4713,8 +4865,10 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                       widget.entry.appointmentId ?? widget.entry.startAtUtc,
                     ),
                     initiallyExpanded: _showAiSummary,
-                    onExpansionChanged: (v) =>
-                        setState(() => _showAiSummary = v),
+                    onExpansionChanged: (v) {
+                      setState(() => _showAiSummary = v);
+                      if (v) _refreshAppointmentDocs(startPoll: true);
+                    },
                     title: Text(
                       t('aiDocumentation', aiDocsFallback),
                       style: TextStyle(
@@ -4749,64 +4903,12 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
                               height: 280,
                               child: TabBarView(
                                 children: [
-                                  consultationNotesAsync.when(
-                                    data: (notes) {
-                                      if (notes.isEmpty) {
-                                        return Align(
-                                          alignment: Alignment.topLeft,
-                                          child: Text(
-                                            t('noSummaryYet', 'No summary yet'),
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return ListView.separated(
-                                        itemCount: notes.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 8),
-                                        itemBuilder: (context, i) {
-                                          final n = notes[i];
-                                          return _docCard(
-                                            title: n.isFromAi
-                                                ? t(
-                                                    'fromShifaAi',
-                                                    'From Shifa AI',
-                                                  )
-                                                : t(
-                                                    'appointmentNote',
-                                                    'Appointment Note',
-                                                  ),
-                                            subtitle: _compactDateTime(
-                                              n.createdAt,
-                                            ),
-                                            body: n.displayText,
-                                            brand: brand,
-                                            l10n: l10n,
-                                          );
-                                        },
-                                      );
-                                    },
-                                    loading: () => const Center(
-                                      child: SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    ),
-                                    error: (_, __) => Align(
-                                      alignment: Alignment.topLeft,
-                                      child: Text(
-                                        l10n.translate('failedToLoad') ??
-                                            'Failed to load',
-                                        style: TextStyle(
-                                          color: Colors.red.shade600,
-                                        ),
-                                      ),
-                                    ),
+                                  _buildAppointmentNotesPane(
+                                    notesAsync: consultationNotesAsync,
+                                    draftsAsync: draftNotesAsync,
+                                    brand: brand,
+                                    l10n: l10n,
+                                    t: t,
                                   ),
                                   patientDocsAsync.when(
                                     data: (docs) {

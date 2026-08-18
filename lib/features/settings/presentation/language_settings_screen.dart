@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
+import 'package:shifa_doc_app_v1/core/services/push_notification_service.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 
@@ -30,12 +33,12 @@ class LanguageSettingsScreen extends ConsumerWidget {
     final brand = AppColors.primaryTeal;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cardboard,
       appBar: AppBar(
         leading: appBarBackLeading(context),
         automaticallyImplyLeading: false,
         title: Text(l10n.selectLanguage),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.cardboard,
         foregroundColor: Colors.black,
         elevation: 0,
       ),
@@ -49,7 +52,7 @@ class LanguageSettingsScreen extends ConsumerWidget {
           return Material(
             color: selected
                 ? brand.withValues(alpha: 0.08)
-                : Colors.grey.shade50,
+                : AppColors.card,
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
@@ -58,6 +61,7 @@ class LanguageSettingsScreen extends ConsumerWidget {
                 await ref
                     .read(languageProvider.notifier)
                     .setLanguage(localeFromPersistenceTag(option.tag));
+                unawaited(PushNotificationService().refreshLocalizationCache());
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(l10n.languageChanged)),

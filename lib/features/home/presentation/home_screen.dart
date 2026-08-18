@@ -13,7 +13,6 @@ import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_analyti
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_attention_center.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_clinical_workflow.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_header.dart';
-import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_reminders_panel.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_search_overlay.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
@@ -71,8 +70,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           selectedAppointmentId: _selectedAppointmentId,
           onPatientChanged: (v) => setState(() => _selectedPatientId = v),
         ),
-        const SizedBox(height: AppDesignSystem.sectionGap),
-        const HomeRemindersPanel(),
         const SizedBox(height: AppDesignSystem.sectionGap),
         const HomeAttentionCenter(),
         const SizedBox(height: AppDesignSystem.sectionGap),

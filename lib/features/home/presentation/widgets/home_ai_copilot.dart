@@ -243,9 +243,7 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
     if (unread > 0) {
       insights.add(_AiInsight(
         icon: Icons.mark_email_unread_outlined,
-        text: l10n.translate('aiInsightNotifications')?.replaceAll(
-                '{count}', unread.toString()) ??
-            '$unread items require your attention.',
+        text: l10n.aiInsightNotificationsLabel(unread),
         action: l10n.translate('review') ?? 'Review',
         onTap: () => ref
             .read(shellProvider.notifier)

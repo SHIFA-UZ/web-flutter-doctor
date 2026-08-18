@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
 import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
@@ -76,7 +77,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     final compactToolbar = PlatformLayout.useCompactToolbar(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.cardboard,
       appBar: AppBar(
         leading: appBarBackLeading(context),
         automaticallyImplyLeading: false,

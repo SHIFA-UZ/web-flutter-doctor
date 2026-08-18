@@ -11,6 +11,7 @@ import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
+import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 /// Notifications screen for the doctor app.
 /// Product-grade UI: grouped by date, semantic colors, cards, actions, filters.
@@ -27,10 +28,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final doctorTimeZone = ref
-        .watch(profileAllProvider)
-        .valueOrNull
-        ?.profile['timeZone'] as String?;
+    final doctorTimeZone = ref.watch(profileAllProvider).maybeWhen(
+          data: (profile) => profile.profile['timeZone'] as String?,
+          orElse: () => null,
+        );
     final notificationsAsync = ref.watch(doctorNotificationsProvider);
     final unreadCountAsync = ref.watch(doctorNotificationsUnreadCountProvider);
     final controller = ref.read(doctorNotificationsControllerProvider);
@@ -40,6 +41,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final showRouteBack = appCanPop(context);
 
     return Scaffold(
+      backgroundColor: AppColors.cardboard,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -226,7 +228,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Center(
+                error: (err, _) {
+                  final raw = err.toString();
+                  final hideTechnical = raw.contains('Not authenticated') ||
+                      raw.contains('Unauthorized') ||
+                      raw.startsWith('Bad state:');
+                  return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
@@ -239,15 +246,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           style: Theme.of(context).textTheme.bodyMedium,
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          err.toString(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: Colors.grey.shade600),
-                          textAlign: TextAlign.center,
-                        ),
+                        if (!hideTechnical) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            raw,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: Colors.grey.shade600),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         ShifaSecondaryButton(
                           label: l10n.retry,
@@ -256,7 +265,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       ],
                     ),
                   ),
-                ),
+                  );
+                },
               ),
             ),
           ],

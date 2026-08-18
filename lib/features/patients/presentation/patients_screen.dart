@@ -62,7 +62,9 @@ import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patien
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_helpers.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_overview.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patients_directory_panel.dart';
+import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
+import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
 
 part 'patient_detail_panel.dart';
 
@@ -666,6 +668,38 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
         clinicId: widget.clinicWorkspaceId,
       );
 
+  Future<void> _reloadPatients({bool showFeedback = false}) async {
+    try {
+      await ref.read(patientsProvider.notifier).loadPatients();
+      if (!mounted) return;
+      final id = _selectedId;
+      if (id != null) {
+        ref.refresh(patientDocumentsProvider(_docKey(id)));
+      }
+      if (showFeedback) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.translate('listRefreshed') ?? 'Patient list refreshed',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (showFeedback && mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.error}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -737,6 +771,12 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
     final brand = Theme.of(context).colorScheme.primary;
     final useSinglePane = PlatformLayout.useSinglePane(context);
 
+    ref.listen<int>(shellProvider, (prev, next) {
+      if (next == DoctorShellTab.patients && prev != DoctorShellTab.patients) {
+        _reloadPatients();
+      }
+    });
+
     ref.listen<List<Patient>>(patientsProvider, (prev, next) {
       if (!mounted || useSinglePane) return;
 
@@ -799,31 +839,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                 favoriteIds: _favoriteIds,
                 onSelect: _handlePatientSelection,
                 onCreatePatient: () => _openCreatePatientModal(context),
-                onRefresh: () async {
-                  try {
-                    await ref.read(patientsProvider.notifier).loadPatients();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            l10n.translate('listRefreshed') ??
-                                'Patient list refreshed',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${l10n.error}: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
+                onRefresh: () => _reloadPatients(showFeedback: true),
                 ),
               );
             }
@@ -839,31 +855,7 @@ class _PatientsScreenState extends ConsumerState<PatientsScreen> {
                     favoriteIds: _favoriteIds,
                     onSelect: _handlePatientSelection,
                     onCreatePatient: () => _openCreatePatientModal(context),
-                    onRefresh: () async {
-                      try {
-                        await ref.read(patientsProvider.notifier).loadPatients();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                l10n.translate('listRefreshed') ??
-                                    'Patient list refreshed',
-                              ),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${l10n.error}: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    onRefresh: () => _reloadPatients(showFeedback: true),
                   ),
                 ),
                 const SizedBox(width: AppDesignSystem.sectionGap),

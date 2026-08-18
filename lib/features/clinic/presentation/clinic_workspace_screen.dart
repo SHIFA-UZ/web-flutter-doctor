@@ -153,7 +153,7 @@ class _ClinicWorkspaceScreenState extends ConsumerState<ClinicWorkspaceScreen>
               },
             ),
             Material(
-              color: Colors.white,
+              color: AppColors.cardboard,
               child: TabBar(
                 controller: _tabController,
                 isScrollable: true,

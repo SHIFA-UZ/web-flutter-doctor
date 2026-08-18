@@ -129,31 +129,12 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.patients,
-                            style: AppDesignSystem.display(context).copyWith(
-                              fontSize: 22,
-                            ),
-                          ),
-                        ),
-                        _CountBadge(count: total),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.translate('patientsPageSubtitle') ??
-                          'Manage patient records, communications and clinical data.',
-                      style: AppDesignSystem.body2(context),
-                    ),
+                    _DirectoryHeaderTitle(total: total, fontSize: 22),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _searchCtrl,
                       decoration: InputDecoration(
-                        hintText: l10n.translate('searchPatientsGlobalHint') ??
-                            'Search patients, phone, ID...',
+                        hintText: l10n.translate('searchPatientsDirectoryHint'),
                         prefixIcon: const Icon(Icons.search, size: 20),
                         filled: true,
                         fillColor: AppDesignSystem.backgroundSecondary,
@@ -294,91 +275,23 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  l10n.patients,
-                                  style: AppDesignSystem.display(context).copyWith(
-                                    fontSize: 24,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              _CountBadge(count: total),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            l10n.translate('patientsPageSubtitle') ??
-                                'Manage patient records, communications and clinical data.',
-                            style: AppDesignSystem.body2(context),
-                          ),
-                        ],
-                      ),
+                    _DirectoryHeaderTitle(total: total, fontSize: 24),
+                    const Spacer(),
+                    _FilterButton(
+                      activeFilter: _statusFilter,
+                      brand: brand,
+                      onChanged: (value) => setState(() {
+                        _statusFilter = value;
+                        _page = 0;
+                      }),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 3,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _searchCtrl,
-                              decoration: InputDecoration(
-                                hintText: l10n.translate('searchPatientsGlobalHint') ??
-                                    'Search patients, phone, ID...',
-                                prefixIcon: const Icon(Icons.search, size: 20),
-                                filled: true,
-                                fillColor: AppDesignSystem.backgroundSecondary,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide:
-                                      BorderSide(color: AppDesignSystem.border),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide:
-                                      BorderSide(color: AppDesignSystem.border),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide(color: brand, width: 1.5),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _FilterButton(
-                            activeFilter: _statusFilter,
-                            brand: brand,
-                            onChanged: (value) =>
-                                setState(() {
-                                  _statusFilter = value;
-                                  _page = 0;
-                                }),
-                          ),
-                          const SizedBox(width: 8),
-                          ShifaPrimaryButton(
-                            onPressed: widget.onCreatePatient,
-                            icon: Icons.person_add_outlined,
-                            label: l10n.translate('newPatient') ?? 'New Patient',
-                          ),
-                        ],
-                      ),
+                    const SizedBox(width: 8),
+                    ShifaPrimaryButton(
+                      onPressed: widget.onCreatePatient,
+                      icon: Icons.person_add_outlined,
+                      label: l10n.translate('newPatient') ?? 'New Patient',
                     ),
                   ],
                 ),
@@ -395,8 +308,7 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
                       child: TextField(
                         controller: _searchCtrl,
                         decoration: InputDecoration(
-                          hintText: l10n.translate('searchPatientsHint') ??
-                              'Search patients...',
+                          hintText: l10n.translate('searchPatientsDirectoryHint'),
                           prefixIcon: const Icon(Icons.search, size: 20),
                           filled: true,
                           fillColor: AppDesignSystem.backgroundSecondary,
@@ -477,6 +389,32 @@ class _PatientsDirectoryPanelState extends State<PatientsDirectoryPanel> {
   }
 }
 
+class _DirectoryHeaderTitle extends StatelessWidget {
+  const _DirectoryHeaderTitle({
+    required this.total,
+    required this.fontSize,
+  });
+
+  final int total;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.patients,
+          style: AppDesignSystem.display(context).copyWith(fontSize: fontSize),
+        ),
+        const SizedBox(height: 8),
+        _CountBadge(count: total),
+      ],
+    );
+  }
+}
+
 class _CountBadge extends StatelessWidget {
   const _CountBadge({required this.count});
 
@@ -492,7 +430,7 @@ class _CountBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        '$count ${l10n.translate('patientsCountLabel') ?? 'patients'}',
+        l10n.patientsCountBadge(count),
         style: AppDesignSystem.caption(context).copyWith(
           color: AppDesignSystem.textSecondary,
           fontWeight: FontWeight.w600,
@@ -802,11 +740,11 @@ class _DirectoryPagination extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final label = (l10n.translate('patientsPagination') ??
-            'Showing {{start}} to {{end}} of {{total}} patients')
-        .replaceAll('{{start}}', '$start')
-        .replaceAll('{{end}}', '$end')
-        .replaceAll('{{total}}', '$total');
+    final label = l10n.patientsPaginationLabel(
+      start: start,
+      end: end,
+      total: total,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
