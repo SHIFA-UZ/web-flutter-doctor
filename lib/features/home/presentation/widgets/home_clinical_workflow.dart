@@ -153,6 +153,7 @@ class _HomeClinicalWorkflowState extends ConsumerState<HomeClinicalWorkflow> {
         ),
         const SizedBox(height: AppDesignSystem.sectionGap),
 
+        // Next patient hero — remaining today, otherwise next upcoming day.
         if (appointmentsAsync.isLoading || upcomingAsync.isLoading)
           const DashboardSkeleton(height: 180, lines: 4)
         else if (hero != null)
