@@ -12,7 +12,7 @@
 	<string>manual</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>com.shifa.doctorapp</key>
+		<key>uz.shifa.doc</key>
 		<string>Shifa Doctor AppStore</string>
 	</dict>
 	<key>uploadBitcode</key>

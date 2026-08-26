@@ -183,7 +183,7 @@ jobs:
           echo "  iOS TestFlight Deployment Successful"
           echo "============================================="
           echo "  App: Shifa Doctor"
-          echo "  Bundle ID: com.shifa.doctorapp"
+          echo "  Bundle ID: uz.shifa.doc"
           echo "  Version: ${{ steps.version.outputs.version_name }}"
           echo "  Build: ${{ steps.version.outputs.build_number }}"
           echo "============================================="
