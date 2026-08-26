@@ -26,6 +26,61 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Runs first, before the ~25 minute build, so bad credentials fail in
+      # under a minute instead of at the upload step.
+      - name: Verify App Store Connect credentials
+        env:
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+
+          # GitHub stores secrets verbatim, so a stray newline from copy/paste
+          # survives into the JWT `kid`/`iss` claims and Apple answers 401 —
+          # indistinguishable from a wrong key, and invisible because the value
+          # is masked in logs. Trim before anything else uses these.
+          ASC_KEY_ID=$(printf '%s' "$API_KEY_ID" | tr -d '[:space:]')
+          ASC_ISSUER_ID=$(printf '%s' "$API_ISSUER_ID" | tr -d '[:space:]')
+          echo "::add-mask::$ASC_KEY_ID"
+          echo "::add-mask::$ASC_ISSUER_ID"
+
+          if [ "${#API_KEY_ID}" -ne "${#ASC_KEY_ID}" ]; then
+            echo "::warning::APP_STORE_CONNECT_KEY_ID contained whitespace (trimmed)"
+          fi
+          if [ "${#API_ISSUER_ID}" -ne "${#ASC_ISSUER_ID}" ]; then
+            echo "::warning::APP_STORE_CONNECT_ISSUER_ID contained whitespace (trimmed)"
+          fi
+
+          mkdir -p ~/private_keys
+          ASC_P8_PATH="$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+          # Accept the secret either as raw PEM or base64-wrapped PEM.
+          if printf '%s' "$API_KEY_CONTENT" | grep -q 'BEGIN PRIVATE KEY'; then
+            printf '%s\n' "$API_KEY_CONTENT" > "$ASC_P8_PATH"
+          else
+            printf '%s' "$API_KEY_CONTENT" | tr -d '[:space:]' \
+              | base64 --decode > "$ASC_P8_PATH"
+          fi
+          chmod 600 "$ASC_P8_PATH"
+
+          if ! openssl pkey -in "$ASC_P8_PATH" -noout 2>/dev/null; then
+            echo "::error::APP_STORE_CONNECT_API_KEY_P8 is not a valid private key."
+            echo "Paste the whole AuthKey_<id>.p8 file including the BEGIN/END lines."
+            exit 1
+          fi
+          echo "p8 public key sha256: $(openssl pkey -in "$ASC_P8_PATH" -pubout \
+            -outform DER | shasum -a 256 | cut -d' ' -f1)"
+
+          echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
+          echo "ASC_ISSUER_ID=$ASC_ISSUER_ID" >> "$GITHUB_ENV"
+
+          APP_STORE_CONNECT_API_KEY_ID="$ASC_KEY_ID" \
+          APP_STORE_CONNECT_API_ISSUER_ID="$ASC_ISSUER_ID" \
+          ASC_P8_PATH="$ASC_P8_PATH" \
+          ASC_EXPECT_BUNDLE_ID=uz.shifa.doc \
+            python3 ios/scripts/verify_asc_api_key.py
+
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '26.0'
@@ -141,20 +196,11 @@ jobs:
             --build-name=${{ steps.version.outputs.version_name }} \
             --build-number=${{ steps.version.outputs.build_number }}
 
-      - name: Setup App Store Connect API key
-        env:
-          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
-        run: |
-          mkdir -p ~/private_keys
-          echo "$API_KEY_CONTENT" > ~/private_keys/AuthKey_${API_KEY_ID}.p8
-          chmod 600 ~/private_keys/AuthKey_${API_KEY_ID}.p8
-
       - name: Build, Sign and Upload to TestFlight with Fastlane
         working-directory: ios
         env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ env.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ env.ASC_ISSUER_ID }}
           VERSION_NUMBER: ${{ steps.version.outputs.version_name }}
           BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
         run: bundle exec fastlane beta
