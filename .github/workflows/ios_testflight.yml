@@ -79,14 +79,30 @@ jobs:
         with:
           xcode-version: '26.0'
 
-      - name: Install iOS platform
+      # The selected Xcode already ships the iphoneos SDK, which is all a
+      # --no-codesign device archive needs. Only fall back to -downloadPlatform
+      # if it is genuinely missing, and never fail the job over it: that command
+      # also installs the *simulator runtime*, which needs a CoreSimulator
+      # handshake that hosted runners refuse ("Unable to connect to simulator").
+      - name: Verify iOS platform SDK
         run: |
-          set -euo pipefail
-          echo "iOS SDKs before:"
+          set -uo pipefail
+          echo "Installed iOS SDKs:"
           xcodebuild -showsdks | grep -i ios || true
-          xcodebuild -downloadPlatform iOS
-          echo "iOS SDKs after:"
-          xcodebuild -showsdks | grep -i ios
+
+          if xcodebuild -showsdks | grep -q 'sdk iphoneos'; then
+            echo "iphoneos SDK present - nothing to download."
+            exit 0
+          fi
+
+          echo "::warning::No iphoneos SDK found; attempting -downloadPlatform iOS"
+          xcodebuild -downloadPlatform iOS || \
+            echo "::warning::-downloadPlatform iOS failed; continuing"
+
+          if ! xcodebuild -showsdks | grep -q 'sdk iphoneos'; then
+            echo "::error::No iphoneos SDK available - device build cannot proceed."
+            exit 1
+          fi
 
       - uses: subosito/flutter-action@v2
         with:
