@@ -78,6 +78,12 @@
 	<string>We need photo library access to save images from consultations</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We use your location to set your practice address on the map</string>
+	<!-- Required by App Store validation: the geolocator plugin references the
+	     always-authorization API even though the app only requests when-in-use. -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We use your location to set your practice address on the map</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We use your location to set your practice address on the map</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Use Face ID to unlock the Shifa Doctor app</string>
 </dict>
