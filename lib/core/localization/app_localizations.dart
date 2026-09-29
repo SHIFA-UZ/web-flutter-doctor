@@ -623,6 +623,7 @@ class AppLocalizations {
       'clinicPaymentMethodCard': 'Card',
       'clinicPaymentMethodTransfer': 'Transfer',
       'clinicPaymentMethodOther': 'Other',
+      'clinicPaymentMethodClick': 'Click',
       'clinicMembershipRoleOwner': 'Owner',
       'clinicMembershipRoleClinicAdmin': 'Clinic admin',
       'clinicMembershipRoleReceptionist': 'Receptionist',
@@ -2663,6 +2664,7 @@ class AppLocalizations {
       'clinicPaymentMethodCard': 'Karta',
       'clinicPaymentMethodTransfer': 'O\'tkazma',
       'clinicPaymentMethodOther': 'Boshqa',
+      'clinicPaymentMethodClick': 'Click',
       'clinicMembershipRoleOwner': 'Egasi',
       'clinicMembershipRoleClinicAdmin': 'Klinika administratori',
       'clinicMembershipRoleReceptionist': 'Resepsionist',
@@ -4669,6 +4671,7 @@ class AppLocalizations {
       'clinicPaymentMethodCard': 'Карта',
       'clinicPaymentMethodTransfer': 'Перевод',
       'clinicPaymentMethodOther': 'Другое',
+      'clinicPaymentMethodClick': 'Click',
       'clinicMembershipRoleOwner': 'Владелец',
       'clinicMembershipRoleClinicAdmin': 'Администратор клиники',
       'clinicMembershipRoleReceptionist': 'Регистратор',
@@ -6045,6 +6048,8 @@ class AppLocalizations {
         return translate('clinicPaymentMethodTransfer');
       case 'OTHER':
         return translate('clinicPaymentMethodOther');
+      case 'CLICK':
+        return translate('clinicPaymentMethodClick');
       default:
         return method;
     }
