@@ -20,11 +20,11 @@ class DoctorVoiceRecorderSession {
   /// Seconds for the last completed recording after [stop] (0 if none).
   int get lastRecordingDurationSeconds => _lastDurationSeconds;
 
-  /// dBFS → ~0..1 bar height.
+  /// dBFS → ~0..1 bar height. Web mics often report quieter peaks.
   static double dbToBarHeight(double db) {
     if (db.isNaN || db.isInfinite) return 0.1;
-    const floor = -55.0;
-    const ceil = -8.0;
+    final floor = kIsWeb ? -70.0 : -55.0;
+    final ceil = kIsWeb ? -12.0 : -8.0;
     if (db <= floor) return 0.08;
     if (db >= ceil) return 1.0;
     final t = (db - floor) / (ceil - floor);
@@ -39,13 +39,24 @@ class DoctorVoiceRecorderSession {
       return 'no_permission';
     }
     try {
+      // Ensure a clean start if a previous session left the recorder open.
+      if (await _recorder.isRecording()) {
+        try {
+          await _recorder.stop();
+        } catch (_) {}
+      }
+
       if (kIsWeb) {
+        // Prefer browser-native capture; wav path is more reliable for STT upload.
         await _recorder.start(
           const RecordConfig(
             encoder: AudioEncoder.wav,
-            bitRate: 64000,
+            bitRate: 128000,
             sampleRate: 16000,
             numChannels: 1,
+            autoGain: true,
+            echoCancel: true,
+            noiseSuppress: true,
           ),
           path: 'web_voice.wav',
         );
@@ -59,15 +70,28 @@ class DoctorVoiceRecorderSession {
             bitRate: 32000,
             sampleRate: 16000,
             numChannels: 1,
+            autoGain: true,
+            echoCancel: true,
+            noiseSuppress: true,
           ),
           path: _nativePath!,
         );
       }
 
+      if (!await _recorder.isRecording()) {
+        return 'start_failed';
+      }
+
       await _amplitudeSub?.cancel();
-      _amplitudeSub = _recorder.onAmplitudeChanged(const Duration(milliseconds: 82)).listen((amp) {
-        onLevel(dbToBarHeight(amp.current));
-      });
+      _amplitudeSub =
+          _recorder.onAmplitudeChanged(const Duration(milliseconds: 60)).listen(
+        (amp) {
+          // Prefer current; some web builds only update max.
+          final db = amp.current.isFinite ? amp.current : amp.max;
+          onLevel(dbToBarHeight(db));
+        },
+        onError: (_) {},
+      );
       _stopwatch
         ..reset()
         ..start();

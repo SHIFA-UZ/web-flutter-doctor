@@ -1,6 +1,7 @@
 // lib/features/calendar/presentation/calendar_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -3576,7 +3577,12 @@ class CalendarSlotDetailsPanelState extends ConsumerState<CalendarSlotDetailsPan
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(controller: controller, autofocus: true),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: submitOnEnter(() => Navigator.pop(ctx, controller.text)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

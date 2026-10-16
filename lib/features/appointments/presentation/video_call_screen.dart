@@ -48,6 +48,7 @@ import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/cons
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_document_upload_strip.dart';
 import 'package:shifa_doc_app_v1/features/appointments/presentation/widgets/consultation_soap_section.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
+import 'package:shifa_doc_app_v1/features/home/presentation/widgets/visit_facts_panel.dart';
 import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_documentation_professions.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_visit_documentation_panel.dart';
@@ -2612,9 +2613,20 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
       final draftNotesAsync = ref.watch(
         draftNotesForAppointmentProvider(widget.appointment.id),
       );
+      final appointmentIdInt = int.tryParse(widget.appointment.id);
+      final patientIdInt = patientId != null && patientId.isNotEmpty
+          ? int.tryParse(patientId)
+          : null;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (appointmentIdInt != null) ...[
+            VisitFactsPanel(
+              appointmentId: appointmentIdInt,
+              patientId: patientIdInt,
+            ),
+            const SizedBox(height: 8),
+          ],
           if (_notesSectionsExpanded) ...[
             // Show AI notes ONLY if 'ai' source selected
             if (_expandedNoteSource == 'ai') ...[

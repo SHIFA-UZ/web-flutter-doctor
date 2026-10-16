@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/providers/auth_providers.dart';
 
 /// OTP dialog used by doctor registration flow.
@@ -193,6 +194,8 @@ class _RegistrationOtpDialogState extends ConsumerState<RegistrationOtpDialog> {
             TextField(
               controller: _otpCtrl,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              onSubmitted: submitOnEnter(_isLoading ? null : _onSubmit),
               maxLength: 6,
               decoration: const InputDecoration(
                 hintText: '000000',

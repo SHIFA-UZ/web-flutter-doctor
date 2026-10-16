@@ -89,10 +89,42 @@ String normalizedTranscriptionLanguageHint(WidgetRef ref) {
   return 'uz';
 }
 
+class DoctorTranscriptionResult {
+  const DoctorTranscriptionResult({
+    required this.text,
+    this.language,
+  });
+
+  final String text;
+  /// ISO-ish code from the model when available: en / ru / uz.
+  final String? language;
+}
+
+/// [languageHint]: `null` = auto-detect (omit field). Non-null forces Whisper language.
+/// Default keeps prior behaviour (UI locale) for clinical fields.
 Future<String> postDoctorTranscription({
   required WidgetRef ref,
   required Uint8List fileBytes,
   required String fileName,
+  String? languageHint,
+  bool autoDetectLanguage = false,
+}) async {
+  final result = await postDoctorTranscriptionDetailed(
+    ref: ref,
+    fileBytes: fileBytes,
+    fileName: fileName,
+    languageHint: languageHint,
+    autoDetectLanguage: autoDetectLanguage,
+  );
+  return result.text;
+}
+
+Future<DoctorTranscriptionResult> postDoctorTranscriptionDetailed({
+  required WidgetRef ref,
+  required Uint8List fileBytes,
+  required String fileName,
+  String? languageHint,
+  bool autoDetectLanguage = false,
 }) async {
   final client = ref.read(apiClientProvider);
   final multipartFile = http.MultipartFile.fromBytes(
@@ -100,10 +132,15 @@ Future<String> postDoctorTranscription({
     fileBytes,
     filename: fileName,
   );
+  final fields = <String, String>{};
+  if (!autoDetectLanguage) {
+    fields['languageHint'] =
+        languageHint ?? normalizedTranscriptionLanguageHint(ref);
+  }
   final streamed = await client.postMultipart(
     '/api/ai/transcribe',
     files: [multipartFile],
-    fields: {'languageHint': normalizedTranscriptionLanguageHint(ref)},
+    fields: fields.isEmpty ? null : fields,
   );
   final response = await http.Response.fromStream(streamed);
   if (response.statusCode == 403) {
@@ -121,7 +158,10 @@ Future<String> postDoctorTranscription({
     throw Exception(_extractApiErrorMessage(response));
   }
   final json = jsonDecode(response.body) as Map<String, dynamic>;
-  return ((json['text'] as String?) ?? '').trim();
+  return DoctorTranscriptionResult(
+    text: ((json['text'] as String?) ?? '').trim(),
+    language: (json['language'] as String?)?.trim().toLowerCase(),
+  );
 }
 
 Future<void> postDoctorTranscriptionFeedback({

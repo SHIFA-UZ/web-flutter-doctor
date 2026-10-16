@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_providers.dart';
 
 /// Receptionist invitations for the clinic (active invites from backend).
@@ -53,6 +54,8 @@ class ClinicInvitationsTab extends ConsumerWidget {
               labelText: l10n.translate('clinicInviteEmailLabel'),
             ),
             keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            onSubmitted: submitOnEnter(send),
           ),
           actions: [
             TextButton(

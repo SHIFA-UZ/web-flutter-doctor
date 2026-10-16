@@ -6,6 +6,7 @@ import 'package:shifa_doc_app_v1/core/services/app_lock_provider.dart';
 import 'package:shifa_doc_app_v1/core/services/app_lock_service.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 
 class AppLockSettingsSection extends ConsumerStatefulWidget {
   const AppLockSettingsSection({super.key});
@@ -56,6 +57,16 @@ class _AppLockSettingsSectionState extends ConsumerState<AppLockSettingsSection>
     final controller = TextEditingController();
     final confirmController = TextEditingController();
     final l10n = AppLocalizations.of(context)!;
+    BuildContext? dialogContext;
+    void savePin() {
+      final navContext = dialogContext;
+      if (navContext == null) return;
+      final pin = controller.text.trim();
+      if (!AppLockService.isValidPin(pin)) return;
+      if (confirm && pin != confirmController.text.trim()) return;
+      Navigator.pop(navContext, pin);
+    }
+
     return showScrollableFormDialog<String>(
       context: context,
       title: Text(l10n.translate('setPin') ?? 'Set PIN'),
@@ -67,6 +78,8 @@ class _AppLockSettingsSectionState extends ConsumerState<AppLockSettingsSection>
             keyboardType: TextInputType.number,
             obscureText: true,
             maxLength: AppLockService.maxPinLength,
+            textInputAction: confirm ? TextInputAction.next : TextInputAction.done,
+            onSubmitted: confirm ? null : submitOnEnter(savePin),
             decoration: InputDecoration(labelText: l10n.translate('pin') ?? 'PIN'),
           ),
           if (confirm)
@@ -75,27 +88,27 @@ class _AppLockSettingsSectionState extends ConsumerState<AppLockSettingsSection>
               keyboardType: TextInputType.number,
               obscureText: true,
               maxLength: AppLockService.maxPinLength,
+              textInputAction: TextInputAction.done,
+              onSubmitted: submitOnEnter(savePin),
               decoration: InputDecoration(
                 labelText: l10n.translate('confirmPin') ?? 'Confirm PIN',
               ),
             ),
         ],
       ),
-      actionsBuilder: (dialogContext) => [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: () {
-            final pin = controller.text.trim();
-            if (!AppLockService.isValidPin(pin)) return;
-            if (confirm && pin != confirmController.text.trim()) return;
-            Navigator.pop(dialogContext, pin);
-          },
-          child: Text(l10n.save),
-        ),
-      ],
+      actionsBuilder: (ctx) {
+        dialogContext = ctx;
+        return [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: savePin,
+            child: Text(l10n.save),
+          ),
+        ];
+      },
     );
   }
 

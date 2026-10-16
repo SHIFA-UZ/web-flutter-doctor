@@ -87,6 +87,19 @@
   </style>
 </head>
 <body>
+  <!-- pdfx requires pdf.js on window before Flutter plugin registration. -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs" type="module"></script>
+  <script type="module">
+    var { pdfjsLib } = globalThis;
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.mjs';
+    // Must be on window — module-scoped `var` is invisible to Dart @JS lookups.
+    window.pdfRenderOptions = {
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/cmaps/',
+      cMapPacked: true,
+    };
+    window.dispatchEvent(new Event('shifa-pdfjs-ready'));
+  </script>
   <!--
     Legacy Flutter web used an offline-first service worker that cache-first'd
     main.dart.js; that keeps stale bundles in normal browsers while incognito looks fine.
@@ -137,6 +150,36 @@
         document.body.appendChild(s);
       }
 
+      /** Wait for pdf.js so pdfx does not assert-crash on blank Chrome. */
+      function whenPdfjsReady(done) {
+        var finished = false;
+        function finish() {
+          if (finished || !window.pdfjsLib) return;
+          finished = true;
+          done();
+        }
+        if (window.pdfjsLib) {
+          finish();
+          return;
+        }
+        window.addEventListener('shifa-pdfjs-ready', finish, { once: true });
+        var tries = 0;
+        var poll = setInterval(function () {
+          tries += 1;
+          if (window.pdfjsLib) {
+            clearInterval(poll);
+            finish();
+          } else if (tries >= 50) {
+            clearInterval(poll);
+            console.error('pdf.js failed to load; Flutter may crash on blank screen.');
+            if (!finished) {
+              finished = true;
+              done();
+            }
+          }
+        }, 100);
+      }
+
       function registerFirebaseMessagingSw() {
         if (!('serviceWorker' in navigator)) {
           return;
@@ -148,6 +191,13 @@
           .catch(function (err) {
             console.log('Service Worker registration failed:', err);
           });
+      }
+
+      function startApp() {
+        whenPdfjsReady(function () {
+          loadFlutterBootstrap();
+          registerFirebaseMessagingSw();
+        });
       }
 
       clearLegacyFlutterPwa()
@@ -162,13 +212,11 @@
             }
           }
           sessionStorage.removeItem(k);
-          loadFlutterBootstrap();
-          registerFirebaseMessagingSw();
+          startApp();
         })
         .catch(function () {
           sessionStorage.removeItem('shifa_sw_purge_reload');
-          loadFlutterBootstrap();
-          registerFirebaseMessagingSw();
+          startApp();
         });
     })();
   </script>

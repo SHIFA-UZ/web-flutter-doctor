@@ -49,6 +49,8 @@ class FinancePaymentsViewState extends ConsumerState<FinancePaymentsView> {
         return Colors.purple;
       case 'CLICK':
         return Colors.teal;
+      case 'STRIPE':
+        return Colors.indigo;
       default:
         return Colors.grey;
     }
@@ -64,6 +66,8 @@ class FinancePaymentsViewState extends ConsumerState<FinancePaymentsView> {
         return Icons.account_balance;
       case 'CLICK':
         return Icons.phone_android;
+      case 'STRIPE':
+        return Icons.credit_card;
       default:
         return Icons.receipt_long;
     }

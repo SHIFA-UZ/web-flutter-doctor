@@ -5,6 +5,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_provider_params.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 class AdminCreateAdminScreen extends ConsumerStatefulWidget {
@@ -120,6 +121,7 @@ class _AdminCreateAdminScreenState extends ConsumerState<AdminCreateAdminScreen>
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _emailCtrl,
+                  textInputAction: TextInputAction.next,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: l10n.emailOrPhone,
@@ -137,6 +139,7 @@ class _AdminCreateAdminScreenState extends ConsumerState<AdminCreateAdminScreen>
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordCtrl,
+                  textInputAction: TextInputAction.next,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: l10n.password,
@@ -160,6 +163,7 @@ class _AdminCreateAdminScreenState extends ConsumerState<AdminCreateAdminScreen>
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _confirmPasswordCtrl,
+                  textInputAction: TextInputAction.next,
                   obscureText: _obscureConfirm,
                   decoration: InputDecoration(
                     labelText: l10n.confirmPassword,
@@ -184,6 +188,7 @@ class _AdminCreateAdminScreenState extends ConsumerState<AdminCreateAdminScreen>
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _firstNameCtrl,
+                  textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
                     labelText: l10n.firstName,
@@ -196,6 +201,8 @@ class _AdminCreateAdminScreenState extends ConsumerState<AdminCreateAdminScreen>
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _lastNameCtrl,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: submitOnEnter(_isLoading ? null : _submit),
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
                     labelText: l10n.lastName,

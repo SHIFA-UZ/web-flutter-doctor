@@ -9,6 +9,7 @@ import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/utils/error_formatter.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 class AdminTokensScreen extends ConsumerStatefulWidget {
@@ -199,70 +200,77 @@ class _AdminTokensScreenState extends ConsumerState<AdminTokensScreen> {
     final notesCtrl = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.translate('generateToken')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: expiresCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.translate('expiresInDaysOptional'),
-                hintText: '30',
+      builder: (context) {
+        Future<void> generate() async {
+          try {
+            final actions = ref.read(adminActionsProvider);
+            final expires = expiresCtrl.text.isEmpty
+                ? null
+                : int.tryParse(expiresCtrl.text);
+            await actions.generateToken(
+              expiresInDays: expires,
+              notes: notesCtrl.text.isEmpty ? null : notesCtrl.text,
+            );
+            if (context.mounted) {
+              Navigator.pop(context);
+              ref.invalidate(adminTokensProvider(
+                TokensProviderParams(
+                  consumed: _filterConsumed,
+                  page: _currentPage,
+                  size: 20,
+                ),
+              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.translate('tokenGeneratedSuccessfully'))),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${l10n.error}: $e')),
+              );
+            }
+          }
+        }
+
+        return AlertDialog(
+          title: Text(l10n.translate('generateToken')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: expiresCtrl,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: l10n.translate('expiresInDaysOptional'),
+                  hintText: '30',
+                ),
+                keyboardType: TextInputType.number,
               ),
-              keyboardType: TextInputType.number,
+              const SizedBox(height: 16),
+              TextField(
+                controller: notesCtrl,
+                textInputAction: TextInputAction.done,
+                onSubmitted: submitOnEnter(generate),
+                decoration: InputDecoration(
+                  labelText: l10n.translate('notesOptional'),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.cancel),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: notesCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.translate('notesOptional'),
-              ),
-              maxLines: 3,
+            ShifaPrimaryButton(
+              label: l10n.translate('generate'),
+              onPressed: generate,
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          ShifaPrimaryButton(
-            label: l10n.translate('generate'),
-            onPressed: () async {
-              try {
-                final actions = ref.read(adminActionsProvider);
-                final expires = expiresCtrl.text.isEmpty
-                    ? null
-                    : int.tryParse(expiresCtrl.text);
-                await actions.generateToken(
-                  expiresInDays: expires,
-                  notes: notesCtrl.text.isEmpty ? null : notesCtrl.text,
-                );
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ref.invalidate(adminTokensProvider(
-                    TokensProviderParams(
-                      consumed: _filterConsumed,
-                      page: _currentPage,
-                      size: 20,
-                    ),
-                  ));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.translate('tokenGeneratedSuccessfully'))),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${l10n.error}: $e')),
-                  );
-                }
-              }
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

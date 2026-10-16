@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 
 class AdminConfigScreen extends ConsumerWidget {
   const AdminConfigScreen({super.key});
@@ -89,44 +90,50 @@ class AdminConfigScreen extends ConsumerWidget {
     final controller = TextEditingController(text: currentValue);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${l10n.translate('editKey')} ${_formatConfigKey(key)}'),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: l10n.translate('value'),
-            border: const OutlineInputBorder(),
+      builder: (context) {
+        Future<void> save() async {
+          try {
+            final actions = ref.read(adminActionsProvider);
+            await actions.updateConfig(key, controller.text);
+            ref.invalidate(systemConfigProvider);
+            if (context.mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.configUpdated)),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${l10n.error}: $e')),
+              );
+            }
+          }
+        }
+
+        return AlertDialog(
+          title: Text('${l10n.translate('editKey')} ${_formatConfigKey(key)}'),
+          content: TextField(
+            controller: controller,
+            textInputAction: TextInputAction.done,
+            onSubmitted: submitOnEnter(save),
+            decoration: InputDecoration(
+              labelText: l10n.translate('value'),
+              border: const OutlineInputBorder(),
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          ShifaPrimaryButton(
-            label: l10n.save,
-            onPressed: () async {
-              try {
-                final actions = ref.read(adminActionsProvider);
-                await actions.updateConfig(key, controller.text);
-                ref.invalidate(systemConfigProvider);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.configUpdated)),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${l10n.error}: $e')),
-                  );
-                }
-              }
-            },
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.cancel),
+            ),
+            ShifaPrimaryButton(
+              label: l10n.save,
+              onPressed: save,
+            ),
+          ],
+        );
+      },
     );
   }
 }

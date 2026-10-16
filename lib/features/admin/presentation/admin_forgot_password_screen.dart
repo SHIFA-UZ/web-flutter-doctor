@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 
@@ -198,7 +199,7 @@ class _AdminForgotPasswordScreenState extends ConsumerState<AdminForgotPasswordS
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _onSendCode(),
+          onFieldSubmitted: submitOnEnter(_isLoading ? null : _onSendCode),
           decoration: InputDecoration(
             labelText: l10n.email,
             prefixIcon: const Icon(Icons.email_outlined),
@@ -234,7 +235,7 @@ class _AdminForgotPasswordScreenState extends ConsumerState<AdminForgotPasswordS
             LengthLimitingTextInputFormatter(6),
           ],
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _onVerifyCode(),
+          onFieldSubmitted: submitOnEnter(_isLoading ? null : _onVerifyCode),
           decoration: InputDecoration(
             labelText: l10n.enterOtp,
             prefixIcon: const Icon(Icons.pin_outlined),
@@ -265,6 +266,7 @@ class _AdminForgotPasswordScreenState extends ConsumerState<AdminForgotPasswordS
         TextFormField(
           controller: _passwordCtrl,
           obscureText: _obscurePassword,
+          textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             labelText: l10n.newPassword,
             prefixIcon: const Icon(Icons.lock_outline),
@@ -280,6 +282,8 @@ class _AdminForgotPasswordScreenState extends ConsumerState<AdminForgotPasswordS
         TextFormField(
           controller: _confirmCtrl,
           obscureText: _obscureConfirm,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: submitOnEnter(_isLoading ? null : _onResetPassword),
           decoration: InputDecoration(
             labelText: l10n.confirmPassword,
             prefixIcon: const Icon(Icons.lock_outline),

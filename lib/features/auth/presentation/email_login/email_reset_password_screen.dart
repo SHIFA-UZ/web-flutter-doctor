@@ -4,6 +4,7 @@ import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
@@ -113,6 +114,7 @@ class _EmailResetPasswordScreenState extends ConsumerState<EmailResetPasswordScr
                     TextFormField(
                       controller: _passwordCtrl,
                       obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: l10n.newPassword,
                         border: const OutlineInputBorder(),
@@ -127,6 +129,8 @@ class _EmailResetPasswordScreenState extends ConsumerState<EmailResetPasswordScr
                     TextFormField(
                       controller: _confirmCtrl,
                       obscureText: _obscureConfirm,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: submitOnEnter(_isLoading ? null : _onSubmit),
                       decoration: InputDecoration(
                         hintText: l10n.confirmPassword,
                         border: const OutlineInputBorder(),

@@ -5,6 +5,7 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/care_partnerships/data/care_partnership_repository.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
 
@@ -189,6 +190,8 @@ class _FindTherapyPartnerScreenState
                   labelText: l10n.translate('partnerInviteMessage'),
                 ),
                 maxLines: 2,
+                textInputAction: TextInputAction.send,
+                onSubmitted: submitOnEnter(_invite),
               ),
               const SizedBox(height: 8),
               FilledButton(

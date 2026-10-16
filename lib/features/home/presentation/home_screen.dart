@@ -8,7 +8,6 @@ import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/features/appointments/domain/appointment_models.dart';
 import 'package:shifa_doc_app_v1/features/home/application/home_dashboard_refresh.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_activity_feed.dart';
-import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_ai_copilot.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_analytics_section.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_attention_center.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_clinical_workflow.dart';
@@ -27,14 +26,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _selectedAppointmentId;
-  String? _selectedPatientId;
 
   void _onAppointmentSelected(Appointment appt) {
     setState(() {
       _selectedAppointmentId = appt.id;
-      if (appt.patientId != null) {
-        _selectedPatientId = appt.patientId.toString();
-      }
     });
   }
 
@@ -62,18 +57,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onAppointmentSelected: _onAppointmentSelected,
     );
 
-    final secondaryColumn = Column(
+    final insightsColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        HomeAiCopilot(
-          selectedPatientId: _selectedPatientId,
-          selectedAppointmentId: _selectedAppointmentId,
-          onPatientChanged: (v) => setState(() => _selectedPatientId = v),
-        ),
-        const SizedBox(height: AppDesignSystem.sectionGap),
-        const HomeAttentionCenter(),
-        const SizedBox(height: AppDesignSystem.sectionGap),
-        const HomeActivityFeed(),
+      children: const [
+        HomeAttentionCenter(),
+        SizedBox(height: AppDesignSystem.sectionGap),
+        HomeActivityFeed(),
       ],
     );
 
@@ -96,14 +85,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       if (useSinglePane) ...[
                         workflow,
                         SizedBox(height: AppDesignSystem.sectionGap),
-                        secondaryColumn,
+                        insightsColumn,
                       ] else
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(flex: 7, child: workflow),
                             const SizedBox(width: AppDesignSystem.sectionGap),
-                            Expanded(flex: 3, child: secondaryColumn),
+                            Expanded(flex: 3, child: insightsColumn),
                           ],
                         ),
                       SizedBox(height: AppDesignSystem.sectionGap),

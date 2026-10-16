@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/localization/locale_detection.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/providers/auth_providers.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/phone_login/reset_password_screen.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
@@ -189,6 +190,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   TextFormField(
                     controller: _otpCtrl,
                     keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: submitOnEnter(_isLoading ? null : _onSubmit),
                     maxLength: 6,
                     decoration: InputDecoration(
                       hintText: '000000',

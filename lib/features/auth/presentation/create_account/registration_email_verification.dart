@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 
 /// Sends OTP to [email] via backend and shows a dialog to enter it.
 /// Returns true only when OTP is successfully verified.
@@ -146,6 +147,8 @@ class _RegistrationEmailOtpDialogState
             TextField(
               controller: _otpCtrl,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              onSubmitted: submitOnEnter(_isLoading ? null : _onSubmit),
               maxLength: 6,
               decoration: const InputDecoration(
                 hintText: '000000',

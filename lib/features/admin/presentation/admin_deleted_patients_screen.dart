@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 
@@ -180,6 +181,7 @@ class _AdminDeletedPatientsScreenState extends ConsumerState<AdminDeletedPatient
                     TextField(
                       controller: _phoneCtrl,
                       keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         labelText: 'Phone (original)',
                         border: OutlineInputBorder(),
@@ -189,6 +191,7 @@ class _AdminDeletedPatientsScreenState extends ConsumerState<AdminDeletedPatient
                     TextField(
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         labelText: 'Email (original)',
                         border: OutlineInputBorder(),
@@ -198,6 +201,8 @@ class _AdminDeletedPatientsScreenState extends ConsumerState<AdminDeletedPatient
                     TextField(
                       controller: _userIdCtrl,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: submitOnEnter(_searchLoading ? null : _onSearch),
                       decoration: const InputDecoration(
                         labelText: 'User ID (optional)',
                         border: OutlineInputBorder(),

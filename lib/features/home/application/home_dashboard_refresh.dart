@@ -24,6 +24,10 @@ Future<void> refreshHomeDashboardOnTabFocus(dynamic ref) async {
   try {
     ref.invalidate(doctorNotificationsProvider);
     ref.invalidate(doctorNotificationsUnreadCountProvider);
+    // Also refresh schedule when returning to Home (e.g. after AI booking).
+    try {
+      await invalidateAppointmentRelatedProviders(ref);
+    } catch (_) {}
     try {
       await ref.read(tasksProvider.notifier).loadTasks();
     } catch (_) {}

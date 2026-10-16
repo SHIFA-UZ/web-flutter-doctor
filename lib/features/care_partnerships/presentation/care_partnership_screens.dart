@@ -4,6 +4,7 @@ import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/care_partnerships/data/care_partnership_repository.dart';
 import 'package:shifa_doc_app_v1/features/care_partnerships/presentation/find_therapy_partner_screen.dart';
 import 'package:shifa_doc_app_v1/features/shell/presentation/shell_scope.dart';
@@ -392,6 +393,8 @@ class _CarePartnershipDetailScreenState
                                   Expanded(
                                     child: TextField(
                                       controller: _progressCtrl,
+                                      textInputAction: TextInputAction.send,
+                                      onSubmitted: submitOnEnter(_postProgress),
                                       decoration: InputDecoration(
                                         hintText: l10n
                                             .translate('progressUpdateHint'),

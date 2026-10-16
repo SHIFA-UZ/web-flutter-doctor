@@ -6,6 +6,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/multiple_phone_fields.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/patients/domain/patient_models.dart';
 import 'package:shifa_doc_app_v1/state/patients/patient_actions.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
@@ -59,6 +60,7 @@ Future<Patient?> showCreatePatientSheet(
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameCtrl,
+                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText:
                         '${l10n.translate('fullName') ?? 'Full Name'} *',
@@ -72,11 +74,17 @@ Future<Patient?> showCreatePatientSheet(
                 const SizedBox(height: 12),
                 TextField(
                   controller: emailCtrl,
+                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(labelText: l10n.email),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: addressCtrl,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: submitOnEnter(() {
+                    if (nameCtrl.text.trim().isEmpty) return;
+                    Navigator.pop(ctx, true);
+                  }),
                   decoration: InputDecoration(labelText: l10n.address),
                 ),
                 const SizedBox(height: 12),
