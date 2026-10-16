@@ -32,6 +32,8 @@ class DoctorSpeechTextField extends ConsumerStatefulWidget {
     this.textStyle,
     this.validator,
     this.onChanged,
+    this.onFieldSubmitted,
+    this.textInputAction,
     this.focusNode,
     this.readOnly = false,
   });
@@ -56,6 +58,8 @@ class DoctorSpeechTextField extends ConsumerStatefulWidget {
   final TextStyle? textStyle;
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
+  final TextInputAction? textInputAction;
   final FocusNode? focusNode;
   final bool readOnly;
 
@@ -280,6 +284,8 @@ class _DoctorSpeechTextFieldState extends ConsumerState<DoctorSpeechTextField> {
       style: widget.textStyle,
       validator: widget.validator,
       onChanged: widget.onChanged,
+      onFieldSubmitted: widget.onFieldSubmitted,
+      textInputAction: widget.textInputAction,
       readOnly: widget.readOnly,
       decoration: mergedDecoration,
     );
@@ -333,6 +339,8 @@ class _DoctorSpeechTextFieldState extends ConsumerState<DoctorSpeechTextField> {
       style: widget.textStyle,
       validator: widget.validator,
       onChanged: widget.onChanged,
+      onFieldSubmitted: widget.onFieldSubmitted,
+      textInputAction: widget.textInputAction,
       readOnly: widget.readOnly,
       decoration: mergedDecoration,
     );

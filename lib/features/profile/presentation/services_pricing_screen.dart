@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_actions.dart';
 import 'package:shifa_doc_app_v1/state/locations/doctor_location_models.dart';
 
@@ -620,6 +621,7 @@ class _ServiceGroupsEditorDialogState extends State<_ServiceGroupsEditorDialog> 
                                         children: [
                                           TextField(
                                             controller: nameCtrl,
+                                            textInputAction: TextInputAction.next,
                                             decoration: InputDecoration(
                                               labelText: l10n.translate('groupName'),
                                             ),
@@ -627,6 +629,8 @@ class _ServiceGroupsEditorDialogState extends State<_ServiceGroupsEditorDialog> 
                                           TextField(
                                             controller: sortCtrl,
                                             keyboardType: TextInputType.number,
+                                            textInputAction: TextInputAction.done,
+                                            onSubmitted: submitOnEnter(() => Navigator.pop(c2, true)),
                                             decoration: InputDecoration(
                                               labelText: l10n.translate('sortOrder'),
                                             ),
@@ -690,6 +694,7 @@ class _ServiceGroupsEditorDialogState extends State<_ServiceGroupsEditorDialog> 
                   children: [
                     TextField(
                       controller: nameCtrl,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: l10n.translate('groupName'),
                       ),
@@ -697,6 +702,8 @@ class _ServiceGroupsEditorDialogState extends State<_ServiceGroupsEditorDialog> 
                     TextField(
                       controller: sortCtrl,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: submitOnEnter(() => Navigator.pop(c2, true)),
                       decoration: InputDecoration(
                         labelText: l10n.translate('sortOrder'),
                       ),

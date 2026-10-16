@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/providers/auth_providers.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/phone_login/otp_screen.dart';
 
@@ -202,6 +203,8 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                           child: TextFormField(
                             controller: _phoneCtrl,
                             keyboardType: TextInputType.phone,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: submitOnEnter(_isLoading ? null : _onContinue),
                             decoration: InputDecoration(
                               hintText: l10n.enterPhoneNumber,
                               border: const OutlineInputBorder(),

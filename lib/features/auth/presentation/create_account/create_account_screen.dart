@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/utils/password_validation.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/create_account/registration_email_verification.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/features/profile/presentation/searchable_timezone_dropdown.dart';
@@ -345,6 +346,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                   children: [
                     TextFormField(
                       controller: _passwordController,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: loc.password,
                         suffixIcon: IconButton(
@@ -373,6 +375,10 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _confirmPasswordController,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: submitOnEnter(
+                        _isSubmitting ? null : _confirmExistingPatientRegistration,
+                      ),
                       decoration: InputDecoration(
                         hintText: loc.confirmPassword,
                         suffixIcon: IconButton(
@@ -485,6 +491,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                   children: [
                     TextFormField(
                       controller: _firstNameController,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.firstName,
                       ),
@@ -493,6 +500,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _lastNameController,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.lastName,
                       ),
@@ -501,6 +509,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _emailController,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.email,
                       ),
@@ -517,6 +526,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _phoneController,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText:
                             '${AppLocalizations.of(context)!.phoneNumber} (${AppLocalizations.of(context)!.optional})',
@@ -527,6 +537,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.password,
                         suffixIcon: IconButton(
@@ -580,6 +591,8 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _confirmPasswordController,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: submitOnEnter(_isCheckingExisting ? null : _next),
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.confirmPassword,
                         suffixIcon: IconButton(

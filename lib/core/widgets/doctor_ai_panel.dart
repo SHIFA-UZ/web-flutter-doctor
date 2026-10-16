@@ -7,6 +7,7 @@ import '../../core/api/ai_message.dart';
 import '../../core/api/ai_api_provider.dart';
 import '../../core/widgets/ai_response_text.dart';
 import '../../core/providers/language_provider.dart';
+import '../../core/widgets/submit_on_enter.dart';
 
 class DoctorAiPanel extends ConsumerStatefulWidget {
   const DoctorAiPanel({super.key});
@@ -200,6 +201,8 @@ class _DoctorAiPanelState extends ConsumerState<DoctorAiPanel> {
             ),
           TextField(
             controller: _controller,
+            textInputAction: TextInputAction.send,
+            onSubmitted: submitOnEnter(_loading ? null : _ask),
             decoration: InputDecoration(
               hintText: 'Ask a clinical question',
               suffixIcon: IconButton(

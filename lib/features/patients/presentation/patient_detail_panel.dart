@@ -264,9 +264,17 @@ class _PatientDetailPanelState extends ConsumerState<PatientDetailPanel>
     final content = LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 760;
+        final patientIdInt = int.tryParse(p.id);
         final leftColumn = Column(
           children: [
             ClinicalSummaryCard(patient: p),
+            if (patientIdInt != null) ...[
+              const SizedBox(height: AppDesignSystem.sectionGap),
+              PatientVisitTimelineCard(
+                patientId: patientIdInt,
+                brand: brand,
+              ),
+            ],
             const SizedBox(height: AppDesignSystem.sectionGap),
             RecentActivityCard(
               activities: activities,

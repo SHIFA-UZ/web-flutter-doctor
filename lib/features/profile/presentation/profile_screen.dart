@@ -838,6 +838,7 @@ import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 import '../../../state/profile/profile_actions.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'location_picker_widget.dart';
@@ -2041,6 +2042,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: _serviceCtrl,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: submitOnEnter(() async {
+                            if (_serviceCtrl.text.trim().isEmpty) return;
+                            final newService = _serviceCtrl.text.trim();
+                            final updatedServices = List<String>.from(services)..add(newService);
+                            _cachedServices = updatedServices;
+                            _serviceCtrl.clear();
+                            final servicesJson = jsonEncode(updatedServices);
+                            await patchProfile(ref, {'services': servicesJson});
+                            ref.refresh(profileAllProvider);
+                            setState(() {});
+                          }),
                           decoration: InputDecoration(
                             hintText: AppLocalizations.of(context)!.addService,
                           ),
@@ -2416,6 +2429,7 @@ class _ClinicStaffProfileShellState
                           TextFormField(
                             controller: _currentPassCtrl,
                             obscureText: true,
+                            textInputAction: TextInputAction.next,
                             decoration: InputDecoration(
                               hintText: l10n.currentPassword,
                             ),
@@ -2427,6 +2441,7 @@ class _ClinicStaffProfileShellState
                           TextFormField(
                             controller: _newPassCtrl,
                             obscureText: true,
+                            textInputAction: TextInputAction.next,
                             decoration: InputDecoration(hintText: l10n.newPassword),
                             validator: (v) => (v == null || v.length < 6)
                                 ? 'Minimum 6 characters'
@@ -2436,6 +2451,8 @@ class _ClinicStaffProfileShellState
                           TextFormField(
                             controller: _confirmPassCtrl,
                             obscureText: true,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: submitOnEnter(() => _savePassword(context)),
                             decoration: InputDecoration(
                               hintText: l10n.confirmNewPassword,
                             ),

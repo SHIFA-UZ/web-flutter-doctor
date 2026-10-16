@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/admin/domain/admin_models.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_provider_params.dart';
 import 'package:shifa_doc_app_v1/state/admin/admin_providers.dart';
@@ -49,22 +50,28 @@ class _AdminClinicsScreenState extends ConsumerState<AdminClinicsScreen> {
             children: [
               TextField(
                 controller: nameCtrl,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: l10n.translate('adminClinicNameLabel')),
               ),
               TextField(
                 controller: tzCtrl,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: l10n.translate('adminClinicTimezoneLabel')),
               ),
               TextField(
                 controller: phoneCtrl,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: l10n.translate('adminClinicPhoneLabel')),
               ),
               TextField(
                 controller: emailCtrl,
+                textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: l10n.translate('adminClinicEmailLabel')),
               ),
               TextField(
                 controller: addrCtrl,
+                textInputAction: TextInputAction.done,
+                onSubmitted: submitOnEnter(() => Navigator.pop(ctx, true)),
                 decoration: InputDecoration(labelText: l10n.translate('adminClinicAddressLabel')),
                 maxLines: 2,
               ),

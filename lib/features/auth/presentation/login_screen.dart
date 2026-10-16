@@ -5,6 +5,7 @@ import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/constants/assets.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/verify_key_screen.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/email_login/email_input_screen.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
@@ -155,7 +156,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         TextFormField(
                           controller: _passCtrl,
                           obscureText: _obscure,
-                          onFieldSubmitted: (_) => _onSignIn(),
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: submitOnEnter(_isLoading ? null : _onSignIn),
                           decoration: InputDecoration(
                             hintText: AppLocalizations.of(context)!.password,
                             suffixIcon: IconButton(

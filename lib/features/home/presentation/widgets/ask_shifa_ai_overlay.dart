@@ -18,17 +18,21 @@ import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/state/ask_shifa_ai_panel_provider.dart';
 import 'package:shifa_doc_app_v1/state/patient_briefing_context_provider.dart';
 import 'package:shifa_doc_app_v1/state/patients/patients_provider.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
+import 'package:shifa_doc_app_v1/state/workspace/workspace_mode_provider.dart';
 
-/// Floating AI chat widget anchored bottom-right — opened from sidebar or shell.
+/// Floating AI chat widget (legacy). Prefer [WorkspaceMode.intelligence].
 class AskShifaAiOverlay extends ConsumerStatefulWidget {
   const AskShifaAiOverlay({super.key});
 
+  /// Opens full-screen Intelligence mode (Cursor-like chat + history).
   static void open(WidgetRef ref) {
-    ref.read(askShifaAiPanelProvider.notifier).open();
+    ref.read(askShifaAiPanelProvider.notifier).close();
+    ref.read(workspaceModeProvider.notifier).showIntelligence();
   }
 
   @override
@@ -319,6 +323,8 @@ class _AskShifaAiOverlayState extends ConsumerState<AskShifaAiOverlay> {
                             maxLines: 3,
                             minLines: 2,
                             textCapitalization: TextCapitalization.sentences,
+                            textInputAction: TextInputAction.send,
+                            onFieldSubmitted: submitOnEnter(_aiLoading ? null : _askAi),
                             decoration: InputDecoration(
                               hintText: l10n.translate('askShifaAi'),
                               border: OutlineInputBorder(

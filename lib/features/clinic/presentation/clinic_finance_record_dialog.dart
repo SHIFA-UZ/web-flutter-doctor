@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_actions.dart';
 import 'package:shifa_doc_app_v1/state/clinic/clinic_finance_providers.dart';
@@ -277,6 +278,7 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
             if (_planId == null) ...[
               TextField(
                 controller: _subCtrl,
+                textInputAction: TextInputAction.next,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^[0-9.,\-]*$'))],
                 decoration: InputDecoration(labelText: l10n.translate('clinicRecordsFormSubtotal')),
@@ -284,6 +286,7 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
               const SizedBox(height: 8),
               TextField(
                 controller: _discCtrl,
+                textInputAction: TextInputAction.next,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^[0-9.,\-]*$'))],
                 decoration: InputDecoration(labelText: l10n.translate('clinicRecordsFormDiscount')),
@@ -291,6 +294,7 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
               const SizedBox(height: 8),
               TextField(
                 controller: _taxCtrl,
+                textInputAction: TextInputAction.next,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^[0-9.,\-]*$'))],
                 decoration: InputDecoration(labelText: l10n.translate('clinicRecordsFormTax')),
@@ -331,6 +335,8 @@ class _ClinicFinanceRecordDialogState extends ConsumerState<_ClinicFinanceRecord
             TextField(
               controller: _notesCtrl,
               maxLines: 2,
+              textInputAction: TextInputAction.done,
+              onSubmitted: submitOnEnter(_busy ? null : _submit),
               decoration: InputDecoration(labelText: l10n.translate('clinicRecordsFormNotes')),
             ),
       ],

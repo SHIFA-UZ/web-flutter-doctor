@@ -11,6 +11,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 
 /// Schedule mode for the create-task form.
 /// - [evenSpacing]: simple `(startTime + intervalHours) × timesPerDay` schedule.
@@ -609,6 +610,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               // Notes Label
               TextFormField(
                 controller: _notesLabelController,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: submitOnEnter(_isSaving ? null : _saveTask),
                 decoration: InputDecoration(
                   labelText: l10n.notesLabel,
                   border: const OutlineInputBorder(),

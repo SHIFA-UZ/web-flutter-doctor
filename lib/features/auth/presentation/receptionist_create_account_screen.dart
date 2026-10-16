@@ -9,6 +9,7 @@ import 'package:shifa_doc_app_v1/core/utils/password_validation.dart';
 import 'package:shifa_doc_app_v1/core/widgets/language_mini_toggle.dart';
 import 'package:shifa_doc_app_v1/core/widgets/app_page_back_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/profile/presentation/searchable_timezone_dropdown.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/auth/registration_state.dart';
@@ -193,6 +194,7 @@ class _ReceptionistCreateAccountScreenState
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _firstCtrl,
+                      textInputAction: TextInputAction.next,
                       decoration:
                           InputDecoration(hintText: l10n.enterFirstName),
                       validator: (v) =>
@@ -202,6 +204,7 @@ class _ReceptionistCreateAccountScreenState
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _lastCtrl,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(hintText: l10n.enterLastName),
                       validator: (v) =>
                           _reqName(v ?? '', context, false),
@@ -222,6 +225,7 @@ class _ReceptionistCreateAccountScreenState
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passCtrl,
+                      textInputAction: TextInputAction.next,
                       obscureText: _obscure,
                       decoration: InputDecoration(
                         hintText: l10n.password,
@@ -277,6 +281,8 @@ class _ReceptionistCreateAccountScreenState
                     ],
                     TextFormField(
                       controller: _confirmPassCtrl,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: submitOnEnter(_busy ? null : _submit),
                       obscureText: _confirmObscure,
                       decoration: InputDecoration(
                         hintText: l10n.confirmPassword,

@@ -7,6 +7,7 @@ import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 
 class AdminLoginScreen extends ConsumerStatefulWidget {
@@ -235,7 +236,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                         focusNode: _passwordFocusNode,
                         obscureText: _obscure,
                         textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _onContinueToOtp(),
+                        onFieldSubmitted: submitOnEnter(_isLoading ? null : _onContinueToOtp),
                         decoration: InputDecoration(
                           labelText: l10n.password,
                           prefixIcon: const Icon(Icons.lock_outline),
@@ -283,7 +284,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                           LengthLimitingTextInputFormatter(6),
                         ],
                         textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _onVerifyOtp(),
+                        onFieldSubmitted: submitOnEnter(_isLoading ? null : _onVerifyOtp),
                         decoration: InputDecoration(
                           labelText: l10n.adminEnterVerificationCode,
                           prefixIcon: const Icon(Icons.pin_outlined),

@@ -5,6 +5,7 @@ import 'package:shifa_doc_app_v1/app/router.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/email_login/email_reset_password_screen.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
@@ -150,6 +151,8 @@ class _EmailOtpScreenState extends ConsumerState<EmailOtpScreen> {
                   TextFormField(
                     controller: _otpCtrl,
                     keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: submitOnEnter(_isLoading ? null : _onSubmit),
                     maxLength: 6,
                     decoration: const InputDecoration(
                       hintText: '000000',

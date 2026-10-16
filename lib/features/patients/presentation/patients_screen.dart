@@ -62,6 +62,7 @@ import 'package:shifa_doc_app_v1/features/chat/application/open_chat_with_patien
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_helpers.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patient_detail_overview.dart';
 import 'package:shifa_doc_app_v1/features/patients/presentation/patients_directory_panel.dart';
+import 'package:shifa_doc_app_v1/features/home/presentation/widgets/visit_facts_panel.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/core/widgets/scrollable_sheet_dialog.dart';
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';

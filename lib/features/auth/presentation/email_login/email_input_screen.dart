@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/auth/presentation/email_login/email_otp_screen.dart';
 import 'package:shifa_doc_app_v1/state/auth/auth_controller.dart';
 
@@ -96,6 +97,8 @@ class _EmailInputScreenState extends ConsumerState<EmailInputScreen> {
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: submitOnEnter(_isLoading ? null : _onContinue),
                       decoration: InputDecoration(
                         hintText: l10n.email,
                         prefixIcon: const Icon(Icons.email_outlined),

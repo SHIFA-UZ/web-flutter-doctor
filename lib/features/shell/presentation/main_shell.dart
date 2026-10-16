@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shifa_doc_app_v1/state/shell/shell_controller.dart';
-import 'package:shifa_doc_app_v1/features/home/presentation/widgets/ask_shifa_ai_overlay.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_search_overlay.dart';
+import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_screen.dart';
 import 'package:shifa_doc_app_v1/features/chat/presentation/chat_screen.dart';
 import 'package:shifa_doc_app_v1/state/tasks/tasks_provider.dart';
 import 'package:shifa_doc_app_v1/features/tasks/domain/task_models.dart';
@@ -49,6 +49,7 @@ import 'package:shifa_doc_app_v1/features/auth/presentation/clinic_staff_web_onl
 import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
+import 'package:shifa_doc_app_v1/state/workspace/workspace_mode_provider.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({Key? key}) : super(key: key);
@@ -270,12 +271,35 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
 
   /// Pops the shell navigator back to tab content (if on a sub-page), then switches to the given tab.
   void _goToTab(int index) {
+    ref.read(workspaceModeProvider.notifier).showClinic();
     _shellNavKey.currentState?.popUntil((route) => route.isFirst);
     ref.read(shellProvider.notifier).setTab(index);
     if (ref.read(doctorAppJwtRoleProvider) != DoctorAppJwtRole.clinicStaff &&
         (index == 1 || index == 2)) {
       _loadActiveLocationLabel();
     }
+  }
+
+  void _openIntelligenceMode() {
+    if (!ref.read(doctorFeatureProvider(DoctorFeature.askShifaAi))) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n?.error ?? 'Unavailable')),
+      );
+      return;
+    }
+    ref.read(workspaceModeProvider.notifier).showIntelligence();
+  }
+
+  void _toggleWorkspaceFromLogo() {
+    final mode = ref.read(workspaceModeProvider);
+    if (mode == WorkspaceMode.intelligence) {
+      ref.read(workspaceModeProvider.notifier).showClinic();
+      // AI bookings may have changed the schedule while Intelligence was open.
+      unawaited(invalidateAppointmentRelatedProviders(ref));
+      return;
+    }
+    _openIntelligenceMode();
   }
 
   @override
@@ -392,6 +416,8 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final compactSidebar = PlatformLayout.useCompactSidebar(context);
     final sidebarWidth = PlatformLayout.sidebarWidth(context);
     final l10n = AppLocalizations.of(context)!;
+    final workspaceMode = ref.watch(workspaceModeProvider);
+    final intelligenceActive = workspaceMode == WorkspaceMode.intelligence;
 
     return Scaffold(
       backgroundColor: AppColors.cardboard,
@@ -419,49 +445,108 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                     ),
                     child: compactSidebar
                         ? Center(
-                            child: Image.asset(
-                              'assets/branding/shifa_logo.png',
-                              width: 36,
-                              height: 36,
-                              fit: BoxFit.contain,
+                            child: Tooltip(
+                              message: intelligenceActive
+                                  ? l10n.translate('clinicMode')
+                                  : l10n.translate('shifaIntelligence'),
+                              child: InkWell(
+                                onTap: isClinicStaff
+                                    ? null
+                                    : _toggleWorkspaceFromLogo,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: intelligenceActive
+                                      ? BoxDecoration(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.18),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.45),
+                                          ),
+                                        )
+                                      : null,
+                                  child: Image.asset(
+                                    'assets/branding/shifa_logo.png',
+                                    width: 36,
+                                    height: 36,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
                             ),
                           )
                         : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Image.asset(
-                              'assets/branding/shifa_logo.png',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.contain,
+                        InkWell(
+                          onTap: isClinicStaff
+                              ? null
+                              : _toggleWorkspaceFromLogo,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 2,
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'SHIFA',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 16,
-                                      letterSpacing: 0.5,
-                                    ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: intelligenceActive
+                                      ? BoxDecoration(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.18),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.45),
+                                          ),
+                                        )
+                                      : null,
+                                  child: Image.asset(
+                                    'assets/branding/shifa_logo.png',
+                                    width: 40,
+                                    height: 40,
+                                    fit: BoxFit.contain,
                                   ),
-                                  Text(
-                                    l10n.translate('clinicIntelligence'),
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.85),
-                                      fontSize: 11,
-                                    ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'SHIFA',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        intelligenceActive
+                                            ? l10n.translate(
+                                                'shifaIntelligence')
+                                            : l10n.translate(
+                                                'clinicIntelligence'),
+                                        style: TextStyle(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.85),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 14),
                         _SidebarSearchButtonDark(
@@ -526,36 +611,19 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                         if (!isClinicStaff && !compactSidebar)
                           _SidebarAiCard(
                             brand: brand,
-                            onTap: () {
-                              if (!ref.read(
-                                doctorFeatureProvider(DoctorFeature.askShifaAi),
-                              )) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(l10n.error)),
-                                );
-                                return;
-                              }
-                              AskShifaAiOverlay.open(ref);
-                            },
+                            active: intelligenceActive,
+                            onTap: _openIntelligenceMode,
                           ),
                         if (!isClinicStaff && compactSidebar)
                           Tooltip(
                             message: l10n.translate('sidebarAiTitle'),
                             child: Material(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: intelligenceActive
+                                  ? Colors.white.withValues(alpha: 0.28)
+                                  : Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
                               child: InkWell(
-                                onTap: () {
-                                  if (!ref.read(
-                                    doctorFeatureProvider(DoctorFeature.askShifaAi),
-                                  )) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(l10n.error)),
-                                    );
-                                    return;
-                                  }
-                                  AskShifaAiOverlay.open(ref);
-                                },
+                                onTap: _openIntelligenceMode,
                                 borderRadius: BorderRadius.circular(12),
                                 child: const Padding(
                                   padding: EdgeInsets.all(10),
@@ -618,33 +686,39 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
               right: false,
               child: Stack(
                 children: [
-                  ShellScope(
-                    navigatorKey: _shellNavKey,
-                    child: Navigator(
-                      key: _shellNavKey,
-                      initialRoute: '/',
-                      onGenerateRoute: (RouteSettings settings) {
-                        final name = settings.name;
-                        if (name == null || name.isEmpty || name == '/') {
+                  if (intelligenceActive && !isClinicStaff)
+                    const IntelligenceScreen()
+                  else
+                    ShellScope(
+                      navigatorKey: _shellNavKey,
+                      child: Navigator(
+                        key: _shellNavKey,
+                        initialRoute: '/',
+                        onGenerateRoute: (RouteSettings settings) {
+                          final name = settings.name;
+                          if (name == null || name.isEmpty || name == '/') {
+                            return MaterialPageRoute<void>(
+                              builder: (_) => _ShellTabContent(
+                                screens: screens,
+                                isClinicStaff: isClinicStaff,
+                              ),
+                            );
+                          }
+                          final route =
+                              AppRouter.shellOnGenerateRoute(settings);
+                          if (route != null) return route;
                           return MaterialPageRoute<void>(
                             builder: (_) => _ShellTabContent(
                               screens: screens,
                               isClinicStaff: isClinicStaff,
                             ),
                           );
-                        }
-                        final route = AppRouter.shellOnGenerateRoute(settings);
-                        if (route != null) return route;
-                        return MaterialPageRoute<void>(
-                          builder: (_) => _ShellTabContent(
-                            screens: screens,
-                            isClinicStaff: isClinicStaff,
-                          ),
-                        );
-                      },
+                        },
+                      ),
                     ),
-                  ),
-                  if (!isClinicStaff && !PlatformLayout.isNativeMobile)
+                  if (!isClinicStaff &&
+                      !intelligenceActive &&
+                      !PlatformLayout.isNativeMobile)
                     Positioned(
                       right: 0,
                       bottom: 0,
@@ -652,13 +726,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                         bottomInset: Responsive.bottomNavClearance(context),
                       ),
                     ),
-                  if (!isClinicStaff)
-                    Positioned(
-                      right: PlatformLayout.useSinglePane(context) ? 16 : 24,
-                      bottom: Responsive.bottomNavClearance(context) + 16,
-                      child: const AskShifaAiOverlay(),
-                    ),
-                  if (isMobile || compactSidebar)
+                  if ((isMobile || compactSidebar) && !intelligenceActive)
                   Positioned(
                     top: 0,
                     right: 0,
@@ -730,6 +798,18 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (!isClinicStaff) ...[
+                    _MobileMoreSheetTile(
+                      leading: Icon(Icons.auto_awesome, color: brand),
+                      title: Text(l10n.translate('shifaIntelligence')),
+                      subtitle: Text(l10n.translate('sidebarAiCta')),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _openIntelligenceMode();
+                      },
+                    ),
+                    const Divider(),
+                  ],
                   if (!isClinicStaff &&
                       (activeLocationLabel ?? '').trim().isNotEmpty) ...[
                     _MobileMoreSheetTile(
@@ -1585,10 +1665,15 @@ class _SidebarSearchButtonDark extends StatelessWidget {
 }
 
 class _SidebarAiCard extends StatelessWidget {
-  const _SidebarAiCard({required this.brand, required this.onTap});
+  const _SidebarAiCard({
+    required this.brand,
+    required this.onTap,
+    this.active = false,
+  });
 
   final Color brand;
   final VoidCallback onTap;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -1597,9 +1682,11 @@ class _SidebarAiCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: Colors.white.withValues(alpha: active ? 0.22 : 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: active ? 0.4 : 0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1632,7 +1719,9 @@ class _SidebarAiCard extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               child: Text(
-                l10n.translate('sidebarAiCta'),
+                active
+                    ? l10n.translate('shifaIntelligence')
+                    : l10n.translate('sidebarAiCta'),
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
               ),
             ),

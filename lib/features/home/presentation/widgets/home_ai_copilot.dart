@@ -16,6 +16,7 @@ import 'package:shifa_doc_app_v1/core/theme/app_colors.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/ai_response_text.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/today_appointments_provider.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/dashboard_card.dart';
@@ -426,6 +427,7 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
         const SizedBox(height: 8),
         TextField(
           controller: _aiController,
+          textInputAction: TextInputAction.send,
           decoration: InputDecoration(
             hintText: l10n.translate('askShifaAi'),
             suffixIcon: IconButton(
@@ -445,7 +447,7 @@ class _HomeAiCopilotState extends ConsumerState<HomeAiCopilot> {
             filled: true,
             fillColor: Colors.white,
           ),
-          onSubmitted: (_) => _askAi(),
+          onSubmitted: submitOnEnter(_aiLoading ? null : _askAi),
         ),
       ],
     );
