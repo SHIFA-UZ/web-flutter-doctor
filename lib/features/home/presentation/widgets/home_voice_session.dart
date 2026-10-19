@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show ValueListenable, debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
@@ -19,6 +22,8 @@ import 'package:shifa_doc_app_v1/core/widgets/doctor_voice_recorder_session.dart
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
 import 'package:shifa_doc_app_v1/core/widgets/submit_on_enter.dart';
 import 'package:shifa_doc_app_v1/core/widgets/web_speech_conversation.dart';
+import 'package:shifa_doc_app_v1/features/home/presentation/widgets/shifa_ai_orb.dart';
+import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/visit_facts_panel.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/domain/intelligence_chat_models.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_action_cards.dart';
@@ -26,8 +31,6 @@ import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
 import 'package:shifa_doc_app_v1/state/subscription/doctor_subscription_provider.dart';
-
-enum VoiceSessionPhase { idle, listening, thinking, speaking }
 
 /// Distinct "talking with Shifa" surface for the morning clinic OS demo.
 class HomeVoiceSession extends ConsumerStatefulWidget {
@@ -41,6 +44,9 @@ class HomeVoiceSession extends ConsumerStatefulWidget {
     this.onMessagesChanged,
     this.recentSessions = const [],
     this.onOpenSession,
+    this.onRenameSession,
+    this.onDeleteSession,
+    this.onWelcomeVisible,
   });
 
   final String? selectedPatientId;
@@ -62,6 +68,11 @@ class HomeVoiceSession extends ConsumerStatefulWidget {
   final List<IntelligenceChatSession> recentSessions;
 
   final ValueChanged<String>? onOpenSession;
+  final void Function(String id, String title)? onRenameSession;
+  final ValueChanged<String>? onDeleteSession;
+
+  /// True while the empty welcome is showing. False once a thread or voice turn starts.
+  final ValueChanged<bool>? onWelcomeVisible;
 
   @override
   ConsumerState<HomeVoiceSession> createState() => _HomeVoiceSessionState();
@@ -72,16 +83,16 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   final _player = AudioPlayer();
   final _chatScroll = ScrollController();
   final List<_VoiceTurn> _turns = [];
-  // Growable — List.filled is fixed-length and removeAt throws on Flutter web.
-  final List<double> _levels = List<double>.generate(
-    DoctorVoiceRecorderSession.waveBarCount,
-    (_) => 0.12,
-  );
+
+  /// Latest normalized mic level for the orb. Updated without rebuilding the
+  /// conversation list on every sample.
+  final ValueNotifier<double> _visualLevel = ValueNotifier<double>(0.12);
 
   /// Bumped on barge-in / new play so stale complete events cannot end TTS early.
   int _ttsPlayGen = 0;
 
   WebSpeechConversation? _browserSpeech;
+
   /// True while a browser utterance is being committed to the AI.
   bool _browserFinalInFlight = false;
 
@@ -90,13 +101,21 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   String _streamingReply = '';
   String? _error;
   bool _busy = false;
+
   /// Hands-free loop: after Shifa speaks, listen again (Alexa / Siri style).
   bool _handsFreeVoice = false;
+
   /// Soft start failures after TTS (Chrome timing); reset on a successful listen.
   int _handsFreeStartFails = 0;
-  /// Idle mic open only for "Hey Shifa" (no active conversation).
+
+  /// Idle mic open only for the locale wake phrase (no active conversation).
   bool _wakeStandby = false;
+
+  /// True only after browser speech actually started for wake standby.
+  bool _wakeListening = false;
+  bool? _reportedWelcome;
   Timer? _wakeStandbyTimer;
+
   /// Restarts browser speech if Chrome ends the session while UI still says Listening.
   Timer? _listenWatchdogTimer;
   DateTime? _lastSpeechActivityAt;
@@ -106,17 +125,31 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   /// Intelligence on web: continuous conversation via browser SpeechRecognition.
   bool get _alexaMode =>
       widget.embedded && kIsWeb && WebSpeechConversation.isSupported;
-  /// Reply language for this turn (EN / RU / UZ), from speech — not UI locale.
+
+  /// Reply language for this turn (EN / RU / UZ). Starts from UI locale so
+  /// Uzbek wake ("Salom Shifa") is not listened for as English "Hey Shifa".
   String _sessionLanguage = 'EN';
+
+  /// Tap-to-record until tap-to-send. Ignores pauses (dictation / protocoling).
+  bool _dictationHold = false;
+
+  /// True while the dictation recording is being transcribed (before the LLM).
+  bool _transcribingDictation = false;
+
+  /// Bumped so a stalled morning stream cannot keep "Reviewing…" forever.
+  int _askGen = 0;
   StreamSubscription<AiStreamEvent>? _aiSub;
+
   /// startAt values already booked in this chat (avoid double-book on "yes").
   final Set<String> _bookedStartAts = {};
 
   // End-of-speech (auto-send): after speech is heard, silence commits the turn.
   bool _heardSpeech = false;
   bool _autoFinishing = false;
+
   /// True once any mic amplitude event arrives (often false on Flutter web).
   bool _gotAmplitude = false;
+
   /// When levels never move, user must tap stop to send (don't discard).
   bool _manualEndpoint = false;
   DateTime? _listenStartedAt;
@@ -126,21 +159,27 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   Timer? _handsFreeResumeTimer;
   Timer? _amplitudeProbeTimer;
   Timer? _pulseTimer;
+
   /// Rolling peak for relative silence (web mic levels vary a lot).
   double _peakLevel = 0.12;
 
   // Web mic levels are often quiet — keep thresholds reachable.
   static const double _speechLevel = 0.12;
   static const double _silenceLevel = 0.09;
-  static const Duration _silenceToSend = Duration(milliseconds: 1100);
-  static const Duration _minSpeechBeforeAutoSend = Duration(milliseconds: 280);
+  // A doctor pauses mid-sentence to think; 1.1 s cut those sentences in half.
+  // Wait long enough for a natural pause, and never commit a fragment shorter
+  // than a few words.
+  static const Duration _silenceToSend = Duration(milliseconds: 1900);
+  static const Duration _minSpeechBeforeAutoSend = Duration(milliseconds: 700);
   static const Duration _maxListen = Duration(seconds: 45);
   static const Duration _noSpeechCancel = Duration(seconds: 20);
 
   @override
   void initState() {
     super.initState();
+    _sessionLanguage = _uiFallbackLanguage();
     _hydrateFromInitial();
+    if (_turns.isNotEmpty) _scrollChatToEnd(force: true);
     if (_alexaMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(_ensureWakeStandby());
@@ -168,14 +207,16 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         } else {
           i += 1;
         }
-        _turns.add(_VoiceTurn(
-          userText: m.content,
-          assistantText: assistant,
-          toolName: toolName,
-          cardPayload: card,
-          userAt: m.at,
-          assistantAt: assistantAt,
-        ));
+        _turns.add(
+          _VoiceTurn(
+            userText: m.content,
+            assistantText: assistant,
+            toolName: toolName,
+            cardPayload: card,
+            userAt: m.at,
+            assistantAt: assistantAt,
+          ),
+        );
       } else {
         i += 1;
       }
@@ -185,7 +226,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   bool _isAffirmativeUtterance(String text) {
     final t = text.trim().toLowerCase();
     if (t.isEmpty || t.length > 48) return false;
-    if (RegExp(r"\b(no|not|don't|dont|cancel|another|different)\b").hasMatch(t)) {
+    if (RegExp(
+      r"\b(no|not|don't|dont|cancel|another|different)\b",
+    ).hasMatch(t)) {
       return false;
     }
     return RegExp(
@@ -246,17 +289,17 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
           return {
             'payload': payload,
             'slot': slot,
-            'reschedule': (payload['cardType'] == 'propose_reschedule') ||
-                false,
+            'reschedule':
+                (payload['cardType'] == 'propose_reschedule') || false,
           };
         }
       }
     }
     final wanted = _extractClockTime(userText);
     if (wanted == null) return null;
-    final slots = (payload['slots'] as List? ?? const [])
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e));
+    final slots = (payload['slots'] as List? ?? const []).whereType<Map>().map(
+      (e) => Map<String, dynamic>.from(e),
+    );
     for (final slot in slots) {
       if (slot['startLocal']?.toString() == wanted) {
         final startAt = slot['startAt']?.toString();
@@ -295,13 +338,14 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     final timeLabel = slot['startLocal']?.toString() ?? '';
     final patientName = payload['patientName']?.toString() ?? 'the patient';
     // Prefer full month names for TTS (avoid "Oct" → O-C-T).
-    final dateLabel = payload['speakableDateLabel']?.toString() ??
+    final dateLabel =
+        payload['speakableDateLabel']?.toString() ??
         payload['dateLabel']?.toString() ??
         '';
     final reply = ok
         ? (reschedule
-            ? 'Moved $patientName to $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.'
-            : 'Booked $patientName at $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.')
+              ? 'Moved $patientName to $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.'
+              : 'Booked $patientName at $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.')
         : 'That slot could not be booked. Pick another time on the card.';
     final updatedPayload = Map<String, dynamic>.from(payload)
       ..['preferredSlot'] = slot
@@ -375,19 +419,20 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     if (startAt == null || _bookedStartAts.contains(startAt)) {
       if (startAt != null && _bookedStartAts.contains(startAt)) {
         next['booked'] = true;
-        next['statusMessage'] =
-            next['statusMessage'] ?? 'Appointment booked.';
+        next['statusMessage'] = next['statusMessage'] ?? 'Appointment booked.';
       }
       return next;
     }
-    final reschedule = toolName == 'propose_reschedule' ||
+    final reschedule =
+        toolName == 'propose_reschedule' ||
         next['cardType'] == 'propose_reschedule';
     final ok = reschedule
         ? await _executeReschedule(next, slot)
         : await _executeBook(next, slot);
     final timeLabel = slot['startLocal']?.toString() ?? '';
     final name = next['patientName']?.toString() ?? 'patient';
-    final dateLabel = next['speakableDateLabel']?.toString() ??
+    final dateLabel =
+        next['speakableDateLabel']?.toString() ??
         next['dateLabel']?.toString() ??
         '';
     if (ok) {
@@ -444,9 +489,15 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     if (appointmentId == null || startAt == null) return false;
     try {
       final client = ref.read(apiClientProvider);
+      final body = <String, dynamic>{
+        'startAt': startAt,
+        'slotMinutes': slotMinutes,
+      };
+      final locationId = (slot['locationId'] as num?)?.toInt();
+      if (locationId != null) body['locationId'] = locationId;
       final res = await client.put(
         '/api/appointments/$appointmentId/change',
-        {'startAt': startAt, 'slotMinutes': slotMinutes},
+        body,
       );
       final ok = res.statusCode == 200 || res.statusCode == 204;
       if (ok) unawaited(_refreshHomeAfterScheduleChange(startAt));
@@ -473,6 +524,17 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     );
   }
 
+  void _reportWelcome(bool visible) {
+    if (_reportedWelcome == visible) return;
+    _reportedWelcome = visible;
+    final cb = widget.onWelcomeVisible;
+    if (cb == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _reportedWelcome != visible) return;
+      cb(visible);
+    });
+  }
+
   /// Latest patient the doctor already matched in this chat.
   /// Prefers search cards over propose cards so a wrong propose cannot stick.
   int? _focusPatientIdFromCards() {
@@ -481,8 +543,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     for (final turn in _turns.reversed) {
       final payload = turn.cardPayload;
       if (payload == null) continue;
-      final cardType =
-          (payload['cardType'] as String?) ?? turn.toolName ?? '';
+      final cardType = (payload['cardType'] as String?) ?? turn.toolName ?? '';
       if (cardType == 'propose_appointment' ||
           cardType == 'propose_reschedule' ||
           cardType == 'patient_appointments' ||
@@ -507,8 +568,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     for (final turn in _turns.reversed) {
       final payload = turn.cardPayload;
       if (payload == null) continue;
-      final cardType =
-          (payload['cardType'] as String?) ?? turn.toolName ?? '';
+      final cardType = (payload['cardType'] as String?) ?? turn.toolName ?? '';
       if (cardType != 'patient_search' && turn.toolName != 'search_patients') {
         continue;
       }
@@ -526,8 +586,10 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         if (raw is! Map) continue;
         final name = (raw['patientName'] as String?)?.toLowerCase() ?? '';
         if (name.isEmpty) continue;
-        final tokens =
-            name.split(RegExp(r'\s+')).where((t) => t.length > 2).toList();
+        final tokens = name
+            .split(RegExp(r'\s+'))
+            .where((t) => t.length > 2)
+            .toList();
         if (tokens.isNotEmpty && tokens.every(recentUser.contains)) {
           return (raw['patientId'] as num?)?.toInt();
         }
@@ -541,49 +603,130 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     if (cb == null) return;
     final out = <IntelligenceChatMessage>[];
     for (final t in _turns) {
-      out.add(IntelligenceChatMessage(
-        role: 'user',
-        content: t.userText,
-        at: t.userAt,
-      ));
+      out.add(
+        IntelligenceChatMessage(
+          role: 'user',
+          content: t.userText,
+          at: t.userAt,
+        ),
+      );
       if (t.assistantText.trim().isNotEmpty || t.cardPayload != null) {
-        out.add(IntelligenceChatMessage(
-          role: 'assistant',
-          content: t.assistantText,
-          at: t.assistantAt ?? t.userAt,
-          toolName: t.toolName,
-          cardPayload: t.cardPayload,
-        ));
+        out.add(
+          IntelligenceChatMessage(
+            role: 'assistant',
+            content: t.assistantText,
+            at: t.assistantAt ?? t.userAt,
+            toolName: t.toolName,
+            cardPayload: t.cardPayload,
+          ),
+        );
       }
     }
     cb(out);
   }
 
+  List<int> _appointmentIds(Map<String, dynamic>? payload) {
+    if (payload == null) return const [];
+    final ids = <int>[];
+    void add(dynamic value) {
+      if (value is num) ids.add(value.toInt());
+    }
+
+    add(payload['appointmentId']);
+    final one = payload['appointment'];
+    if (one is Map) add(one['appointmentId']);
+    final many = payload['appointments'];
+    if (many is List) {
+      for (final row in many) {
+        if (row is Map) add(row['appointmentId']);
+      }
+    }
+    return ids;
+  }
+
   /// Sends the prior structured query back to the server without putting it in speech.
   String _assistantContentForApi(_VoiceTurn turn) {
     final spoken = turn.assistantText.trim();
-    final context = turn.cardPayload?['queryContext'];
-    if (context == null) return spoken;
-    final encoded = jsonEncode(context);
-    if (spoken.isEmpty) return '<appointment_query>$encoded</appointment_query>';
-    return '$spoken\n<appointment_query>$encoded</appointment_query>';
-  }
-
-  bool _isNearBottom() {
-    if (!_chatScroll.hasClients) return true;
-    final pos = _chatScroll.position;
-    return pos.maxScrollExtent - pos.pixels < 120;
-  }
-
-  void _scrollChatToEnd({bool force = false}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_chatScroll.hasClients) return;
-      if (!force && !_isNearBottom()) return;
-      _chatScroll.animateTo(
-        _chatScroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
+    final buffer = StringBuffer(spoken);
+    final query = turn.cardPayload?['queryContext'];
+    if (query != null) {
+      buffer.write(
+        '\n<appointment_query>${jsonEncode(query)}</appointment_query>',
       );
+    }
+    final listed = _appointmentIds(turn.cardPayload);
+    if (listed.isNotEmpty) {
+      buffer.write(
+        '\n<appointment_list>${listed.join(',')}</appointment_list>',
+      );
+    }
+    final action = turn.cardPayload?['actionContext'];
+    if (action is Map) {
+      final type = action['type']?.toString();
+      if (type == 'CANCEL' && action['token'] != null) {
+        buffer.write(
+          '\n<appointment_action>${action['token']}</appointment_action>',
+        );
+      }
+      if (type == 'FOCUS' && action['appointmentId'] != null) {
+        buffer.write(
+          '\n<appointment_focus>${action['appointmentId']}</appointment_focus>',
+        );
+      }
+    }
+    final text = buffer.toString().trim();
+    return text;
+  }
+
+  /// Keep the latest message in view unless the doctor has scrolled up.
+  bool _followLatest = true;
+  int _followFrames = 0;
+  bool _followQueued = false;
+
+  bool _onChatScrollNotification(ScrollNotification notification) {
+    if (notification is! UserScrollNotification) return false;
+    if (notification.direction == ScrollDirection.forward) {
+      _followLatest = false;
+      _followFrames = 0;
+      return false;
+    }
+    final gap =
+        notification.metrics.maxScrollExtent - notification.metrics.pixels;
+    if (notification.direction == ScrollDirection.idle && gap < 72) {
+      _followLatest = true;
+    }
+    return false;
+  }
+
+  /// Jump to the latest content and keep correcting for a few frames.
+  ///
+  /// A single [ScrollController.animateTo] aims at the height from one frame.
+  /// Streaming text and cards grow after that, so the view stops short of the
+  /// end and later updates refuse to follow.
+  void _scrollChatToEnd({bool force = false}) {
+    if (force) _followLatest = true;
+    if (!_followLatest) return;
+    _followFrames = 10;
+    _queueFollowLatest();
+  }
+
+  void _queueFollowLatest() {
+    if (_followQueued || !_followLatest || _followFrames <= 0) return;
+    _followQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _followQueued = false;
+      if (!mounted || !_followLatest) return;
+      _followFrames--;
+      if (!_chatScroll.hasClients) {
+        if (_followFrames > 0) _queueFollowLatest();
+        return;
+      }
+      final position = _chatScroll.position;
+      final target = position.maxScrollExtent;
+      if (target - position.pixels > 1) {
+        position.jumpTo(target);
+      }
+      if (_followFrames > 0) _queueFollowLatest();
     });
   }
 
@@ -595,6 +738,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     _listenWatchdogTimer?.cancel();
     _amplitudeProbeTimer?.cancel();
     _pulseTimer?.cancel();
+    _visualLevel.dispose();
     _aiSub?.cancel();
     _browserSpeech?.dispose();
     _chatScroll.dispose();
@@ -635,7 +779,8 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   Future<void> _hardRestartListening() async {
     if (!mounted || !_handsFreeVoice || _busy || _browserFinalInFlight) return;
     final last = _lastListenStartAt;
-    if (last != null && DateTime.now().difference(last) < _listenRestartCooldown) {
+    if (last != null &&
+        DateTime.now().difference(last) < _listenRestartCooldown) {
       return;
     }
     _cancelListenWatchdog();
@@ -656,17 +801,20 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     return _browserSpeech ??= WebSpeechConversation(
       onInterim: (text) {
         if (!mounted) return;
-        // Wake standby: show caption only when it looks like "Hey Shifa…"
+        // Wake standby: show caption only when it looks like the wake phrase.
         if (_wakeStandby && !_handsFreeVoice) {
           if (_containsWakePhrase(text)) {
             _noteSpeechActivity();
+            _visualLevel.value = (0.35 + (text.length % 7) * 0.06).clamp(
+              0.0,
+              1.0,
+            );
             setState(() {
               _liveCaption = text;
               _phase = VoiceSessionPhase.listening;
               _heardSpeech = true;
-              _levels.removeAt(0);
-              _levels.add(0.35 + (text.length % 7) * 0.06);
             });
+            _scrollChatToEnd();
           }
           return;
         }
@@ -675,22 +823,25 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         if (text.trim().isNotEmpty) {
           _pulseTimer?.cancel();
         }
+        if (text.trim().isNotEmpty) {
+          _visualLevel.value = (0.35 + (text.length % 7) * 0.06).clamp(
+            0.0,
+            1.0,
+          );
+        }
         setState(() {
           _liveCaption = text;
           _heardSpeech = text.trim().isNotEmpty;
-          // Animate bars while browser hears speech.
-          if (_heardSpeech) {
-            _levels.removeAt(0);
-            _levels.add(0.35 + (text.length % 7) * 0.06);
-          }
         });
+        _scrollChatToEnd();
       },
       onFinal: (text) {
         unawaited(_onBrowserFinalUtterance(text));
       },
       onError: (message) {
         if (!mounted) return;
-        final fatal = message.toLowerCase().contains('permission') ||
+        final fatal =
+            message.toLowerCase().contains('permission') ||
             message.toLowerCase().contains('not-allowed') ||
             message.toLowerCase().contains('denied');
         setState(() {
@@ -700,6 +851,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
           if (fatal) {
             _handsFreeVoice = false;
             _wakeStandby = false;
+            _wakeListening = false;
             _surfaceError(message);
           }
         });
@@ -745,72 +897,124 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       return;
     }
 
-    final lang = _detectLanguageFromText(cleaned) ?? _sessionLanguage;
-
     try {
-      // Idle wake standby: only "Hey Shifa" (optionally with a command) starts.
+      // Idle wake: "Hey Shifa" / "Salom Shifa" (optionally with a command).
       if (_wakeStandby && !_handsFreeVoice) {
-        if (!_containsWakePhrase(cleaned)) {
-          return;
+        var spokenRaw = cleaned;
+        DoctorTranscriptionResult? alreadyTranscribed;
+        if (!_containsWakePhrase(spokenRaw)) {
+          alreadyTranscribed = await _tryGeminiWakeRecover(cleaned);
+          final recovered = alreadyTranscribed?.text.trim() ?? '';
+          if (!_containsWakePhrase(recovered)) {
+            return;
+          }
+          spokenRaw = recovered;
         }
         _wakeStandby = false;
-        final command = _stripShifaAddress(cleaned);
+        _wakeListening = false;
+        final chromeCommand = IntelligenceChatTitles.stripWakePhrase(spokenRaw);
         await _browserSpeech?.stop();
-        if (command.isEmpty) {
+        if (chromeCommand.isEmpty) {
           // Wake only → enter active listening (no mic tap).
           setState(() {
-            _sessionLanguage = lang;
             _error = null;
-            _liveCaption = cleaned;
+            _liveCaption = spokenRaw;
+            _sessionLanguage = _uiFallbackLanguage();
           });
           await _beginListening();
           return;
         }
-        // "Hey Shifa, …" → run the request immediately.
+        // Wake + command — prefer Gemini STT so Uzbek is not mangled by Chrome.
+        var spoken = chromeCommand;
+        var lang = _detectLanguageFromText(spoken) ?? _uiFallbackLanguage();
+        final server = alreadyTranscribed ?? await _transcribeCapturedAudio();
+        if (server != null && server.text.isNotEmpty) {
+          final fromServer = _stripShifaAddress(server.text);
+          spoken = fromServer.isNotEmpty ? fromServer : server.text;
+          lang = _resolveReplyLanguage(
+            transcript: spoken,
+            sttLanguage: server.language,
+          );
+        }
         setState(() {
           _busy = true;
           _handsFreeVoice = true;
           _phase = VoiceSessionPhase.thinking;
-          _liveCaption = cleaned;
+          _liveCaption = spoken;
           _sessionLanguage = lang;
           _error = null;
           _manualEndpoint = false;
         });
-        await _askMorningAi(command, language: lang);
+        await _askMorningAi(spoken, language: lang);
         return;
       }
 
+      var spoken = cleaned;
+      var lang = _detectLanguageFromText(spoken) ?? _sessionLanguage;
+      final server = await _transcribeCapturedAudio();
+      if (server != null && server.text.isNotEmpty) {
+        spoken = server.text;
+        lang = _resolveReplyLanguage(
+          transcript: spoken,
+          sttLanguage: server.language,
+        );
+      }
+
       // Active conversation: goodbye phrases end the loop.
-      if (_handsFreeVoice && _isConversationSignOff(cleaned)) {
-        await _endConversationFromSignOff(cleaned, language: lang);
+      if (_handsFreeVoice && _isConversationSignOff(spoken)) {
+        await _endConversationFromSignOff(spoken, language: lang);
         return;
       }
 
       setState(() {
         _busy = true;
         _phase = VoiceSessionPhase.thinking;
-        _liveCaption = cleaned;
+        _liveCaption = spoken;
         _sessionLanguage = lang;
         _error = null;
         _manualEndpoint = false;
       });
       await _browserSpeech?.stop();
-      await _askMorningAi(cleaned, language: lang);
+      await _askMorningAi(spoken, language: lang);
     } finally {
       _browserFinalInFlight = false;
     }
   }
 
-  bool _containsWakePhrase(String text) {
-    final t = text.toLowerCase();
-    return RegExp(
-          r"\b((hey|hi|hello|ok|okay)\s+)?shifa\b",
-          caseSensitive: false,
-        ).hasMatch(t) ||
-        RegExp(
-          r"\b((эй|привет|здравствуй)\s+)?шифа\b",
-          caseSensitive: false,
-        ).hasMatch(t);
+  bool _containsWakePhrase(String text) =>
+      IntelligenceChatTitles.containsWakePhrase(text);
+
+  /// Chrome's English recognizer often misses Uzbek "Salom Shifa". Check Gemini.
+  Future<DoctorTranscriptionResult?> _tryGeminiWakeRecover(
+    String chromeText,
+  ) async {
+    if (_uiFallbackLanguage() != 'UZ') return null;
+    final words = chromeText
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty);
+    if (words.isEmpty || words.length > 8 || chromeText.trim().length > 120) {
+      return null;
+    }
+    try {
+      final result = await _transcribeCapturedAudio().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => null,
+      );
+      if (result == null || !_containsWakePhrase(result.text)) {
+        _restartWakeAudioCapture();
+        return null;
+      }
+      return result;
+    } catch (_) {
+      _restartWakeAudioCapture();
+      return null;
+    }
+  }
+
+  void _restartWakeAudioCapture() {
+    if (!mounted || !_wakeStandby || _handsFreeVoice) return;
+    unawaited(_session.start(_onMicLevel));
   }
 
   /// Doctor is closing the chat — stop hands-free listening.
@@ -890,9 +1094,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     ).hasMatch(t)) {
       return true;
     }
-    if (RegExp(
-      r"^that'?s it[, ]+(thanks|thank you)$",
-    ).hasMatch(t)) {
+    if (RegExp(r"^that'?s it[, ]+(thanks|thank you)$").hasMatch(t)) {
       return true;
     }
     if (RegExp(
@@ -912,6 +1114,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     _wakeStandbyTimer?.cancel();
     _handsFreeVoice = false;
     _wakeStandby = false;
+    _wakeListening = false;
     setState(() {
       _busy = true;
       _phase = VoiceSessionPhase.thinking;
@@ -950,11 +1153,12 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     final t = text.toLowerCase();
     final lang = language.toUpperCase();
     if (lang == 'RU' || RegExp(r'[а-яё]', caseSensitive: false).hasMatch(t)) {
-      if (t.contains('спасибо')) return 'Пожалуйста. Скажите «Привет, Шифа», когда понадоблюсь.';
+      if (t.contains('спасибо'))
+        return 'Пожалуйста. Скажите «Привет, Шифа», когда понадоблюсь.';
       return 'Хорошо. Скажите «Привет, Шифа», когда понадоблюсь.';
     }
     if (lang == 'UZ') {
-      return 'Mayli. Kerak bo‘lsa «Hey Shifa» deb chaqiring.';
+      return 'Mayli. Kerak bo‘lsa «Salom Shifa» deb chaqiring.';
     }
     if (t.contains('thank') || t.contains('thanks')) {
       return "You're welcome. Say Hey Shifa when you need me again.";
@@ -970,7 +1174,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     });
   }
 
-  /// Background mic for "Hey Shifa" while conversation is closed.
+  /// Background mic for the locale wake phrase while conversation is closed.
   Future<void> _ensureWakeStandby() async {
     if (!mounted || !_alexaMode) return;
     if (_handsFreeVoice || _busy || _browserFinalInFlight) return;
@@ -979,8 +1183,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _phase == VoiceSessionPhase.speaking) {
       return;
     }
-    final canSpeak =
-        ref.read(doctorFeatureProvider(DoctorFeature.speechToText));
+    final canSpeak = ref.read(
+      doctorFeatureProvider(DoctorFeature.speechToText),
+    );
     if (!canSpeak) return;
 
     _wakeStandby = true;
@@ -990,16 +1195,21 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     } catch (_) {}
     final speech = _ensureBrowserSpeech();
     final ok = await speech.start(
-      languageCode: _sessionLanguage,
+      languageCode: _uiFallbackLanguage(),
       continuous: true,
     );
     if (!mounted) return;
     if (!ok) {
+      if (mounted) setState(() => _wakeListening = false);
       _scheduleWakeStandby(delayMs: 1200);
       return;
     }
+    // Capture audio in parallel so Uzbek "Salom Shifa" is not lost if Chrome
+    // mangles the wake phrase.
+    unawaited(_session.start(_onMicLevel));
     if (mounted) {
       setState(() {
+        _wakeListening = true;
         _phase = VoiceSessionPhase.idle;
         _busy = false;
       });
@@ -1045,26 +1255,38 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       return;
     }
     _gotAmplitude = true;
-    if (_manualEndpoint && level >= _speechLevel) {
-      // Levels started working after we entered manual mode — keep manual send.
+    final safe = level.isFinite ? level.clamp(0.0, 1.0) : 0.0;
+    // Web often reports a flat noise floor (~0.08). Don't overwrite the
+    // dictation pulse with that or the composer looks frozen.
+    if (_dictationHold) {
+      if (safe > 0.18) {
+        _visualLevel.value = math.max(_visualLevel.value, safe);
+      }
+      return;
     }
-    setState(() {
-      _levels.removeAt(0);
-      _levels.add(level);
-    });
+    _visualLevel.value = safe;
 
     // Decay peak so silence is relative to recent speech, not absolute dB.
-    _peakLevel = level > _peakLevel ? level : (_peakLevel * 0.92 + level * 0.08);
-    final relativeSilenceGate =
-        (_peakLevel * 0.42).clamp(_silenceLevel, 0.55);
+    _peakLevel = level > _peakLevel
+        ? level
+        : (_peakLevel * 0.92 + level * 0.08);
+    // 0.42 treated soft trailing syllables as silence; keep the gate low so only
+    // a real pause counts.
+    final relativeSilenceGate = (_peakLevel * 0.30).clamp(_silenceLevel, 0.40);
 
     final now = DateTime.now();
     if (level >= _speechLevel) {
+      final firstSpeech = !_heardSpeech;
       _heardSpeech = true;
       _speechStartedAt ??= now;
       _silenceStartedAt = null;
+      if (firstSpeech) setState(() {});
       return;
     }
+
+    // Dictation / Alexa: levels drive the orb only. Alexa commits on browser
+    // utterance end; dictation commits when the doctor taps send.
+    if (_dictationHold || _alexaMode) return;
 
     // Without usable levels, never auto-cancel — user taps stop to send.
     if (_manualEndpoint) return;
@@ -1072,10 +1294,12 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     if (!_heardSpeech) {
       final started = _listenStartedAt;
       if (started != null && now.difference(started) >= _noSpeechCancel) {
-        unawaited(_cancelListening(
-          reason:
-              'No speech detected. Tap the mic, speak, then tap stop to send.',
-        ));
+        unawaited(
+          _cancelListening(
+            reason:
+                'No speech detected. Tap the mic, speak, then tap stop to send.',
+          ),
+        );
       }
       return;
     }
@@ -1114,17 +1338,20 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _pulseTimer?.cancel();
         return;
       }
-      if (!stopWhenHeard && _gotAmplitude) {
+      if (!stopWhenHeard && _gotAmplitude && !_dictationHold) {
         _pulseTimer?.cancel();
         return;
       }
       final t = DateTime.now().millisecondsSinceEpoch / 180.0;
       final pulse =
           0.16 + 0.2 * (0.5 + 0.5 * (t % 2 < 1 ? (t % 1) : 1 - (t % 1)));
-      setState(() {
-        _levels.removeAt(0);
-        _levels.add(pulse.clamp(0.12, 0.5));
-      });
+      if (_dictationHold) {
+        // Keep bars moving even when the web mic reports a flat floor.
+        final spoken = _visualLevel.value;
+        _visualLevel.value = math.max(spoken * 0.82, pulse.clamp(0.18, 0.72));
+      } else {
+        _visualLevel.value = pulse.clamp(0.12, 0.5);
+      }
     });
   }
 
@@ -1144,6 +1371,8 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     setState(() {
       _phase = VoiceSessionPhase.idle;
       _busy = false;
+      _dictationHold = false;
+      _transcribingDictation = false;
       if (reason != null) {
         _handsFreeVoice = false;
         _surfaceError(reason);
@@ -1226,7 +1455,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       return;
     }
 
-    final canSpeak = ref.read(doctorFeatureProvider(DoctorFeature.speechToText));
+    final canSpeak = ref.read(
+      doctorFeatureProvider(DoctorFeature.speechToText),
+    );
     if (!canSpeak) {
       setState(() {
         _surfaceError('Speech requires Pro. Upgrade to talk with Shifa.');
@@ -1235,12 +1466,19 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     }
 
     // Second tap while listening:
+    // - Dictation: send the recording (pauses were allowed)
     // - Alexa mode: end the conversation → wake-word standby
     // - Recorder mode: send what was captured
     if (_phase == VoiceSessionPhase.listening) {
+      if (_dictationHold) {
+        _dictationHold = false;
+        await _finishListening();
+        return;
+      }
       if (_alexaMode) {
         _handsFreeVoice = false;
         _wakeStandby = false;
+        _wakeListening = false;
         _handsFreeResumeTimer?.cancel();
         _wakeStandbyTimer?.cancel();
         _cancelListenWatchdog();
@@ -1262,14 +1500,102 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     await _beginListening();
   }
 
+  /// Click to start recording, click the check to send. Pauses do not cut the turn.
+  Future<void> _toggleDictation() async {
+    final canSpeak = ref.read(
+      doctorFeatureProvider(DoctorFeature.speechToText),
+    );
+    if (!canSpeak) {
+      setState(() {
+        _surfaceError('Speech requires Pro. Upgrade to talk with Shifa.');
+      });
+      return;
+    }
+    if (_phase == VoiceSessionPhase.speaking) {
+      _ttsPlayGen++;
+      await _player.stop();
+      setState(() {
+        _phase = VoiceSessionPhase.idle;
+        _busy = false;
+      });
+    }
+    if (_busy && _phase == VoiceSessionPhase.thinking) {
+      _askGen++;
+      await _aiSub?.cancel();
+      setState(() {
+        _busy = false;
+        _phase = VoiceSessionPhase.idle;
+        _transcribingDictation = false;
+        _surfaceError('Stopped.');
+      });
+      return;
+    }
+    if (_phase == VoiceSessionPhase.listening) {
+      _dictationHold = false;
+      _handsFreeVoice = false;
+      await _browserSpeech?.stop();
+      await _finishListening();
+      return;
+    }
+    if (_busy) return;
+    await _beginDictation();
+  }
+
+  Future<void> _beginDictation() async {
+    _handsFreeResumeTimer?.cancel();
+    _wakeStandbyTimer?.cancel();
+    _cancelListenWatchdog();
+    _wakeStandby = false;
+    _wakeListening = false;
+    _handsFreeVoice = false;
+    _dictationHold = true;
+    _transcribingDictation = false;
+    _browserFinalInFlight = false;
+    await _browserSpeech?.stop();
+    try {
+      await _session.stop(discard: true);
+    } catch (_) {}
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    _resetVad();
+    _listenStartedAt = DateTime.now();
+    setState(() {
+      _error = null;
+      _busy = false;
+      _phase = VoiceSessionPhase.listening;
+      _liveCaption = '';
+      _streamingReply = '';
+      _manualEndpoint = true;
+    });
+    _visualLevel.value = 0.28;
+    _startListeningPulse(stopWhenHeard: false);
+    final err = await _session.start(_onMicLevel);
+    if (err != null) {
+      _dictationHold = false;
+      if (mounted) {
+        setState(() {
+          _phase = VoiceSessionPhase.idle;
+          _surfaceError(
+            err == 'no_permission'
+                ? 'Microphone permission is required.'
+                : 'Could not start recording.',
+          );
+        });
+      }
+      return;
+    }
+    _maxListenTimer?.cancel();
+    _maxListenTimer = Timer(const Duration(minutes: 10), () {
+      if (!mounted || _phase != VoiceSessionPhase.listening) return;
+      unawaited(_finishListening());
+    });
+  }
+
   Future<void> _beginListening() async {
     final now = DateTime.now();
     final last = _lastListenStartAt;
     if (last != null && now.difference(last) < _listenRestartCooldown) {
       final wait = _listenRestartCooldown - now.difference(last);
-      _scheduleHandsFreeListen(
-        delayMs: wait.inMilliseconds.clamp(200, 2000),
-      );
+      _scheduleHandsFreeListen(delayMs: wait.inMilliseconds.clamp(200, 2000));
       return;
     }
     _lastListenStartAt = now;
@@ -1277,6 +1603,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     _handsFreeResumeTimer?.cancel();
     _wakeStandbyTimer?.cancel();
     _wakeStandby = false;
+    _wakeListening = false;
     _handsFreeVoice = true;
     _resetVad();
     _browserFinalInFlight = false;
@@ -1288,10 +1615,8 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       _phase = VoiceSessionPhase.listening;
       _liveCaption = '';
       _streamingReply = '';
-      for (var i = 0; i < _levels.length; i++) {
-        _levels[i] = 0.12;
-      }
     });
+    _visualLevel.value = 0.12;
     _startListeningPulse();
 
     // Intelligence web: continuous conversation (pause ends the turn).
@@ -1303,6 +1628,13 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       } catch (_) {}
       await Future<void>.delayed(const Duration(milliseconds: 200));
       if (!mounted || !_handsFreeVoice) return;
+      // Start the file recorder first so Gemini STT hears the full utterance.
+      // Chrome SpeechRecognition is English-biased and turns Uzbek into junk.
+      await _session.start(_onMicLevel);
+      if (!mounted || !_handsFreeVoice) {
+        await _session.stop(discard: true);
+        return;
+      }
       final speech = _ensureBrowserSpeech();
       // Conversation turns: one utterance (continuous false). Wake uses continuous.
       final ok = await speech.start(
@@ -1310,6 +1642,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         continuous: false,
       );
       if (!ok && mounted) {
+        await _session.stop(discard: true);
         _handsFreeStartFails++;
         _cancelListenWatchdog();
         _pulseTimer?.cancel();
@@ -1317,7 +1650,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         if (_handsFreeStartFails >= 5) {
           _handsFreeVoice = false;
           _surfaceError(
-            'Could not reopen the microphone. Say Hey Shifa or tap the mic.',
+            _uiFallbackLanguage() == 'UZ'
+                ? 'Mikrofonni qayta ochib bo‘lmadi. «Salom Shifa» deng yoki mikrofonni bosing.'
+                : 'Could not reopen the microphone. Say Hey Shifa or tap the mic.',
           );
           _scheduleWakeStandby(delayMs: 900);
         } else {
@@ -1365,7 +1700,8 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   void _scheduleHandsFreeListen({int delayMs = 650}) {
     if (!_handsFreeVoice || !mounted) return;
     // Allow re-arm even when UI still shows listening (dead Chrome session).
-    final speechDead = _alexaMode &&
+    final speechDead =
+        _alexaMode &&
         _phase == VoiceSessionPhase.listening &&
         (_browserSpeech == null || !_browserSpeech!.isListening);
     if (_phase == VoiceSessionPhase.listening && !speechDead) return;
@@ -1377,70 +1713,98 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
           _phase == VoiceSessionPhase.speaking) {
         return;
       }
-      final stillDead = _alexaMode &&
+      final stillDead =
+          _alexaMode &&
           (_browserSpeech == null || !_browserSpeech!.isListening);
       if (_phase == VoiceSessionPhase.listening && !stillDead) return;
       unawaited(_beginListening());
     });
   }
 
+  Future<DoctorTranscriptionResult?> _transcribeCapturedAudio() async {
+    final path = await _session
+        .stop(discard: false)
+        .timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {
+            throw TimeoutException('Could not finish the recording.');
+          },
+        );
+    if (path == null || path.isEmpty) return null;
+    final bytes = await readVoiceRecordingFileBytes(path).timeout(
+      const Duration(seconds: 8),
+      onTimeout: () {
+        throw TimeoutException('Could not read the recording.');
+      },
+    );
+    if (bytes.isEmpty) return null;
+    debugPrint('intelligence_stt bytes=${bytes.length}');
+    final name = voiceRecordingUploadFileName(path, bytes: bytes);
+    final stt = await postDoctorTranscriptionDetailed(
+      ref: ref,
+      fileBytes: bytes,
+      fileName: name,
+      autoDetectLanguage: true,
+    );
+    final cleaned = stt.text.trim();
+    if (cleaned.isEmpty || cleaned == kNoSpeechTranscriptPlaceholder) {
+      return null;
+    }
+    return DoctorTranscriptionResult(text: cleaned, language: stt.language);
+  }
+
   Future<void> _finishListening() async {
     _maxListenTimer?.cancel();
+    final fromDictation = _dictationHold;
+    _dictationHold = false;
+    final gen = ++_askGen;
     setState(() {
       _busy = true;
       _phase = VoiceSessionPhase.thinking;
+      _transcribingDictation = fromDictation;
     });
-    final path = await _session.stop(discard: false);
     _resetVad();
-    if (path == null || path.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _phase = VoiceSessionPhase.idle;
-          _error = 'No recording captured.';
-        });
-      }
-      return;
-    }
-
     try {
-      final bytes = await readVoiceRecordingFileBytes(path);
-      final name = voiceRecordingUploadFileName(path, bytes: bytes);
-      // Auto-detect: do not force UI locale (was turning English speech into Uzbek).
-      final stt = await postDoctorTranscriptionDetailed(
-        ref: ref,
-        fileBytes: bytes,
-        fileName: name,
-        autoDetectLanguage: true,
-      );
-      if (!mounted) return;
-      final cleaned = stt.text.trim();
-      if (cleaned.isEmpty || cleaned == kNoSpeechTranscriptPlaceholder) {
+      final stt = await _transcribeCapturedAudio();
+      if (!mounted || gen != _askGen) return;
+      final cleaned = stt?.text.trim() ?? '';
+      if (cleaned.isEmpty) {
         setState(() {
           _busy = false;
           _phase = VoiceSessionPhase.idle;
-          _surfaceError('No speech detected. Tap the mic and try again.');
+          _transcribingDictation = false;
+          _surfaceError(
+            fromDictation
+                ? 'No speech in that recording. Tap the record button and try again.'
+                : 'No speech detected. Tap the mic and try again.',
+          );
         });
         _scheduleHandsFreeListen();
         return;
       }
       final lang = _resolveReplyLanguage(
         transcript: cleaned,
-        sttLanguage: stt.language,
+        sttLanguage: stt?.language,
       );
       setState(() {
         _liveCaption = cleaned;
         _sessionLanguage = lang;
+        _transcribingDictation = false;
       });
       await _askMorningAi(cleaned, language: lang);
     } catch (e) {
+      debugPrint('intelligence_stt_failed $e');
       if (!mounted) return;
       setState(() {
         _busy = false;
         _phase = VoiceSessionPhase.idle;
+        _transcribingDictation = false;
         _handsFreeVoice = false;
         _surfaceError(
-          e.toString().contains('permission') || e.toString().contains('403')
+          e is TimeoutException
+              ? 'Transcription timed out. Try a shorter recording.'
+              : e.toString().contains('permission') ||
+                    e.toString().contains('403')
               ? 'Speech requires Pro, or mic permission was denied.'
               : 'Transcription failed. Check your connection and try again.',
         );
@@ -1457,36 +1821,18 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         t.contains('save everything');
   }
 
-  /// Strip wake phrases so "Hey Shifa, free slots today" becomes the request.
+  /// Strip wake phrases so "Salom Shifa, free slots today" becomes the request.
   String _stripShifaAddress(String text) {
-    var t = text.trim();
-    t = t.replaceFirst(
-      RegExp(
-        r"^(hey|hi|hello|ok|okay)?\s*shifa[,!.]?\s*",
-        caseSensitive: false,
-      ),
-      '',
-    );
-    t = t.replaceFirst(
-      RegExp(
-        r"^(эй|привет|здравствуй)?\s*шифа[,!.]?\s*",
-        caseSensitive: false,
-      ),
-      '',
-    );
-    return t.trim().isEmpty ? text.trim() : t.trim();
+    final stripped = IntelligenceChatTitles.stripWakePhrase(text);
+    return stripped.isEmpty ? text.trim() : stripped;
   }
 
-  Future<void> _askMorningAi(
-    String userText, {
-    String? language,
-  }) async {
+  Future<void> _askMorningAi(String userText, {String? language}) async {
     final api = ref.read(aiApiProvider);
     userText = _stripShifaAddress(userText);
     final userAt = DateTime.now();
-    final replyLang = language ??
-        _detectLanguageFromText(userText) ??
-        _sessionLanguage;
+    final replyLang =
+        language ?? _detectLanguageFromText(userText) ?? _sessionLanguage;
     _sessionLanguage = replyLang;
     final patientId = int.tryParse(widget.selectedPatientId ?? '');
     final appointmentId = int.tryParse(widget.selectedAppointmentId ?? '');
@@ -1509,6 +1855,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       try {
         final result = await api.commitVisitFacts(appointmentId: appointmentId);
         ref.invalidate(visitFactsForAppointmentProvider(appointmentId));
+        ref.invalidate(
+          consultationNotesForAppointmentProvider('$appointmentId'),
+        );
         if (patientId != null) {
           ref.invalidate(patientTimelineProvider(patientId));
         }
@@ -1559,7 +1908,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       _streamingReply = '';
       _phase = VoiceSessionPhase.thinking;
       _error = null;
+      _transcribingDictation = false;
     });
+    _scrollChatToEnd(force: true);
 
     final buffer = StringBuffer();
     String? toolName;
@@ -1569,14 +1920,18 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     // already resolved someone in this chat.
     final focusPatientId = _focusPatientIdFromCards() ?? patientId;
     await _aiSub?.cancel();
+    final askGen = ++_askGen;
     try {
-      await for (final event in api.streamMorningAi(
-        messages: history,
-        language: replyLang,
-        patientId: focusPatientId,
-        consultationId: appointmentId,
-      )) {
-        if (!mounted) return;
+      await for (final event
+          in api
+              .streamMorningAi(
+                messages: history,
+                language: replyLang,
+                patientId: focusPatientId,
+                consultationId: appointmentId,
+              )
+              .timeout(const Duration(seconds: 75))) {
+        if (!mounted || askGen != _askGen) return;
         if (event is AiToolEvent) {
           final name = event.name;
           toolName = name;
@@ -1591,6 +1946,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
           }
           cardPayload = payload;
           setState(() {});
+          _scrollChatToEnd();
           continue;
         }
         if (event is AiTokenEvent) {
@@ -1608,7 +1964,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         setState(() {
           _busy = false;
           _phase = VoiceSessionPhase.idle;
-          _error = 'Shifa had nothing to say. Try again.';
+          _error =
+              AppLocalizations.of(context)?.translate('intelEmptyReply') ??
+              'Shifa had nothing to say. Try again.';
         });
         return;
       }
@@ -1616,17 +1974,19 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       final spoken = cardPayload?['booked'] == true
           ? (cardPayload?['statusMessage']?.toString() ?? reply)
           : reply.isEmpty
-              ? (cardPayload?['spokenHint']?.toString() ?? '')
-              : reply;
+          ? (cardPayload?['spokenHint']?.toString() ?? '')
+          : reply;
       setState(() {
-        _turns.add(_VoiceTurn(
-          userText: userText,
-          assistantText: spoken,
-          toolName: toolName,
-          cardPayload: cardPayload,
-          userAt: userAt,
-          assistantAt: DateTime.now(),
-        ));
+        _turns.add(
+          _VoiceTurn(
+            userText: userText,
+            assistantText: spoken,
+            toolName: toolName,
+            cardPayload: cardPayload,
+            userAt: userAt,
+            assistantAt: DateTime.now(),
+          ),
+        );
         _streamingReply = spoken;
       });
       _emitMessages();
@@ -1640,6 +2000,15 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _error = e.userFacingMessage;
         _phase = VoiceSessionPhase.idle;
         _busy = false;
+        _transcribingDictation = false;
+      });
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Shifa took too long to reply. Try again.';
+        _phase = VoiceSessionPhase.idle;
+        _busy = false;
+        _transcribingDictation = false;
       });
     } catch (e) {
       if (!mounted) return;
@@ -1647,6 +2016,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _error = e.toString();
         _phase = VoiceSessionPhase.idle;
         _busy = false;
+        _transcribingDictation = false;
       });
     } finally {
       // Always clear busy first, then re-arm mic — scheduling while busy
@@ -1679,13 +2049,13 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     final playGen = ++_ttsPlayGen;
     try {
       final api = ref.read(aiApiProvider);
-      final bytes = await api.speak(
+      final spoken = await api.speak(
         text,
         language: language,
-        timeout: const Duration(seconds: 8),
+        timeout: const Duration(seconds: 25),
       );
       if (!mounted || playGen != _ttsPlayGen) return;
-      if (bytes.isEmpty) {
+      if (spoken.bytes.isEmpty) {
         setState(() {
           _phase = VoiceSessionPhase.idle;
         });
@@ -1696,10 +2066,11 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       await Future<void>.delayed(const Duration(milliseconds: 60));
       if (!mounted || playGen != _ttsPlayGen) return;
       await _player.setVolume(1.0);
-      final data = Uint8List.fromList(bytes);
+      final data = Uint8List.fromList(spoken.bytes);
+      final mime = spoken.mimeType.isEmpty ? 'audio/mpeg' : spoken.mimeType;
       // Prefer data-URI UrlSource first (reliable on Flutter web).
       try {
-        final dataUri = Uri.dataFromBytes(data, mimeType: 'audio/mpeg');
+        final dataUri = Uri.dataFromBytes(data, mimeType: mime);
         await _player.play(UrlSource(dataUri.toString()));
       } catch (_) {
         await _player.play(BytesSource(data));
@@ -1828,6 +2199,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     // Typing exits hands-free voice loop; wake standby resumes after.
     _handsFreeVoice = false;
     _wakeStandby = false;
+    _wakeListening = false;
     _handsFreeResumeTimer?.cancel();
     _wakeStandbyTimer?.cancel();
     await _browserSpeech?.stop();
@@ -1838,6 +2210,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       _sessionLanguage = lang;
       _error = null;
     });
+    _scrollChatToEnd(force: true);
     await _askMorningAi(t, language: lang);
     if (mounted && _alexaMode && !_handsFreeVoice) {
       _scheduleWakeStandby();
@@ -1863,8 +2236,83 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     await _askMorningAi(text);
   }
 
+  ({String status, String? subtitle}) _voiceCopy(AppLocalizations l10n) {
+    switch (_phase) {
+      case VoiceSessionPhase.listening:
+        final status = _alexaMode
+            ? (_heardSpeech
+                  ? l10n.translate('intelBannerGotIt')
+                  : l10n.translate('intelBannerListeningNatural'))
+            : _manualEndpoint
+            ? l10n.translate('intelBannerRecording')
+            : _heardSpeech
+            ? l10n.translate('intelBannerPauseSend')
+            : l10n.translate('intelBannerSpeakNow');
+        final subtitle = _alexaMode
+            ? l10n.translate('intelBannerAlexaSubtitle')
+            : _manualEndpoint
+            ? l10n.translate('intelBannerManualSubtitle')
+            : _handsFreeVoice
+            ? l10n.translate('intelBannerHandsFreeSubtitle')
+            : null;
+        return (status: status, subtitle: subtitle);
+      case VoiceSessionPhase.thinking:
+        return (
+          status: _transcribingDictation
+              ? 'Transcribing…'
+              : l10n.translate('intelReviewing'),
+          subtitle: _transcribingDictation
+              ? 'Sending your recording to Shifa'
+              : _t(
+                  l10n,
+                  'voiceThinkingSubtitle',
+                  'Shifa is reviewing your request',
+                ),
+        );
+      case VoiceSessionPhase.speaking:
+        return (
+          status: _t(l10n, 'voiceSpeaking', 'Shifa is speaking…'),
+          subtitle: _t(
+            l10n,
+            'voiceSpeakingSubtitle',
+            'Tap the microphone to interrupt',
+          ),
+        );
+      case VoiceSessionPhase.idle:
+        return (
+          status: _t(l10n, 'talkWithShifa', 'Talk with Shifa'),
+          subtitle: null,
+        );
+    }
+  }
+
+  Widget _embeddedVoicePanel(AppLocalizations l10n) {
+    final copy = _voiceCopy(l10n);
+    final listening = _phase == VoiceSessionPhase.listening;
+    return ShifaVoiceOrbPanel(
+      phase: _phase,
+      intensity: _visualLevel,
+      status: copy.status,
+      subtitle: copy.subtitle,
+      caption: listening && _alexaMode && _liveCaption.trim().isNotEmpty
+          ? _liveCaption
+          : null,
+      onStop: listening ? () => unawaited(_toggleListen()) : null,
+      stopLabel: _t(l10n, 'intelVoiceStop', 'Stop'),
+      stopSemanticsLabel: l10n.translate('intelStopListening'),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    ref.listen(languageProvider, (previous, next) {
+      if (!_alexaMode || _handsFreeVoice || _busy) return;
+      if (_wakeStandby || _phase == VoiceSessionPhase.idle) {
+        _sessionLanguage = _uiFallbackLanguage();
+        _scheduleWakeStandby(delayMs: 250);
+      }
+    });
     final canUse = ref.watch(doctorFeatureProvider(DoctorFeature.askShifaAi));
     if (!canUse) return const SizedBox.shrink();
 
@@ -1894,10 +2342,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
               const SizedBox(height: 2),
               Text(
                 phaseLabel,
-                style: AppDesignSystem.body2(context).copyWith(
-                  color: brand,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppDesignSystem.body2(
+                  context,
+                ).copyWith(color: brand, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -1908,18 +2355,29 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     final legacyControls = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _WaveStrip(
-          levels: _levels,
-          brand: brand,
-          active: _phase == VoiceSessionPhase.listening,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : 280.0;
+            final size = (width * 0.55).clamp(160.0, 260.0);
+            return Center(
+              child: ShifaAiOrb(
+                phase: _phase,
+                intensity: _visualLevel,
+                size: size,
+                reduceMotion: MediaQuery.disableAnimationsOf(context),
+              ),
+            );
+          },
         ),
         if (_error != null) ...[
           const SizedBox(height: 8),
           Text(
             _error!,
-            style: AppDesignSystem.caption(context).copyWith(
-              color: Colors.red.shade700,
-            ),
+            style: AppDesignSystem.caption(
+              context,
+            ).copyWith(color: Colors.red.shade700),
           ),
         ],
         const SizedBox(height: 12),
@@ -1933,11 +2391,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
             'listeningCancel',
             'Listening… pause to send',
           ),
-          labelIdle: _t(
-            l10n,
-            'holdToTalk',
-            'Tap once, then speak',
-          ),
+          labelIdle: _t(l10n, 'holdToTalk', 'Tap once, then speak'),
         ),
         if (_phase == VoiceSessionPhase.listening) ...[
           const SizedBox(height: 6),
@@ -1953,11 +2407,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _TypedFallback(
           enabled: !_busy && _phase != VoiceSessionPhase.listening,
           onSend: _sendTyped,
-          hint: _t(
-            l10n,
-            'orTypeHere',
-            'Or type: How many appointments today?',
-          ),
+          hint: _t(l10n, 'orTypeHere', 'Or type: How many appointments today?'),
         ),
         if (widget.selectedAppointmentId != null) ...[
           const SizedBox(height: 16),
@@ -1970,14 +2420,21 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     );
 
     if (widget.embedded) {
-      final inVoiceUi = _phase == VoiceSessionPhase.listening ||
+      final showVoiceOrb =
+          _phase == VoiceSessionPhase.listening ||
+          _phase == VoiceSessionPhase.speaking ||
+          (_phase == VoiceSessionPhase.thinking && _handsFreeVoice);
+      final inVoiceUi =
+          _phase == VoiceSessionPhase.listening ||
           _phase == VoiceSessionPhase.speaking ||
           _phase == VoiceSessionPhase.thinking;
-      final showWelcome = _turns.isEmpty &&
+      final showWelcome =
+          _turns.isEmpty &&
           _liveCaption.isEmpty &&
           _streamingReply.isEmpty &&
           !_busy &&
           !inVoiceUi;
+      _reportWelcome(showWelcome);
 
       return ColoredBox(
         color: AppDesignSystem.backgroundSecondary,
@@ -1992,145 +2449,183 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
               const Divider(height: 1),
             ],
             Expanded(
-              child: showWelcome
-                  ? IntelligenceWelcome(
-                      recentSessions: widget.recentSessions,
-                      onSendPrompt: _sendTyped,
-                      onOpenSession: widget.onOpenSession ?? (_) {},
-                    )
-                  : ListView(
-                      controller: _chatScroll,
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                      children: [
-                        for (final turn in _turns) ...[
-                          _UserBubble(
-                            text: turn.userText,
-                            brand: brand,
-                            at: turn.userAt,
-                          ),
-                          const SizedBox(height: 12),
-                          if (turn.assistantText.trim().isNotEmpty ||
-                              turn.cardPayload != null)
-                            _AssistantBlock(
-                              text: turn.assistantText,
-                              toolName: turn.toolName,
-                              cardPayload: turn.cardPayload,
-                              at: turn.assistantAt,
-                            ),
-                          const SizedBox(height: 18),
-                        ],
-                        if ((_busy ||
-                                _phase == VoiceSessionPhase.listening) &&
-                            _liveCaption.isNotEmpty &&
-                            (_turns.isEmpty ||
-                                _turns.last.userText != _liveCaption)) ...[
-                          _UserBubble(
-                            text: _liveCaption,
-                            brand: brand,
-                            at: DateTime.now(),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        if (_phase == VoiceSessionPhase.listening)
-                          _ListeningBanner(
-                            brand: brand,
-                            levels: _levels,
-                            heardSpeech: _heardSpeech,
-                            handsFree: _handsFreeVoice,
-                            manualEndpoint: _manualEndpoint,
-                            alexaMode: _alexaMode,
-                            liveCaption: _liveCaption,
-                          ),
-                        if (_phase == VoiceSessionPhase.speaking)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Row(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: showWelcome ? 720 : 880,
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                    child: showWelcome
+                        ? IntelligenceWelcome(
+                            recentSessions: widget.recentSessions,
+                            onSendPrompt: _sendTyped,
+                            onOpenSession: widget.onOpenSession ?? (_) {},
+                            onRenameSession:
+                                widget.onRenameSession ?? (_, __) {},
+                            onDeleteSession: widget.onDeleteSession ?? (_) {},
+                          )
+                        : NotificationListener<ScrollNotification>(
+                            onNotification: _onChatScrollNotification,
+                            child: ListView(
+                              controller: _chatScroll,
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                20,
+                                24,
+                                16,
+                              ),
                               children: [
-                                Icon(Icons.graphic_eq, color: brand),
-                                const SizedBox(width: 10),
-                                Text(
-                                  _t(l10n, 'voiceSpeaking', 'Speaking…'),
-                                  style: AppDesignSystem.body2(context)
-                                      .copyWith(
-                                    color: brand,
-                                    fontWeight: FontWeight.w600,
+                                for (final turn in _turns) ...[
+                                  _UserBubble(
+                                    text: turn.userText,
+                                    brand: brand,
+                                    at: turn.userAt,
                                   ),
-                                ),
+                                  const SizedBox(height: 12),
+                                  if (turn.assistantText.trim().isNotEmpty ||
+                                      turn.cardPayload != null)
+                                    _AssistantBlock(
+                                      text: turn.assistantText,
+                                      toolName: turn.toolName,
+                                      cardPayload: turn.cardPayload,
+                                      at: turn.assistantAt,
+                                    ),
+                                  const SizedBox(height: 18),
+                                ],
+                                if ((_busy ||
+                                        _phase ==
+                                            VoiceSessionPhase.listening) &&
+                                    _liveCaption.isNotEmpty &&
+                                    (_turns.isEmpty ||
+                                        _turns.last.userText !=
+                                            _liveCaption)) ...[
+                                  _UserBubble(
+                                    text: _liveCaption,
+                                    brand: brand,
+                                    at: DateTime.now(),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                                if (_phase == VoiceSessionPhase.thinking &&
+                                    _streamingReply.isEmpty &&
+                                    !showVoiceOrb)
+                                  _AssistantBlock(
+                                    text: _transcribingDictation
+                                        ? 'Transcribing…'
+                                        : _t(
+                                            l10n,
+                                            'intelReviewing',
+                                            'Reviewing…',
+                                          ),
+                                    toolName: null,
+                                    cardPayload: null,
+                                    pending: true,
+                                  ),
+                                if (_streamingReply.isNotEmpty &&
+                                    (_turns.isEmpty ||
+                                        _turns.last.assistantText !=
+                                            _streamingReply))
+                                  _AssistantBlock(
+                                    text: _streamingReply,
+                                    toolName: null,
+                                    cardPayload: null,
+                                  ),
+                                if (showVoiceOrb)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: _embeddedVoicePanel(l10n),
+                                  ),
+                                if (_error != null) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _error!,
+                                          style:
+                                              AppDesignSystem.caption(
+                                                context,
+                                              ).copyWith(
+                                                color: Colors.red.shade700,
+                                              ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: _busy ? null : _retryLast,
+                                        child: Text(l10n.translate('retry')),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
-                        if (_phase == VoiceSessionPhase.thinking &&
-                            _streamingReply.isEmpty)
-                          _AssistantBlock(
-                            text: _t(l10n, 'intelReviewing', 'Reviewing…'),
-                            toolName: null,
-                            cardPayload: null,
-                            pending: true,
-                          ),
-                        if (_streamingReply.isNotEmpty &&
-                            (_turns.isEmpty ||
-                                _turns.last.assistantText !=
-                                    _streamingReply))
-                          _AssistantBlock(
-                            text: _streamingReply,
-                            toolName: null,
-                            cardPayload: null,
-                          ),
-                        if (_error != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _error!,
-                                  style: AppDesignSystem.caption(context)
-                                      .copyWith(color: Colors.red.shade700),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: _busy ? null : _retryLast,
-                                child: Text(l10n.translate('retry')),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
+                  ),
+                ),
+              ),
             ),
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              child: _IntelligenceComposer(
-                phase: _phase,
-                busy: _busy,
-                brand: brand,
-                levels: _levels,
-                heardSpeech: _heardSpeech,
-                error: _error,
-                handsFree: _handsFreeVoice,
-                wakeStandby: _wakeStandby,
-                manualEndpoint: _manualEndpoint,
-                alexaMode: _alexaMode,
-                onMic: () => unawaited(_toggleListen()),
-                onSend: _sendTyped,
-                hint: _t(
-                  l10n,
-                  'intelComposerHint',
-                  'Ask Shifa about patients, appointments, or clinical tasks…',
+              child: Align(
+                alignment: Alignment.topCenter,
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: showWelcome ? 720 : 880,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!showWelcome) _PatientContextLine(turns: _turns),
+                      _IntelligenceComposer(
+                        phase: _phase,
+                        busy: _busy,
+                        brand: brand,
+                        heardSpeech: _heardSpeech,
+                        error: _error,
+                        handsFree: _handsFreeVoice,
+                        wakeStandby: _wakeListening,
+                        manualEndpoint: _manualEndpoint,
+                        alexaMode: _alexaMode,
+                        dictationHold: _dictationHold,
+                        transcribing: _transcribingDictation,
+                        dictationLevel: _visualLevel,
+                        onMic: () => unawaited(_toggleListen()),
+                        onDictation: () => unawaited(_toggleDictation()),
+                        onSend: _sendTyped,
+                        hint: _t(l10n, 'intelComposerHint', 'Ask Shifa…'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Text(
-                _t(
-                  l10n,
-                  'intelDisclaimer',
-                  'AI-generated responses may require review.',
-                ),
-                textAlign: TextAlign.center,
-                style: AppDesignSystem.caption(context).copyWith(
-                  color: AppDesignSystem.textTertiary,
+              child: Align(
+                alignment: Alignment.topCenter,
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: showWelcome ? 720 : 880,
+                  ),
+                  child: Text(
+                    _t(
+                      l10n,
+                      'intelDisclaimer',
+                      'AI-generated responses may require review.',
+                    ),
+                    textAlign: TextAlign.center,
+                    style: AppDesignSystem.caption(
+                      context,
+                    ).copyWith(color: AppDesignSystem.textTertiary),
+                  ),
                 ),
               ),
             ),
@@ -2250,47 +2745,51 @@ String _formatChatTimestamp(DateTime at) {
 }
 
 class _UserBubble extends StatelessWidget {
-  const _UserBubble({
-    required this.text,
-    required this.brand,
-    this.at,
-  });
+  const _UserBubble({required this.text, required this.brand, this.at});
   final String text;
   final Color brand;
   final DateTime? at;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.72,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (at != null) ...[
-              Text(
-                _formatChatTimestamp(at!),
-                style: AppDesignSystem.caption(context).copyWith(
-                  color: AppDesignSystem.textTertiary,
-                  fontSize: 11,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth * 0.78
+            : 560.0;
+        return Align(
+          alignment: Alignment.centerRight,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (at != null) ...[
+                  Text(
+                    _formatChatTimestamp(at!),
+                    style: AppDesignSystem.caption(context).copyWith(
+                      color: AppDesignSystem.textTertiary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: brand.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(text, style: AppDesignSystem.body2(context)),
                 ),
-              ),
-              const SizedBox(height: 4),
-            ],
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: brand.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(text, style: AppDesignSystem.body2(context)),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -2312,141 +2811,63 @@ class _AssistantBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.85,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (at != null && !pending) ...[
-              Text(
-                _formatChatTimestamp(at!),
-                style: AppDesignSystem.caption(context).copyWith(
-                  color: AppDesignSystem.textTertiary,
-                  fontSize: 11,
-                ),
-              ),
-              const SizedBox(height: 4),
-            ],
-            Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 880.0;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.auto_awesome,
-                  size: 16,
-                  color: AppDesignSystem.primaryAi.withValues(alpha: 0.9),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: AppDesignSystem.body2(context).copyWith(
-                      height: 1.45,
-                      fontStyle: pending ? FontStyle.italic : FontStyle.normal,
-                      color: pending
-                          ? AppDesignSystem.textSecondary
-                          : AppDesignSystem.textPrimary,
+                if (at != null && !pending) ...[
+                  Text(
+                    _formatChatTimestamp(at!),
+                    style: AppDesignSystem.caption(context).copyWith(
+                      color: AppDesignSystem.textTertiary,
+                      fontSize: 11,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: AppDesignSystem.primaryAi.withValues(alpha: 0.9),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: AppDesignSystem.body2(context).copyWith(
+                          height: 1.45,
+                          fontStyle: pending
+                              ? FontStyle.italic
+                              : FontStyle.normal,
+                          color: pending
+                              ? AppDesignSystem.textSecondary
+                              : AppDesignSystem.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                if (cardPayload != null && toolName != null)
+                  IntelligenceActionCard(
+                    toolName: toolName!,
+                    payload: cardPayload!,
+                  ),
               ],
             ),
-            if (cardPayload != null && toolName != null)
-              IntelligenceActionCard(
-                toolName: toolName!,
-                payload: cardPayload!,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ListeningBanner extends StatelessWidget {
-  const _ListeningBanner({
-    required this.brand,
-    required this.levels,
-    required this.heardSpeech,
-    required this.handsFree,
-    required this.manualEndpoint,
-    required this.alexaMode,
-    required this.liveCaption,
-  });
-
-  final Color brand;
-  final List<double> levels;
-  final bool heardSpeech;
-  final bool handsFree;
-  final bool manualEndpoint;
-  final bool alexaMode;
-  final String liveCaption;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = alexaMode
-        ? (heardSpeech ? 'Got it… keep talking or pause' : 'Listening… speak naturally')
-        : manualEndpoint
-            ? 'Recording… speak, then tap stop'
-            : heardSpeech
-                ? 'Listening… pause to send'
-                : 'Listening… speak now';
-    final subtitle = alexaMode
-        ? 'Pause when finished — Shifa answers, then listens again. Say “that’s it” or “thank you” to stop, or tap stop.'
-        : manualEndpoint
-            ? 'Tap the red stop button when you finish speaking'
-            : handsFree
-                ? 'Hands-free — tap stop when done to send'
-                : null;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-      decoration: BoxDecoration(
-        color: brand.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: brand.withValues(alpha: 0.28)),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.mic, color: brand, size: 36),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: AppDesignSystem.body1(context).copyWith(
-              color: brand,
-              fontWeight: FontWeight.w700,
-            ),
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: AppDesignSystem.caption(context).copyWith(
-                color: AppDesignSystem.textSecondary,
-              ),
-            ),
-          ],
-          if (alexaMode && liveCaption.trim().isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              liveCaption,
-              textAlign: TextAlign.center,
-              style: AppDesignSystem.body2(context),
-            ),
-          ],
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 36,
-            child: _WaveStrip(levels: levels, brand: brand, active: true),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -2456,9 +2877,9 @@ class _IntelligenceComposer extends StatefulWidget {
     required this.phase,
     required this.busy,
     required this.brand,
-    required this.levels,
     required this.heardSpeech,
     required this.onMic,
+    required this.onDictation,
     required this.onSend,
     required this.hint,
     this.error,
@@ -2466,14 +2887,17 @@ class _IntelligenceComposer extends StatefulWidget {
     this.wakeStandby = false,
     this.manualEndpoint = false,
     this.alexaMode = false,
+    this.dictationHold = false,
+    this.transcribing = false,
+    this.dictationLevel,
   });
 
   final VoiceSessionPhase phase;
   final bool busy;
   final Color brand;
-  final List<double> levels;
   final bool heardSpeech;
   final VoidCallback onMic;
+  final VoidCallback onDictation;
   final ValueChanged<String> onSend;
   final String hint;
   final String? error;
@@ -2481,6 +2905,9 @@ class _IntelligenceComposer extends StatefulWidget {
   final bool wakeStandby;
   final bool manualEndpoint;
   final bool alexaMode;
+  final bool dictationHold;
+  final bool transcribing;
+  final ValueListenable<double>? dictationLevel;
 
   @override
   State<_IntelligenceComposer> createState() => _IntelligenceComposerState();
@@ -2491,7 +2918,18 @@ class _IntelligenceComposerState extends State<_IntelligenceComposer> {
   final _focus = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onDraftChanged);
+  }
+
+  void _onDraftChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _controller.removeListener(_onDraftChanged);
     _controller.dispose();
     _focus.dispose();
     super.dispose();
@@ -2507,109 +2945,158 @@ class _IntelligenceComposerState extends State<_IntelligenceComposer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final listening = widget.phase == VoiceSessionPhase.listening;
     final speaking = widget.phase == VoiceSessionPhase.speaking;
+    final wake =
+        widget.alexaMode &&
+        widget.wakeStandby &&
+        widget.phase == VoiceSessionPhase.idle;
+    final canSend =
+        _controller.text.trim().isNotEmpty &&
+        !widget.busy &&
+        !listening &&
+        !speaking;
     // Allow mic while idle, listening (stop), or speaking (barge-in).
     final micEnabled = !widget.busy || listening || speaking;
+    final borderColor = listening
+        ? widget.brand.withValues(alpha: 0.7)
+        : wake
+        ? widget.brand.withValues(alpha: 0.45)
+        : AppDesignSystem.border;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.error != null &&
-            widget.phase == VoiceSessionPhase.idle) ...[
+        if (widget.error != null && widget.phase == VoiceSessionPhase.idle) ...[
           Text(
             widget.error!,
-            style: AppDesignSystem.caption(context).copyWith(
-              color: Colors.red.shade700,
-            ),
+            style: AppDesignSystem.caption(
+              context,
+            ).copyWith(color: Colors.red.shade700),
           ),
           const SizedBox(height: 8),
         ],
-        if (listening) ...[
+        if (widget.transcribing) ...[
           Text(
-            widget.alexaMode
-                ? (widget.heardSpeech
-                    ? 'Pause to send — then keep talking after the reply'
-                    : 'Speak naturally — say “that’s it” when you’re done')
-                : widget.manualEndpoint
-                    ? 'Speak, then tap the red stop to send'
-                    : widget.heardSpeech
-                        ? 'Pause when finished — sending automatically'
-                        : 'Speak now — I am listening',
+            'Transcribing your recording…',
             textAlign: TextAlign.center,
-            style: AppDesignSystem.caption(context).copyWith(
-              color: widget.brand,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppDesignSystem.caption(
+              context,
+            ).copyWith(color: widget.brand, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+        ] else if (listening && widget.dictationHold) ...[
+          Text(
+            'Recording… tap the check when you are done. Pauses are fine.',
+            textAlign: TextAlign.center,
+            style: AppDesignSystem.caption(
+              context,
+            ).copyWith(color: widget.brand, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
         ],
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: listening
-                  ? widget.brand.withValues(alpha: 0.55)
-                  : AppDesignSystem.border,
-              width: listening ? 1.6 : 1,
+              color: widget.dictationHold ? widget.brand : borderColor,
+              width: listening || wake || widget.dictationHold ? 1.6 : 1,
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+          padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focus,
-                  enabled: !widget.busy && !listening && !speaking,
-                  minLines: 1,
-                  maxLines: 4,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: submitOnEnter(
-                    widget.busy || listening || speaking ? null : _submit,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: listening
-                        ? 'Listening…'
-                        : speaking
-                            ? 'Shifa is speaking… tap mic to interrupt'
-                            : widget.alexaMode && widget.wakeStandby
-                                ? 'Say “Hey Shifa” — or type here…'
-                                : widget.hint,
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                ),
+                child: widget.dictationHold
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: _ComposerDictationWave(
+                          brand: widget.brand,
+                          level: widget.dictationLevel,
+                        ),
+                      )
+                    : TextField(
+                        controller: _controller,
+                        focusNode: _focus,
+                        enabled: !widget.busy && !listening && !speaking,
+                        minLines: 1,
+                        maxLines: 4,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: submitOnEnter(canSend ? _submit : null),
+                        decoration: InputDecoration(
+                          hintText: listening
+                              ? l10n.translate('intelComposerListening')
+                              : speaking
+                              ? l10n.translate('intelComposerSpeaking')
+                              : widget.transcribing
+                              ? 'Transcribing…'
+                              : widget.hint,
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                      ),
+              ),
+              IconButton(
+                tooltip: widget.dictationHold
+                    ? 'Tap to send this recording'
+                    : 'Dictate — records until you tap send. Pauses are OK.',
+                style: IconButton.styleFrom(minimumSize: const Size(40, 40)),
+                onPressed: (!widget.busy || listening || widget.transcribing)
+                    ? widget.onDictation
+                    : null,
+                icon: widget.transcribing
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: widget.brand,
+                        ),
+                      )
+                    : Icon(
+                        widget.dictationHold
+                            ? Icons.check_circle
+                            : Icons.fiber_manual_record_outlined,
+                        color: widget.dictationHold
+                            ? Colors.green.shade700
+                            : widget.brand,
+                        size: widget.dictationHold ? 26 : 22,
+                      ),
               ),
               IconButton(
                 tooltip: listening
-                    ? 'Stop listening'
+                    ? l10n.translate('intelStopListening')
                     : speaking
-                        ? 'Interrupt and speak'
-                        : widget.wakeStandby
-                            ? 'Wake standby on — or tap to talk'
-                            : 'Talk with Shifa',
+                    ? l10n.translate('intelInterruptSpeak')
+                    : wake
+                    ? l10n.translate('intelMicWake')
+                    : l10n.translate('intelMicTalk'),
+                style: IconButton.styleFrom(minimumSize: const Size(40, 40)),
                 onPressed: micEnabled ? widget.onMic : null,
                 icon: Icon(
                   listening
                       ? Icons.stop_circle_outlined
                       : speaking
-                          ? Icons.mic
-                          : widget.wakeStandby
-                              ? Icons.hearing
-                              : Icons.mic_none,
-                  color: listening
-                      ? Colors.red.shade600
-                      : widget.brand,
-                  size: listening || speaking ? 28 : 24,
+                      ? Icons.mic
+                      : wake
+                      ? Icons.hearing
+                      : Icons.mic_none,
+                  color: listening ? Colors.red.shade600 : widget.brand,
+                  size: listening || speaking ? 26 : 22,
                 ),
               ),
               IconButton(
-                tooltip: 'Send',
-                onPressed:
-                    widget.busy || listening || speaking ? null : _submit,
-                icon: Icon(Icons.send_rounded, color: widget.brand),
+                tooltip: l10n.translate('send'),
+                style: IconButton.styleFrom(minimumSize: const Size(40, 40)),
+                onPressed: canSend ? _submit : null,
+                icon: Icon(
+                  Icons.send_rounded,
+                  color: canSend
+                      ? widget.brand
+                      : widget.brand.withValues(alpha: 0.35),
+                ),
               ),
             ],
           ),
@@ -2617,25 +3104,66 @@ class _IntelligenceComposerState extends State<_IntelligenceComposer> {
         if (widget.handsFree && widget.phase == VoiceSessionPhase.idle) ...[
           const SizedBox(height: 6),
           Text(
-            'Hands-free on — mic will open after each reply',
+            l10n.translate('intelHandsFreeOn'),
             textAlign: TextAlign.center,
-            style: AppDesignSystem.caption(context).copyWith(
-              color: AppDesignSystem.textSecondary,
-            ),
+            style: AppDesignSystem.caption(
+              context,
+            ).copyWith(color: AppDesignSystem.textSecondary),
           ),
-        ] else if (widget.alexaMode &&
-            widget.wakeStandby &&
-            widget.phase == VoiceSessionPhase.idle) ...[
+        ] else if (wake) ...[
           const SizedBox(height: 6),
           Text(
-            'Say “Hey Shifa” to start — no need to touch the mic',
+            l10n.translate('intelListeningForWake'),
             textAlign: TextAlign.center,
-            style: AppDesignSystem.caption(context).copyWith(
-              color: AppDesignSystem.textSecondary,
-            ),
+            style: AppDesignSystem.caption(
+              context,
+            ).copyWith(color: widget.brand, fontWeight: FontWeight.w600),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _PatientContextLine extends StatelessWidget {
+  const _PatientContextLine({required this.turns});
+
+  final List<_VoiceTurn> turns;
+
+  @override
+  Widget build(BuildContext context) {
+    final mark = IntelligenceChatContext.summarize(
+      turns.map((t) => (payload: t.cardPayload, toolName: t.toolName)),
+    );
+    if (!mark.linked) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    final brand = Theme.of(context).colorScheme.primary;
+    final name = mark.name;
+    final label = name == null
+        ? l10n.translate('intelPatient')
+        : l10n.translate('intelContextPatient').replaceAll('{name}', name);
+    return Semantics(
+      label: label,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Icon(Icons.person_outline, size: 16, color: brand),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppDesignSystem.caption(context).copyWith(
+                  color: AppDesignSystem.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2657,7 +3185,10 @@ class _PulseOrb extends StatelessWidget {
         gradient: LinearGradient(
           colors: active
               ? [brand, AppDesignSystem.primaryAi]
-              : [brand.withValues(alpha: 0.7), AppDesignSystem.primaryAi.withValues(alpha: 0.7)],
+              : [
+                  brand.withValues(alpha: 0.7),
+                  AppDesignSystem.primaryAi.withValues(alpha: 0.7),
+                ],
         ),
         boxShadow: active
             ? [
@@ -2669,55 +3200,12 @@ class _PulseOrb extends StatelessWidget {
               ]
             : null,
       ),
-      child: Icon(
-        switch (phase) {
-          VoiceSessionPhase.listening => Icons.mic,
-          VoiceSessionPhase.thinking => Icons.auto_awesome,
-          VoiceSessionPhase.speaking => Icons.graphic_eq,
-          VoiceSessionPhase.idle => Icons.record_voice_over,
-        },
-        color: Colors.white,
-      ),
-    );
-  }
-}
-
-class _WaveStrip extends StatelessWidget {
-  const _WaveStrip({
-    required this.levels,
-    required this.brand,
-    required this.active,
-  });
-
-  final List<double> levels;
-  final Color brand;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (final level in levels)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 80),
-                  height: 8 + level * 36,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? brand.withValues(alpha: 0.35 + level * 0.55)
-                        : brand.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+      child: Icon(switch (phase) {
+        VoiceSessionPhase.listening => Icons.mic,
+        VoiceSessionPhase.thinking => Icons.auto_awesome,
+        VoiceSessionPhase.speaking => Icons.graphic_eq,
+        VoiceSessionPhase.idle => Icons.record_voice_over,
+      }, color: Colors.white),
     );
   }
 }
@@ -2877,6 +3365,83 @@ class _TypedFallbackState extends State<_TypedFallback> {
                 },
         ),
       ],
+    );
+  }
+}
+
+/// Live bars in the composer while hold-to-dictate is recording.
+class _ComposerDictationWave extends StatefulWidget {
+  const _ComposerDictationWave({required this.brand, required this.level});
+
+  final Color brand;
+  final ValueListenable<double>? level;
+
+  @override
+  State<_ComposerDictationWave> createState() => _ComposerDictationWaveState();
+}
+
+class _ComposerDictationWaveState extends State<_ComposerDictationWave> {
+  static const _bars = 22;
+  late List<double> _levels;
+
+  @override
+  void initState() {
+    super.initState();
+    _levels = List<double>.filled(_bars, 0.22);
+    widget.level?.addListener(_onLevel);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ComposerDictationWave oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.level != widget.level) {
+      oldWidget.level?.removeListener(_onLevel);
+      widget.level?.addListener(_onLevel);
+    }
+  }
+
+  void _onLevel() {
+    if (!mounted) return;
+    final v = (widget.level?.value ?? 0.22).clamp(0.12, 1.0);
+    setState(() {
+      _levels = List<double>.from(_levels.skip(1))..add(v);
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.level?.removeListener(_onLevel);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 28,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var i = 0; i < _levels.length; i++)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0.6),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 80),
+                  curve: Curves.easeOut,
+                  height: 4 + _levels[i] * 24,
+                  decoration: BoxDecoration(
+                    color: Color.lerp(
+                      widget.brand.withValues(alpha: 0.25),
+                      widget.brand,
+                      _levels[i],
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

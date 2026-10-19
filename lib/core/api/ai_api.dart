@@ -5,6 +5,13 @@ import 'package:http/http.dart' as http;
 import '../../../core/api/api_client.dart';
 import '../../../core/api/ai_message.dart';
 
+/// Bytes plus the server Content-Type (OpenAI MP3 or Gemini WAV).
+class SpokenAudio {
+  const SpokenAudio({required this.bytes, required this.mimeType});
+  final List<int> bytes;
+  final String mimeType;
+}
+
 /// Thrown when the AI stream fails with a structured error (validation, rate limit, safety block, unavailable).
 class AiStreamException implements Exception {
   final String code;
@@ -282,15 +289,14 @@ class AiApi {
     );
   }
 
-  /// Server TTS for short spoken morning replies. Returns mp3 bytes.
-  /// Hard-timeout so Intelligence never hangs minutes waiting on OpenAI.
-  Future<List<int>> speak(
+  /// Server TTS for short spoken morning replies.
+  /// Uzbek is Gemini WAV; English/Russian stay OpenAI MP3. Use [SpokenAudio.mimeType].
+  Future<SpokenAudio> speak(
     String text, {
     String language = 'UZ',
-    Duration timeout = const Duration(seconds: 8),
+    Duration timeout = const Duration(seconds: 25),
   }) async {
     final uri = Uri.parse('${_api.baseUrl}/api/ai/speak');
-    // Speak only a short lead — full reply stays on screen.
     final spoken = _truncateForSpeech(text);
     final response = await http
         .post(
@@ -305,10 +311,14 @@ class AiApi {
         'Speech synthesis failed: HTTP ${response.statusCode}',
       );
     }
-    return response.bodyBytes;
+    final mime = response.headers['content-type']?.split(';').first.trim();
+    return SpokenAudio(
+      bytes: response.bodyBytes,
+      mimeType: (mime == null || mime.isEmpty) ? 'audio/mpeg' : mime,
+    );
   }
 
-  static String _truncateForSpeech(String text, {int maxChars = 280}) {
+  static String _truncateForSpeech(String text, {int maxChars = 560}) {
     final t = text.trim();
     if (t.length <= maxChars) return t;
     final cut = t.substring(0, maxChars);

@@ -6,6 +6,7 @@ import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
+import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/visit_facts_panel.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_inline_viewers.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
@@ -1094,6 +1095,9 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       );
       final patientId = (widget.payload['patientId'] as num?)?.toInt();
       ref.invalidate(visitFactsForAppointmentProvider(appointmentId));
+      ref.invalidate(
+        consultationNotesForAppointmentProvider('$appointmentId'),
+      );
       if (patientId != null) {
         ref.invalidate(patientTimelineProvider(patientId));
       }

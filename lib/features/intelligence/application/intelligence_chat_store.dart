@@ -30,8 +30,9 @@ class IntelligenceChatState {
   }) {
     return IntelligenceChatState(
       sessions: sessions ?? this.sessions,
-      activeSessionId:
-          clearActive ? null : (activeSessionId ?? this.activeSessionId),
+      activeSessionId: clearActive
+          ? null
+          : (activeSessionId ?? this.activeSessionId),
       loaded: loaded ?? this.loaded,
     );
   }
@@ -39,14 +40,14 @@ class IntelligenceChatState {
 
 class IntelligenceChatController extends StateNotifier<IntelligenceChatState> {
   IntelligenceChatController(this._ref)
-      : super(const IntelligenceChatState(sessions: [], activeSessionId: null));
+    : super(const IntelligenceChatState(sessions: [], activeSessionId: null));
 
   final Ref _ref;
 
   String _storageKey() {
     final profile = _ref.read(profileAllProvider).valueOrNull?.profile;
-    final doctorId =
-        (profile?['id'] ?? profile?['doctorId'] ?? 'anonymous').toString();
+    final doctorId = (profile?['id'] ?? profile?['doctorId'] ?? 'anonymous')
+        .toString();
     return 'shifa_intelligence_chats_v1:$doctorId';
   }
 
@@ -85,7 +86,7 @@ class IntelligenceChatController extends StateNotifier<IntelligenceChatState> {
     final now = DateTime.now();
     return IntelligenceChatSession(
       id: 'chat_${now.millisecondsSinceEpoch}',
-      title: 'New chat',
+      title: IntelligenceChatSession.untitled,
       createdAt: now,
       updatedAt: now,
       messages: [],
@@ -137,9 +138,34 @@ class IntelligenceChatController extends StateNotifier<IntelligenceChatState> {
       state = state.copyWith(sessions: next, activeSessionId: created.id);
       return;
     }
-    final active = state.activeSessionId == id ? next.first.id : state.activeSessionId;
+    final active = state.activeSessionId == id
+        ? next.first.id
+        : state.activeSessionId;
     await _persist(next);
     state = state.copyWith(sessions: next, activeSessionId: active);
+  }
+
+  /// Keeps [updatedAt] so a rename does not look like a new message.
+  Future<void> renameChat(String id, String nextTitle) async {
+    await ensureLoaded();
+    final trimmed = nextTitle.trim();
+    if (trimmed.isEmpty) return;
+    var changed = false;
+    final next = state.sessions.map((s) {
+      if (s.id != id) return s;
+      changed = true;
+      return IntelligenceChatSession(
+        id: s.id,
+        title: trimmed,
+        titleCustom: true,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+        messages: s.messages,
+      );
+    }).toList();
+    if (!changed) return;
+    await _persist(next);
+    state = state.copyWith(sessions: next);
   }
 
   Future<void> replaceMessages(
@@ -149,24 +175,15 @@ class IntelligenceChatController extends StateNotifier<IntelligenceChatState> {
     await ensureLoaded();
     final next = state.sessions.map((s) {
       if (s.id != sessionId) return s;
-      String title = 'New chat';
-      if (messages.isNotEmpty) {
-        for (final m in messages) {
-          if (m.role == 'user' && m.content.trim().isNotEmpty) {
-            title = m.content.trim();
-            break;
-          }
-        }
-      }
       return IntelligenceChatSession(
         id: s.id,
-        title: title,
+        title: s.title,
+        titleCustom: s.titleCustom,
         createdAt: s.createdAt,
         updatedAt: DateTime.now(),
         messages: List.of(messages),
       );
-    }).toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    }).toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     await _persist(next);
     state = state.copyWith(sessions: next, activeSessionId: sessionId);
   }
@@ -174,5 +191,5 @@ class IntelligenceChatController extends StateNotifier<IntelligenceChatState> {
 
 final intelligenceChatProvider =
     StateNotifierProvider<IntelligenceChatController, IntelligenceChatState>(
-  (ref) => IntelligenceChatController(ref),
-);
+      (ref) => IntelligenceChatController(ref),
+    );

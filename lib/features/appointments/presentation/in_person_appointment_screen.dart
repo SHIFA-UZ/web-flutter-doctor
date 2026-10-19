@@ -117,6 +117,8 @@ class _InPersonAppointmentScreenState
   /// 'general' = notes + images; '025-2' = structured dental form
   String _documentationType = 'general';
   bool _hasUnsavedChanges = false;
+  bool _notesHydrated = false;
+  bool _dentalNotesHydrated = false;
   /// One-shot: apply [profileAllProvider] default mode when profile first loads.
   bool _documentationProfessionDefaultApplied = false;
   /// After the doctor explicitly picks a mode, do not override from profile.
@@ -177,6 +179,66 @@ class _InPersonAppointmentScreenState
     if (_documentationType == 'dental') {
       await _dentalDocPanelKey.currentState?.flushSave();
     }
+    await _persistGeneralConsultationNotes();
+  }
+
+  Future<void> _persistGeneralConsultationNotes() async {
+    if (_documentationType != 'general' || !_hasUnsavedChanges) return;
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+    final text = composeConsultationNotesPdf(
+      l10n: l10n,
+      soapSubjective: _soapSubjective,
+      soapObjective: _soapObjective,
+      soapAssessment: _soapAssessment,
+      soapPlan: _soapPlan,
+      freeNotes: _notesController,
+    );
+    if (text.trim().isEmpty) return;
+    try {
+      await saveDoctorConsultationNotes(
+        api: ref.read(apiClientProvider),
+        appointmentId: widget.appointment.id,
+        text: text,
+      );
+      if (mounted) {
+        ref.invalidate(
+          consultationNotesForAppointmentProvider(widget.appointment.id),
+        );
+        _hasUnsavedChanges = false;
+      }
+    } catch (e) {
+      debugPrint('Failed to persist consultation notes: $e');
+    }
+  }
+
+  void _hydrateNotesIfNeeded(List<ConsultationNoteDto>? notes) {
+    if (notes == null) return;
+    final manual = joinedManualConsultationNotes(notes);
+    if (manual.isEmpty) {
+      _notesHydrated = true;
+      return;
+    }
+    if (!_notesHydrated) {
+      _notesHydrated = true;
+      if (_notesController.text.trim().isEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _notesController.text.trim().isNotEmpty) return;
+          _notesController.removeListener(_markUnsaved);
+          _notesController.text = manual;
+          _notesController.addListener(_markUnsaved);
+        });
+      }
+    }
+    if (_dentalNotesHydrated) return;
+    final dental = _dentalDocPanelKey.currentState;
+    if (dental == null || !dental.isReadyForNoteHydrate) return;
+    _dentalNotesHydrated = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _dentalDocPanelKey.currentState?.hydrateClinicalNotesIfEmpty(manual);
+    });
   }
 
   Future<void> _leaveAppointmentScreen() async {
@@ -1392,6 +1454,7 @@ class _InPersonAppointmentScreenState
     final consultationNotesAsync = ref.watch(
       consultationNotesForAppointmentProvider(widget.appointment.id),
     );
+    _hydrateNotesIfNeeded(consultationNotesAsync.valueOrNull);
     // Pending AI draft notes for this appointment (e.g. AI Scribe) – show with Confirm/Discard
     final draftNotesAsync = ref.watch(
       draftNotesForAppointmentProvider(widget.appointment.id),

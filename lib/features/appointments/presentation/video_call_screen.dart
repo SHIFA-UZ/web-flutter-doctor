@@ -152,6 +152,8 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
   bool _warningShown = false;
   String _documentationType = 'general';
   bool _hasUnsavedChanges = false;
+  bool _notesHydrated = false;
+  bool _dentalNotesHydrated = false;
   bool _documentationProfessionDefaultApplied = false;
   bool _userSelectedDocumentationType = false;
 
@@ -228,6 +230,66 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
     if (_documentationType == 'dental') {
       await _dentalDocPanelKey.currentState?.flushSave();
     }
+    await _persistGeneralConsultationNotes();
+  }
+
+  Future<void> _persistGeneralConsultationNotes() async {
+    if (_documentationType != 'general' || !_hasUnsavedChanges) return;
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+    final text = composeConsultationNotesPdf(
+      l10n: l10n,
+      soapSubjective: _soapSubjective,
+      soapObjective: _soapObjective,
+      soapAssessment: _soapAssessment,
+      soapPlan: _soapPlan,
+      freeNotes: _notesController,
+    );
+    if (text.trim().isEmpty) return;
+    try {
+      await saveDoctorConsultationNotes(
+        api: ref.read(apiClientProvider),
+        appointmentId: widget.appointment.id,
+        text: text,
+      );
+      if (mounted) {
+        ref.invalidate(
+          consultationNotesForAppointmentProvider(widget.appointment.id),
+        );
+        _hasUnsavedChanges = false;
+      }
+    } catch (e) {
+      debugPrint('Failed to persist consultation notes: $e');
+    }
+  }
+
+  void _hydrateNotesIfNeeded(List<ConsultationNoteDto>? notes) {
+    if (notes == null) return;
+    final manual = joinedManualConsultationNotes(notes);
+    if (manual.isEmpty) {
+      _notesHydrated = true;
+      return;
+    }
+    if (!_notesHydrated) {
+      _notesHydrated = true;
+      if (_notesController.text.trim().isEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _notesController.text.trim().isNotEmpty) return;
+          _notesController.removeListener(_markUnsaved);
+          _notesController.text = manual;
+          _notesController.addListener(_markUnsaved);
+        });
+      }
+    }
+    if (_dentalNotesHydrated) return;
+    final dental = _dentalDocPanelKey.currentState;
+    if (dental == null || !dental.isReadyForNoteHydrate) return;
+    _dentalNotesHydrated = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _dentalDocPanelKey.currentState?.hydrateClinicalNotesIfEmpty(manual);
+    });
   }
 
   Future<void> _leaveAppointmentScreen() async {
@@ -1558,6 +1620,12 @@ class _VideoCallScreenState extends ConsumerState<VideoCallScreen> {
         patientId.isNotEmpty &&
         (patientIdAsync == null ||
             (!patientIdAsync.isLoading && !patientIdAsync.hasError));
+
+    _hydrateNotesIfNeeded(
+      ref
+          .watch(consultationNotesForAppointmentProvider(widget.appointment.id))
+          .valueOrNull,
+    );
 
     final patientProfileAsync =
         patientId != null && patientId.isNotEmpty

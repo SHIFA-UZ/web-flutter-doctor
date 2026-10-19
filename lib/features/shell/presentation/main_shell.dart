@@ -415,6 +415,7 @@ class _MainShellState extends ConsumerState<MainShell> with WidgetsBindingObserv
     final isMobile = PlatformLayout.useMobileShell(context);
     final compactSidebar = PlatformLayout.useCompactSidebar(context);
     final sidebarWidth = PlatformLayout.sidebarWidth(context);
+    ref.watch(languageProvider);
     final l10n = AppLocalizations.of(context)!;
     final workspaceMode = ref.watch(workspaceModeProvider);
     final intelligenceActive = workspaceMode == WorkspaceMode.intelligence;
