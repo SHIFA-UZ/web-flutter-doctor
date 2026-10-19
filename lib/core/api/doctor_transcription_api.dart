@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -137,12 +138,15 @@ Future<DoctorTranscriptionResult> postDoctorTranscriptionDetailed({
     fields['languageHint'] =
         languageHint ?? normalizedTranscriptionLanguageHint(ref);
   }
-  final streamed = await client.postMultipart(
-    '/api/ai/transcribe',
-    files: [multipartFile],
-    fields: fields.isEmpty ? null : fields,
-  );
-  final response = await http.Response.fromStream(streamed);
+  final streamed = await client
+      .postMultipart(
+        '/api/ai/transcribe',
+        files: [multipartFile],
+        fields: fields.isEmpty ? null : fields,
+      )
+      .timeout(const Duration(seconds: 90));
+  final response = await http.Response.fromStream(streamed)
+      .timeout(const Duration(seconds: 90));
   if (response.statusCode == 403) {
     throw Exception('speechToTextRequiresPro');
   }

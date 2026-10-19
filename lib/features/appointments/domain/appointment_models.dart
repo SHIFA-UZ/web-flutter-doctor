@@ -6,7 +6,8 @@ enum AppointmentStatus {
   confirmed,
   cancelled,
   completed,
-  inProgress;
+  inProgress,
+  noShow;
 
   static AppointmentStatus? fromString(String? status) {
     if (status == null) return null;
@@ -21,6 +22,8 @@ enum AppointmentStatus {
         return AppointmentStatus.completed;
       case 'IN_PROGRESS':
         return AppointmentStatus.inProgress;
+      case 'NO_SHOW':
+        return AppointmentStatus.noShow;
       default:
         return null;
     }

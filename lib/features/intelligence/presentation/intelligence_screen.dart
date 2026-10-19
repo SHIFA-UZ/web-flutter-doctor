@@ -6,14 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/layout/platform_layout.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/features/admin/presentation/admin_pdf_downloader_stub.dart'
-    if (dart.library.html)
-        'package:shifa_doc_app_v1/features/admin/presentation/admin_pdf_downloader_web.dart'
+    if (dart.library.html) 'package:shifa_doc_app_v1/features/admin/presentation/admin_pdf_downloader_web.dart'
     as file_download;
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_voice_session.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/application/intelligence_chat_store.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/domain/intelligence_chat_models.dart';
+import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_session_tile.dart';
+import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
+import 'package:shifa_doc_app_v1/state/workspace/workspace_mode_provider.dart';
 
 /// Clinical Intelligence workspace: conversation-first, history on demand.
 class IntelligenceScreen extends ConsumerStatefulWidget {
@@ -25,6 +28,7 @@ class IntelligenceScreen extends ConsumerStatefulWidget {
 
 class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool? _welcomeVisible;
 
   @override
   void initState() {
@@ -79,6 +83,31 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
     }
   }
 
+  Future<void> _renameActive() async {
+    final active = ref.read(intelligenceChatProvider).active;
+    if (active == null || active.messages.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
+    final current = intelligenceSessionLabel(l10n, active);
+    final next = await showIntelligenceRenameDialog(
+      context,
+      initialTitle: current,
+    );
+    if (next == null || !mounted) return;
+    final trimmed = next.trim();
+    if (trimmed.isEmpty || trimmed == current) return;
+    await ref
+        .read(intelligenceChatProvider.notifier)
+        .renameChat(active.id, trimmed);
+  }
+
+  Future<void> _deleteActive() async {
+    final active = ref.read(intelligenceChatProvider).active;
+    if (active == null || active.messages.isEmpty) return;
+    final ok = await confirmIntelligenceDelete(context);
+    if (!ok || !mounted) return;
+    await ref.read(intelligenceChatProvider.notifier).deleteChat(active.id);
+  }
+
   void _openHistory() {
     final narrow = PlatformLayout.useSinglePane(context);
     if (narrow) {
@@ -99,7 +128,9 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
                   sessions: state.sessions,
                   activeId: state.activeSessionId,
                   onNew: () {
-                    sheetRef.read(intelligenceChatProvider.notifier).createChat();
+                    sheetRef
+                        .read(intelligenceChatProvider.notifier)
+                        .createChat();
                     Navigator.pop(ctx);
                   },
                   onSelect: (id) {
@@ -111,6 +142,9 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
                   onDelete: (id) => sheetRef
                       .read(intelligenceChatProvider.notifier)
                       .deleteChat(id),
+                  onRename: (id, title) => sheetRef
+                      .read(intelligenceChatProvider.notifier)
+                      .renameChat(id, title),
                 ),
               );
             },
@@ -124,6 +158,7 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final l10n = AppLocalizations.of(context)!;
     final chatState = ref.watch(intelligenceChatProvider);
     final active = chatState.active;
@@ -139,7 +174,12 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
       },
       onDelete: (id) =>
           ref.read(intelligenceChatProvider.notifier).deleteChat(id),
+      onRename: (id, title) =>
+          ref.read(intelligenceChatProvider.notifier).renameChat(id, title),
     );
+
+    final persistedThread = active != null && active.messages.isNotEmpty;
+    final conversationOpen = _welcomeVisible == false || persistedThread;
 
     final body = !chatState.loaded || active == null
         ? const Center(child: CircularProgressIndicator())
@@ -151,6 +191,15 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
             recentSessions: chatState.sessions,
             onOpenSession: (id) =>
                 ref.read(intelligenceChatProvider.notifier).selectChat(id),
+            onRenameSession: (id, title) => ref
+                .read(intelligenceChatProvider.notifier)
+                .renameChat(id, title),
+            onDeleteSession: (id) =>
+                ref.read(intelligenceChatProvider.notifier).deleteChat(id),
+            onWelcomeVisible: (visible) {
+              if (_welcomeVisible == visible) return;
+              setState(() => _welcomeVisible = visible);
+            },
             onMessagesChanged: (messages) {
               ref
                   .read(intelligenceChatProvider.notifier)
@@ -174,20 +223,25 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
         elevation: 0,
         scrolledUnderElevation: 0.5,
         leading: IconButton(
-          tooltip: l10n.translate('intelHowCanIHelp'),
+          tooltip: conversationOpen
+              ? l10n.translate('intelBackToWelcome')
+              : l10n.translate('intelBackToClinic'),
           icon: const Icon(Icons.arrow_back),
-          onPressed: () =>
-              ref.read(intelligenceChatProvider.notifier).goToWelcome(),
+          onPressed: () {
+            if (!conversationOpen) {
+              ref.read(workspaceModeProvider.notifier).showClinic();
+              unawaited(invalidateAppointmentRelatedProviders(ref));
+              return;
+            }
+            ref.read(intelligenceChatProvider.notifier).goToWelcome();
+          },
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               l10n.translate('shifaIntelligence'),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             Text(
               l10n.translate('intelligenceEmptyHint'),
@@ -203,23 +257,45 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: l10n.translate('intelDownloadChat'),
-            icon: const Icon(Icons.download_outlined),
-            onPressed: active == null || active.messages.isEmpty
-                ? null
-                : () => unawaited(_downloadConversation()),
-          ),
-          IconButton(
-            tooltip: l10n.translate('chatHistory'),
+            tooltip: l10n.translate('intelHistory'),
             icon: const Icon(Icons.history),
             onPressed: _openHistory,
           ),
           IconButton(
-            tooltip: l10n.translate('newChat'),
+            tooltip: l10n.translate('intelNewConversation'),
             icon: const Icon(Icons.add_comment_outlined),
             onPressed: () =>
                 ref.read(intelligenceChatProvider.notifier).createChat(),
           ),
+          if (conversationOpen)
+            PopupMenuButton<String>(
+              tooltip: l10n.translate('intelMoreActions'),
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                switch (value) {
+                  case 'download':
+                    unawaited(_downloadConversation());
+                  case 'rename':
+                    unawaited(_renameActive());
+                  case 'delete':
+                    unawaited(_deleteActive());
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'download',
+                  child: Text(l10n.translate('intelDownloadChat')),
+                ),
+                PopupMenuItem(
+                  value: 'rename',
+                  child: Text(l10n.translate('intelRename')),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text(l10n.translate('delete')),
+                ),
+              ],
+            ),
         ],
       ),
       body: body,
@@ -251,27 +327,24 @@ String _formatConversationExport(IntelligenceChatSession session) {
     if (m.cardPayload != null && m.cardPayload!.isNotEmpty) {
       buf.writeln();
       buf.writeln('cardPayload:');
-      buf.writeln(
-        const JsonEncoder.withIndent('  ').convert(m.cardPayload),
-      );
+      buf.writeln(const JsonEncoder.withIndent('  ').convert(m.cardPayload));
     }
     buf.writeln();
   }
 
   buf.writeln('--- JSON (machine-readable) ---');
-  buf.writeln(
-    const JsonEncoder.withIndent('  ').convert(session.toJson()),
-  );
+  buf.writeln(const JsonEncoder.withIndent('  ').convert(session.toJson()));
   return buf.toString();
 }
 
-class _HistoryPane extends StatelessWidget {
+class _HistoryPane extends StatefulWidget {
   const _HistoryPane({
     required this.sessions,
     required this.activeId,
     required this.onNew,
     required this.onSelect,
     required this.onDelete,
+    required this.onRename,
   });
 
   final List<IntelligenceChatSession> sessions;
@@ -279,11 +352,28 @@ class _HistoryPane extends StatelessWidget {
   final VoidCallback onNew;
   final ValueChanged<String> onSelect;
   final ValueChanged<String> onDelete;
+  final void Function(String id, String title) onRename;
+
+  @override
+  State<_HistoryPane> createState() => _HistoryPaneState();
+}
+
+class _HistoryPaneState extends State<_HistoryPane> {
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final brand = Theme.of(context).colorScheme.primary;
+    final query = _search.text;
+    final visible = widget.sessions
+        .where((s) => s.matchesQuery(query))
+        .toList();
 
     return ColoredBox(
       color: Colors.white,
@@ -292,91 +382,77 @@ class _HistoryPane extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.translate('chatHistory'),
-                    style: AppDesignSystem.body1(context).copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              l10n.translate('intelHistory'),
+              style: AppDesignSystem.body1(
+                context,
+              ).copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: OutlinedButton.icon(
-              onPressed: onNew,
+              onPressed: widget.onNew,
               icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.translate('newChat')),
+              label: Text(l10n.translate('intelNewConversation')),
             ),
           ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: sessions.length,
-              itemBuilder: (context, index) {
-                final session = sessions[index];
-                final selected = session.id == activeId;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Material(
-                    color: selected
-                        ? brand.withValues(alpha: 0.1)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () => onSelect(session.id),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              color: brand.withValues(alpha: 0.75),
-                              size: 16,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                                child: Text(
-                                  session.displayTitle,
-                                  style: AppDesignSystem.body2(context).copyWith(
-                                    fontWeight: selected
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                  ),
-                                ),
-                            ),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 28,
-                                minHeight: 28,
-                              ),
-                              tooltip: l10n.translate('delete'),
-                              onPressed: () => onDelete(session.id),
-                              icon: Icon(
-                                Icons.close,
-                                size: 16,
-                                color: AppDesignSystem.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+            child: TextField(
+              controller: _search,
+              textInputAction: TextInputAction.search,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: l10n.translate('intelSearchConversations'),
+                prefixIcon: const Icon(Icons.search, size: 20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
+          ),
+          Expanded(
+            child: visible.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      query.trim().isEmpty
+                          ? l10n.translate('intelNoConversations')
+                          : l10n.translate('intelNoSearchResults'),
+                      style: AppDesignSystem.body2(
+                        context,
+                      ).copyWith(color: AppDesignSystem.textSecondary),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                    itemCount: visible.length,
+                    itemBuilder: (context, index) {
+                      final session = visible[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppDesignSystem.border),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: IntelligenceSessionTile(
+                              session: session,
+                              selected: session.id == widget.activeId,
+                              onOpen: () => widget.onSelect(session.id),
+                              onRename: (title) =>
+                                  widget.onRename(session.id, title),
+                              onDelete: () => widget.onDelete(session.id),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

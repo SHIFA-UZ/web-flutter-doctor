@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/utils/doctor_display_name.dart';
-import 'package:shifa_doc_app_v1/features/home/presentation/widgets/home_search_overlay.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/domain/intelligence_chat_models.dart';
+import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_session_tile.dart';
 import 'package:shifa_doc_app_v1/state/profile/profile_providers.dart';
 
 class IntelligenceWelcome extends ConsumerWidget {
@@ -13,11 +13,15 @@ class IntelligenceWelcome extends ConsumerWidget {
     required this.recentSessions,
     required this.onSendPrompt,
     required this.onOpenSession,
+    required this.onRenameSession,
+    required this.onDeleteSession,
   });
 
   final List<IntelligenceChatSession> recentSessions;
   final ValueChanged<String> onSendPrompt;
   final ValueChanged<String> onOpenSession;
+  final void Function(String id, String title) onRenameSession;
+  final ValueChanged<String> onDeleteSession;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,39 +35,34 @@ class IntelligenceWelcome extends ConsumerWidget {
     final greetingKey = hour < 12
         ? 'goodMorning'
         : hour < 17
-            ? 'goodAfternoon'
-            : 'goodEvening';
+        ? 'goodAfternoon'
+        : 'goodEvening';
 
     final cards = <_WelcomeCardData>[
       _WelcomeCardData(
         icon: Icons.calendar_today_outlined,
         title: l10n.translate('intelWelcomeSchedule'),
         subtitle: l10n.translate('intelWelcomeScheduleDesc'),
-        onTap: () => onSendPrompt(
-          l10n.translate('intelPromptSchedule'),
-        ),
+        onTap: () => onSendPrompt(l10n.translate('intelPromptSchedule')),
       ),
       _WelcomeCardData(
         icon: Icons.person_search_outlined,
         title: l10n.translate('intelWelcomeFindPatient'),
         subtitle: l10n.translate('intelWelcomeFindPatientDesc'),
-        onTap: () => HomeSearchOverlay.show(context),
+        onTap: () => onSendPrompt(l10n.translate('intelPromptFindPatient')),
       ),
       _WelcomeCardData(
         icon: Icons.event_available_outlined,
         title: l10n.translate('intelWelcomeAppointments'),
         subtitle: l10n.translate('intelWelcomeAppointmentsDesc'),
-        onTap: () => onSendPrompt(
-          l10n.translate('intelPromptManageAppointments'),
-        ),
+        onTap: () =>
+            onSendPrompt(l10n.translate('intelPromptManageAppointments')),
       ),
       _WelcomeCardData(
         icon: Icons.notes_outlined,
         title: l10n.translate('intelWelcomeNotes'),
         subtitle: l10n.translate('intelWelcomeNotesDesc'),
-        onTap: () => onSendPrompt(
-          l10n.translate('intelPromptClinicalNotes'),
-        ),
+        onTap: () => onSendPrompt(l10n.translate('intelPromptClinicalNotes')),
       ),
     ];
 
@@ -73,26 +72,20 @@ class IntelligenceWelcome extends ConsumerWidget {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 16),
+      padding: const EdgeInsets.fromLTRB(8, 28, 8, 16),
       children: [
         Text(
           '${l10n.translate(greetingKey)}, $name.',
-          style: AppDesignSystem.h2(context),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          l10n.translate('intelligenceEmptyHint'),
-          style: AppDesignSystem.body2(context).copyWith(
-            color: AppDesignSystem.textSecondary,
-          ),
+          style: AppDesignSystem.h2(
+            context,
+          ).copyWith(fontSize: 22, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
           l10n.translate('intelHowCanIHelp'),
-          style: AppDesignSystem.h2(context).copyWith(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-          ),
+          style: AppDesignSystem.body1(
+            context,
+          ).copyWith(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 20),
         LayoutBuilder(
@@ -112,11 +105,17 @@ class IntelligenceWelcome extends ConsumerWidget {
               children: [
                 for (var i = 0; i < cards.length; i += 2)
                   Padding(
-                    padding: EdgeInsets.only(bottom: i + 2 < cards.length ? 10 : 0),
+                    padding: EdgeInsets.only(
+                      bottom: i + 2 < cards.length ? 10 : 0,
+                    ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: _WelcomeActionCard(data: cards[i], brand: brand),
+                          child: _WelcomeActionCard(
+                            data: cards[i],
+                            brand: brand,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -138,38 +137,39 @@ class IntelligenceWelcome extends ConsumerWidget {
           const SizedBox(height: 28),
           Text(
             l10n.translate('intelRecentConversations'),
-            style: AppDesignSystem.body1(context).copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppDesignSystem.body1(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
-          ...recent.map((s) {
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.chat_bubble_outline, color: brand, size: 20),
-              title: Text(
-                s.displayTitle,
-                style: AppDesignSystem.body2(context),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppDesignSystem.border),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Column(
+                children: [
+                  for (var i = 0; i < recent.length; i++) ...[
+                    if (i > 0)
+                      const Divider(height: 1, color: AppDesignSystem.border),
+                    IntelligenceSessionTile(
+                      session: recent[i],
+                      selected: false,
+                      onOpen: () => onOpenSession(recent[i].id),
+                      onRename: (title) => onRenameSession(recent[i].id, title),
+                      onDelete: () => onDeleteSession(recent[i].id),
+                    ),
+                  ],
+                ],
               ),
-              subtitle: Text(
-                _relative(s.updatedAt),
-                style: AppDesignSystem.caption(context),
-              ),
-              onTap: () => onOpenSession(s.id),
-            );
-          }),
+            ),
+          ),
         ],
       ],
     );
-  }
-
-  String _relative(DateTime at) {
-    final d = DateTime.now().difference(at);
-    if (d.inMinutes < 1) return 'Just now';
-    if (d.inHours < 1) return '${d.inMinutes}m ago';
-    if (d.inDays < 1) return '${d.inHours}h ago';
-    if (d.inDays < 7) return '${d.inDays}d ago';
-    return '${at.day}.${at.month}.${at.year}';
   }
 }
 
@@ -195,45 +195,53 @@ class _WelcomeActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: data.onTap,
+    return Semantics(
+      button: true,
+      label: '${data.title}. ${data.subtitle}',
+      child: Material(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppDesignSystem.border),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(data.icon, color: brand, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.title,
-                      style: AppDesignSystem.body1(context).copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      data.subtitle,
-                      style: AppDesignSystem.caption(context).copyWith(
-                        color: AppDesignSystem.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+        child: InkWell(
+          onTap: data.onTap,
+          borderRadius: BorderRadius.circular(12),
+          hoverColor: brand.withValues(alpha: 0.06),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 72),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppDesignSystem.border),
               ),
-            ],
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(data.icon, color: brand, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.title,
+                          style: AppDesignSystem.body1(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          data.subtitle,
+                          style: AppDesignSystem.caption(
+                            context,
+                          ).copyWith(color: AppDesignSystem.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

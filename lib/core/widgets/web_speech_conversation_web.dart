@@ -9,7 +9,7 @@ import 'package:web/web.dart' as web;
 /// Browser SpeechRecognition for Alexa-style turn-taking on Flutter web.
 ///
 /// Each utterance ends after a natural pause; [onFinal] fires with the transcript.
-/// Pass [continuous] for wake-word standby so "Hey Shifa" is not missed between turns.
+/// Pass [continuous] for wake-word standby so "Hey Shifa" / "Salom Shifa" is not missed between turns.
 class WebSpeechConversation {
   WebSpeechConversation({
     required this.onInterim,

@@ -50,6 +50,32 @@ class ConsultationNoteDto {
   }
 }
 
+/// Doctor-authored notes (Intelligence dictation / appointment notes field).
+String joinedManualConsultationNotes(List<ConsultationNoteDto> notes) {
+  return notes
+      .where((n) => !n.isFromAi)
+      .map((n) => n.displayText.trim())
+      .where((t) => t.isNotEmpty)
+      .join('\n\n');
+}
+
+/// Save the doctor's appointment notes without completing the visit.
+Future<void> saveDoctorConsultationNotes({
+  required ApiClient api,
+  required String appointmentId,
+  required String text,
+}) async {
+  final body = text.trim();
+  if (body.isEmpty) return;
+  final res = await api.put(
+    '/api/appointments/$appointmentId/consultation-notes',
+    {'body': body},
+  );
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw Exception('Failed to save consultation notes: ${res.statusCode}');
+  }
+}
+
 /// Fetches consultation notes for an appointment (doctor-only).
 Future<List<ConsultationNoteDto>> getConsultationNotesForAppointment({
   required ApiClient api,

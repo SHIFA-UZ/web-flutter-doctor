@@ -54,12 +54,16 @@ class LanguageNotifier extends StateNotifier<LanguageState> {
     _loadLanguage();
   }
 
+  bool _userChoseLanguage = false;
+
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
+    if (_userChoseLanguage) return;
     final saved = prefs.getString('doctor_language');
     final explicit = prefs.getBool(languageExplicitPrefKey) ?? false;
 
     if (saved != null && saved.isNotEmpty) {
+      if (_userChoseLanguage) return;
       if (explicit) {
         state = LanguageState(localeFromPersistenceTag(saved));
         return;
@@ -82,6 +86,7 @@ class LanguageNotifier extends StateNotifier<LanguageState> {
 
   /// Call on login screens; sets Uzbek when in Uzbekistan unless user chose a language.
   Future<void> applyRegionalDefaultIfUnset({String? phoneCountryCode}) async {
+    if (_userChoseLanguage) return;
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(languageExplicitPrefKey) ?? false) return;
 
@@ -89,14 +94,16 @@ class LanguageNotifier extends StateNotifier<LanguageState> {
 
     const uz = Locale('uz');
     await prefs.setString('doctor_language', uz.persistenceTag);
+    if (_userChoseLanguage) return;
     state = LanguageState(uz);
   }
 
   Future<void> setLanguage(Locale locale) async {
+    _userChoseLanguage = true;
+    state = LanguageState(locale);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('doctor_language', locale.persistenceTag);
     await prefs.setBool(languageExplicitPrefKey, true);
-    state = LanguageState(locale);
   }
 }
 

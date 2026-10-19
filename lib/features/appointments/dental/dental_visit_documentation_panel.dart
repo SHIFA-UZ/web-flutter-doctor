@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/api_client.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
+import 'package:shifa_doc_app_v1/core/api/consultation_notes_api.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/layout/responsive.dart';
 import 'package:shifa_doc_app_v1/core/widgets/doctor_speech_text_field.dart';
@@ -210,7 +211,11 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
       await Future.wait([_loadServices(), _loadSaved()]);
       _hydrating = false;
       _loaded = true;
-      _dirty = false;
+      final filledFromIntelligence = _notesCtrl.text.trim().isEmpty
+          ? await _fillNotesFromConsultation()
+          : false;
+      _dirty = filledFromIntelligence;
+      if (filledFromIntelligence) _scheduleAutosave();
       if (mounted) setState(() => _loading = false);
     });
   }
@@ -393,6 +398,23 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
       }
       if (mounted) setState(() {});
     } catch (_) {}
+  }
+
+  Future<bool> _fillNotesFromConsultation() async {
+    final api = _apiClient;
+    if (api == null) return false;
+    try {
+      final notes = await getConsultationNotesForAppointment(
+        api: api,
+        appointmentId: widget.appointmentId,
+      );
+      final manual = joinedManualConsultationNotes(notes);
+      if (manual.isEmpty || _notesCtrl.text.trim().isNotEmpty) return false;
+      _notesCtrl.text = manual;
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   bool get hasDentalChartContent {
@@ -717,6 +739,8 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
     );
   }
 
+  bool get isReadyForNoteHydrate => _loaded && !_loading;
+
   /// Appends text to clinical notes (e.g. from last 025-2 form or Shifa AI).
   void appendClinicalNotes(String text) {
     final toAdd = text.trim();
@@ -725,6 +749,21 @@ class DentalVisitDocumentationPanelState extends ConsumerState<DentalVisitDocume
       _notesCtrl.text += '\n\n';
     }
     _notesCtrl.text += toAdd;
+    _touch();
+    if (mounted) setState(() {});
+  }
+
+  /// Fills empty dental notes from Intelligence / consultation notes.
+  void hydrateClinicalNotesIfEmpty(String text) {
+    final toAdd = text.trim();
+    if (toAdd.isEmpty || !_loaded) return;
+    final current = _notesCtrl.text.trim();
+    if (current.isNotEmpty) {
+      if (current.contains(toAdd) || toAdd.contains(current)) return;
+      _notesCtrl.text = '$current\n\n$toAdd';
+    } else {
+      _notesCtrl.text = toAdd;
+    }
     _touch();
     if (mounted) setState(() {});
   }

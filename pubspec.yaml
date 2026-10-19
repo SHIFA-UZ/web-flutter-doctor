@@ -119,6 +119,7 @@ flutter:
   assets:
     - assets/images/shifa_logo.svg
     - assets/branding/shifa_logo.png
+    - assets/branding/shifa_mark.svg
     - assets/fonts/DejaVuSans.ttf
     - assets/fonts/DancingScript-Regular.ttf
     - assets/fonts/Sacramento-Regular.ttf

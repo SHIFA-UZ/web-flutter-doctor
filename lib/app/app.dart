@@ -446,12 +446,12 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
       });
     }
 
-    // Browser tab title: show unread chat count like a messenger (e.g. "(1) Shifa Doctor").
+    // Browser tab title: show unread chat count like a messenger (e.g. "(1) SHIFA DOCTOR").
     // Admin app should not poll chat unread count (doctor-only endpoint).
     if (!isAdminHost) {
       ref.listen<AsyncValue<int>>(unreadCountProvider, (prev, next) {
         final count = next.valueOrNull ?? 0;
-        setWebTitle(count > 0 ? '($count) Shifa Doctor' : 'Shifa Doctor');
+        setWebTitle(count > 0 ? '($count) SHIFA DOCTOR' : 'SHIFA DOCTOR');
       });
     }
     
@@ -461,10 +461,15 @@ class _ShifaDoctorAppState extends ConsumerState<ShifaDoctorApp> {
         behavior: const ShifaScrollBehavior(),
         child: MaterialApp(
         navigatorKey: navigatorKey,
-        title: 'Shifa Doctor',
+        title: 'SHIFA DOCTOR',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         locale: languageState.locale,
+        // Material's bundled localizations omit Uzbek. Without this callback
+        // Flutter can keep the whole tree on English even when the user picked UZ.
+        localeResolutionCallback: (deviceLocale, supported) {
+          return languageState.locale;
+        },
         supportedLocales: const [
           Locale('en'), // English
           Locale('uz'), // Uzbek (Latin)
