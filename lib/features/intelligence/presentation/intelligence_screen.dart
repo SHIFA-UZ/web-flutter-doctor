@@ -187,6 +187,7 @@ class _IntelligenceScreenState extends ConsumerState<IntelligenceScreen> {
             key: ValueKey(active.id),
             embedded: true,
             hideChrome: true,
+            conversationId: active.id,
             initialMessages: active.messages,
             recentSessions: chatState.sessions,
             onOpenSession: (id) =>

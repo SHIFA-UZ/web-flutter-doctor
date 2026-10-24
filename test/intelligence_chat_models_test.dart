@@ -17,6 +17,25 @@ IntelligenceChatMessage _msg(
 }
 
 void main() {
+  test('Uzbek date fragments stay Uzbek instead of flipping to English', () {
+    expect(
+      IntelligenceChatTitles.detectReplyLanguage('24-oktabr soat 8:00 ga'),
+      'UZ',
+    );
+    expect(
+      IntelligenceChatTitles.detectReplyLanguage("8:30 to'g'ri keladi."),
+      'UZ',
+    );
+    expect(IntelligenceChatTitles.detectReplyLanguage('oktyabr 8:30 ga'), 'UZ');
+    expect(IntelligenceChatTitles.detectReplyLanguage('8:30'), isNull);
+    expect(
+      IntelligenceChatTitles.detectReplyLanguage(
+        'What is my schedule for today',
+      ),
+      'EN',
+    );
+  });
+
   test('Uzbek Salom Shifa is a wake phrase and strips like Hey Shifa', () {
     expect(IntelligenceChatTitles.containsWakePhrase('Salom Shifa'), isTrue);
     expect(IntelligenceChatTitles.containsWakePhrase('salom shifa'), isTrue);

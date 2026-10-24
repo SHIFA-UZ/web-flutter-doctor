@@ -71,6 +71,7 @@ class WebSpeechConversation {
   Future<bool> start({
     String languageCode = 'en',
     bool continuous = false,
+    bool interimResults = true,
   }) async {
     if (!isSupported) {
       onError('Voice conversation needs Chrome or Edge with mic access.');
@@ -96,7 +97,10 @@ class WebSpeechConversation {
       // continuous=false: one utterance per turn (pause commits). Avoids Chrome
       // zombie sessions that report listening but capture nothing after big UI.
       rec.continuous = continuous;
-      rec.interimResults = true;
+      // Uzbek turns pass false. Chrome's uz-UZ guesses rewrite the same
+      // sentence while the doctor is still speaking, then the server
+      // transcript replaces that line. Chrome is only the pause detector.
+      rec.interimResults = interimResults;
       rec.maxAlternatives = 1;
       rec.lang = _toBcp47(languageCode);
 

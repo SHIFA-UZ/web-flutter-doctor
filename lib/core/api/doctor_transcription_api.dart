@@ -126,6 +126,7 @@ Future<DoctorTranscriptionResult> postDoctorTranscriptionDetailed({
   required String fileName,
   String? languageHint,
   bool autoDetectLanguage = false,
+  String? recordingId,
 }) async {
   final client = ref.read(apiClientProvider);
   final multipartFile = http.MultipartFile.fromBytes(
@@ -137,6 +138,10 @@ Future<DoctorTranscriptionResult> postDoctorTranscriptionDetailed({
   if (!autoDetectLanguage) {
     fields['languageHint'] =
         languageHint ?? normalizedTranscriptionLanguageHint(ref);
+  }
+  final safeRecordingId = recordingId?.trim();
+  if (safeRecordingId != null && safeRecordingId.isNotEmpty) {
+    fields['recordingId'] = safeRecordingId;
   }
   final streamed = await client
       .postMultipart(

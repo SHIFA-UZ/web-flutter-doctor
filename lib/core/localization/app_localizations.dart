@@ -261,7 +261,90 @@ class AppLocalizations {
       'intelNoAppointmentsToday': 'No appointments today.',
       'intelNoPatientAppointmentsInRange': 'No appointments in this period.',
       'intelOpenCalendar': 'Open calendar',
+      'intelRangeThisWeek': 'This week',
+      'intelRangeNextWeek': 'Next week',
+      'intelTomorrow': 'Tomorrow',
+      'intelRangeUpcomingFrom': 'Upcoming (from {date})',
+      'intelCancelAskWhich':
+          'Which visits should I cancel? Tell me the day, or say all for a period such as next week.',
+      'intelCancelPreview':
+          'I can cancel {count} upcoming {visitWord}: {names}. Say yes to cancel them. Nothing has been cancelled yet.',
+      'intelCancelVisit': 'visit',
+      'intelCancelVisits': 'visits',
+      'intelCancelSkipped':
+          '{count} cannot be cancelled and will be left as they are.',
+      'intelCancelAndMore': ', and {count} more',
+      'intelCancelNothing':
+          'Nothing was cancelled. Say yes if you want me to cancel the visits I just listed.',
+      'intelCancelNoneEligible':
+          'No visits in that period can be cancelled. Nothing was changed.',
+      'intelCancelNotWaiting':
+          'I don\'t have a cancellation waiting for confirmation. Tell me which visits to cancel.',
+      'intelCancelNotFound': 'I could not find that visit.',
+      'intelCancelTooMany':
+          'That matches more than {count} visits. Narrow the period before I cancel anything.',
+      'intelWhenAt': '{weekday} {day} {month} at {time}',
+      'appointmentStatusNoShow': 'No-show',
+      'intelOtherTimes': 'Other times',
+      'intelHideOtherTimes': 'Hide other times',
+      'intelNoPatientsMatched': 'No patients matched.',
+      'intelDidYouMean': 'Did you mean…?',
+      'intelNoExactMatchFor': 'No exact match for “{query}”. Did you mean…?',
+      'intelMissingPatientOrSlot': 'Missing patient or slot.',
+      'intelMissingAppointmentOrSlot': 'Missing appointment or slot.',
+      'intelBookingFailed': 'Booking failed: {code}',
+      'intelRescheduleFailed': 'Reschedule failed: {code}',
+      'intelDocumentedFacts': 'Documented {count} facts.',
+      'intelDocument': 'Document',
       'intelPatient': 'Patient',
+      'intelService': 'Service',
+      'intelTookTooLong': 'Shifa took too long to reply. Try again.',
+      'intelVoiceSlow': 'Voice is slow — caption is above. Keep talking.',
+      'intelVoiceSkipped': 'Voice skipped — caption is above.',
+      'intelSendingRecording': 'Sending your recording to Shifa',
+      'intelTranscribingRecording': 'Transcribing your recording…',
+      'intelRecordingHold':
+          'Recording… tap the check when you are done. Pauses are fine.',
+      'intelTapToSendRecording': 'Tap to send this recording',
+      'intelDictateHint':
+          'Dictate — records until you tap send. Pauses are OK.',
+      'intelPauseToSend': 'Pause when finished — sending automatically',
+      'intelSpeakNow': 'Speak now…',
+      'intelNoSpeech':
+          'No speech detected. Tap the mic, speak, then tap stop to send.',
+      'intelNoSpeechShort': 'No speech detected. Tap the mic and try again.',
+      'intelNoSpeechRecording':
+          'No speech in that recording. Tap the record button and try again.',
+      'intelSpeechRequiresPro': 'Speech requires Pro. Upgrade to talk with Shifa.',
+      'intelMicPermission': 'Microphone permission is required.',
+      'intelMicPermissionRetry':
+          'Microphone permission is required. Allow mic access and try again.',
+      'intelCouldNotStartRecording': 'Could not start recording.',
+      'intelCouldNotStartMic':
+          'Could not start the microphone. Check browser permissions.',
+      'intelTranscriptionTimeout':
+          'Transcription timed out. Try a shorter recording.',
+      'intelTranscriptionFailed':
+          'Transcription failed. Check your connection and try again.',
+      'intelSpeechProOrDenied':
+          'Speech requires Pro, or mic permission was denied.',
+      'intelStopped': 'Stopped.',
+      'intelCouldNotReopenMic':
+          'Could not reopen the microphone. Say Hey Shifa or tap the mic.',
+      'visitFactCards': 'Visit facts from the call',
+      'visitFactCardsHint':
+          'Only what was spoken. Review, then document everything.',
+      'droppedFacts': 'Dropped (not said)',
+      'documenting': 'Documenting…',
+      'documentEverything': 'Document everything',
+      'factsAlreadyDocumented':
+          'These visit facts are already in the patient timeline.',
+      'clinicalTimeline': 'Clinical timeline',
+      'clinicalTimelineHint':
+          'Accepted visit facts, step by step. Sourced from what was spoken.',
+      'intelKeep': 'Keep',
+      'intelReject': 'Reject',
+      'intelScheduleHint': 'Schedule: {hint}',
       'intelDate': 'Date',
       'intelTime': 'Time',
       'intelTimeNotSelected': 'Not selected',
@@ -2339,7 +2422,93 @@ class AppLocalizations {
       'intelNoAppointmentsToday': 'Bugun uchrashuv yo‘q.',
       'intelNoPatientAppointmentsInRange': 'Bu davrda uchrashuv yo‘q.',
       'intelOpenCalendar': 'Kalendarni ochish',
+      'intelRangeThisWeek': 'Shu hafta',
+      'intelRangeNextWeek': 'Keyingi hafta',
+      'intelTomorrow': 'Ertaga',
+      'intelRangeUpcomingFrom': '{date} dan boshlab',
+      'intelCancelAskWhich':
+          'Qaysi qabullarni bekor qilishim kerak? Kunini ayting yoki kelasi hafta kabi ma’lum bir davr uchun hammasi deng.',
+      'intelCancelPreview':
+          'Men yaqinlashib kelayotgan {count} ta qabulni bekor qila olaman: {names}. Ularni bekor qilish uchun «ha» deng. Hali hech narsa bekor qilinmadi.',
+      'intelCancelVisit': 'qabul',
+      'intelCancelVisits': 'qabul',
+      'intelCancelSkipped':
+          '{count} tasini bekor qilib bo‘lmaydi, ular o‘z holicha qoladi.',
+      'intelCancelAndMore': ', va yana {count} ta',
+      'intelCancelNothing':
+          'Hech narsa bekor qilinmadi. Agar hozirgina sanab o‘tgan qabullarimni bekor qilishimni xohlasangiz, «ha» deng.',
+      'intelCancelNoneEligible':
+          'Bu davrda bekor qilish mumkin bo‘lgan qabul yo‘q. Hech narsa o‘zgartirilmadi.',
+      'intelCancelNotWaiting':
+          'Tasdiqlashni kutayotgan bekor qilish yo‘q. Qaysi qabullarni bekor qilishni ayting.',
+      'intelCancelNotFound': 'Bu qabulni topa olmadim.',
+      'intelCancelTooMany':
+          'Bu {count} tadan ko‘p qabulga to‘g‘ri keladi. Bekor qilishdan oldin davrni toraytiring.',
+      'intelWhenAt': '{weekday} {day}-{month} soat {time} da',
+      'appointmentStatusNoShow': 'Kelmadi',
+      'intelOtherTimes': 'Boshqa vaqtlar',
+      'intelHideOtherTimes': 'Boshqa vaqtlarni yashirish',
+      'intelNoPatientsMatched': 'Bemor topilmadi.',
+      'intelDidYouMean': 'Shuni nazarda tutdingizmi…?',
+      'intelNoExactMatchFor': '“{query}” bo‘yicha aniq moslik yo‘q. Shuni nazarda tutdingizmi…?',
+      'intelMissingPatientOrSlot': 'Bemor yoki vaqt tanlanmagan.',
+      'intelMissingAppointmentOrSlot': 'Uchrashuv yoki vaqt tanlanmagan.',
+      'intelBookingFailed': 'Band qilish amalga oshmadi: {code}',
+      'intelRescheduleFailed': 'Ko‘chirish amalga oshmadi: {code}',
+      'intelDocumentedFacts': '{count} ta fakt hujjatlashtirildi.',
+      'intelDocument': 'Hujjat',
       'intelPatient': 'Bemor',
+      'intelService': 'Xizmat',
+      'intelTookTooLong': 'Shifa javob berishga ulgurmadi. Qayta urinib ko‘ring.',
+      'intelVoiceSlow':
+          'Ovoz sekin — matn yuqorida. Gapirishda davom eting.',
+      'intelVoiceSkipped': 'Ovoz o‘tkazib yuborildi — matn yuqorida.',
+      'intelSendingRecording': 'Yozuv Shifaga yuborilmoqda',
+      'intelTranscribingRecording': 'Yozuv matnga o‘girilmoqda…',
+      'intelRecordingHold':
+          'Yozilmoqda… tugagach belgini bosing. Pauzalar mumkin.',
+      'intelTapToSendRecording': 'Yozuvni yuborish uchun bosing',
+      'intelDictateHint':
+          'Imlo — yuborguningizcha yoziladi. Pauzalar mumkin.',
+      'intelPauseToSend': 'Tugagach pauza qiling — o‘zi yuboriladi',
+      'intelSpeakNow': 'Hozir gapiring…',
+      'intelNoSpeech':
+          'Nutq eshitilmadi. Mikrofonni bosing, gapiring, keyin to‘xtatishni bosing.',
+      'intelNoSpeechShort':
+          'Nutq eshitilmadi. Mikrofonni bosing va qayta urinib ko‘ring.',
+      'intelNoSpeechRecording':
+          'Yozuvda nutq yo‘q. Yozish tugmasini bosing va qayta urinib ko‘ring.',
+      'intelSpeechRequiresPro':
+          'Nutq uchun Pro kerak. Shifa bilan gaplashish uchun yangilang.',
+      'intelMicPermission': 'Mikrofon ruxsati kerak.',
+      'intelMicPermissionRetry':
+          'Mikrofon ruxsati kerak. Ruxsat bering va qayta urinib ko‘ring.',
+      'intelCouldNotStartRecording': 'Yozishni boshlab bo‘lmadi.',
+      'intelCouldNotStartMic':
+          'Mikrofonni yoqib bo‘lmadi. Brauzer ruxsatlarini tekshiring.',
+      'intelTranscriptionTimeout':
+          'Matnga o‘girish vaqti tugadi. Qisqaroq yozuvni sinang.',
+      'intelTranscriptionFailed':
+          'Matnga o‘girib bo‘lmadi. Ulanishni tekshirib, qayta urinib ko‘ring.',
+      'intelSpeechProOrDenied':
+          'Nutq uchun Pro kerak yoki mikrofon ruxsati rad etilgan.',
+      'intelStopped': 'To‘xtatildi.',
+      'intelCouldNotReopenMic':
+          'Mikrofonni qayta ochib bo‘lmadi. «Salom Shifa» deng yoki mikrofonni bosing.',
+      'visitFactCards': 'Suhbatdagi tashrif faktlari',
+      'visitFactCardsHint':
+          'Faqat aytilganlar. Ko‘rib chiqing, keyin hammasini hujjatlashtiring.',
+      'droppedFacts': 'Tashlab yuborilgan (aytilmagan)',
+      'documenting': 'Hujjatlashtirilmoqda…',
+      'documentEverything': 'Hammasini hujjatlashtirish',
+      'factsAlreadyDocumented':
+          'Bu tashrif faktlari allaqachon bemor vaqt chizig‘ida.',
+      'clinicalTimeline': 'Klinik vaqt chizig‘i',
+      'clinicalTimelineHint':
+          'Qabul qilingan tashrif faktlari, qadam-baqadam. Aytilganlardan olingan.',
+      'intelKeep': 'Qoldirish',
+      'intelReject': 'Rad etish',
+      'intelScheduleHint': 'Jadval: {hint}',
       'intelDate': 'Sana',
       'intelTime': 'Vaqt',
       'intelTimeNotSelected': 'Tanlanmagan',
@@ -4448,7 +4617,92 @@ class AppLocalizations {
       'intelNoAppointmentsToday': 'Сегодня приёмов нет.',
       'intelNoPatientAppointmentsInRange': 'В этом периоде приёмов нет.',
       'intelOpenCalendar': 'Открыть календарь',
+      'intelRangeThisWeek': 'На этой неделе',
+      'intelRangeNextWeek': 'На следующей неделе',
+      'intelTomorrow': 'Завтра',
+      'intelRangeUpcomingFrom': 'Предстоящие (с {date})',
+      'intelCancelAskWhich':
+          'Какие визиты отменить? Назовите день или скажите «все» за период, например на следующей неделе.',
+      'intelCancelPreview':
+          'Могу отменить {count} предстоящих визитов: {names}. Скажите «да», чтобы отменить. Пока ничего не отменено.',
+      'intelCancelVisit': 'визит',
+      'intelCancelVisits': 'визитов',
+      'intelCancelSkipped': '{count} отменить нельзя, они останутся как есть.',
+      'intelCancelAndMore': ', и ещё {count}',
+      'intelCancelNothing':
+          'Ничего не отменено. Скажите «да», если нужно отменить визиты, которые я только что перечислила.',
+      'intelCancelNoneEligible':
+          'В этом периоде нет визитов, которые можно отменить. Ничего не изменено.',
+      'intelCancelNotWaiting':
+          'Нет отмены, ожидающей подтверждения. Скажите, какие визиты отменить.',
+      'intelCancelNotFound': 'Не нашла этот визит.',
+      'intelCancelTooMany':
+          'Это больше {count} визитов. Сузьте период, прежде чем что-то отменять.',
+      'intelWhenAt': '{weekday}, {day} {month}, {time}',
+      'appointmentStatusNoShow': 'Неявка',
+      'intelOtherTimes': 'Другие времена',
+      'intelHideOtherTimes': 'Скрыть другие времена',
+      'intelNoPatientsMatched': 'Пациенты не найдены.',
+      'intelDidYouMean': 'Вы имели в виду…?',
+      'intelNoExactMatchFor': 'Нет точного совпадения для «{query}». Вы имели в виду…?',
+      'intelMissingPatientOrSlot': 'Не выбран пациент или время.',
+      'intelMissingAppointmentOrSlot': 'Не выбрана запись или время.',
+      'intelBookingFailed': 'Не удалось записать: {code}',
+      'intelRescheduleFailed': 'Не удалось перенести: {code}',
+      'intelDocumentedFacts': 'Задокументировано фактов: {count}.',
+      'intelDocument': 'Документ',
       'intelPatient': 'Пациент',
+      'intelService': 'Услуга',
+      'intelTookTooLong': 'Shifa не успела ответить. Попробуйте ещё раз.',
+      'intelVoiceSlow':
+          'Голос запаздывает — текст выше. Продолжайте говорить.',
+      'intelVoiceSkipped': 'Голос пропущен — текст выше.',
+      'intelSendingRecording': 'Отправляю запись Шифе',
+      'intelTranscribingRecording': 'Распознаю запись…',
+      'intelRecordingHold':
+          'Идёт запись… нажмите галочку, когда закончите. Паузы можно.',
+      'intelTapToSendRecording': 'Нажмите, чтобы отправить запись',
+      'intelDictateHint':
+          'Диктовка — запись до нажатия «отправить». Паузы можно.',
+      'intelPauseToSend': 'Сделайте паузу — отправлю автоматически',
+      'intelSpeakNow': 'Говорите…',
+      'intelNoSpeech':
+          'Речь не распознана. Нажмите микрофон, говорите, затем нажмите стоп.',
+      'intelNoSpeechShort':
+          'Речь не распознана. Нажмите микрофон и попробуйте ещё раз.',
+      'intelNoSpeechRecording':
+          'В записи нет речи. Нажмите запись и попробуйте ещё раз.',
+      'intelSpeechRequiresPro':
+          'Для речи нужен Pro. Обновите план, чтобы говорить с Шифой.',
+      'intelMicPermission': 'Нужен доступ к микрофону.',
+      'intelMicPermissionRetry':
+          'Нужен доступ к микрофону. Разрешите и попробуйте ещё раз.',
+      'intelCouldNotStartRecording': 'Не удалось начать запись.',
+      'intelCouldNotStartMic':
+          'Не удалось включить микрофон. Проверьте разрешения браузера.',
+      'intelTranscriptionTimeout':
+          'Время распознавания истекло. Попробуйте более короткую запись.',
+      'intelTranscriptionFailed':
+          'Не удалось распознать. Проверьте соединение и попробуйте ещё раз.',
+      'intelSpeechProOrDenied':
+          'Нужен Pro, либо доступ к микрофону запрещён.',
+      'intelStopped': 'Остановлено.',
+      'intelCouldNotReopenMic':
+          'Не удалось снова открыть микрофон. Скажите «Привет, Шифа» или нажмите микрофон.',
+      'visitFactCards': 'Факты визита из разговора',
+      'visitFactCardsHint':
+          'Только сказанное. Проверьте, затем задокументируйте всё.',
+      'droppedFacts': 'Отброшено (не сказано)',
+      'documenting': 'Документирование…',
+      'documentEverything': 'Задокументировать всё',
+      'factsAlreadyDocumented':
+          'Эти факты визита уже на временной шкале пациента.',
+      'clinicalTimeline': 'Клиническая шкала',
+      'clinicalTimelineHint':
+          'Принятые факты визита, по шагам. Из того, что было сказано.',
+      'intelKeep': 'Оставить',
+      'intelReject': 'Отклонить',
+      'intelScheduleHint': 'Расписание: {hint}',
       'intelDate': 'Дата',
       'intelTime': 'Время',
       'intelTimeNotSelected': 'Не выбрано',

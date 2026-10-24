@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
+import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_card_text.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_chart_codec.dart';
 import 'package:shifa_doc_app_v1/features/appointments/dental/dental_fdi_chart.dart';
@@ -296,10 +297,16 @@ class _IntelligenceInlineDentalChartState
 
   @override
   Widget build(BuildContext context) {
-    final patientName = widget.payload['patientName']?.toString() ?? 'Patient';
-    final dateLabel = widget.payload['date']?.toString() ?? '';
-    final notes = widget.payload['notes']?.toString();
     final l10n = AppLocalizations.of(context)!;
+    final patientName = intelligencePatientLabel(
+      l10n,
+      widget.payload['patientName']?.toString(),
+    );
+    final dateLabel = intelligenceFieldLabel(
+      l10n,
+      fallback: widget.payload['date']?.toString(),
+    );
+    final notes = widget.payload['notes']?.toString();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -343,10 +350,12 @@ class _IntelligenceInlineDentalChartState
             )
           else
             ..._selectedLines.take(6).map((line) {
-              final name = line['name']?.toString() ??
+              final rawName = line['name']?.toString() ??
                   line['serviceName']?.toString() ??
-                  line['label']?.toString() ??
-                  'Service';
+                  line['label']?.toString();
+              final name = (rawName == null || rawName.trim().isEmpty)
+                  ? l10n.translate('intelService')
+                  : rawName;
               return Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text('• $name', style: AppDesignSystem.caption(context)),

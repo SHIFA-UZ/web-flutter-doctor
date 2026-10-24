@@ -5,6 +5,7 @@ import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/core/widgets/shifa_button.dart';
+import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_card_text.dart';
 
 final visitFactsForAppointmentProvider =
     FutureProvider.autoDispose.family<VisitFactsBundle, int>((ref, appointmentId) async {
@@ -64,9 +65,12 @@ class _VisitFactsPanelState extends ConsumerState<VisitFactsPanel> {
       }
       if (!mounted) return;
       setState(() {
-        _commitMessage =
-            'Documented ${result.committedFacts.length} facts'
-            '${result.createdTaskIds.isEmpty ? '' : ', ${result.createdTaskIds.length} medication tasks drafted'}.';
+        _commitMessage = localizeIntelligenceHint(
+          AppLocalizations.of(context)!,
+          'Documented ${result.committedFacts.length} facts'
+          '${result.createdTaskIds.isEmpty ? '' : ' and drafted ${result.createdTaskIds.length} medication tasks'}'
+          '. They are on the patient timeline.',
+        );
       });
     } catch (e) {
       if (!mounted) return;
@@ -118,7 +122,7 @@ class _VisitFactsPanelState extends ConsumerState<VisitFactsPanel> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Refresh',
+                    tooltip: l10n.translate('refresh'),
                     onPressed: () => ref.invalidate(
                       visitFactsForAppointmentProvider(appointmentId),
                     ),
@@ -173,7 +177,7 @@ class _VisitFactsPanelState extends ConsumerState<VisitFactsPanel> {
               if (bundle.patterns.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  _vf(l10n, 'clinicPatterns', 'Clinic patterns'),
+                  l10n.translate('intelCardPatterns'),
                   style: AppDesignSystem.caption(context).copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -255,6 +259,7 @@ class _FactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dimmed = rejected || fact.isDropped;
     return Opacity(
       opacity: dimmed ? 0.55 : 1,
@@ -275,7 +280,7 @@ class _FactCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${fact.factType} · ${fact.text}',
+                    '${intelligenceFactTypeLabel(l10n, fact.factType)} · ${fact.text}',
                     style: AppDesignSystem.body1(context).copyWith(
                       fontWeight: FontWeight.w600,
                       decoration:
@@ -285,7 +290,9 @@ class _FactCard extends StatelessWidget {
                 ),
                 if (!readOnly && onToggleReject != null)
                   IconButton(
-                    tooltip: rejected ? 'Keep' : 'Reject',
+                    tooltip: AppLocalizations.of(context)!.translate(
+                      rejected ? 'intelKeep' : 'intelReject',
+                    ),
                     onPressed: onToggleReject,
                     icon: Icon(
                       rejected ? Icons.undo : Icons.close,
@@ -307,7 +314,9 @@ class _FactCard extends StatelessWidget {
             if (fact.scheduleHint != null && fact.scheduleHint!.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
-                'Schedule: ${fact.scheduleHint}',
+                AppLocalizations.of(context)!
+                    .translate('intelScheduleHint')
+                    .replaceAll('{hint}', fact.scheduleHint!),
                 style: AppDesignSystem.caption(context),
               ),
             ],
@@ -404,7 +413,7 @@ class PatientVisitTimelineCard extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${f.factType} · ${f.text}',
+                              '${intelligenceFactTypeLabel(l10n, f.factType)} · ${f.text}',
                               style: AppDesignSystem.body1(context).copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -429,7 +438,7 @@ class PatientVisitTimelineCard extends ConsumerWidget {
               if (bundle.patterns.isNotEmpty) ...[
                 const Divider(height: 20),
                 Text(
-                  _vf(l10n, 'clinicPatterns', 'Clinic patterns'),
+                  l10n.translate('intelCardPatterns'),
                   style: AppDesignSystem.caption(context).copyWith(
                     fontWeight: FontWeight.w700,
                   ),

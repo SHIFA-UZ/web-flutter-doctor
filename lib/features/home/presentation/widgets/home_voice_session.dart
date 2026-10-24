@@ -12,7 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_api_provider.dart';
 import 'package:shifa_doc_app_v1/core/api/ai_message.dart';
-import 'package:shifa_doc_app_v1/core/api/api_providers.dart';
 import 'package:shifa_doc_app_v1/core/api/doctor_transcription_api.dart';
 import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/providers/language_provider.dart';
@@ -27,6 +26,7 @@ import 'package:shifa_doc_app_v1/features/appointments/application/consultation_
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/visit_facts_panel.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/domain/intelligence_chat_models.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_action_cards.dart';
+import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_card_text.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_welcome.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
 import 'package:shifa_doc_app_v1/state/notifications/doctor_notifications_provider.dart';
@@ -38,6 +38,7 @@ class HomeVoiceSession extends ConsumerStatefulWidget {
     super.key,
     this.selectedPatientId,
     this.selectedAppointmentId,
+    this.conversationId,
     this.embedded = false,
     this.hideChrome = false,
     this.initialMessages,
@@ -51,6 +52,7 @@ class HomeVoiceSession extends ConsumerStatefulWidget {
 
   final String? selectedPatientId;
   final String? selectedAppointmentId;
+  final String? conversationId;
 
   /// Full-height intelligence mode (Cursor-like chat pane).
   final bool embedded;
@@ -140,9 +142,6 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   int _askGen = 0;
   StreamSubscription<AiStreamEvent>? _aiSub;
 
-  /// startAt values already booked in this chat (avoid double-book on "yes").
-  final Set<String> _bookedStartAts = {};
-
   // End-of-speech (auto-send): after speech is heard, silence commits the turn.
   bool _heardSpeech = false;
   bool _autoFinishing = false;
@@ -223,307 +222,6 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     }
   }
 
-  bool _isAffirmativeUtterance(String text) {
-    final t = text.trim().toLowerCase();
-    if (t.isEmpty || t.length > 48) return false;
-    if (RegExp(
-      r"\b(no|not|don't|dont|cancel|another|different)\b",
-    ).hasMatch(t)) {
-      return false;
-    }
-    return RegExp(
-      r'\b(yes|yeah|yep|yup|ok|okay|sure|confirm|please|book it|do it|'
-      r'да|хорошо|ha|mayli|tasdiq)\b',
-    ).hasMatch(t);
-  }
-
-  String? _extractClockTime(String text) {
-    final t = text.toLowerCase();
-    final ampm = RegExp(
-      r'\b([01]?\d|2[0-3])(?::([0-5]\d))?\s*(a\.?m\.?|p\.?m\.?)\b',
-    ).firstMatch(t);
-    if (ampm != null) {
-      var hour = int.parse(ampm.group(1)!);
-      final minute = (ampm.group(2) ?? '00').padLeft(2, '0');
-      final isPm = ampm.group(3)!.startsWith('p');
-      if (hour == 12) hour = 0;
-      if (isPm) hour += 12;
-      return '${hour.toString().padLeft(2, '0')}:$minute';
-    }
-    final clock = RegExp(r'\b([01]?\d|2[0-3]):([0-5]\d)\b').firstMatch(t);
-    if (clock != null) {
-      return '${clock.group(1)!.padLeft(2, '0')}:${clock.group(2)}';
-    }
-    final oclock = RegExp(r"\b([01]?\d|2[0-3])\s*o['’]?clock\b").firstMatch(t);
-    if (oclock != null) {
-      return '${oclock.group(1)!.padLeft(2, '0')}:00';
-    }
-    return null;
-  }
-
-  Map<String, dynamic>? _latestProposePayload() {
-    for (final turn in _turns.reversed) {
-      final payload = turn.cardPayload;
-      if (payload == null) continue;
-      final type = (payload['cardType'] as String?) ?? turn.toolName ?? '';
-      if (type == 'propose_appointment' ||
-          type == 'propose_reschedule' ||
-          turn.toolName == 'propose_appointment' ||
-          turn.toolName == 'propose_reschedule') {
-        return payload;
-      }
-    }
-    return null;
-  }
-
-  Map<String, dynamic>? _resolveBookableSlot(String userText) {
-    final payload = _latestProposePayload();
-    if (payload == null || payload['booked'] == true) return null;
-    final preferred = payload['preferredSlot'];
-    if (preferred is Map) {
-      final slot = Map<String, dynamic>.from(preferred);
-      final startAt = slot['startAt']?.toString();
-      if (startAt != null && !_bookedStartAts.contains(startAt)) {
-        if (_isAffirmativeUtterance(userText) ||
-            _extractClockTime(userText) == slot['startLocal']?.toString()) {
-          return {
-            'payload': payload,
-            'slot': slot,
-            'reschedule':
-                (payload['cardType'] == 'propose_reschedule') || false,
-          };
-        }
-      }
-    }
-    final wanted = _extractClockTime(userText);
-    if (wanted == null) return null;
-    final slots = (payload['slots'] as List? ?? const []).whereType<Map>().map(
-      (e) => Map<String, dynamic>.from(e),
-    );
-    for (final slot in slots) {
-      if (slot['startLocal']?.toString() == wanted) {
-        final startAt = slot['startAt']?.toString();
-        if (startAt != null && !_bookedStartAts.contains(startAt)) {
-          return {
-            'payload': payload,
-            'slot': slot,
-            'reschedule': payload['cardType'] == 'propose_reschedule',
-          };
-        }
-      }
-    }
-    return null;
-  }
-
-  Future<bool> _tryCompletePendingBooking(String userText) async {
-    final target = _resolveBookableSlot(userText);
-    if (target == null) return false;
-    final payload = target['payload'] as Map<String, dynamic>;
-    final slot = target['slot'] as Map<String, dynamic>;
-    final reschedule = target['reschedule'] == true;
-    final startAt = slot['startAt']?.toString();
-    if (startAt == null) return false;
-
-    setState(() {
-      _busy = true;
-      _phase = VoiceSessionPhase.thinking;
-      _liveCaption = userText;
-      _error = null;
-    });
-
-    final ok = reschedule
-        ? await _executeReschedule(payload, slot)
-        : await _executeBook(payload, slot);
-    if (!mounted) return true;
-    final timeLabel = slot['startLocal']?.toString() ?? '';
-    final patientName = payload['patientName']?.toString() ?? 'the patient';
-    // Prefer full month names for TTS (avoid "Oct" → O-C-T).
-    final dateLabel =
-        payload['speakableDateLabel']?.toString() ??
-        payload['dateLabel']?.toString() ??
-        '';
-    final reply = ok
-        ? (reschedule
-              ? 'Moved $patientName to $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.'
-              : 'Booked $patientName at $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.')
-        : 'That slot could not be booked. Pick another time on the card.';
-    final updatedPayload = Map<String, dynamic>.from(payload)
-      ..['preferredSlot'] = slot
-      ..['booked'] = ok
-      ..['statusMessage'] = reply
-      ..['autoConfirm'] = false;
-    final userAt = DateTime.now();
-    setState(() {
-      _turns.add(
-        _VoiceTurn(
-          userText: userText,
-          assistantText: reply,
-          toolName: reschedule ? 'propose_reschedule' : 'propose_appointment',
-          cardPayload: updatedPayload,
-          userAt: userAt,
-          assistantAt: DateTime.now(),
-        ),
-      );
-      _streamingReply = reply;
-      _busy = false;
-      _phase = VoiceSessionPhase.idle;
-    });
-    if (ok) _bookedStartAts.add(startAt);
-    _emitMessages();
-    _scrollChatToEnd(force: true);
-    if (ok) {
-      await _speakReply(reply, _sessionLanguage);
-    }
-    if (mounted) {
-      setState(() {
-        _busy = false;
-        _phase = VoiceSessionPhase.idle;
-      });
-      if (_handsFreeVoice) {
-        _scheduleHandsFreeListen(delayMs: _alexaMode ? 750 : 450);
-      }
-    }
-    return true;
-  }
-
-  /// Book immediately when the doctor named a free time (or backend set autoConfirm).
-  Future<Map<String, dynamic>> _maybeAutoBookFromTool(
-    Map<String, dynamic> payload, {
-    required String userText,
-    required String toolName,
-  }) async {
-    final next = Map<String, dynamic>.from(payload);
-    Map<String, dynamic>? slot;
-    final preferred = next['preferredSlot'];
-    if (preferred is Map) {
-      slot = Map<String, dynamic>.from(preferred);
-    } else {
-      final wanted = _extractClockTime(userText);
-      if (wanted != null) {
-        for (final raw in (next['slots'] as List? ?? const [])) {
-          if (raw is Map && raw['startLocal']?.toString() == wanted) {
-            slot = Map<String, dynamic>.from(raw);
-            next['preferredSlot'] = slot;
-            break;
-          }
-        }
-      }
-    }
-    if (slot == null) return next;
-    final namedTime = _extractClockTime(userText);
-    final shouldBook =
-        next['autoConfirm'] == true ||
-        (namedTime != null && namedTime == slot['startLocal']?.toString());
-    if (!shouldBook) return next;
-    final startAt = slot['startAt']?.toString();
-    if (startAt == null || _bookedStartAts.contains(startAt)) {
-      if (startAt != null && _bookedStartAts.contains(startAt)) {
-        next['booked'] = true;
-        next['statusMessage'] = next['statusMessage'] ?? 'Appointment booked.';
-      }
-      return next;
-    }
-    final reschedule =
-        toolName == 'propose_reschedule' ||
-        next['cardType'] == 'propose_reschedule';
-    final ok = reschedule
-        ? await _executeReschedule(next, slot)
-        : await _executeBook(next, slot);
-    final timeLabel = slot['startLocal']?.toString() ?? '';
-    final name = next['patientName']?.toString() ?? 'patient';
-    final dateLabel =
-        next['speakableDateLabel']?.toString() ??
-        next['dateLabel']?.toString() ??
-        '';
-    if (ok) {
-      _bookedStartAts.add(startAt);
-      next['booked'] = true;
-      next['autoConfirm'] = false;
-      next['statusMessage'] = reschedule
-          ? 'Moved $name to $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.'
-          : 'Booked $name at $timeLabel${dateLabel.isEmpty ? '' : ' on $dateLabel'}.';
-    }
-    return next;
-  }
-
-  Future<bool> _executeBook(
-    Map<String, dynamic> payload,
-    Map<String, dynamic> slot,
-  ) async {
-    final patientId = (payload['patientId'] as num?)?.toInt();
-    final startAt = slot['startAt']?.toString();
-    final slotMinutes = (slot['slotMinutes'] as num?)?.toInt() ?? 30;
-    if (patientId == null || startAt == null) return false;
-    try {
-      final client = ref.read(apiClientProvider);
-      final body = <String, dynamic>{
-        'startAt': startAt,
-        'slotMinutes': slotMinutes,
-        'patientId': patientId,
-        'location': (payload['isVideo'] == true)
-            ? 'Video Consultation'
-            : (slot['locationLabel']?.toString() ?? 'Clinic'),
-        'reason': payload['reason'],
-        'isVideo': payload['isVideo'] == true,
-      };
-      final locId = (slot['locationId'] as num?)?.toInt();
-      if (locId != null && payload['isVideo'] != true) {
-        body['locationId'] = locId;
-      }
-      final res = await client.post('/api/schedule/book', body);
-      final ok = res.statusCode == 200 || res.statusCode == 201;
-      if (ok) unawaited(_refreshHomeAfterScheduleChange(startAt));
-      return ok;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<bool> _executeReschedule(
-    Map<String, dynamic> payload,
-    Map<String, dynamic> slot,
-  ) async {
-    final appointmentId = (payload['appointmentId'] as num?)?.toInt();
-    final startAt = slot['startAt']?.toString();
-    final slotMinutes = (slot['slotMinutes'] as num?)?.toInt() ?? 30;
-    if (appointmentId == null || startAt == null) return false;
-    try {
-      final client = ref.read(apiClientProvider);
-      final body = <String, dynamic>{
-        'startAt': startAt,
-        'slotMinutes': slotMinutes,
-      };
-      final locationId = (slot['locationId'] as num?)?.toInt();
-      if (locationId != null) body['locationId'] = locationId;
-      final res = await client.put(
-        '/api/appointments/$appointmentId/change',
-        body,
-      );
-      final ok = res.statusCode == 200 || res.statusCode == 204;
-      if (ok) unawaited(_refreshHomeAfterScheduleChange(startAt));
-      return ok;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> _refreshHomeAfterScheduleChange(String? startAtIso) async {
-    DateTime? appointmentDay;
-    if (startAtIso != null && startAtIso.isNotEmpty) {
-      try {
-        appointmentDay = DateTime.parse(startAtIso).toLocal();
-      } catch (_) {}
-    }
-    try {
-      ref.invalidate(doctorNotificationsProvider);
-      ref.invalidate(doctorNotificationsUnreadCountProvider);
-    } catch (_) {}
-    await invalidateAppointmentRelatedProviders(
-      ref,
-      appointmentDay: appointmentDay,
-    );
-  }
-
   void _reportWelcome(bool visible) {
     if (_reportedWelcome == visible) return;
     _reportedWelcome = visible;
@@ -533,6 +231,23 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       if (!mounted || _reportedWelcome != visible) return;
       cb(visible);
     });
+  }
+
+  Future<void> _refreshAfterConfirmedWorkflow(
+    Map<String, dynamic> payload,
+  ) async {
+    DateTime? appointmentDay;
+    final preferred = payload['preferredSlot'];
+    final startAt = preferred is Map ? preferred['startAt']?.toString() : null;
+    if (startAt != null) {
+      appointmentDay = DateTime.tryParse(startAt)?.toLocal();
+    }
+    ref.invalidate(doctorNotificationsProvider);
+    ref.invalidate(doctorNotificationsUnreadCountProvider);
+    await invalidateAppointmentRelatedProviders(
+      ref,
+      appointmentDay: appointmentDay,
+    );
   }
 
   /// Latest patient the doctor already matched in this chat.
@@ -820,6 +535,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         }
         if (_phase != VoiceSessionPhase.listening) return;
         _noteSpeechActivity();
+        // Uzbek live guesses are unstable. The caption appears once, from
+        // the server transcript, after the doctor pauses.
+        if (_recognizesUzbek) return;
         if (text.trim().isNotEmpty) {
           _pulseTimer?.cancel();
         }
@@ -949,6 +667,11 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         return;
       }
 
+      if (_recognizesUzbek) {
+        await _commitUzbekUtterance();
+        return;
+      }
+
       var spoken = cleaned;
       var lang = _detectLanguageFromText(spoken) ?? _sessionLanguage;
       final server = await _transcribeCapturedAudio();
@@ -983,6 +706,56 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
 
   bool _containsWakePhrase(String text) =>
       IntelligenceChatTitles.containsWakePhrase(text);
+
+  /// Uzbek UI, or a conversation already detected as Uzbek.
+  bool get _recognizesUzbek =>
+      _sessionLanguage.toUpperCase() == 'UZ' || _uiFallbackLanguage() == 'UZ';
+
+  /// Chrome is not shown and not saved. One server transcript is committed.
+  Future<void> _commitUzbekUtterance() async {
+    await _browserSpeech?.stop();
+    if (!mounted) return;
+    setState(() {
+      _busy = true;
+      _phase = VoiceSessionPhase.thinking;
+      _liveCaption = '';
+      _error = null;
+      _manualEndpoint = false;
+    });
+    final server = await _transcribeCapturedAudio();
+    if (!mounted) return;
+    final spoken = server?.text.trim() ?? '';
+    if (spoken.isEmpty) {
+      setState(() {
+        _busy = false;
+        _phase = VoiceSessionPhase.idle;
+        _surfaceError(
+          _tr(
+            'intelNoSpeechShort',
+            'No speech detected. Tap the mic and try again.',
+          ),
+        );
+      });
+      _scheduleHandsFreeListen();
+      return;
+    }
+    final lang = _resolveReplyLanguage(
+      transcript: spoken,
+      sttLanguage: server?.language,
+    );
+    if (_handsFreeVoice && _isConversationSignOff(spoken)) {
+      await _endConversationFromSignOff(spoken, language: lang);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _phase = VoiceSessionPhase.thinking;
+      _liveCaption = spoken;
+      _sessionLanguage = lang;
+      _error = null;
+    });
+    await _askMorningAi(spoken, language: lang);
+  }
 
   /// Chrome's English recognizer often misses Uzbek "Salom Shifa". Check Gemini.
   Future<DoctorTranscriptionResult?> _tryGeminiWakeRecover(
@@ -1216,6 +989,12 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     }
   }
 
+  String _tr(String key, String fallback) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return fallback;
+    return _t(l10n, key, fallback);
+  }
+
   void _surfaceError(String message) {
     _error = message;
     if (!mounted) return;
@@ -1297,7 +1076,10 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         unawaited(
           _cancelListening(
             reason:
-                'No speech detected. Tap the mic, speak, then tap stop to send.',
+                _tr(
+                  'intelNoSpeech',
+                  'No speech detected. Tap the mic, speak, then tap stop to send.',
+                ),
           ),
         );
       }
@@ -1392,14 +1174,14 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     }
   }
 
-  /// Prefer STT-detected language, then heuristics from the transcript text.
+  /// Prefer words in the transcript so Chrome STT "en-US" does not flip Uzbek.
   String _resolveReplyLanguage({
     required String transcript,
     String? sttLanguage,
   }) {
-    final fromStt = _normalizeLangCode(sttLanguage);
-    if (fromStt != null) return fromStt;
-    return _detectLanguageFromText(transcript) ?? _uiFallbackLanguage();
+    return IntelligenceChatTitles.detectReplyLanguage(transcript) ??
+        _normalizeLangCode(sttLanguage) ??
+        _sessionLanguage;
   }
 
   String? _normalizeLangCode(String? raw) {
@@ -1414,30 +1196,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
   }
 
   String? _detectLanguageFromText(String text) {
-    final t = text.trim();
-    if (t.isEmpty) return null;
-    if (RegExp(r'[А-Яа-яЁё]').hasMatch(t)) return 'RU';
-    final lower = t.toLowerCase();
-    const uzMarkers = [
-      'qabul',
-      'nechta',
-      'bugun',
-      'kecha',
-      'bemor',
-      'shifokor',
-      'hozir',
-      'iltimos',
-      'salom',
-      'rahmat',
-      "o'",
-      'gʻ',
-      'qʻ',
-    ];
-    for (final m in uzMarkers) {
-      if (lower.contains(m)) return 'UZ';
-    }
-    if (RegExp(r'[A-Za-z]').hasMatch(t)) return 'EN';
-    return null;
+    return IntelligenceChatTitles.detectReplyLanguage(text);
   }
 
   Future<void> _toggleListen() async {
@@ -1451,6 +1210,16 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _busy = false;
       });
       // Fall through to start listening.
+    } else if (_busy && _phase == VoiceSessionPhase.thinking) {
+      _askGen++;
+      await _aiSub?.cancel();
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _phase = VoiceSessionPhase.idle;
+          _transcribingDictation = false;
+        });
+      }
     } else if (_busy && _phase != VoiceSessionPhase.listening) {
       return;
     }
@@ -1460,7 +1229,12 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     );
     if (!canSpeak) {
       setState(() {
-        _surfaceError('Speech requires Pro. Upgrade to talk with Shifa.');
+        _surfaceError(
+          _tr(
+            'intelSpeechRequiresPro',
+            'Speech requires Pro. Upgrade to talk with Shifa.',
+          ),
+        );
       });
       return;
     }
@@ -1497,7 +1271,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       return;
     }
 
-    await _beginListening();
+    await _beginListening(fromUserTap: true);
   }
 
   /// Click to start recording, click the check to send. Pauses do not cut the turn.
@@ -1507,7 +1281,12 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     );
     if (!canSpeak) {
       setState(() {
-        _surfaceError('Speech requires Pro. Upgrade to talk with Shifa.');
+        _surfaceError(
+          _tr(
+            'intelSpeechRequiresPro',
+            'Speech requires Pro. Upgrade to talk with Shifa.',
+          ),
+        );
       });
       return;
     }
@@ -1526,7 +1305,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _busy = false;
         _phase = VoiceSessionPhase.idle;
         _transcribingDictation = false;
-        _surfaceError('Stopped.');
+        _surfaceError(_tr('intelStopped', 'Stopped.'));
       });
       return;
     }
@@ -1576,8 +1355,11 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
           _phase = VoiceSessionPhase.idle;
           _surfaceError(
             err == 'no_permission'
-                ? 'Microphone permission is required.'
-                : 'Could not start recording.',
+                ? _tr('intelMicPermission', 'Microphone permission is required.')
+                : _tr(
+                    'intelCouldNotStartRecording',
+                    'Could not start recording.',
+                  ),
           );
         });
       }
@@ -1590,10 +1372,16 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     });
   }
 
-  Future<void> _beginListening() async {
+  Future<void> _beginListening({bool fromUserTap = false}) async {
+    if (fromUserTap) {
+      _handsFreeStartFails = 0;
+      _handsFreeVoice = true;
+    }
     final now = DateTime.now();
     final last = _lastListenStartAt;
-    if (last != null && now.difference(last) < _listenRestartCooldown) {
+    if (!fromUserTap &&
+        last != null &&
+        now.difference(last) < _listenRestartCooldown) {
       final wait = _listenRestartCooldown - now.difference(last);
       _scheduleHandsFreeListen(delayMs: wait.inMilliseconds.clamp(200, 2000));
       return;
@@ -1640,6 +1428,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       final ok = await speech.start(
         languageCode: _sessionLanguage,
         continuous: false,
+        interimResults: !_recognizesUzbek,
       );
       if (!ok && mounted) {
         await _session.stop(discard: true);
@@ -1650,9 +1439,10 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         if (_handsFreeStartFails >= 5) {
           _handsFreeVoice = false;
           _surfaceError(
-            _uiFallbackLanguage() == 'UZ'
-                ? 'Mikrofonni qayta ochib bo‘lmadi. «Salom Shifa» deng yoki mikrofonni bosing.'
-                : 'Could not reopen the microphone. Say Hey Shifa or tap the mic.',
+            _tr(
+              'intelCouldNotReopenMic',
+              'Could not reopen the microphone. Say Hey Shifa or tap the mic.',
+            ),
           );
           _scheduleWakeStandby(delayMs: 900);
         } else {
@@ -1690,8 +1480,14 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _phase = VoiceSessionPhase.idle;
         _surfaceError(
           err == 'no_permission'
-              ? 'Microphone permission is required. Allow mic access and try again.'
-              : 'Could not start the microphone. Check browser permissions.',
+              ? _tr(
+                  'intelMicPermissionRetry',
+                  'Microphone permission is required. Allow mic access and try again.',
+                )
+              : _tr(
+                  'intelCouldNotStartMic',
+                  'Could not start the microphone. Check browser permissions.',
+                ),
         );
       });
     }
@@ -1738,15 +1534,21 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       },
     );
     if (bytes.isEmpty) return null;
-    debugPrint('intelligence_stt bytes=${bytes.length}');
+    debugPrint(
+      'intelligence_stt stage=UPLOAD recordingId=${_session.recordingId} bytes=${bytes.length} durationSec=${_session.lastRecordingDurationSeconds}',
+    );
     final name = voiceRecordingUploadFileName(path, bytes: bytes);
     final stt = await postDoctorTranscriptionDetailed(
       ref: ref,
       fileBytes: bytes,
       fileName: name,
       autoDetectLanguage: true,
+      recordingId: _session.recordingId,
     );
     final cleaned = stt.text.trim();
+    debugPrint(
+      'intelligence_stt stage=TRANSCRIPT_READY recordingId=${_session.recordingId} transcriptChars=${cleaned.length} language=${stt.language ?? ''}',
+    );
     if (cleaned.isEmpty || cleaned == kNoSpeechTranscriptPlaceholder) {
       return null;
     }
@@ -1775,8 +1577,14 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
           _transcribingDictation = false;
           _surfaceError(
             fromDictation
-                ? 'No speech in that recording. Tap the record button and try again.'
-                : 'No speech detected. Tap the mic and try again.',
+                ? _tr(
+                    'intelNoSpeechRecording',
+                    'No speech in that recording. Tap the record button and try again.',
+                  )
+                : _tr(
+                    'intelNoSpeechShort',
+                    'No speech detected. Tap the mic and try again.',
+                  ),
           );
         });
         _scheduleHandsFreeListen();
@@ -1802,11 +1610,20 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
         _handsFreeVoice = false;
         _surfaceError(
           e is TimeoutException
-              ? 'Transcription timed out. Try a shorter recording.'
+              ? _tr(
+                  'intelTranscriptionTimeout',
+                  'Transcription timed out. Try a shorter recording.',
+                )
               : e.toString().contains('permission') ||
                     e.toString().contains('403')
-              ? 'Speech requires Pro, or mic permission was denied.'
-              : 'Transcription failed. Check your connection and try again.',
+              ? _tr(
+                  'intelSpeechProOrDenied',
+                  'Speech requires Pro, or mic permission was denied.',
+                )
+              : _tr(
+                  'intelTranscriptionFailed',
+                  'Transcription failed. Check your connection and try again.',
+                ),
         );
       });
     }
@@ -1832,16 +1649,10 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     userText = _stripShifaAddress(userText);
     final userAt = DateTime.now();
     final replyLang =
-        language ?? _detectLanguageFromText(userText) ?? _sessionLanguage;
+        _detectLanguageFromText(userText) ?? language ?? _sessionLanguage;
     _sessionLanguage = replyLang;
     final patientId = int.tryParse(widget.selectedPatientId ?? '');
     final appointmentId = int.tryParse(widget.selectedAppointmentId ?? '');
-
-    // If the doctor named a free time (or said yes after one was locked), book
-    // immediately — do not loop through another propose card.
-    if (widget.embedded && await _tryCompletePendingBooking(userText)) {
-      return;
-    }
 
     // Intelligence mode uses list_draft_visit_facts + confirm card instead of auto-commit.
     if (!widget.embedded &&
@@ -1929,20 +1740,16 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
                 language: replyLang,
                 patientId: focusPatientId,
                 consultationId: appointmentId,
+                conversationId: widget.conversationId,
               )
               .timeout(const Duration(seconds: 75))) {
         if (!mounted || askGen != _askGen) return;
         if (event is AiToolEvent) {
           final name = event.name;
           toolName = name;
-          var payload = Map<String, dynamic>.from(event.payload);
-          if (widget.embedded &&
-              (name == 'propose_appointment' || name == 'propose_reschedule')) {
-            payload = await _maybeAutoBookFromTool(
-              payload,
-              userText: userText,
-              toolName: name,
-            );
+          final payload = Map<String, dynamic>.from(event.payload);
+          if (payload['booked'] == true) {
+            unawaited(_refreshAfterConfirmedWorkflow(payload));
           }
           cardPayload = payload;
           setState(() {});
@@ -2005,7 +1812,10 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
     } on TimeoutException {
       if (!mounted) return;
       setState(() {
-        _error = 'Shifa took too long to reply. Try again.';
+        _error = _tr(
+          'intelTookTooLong',
+          'Shifa took too long to reply. Try again.',
+        );
         _phase = VoiceSessionPhase.idle;
         _busy = false;
         _transcribingDictation = false;
@@ -2090,7 +1900,12 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       if (!mounted || playGen != _ttsPlayGen) return;
       setState(() {
         _phase = VoiceSessionPhase.idle;
-        _surfaceError('Voice is slow — caption is above. Keep talking.');
+        _surfaceError(
+          _tr(
+            'intelVoiceSlow',
+            'Voice is slow — caption is above. Keep talking.',
+          ),
+        );
       });
     } catch (e) {
       if (!mounted || playGen != _ttsPlayGen) return;
@@ -2102,7 +1917,9 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
             raw.contains('Speech synthesis') ||
             raw.contains('TTS_FAILED') ||
             raw.contains('TimeoutException')) {
-          _surfaceError('Voice skipped — caption is above.');
+          _surfaceError(
+            _tr('intelVoiceSkipped', 'Voice skipped — caption is above.'),
+          );
         }
       });
     }
@@ -2259,10 +2076,10 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
       case VoiceSessionPhase.thinking:
         return (
           status: _transcribingDictation
-              ? 'Transcribing…'
+              ? l10n.translate('transcribing')
               : l10n.translate('intelReviewing'),
           subtitle: _transcribingDictation
-              ? 'Sending your recording to Shifa'
+              ? l10n.translate('intelSendingRecording')
               : _t(
                   l10n,
                   'voiceThinkingSubtitle',
@@ -2397,8 +2214,8 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
           const SizedBox(height: 6),
           Text(
             _heardSpeech
-                ? 'Pause when finished — sending automatically'
-                : 'Speak now…',
+                ? l10n.translate('intelPauseToSend')
+                : l10n.translate('intelSpeakNow'),
             textAlign: TextAlign.center,
             style: AppDesignSystem.caption(context).copyWith(color: brand),
           ),
@@ -2514,7 +2331,7 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
                                     !showVoiceOrb)
                                   _AssistantBlock(
                                     text: _transcribingDictation
-                                        ? 'Transcribing…'
+                                        ? l10n.translate('transcribing')
                                         : _t(
                                             l10n,
                                             'intelReviewing',
@@ -2677,9 +2494,12 @@ class _HomeVoiceSessionState extends ConsumerState<HomeVoiceSession> {
             if (_streamingReply.isNotEmpty || _turns.isNotEmpty) ...[
               _CaptionBubble(
                 label: _t(l10n, 'shifaSaid', 'Shifa'),
-                text: _streamingReply.isNotEmpty
-                    ? _streamingReply
-                    : _turns.last.assistantText,
+                text: localizeIntelligenceHint(
+                  l10n,
+                  _streamingReply.isNotEmpty
+                      ? _streamingReply
+                      : _turns.last.assistantText,
+                ),
                 alignEnd: false,
                 brand: AppDesignSystem.primaryAi,
               ),
@@ -2715,33 +2535,8 @@ class _VoiceTurn {
   final Map<String, dynamic>? cardPayload;
 }
 
-String _formatChatTimestamp(DateTime at) {
-  final local = at.toLocal();
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final day = DateTime(local.year, local.month, local.day);
-  final hh = local.hour.toString().padLeft(2, '0');
-  final mm = local.minute.toString().padLeft(2, '0');
-  final time = '$hh:$mm';
-  if (day == today) return 'Today · $time';
-  final yesterday = today.subtract(const Duration(days: 1));
-  if (day == yesterday) return 'Yesterday · $time';
-  const months = <String>[
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  final date = '${local.day} ${months[local.month - 1]} ${local.year}';
-  return '$date · $time';
+String _formatChatTimestamp(DateTime at, AppLocalizations l10n) {
+  return intelligenceChatTimestamp(l10n, at);
 }
 
 class _UserBubble extends StatelessWidget {
@@ -2766,7 +2561,7 @@ class _UserBubble extends StatelessWidget {
               children: [
                 if (at != null) ...[
                   Text(
-                    _formatChatTimestamp(at!),
+                    _formatChatTimestamp(at!, AppLocalizations.of(context)!),
                     style: AppDesignSystem.caption(context).copyWith(
                       color: AppDesignSystem.textTertiary,
                       fontSize: 11,
@@ -2809,6 +2604,38 @@ class _AssistantBlock extends StatelessWidget {
   final DateTime? at;
   final bool pending;
 
+  String _assistantLine(AppLocalizations l10n) {
+    final localized = localizeIntelligenceHint(l10n, text);
+    if (!intelligenceToolLineStillEnglish(localized)) return localized;
+    final payload = cardPayload;
+    if (payload == null) return localized;
+    final status = payload['statusMessage']?.toString() ?? '';
+    if (status.isNotEmpty) {
+      final fromStatus = localizeIntelligenceHint(l10n, status);
+      if (!intelligenceToolLineStillEnglish(fromStatus)) return fromStatus;
+    }
+    final hint = payload['spokenHint']?.toString() ?? '';
+    if (hint.isNotEmpty && hint != text) {
+      final fromHint = localizeIntelligenceHint(l10n, hint);
+      if (!intelligenceToolLineStillEnglish(fromHint)) return fromHint;
+    }
+    final name = payload['patientName']?.toString() ?? '';
+    final slot = payload['preferredSlot'];
+    final time = slot is Map ? slot['startLocal']?.toString() ?? '' : '';
+    final when =
+        payload['speakableDateLabel']?.toString() ??
+        payload['dateLabel']?.toString() ??
+        '';
+    if (name.isEmpty || time.isEmpty) return localized;
+    final cardType = (payload['cardType'] as String?) ?? toolName ?? '';
+    final onWhen = when.isEmpty ? '' : ' on $when';
+    final canonical = cardType == 'propose_reschedule'
+        ? 'Moved $name to $time$onWhen.'
+        : 'Booked $name at $time$onWhen.';
+    final rebuilt = localizeIntelligenceHint(l10n, canonical);
+    return intelligenceToolLineStillEnglish(rebuilt) ? localized : rebuilt;
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -2825,7 +2652,7 @@ class _AssistantBlock extends StatelessWidget {
               children: [
                 if (at != null && !pending) ...[
                   Text(
-                    _formatChatTimestamp(at!),
+                    _formatChatTimestamp(at!, AppLocalizations.of(context)!),
                     style: AppDesignSystem.caption(context).copyWith(
                       color: AppDesignSystem.textTertiary,
                       fontSize: 11,
@@ -2844,7 +2671,9 @@ class _AssistantBlock extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        text,
+                        _assistantLine(
+                          AppLocalizations.of(context)!,
+                        ),
                         style: AppDesignSystem.body2(context).copyWith(
                           height: 1.45,
                           fontStyle: pending
@@ -2978,7 +2807,7 @@ class _IntelligenceComposerState extends State<_IntelligenceComposer> {
         ],
         if (widget.transcribing) ...[
           Text(
-            'Transcribing your recording…',
+            l10n.translate('intelTranscribingRecording'),
             textAlign: TextAlign.center,
             style: AppDesignSystem.caption(
               context,
@@ -2987,7 +2816,7 @@ class _IntelligenceComposerState extends State<_IntelligenceComposer> {
           const SizedBox(height: 8),
         ] else if (listening && widget.dictationHold) ...[
           Text(
-            'Recording… tap the check when you are done. Pauses are fine.',
+            l10n.translate('intelRecordingHold'),
             textAlign: TextAlign.center,
             style: AppDesignSystem.caption(
               context,
@@ -3031,7 +2860,7 @@ class _IntelligenceComposerState extends State<_IntelligenceComposer> {
                               : speaking
                               ? l10n.translate('intelComposerSpeaking')
                               : widget.transcribing
-                              ? 'Transcribing…'
+                              ? l10n.translate('transcribing')
                               : widget.hint,
                           border: InputBorder.none,
                           isDense: true,
@@ -3040,8 +2869,8 @@ class _IntelligenceComposerState extends State<_IntelligenceComposer> {
               ),
               IconButton(
                 tooltip: widget.dictationHold
-                    ? 'Tap to send this recording'
-                    : 'Dictate — records until you tap send. Pauses are OK.',
+                    ? l10n.translate('intelTapToSendRecording')
+                    : l10n.translate('intelDictateHint'),
                 style: IconButton.styleFrom(minimumSize: const Size(40, 40)),
                 onPressed: (!widget.busy || listening || widget.transcribing)
                     ? widget.onDictation

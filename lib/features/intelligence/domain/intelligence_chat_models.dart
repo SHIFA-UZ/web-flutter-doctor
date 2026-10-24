@@ -188,6 +188,69 @@ abstract final class IntelligenceChatTitles {
     final base = space > 40 ? cut.substring(0, space) : cut.trimRight();
     return '$base…';
   }
+
+  /// Language of one user turn. Null means keep the session language.
+  /// Short Uzbek date/time fragments must not flip the thread to English.
+  static String? detectReplyLanguage(String text) {
+    final t = text.trim();
+    if (t.isEmpty) return null;
+    if (RegExp(r'[ўқғҳЎҚҒҲ]').hasMatch(t)) return 'UZ';
+    if (RegExp(r'[А-Яа-яЁё]').hasMatch(t)) return 'RU';
+    final lower = t.toLowerCase();
+    const uzMarkers = [
+      'qabul',
+      'nechta',
+      'bugun',
+      'kecha',
+      'bemor',
+      'shifokor',
+      'hozir',
+      'iltimos',
+      'salom',
+      'rahmat',
+      "o'",
+      'gʻ',
+      'qʻ',
+      'soat',
+      'oktabr',
+      'oktyabr',
+      "ko'chir",
+      'kochir',
+      'dagi',
+      'kungi',
+      "to'g'ri",
+      'keladi',
+      'hafta',
+      'vaqt',
+      "bo'sh",
+      'ertaga',
+      'qara',
+      'uchun',
+    ];
+    for (final m in uzMarkers) {
+      if (lower.contains(m)) return 'UZ';
+    }
+    const enWords = {
+      'the',
+      'please',
+      'which',
+      'should',
+      'what',
+      'schedule',
+      'appointment',
+      'reschedule',
+      'today',
+      'tomorrow',
+      'show',
+      'list',
+      'move',
+      'how',
+      'many',
+    };
+    final tokens = lower.split(RegExp(r"[^\p{L}']+", unicode: true));
+    if (tokens.where(enWords.contains).length >= 2) return 'EN';
+    return null;
+  }
 }
 
 class IntelligencePatientMark {
