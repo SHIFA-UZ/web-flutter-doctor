@@ -8,6 +8,7 @@ import 'package:shifa_doc_app_v1/core/localization/app_localizations.dart';
 import 'package:shifa_doc_app_v1/core/theme/app_design_system.dart';
 import 'package:shifa_doc_app_v1/features/appointments/application/consultation_notes_provider.dart';
 import 'package:shifa_doc_app_v1/features/home/presentation/widgets/visit_facts_panel.dart';
+import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_card_text.dart';
 import 'package:shifa_doc_app_v1/features/intelligence/presentation/intelligence_inline_viewers.dart';
 import 'package:shifa_doc_app_v1/features/shell/domain/doctor_shell_tab.dart';
 import 'package:shifa_doc_app_v1/state/appointments/appointment_invalidation.dart';
@@ -33,7 +34,8 @@ class IntelligenceActionCard extends ConsumerStatefulWidget {
       _IntelligenceActionCardState();
 }
 
-class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard> {
+class _IntelligenceActionCardState
+    extends ConsumerState<IntelligenceActionCard> {
   bool _busy = false;
   String? _status;
   String? _error;
@@ -44,12 +46,32 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
   String get _cardType =>
       (widget.payload['cardType'] as String?) ?? widget.toolName;
 
+  String _localizedStatus(AppLocalizations l10n) {
+    final raw = _status ?? '';
+    final localized = localizeIntelligenceHint(l10n, raw);
+    if (!intelligenceToolLineStillEnglish(localized)) return localized;
+    final name = widget.payload['patientName']?.toString() ?? '';
+    final slot = widget.payload['preferredSlot'];
+    final time = slot is Map ? slot['startLocal']?.toString() ?? '' : '';
+    final when =
+        widget.payload['speakableDateLabel']?.toString() ??
+        widget.payload['dateLabel']?.toString() ??
+        '';
+    if (name.isEmpty || time.isEmpty) return localized;
+    final onWhen = when.isEmpty ? '' : ' on $when';
+    final canonical = _cardType == 'propose_reschedule'
+        ? 'Moved $name to $time$onWhen.'
+        : 'Booked $name at $time$onWhen.';
+    final rebuilt = localizeIntelligenceHint(l10n, canonical);
+    return intelligenceToolLineStillEnglish(rebuilt) ? localized : rebuilt;
+  }
+
   @override
   void initState() {
     super.initState();
     if (widget.payload['booked'] == true) {
-      _status = widget.payload['statusMessage']?.toString() ??
-          'Appointment booked.';
+      _status =
+          widget.payload['statusMessage']?.toString() ?? 'Appointment booked.';
     }
     final autoOpen = (widget.payload['autoOpenDocumentId'] as num?)?.toInt();
     if (autoOpen != null) {
@@ -83,26 +105,25 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         children: [
           Text(
             _title(l10n),
-            style: AppDesignSystem.body1(context).copyWith(
-              fontWeight: FontWeight.w700,
-              color: brand,
-            ),
+            style: AppDesignSystem.body1(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700, color: brand),
           ),
           const SizedBox(height: 10),
           ..._body(context, brand, l10n),
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(
-              _error!,
-              style: AppDesignSystem.caption(context).copyWith(
-                color: Colors.red.shade700,
-              ),
+              localizeIntelligenceHint(l10n, _error!),
+              style: AppDesignSystem.caption(
+                context,
+              ).copyWith(color: Colors.red.shade700),
             ),
           ],
           if (_status != null) ...[
             const SizedBox(height: 8),
             Text(
-              _status!,
+              _localizedStatus(l10n),
               style: AppDesignSystem.caption(context).copyWith(
                 color: AppDesignSystem.success,
                 fontWeight: FontWeight.w600,
@@ -171,7 +192,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         return _freeSlotsBody(context, l10n);
       case 'patient_search':
       case 'search_patients':
-        return _searchBody(context);
+        return _searchBody(context, l10n);
       case 'propose_appointment':
         return _proposeBookBody(context, brand, l10n);
       case 'propose_reschedule':
@@ -181,13 +202,13 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         return _draftFactsBody(context, brand, l10n);
       case 'most_visited':
       case 'get_most_visited_patients':
-        return _listNameCountBody(context, 'patients');
+        return _listNameCountBody(context, l10n, 'patients');
       case 'clinic_patterns':
       case 'get_clinic_patterns':
-        return _patternsBody(context);
+        return _patternsBody(context, l10n);
       case 'patient_brief':
       case 'brief_patient':
-        return _briefBody(context);
+        return _briefBody(context, l10n);
       case 'patient_documents':
       case 'list_patient_documents':
         return _documentsListBody(context, brand, l10n);
@@ -200,9 +221,12 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       default:
         return [
           Text(
-            widget.payload['spokenHint']?.toString() ??
-                widget.payload['error']?.toString() ??
-                '',
+            localizeIntelligenceHint(
+              l10n,
+              widget.payload['spokenHint']?.toString() ??
+                  widget.payload['error']?.toString() ??
+                  '',
+            ),
             style: AppDesignSystem.body2(context),
           ),
         ];
@@ -233,15 +257,25 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     return [
       if (docs.isEmpty)
         Text(
-          widget.payload['spokenHint']?.toString() ??
-              l10n.translate('intelNoDocuments'),
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ??
+                l10n.translate('intelNoDocuments'),
+          ),
           style: AppDesignSystem.body2(context),
         )
       else
         ...docs.take(12).map((d) {
           final id = (d['documentId'] as num?)?.toInt();
-          final title = d['title']?.toString() ?? 'Document';
-          final date = d['date']?.toString() ?? '';
+          final title = intelligenceDocumentLabel(
+            l10n,
+            d['title']?.toString(),
+          );
+          final date = intelligenceDateLabel(
+            l10n,
+            isoDate: d['date']?.toString(),
+            fallback: d['date']?.toString(),
+          );
           final selected = id != null && id == openedId;
           return Padding(
             padding: const EdgeInsets.only(bottom: 4),
@@ -262,11 +296,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 18,
-                        color: brand,
-                      ),
+                      Icon(Icons.description_outlined, size: 18, color: brand),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -274,17 +304,17 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
                           children: [
                             Text(
                               title,
-                              style: AppDesignSystem.body2(context).copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppDesignSystem.body2(
+                                context,
+                              ).copyWith(fontWeight: FontWeight.w600),
                             ),
                             if (date.isNotEmpty)
                               Text(
                                 date,
                                 style: AppDesignSystem.caption(context)
                                     .copyWith(
-                                  color: AppDesignSystem.textSecondary,
-                                ),
+                                      color: AppDesignSystem.textSecondary,
+                                    ),
                               ),
                           ],
                         ),
@@ -308,7 +338,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         IntelligenceInlineDocumentViewer(
           patientId: '$patientId',
           documentId: '$openedId',
-          title: opened['title']?.toString() ?? 'Document',
+          title: intelligenceDocumentLabel(l10n, opened['title']?.toString()),
         ),
       ],
     ];
@@ -320,14 +350,18 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
   ) {
     final patientId = (widget.payload['patientId'] as num?)?.toInt();
     final documentId = (widget.payload['documentId'] as num?)?.toInt();
-    final title = widget.payload['title']?.toString() ?? 'Document';
+    final title = intelligenceDocumentLabel(
+      l10n,
+      widget.payload['title']?.toString(),
+    );
     final err = widget.payload['error']?.toString();
     if (patientId == null || documentId == null) {
       return [
         Text(
-          err ??
-              widget.payload['spokenHint']?.toString() ??
-              l10n.translate('couldNotLoadDocument'),
+          localizeIntelligenceHint(
+            l10n,
+            err ?? widget.payload['spokenHint']?.toString() ?? '',
+          ),
           style: AppDesignSystem.body2(context),
         ),
       ];
@@ -347,21 +381,22 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     AppLocalizations l10n,
   ) {
     final err = widget.payload['error']?.toString();
-    final hasDoc = widget.payload['documentation'] is Map ||
+    final hasDoc =
+        widget.payload['documentation'] is Map ||
         widget.payload['toothServiceCounts'] is Map;
     if (err != null && !hasDoc) {
       return [
         Text(
-          widget.payload['spokenHint']?.toString() ?? err,
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ?? err,
+          ),
           style: AppDesignSystem.body2(context),
         ),
       ];
     }
     return [
-      IntelligenceInlineDentalChart(
-        brand: brand,
-        payload: widget.payload,
-      ),
+      IntelligenceInlineDentalChart(brand: brand, payload: widget.payload),
     ];
   }
 
@@ -370,22 +405,29 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
-    final dateLabel = widget.payload['dateLabel']?.toString() ??
-        widget.payload['date']?.toString() ??
-        '';
+    final dateLabel = intelligenceFieldLabel(
+      l10n,
+      isoDate: widget.payload['date']?.toString(),
+      fallback:
+          widget.payload['dateLabel']?.toString() ??
+          widget.payload['date']?.toString(),
+    );
     return [
       if (dateLabel.isNotEmpty)
         Text(
           dateLabel,
-          style: AppDesignSystem.body2(context).copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppDesignSystem.body2(
+            context,
+          ).copyWith(fontWeight: FontWeight.w600),
         ),
       const SizedBox(height: 8),
       if (slots.isEmpty)
         Text(
-          widget.payload['spokenHint']?.toString() ??
-              l10n.translate('intelNoFreeSlots'),
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ??
+                l10n.translate('intelNoFreeSlots'),
+          ),
           style: AppDesignSystem.body2(context),
         )
       else
@@ -399,7 +441,9 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
                 visualDensity: VisualDensity.compact,
                 backgroundColor: Colors.white,
                 side: BorderSide(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.35),
                 ),
               ),
           ],
@@ -436,9 +480,9 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       if (appts.isEmpty)
         Text(
           l10n.translate('intelNoAppointmentsToday'),
-          style: AppDesignSystem.body2(context).copyWith(
-            color: AppDesignSystem.textSecondary,
-          ),
+          style: AppDesignSystem.body2(
+            context,
+          ).copyWith(color: AppDesignSystem.textSecondary),
         )
       else
         ...appts.take(8).map((a) {
@@ -450,14 +494,14 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
                   width: 52,
                   child: Text(
                     '${a['startLocal'] ?? ''}',
-                    style: AppDesignSystem.body2(context).copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppDesignSystem.body2(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    '${a['patientName'] ?? 'Patient'} · ${a['status'] ?? ''}',
+                    '${intelligencePatientLabel(l10n, a['patientName']?.toString())} · ${intelligenceStatusLabel(l10n, '${a['status'] ?? ''}')}',
                     style: AppDesignSystem.body2(context),
                   ),
                 ),
@@ -489,22 +533,23 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
     final rangeLabel = widget.payload['rangeLabel']?.toString();
-    final patientName = widget.payload['patientName']?.toString();
+    final rawPatient = widget.payload['patientName']?.toString();
+    final patientName = intelligencePatientLabel(l10n, rawPatient);
     return [
-      if (patientName != null && patientName.isNotEmpty)
+      if (rawPatient != null && rawPatient.trim().isNotEmpty)
         Text(
           patientName,
-          style: AppDesignSystem.body2(context).copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppDesignSystem.body2(
+            context,
+          ).copyWith(fontWeight: FontWeight.w600),
         ),
       if (rangeLabel != null && rangeLabel.isNotEmpty) ...[
         const SizedBox(height: 4),
         Text(
-          rangeLabel,
-          style: AppDesignSystem.body2(context).copyWith(
-            color: AppDesignSystem.textSecondary,
-          ),
+          intelligenceRangeLabel(l10n, rangeLabel),
+          style: AppDesignSystem.body2(
+            context,
+          ).copyWith(color: AppDesignSystem.textSecondary),
         ),
       ],
       const SizedBox(height: 8),
@@ -516,19 +561,28 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       if (appts.isEmpty)
         Text(
           l10n.translate('intelNoPatientAppointmentsInRange'),
-          style: AppDesignSystem.body2(context).copyWith(
-            color: AppDesignSystem.textSecondary,
-          ),
+          style: AppDesignSystem.body2(
+            context,
+          ).copyWith(color: AppDesignSystem.textSecondary),
         )
       else
         ...appts.take(12).map((a) {
-          final day = a['dateLabel']?.toString() ?? a['date']?.toString() ?? '';
+          final day = intelligenceDateLabel(
+            l10n,
+            isoDate: a['date']?.toString(),
+            fallback: a['dateLabel']?.toString(),
+          );
           final time = a['startLocal']?.toString() ?? '';
-          final status = a['status']?.toString() ?? '';
-          final rowPatient = a['patientName']?.toString();
-          final statusText = (patientName == null || patientName.isEmpty) &&
-                  rowPatient != null &&
-                  rowPatient.isNotEmpty
+          final status = intelligenceStatusLabel(
+            l10n,
+            a['status']?.toString() ?? '',
+          );
+          final rowPatient = intelligencePatientLabel(
+            l10n,
+            a['patientName']?.toString(),
+          );
+          final headerName = widget.payload['patientName']?.toString() ?? '';
+          final statusText = headerName.trim().isEmpty && rowPatient.isNotEmpty
               ? '$rowPatient · $status'
               : status;
           return Padding(
@@ -540,24 +594,21 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
                   width: 100,
                   child: Text(
                     day,
-                    style: AppDesignSystem.body2(context).copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppDesignSystem.body2(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 SizedBox(
                   width: 48,
-                  child: Text(
-                    time,
-                    style: AppDesignSystem.body2(context),
-                  ),
+                  child: Text(time, style: AppDesignSystem.body2(context)),
                 ),
                 Expanded(
                   child: Text(
                     statusText,
-                    style: AppDesignSystem.body2(context).copyWith(
-                      color: AppDesignSystem.textSecondary,
-                    ),
+                    style: AppDesignSystem.body2(
+                      context,
+                    ).copyWith(color: AppDesignSystem.textSecondary),
                   ),
                 ),
               ],
@@ -578,7 +629,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     ];
   }
 
-  List<Widget> _searchBody(BuildContext context) {
+  List<Widget> _searchBody(BuildContext context, AppLocalizations l10n) {
     final matches = (widget.payload['matches'] as List? ?? const [])
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
@@ -586,23 +637,31 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     final fuzzy = widget.payload['fuzzy'] == true;
     final query = widget.payload['query']?.toString() ?? '';
     if (matches.isEmpty) {
+      final hint = widget.payload['spokenHint']?.toString() ?? '';
+      var body = hint.isEmpty
+          ? l10n.translate('intelNoPatientsMatched')
+          : localizeIntelligenceHint(l10n, hint);
+      if (body.contains('No patients matched') && query.isNotEmpty) {
+        body = localizeIntelligenceHint(
+          l10n,
+          'No patients matched "$query" in your roster.',
+        );
+      }
       return [
-        Text(
-          widget.payload['spokenHint']?.toString() ??
-              'No patients matched.',
-          style: AppDesignSystem.body2(context),
-        ),
+        Text(body, style: AppDesignSystem.body2(context)),
       ];
     }
     return [
       if (fuzzy) ...[
         Text(
           query.isEmpty
-              ? 'Did you mean…?'
-              : 'No exact match for “$query”. Did you mean…?',
-          style: AppDesignSystem.body2(context).copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+              ? l10n.translate('intelDidYouMean')
+              : l10n
+                    .translate('intelNoExactMatchFor')
+                    .replaceAll('{query}', query),
+          style: AppDesignSystem.body2(
+            context,
+          ).copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
       ],
@@ -610,7 +669,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         return Padding(
           padding: const EdgeInsets.only(bottom: 6),
           child: Text(
-            '${m['patientName'] ?? 'Patient'}'
+            '${intelligencePatientLabel(l10n, m['patientName']?.toString())}'
             '${(m['phone'] as String?)?.isNotEmpty == true ? ' · ${m['phone']}' : ''}',
             style: AppDesignSystem.body2(context),
           ),
@@ -624,10 +683,17 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     Color brand,
     AppLocalizations l10n,
   ) {
-    final patientName = widget.payload['patientName']?.toString() ?? 'Patient';
-    final dateLabel = widget.payload['dateLabel']?.toString() ??
-        widget.payload['date']?.toString() ??
-        '';
+    final patientName = intelligencePatientLabel(
+      l10n,
+      widget.payload['patientName']?.toString(),
+    );
+    final dateLabel = intelligenceFieldLabel(
+      l10n,
+      isoDate: widget.payload['date']?.toString(),
+      fallback:
+          widget.payload['dateLabel']?.toString() ??
+          widget.payload['date']?.toString(),
+    );
     final slots = (widget.payload['slots'] as List? ?? const [])
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
@@ -638,10 +704,15 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     final preferredLabel = preferred?['startLocal']?.toString();
     final err = widget.payload['error']?.toString();
     final done = _status != null;
+    final serverWorkflow = widget.payload['workflowId'] != null;
 
     return [
       _kv(context, l10n.translate('intelPatient'), patientName),
-      _kv(context, l10n.translate('intelDate'), dateLabel.isEmpty ? '—' : dateLabel),
+      _kv(
+        context,
+        l10n.translate('intelDate'),
+        dateLabel.isEmpty ? '—' : dateLabel,
+      ),
       _kv(
         context,
         l10n.translate('intelTime'),
@@ -652,17 +723,32 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       ),
       if (err != null) ...[
         const SizedBox(height: 6),
-        Text(err, style: AppDesignSystem.caption(context)),
+        Text(
+          localizeIntelligenceHint(l10n, err),
+          style: AppDesignSystem.caption(context),
+        ),
       ],
       const SizedBox(height: 10),
       if (slots.isEmpty)
         Text(
-          widget.payload['spokenHint']?.toString() ??
-              l10n.translate('intelNoFreeSlots'),
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ??
+                l10n.translate('intelNoFreeSlots'),
+          ),
           style: AppDesignSystem.body2(context),
         )
       else if (preferred != null) ...[
-        if (!done)
+        if (!done && serverWorkflow)
+          Text(
+            localizeIntelligenceHint(
+              l10n,
+              widget.payload['spokenHint']?.toString() ??
+                  'Confirm this exact booking with Shifa.',
+            ),
+            style: AppDesignSystem.body2(context),
+          ),
+        if (!done && !serverWorkflow)
           FilledButton(
             onPressed: _busy ? null : () => _bookSlot(preferred),
             child: _busy
@@ -672,14 +758,12 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(
-                    l10n.translate('intelConfirmTime').contains('{time}')
-                        ? l10n
-                            .translate('intelConfirmTime')
-                            .replaceAll('{time}', preferredLabel ?? '')
-                        : 'Confirm $preferredLabel',
+                    l10n
+                        .translate('intelConfirmTime')
+                        .replaceAll('{time}', preferredLabel ?? ''),
                   ),
           ),
-        if (!done) ...[
+        if (!done && !serverWorkflow) ...[
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
@@ -688,12 +772,14 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
                   ? null
                   : () => setState(() => _showOtherTimes = !_showOtherTimes),
               child: Text(
-                _showOtherTimes ? 'Hide other times' : 'Other times',
+                _showOtherTimes
+                    ? l10n.translate('intelHideOtherTimes')
+                    : l10n.translate('intelOtherTimes'),
               ),
             ),
           ),
         ],
-        if (_showOtherTimes && !done)
+        if (_showOtherTimes && !done && !serverWorkflow)
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -713,7 +799,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
           children: [
             for (final s in slots)
               OutlinedButton(
-                onPressed: _busy || _status != null
+                onPressed: _busy || _status != null || serverWorkflow
                     ? null
                     : () => _bookSlot(s),
                 child: Text('${s['startLocal'] ?? ''}'),
@@ -743,10 +829,14 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     Color brand,
     AppLocalizations l10n,
   ) {
-    final patientName = widget.payload['patientName']?.toString() ?? 'Patient';
-    final current =
-        '${widget.payload['currentDateLabel'] ?? ''} ${widget.payload['currentStartLocal'] ?? ''}'
-            .trim();
+    final patientName = intelligencePatientLabel(
+      l10n,
+      widget.payload['patientName']?.toString(),
+    );
+    final current = intelligenceDateTimeLabel(
+      l10n,
+      '${widget.payload['currentDateLabel'] ?? ''} ${widget.payload['currentStartLocal'] ?? ''}',
+    );
     final slots = (widget.payload['slots'] as List? ?? const [])
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
@@ -756,31 +846,55 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         : null;
     final preferredLabel = preferred?['startLocal']?.toString();
     final done = _status != null;
+    final serverWorkflow = widget.payload['workflowId'] != null;
 
     return [
       _kv(context, l10n.translate('intelPatient'), patientName),
-      _kv(context, l10n.translate('intelCurrentSlot'), current.isEmpty ? '—' : current),
       _kv(
         context,
-        l10n.translate('intelNewDate'),
-        widget.payload['dateLabel']?.toString() ??
-            widget.payload['date']?.toString() ??
-            '—',
+        l10n.translate('intelCurrentSlot'),
+        current.isEmpty ? '—' : current,
       ),
+      _kv(context, l10n.translate('intelNewDate'), () {
+        final label = intelligenceFieldLabel(
+          l10n,
+          isoDate: widget.payload['date']?.toString(),
+          fallback:
+              widget.payload['dateLabel']?.toString() ??
+              widget.payload['date']?.toString(),
+        );
+        return label.isEmpty ? '—' : label;
+      }()),
       if (preferredLabel != null)
         _kv(context, l10n.translate('intelTime'), preferredLabel),
       const SizedBox(height: 10),
       if (slots.isEmpty)
         Text(
-          widget.payload['spokenHint']?.toString() ??
-              l10n.translate('intelNoFreeSlots'),
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ??
+                l10n.translate('intelNoFreeSlots'),
+          ),
           style: AppDesignSystem.body2(context),
         )
       else if (preferred != null) ...[
-        if (!done)
+        if (!done && serverWorkflow)
+          Text(
+            localizeIntelligenceHint(
+              l10n,
+              widget.payload['spokenHint']?.toString() ??
+                  'Please confirm this exact reschedule in the conversation.',
+            ),
+            style: AppDesignSystem.body2(context),
+          )
+        else if (!done)
           FilledButton(
             onPressed: _busy ? null : () => _moveSlot(preferred),
-            child: Text('Confirm $preferredLabel'),
+            child: Text(
+              l10n
+                  .translate('intelConfirmTime')
+                  .replaceAll('{time}', preferredLabel ?? ''),
+            ),
           ),
       ] else
         Wrap(
@@ -789,9 +903,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
           children: [
             for (final s in slots)
               OutlinedButton(
-                onPressed: _busy || _status != null
-                    ? null
-                    : () => _moveSlot(s),
+                onPressed: _busy || _status != null ? null : () => _moveSlot(s),
                 child: Text('${s['startLocal'] ?? ''}'),
               ),
           ],
@@ -829,13 +941,19 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       _kv(
         context,
         l10n.translate('intelPatient'),
-        widget.payload['patientName']?.toString() ?? '—',
+        intelligencePatientLabel(
+          l10n,
+          widget.payload['patientName']?.toString(),
+        ),
       ),
       const SizedBox(height: 8),
       if (facts.isEmpty)
         Text(
-          widget.payload['spokenHint']?.toString() ??
-              l10n.translate('intelNoDraftFacts'),
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ??
+                l10n.translate('intelNoDraftFacts'),
+          ),
           style: AppDesignSystem.body2(context),
         )
       else ...[
@@ -843,7 +961,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
           return Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
-              '${f['factType'] ?? ''}: ${f['text'] ?? ''}',
+              '${intelligenceFactTypeLabel(l10n, '${f['factType'] ?? ''}')}: ${f['text'] ?? ''}',
               style: AppDesignSystem.body2(context),
             ),
           );
@@ -852,9 +970,7 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         Row(
           children: [
             FilledButton(
-              onPressed: _busy ||
-                      _status != null ||
-                      appointmentId == null
+              onPressed: _busy || _status != null || appointmentId == null
                   ? null
                   : () => _commitFacts(appointmentId, facts),
               child: _busy
@@ -881,7 +997,11 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     ];
   }
 
-  List<Widget> _listNameCountBody(BuildContext context, String key) {
+  List<Widget> _listNameCountBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    String key,
+  ) {
     final rows = (widget.payload[key] as List? ?? const [])
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
@@ -889,7 +1009,10 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     if (rows.isEmpty) {
       return [
         Text(
-          widget.payload['spokenHint']?.toString() ?? '—',
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ?? '—',
+          ),
           style: AppDesignSystem.body2(context),
         ),
       ];
@@ -898,14 +1021,14 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       return Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(
-          '${r['patientName'] ?? r['label'] ?? ''} · ${r['visitCount'] ?? r['count'] ?? ''}',
+          '${intelligencePatientLabel(l10n, (r['patientName'] ?? r['label'])?.toString())} · ${r['visitCount'] ?? r['count'] ?? ''}',
           style: AppDesignSystem.body2(context),
         ),
       );
     }).toList();
   }
 
-  List<Widget> _patternsBody(BuildContext context) {
+  List<Widget> _patternsBody(BuildContext context, AppLocalizations l10n) {
     final rows = (widget.payload['patterns'] as List? ?? const [])
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
@@ -913,7 +1036,10 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     if (rows.isEmpty) {
       return [
         Text(
-          widget.payload['spokenHint']?.toString() ?? '—',
+          localizeIntelligenceHint(
+            l10n,
+            widget.payload['spokenHint']?.toString() ?? '—',
+          ),
           style: AppDesignSystem.body2(context),
         ),
       ];
@@ -929,12 +1055,15 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     }).toList();
   }
 
-  List<Widget> _briefBody(BuildContext context) {
+  List<Widget> _briefBody(BuildContext context, AppLocalizations l10n) {
+    final briefing = widget.payload['briefing']?.toString();
+    final hint = widget.payload['spokenHint']?.toString();
+    final text = (briefing != null && briefing.trim().isNotEmpty)
+        ? briefing
+        : (hint ?? '');
     return [
       Text(
-        widget.payload['briefing']?.toString() ??
-            widget.payload['spokenHint']?.toString() ??
-            '',
+        localizeIntelligenceHint(l10n, text),
         style: AppDesignSystem.body2(context),
       ),
     ];
@@ -950,14 +1079,12 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
             width: 110,
             child: Text(
               k,
-              style: AppDesignSystem.caption(context).copyWith(
-                color: AppDesignSystem.textSecondary,
-              ),
+              style: AppDesignSystem.caption(
+                context,
+              ).copyWith(color: AppDesignSystem.textSecondary),
             ),
           ),
-          Expanded(
-            child: Text(v, style: AppDesignSystem.body2(context)),
-          ),
+          Expanded(child: Text(v, style: AppDesignSystem.body2(context))),
         ],
       ),
     );
@@ -968,7 +1095,11 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     final startAt = slot['startAt']?.toString();
     final slotMinutes = (slot['slotMinutes'] as num?)?.toInt() ?? 30;
     if (patientId == null || startAt == null || startAt.isEmpty) {
-      setState(() => _error = 'Missing patient or slot.');
+      setState(
+        () => _error = AppLocalizations.of(
+          context,
+        )!.translate('intelMissingPatientOrSlot'),
+      );
       return;
     }
     setState(() {
@@ -1005,7 +1136,12 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         _busy = false;
         _error = res.statusCode == 409
             ? AppLocalizations.of(context)!.translate('intelSlotConflict')
-            : 'Booking failed: ${res.statusCode}';
+            : AppLocalizations.of(
+                context,
+              )!.translate('intelBookingFailed').replaceAll(
+                '{code}',
+                '${res.statusCode}',
+              );
       });
     } catch (e) {
       if (!mounted) return;
@@ -1038,7 +1174,11 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     final startAt = slot['startAt']?.toString();
     final slotMinutes = (slot['slotMinutes'] as num?)?.toInt() ?? 30;
     if (appointmentId == null || startAt == null) {
-      setState(() => _error = 'Missing appointment or slot.');
+      setState(
+        () => _error = AppLocalizations.of(
+          context,
+        )!.translate('intelMissingAppointmentOrSlot'),
+      );
       return;
     }
     setState(() {
@@ -1047,10 +1187,10 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
     });
     try {
       final client = ref.read(apiClientProvider);
-      final res = await client.put(
-        '/api/appointments/$appointmentId/change',
-        {'startAt': startAt, 'slotMinutes': slotMinutes},
-      );
+      final res = await client.put('/api/appointments/$appointmentId/change', {
+        'startAt': startAt,
+        'slotMinutes': slotMinutes,
+      });
       if (!mounted) return;
       if (res.statusCode == 200 || res.statusCode == 204) {
         setState(() {
@@ -1064,7 +1204,12 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
         _busy = false;
         _error = res.statusCode == 409
             ? AppLocalizations.of(context)!.translate('intelSlotConflict')
-            : 'Reschedule failed: ${res.statusCode}';
+            : AppLocalizations.of(
+                context,
+              )!.translate('intelRescheduleFailed').replaceAll(
+                '{code}',
+                '${res.statusCode}',
+              );
       });
     } catch (e) {
       if (!mounted) return;
@@ -1095,17 +1240,16 @@ class _IntelligenceActionCardState extends ConsumerState<IntelligenceActionCard>
       );
       final patientId = (widget.payload['patientId'] as num?)?.toInt();
       ref.invalidate(visitFactsForAppointmentProvider(appointmentId));
-      ref.invalidate(
-        consultationNotesForAppointmentProvider('$appointmentId'),
-      );
+      ref.invalidate(consultationNotesForAppointmentProvider('$appointmentId'));
       if (patientId != null) {
         ref.invalidate(patientTimelineProvider(patientId));
       }
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _status =
-            'Documented ${result.committedFacts.length} facts.';
+        _status = AppLocalizations.of(context)!
+            .translate('intelDocumentedFacts')
+            .replaceAll('{count}', '${result.committedFacts.length}');
       });
     } catch (e) {
       if (!mounted) return;

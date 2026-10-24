@@ -19,6 +19,7 @@ class WebSpeechConversation {
   Future<bool> start({
     String languageCode = 'en',
     bool continuous = false,
+    bool interimResults = true,
   }) async =>
       false;
 

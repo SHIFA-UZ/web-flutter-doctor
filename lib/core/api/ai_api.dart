@@ -88,6 +88,7 @@ class AiApi {
     required String language,
     int? patientId,
     int? consultationId,
+    String? conversationId,
   }) =>
       _streamAiAt(
         path: '/api/ai/morning/stream',
@@ -96,6 +97,7 @@ class AiApi {
         language: language,
         patientId: patientId,
         consultationId: consultationId,
+        conversationId: conversationId,
         expectDraft: false,
       );
 
@@ -125,6 +127,7 @@ class AiApi {
     required String language,
     int? patientId,
     int? consultationId,
+    String? conversationId,
     required bool expectDraft,
   }) async* {
     final uri = Uri.parse('${_api.baseUrl}$path');
@@ -140,6 +143,7 @@ class AiApi {
       'language': language,
       'patientId': patientId,
       'consultationId': consultationId,
+      'conversationId': conversationId,
     });
 
     final response = await request.send();

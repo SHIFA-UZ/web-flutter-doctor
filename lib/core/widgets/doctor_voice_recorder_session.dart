@@ -13,7 +13,11 @@ class DoctorVoiceRecorderSession {
   final Stopwatch _stopwatch = Stopwatch();
   StreamSubscription<Amplitude>? _amplitudeSub;
   String? _nativePath;
+  String? _recordingId;
   int _lastDurationSeconds = 0;
+
+  /// Id for this capture. Logged with byte and character counts, never with audio.
+  String? get recordingId => _recordingId;
 
   static const int waveBarCount = 40;
 
@@ -35,6 +39,7 @@ class DoctorVoiceRecorderSession {
   /// Returns null on success, or an error token if permission denied / start failed.
   Future<String?> start(void Function(double level) onLevel) async {
     _nativePath = null;
+    _recordingId = 'rec_${DateTime.now().millisecondsSinceEpoch}';
     if (!await _recorder.hasPermission()) {
       return 'no_permission';
     }
@@ -47,18 +52,21 @@ class DoctorVoiceRecorderSession {
       }
 
       if (kIsWeb) {
-        // Prefer browser-native capture; wav path is more reliable for STT upload.
+        // WAV on web copies the entire buffer on every chunk and freezes the
+        // page after about 20–30s, so only that slice is transcribed.
+        // Opus/AAC append chunks and keep recording until the doctor sends.
+        final opus = await _recorder.isEncoderSupported(AudioEncoder.opus);
         await _recorder.start(
-          const RecordConfig(
-            encoder: AudioEncoder.wav,
-            bitRate: 128000,
+          RecordConfig(
+            encoder: opus ? AudioEncoder.opus : AudioEncoder.aacLc,
+            bitRate: 32000,
             sampleRate: 16000,
             numChannels: 1,
             autoGain: true,
             echoCancel: true,
             noiseSuppress: true,
           ),
-          path: 'web_voice.wav',
+          path: opus ? 'web_voice.webm' : 'web_voice.m4a',
         );
       } else {
         final directory = await getTemporaryDirectory();
