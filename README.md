@@ -93,9 +93,14 @@ The app is deployed to Firebase Hosting with two targets from the same build:
 - **Doctor app** — any hostname without "admin"
 - **Admin panel** — hostname containing "admin"
 
+Every merge to `main` deploys both sites through `.github/workflows/deploy_web.yml`: it builds with the production
+defines (`API_BASE_URL=https://api.shifa.uz`, `ENVIRONMENT=production`) and deploys with the repository secret
+`FIREBASE_SERVICE_ACCOUNT` (a service-account key of the Firebase project `shifa-doctor-staging`). The workflow can
+also be started by hand from the Actions tab. The commands below are the manual fallback:
+
 ```bash
 # Build
-flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=https://api.example.com
+flutter build web --release --pwa-strategy=none --dart-define=API_BASE_URL=https://api.shifa.uz --dart-define=ENVIRONMENT=production
 
 # Deploy doctor app
 firebase deploy --only hosting:doctor --project staging
