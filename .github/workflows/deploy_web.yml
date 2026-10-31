@@ -1,0 +1,50 @@
+name: Deploy web to Firebase Hosting
+
+# Every merge to main publishes the doctor and admin web apps (doctor.shifa.uz, admin.shifa.uz).
+# Needs the repository secret FIREBASE_SERVICE_ACCOUNT: a service-account key of the Firebase project
+# shifa-doctor-staging (Project settings > Service accounts > Generate new private key).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: '3.35.5'
+  API_BASE_URL: 'https://api.shifa.uz'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Build web (production)
+        run: |
+          flutter pub get
+          flutter build web --release --pwa-strategy=none \
+            --dart-define=API_BASE_URL=${{ env.API_BASE_URL }} \
+            --dart-define=ENVIRONMENT=production
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Deploy both hosting targets
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          test -n "$FIREBASE_SERVICE_ACCOUNT" || { echo "FIREBASE_SERVICE_ACCOUNT secret is not set"; exit 1; }
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          npx --yes firebase-tools@14 deploy --only hosting:doctor,hosting:admin --project shifa-doctor-staging --non-interactive
+          rm -f "$RUNNER_TEMP/firebase-sa.json"
