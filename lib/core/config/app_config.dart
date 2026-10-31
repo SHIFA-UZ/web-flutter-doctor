@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   /// Production backend URL (no trailing /api).
   static const String productionApiBaseUrl =
-      'https://shifa-doc-backend-mvp-production.up.railway.app';
+      'https://api.shifa.uz';
 
   /// Base URL for the API backend.
   ///
