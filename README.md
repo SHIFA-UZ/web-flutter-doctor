@@ -131,11 +131,11 @@ The same Flutter codebase ships as native apps for doctors.
 # Production mobile build
 flutter build apk --release \
   --dart-define=ENVIRONMENT=production \
-  --dart-define=API_BASE_URL=https://shifa-doc-backend-mvp-production.up.railway.app
+  --dart-define=API_BASE_URL=https://api.shifa.uz
 
 flutter build appbundle --release \
   --dart-define=ENVIRONMENT=production \
-  --dart-define=API_BASE_URL=https://shifa-doc-backend-mvp-production.up.railway.app
+  --dart-define=API_BASE_URL=https://api.shifa.uz
 ```
 
 CI workflows: `.github/workflows/flutter_ci.yml`, `google_play_deploy.yml`, `ios_testflight.yml`.
