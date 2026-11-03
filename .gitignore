@@ -70,3 +70,4 @@ build/
 *.md
 !CLAUDE.md
 !README.md
+!docs/**/*.md
