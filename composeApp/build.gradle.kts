@@ -39,6 +39,7 @@ kotlin {
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.messaging)
             implementation(libs.androidx.core.ktx)
+            implementation(libs.osmdroid.android) // MapPin: OpenStreetMap tiles, no Google key (D-06, CORE-07)
         }
 
         androidUnitTest.dependencies {

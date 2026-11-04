@@ -124,3 +124,26 @@ Built 2026-11-04 on `doc-app2.0`. `TokenStorage`, the secure store and the `Jwt`
   sign in again once).
 - **Tests:** `SessionRepositoryTest` (6: restore, expired/admin/garbage tokens, sign-in, what a session end clears,
   sign-out then a late report, a late 401 after a new sign-in), `AppLockStorageTest` (5).
+
+## CORE-07 · Native spikes (`ui/debug/SpikesScreen.kt`, `utils/{VoiceRecorder,AudioPlayer,PdfView,MapPin,PushToken,CacheFile}`)
+
+Run 2026-11-04 on the Pixel 9 Pro emulator (Android 16 image, arm64) and the iPhone 16 Pro simulator (iOS 18.6).
+Debug builds open the Spikes screen until AUTH-01 (the debug menu keeps it after CORE-08); release builds never show it.
+
+| Spike | Android | iOS | Outcome |
+|---|---|---|---|
+| AAC record | `MediaRecorder` → `cache/spike.m4a`: 1 ch, 16 kHz, AAC, 32 kbps, 5.0 s (`afinfo`) | `AVAudioRecorder` → `tmp/spike.m4a`: 1 ch, 16 kHz, AAC, 3.1 s | **Works.** The patient app's recorder is copied as is; the backend already takes `.m4a`. |
+| AAC play | `MediaPlayer`: position advanced 2 s / 5 s | `AVPlayer`: 0 s → 1 s / 3 s, then finished | **Works**, file URLs and streamed URLs alike. |
+| PDF render | `PdfRenderer` drew the bundled page | PDFKit drew it | **Works** for viewing. Generating PDFs on device (summary, 025-2) is not spiked; D-05 asks the backend first. |
+| Map pin | osmdroid 6.1.20 + OSM tiles, pin at Amir Temur square, tap moves the pin | MapKit, same pin | **Works without a Google key** (D-06). Needed `clipToBounds()` on Android (the MapView drew over the card above). iOS tap-to-move waits for PROF-07. |
+| FCM token | Firebase initialises; `FirebaseMessaging.token` fails: "FCM Registration failed!" | n/a in Kotlin (APNs → Swift) | **Blocked by credentials**: the debug-signed build isn't accepted (the API key is likely restricted to the release certificate, or the image needs a signed-in Play account). Re-check in PUSH-01 on a device with the release key. |
+| Daily video | — | — | **Skipped**: joining needs a room token for a video appointment and the Daily SDKs on both platforms (credentials + SDK work). VIDEO-01 does it. |
+
+- The iOS run has no UI driver, so `xcrun simctl launch … uz.shifa.doc -spikeAutoRun` records 3 s, stops and plays
+  (debug builds only; `MainViewController.kt`). Android was driven with `adb` taps (`RECORD_AUDIO` granted with
+  `pm grant`).
+- Copied from the patient app (`main@dc2eae4`): `VoiceRecorder`, `AudioPlayer`, `PdfView` (+ `NSData` helpers). New:
+  `MapPin`, `currentPushToken`, `writeCacheFile`.
+- The sample page is `composeResources/files/spike.pdf` (hand-written, 636 bytes).
+- Codex fixed seven defects in the copied code (URL logging, player state machine and leak, PDF threading, cleanup and
+  iOS refresh, the auto-run timer). **The patient app still has the same code:** worth a follow-up there.

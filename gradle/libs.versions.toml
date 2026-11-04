@@ -17,6 +17,7 @@ daily = "0.40.0"
 kotlinx-serialization = "1.6.2"
 kotlinx-coroutines = "1.7.3"
 atomicfu = "0.27.0"
+osmdroid = "6.1.20"
 kotlinx-datetime = "0.5.0"
 multiplatform-settings = "1.1.1"
 security-crypto = "1.1.0"
@@ -63,6 +64,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 # Kotlinx Coroutines
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
+osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
 
 # Kotlinx DateTime
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }

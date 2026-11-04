@@ -14,9 +14,11 @@ import androidx.compose.ui.Modifier
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.ui.debug.SpikesScreen
 import shifa.doctor.ui.theme.ShifaTheme
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
+import shifa.doctor.utils.isDebugBuild
 
 /** Root of the app: theme and language. Placeholder content until AUTH-01 adds splash and screen switching. */
 @Composable
@@ -30,8 +32,13 @@ fun App() {
     ProvideAppLocale(language.resourceCode) {
         CompositionLocalProvider(LocalUzbekCyrillic provides language.cyrillic) {
             ShifaTheme {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Shifa Doctor", style = MaterialTheme.typography.headlineSmall)
+                // Until AUTH-01: debug builds open the native spikes (CORE-07), release builds a placeholder.
+                if (isDebugBuild) {
+                    SpikesScreen()
+                } else {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Shifa Doctor", style = MaterialTheme.typography.headlineSmall)
+                    }
                 }
             }
         }

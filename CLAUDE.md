@@ -116,7 +116,14 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
 - Charts (home analytics, finance): hand-drawn Compose `Canvas` (no chart library; the boards draw bars, a line and a
   donut, all within a few dozen lines each). PDF: backend rendering is requested (BE-01, D-05); until then the
   appointment summary and 025-2 use the platform PDF APIs behind `expect/actual` (Android `PdfDocument`, iOS
-  `UIGraphicsPDFRenderer`); the CORE-07 spike records whether that holds (`docs/implemented/foundation.md`).
+  `UIGraphicsPDFRenderer`; generation not spiked yet). Viewing is `utils/PdfView` (Android `PdfRenderer`, iOS
+  PDFKit), verified on both by the CORE-07 spike.
+- Native pieces proven by the CORE-07 spikes (debug Spikes screen, `ui/debug/SpikesScreen.kt`;
+  `docs/implemented/foundation.md`): voice is `utils/VoiceRecorder` (AAC-LC `.m4a`, 16 kHz mono, 32 kbps:
+  `MediaRecorder` / `AVAudioRecorder`) and `utils/AudioPlayer` (`MediaPlayer` / `AVPlayer`, one at a time); maps are
+  `utils/MapPin` (osmdroid with OpenStreetMap tiles on Android, MapKit on iOS; no Google key, D-06); the FCM token is
+  `utils/currentPushToken()` (Android; iOS gets it in Swift with PUSH-01). Not spiked: Daily (needs a video
+  appointment's room token and the SDKs) and push delivery (needs the release key / a device).
 - Tests (`androidUnitTest`): JUnit4, Mockito-Kotlin, Turbine, Truth, kotlinx-coroutines-test, Roborazzi + Robolectric
   for screenshots, `multiplatform-settings-test` (`MapSettings`) for storage
 - ktlint (`./gradlew ktlintFormat`); it fails the build. `.editorconfig` allows PascalCase `@Composable`s, trailing
