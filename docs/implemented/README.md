@@ -64,7 +64,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | LOCK-02 Inactivity timeout | Done | 30 days without a touch or an expired token end the session on a cold start (decided in the splash, before the shell), on coming back, and on a tap with an expired token; activity written at most every 5 min; Sign In explains it. **M1 complete.** See auth.md. |
 | PROF-01 Profile models + repository | Done | Typed `/doctors/me` (profile, contact, billing, settings, subscription) and `/me/profile`; shared `profileRepository` with the four PATCHes updating it in place; cleared when the session ends. Checked against dev. See profile.md. |
 | SHELL-01 Doctor shell | Done (tabs are placeholders) | Floating bar Home/Calendar/Patients/Chat/More, per-tab stacks kept when switching, re-tap → root, bar hidden on pushed screens, Back pop → Home → exit, More sheet (Intelligence, Clinic if a member, Tasks with its plan, Reports, Notifications, Profile, Language, Sign Out), start tab from the profile once with clamps. See shell.md. |
-| SHELL-02 … SET-03 | Not started | |
+| SHELL-02 Clinic-staff shell | Done | Chat / Clinic / Notifications / Profile (their photo), starts on Clinic, no saved start tab, never calls `/doctors/me`, Back → Clinic → exit; Language and Sign Out in their Profile. See shell.md. |
+| SHELL-03 … SET-03 | Not started | |
 
 ## Log
 
@@ -90,3 +91,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · LOCK-02 · Inactivity timeout (30 days) and expiry checks on start, resume and touch. M1 done.
 - 2026-11-04 · PROF-01 · Typed profile models and the shared profile repository (no screen).
 - 2026-11-04 · SHELL-01 · Doctor shell: bar, per-tab stacks, Back, More sheet, start tab; placeholders per tab.
+- 2026-11-04 · SHELL-02 · Clinic-staff shell (D-02: staff on mobile).

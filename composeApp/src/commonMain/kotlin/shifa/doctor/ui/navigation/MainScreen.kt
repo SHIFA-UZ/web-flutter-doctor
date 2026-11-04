@@ -130,17 +130,18 @@ private val ShellTab.selectedIcon: DrawableResource
             else -> icon
         }
 
-private val barTabs = ShellTab.entries.filter { it.inBar }
-
 /** The doctor's shell (SHELL-01, DaApp phone): the current tab's screen, the floating bar, More, sign-out. */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun MainScreen(viewModel: ShellViewModel = viewModel { ShellViewModel() }) {
+fun MainScreen(
+    staff: Boolean = false,
+    viewModel: ShellViewModel = viewModel { ShellViewModel(staff) },
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val signOut = viewModel { SignOutViewModel() }
     val question by signOut.state.collectAsStateWithLifecycle()
     // Home's root lets the system close the app; everything else is handled here (flow 01/16 §7).
-    BackHandler(enabled = state.moreOpen || state.stack.size > 1 || state.tab != ShellTab.Home) { viewModel.back() }
+    BackHandler(enabled = state.moreOpen || state.stack.size > 1 || state.tab != state.home) { viewModel.back() }
     MainScreenContent(
         state,
         ShellActions(
@@ -180,15 +181,30 @@ fun MainScreenContent(
             val saved = rememberSaveableStateHolder()
             Box(Modifier.weight(1f)) {
                 saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
-                    RouteContent(state.route, actions)
+                    RouteContent(state.route, actions, state.staff)
                 }
             }
         }
         if (state.barVisible) {
-            val selected = if (state.tab.inBar) barTabs.indexOf(state.tab) else barTabs.size
+            val barTabs = state.barTabs
+            val selected = barTabs.indexOf(state.tab).takeIf { it >= 0 } ?: barTabs.size
+            // Staff: four tabs, the last one their photo (flow 01/18 §3); doctors: four and More.
+            val items =
+                barTabs.map {
+                    val avatar = state.staff && it == ShellTab.Profile
+                    NavBarItem(tr(it.label), it.icon, it.selectedIcon, avatar = avatar, avatarUrl = state.avatarUrl)
+                }
             ShifaNavBar(
-                barTabs.map { NavBarItem(tr(it.label), it.icon, it.selectedIcon) } +
-                    NavBarItem(tr(Res.string.more), Res.drawable.ic_more_22, description = tr(Res.string.moreOptions)),
+                if (state.staff) {
+                    items
+                } else {
+                    items +
+                        NavBarItem(
+                            tr(Res.string.more),
+                            Res.drawable.ic_more_22,
+                            description = tr(Res.string.moreOptions),
+                        )
+                },
                 selected,
                 onSelect = { i -> if (i < barTabs.size) actions.select(barTabs[i]) else actions.openMore() },
                 modifier =
@@ -216,10 +232,11 @@ fun MainScreenContent(
 private fun RouteContent(
     route: ShellRoute,
     actions: ShellActions,
+    staff: Boolean,
 ) = when (route) {
     is ShellRoute.Root ->
         if (route.tab == ShellTab.Profile) {
-            ProfilePlaceholder(actions)
+            ProfilePlaceholder(actions, staff)
         } else {
             TabPlaceholder(route.tab.label, route.tab.icon)
         }
@@ -254,18 +271,34 @@ private fun TabPlaceholder(
 
 // PROF-02 replaces this; until then Profile holds the app lock (SET-03's) and, in debug builds, the debug menu.
 @Composable
-private fun ProfilePlaceholder(actions: ShellActions) =
-    Column(
-        Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(ShifaSpacing.Inset.Md),
-        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
-    ) {
-        AppLockSection()
-        if (isDebugBuild) ShifaSettingsItem("Debug menu", { actions.push(ShellRoute.Debug) }, divider = false)
+private fun ProfilePlaceholder(
+    actions: ShellActions,
+    staff: Boolean,
+) = Column(
+    Modifier
+        .fillMaxSize()
+        .statusBarsPadding()
+        .verticalScroll(rememberScrollState())
+        .padding(ShifaSpacing.Inset.Md),
+    verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+) {
+    AppLockSection()
+    // Staff have no More sheet: Language and Sign Out live here (flow 01/18 §3).
+    if (staff) {
+        ShifaSettingsItem(
+            tr(Res.string.language),
+            { actions.push(ShellRoute.Language) },
+            icon = Res.drawable.ic_globe_22,
+        )
+        ShifaSettingsItem(
+            tr(Res.string.signOut),
+            actions.signOut,
+            icon = Res.drawable.ic_logout_22,
+            destructive = true,
+        )
     }
+    if (isDebugBuild) ShifaSettingsItem("Debug menu", { actions.push(ShellRoute.Debug) }, divider = false)
+}
 
 /**
  * The More sheet (flow 01/17, DaApp `moreOpen`): Shifa Intelligence, the five other destinations (Clinic only with a

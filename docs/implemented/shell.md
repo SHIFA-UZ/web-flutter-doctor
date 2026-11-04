@@ -39,3 +39,19 @@ Built 2026-11-04. Flows `01/16-main-shell-doctor.md`, `01/17-more-sheet.md`; boa
 - **Tests:** `ShellViewModelTest` (6: start tab, fallbacks, an early tap wins, an early push wins, a gated tab picked
   early opens once allowed, stacks/re-tap/Back), `ShellScreenshotTest`
   (4: Home, a More tab, More for PREMIUM with a clinic, More for BASIC).
+
+## SHELL-02 · Clinic-staff shell
+
+Built 2026-11-04. Flow `01/18-main-shell-clinic-staff.md`; board `DaApp.dc.html` (`phoneTabs` for staff). D-02:
+staff use the mobile app (Flutter showed a "web only" block screen).
+
+- Same shell, by role: a `CLINIC_STAFF` token opens `MainScreen(staff = true)`. Four tabs: Chat, Clinic,
+  Notifications, Profile, whose slot shows the person's photo (`GET /me/profile`; brand fallback without one; the
+  kit's `NavBarItem` gained `avatar`/`avatarUrl`). No More sheet.
+- Starts on Clinic, which is also "home" for Back (nested pop → Clinic → exit). The saved start tab is never applied
+  and `/doctors/me` is never called (it answers 403 for staff: flow §4). Doctor-only tabs can't be selected.
+- Language and Sign Out sit in the staff Profile (placeholder until PROF-02's staff variant) since there is no More.
+- **Not built here:** badges (SHELL-03), the Clinic workspace (area 09), deep-link mapping for staff (flow §8, PUSH).
+- **Tests:** `ShellViewModelTest` (+1), `ShellScreenshotTest` (+1: the staff bar). The staff Profile placeholder has
+  no screenshot: it hosts the real app-lock section, whose secure store Robolectric can't open.
+

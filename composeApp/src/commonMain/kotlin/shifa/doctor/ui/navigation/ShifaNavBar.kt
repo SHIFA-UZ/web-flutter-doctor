@@ -33,6 +33,7 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.ShifaAvatar
 
 /** A tab of [ShifaNavBar]. [selectedIcon] is the bolder stroke the board draws for the current tab. */
 data class NavBarItem(
@@ -42,6 +43,9 @@ data class NavBarItem(
     val badge: Int = 0,
     // Screen-reader text with the count ("Chat, 3 unread"); the badge itself is hidden from it.
     val description: String = label,
+    // The staff bar's Profile slot: the person's photo instead of the icon (flow 01/18 §3).
+    val avatar: Boolean = false,
+    val avatarUrl: String? = null,
 )
 
 /**
@@ -91,11 +95,15 @@ fun ShifaNavBar(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
                 ) {
-                    Icon(
-                        painterResource(if (isSelected) item.selectedIcon else item.icon),
-                        contentDescription = null,
-                        tint = if (isSelected) ShifaColors.Icon.Brand else ShifaColors.Icon.Primary,
-                    )
+                    if (item.avatar) {
+                        ShifaAvatar(item.avatarUrl, ShifaSize.S24)
+                    } else {
+                        Icon(
+                            painterResource(if (isSelected) item.selectedIcon else item.icon),
+                            contentDescription = null,
+                            tint = if (isSelected) ShifaColors.Icon.Brand else ShifaColors.Icon.Primary,
+                        )
+                    }
                     Text(
                         item.label,
                         style =

@@ -55,13 +55,22 @@ sealed interface ShellRoute {
 enum class Plan { Unknown, Basic, Pro, Premium }
 
 data class ShellUiState(
-    val tab: ShellTab = ShellTab.Home,
+    // Clinic staff (SHELL-02, flow 01/18): four tabs, no More, no plan, start and "home" on Clinic.
+    val staff: Boolean = false,
+    val tab: ShellTab = if (staff) ShellTab.Clinic else ShellTab.Home,
     val stacks: Map<ShellTab, List<ShellRoute>> = emptyMap(),
     val moreOpen: Boolean = false,
     // Null until `GET /me/clinics` answers; a failure counts as no clinic for this session (flow 01/16 §6).
     val hasClinic: Boolean? = null,
     val plan: Plan = Plan.Unknown,
+    // The staff bar's Profile slot shows the person's photo (`GET /me/profile`).
+    val avatarUrl: String? = null,
 ) {
+    val home: ShellTab get() = if (staff) ShellTab.Clinic else ShellTab.Home
+
+    val barTabs: List<ShellTab> get() =
+        if (staff) STAFF_TABS else ShellTab.entries.filter { it.inBar }
+
     val stack: List<ShellRoute> get() = stacks[tab] ?: listOf(ShellRoute.Root(tab))
     val route: ShellRoute get() = stack.last()
 
@@ -70,6 +79,10 @@ data class ShellUiState(
 
     val canTasks: Boolean get() = plan == Plan.Premium
     val canIntelligence: Boolean get() = plan == Plan.Pro || plan == Plan.Premium
+
+    private companion object {
+        val STAFF_TABS = listOf(ShellTab.Chat, ShellTab.Clinic, ShellTab.Notifications, ShellTab.Profile)
+    }
 }
 
 /**
@@ -78,10 +91,11 @@ data class ShellUiState(
  * switched; a start tab the doctor can't use (Tasks below PREMIUM, Clinic without a clinic) falls back to Home.
  */
 class ShellViewModel(
+    staff: Boolean = false,
     private val profile: ProfileRepository = profileRepository,
     private val clinics: ClinicsRepository = ClinicsRepository(),
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ShellUiState())
+    private val _state = MutableStateFlow(ShellUiState(staff = staff))
     val state: StateFlow<ShellUiState> = _state.asStateFlow()
 
     private var switched = false
@@ -91,6 +105,11 @@ class ShellViewModel(
 
     init {
         viewModelScope.launch {
+            // Staff never call /doctors/me (it answers 403) and have no saved start tab (flow 01/18 §2, §4).
+            if (staff) {
+                val me = profile.meProfile().getOrNull()
+                return@launch _state.update { it.copy(avatarUrl = me?.photoUrl, hasClinic = true) }
+            }
             val clinicResult = clinics.mine()
             _state.update { it.copy(hasClinic = clinicResult.getOrNull()?.isNotEmpty() ?: false) }
             val me = profile.refresh().getOrNull()
@@ -114,7 +133,9 @@ class ShellViewModel(
     fun select(tab: ShellTab) {
         switched = true
         val s0 = _state.value
-        if ((tab == ShellTab.Tasks && s0.plan == Plan.Unknown) || (tab == ShellTab.Clinic && s0.hasClinic == null)) {
+        val unknownGate =
+            (tab == ShellTab.Tasks && s0.plan == Plan.Unknown) || (tab == ShellTab.Clinic && s0.hasClinic == null)
+        if (!s0.staff && unknownGate) {
             pending = tab
             return closeMore()
         }
@@ -148,7 +169,7 @@ class ShellViewModel(
         when {
             s.moreOpen -> closeMore()
             s.stack.size > 1 -> _state.update { it.copy(stacks = it.stacks + (it.tab to it.stack.dropLast(1))) }
-            s.tab != ShellTab.Home -> _state.update { it.copy(tab = ShellTab.Home) }
+            s.tab != s.home -> _state.update { it.copy(tab = it.home) }
             else -> return false
         }
         return true
@@ -159,6 +180,7 @@ class ShellViewModel(
         s: ShellUiState,
     ): ShellTab =
         when {
+            s.staff -> if (tab in s.barTabs) tab else s.home
             tab == ShellTab.Tasks && !s.canTasks -> ShellTab.Home
             tab == ShellTab.Clinic && s.hasClinic != true -> ShellTab.Home
             else -> tab

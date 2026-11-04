@@ -27,13 +27,17 @@ class ShellViewModelTest {
     private var tier = "PREMIUM"
     private var clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic"}]"""
     private var hold = CompletableDeferred(Unit)
+    private val paths = mutableListOf<String>()
     private val client by lazy {
         createHttpClient(
             { null },
             MockEngine { req ->
+                paths += req.url.encodedPath
                 val body =
                     if (req.url.encodedPath.endsWith("me/clinics")) {
                         clinics
+                    } else if (req.url.encodedPath.endsWith("me/profile")) {
+                        """{"id":5,"role":"CLINIC_STAFF","firstName":"Dilfuza","lastName":"Y","photoUrl":"https://x/p.jpg"}"""
                     } else {
                         hold.await()
                         """{"profile":{},"settings":{"defaultStartTab":"$startTab"},"subscription":{"tier":"$tier","features":[]}}"""
@@ -47,7 +51,14 @@ class ShellViewModelTest {
 
     @After fun tearDown() = Dispatchers.resetMain()
 
-    private fun vm() = ShellViewModel(ProfileRepository { client }, ClinicsRepository { client })
+    private fun vm(staff: Boolean = false) =
+        ShellViewModel(
+            staff,
+            ProfileRepository {
+                client
+            },
+            ClinicsRepository { client },
+        )
 
     private fun ShellViewModel.settle() {
         repeat(200) {
@@ -132,5 +143,24 @@ class ShellViewModelTest {
         hold.complete(Unit)
         classToTest.settle()
         assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Tasks)
+    }
+
+    @Test
+    fun `clinic staff start on Clinic with four tabs, never ask for the doctor profile, Back goes to Clinic`() {
+        val classToTest = vm(staff = true)
+        repeat(200) { if (classToTest.state.value.avatarUrl == null) Thread.sleep(10) }
+        val s = classToTest.state.value
+        assertThat(s.tab).isEqualTo(ShellTab.Clinic)
+        assertThat(
+            s.barTabs,
+        ).containsExactly(ShellTab.Chat, ShellTab.Clinic, ShellTab.Notifications, ShellTab.Profile).inOrder()
+        assertThat(s.avatarUrl).isEqualTo("https://x/p.jpg")
+        assertThat(paths.none { it.endsWith("doctors/me") }).isTrue()
+        classToTest.select(ShellTab.Tasks) // not a staff tab
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Clinic)
+        classToTest.select(ShellTab.Chat)
+        assertThat(classToTest.back()).isTrue()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Clinic)
+        assertThat(classToTest.back()).isFalse()
     }
 }

@@ -24,4 +24,7 @@ class ShellScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h640dp-xhdpi")
     fun moreBasic() = captureRoboImage("screenshots/Shell_moreBasic.png") { MoreSheetBasicPreview() }
+
+    @Test
+    fun staff() = captureRoboImage("screenshots/Shell_staff.png") { ShellStaffPreview() }
 }

@@ -41,3 +41,8 @@ internal fun MoreSheetBasicPreview() =
             MoreSheetContent(ShellUiState(plan = Plan.Basic, hasClinic = false), ShellActions())
         }
     }
+
+// Flow 01/18: the clinic-staff shell (DaApp `phoneTabs` for staff).
+@Preview(widthDp = 402, heightDp = 874)
+@Composable
+internal fun ShellStaffPreview() = PreviewTheme { MainScreenContent(ShellUiState(staff = true), ShellActions()) }

@@ -236,8 +236,8 @@ private fun AppScreens() {
                     DebugMenuScreen(onBack = { screen = Screen.SignIn })
                 }
                 // SHELL-01 replaces this. Debug builds reach the debug menu meanwhile.
-                // SHELL-01: the doctor's shell (the staff shell is SHELL-02).
-                Screen.Shell -> ScopedViewModels { MainScreen() }
+                // SHELL-01/02: the doctor's shell, or the clinic-staff one for a CLINIC_STAFF token.
+                Screen.Shell -> ScopedViewModels { MainScreen(staff = session?.isClinicStaff == true) }
             }
         }
         // Above everything once the splash is done; what was on screen is kept underneath (flow 01/12 §2).
