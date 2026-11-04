@@ -1,0 +1,95 @@
+package shifa.doctor.ui.splash
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import shifa.doctor.data.config.BootGate
+import shifa.doctor.data.config.PublicConfigRepository
+import shifa.doctor.data.session.Session
+import shifa.doctor.data.session.SessionRepository
+import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.storage.languageStorage
+
+sealed interface SplashUiState {
+    /** The brand animation; the checks run underneath. */
+    data object Loading : SplashUiState
+
+    data class UpdateRequired(
+        val storeUrl: String?,
+    ) : SplashUiState
+
+    data class Maintenance(
+        val message: String?,
+        val retrying: Boolean = false,
+    ) : SplashUiState
+
+    /** Done: [session] null means Login. */
+    data class Finished(
+        val session: Session?,
+    ) : SplashUiState
+}
+
+/**
+ * AUTH-01 (flow 01/01, 01 §2.9). The session restore (local) and the force-update / maintenance check (BE-04) run in
+ * parallel with the animation; a returning doctor leaves after [minSplashMs] instead of Flutter's fixed 1.8 s. The
+ * gate check never blocks launch for more than its own 5 s timeout.
+ */
+class SplashViewModel(
+    private val bootGate: suspend (language: String) -> Result<BootGate> = PublicConfigRepository()::bootGate,
+    private val sessions: SessionRepository = sessionRepository,
+    private val language: () -> String = { languageStorage.language.value.backendCode },
+    private val minSplashMs: Long = MIN_SPLASH_MS,
+) : ViewModel() {
+    private val _state = MutableStateFlow<SplashUiState>(SplashUiState.Loading)
+    val state: StateFlow<SplashUiState> = _state.asStateFlow()
+
+    // Declared before init: on Main.immediate, check() runs its first part inside the constructor.
+    private val skipped = CompletableDeferred<Unit>()
+
+    init {
+        check(firstRun = true)
+    }
+
+    /** A tap skips what's left of the brand moment, never the checks (flow §7). */
+    fun skip() {
+        skipped.complete(Unit)
+    }
+
+    /** Maintenance → "Try again", and the return from the store after "Update". */
+    fun retry() {
+        val current = _state.value
+        if (current is SplashUiState.Maintenance && current.retrying) return
+        if (current is SplashUiState.Maintenance) _state.value = current.copy(retrying = true)
+        check(firstRun = false)
+    }
+
+    private fun check(firstRun: Boolean) {
+        viewModelScope.launch {
+            val gate =
+                coroutineScope {
+                    // Launch is never blocked by the check: a failure or timeout counts as no gate (flow §6).
+                    val gate = async { bootGate(language()).getOrDefault(BootGate.None) }
+                    if (firstRun) withTimeoutOrNull(minSplashMs) { skipped.await() }
+                    gate.await()
+                }
+            _state.value =
+                when (gate) {
+                    is BootGate.Update -> SplashUiState.UpdateRequired(gate.storeUrl)
+                    is BootGate.Maintenance -> SplashUiState.Maintenance(gate.message)
+                    BootGate.None -> SplashUiState.Finished(sessions.restore())
+                }
+        }
+    }
+
+    private companion object {
+        // Enough for the logo to read as a brand moment, short enough that a returning doctor is in within 2 s.
+        const val MIN_SPLASH_MS = 800L
+    }
+}

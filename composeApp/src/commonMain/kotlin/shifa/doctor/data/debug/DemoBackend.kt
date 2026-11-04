@@ -43,7 +43,25 @@ object DemoMode {
         settings[KEY] = on && isDebugBuild
         _enabled.value = on && isDebugBuild
     }
+
+    private const val GATE_KEY = "debug_demo_boot_gate"
+    private val _gate by lazy {
+        MutableStateFlow(
+            DemoBootGate.entries.firstOrNull {
+                it.name == settings.getStringOrNull(GATE_KEY)
+            } ?: DemoBootGate.None,
+        )
+    }
+    val bootGate: StateFlow<DemoBootGate> get() = _gate
+
+    fun setBootGate(gate: DemoBootGate) {
+        settings[GATE_KEY] = gate.name
+        _gate.value = gate
+    }
 }
+
+/** Debug menu → Splash gate: what the demo `public/config` asks for, so both BE-04 frames can be tried. */
+enum class DemoBootGate { None, Update, Maintenance }
 
 /**
  * A fake backend for the debug menu (CORE-08), so screens can be tried without touching production. Every endpoint
@@ -54,6 +72,7 @@ object DemoMode {
  * ponytail: one fixed data set; add states when a feature needs one this set doesn't have.
  */
 class DemoBackend(
+    private val bootGate: () -> DemoBootGate = { DemoMode.bootGate.value },
     passthrough: () -> HttpClient = { HttpClient(createHttpEngine()) },
     private val fixture: suspend (String) -> String = { Res.readBytes("files/demo/$it").decodeToString() },
 ) {
@@ -109,10 +128,25 @@ class DemoBackend(
         if (path == Endpoints.LOGIN) return null
         return when {
             get && path == Endpoints.DOCTOR_ME -> ok(doctorMe())
+            get && path == Endpoints.PUBLIC_CONFIG -> ok(publicConfig(bootGate()))
             request.method == HttpMethod.Put && path == Endpoints.DOCTOR_LANGUAGE -> setLanguage(body)
             get -> null
             else -> refused()
         }
+    }
+
+    // The dev answer (googleMapsApiKey removed: D-06) plus the BE-04 block the debug menu asks for.
+    private fun publicConfig(gate: DemoBootGate): JsonObject {
+        val block =
+            when (gate) {
+                DemoBootGate.None -> null
+                DemoBootGate.Update ->
+                    """{"minVersion":{"android":"99.0.0","ios":"99.0.0"},
+                    "storeUrl":{"android":"https://play.google.com/store/apps/details?id=com.shifa.doc"}}"""
+                DemoBootGate.Maintenance -> """{"maintenance":{"active":true,"message":{}}}"""
+            }
+        val base = """{"transcriptionFeedbackEnabled":"false"${block?.let { ""","doctorApp":$it""" } ?: ""}}"""
+        return apiJson.parseToJsonElement(base).jsonObject
     }
 
     private suspend fun doctorMe(): JsonObject =

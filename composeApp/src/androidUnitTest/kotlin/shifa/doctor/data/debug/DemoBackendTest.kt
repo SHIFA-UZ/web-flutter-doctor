@@ -20,6 +20,8 @@ import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.api.jwt
+import shifa.doctor.data.config.BootGate
+import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.settings.LanguageRepository
 import java.io.File
@@ -28,8 +30,10 @@ import java.io.File
 // without one is noticed here.
 class DemoBackendTest {
     private val forwarded = mutableListOf<String>()
+    private var gate = DemoBootGate.None
     private val demo =
         DemoBackend(
+            bootGate = { gate },
             passthrough = {
                 HttpClient(
                     MockEngine {
@@ -74,7 +78,7 @@ class DemoBackendTest {
                 contentType(ContentType.Application.Json)
                 setBody("{}")
             }
-            client.get("public/config")
+            client.get("public/professions")
             val write =
                 apiCall<Unit> {
                     client.put("doctors/me/profile") {
@@ -82,7 +86,19 @@ class DemoBackendTest {
                         setBody("{}")
                     }
                 }
-            assertThat(forwarded).containsExactly("POST /api/auth/login", "GET /api/public/config").inOrder()
+            assertThat(forwarded).containsExactly("POST /api/auth/login", "GET /api/public/professions").inOrder()
             assertThat((write.exceptionOrNull() as ApiException).code).isEqualTo("DEMO_WRITE_REFUSED")
+        }
+
+    @Test
+    fun `public_config carries the splash gate the debug menu picked`() =
+        runTest {
+            val config = PublicConfigRepository({ client }, "1.0.1", "android")
+            assertThat(config.bootGate("en").getOrNull()).isEqualTo(BootGate.None)
+            gate = DemoBootGate.Maintenance
+            assertThat(config.bootGate("en").getOrNull()).isEqualTo(BootGate.Maintenance(null))
+            gate = DemoBootGate.Update
+            assertThat(config.bootGate("en").getOrNull()).isInstanceOf(BootGate.Update::class.java)
+            assertThat(forwarded).isEmpty()
         }
 }

@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import shifa.doctor.data.debug.BackendChoice
+import shifa.doctor.data.debug.DemoBootGate
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -32,6 +33,7 @@ import shifa.doctor.ui.widgets.ShifaSwitch
 fun DebugMenuScreen(modifier: Modifier = Modifier) {
     var spikes by remember { mutableStateOf(spikeAutoRun) } // -spikeAutoRun (iOS check) starts there
     val demo by DemoMode.enabled.collectAsState()
+    val gate by DemoMode.bootGate.collectAsState()
     val backend by BackendChoice.current.collectAsState()
     if (spikes) {
         Column(modifier.fillMaxSize().statusBarsPadding()) {
@@ -49,6 +51,8 @@ fun DebugMenuScreen(modifier: Modifier = Modifier) {
                 BackendChoice.set(if (dev) BackendChoice.Backend.Development else BackendChoice.Backend.Production)
             },
             onSpikes = { spikes = true },
+            bootGate = gate.name,
+            onBootGate = { DemoMode.setBootGate(DemoBootGate.entries[(gate.ordinal + 1) % DemoBootGate.entries.size]) },
             modifier = modifier,
         )
     }
@@ -62,6 +66,8 @@ fun DebugMenuScreenContent(
     onDemo: (Boolean) -> Unit,
     onDevelopment: (Boolean) -> Unit,
     onSpikes: () -> Unit,
+    bootGate: String,
+    onBootGate: () -> Unit,
     modifier: Modifier = Modifier,
 ) = Column(
     modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
@@ -80,6 +86,7 @@ fun DebugMenuScreenContent(
             subtitle = backendUrl,
             trailing = { ShifaSwitch(development, onDevelopment) },
         )
+        ShifaSettingsItem("Splash gate (demo data)", onBootGate, subtitle = "$bootGate · restart the app to see it")
         ShifaSettingsItem("Native spikes", onSpikes, divider = false)
     }
 }

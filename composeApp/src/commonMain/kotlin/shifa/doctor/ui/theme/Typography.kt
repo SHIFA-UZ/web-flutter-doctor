@@ -147,6 +147,10 @@ object ShifaTextStyles {
     @Composable
     fun otpDigit() = manrope(manropeFontFamily(), FontWeight.Bold, 24, 28)
 
+    // DaApp splash and boot frames: the "S" mark in its 96 tile.
+    @Composable
+    fun splashMark() = manrope(manropeFontFamily(), FontWeight.Bold, 40, 48)
+
     @Composable
     fun pinKey() = manrope(manropeFontFamily(), FontWeight.SemiBold, 24, 28)
 

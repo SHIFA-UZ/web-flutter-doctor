@@ -14,6 +14,7 @@ object ApiConfig {
         const val RESET_PASSWORD = "auth/reset-password"
         const val DOCTOR_ME = "doctors/me"
         const val DOCTOR_LANGUAGE = "doctors/me/language"
+        const val PUBLIC_CONFIG = "public/config"
     }
 
     /**

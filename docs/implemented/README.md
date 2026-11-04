@@ -27,13 +27,16 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | D-05 | PDFs: backend rendering requested (BE-01); client `expect/actual` fallback only for the appointment summary and 025-2. | The user's call, 2026-11-04 (§3 default) |
 | D-06 | Maps: address fields + coordinates first, native map behind `expect/actual` later, no Google key in the app (BE-15). | The user's call, 2026-11-04 (§3 default) |
 | D-07 | Not ported: waiting room, typing indicator, doc-access approve/reject in the inbox, phone OTP. | The user's call, 2026-11-04 (§3 default) |
-| D-08 | Flutter web keeps deploying from `main`; no desktop layouts in the KMP app. | The user's call, 2026-11-04 (§3 default) |
+| D-08 | Flutter web keeps deploying from `main` for now; a KMP web target is built **after M2** (the user asked for KMP web too). | The user's call, 2026-11-04 (confirmed mid-run) |
 | D-09 | App-lock PIN 4–6 digits, user's choice, explicit submit, salted hash. | The user's call, 2026-11-04 (§3 default) |
 | D-10 | Version `1.0.1`; build numbers start at 10 on both stores: `VERSION_CODE_OFFSET` 1 (next Play run 9 → 10), `BUILD_NUMBER_OFFSET` 4 (next TestFlight run 6 → 10), same workflow files (last Flutter uploads: Play run 8 → versionCode 9, TestFlight run 5 → build 6; public Actions API, 2026-11-04). The shared `iosApp.xcscheme` is committed so fastlane can build. | The user's call, 2026-11-04 (§3 default) |
 | D-11 | Doctor delete-account UI built; the action goes to "contact support" until BE-02 ships. | The user's call, 2026-11-04 (§3 default) |
 | D-12 | Video gated on `VIDEO_CONSULTATION` in `features`, hidden while unresolved. | The user's call, 2026-11-04 (§3 default) |
 | D-13 | Push language and per-device tokens: inherit the patient app's asks (BE-05, BE-06); single token until then. | The user's call, 2026-11-04 (§3 default) |
 | D-14 | Booking is slot-first only; "Book for this patient" opens the calendar with the patient pre-filled. | The user's call, 2026-11-04 (§3 default) |
+| D-15 | Push (FCM token, PUSH-01…03) moves to the very end, together with a clean-up of the Firebase project; the debug build's token refusal is part of that. | The user's call, 2026-11-04 |
+| D-16 | Daily video may be tested against the production backend (`POST /video/token`), as the patient app does. | The user's call, 2026-11-04 |
+| D-17 | The uz/ru texts written for the port stay as they are for now (no native-speaker pass before release prep). | The user's call, 2026-11-04 |
 
 ## Status
 
@@ -48,6 +51,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CORE-07 Native spikes | Done (Daily skipped, FCM blocked) | AAC record + play, PDF view and map pin work on the emulator and the simulator (osmdroid / MapKit, no Google key). FCM token: debug build rejected ("FCM Registration failed!"), credentials. Daily: skipped, needs an appointment room token + SDKs. Outcomes in `CLAUDE.md` and foundation.md. |
 | CORE-08 Demo backend, debug menu | Done (fake pushes deferred) | `DemoBackend` (MockEngine) answers every endpoint called so far from a scrubbed dev fixture; `auth/` and unknown GETs go to the real backend, other writes are refused. Debug menu: demo data, development backend, native spikes. Fake pushes come with PUSH-01/NOTIF. See foundation.md. |
 | CORE-09 Utils | Done | `PracticeClock` (practice-zone today/now, DST-safe conversions, mismatch flag, zone-less timestamps as UTC), `Money` (UZS whole sums, grouped), `PhoneE164`, `PasswordPolicy` (the backend's patterns), document picker / share / in-app browser / file saver. `sanitizeErrorMessage` not ported (17 §1). See foundation.md. |
+| AUTH-01 Splash | Done | Session restore + BE-04 boot check in parallel (0.8 s for a returning doctor), force-update and maintenance frames, top-level navigation. See auth.md. |
+| AUTH-02 … LOCK-02 | Not started | |
 
 ## Log
 
@@ -60,3 +65,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CORE-07 · Native spikes on emulator and simulator: audio, PDF view, map pin work; FCM blocked by credentials; Daily skipped.
 - 2026-11-04 · CORE-08 · Demo backend from real dev fixtures, debug menu.
 - 2026-11-04 · CORE-09 · Practice clock, money, phone and password rules, platform helpers. M0 complete.
+- 2026-11-04 · AUTH-01 · Splash with session restore, the BE-04 boot gate and the app's top-level navigation.
