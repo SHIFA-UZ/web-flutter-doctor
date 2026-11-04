@@ -109,7 +109,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | DOCS-05 Document viewer | Done | Download → zoomable image, PDF in the zoomable PDF view, or "can't preview" with Save to device; 403 request access, 404 gone, Retry. See patients.md. |
 | DOCS-04 Documents tab | Done | Search, cards (lock, chip, shared mark, byline, localised 025-2 title), open in the viewer, request access; read on each showing. See patients.md. |
 | DOCS-03 Upload | Done | PDF, photo (as JPEG), gallery, multi-page scan → title & required type → multipart upload with progress, Cancel, Retry, 25 MB cap. See patients.md. |
-| FORM-01 … CLIN-02 | Not started | |
+| FORM-01 Form models + dental codec | Done | `PatientForm` / `FormRequest` (no server fields, one ICD spelling), the 025-2 dental-chart key grammar ported with tests (FDI wins over legacy keys). See patients.md. |
+| FORM-02 … CLIN-02 | Not started | |
 
 ## Log
 
@@ -176,3 +177,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · DOCS-05 · Document viewer (before DOCS-04, which opens it).
 - 2026-11-04 · DOCS-04 · Documents tab.
 - 2026-11-04 · DOCS-03 · Upload (PDF, photo, scan) from the Documents tab.
+- 2026-11-04 · FORM-01 · Form models and the dental-chart codec.

@@ -340,3 +340,29 @@ has the Upload button); built in the existing style. Started from the Documents 
 - **Tests:** `DocumentUploadViewModelTest` (4: PDF naming, empty and too large; the type required, then the multipart
   body with title fallback, category and clinic; the scan loop to a 2-page PDF and the discard question; failure with
   Retry, Cancel of a running upload), `DemoBackendTest` (+ upload), screenshots `Upload_details`, `Upload_status`.
+
+## FORM-01 · Form models and dental-chart codec
+
+Built 2026-11-04. Spec 06 §3.2–3.3. No screen.
+
+- **Models** (`data/model/FormModels.kt`): `PatientForm` as dev's OpenAPI `PatientFormDto` lists it (every field of the
+  025-2, the dental chart as a flat string map, follow-ups, the linked document, the signature fields, clinical-engine
+  disease and chip selections, `createdByDoctorId`); read leniently (an old string `formNumber` reads as a number,
+  unknown keys ignored). Saving sends `FormRequest`: the same without the server's fields (signature requested /
+  signed at / signature image, creator), null fields left out. **One ICD system spelling:** Flutter sent "ICD10" from
+  the picker and "ICD-10" from the clinical engine (06 §10); a save now always sends "ICD10" (the ticket's constant).
+  Dates go as `YYYY-MM-DD`; an empty chart and empty lists are left out. Templates: only
+  `025-2` (06 §3.1).
+- **Dental chart** (`data/forms/DentalChartCodec.kt`, ported from Flutter's `dental_chart_codec.dart`): FDI keys
+  ("11"…"48", primary "51"…"85"), legacy "UR1" keys normalised and migrated, the dentition meta key and row widths (16
+  / 10), editable rows `TOP_{row}_{cell}`, history rows `TOP_HIST_{i}_{cell}` with their date and doctor, the next
+  history index, the prefill of a new 025-2 from the patient's latest (teeth and history carried over, the latest's
+  editable rows become history dated and signed with this visit, empty rows dropped), dd.MM.yyyy history dates; `DentalCode`, Flutter's twelve chart codes (O, R, C, P, Pt, П, A, I, II, III,
+  K, И).
+  **Fixed on the way:** when a chart held both "11" and "UR1", Flutter's migration kept whichever came first in the
+  map; the FDI value now always wins. Flutter had no codec tests (the plan's "ported tests" don't exist); written
+  here.
+- **Tests:** `DentalChartCodecTest` (5: FDI keys for both dentitions and normalisation; dentition and widths;
+  migration with the FDI value winning in either order; editable and history rows, sparse and ordered, out-of-range
+  cells dropped, next index; prefill), `FormModelsTest` (3: lenient read, the request without server fields, one ICD
+  spelling; days and empties left out; the dental codes).
