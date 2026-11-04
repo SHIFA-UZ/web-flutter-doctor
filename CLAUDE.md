@@ -103,8 +103,8 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
 - Compose Multiplatform + Material 3 for all UI (shared in `commonMain`)
 - Ktor Client (OkHttp on Android, Darwin on iOS) + ContentNegotiation, HttpTimeout; the Bearer token is added by an
   `HttpSend` interceptor (no Auth plugin, no refresh token). No Ktor `Logging` plugin: its default logger goes through
-  SLF4J, which has no binding on Android, so nothing reaches Logcat. SSE (AI streams) uses Ktor's SSE plugin on the
-  same client.
+  SLF4J, which has no binding on Android, so nothing reaches Logcat. SSE (AI streams) goes through
+  `HttpClient.streamEvents` (`data/api/Sse.kt`), a reader on the same client: Ktor 2.3's SSE plugin can't POST a body.
 - kotlinx.serialization (JSON), kotlinx.coroutines, kotlinx.datetime
 - Multiplatform Settings (`no-arg`) for local key/value; the token uses `secureSettings` (`KeychainSettings` on iOS,
   EncryptedSharedPreferences from `androidx.security:security-crypto` on Android)
@@ -156,13 +156,18 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
 ### Data layer
 - `ApiConfig` holds `BASE_URL` (production; paths are written without `/api`), `TIMEOUT_MS` (30 s), `Endpoints`
   (consts, or functions for path params) and `PUBLIC_AUTH_PATHS`.
-- `createHttpClient(tokenStorage, engine)` builds the Ktor client (engine defaults to `expect fun createHttpEngine()`);
-  the app uses the shared `httpClient`. The token goes only to the backend host and never on `PUBLIC_AUTH_PATHS`.
-- Calls go through `apiCall<T>(defaultMessage) { client.get(…) }` from `ApiHelper.kt`: returns `Result<T>`, non-2xx
-  becomes an `ApiException` whose message is sanitized by `sanitizeError` (`ErrorMessages.kt`), no response becomes
-  `NetworkError`. Error bodies are read leniently. **401 means logout. 403 logs out only when the JWT is expired or the
-  body says `Account is disabled` / `Session invalid` / `Session expired or signed out`** (clinic staff legitimately get
-  403 on doctor-only endpoints; see `01-architecture-and-core.md` §4).
+- `createHttpClient(token, engine)` builds the Ktor client (engine defaults to `expect fun createHttpEngine()`); the
+  app uses the shared `httpClient` (production, or the development backend from the debug menu). The token goes only
+  to the backend's `/api/` paths that need it (`ApiConfig.needsToken`: not `auth/**` except `auth/reset-password`, not
+  `public/**`, never file URLs) and never over an Authorization header the caller set (Firebase bearer). A token more
+  than 30 s past `exp` ends the session before the request is sent.
+- Calls go through `apiCall<T> { client.get(…) }` from `ApiHelper.kt`: returns `Result<T>`; a non-2xx becomes an
+  `ApiException` with the backend's `status`, `code` and `requestId` (no server text: it can name a patient); no
+  response becomes `NetworkError`. HTML error pages and a numeric `error` are read safely. **Session rule (17 §1), applied
+  only in `apiCall`: a 401 to a request that carried a token, or `code = ACCOUNT_DISABLED`, ends the session through
+  `SessionEvents`; a 403 never does** (clinic staff legitimately get 403 on doctor-only routes; the feature shows its
+  own message). Screens show `e.toUserMessage(Res.string.<featureFallback>)`, which maps the `code`, never English
+  text; show `requestId` in the error banner's detail.
 - Repositories take `HttpClient` (and `TokenStorage` if needed) via constructor and return `Result<T>`. Map HTTP
   errors to the sealed `ApiException` (ValidationError, Unauthorized, NotFound, Conflict, RateLimit, ServerError,
   NetworkError…). DTOs tolerate `null` in list fields and unknown keys; one bad item must not drop the whole list.
@@ -173,8 +178,8 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   `httpClient`, writes never reach production) and fake pushes of each type. A new endpoint gets a `DemoBackend`
   handler too; without one, demo GETs read production and other calls are refused. `DemoBackendTest` covers it.
 - Logging: errors only, never successes. Every failed backend call is logged through `httpLogger` (Logcat tag
-  `HttpClient` on Android, the Xcode console on iOS). `apiCall` already does it: `FAILED <status> <method> <path>:
-  <backend reason>`, `FAILED <message>, no response: <exception>`, or an unreadable body. Network code outside
+  `HttpClient` on Android, the Xcode console on iOS). `apiCall` already does it: `FAILED <status> <method> <path with ids
+  masked> <code> requestId=<id>`, `FAILED no response: <exception class>`, or an unreadable body. Network code outside
   `apiCall` (SSE streams, polling) logs its failures the same way. Debug builds only (release logs nothing); never log
   tokens, passwords, headers, request bodies or patient data (HIPAA: patient ids only).
 - Push: Firebase Messaging on both platforms; the token is sent (`PUT /doctors/me/fcm-token`) after login and on every

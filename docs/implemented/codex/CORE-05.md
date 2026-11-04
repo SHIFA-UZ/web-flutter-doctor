@@ -1,0 +1,19 @@
+- **P1 — A 403 can end the session.** [ApiHelper.kt:69](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/api/ApiHelper.kt:69) handles `ACCOUNT_DISABLED` before checking status. Consequently, `403 {"code":"ACCOUNT_DISABLED"}` emits a logout event, contradicting the requested absolute “403 never does” rule. The new test explicitly requires this behavior.
+
+- **P1 — Stored tokens reach public backend resources.** [ApiConfig.kt:25](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/api/ApiConfig.kt:25) excludes only `auth/` and `public/`. Backend-public paths such as `/patientdocuments/**`, `/chat-attachments/**`, `/certificates/**` and `/v3/api-docs/**` therefore receive the JWT through [HttpClient.kt:81](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/api/HttpClient.kt:81). An expired token also blocks these public requests and ends the session.
+
+- **P2 — Language deduplication races across suspension and logout.** [LanguageRepository.kt:26](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/settings/LanguageRepository.kt:26) checks `synced` before suspending, then updates it after completion. Concurrent identical calls both send; an old request completing after `reset()` repopulates the cache and can suppress the next account’s required sync. Serialize updates and invalidate completions from previous sessions.
+
+- **P2 — Pre-flight reverses the documented grace period.** [Jwt.kt:25](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/utils/Jwt.kt:25) expires tokens at `exp − 30 seconds`. Both architecture §3 and API reference §1 specify `exp + 30 seconds < now`; master-plan §1 says to retain that check. The implementation logs users out approximately 60 seconds earlier than that contract.
+
+- **P2 — Malformed JWT claim types escape the decoder.** [Jwt.kt:15](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/utils/Jwt.kt:15) accesses `jsonPrimitive` outside `claims()`’s exception handling. Payloads containing `"exp":{}` or `"role":[]` throw instead of returning unreadable claims. During pre-flight this becomes a misleading `NetworkError`, leaving the unusable token installed.
+
+- **P2 — SSE dispatches incomplete events.** [Sse.kt:72](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/api/Sse.kt:72) flushes at EOF, so a connection ending midway through `data:` delivers truncated content as a complete event. SSE requires discarding pending data unless a blank line terminates the event; the new EOF test encodes the opposite behavior. [SSE parsing specification](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation).
+---
+**Answers (round 1):**
+1. *403 ACCOUNT_DISABLED ends the session:* kept on purpose. The backend sends `ACCOUNT_DISABLED` only as a 403 (`backend-kotlin-shifa/.../JwtAuthFilter.kt:120`, `SC_FORBIDDEN`), and the rule names that code explicitly, so it is the one 403 that ends the session. The comment and docs now say so.
+2. *Token on backend file paths:* fixed. `ApiConfig.needsToken` only allows `/api/` paths; a test covers `/patientdocuments/…`.
+3. *Language dedupe race:* fixed with a `Mutex` and a session counter that `reset()` bumps.
+4. *Grace direction:* fixed to Flutter's `exp + 30 s < now`; tests updated.
+5. *Malformed claim types:* fixed; the claims are read inside `runCatching`, and a test covers it.
+6. *SSE partial event at EOF:* fixed per WHATWG; dropped, and the test was updated.

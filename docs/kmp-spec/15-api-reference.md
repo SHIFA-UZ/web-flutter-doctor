@@ -15,13 +15,13 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 
 | Topic | Rule |
 |---|---|
-| Base URL | `https://shifa-doc-backend-mvp-production.up.railway.app`; paths below include the `/api` prefix as the Flutter code writes them. In Kotlin, `ApiConfig.BASE_URL` ends with `/api` and `Endpoints` omit it. |
+| Base URL | Production `https://api.shifa.uz` (17 §1; the Railway host stays alive for old store builds), development `https://api-dev.shifa.uz`; paths below include the `/api` prefix as the Flutter code writes them. In Kotlin, `ApiConfig.BASE_URL` ends with `/api` and `Endpoints` omit it. |
 | Auth | `Authorization: Bearer <jwt>`. No refresh token. JWT claims read: `exp`, `role` (`DOCTOR` \| `CLINIC_STAFF` \| `ADMIN`). |
 | Public paths | `/api/auth/**` (login, OTP, register, verify-key, check-existing-patient, forgot-password…), `/api/public/**`. `POST /api/auth/reset-password` (change password while signed in) needs the token. |
-| 401 / 403 | 401 ⇒ logout (only if a token was sent). 403 ⇒ logout **only** when the JWT is expired, or the body contains `"error":"Account is disabled"` / `"Session invalid"` / `"Session expired or signed out"`, or it is a `/api/doctors/me*` `Forbidden` for a non-`CLINIC_STAFF` role. Everything else (clinic staff on doctor-only routes, video token business rules) is a normal error. Doc 01 §3. |
+| 401 / 403 | **Superseded by 17 §1 (built in CORE-05):** a 401 to a request that carried a token, or `code = ACCOUNT_DISABLED`, ends the session; a 403 never does. Verified on dev 2026-11-04: a missing or invalid token gets `401 {"error":"Authentication required","code":"UNAUTHORIZED","requestId":…}` (not `TOKEN_INVALID`). The old Flutter rule (403 on English body strings) is in 01 §3 for reference only. |
 | Pre-flight expiry | Flutter rejects requests locally when `exp + 30 s < now` and logs out. Keep. |
 | Timeout | 30 s (Flutter applied it only to GET/POST; apply to all). |
-| Content type | JSON. The backend can return HTML error pages: check `Content-Type` before decoding. Error bodies: `{message}` or `{error}` (sometimes numeric). |
+| Content type | JSON. The backend can return HTML error pages: check `Content-Type` before decoding. Error bodies (dev, 2026-11-04): `{error, message?, status?, code, requestId}`; `error` is the status number on some routes (`{"error":404,"message":"Appointment not found: 9",…}`), and `message` can name records, so it is never logged or shown. |
 | Times | Instants are ISO-8601 UTC with `Z`. Dates are `YYYY-MM-DD`. Times of day are `HH:mm`. Display in the doctor's practice time zone (`profile.timeZone`), clinic time zone for clinic-scoped screens, patient time zone for task check-ins. |
 | Money | Integer minor units (`*Minor`) + `currency` (`UZS`, `USD`, `EUR`, `RUB`). |
 | IDs | Numeric on the wire; the Flutter app stringifies patient ids. Tolerate `int`/`double`/`String`. |

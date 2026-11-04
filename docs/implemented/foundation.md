@@ -60,3 +60,39 @@ Built 2026-11-04 on `doc-app2.0`.
   **Not here:** `PUT /doctors/me/language` needs `apiCall`, so the sync is wired in CORE-05.
 - **Tests:** `StringsTest` (keys, plurals and placeholders equal across locales; no `\'`/`\"`),
   `UzbekCyrillicTest`, `LanguageStorageTest`.
+
+## CORE-05 · HTTP client (`data/api/`, `data/model/ApiError.kt`, `data/storage/TokenStorage.kt`, `utils/Jwt.kt`)
+
+Built 2026-11-04 on `doc-app2.0`, copied from the patient app's `data/api` and changed where 17 §1 says so.
+
+- **Client** (`HttpClient.kt`): OkHttp / Darwin, 30 s request/connect/socket timeouts on every verb, lenient JSON. An
+  `HttpSend` interceptor adds the token only to the backend's `/api/` paths that need it (not `auth/**` except
+  `auth/reset-password`, not `public/**`, never the file paths or `/v3/api-docs`; checked against the backend's
+  `SecurityConfig`), and never over a header the caller set (`auth/verify` sends a Firebase bearer). Pre-flight
+  (Flutter's rule): a token more than 30 s past `exp` ends the session and fails with `Unauthorized(SESSION_EXPIRED)`
+  without a request.
+- **Session rule** (17 §1), only in `apiCall`: a 401 to a request that carried a token → `SessionEvents.end(Unauthorized)`;
+  `code = ACCOUNT_DISABLED` → `AccountDisabled`; any other 403 never ends the session. The backend sends
+  `ACCOUNT_DISABLED` as a 403 (`JwtAuthFilter`), so that code is the one 403 that does. CORE-06's session repository
+  listens.
+- **Errors:** `ApiException` carries `status`, `code`, `requestId`, and no server text (dev's 404 message names the
+  record: "Appointment not found: 9"). `toUserMessage(fallback)` maps codes (`RATE_LIMITED`, `ACCOUNT_DISABLED`,
+  `SESSION_*`/`TOKEN_INVALID`, `UNAVAILABLE`) and otherwise uses the screen's own fallback string. The patient app's
+  English-message table is not copied (17 §1: never match English text). HTML error pages are not decoded.
+- **Logging** (debug only): `FAILED <status> <method> <path, ids masked> <code> requestId=<id>`; never tokens,
+  headers, bodies or server messages.
+- **SSE:** `HttpClient.streamEvents` reads `text/event-stream` on the same client; non-2xx and `event: error` fail like
+  `apiCall`; an event cut off by the end of the stream is dropped (WHATWG rules; the patient app kept it).
+- **Dev host switch:** `data/debug/BackendChoice` (debug builds; production otherwise). The menu itself is CORE-08.
+- **Moved in from CORE-06** because the interceptor needs them: `TokenStorage` (`shifa_doctor_auth_token` in
+  `shifa_doctor_auth_secure`, Keychain / EncryptedSharedPreferences) and the single `Jwt` reader (`exp`, `role`).
+- **Language sync:** `LanguageRepository.sync(code)` → `PUT /doctors/me/language` (204), deduped under a mutex, and a
+  reply landing after logout doesn't count for the next session; called on sign-in
+  and on change once the session exists (CORE-06).
+- **Verified on dev 2026-11-04** as `seed.doctor1@shifa.dev`: `POST auth/login` 200 `{token, forcePasswordReset}`;
+  `GET doctors/me` 200 `{billing, contact, profile, settings, subscription}`; missing / invalid token 401
+  `code: UNAUTHORIZED` (not `TOKEN_INVALID`); `PUT doctors/me/language` is in the OpenAPI spec (204). The JWT carries
+  `exp, iat, iss, jti, principal, role, sub`, and **a doctor token lives 30 days** on dev, not the 12 h the workspace
+  notes say.
+- **Tests:** `ApiCallTest` (11: session rule cases, pre-flight, token placement, HTML and numeric error bodies,
+  messages, masking), `SseTest` (3), `JwtTest` (3), `LanguageRepositoryTest` (2).
