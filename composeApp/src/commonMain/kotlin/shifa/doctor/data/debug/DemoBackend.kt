@@ -542,9 +542,9 @@ class DemoBackend(
             get && path == Endpoints.TREATMENT_PLANS -> {
                 val q = request.url.parameters
                 val plan = demoPlanSummary()
-                val mine =
-                    q["clinicId"] == "1" && q["patientId"].let { it == null || it == "12" } && q["planKind"] != "VISIT" &&
-                        q["status"].let { it == null || it == plan["status"]?.jsonPrimitive?.content }
+                val patient = q["patientId"].let { it == null || it == "12" }
+                val status = q["status"].let { it == null || it == plan["status"]?.jsonPrimitive?.content }
+                val mine = q["clinicId"] == "1" && patient && q["planKind"] != "VISIT" && status
                 ok(JsonArray(if (mine) listOf(plan) else emptyList()))
             }
             get && path == Endpoints.treatmentPlanDetail(DEMO_PLAN_ID) -> ok(demoPlanDetail())

@@ -375,6 +375,9 @@ Notes from M5:
 - **Lint-only issue in `8727e58` (DENTAL-02):** one line over 120 characters, from the last review fix. It compiles;
   the next commit (APPT-05) wraps it. My check looked for "FAILED", but Gradle prints "FAILURE"; the check now matches
   both.
+- **Lint-only issue in `abc90d8` (TP-01):** a demo line over 120 characters. I ran the commit in the same command as
+  the check instead of after reading its result. It compiles; fixed in the next commit. Commits now come only after a
+  separate, read check.
 - **A real bug caught by a test:** a retry ran the upload inside a state update, which can run twice; it uploaded the
   recording twice. Fixed before commit (SCRIBE-01).
 - **Backend facts:** the doctor's appointment detail has no video flag (only the patient side has it); notes are one
