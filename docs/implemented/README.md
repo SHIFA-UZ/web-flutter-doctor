@@ -70,7 +70,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SHELL-05 Intelligence mode, resume refresh | Done (AI surface: area 03) | Shifa Intelligence replaces the tab content with the bar kept (tab tap or Back leaves it, the tab underneath untouched, gated on `ASK_SHIFA_AI`); every resume re-reads the profile, clinics and notifications. See shell.md. |
 | PROF-02 Profile root | Done (sections are placeholders) | Identity card ("Dr. med. First Last", professions in the app language, timezone and plan chips), completeness card with fix-it chips, ten section rows with live previews, Sign Out, version; staff read-only variant; skeleton, error with Retry. See profile.md. |
 | PROF-03 Personal information | Done | Names, date of birth, gender, professions (shared picker), changed-keys-only save, discard question; photo from gallery or camera uploads at once. Remove photo waits for BE-30. See profile.md. |
-| PROF-04 … SET-03 | Not started | |
+| PROF-04 Contact, invoicing, password | Done | Contact & clinic address (phone, e-mail, editable address fields, timezone row), Subscription & billing (current plan, invoicing card), Security (app lock + change password). Address search and map are PROF-07; plans and checkout SUB-02. See profile.md. |
+| PROF-05 … SET-03 | Not started | |
 
 ## Log
 
@@ -102,3 +103,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · SHELL-05 · Intelligence mode in the shell and the resume refresh.
 - 2026-11-04 · PROF-02 · Profile root (doctor and staff), section routes as placeholders.
 - 2026-11-04 · PROF-03 · Personal information panel, photo upload, shared profession picker; fragment 1.8.9 fixes picker crash.
+- 2026-11-04 · PROF-04 · Contact & clinic address, invoicing details, Security with password change; shared profile form pieces.

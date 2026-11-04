@@ -2286,5 +2286,16 @@
   "yesterday": "Вчера",
   "yourCameraPreview": "Предпросмотр вашей камеры",
   "yourName": "Ваше имя",
-  "cameraAccessNeeded": "Чтобы сделать фото, нужен доступ к камере"
+  "cameraAccessNeeded": "Чтобы сделать фото, нужен доступ к камере",
+  "contactSection": "Контакты",
+  "patientsSeePhone": "Пациенты видят ваш номер телефона в подтверждённых записях",
+  "coordinatesNotSet": "Координаты не заданы",
+  "contactSavedAddressFailed": "Контакты сохранены, но адрес сохранить не удалось",
+  "yourCurrentPlan": "Ваш текущий тариф",
+  "invoicingDetails": "Реквизиты для счетов",
+  "invalidIban": "Введите корректный IBAN или номер счёта",
+  "security": "Безопасность",
+  "changePassword": "Изменить пароль",
+  "currentPasswordIncorrect": "Текущий пароль неверен",
+  "failedToChangePassword": "Не удалось изменить пароль"
 }

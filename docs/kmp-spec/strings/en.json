@@ -2286,5 +2286,16 @@
   "yesterday": "Yesterday",
   "yourCameraPreview": "Your camera preview",
   "yourName": "Your Name",
-  "cameraAccessNeeded": "Camera access is needed to take a photo"
+  "cameraAccessNeeded": "Camera access is needed to take a photo",
+  "contactSection": "Contact",
+  "patientsSeePhone": "Patients see your phone number on confirmed appointments",
+  "coordinatesNotSet": "Coordinates not set",
+  "contactSavedAddressFailed": "Contact saved, but the address could not be saved",
+  "yourCurrentPlan": "Your current plan",
+  "invoicingDetails": "Invoicing details",
+  "invalidIban": "Enter a valid IBAN or account number",
+  "security": "Security",
+  "changePassword": "Change password",
+  "currentPasswordIncorrect": "Current password is incorrect",
+  "failedToChangePassword": "Failed to change password"
 }

@@ -106,3 +106,52 @@ Built 2026-11-04. Flow `08/02-edit-profile.md`; board `DaProfile.dc.html` (`prof
   rules, discard and tab switch, failed save with request id, photo upload success / failure / cancel, photo version
   kept after a save, camera refused, bundled professions while the backend is slow, Save blocked during an upload),
   `DemoBackendTest` (+1, photo upload), `ProfileScreenshotTest` (+2: `PersonalInfo_edited`, `PersonalInfo_errors`).
+
+## PROF-04 · Contact, invoicing and password
+
+Built 2026-11-04. Flows `08/03-contact-and-clinic-address.md`, `08/09-subscription-and-billing.md` (current plan and
+invoicing card), `08/11-security.md` (password card); board `DaProfile.dc.html` (`profContact`, `subscription`,
+`setSecurity`).
+
+- **Shared edit-form pieces** (`ui/profile/ProfileForms.kt`): `ProfileForm` (header with Back and the Save check,
+  scrolling column with keyboard padding, the "Discard changes?" question), `FormExitEffects` (system Back, close after
+  Save or Discard), `backStep`, `ProfileSheet`. Personal information (PROF-03) now uses them too.
+- **Contact & clinic address** (`ContactScreen.kt`, Profile → Contact):
+  - Contact: phone (required; normalised to E.164 by `PhoneE164`, shown grouped "+998 90 123 45 67"), e-mail
+    (optional, trimmed and lower-cased, checked), the "Patients see your phone number…" line.
+  - Clinic address: Country, Region, District, City, Postal code, Street (≤ 250), all editable (the flow's target;
+    Flutter had them read-only), the street helper under it, and the coordinates line (6 decimals, or "Coordinates not
+    set"; read-only until the map picker).
+  - Practice timezone row → the timezone screen (placeholder until PROF-06).
+  - Save: `PATCH /doctors/me/contact` (whole block) when the contact changed, then `PATCH /doctors/me/profile` with only
+    the changed address keys ("" clears). A failed address after a saved contact shows "Contact saved, but the address
+    could not be saved" with the request id, and only the address stays dirty. Success: "Contact details saved" or
+    "Location saved" on the Profile root.
+  - Not here: address search, "Pick on map", reverse geocoding, the static preview (PROF-07).
+- **Subscription & billing** (`BillingScreen.kt`, Profile → Subscription & billing):
+  - Current plan card ("PREMIUM · Your current plan"), shown once the plan is known.
+  - Invoicing details card: Billing name, Billing email (checked), IBAN / Account number (spaces removed, upper-cased;
+    an IBAN of 15–34 or 10–34 digits, no checksum), Tax ID / VAT ID, and Save in the card. `PATCH /doctors/me/billing`
+    sends the whole block: blanks are left out (the backend sets every field, so a missing key is cleared), the Stripe
+    account and the Click / Payme ids go back as read. Saves and stays with "Payment & invoicing saved".
+  - Not here: plan cards, feature matrix, checkout and Stripe Connect (SUB-02).
+- **Security** (`SecurityScreen.kt`, Settings → Security, for doctors and staff): the app lock section (moved here
+  from the Settings placeholder) and the password card: Current, New (with the registration checklist), Confirm, each
+  with show/hide; Change password. Passwords go exactly as typed (`AuthRepository.changePassword`, `POST
+  /auth/reset-password`). The policy is checked first, so a 400 means a wrong current password: "Current password is
+  incorrect" under it, the field cleared. Success clears the form with "Password updated successfully". Back with
+  typed passwords asks before discarding; a clean Back forgets everything. Change password is enabled only when the
+  request can succeed; a 400 is read as a wrong current password because the policy is checked first (BE-32 asks for
+  a distinct code).
+- **Shell:** a success notice ("… saved") is cleared when the doctor opens another screen or tab; warnings stay until
+  closed. `ShifaSubHeader`'s check is labelled "Save" on these forms.
+- **Verified on the emulator against dev (2026-11-04):** contact screen loads; postal code saved and cleared again;
+  billing name saved and cleared again; wrong current password → inline error; discard question; the Settings →
+  Security route. The contact PATCH itself was not sent to dev (the e-mail may be the sign-in identity); it is covered
+  by tests.
+- **Tests:** `ProfileFormsViewModelTest` (12: contact load, validation, contact + address save order and payloads,
+  address only with a cleared field, partial failure and retry, billing payload and plan, IBAN rules, password
+  validation and send-as-typed, wrong current password, discard, Change password enablement and reset on Back,
+  billing keeps a newer Stripe account), `ShellViewModelTest` (+1, notices),
+  `DemoBackendTest` (+1, password change), `ProfileScreenshotTest` (+3: `Contact_phoneError`, `Billing_ibanError`,
+  `Security_password`; `PersonalInfo_errors` re-recorded: the Save check hides during an upload).

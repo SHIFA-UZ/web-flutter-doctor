@@ -277,6 +277,7 @@
     <string name="certificateUploaded">Certificate uploaded</string>
     <string name="certificates">Certificates</string>
     <string name="changeOrResetPassword">Change or reset your password here</string>
+    <string name="changePassword">Change password</string>
     <string name="changePhoto">Change photo</string>
     <string name="changePin">Change PIN</string>
     <string name="changeSlot">Change Slot</string>
@@ -699,9 +700,12 @@
     <string name="contactAndClinicAddress">Contact &amp; clinic address</string>
     <string name="contactDetails">Contact Details</string>
     <string name="contactDetailsSaved">Contact details saved</string>
+    <string name="contactSavedAddressFailed">Contact saved, but the address could not be saved</string>
+    <string name="contactSection">Contact</string>
     <string name="continue">Continue</string>
     <string name="continueWithoutWaiting">Continue without waiting</string>
     <string name="coordinatesFromAddress">Coordinates from Address</string>
+    <string name="coordinatesNotSet">Coordinates not set</string>
     <string name="copd">COPD</string>
     <string name="copied">Copied</string>
     <string name="copiedToClipboard">copied to clipboard</string>
@@ -737,6 +741,7 @@
     <string name="currentAppointment">Current appointment</string>
     <string name="currentLocation">Current Location</string>
     <string name="currentPassword">Current Password</string>
+    <string name="currentPasswordIncorrect">Current password is incorrect</string>
     <string name="currentPasswordIsRequired">Current password is required</string>
     <string name="customTimesAddAtLeastOne">Add at least one time slot</string>
     <string name="customTimesAddSlot">Add time slot</string>
@@ -997,6 +1002,7 @@
     <string name="factsAlreadyDocumented">These visit facts are already in the patient timeline.</string>
     <string name="failedToAssign">Failed to assign</string>
     <string name="failedToCancel">Failed to cancel</string>
+    <string name="failedToChangePassword">Failed to change password</string>
     <string name="failedToChangeSlot">Failed to change slot</string>
     <string name="failedToCopySchedule">Failed to copy schedule from selected day.</string>
     <string name="failedToCreateTask">Failed to create task</string>
@@ -1278,6 +1284,7 @@
     <string name="invalidCredentials">Incorrect email or password.</string>
     <string name="invalidDuration">Invalid duration.</string>
     <string name="invalidEmail">Please enter a valid email address</string>
+    <string name="invalidIban">Enter a valid IBAN or account number</string>
     <string name="invalidInviteKey">This key is invalid or has already been used.</string>
     <string name="invalidOtp">Invalid or expired OTP.</string>
     <string name="invalidPhone">Please enter a valid phone number</string>
@@ -1285,6 +1292,7 @@
     <string name="inviteReceivedFrom">%1$s invited you to co-treat this patient.</string>
     <string name="inviteSentWaiting">Invite sent. Waiting for %1$s to accept.</string>
     <string name="invitedBy">You were invited by %1$s</string>
+    <string name="invoicingDetails">Invoicing details</string>
     <string name="isTyping">is typing</string>
     <string name="isWaiting">is waiting</string>
     <string name="issuePrescription">Prescription</string>
@@ -1649,6 +1657,7 @@
     <string name="patientWithChronicDisease">Patient with Chronic Disease</string>
     <string name="patients">Patients</string>
     <string name="patientsPageSubtitle">Manage your patient directory and clinical records</string>
+    <string name="patientsSeePhone">Patients see your phone number on confirmed appointments</string>
     <string name="patientsWithDevice">Patients with device</string>
     <string name="patientsWithoutDevice">Patients without device</string>
     <string name="paymentAlreadyRecorded">Already recorded for this visit</string>
@@ -1851,6 +1860,7 @@
     <string name="searchTimezone">Search timezone</string>
     <string name="searchUsersPlaceholder">Search by name, number, role</string>
     <string name="searching">Searching…</string>
+    <string name="security">Security</string>
     <string name="selectChronicDisease">Select Chronic Disease</string>
     <string name="selectConversation">Select a conversation</string>
     <string name="selectDate">Select Date</string>
@@ -2275,6 +2285,7 @@
     <string name="yesCancel">Yes, Cancel</string>
     <string name="yesterday">Yesterday</string>
     <string name="yourCameraPreview">Your camera preview</string>
+    <string name="yourCurrentPlan">Your current plan</string>
     <string name="yourName">Your Name</string>
     <string name="youveSignedOut">You've signed out.</string>
 </resources>

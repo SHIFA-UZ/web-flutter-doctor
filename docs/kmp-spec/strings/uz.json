@@ -2286,5 +2286,16 @@
   "yesterday": "Kecha",
   "yourCameraPreview": "Kamerangizni oldindan ko'rish",
   "yourName": "Sizning ismingiz",
-  "cameraAccessNeeded": "Suratga olish uchun kameraga ruxsat kerak"
+  "cameraAccessNeeded": "Suratga olish uchun kameraga ruxsat kerak",
+  "contactSection": "Aloqa",
+  "patientsSeePhone": "Tasdiqlangan qabullarda bemorlar telefon raqamingizni ko'radi",
+  "coordinatesNotSet": "Koordinatalar kiritilmagan",
+  "contactSavedAddressFailed": "Aloqa saqlandi, lekin manzilni saqlab bo'lmadi",
+  "yourCurrentPlan": "Joriy tarifingiz",
+  "invoicingDetails": "Hisob-faktura ma'lumotlari",
+  "invalidIban": "To'g'ri IBAN yoki hisob raqamini kiriting",
+  "security": "Xavfsizlik",
+  "changePassword": "Parolni o'zgartirish",
+  "currentPasswordIncorrect": "Joriy parol noto'g'ri",
+  "failedToChangePassword": "Parolni o'zgartirib bo'lmadi"
 }

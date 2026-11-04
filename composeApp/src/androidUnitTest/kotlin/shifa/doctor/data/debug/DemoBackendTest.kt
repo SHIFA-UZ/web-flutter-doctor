@@ -78,7 +78,7 @@ class DemoBackendTest {
         runTest {
             val reset =
                 apiCall<Unit> {
-                    client.post(ApiConfig.Endpoints.RESET_PASSWORD) {
+                    client.post("doctors/me/certificate") {
                         contentType(ContentType.Application.Json)
                         setBody("{}")
                     }
@@ -173,6 +173,17 @@ class DemoBackendTest {
             val url = profile.uploadPhoto(PickedImage("photo.jpg", byteArrayOf(1, 2, 3))).getOrThrow()
             assertThat(url).contains("demo-photo.jpg?v=")
             assertThat(profile.refresh().getOrThrow().profile.photoUrl).endsWith("demo-photo.jpg")
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `the password change answers locally - the seed password is the current one`() =
+        runTest {
+            val auth = AuthRepository({ client })
+            assertThat(auth.changePassword(DEMO_PASSWORD, "Abcdef1!").isSuccess).isTrue()
+            assertThat(
+                (auth.changePassword("wrong", "Abcdef1!").exceptionOrNull() as ApiException).status,
+            ).isEqualTo(400)
             assertThat(forwarded).isEmpty()
         }
 }

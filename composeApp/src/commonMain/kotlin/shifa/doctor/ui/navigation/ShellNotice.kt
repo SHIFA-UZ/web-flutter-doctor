@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.ic_check_circle_16
@@ -22,6 +23,9 @@ import shifa.doctor.utils.tr
  */
 object ShellNotice {
     val pending = MutableStateFlow<Notice?>(null)
+
+    /** A success ("Profile information saved") is done once the doctor moves on; a warning stays until closed. */
+    fun dismissSuccess() = pending.update { it?.takeUnless(Notice::success) }
 }
 
 /** A note for the shell; [success] shows it as the calm teal banner ("Profile information saved") instead of a warning. */

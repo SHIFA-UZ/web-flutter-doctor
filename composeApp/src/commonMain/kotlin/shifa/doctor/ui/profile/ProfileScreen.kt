@@ -121,7 +121,7 @@ import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.tr
 
 /** The profile's child screens (each its own ticket: PROF-03/04/07/08, SVC, SUB-02, SET, LEGAL). */
-enum class ProfileSection { PersonalInfo, Contact, Timezone, Extended, Services, Subscription, Settings, About }
+enum class ProfileSection { PersonalInfo, Contact, Timezone, Extended, Services, Subscription, Settings, Security, About }
 
 data class ProfileUiState(
     val staff: Boolean = false,
@@ -467,15 +467,15 @@ private fun IdentityCard(
         )
         if (sub.isNotBlank()) Text(sub, style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Secondary)
         Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-            zone?.let { Chip(it, ShifaColors.Bg.Canvas, ShifaColors.Text.Primary) }
+            zone?.let { ProfileChip(it, ShifaColors.Bg.Canvas, ShifaColors.Text.Primary) }
             // The plan badge only once known (D-03).
-            tier?.let { Chip(it, ShifaColors.Text.Primary, ShifaColors.Text.Inverse) }
+            tier?.let { ProfileChip(it, ShifaColors.Text.Primary, ShifaColors.Text.Inverse) }
         }
     }
 }
 
 @Composable
-private fun Chip(
+internal fun ProfileChip(
     text: String,
     background: androidx.compose.ui.graphics.Color,
     color: androidx.compose.ui.graphics.Color,

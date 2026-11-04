@@ -8,7 +8,10 @@ import shifa.doctor.data.model.DoctorProfile
 import shifa.doctor.data.model.DoctorSubscription
 import shifa.doctor.data.model.MeProfile
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.currentPasswordIncorrect
 import shifa.doctor.generated.resources.enterFirstName
+import shifa.doctor.generated.resources.invalidIban
+import shifa.doctor.generated.resources.invalidPhone
 import shifa.doctor.generated.resources.nameInvalid
 import shifa.doctor.generated.resources.networkError
 import shifa.doctor.generated.resources.photoUploadFailed
@@ -121,5 +124,62 @@ internal fun PersonalInfoErrorsPreview() =
                     ),
             ),
             PersonalInfoActions(),
+        )
+    }
+
+private val contact =
+    ContactForm(
+        "+998 90 123 45 67",
+        "aziza@shifa.dev",
+        "Uzbekistan",
+        "Tashkent",
+        "Chilonzor",
+        "Tashkent",
+        "100115",
+        "Bunyodkor Ave 12, 3rd floor",
+    )
+
+@Composable
+internal fun ContactPreview() =
+    PreviewTheme {
+        ContactContent(
+            ContactUiState(
+                saved = contact,
+                form = contact.copy(phone = "12345"),
+                latitude = 41.2856,
+                longitude = 69.2034,
+                timeZone = "Asia/Tashkent",
+                phoneError = Res.string.invalidPhone,
+            ),
+            ContactActions(),
+        )
+    }
+
+@Composable
+internal fun BillingPreview() =
+    PreviewTheme {
+        val saved = InvoicingForm("Dr Aziza Karimova", "billing@shifa.dev", "", "")
+        BillingContent(
+            BillingUiState(
+                tier = shifa.doctor.data.subscription.DoctorTier.Pro,
+                saved = saved,
+                form = saved.copy(iban = "DE89 37"),
+                ibanError = Res.string.invalidIban,
+            ),
+            BillingActions(),
+        )
+    }
+
+@Composable
+internal fun SecurityPreview() =
+    PreviewTheme {
+        SecurityContent(
+            SecurityUiState(
+                current = "",
+                new = "Abcdef1",
+                confirm = "",
+                currentError = Res.string.currentPasswordIncorrect,
+            ),
+            SecurityActions(),
         )
     }

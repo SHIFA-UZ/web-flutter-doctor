@@ -85,6 +85,20 @@ class ShellViewModelTest {
     }
 
     @Test
+    fun `moving on clears a success notice, a warning stays until closed`() {
+        val classToTest = vm()
+        classToTest.settle()
+        ShellNotice.pending.value = Notice(Res.string.tasksNotOnPlan, success = true)
+        classToTest.push(ShellRoute.Language)
+        assertThat(ShellNotice.pending.value).isNull()
+        ShellNotice.pending.value = Notice(Res.string.tasksNotOnPlan)
+        classToTest.select(ShellTab.Chat)
+        classToTest.push(ShellRoute.Language)
+        assertThat(ShellNotice.pending.value).isEqualTo(Notice(Res.string.tasksNotOnPlan))
+        ShellNotice.pending.value = null
+    }
+
+    @Test
     fun `the saved start tab opens once the profile is in`() {
         val classToTest = vm()
         classToTest.settle()

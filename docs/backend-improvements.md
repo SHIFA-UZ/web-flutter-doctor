@@ -511,3 +511,16 @@ picture (the app's for the rest of the run, and patients' apps too).
 **App until then:** the upload answer gets `?v=<time>` on the device, so the doctor sees the new picture right after
 uploading; a later profile refresh brings back the plain URL, and the cache may show the old picture until the app
 restarts.
+
+## BE-32 Tell a wrong current password apart from a weak new one
+
+**Needed by:** flow `08/11` §8 (wrong current password shown under that field); ticket PROF-04.
+
+**Now:** `POST /auth/reset-password` answers 400 with the generic code `BAD_REQUEST` both when the current password is
+wrong and when the new one fails `PasswordPolicy`; only the English `message` differs, and the app never shows or
+parses server text.
+
+**Change:** a distinct `code`, e.g. `CURRENT_PASSWORD_INCORRECT` and `PASSWORD_POLICY`.
+
+**App until then:** the form checks the same policy before sending, so a 400 is read as a wrong current password
+(field cleared, inline error). If the two policies ever drift, that message would be wrong.

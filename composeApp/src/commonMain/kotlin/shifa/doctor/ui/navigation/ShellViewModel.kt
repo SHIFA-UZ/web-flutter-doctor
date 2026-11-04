@@ -179,6 +179,7 @@ class ShellViewModel(
      */
     fun select(tab: ShellTab) {
         switched = true
+        ShellNotice.dismissSuccess()
         val s0 = _state.value
         val unknownGate =
             (tab == ShellTab.Tasks && !s0.gate.known) || (tab == ShellTab.Clinic && s0.hasClinic == null)
@@ -210,6 +211,7 @@ class ShellViewModel(
     /** Opens [route] on the current tab; like a tab tap, it means the saved start tab no longer applies. */
     fun push(route: ShellRoute) {
         switched = true
+        ShellNotice.dismissSuccess()
         _state.update { s -> s.copy(stacks = s.stacks + (s.tab to s.stack + route), moreOpen = false) }
     }
 

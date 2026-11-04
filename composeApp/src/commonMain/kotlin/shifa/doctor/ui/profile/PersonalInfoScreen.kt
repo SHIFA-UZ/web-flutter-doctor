@@ -1,31 +1,20 @@
 package shifa.doctor.ui.profile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.backhandler.BackHandler
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -55,16 +44,12 @@ import shifa.doctor.generated.resources.chooseFromGallery
 import shifa.doctor.generated.resources.chooseOneOrMore
 import shifa.doctor.generated.resources.dateOfBirth
 import shifa.doctor.generated.resources.discard
-import shifa.doctor.generated.resources.discardChangesBody
-import shifa.doctor.generated.resources.discardChangesTitle
 import shifa.doctor.generated.resources.enterFirstName
 import shifa.doctor.generated.resources.enterLastName
 import shifa.doctor.generated.resources.female
 import shifa.doctor.generated.resources.firstName
 import shifa.doctor.generated.resources.gender
 import shifa.doctor.generated.resources.ic_alert_circle_16
-import shifa.doctor.generated.resources.ic_trash_22
-import shifa.doctor.generated.resources.keepEditing
 import shifa.doctor.generated.resources.lastName
 import shifa.doctor.generated.resources.male
 import shifa.doctor.generated.resources.nameInvalid
@@ -91,7 +76,6 @@ import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
-import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
@@ -102,7 +86,6 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPickField
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSpinner
-import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.utils.PickedImage
 import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.rememberCameraLauncher
@@ -236,17 +219,11 @@ class PersonalInfoViewModel(
     /** Back: a changed form asks first (flow 08/02 §7). True when the screen may close. */
     fun back(): Boolean {
         val s = _state.value
-        return when {
-            s.saving -> false
-            s.askDiscard -> {
-                _state.update { it.copy(askDiscard = false) }
-                false
-            }
-            s.dirty -> {
-                _state.update { it.copy(askDiscard = true) }
-                false
-            }
-            else -> true
+        return when (backStep(s.saving, s.askDiscard, s.dirty)) {
+            BackStep.Close -> true
+            BackStep.Ask -> false.also { _state.update { it.copy(askDiscard = true) } }
+            BackStep.CloseQuestion -> false.also { _state.update { it.copy(askDiscard = false) } }
+            BackStep.Stay -> false
         }
     }
 
@@ -350,16 +327,9 @@ fun PersonalInfoScreen(
     viewModel: PersonalInfoViewModel = viewModel { PersonalInfoViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val close by rememberUpdatedState(onClose)
     LaunchedEffect(Unit) { viewModel.open() }
-    LaunchedEffect(state.done) {
-        if (state.done) {
-            viewModel.closed()
-            close()
-        }
-    }
     val back = { if (viewModel.back()) onClose() }
-    BackHandler(onBack = back)
+    FormExitEffects(state.done, viewModel::closed, onClose, back)
     val gallery = rememberImagePickerLauncher(viewModel::upload)
     val camera = rememberCameraLauncher(viewModel::upload, viewModel::cameraDenied)
     PersonalInfoContent(
@@ -397,92 +367,87 @@ fun PersonalInfoContent(
     actions: PersonalInfoActions,
 ) {
     val enabled = !state.saving
-    Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
-        ShifaSubHeader(
-            tr(Res.string.personalInformation),
-            Modifier.statusBarsPadding(),
-            onBack = actions.back,
-            onCheck = if (state.dirty && enabled && !state.uploading) actions.save else null,
-            checkDescription = Res.string.save,
-        )
-        Column(
-            Modifier.weight(1f).imePadding().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
-            verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
-        ) {
-            codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
-            if (state.cameraDenied) {
-                Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                    ShifaBanner(
-                        tr(Res.string.cameraAccessNeeded),
-                        Res.drawable.ic_alert_circle_16,
-                        ShifaBannerType.Warning,
-                        onClose = { actions.ui { it.copy(cameraDenied = false) } },
-                    )
-                    ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
-                }
+    ProfileForm(
+        tr(Res.string.personalInformation),
+        actions.back,
+        onSave = if (state.dirty && enabled && !state.uploading) actions.save else null,
+        askDiscard = state.askDiscard,
+        onDiscard = actions.discard,
+        onKeep = { actions.ui { it.copy(askDiscard = false) } },
+    ) {
+        codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
+        if (state.cameraDenied) {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                ShifaBanner(
+                    tr(Res.string.cameraAccessNeeded),
+                    Res.drawable.ic_alert_circle_16,
+                    ShifaBannerType.Warning,
+                    onClose = { actions.ui { it.copy(cameraDenied = false) } },
+                )
+                ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
             }
-            // Photo block: 96 avatar and its label, one button for the sheet; a spinner over it while uploading.
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Column(
-                    Modifier.clickable(enabled = !state.uploading && enabled, role = Role.Button) {
-                        actions.ui { it.copy(photoSheet = true) }
-                    },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        ShifaAvatar(state.photoUrl, ShifaSize.S96)
-                        if (state.uploading) ShifaSpinner(ShifaColors.Interactive.Primary)
-                    }
-                    Text(
-                        tr(Res.string.changePhoto),
-                        Modifier.padding(top = ShifaSize.S8),
-                        style = ShifaTextStyles.metaSmall(),
-                        color = ShifaColors.Text.Brand,
-                    )
+        }
+        // Photo block: 96 avatar and its label, one button for the sheet; a spinner over it while uploading.
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                Modifier.clickable(enabled = !state.uploading && enabled, role = Role.Button) {
+                    actions.ui { it.copy(photoSheet = true) }
+                },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    ShifaAvatar(state.photoUrl, ShifaSize.S96)
+                    if (state.uploading) ShifaSpinner(ShifaColors.Interactive.Primary)
                 }
-            }
-            ShifaSection(tr(Res.string.personalInformation)) {
-                Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
-                    NameField(state.form.firstName, Res.string.firstName, state.firstNameError, enabled) { v ->
-                        actions.edit { it.copy(firstName = v) }
-                    }
-                    NameField(state.form.lastName, Res.string.lastName, state.lastNameError, enabled) { v ->
-                        actions.edit { it.copy(lastName = v) }
-                    }
-                    ShifaPickField(
-                        tr(Res.string.dateOfBirth),
-                        state.form.dob?.let(::displayDate).orEmpty(),
-                        tr(Res.string.dateOfBirth),
-                        { actions.ui { it.copy(pickingDob = true) } },
-                        Modifier.fillMaxWidth(),
-                        enabled = enabled,
-                    )
-                    val genders = listOf(null) + Gender.entries
-                    ShifaDropdown(
-                        tr(Res.string.gender),
-                        genders.map { tr(it.label()) },
-                        state.form.gender?.let { tr(it.label()) },
-                        onSelect = { i ->
-                            actions.edit { it.copy(gender = genders[i]) }
-                            actions.ui { it.copy(genderOpen = false) }
-                        },
-                        expanded = state.genderOpen,
-                        onExpandedChange = { open -> if (enabled) actions.ui { it.copy(genderOpen = open) } },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-            ShifaSection(tr(Res.string.professional)) {
-                ShifaPickField(
-                    tr(Res.string.profession),
-                    "",
-                    tr(Res.string.chooseOneOrMore),
-                    { actions.ui { it.copy(professionsOpen = true, query = "") } },
-                    Modifier.fillMaxWidth(),
-                    enabled = enabled,
-                    chips = state.form.professions.map { it.label() },
+                Text(
+                    tr(Res.string.changePhoto),
+                    Modifier.padding(top = ShifaSize.S8),
+                    style = ShifaTextStyles.metaSmall(),
+                    color = ShifaColors.Text.Brand,
                 )
             }
+        }
+        ShifaSection(tr(Res.string.personalInformation)) {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
+                NameField(state.form.firstName, Res.string.firstName, state.firstNameError, enabled) { v ->
+                    actions.edit { it.copy(firstName = v) }
+                }
+                NameField(state.form.lastName, Res.string.lastName, state.lastNameError, enabled) { v ->
+                    actions.edit { it.copy(lastName = v) }
+                }
+                ShifaPickField(
+                    tr(Res.string.dateOfBirth),
+                    state.form.dob?.let(::displayDate).orEmpty(),
+                    tr(Res.string.dateOfBirth),
+                    { actions.ui { it.copy(pickingDob = true) } },
+                    Modifier.fillMaxWidth(),
+                    enabled = enabled,
+                )
+                val genders = listOf(null) + Gender.entries
+                ShifaDropdown(
+                    tr(Res.string.gender),
+                    genders.map { tr(it.label()) },
+                    state.form.gender?.let { tr(it.label()) },
+                    onSelect = { i ->
+                        actions.edit { it.copy(gender = genders[i]) }
+                        actions.ui { it.copy(genderOpen = false) }
+                    },
+                    expanded = state.genderOpen,
+                    onExpandedChange = { open -> if (enabled) actions.ui { it.copy(genderOpen = open) } },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+        ShifaSection(tr(Res.string.professional)) {
+            ShifaPickField(
+                tr(Res.string.profession),
+                "",
+                tr(Res.string.chooseOneOrMore),
+                { actions.ui { it.copy(professionsOpen = true, query = "") } },
+                Modifier.fillMaxWidth(),
+                enabled = enabled,
+                chips = state.form.professions.map { it.label() },
+            )
         }
     }
     if (state.pickingDob) {
@@ -492,7 +457,7 @@ fun PersonalInfoContent(
         }
     }
     if (state.professionsOpen) {
-        Sheet({
+        ProfileSheet({ actions.ui { it.copy(professionsOpen = false) } }) {
             ProfessionPickerSheet(
                 state.query,
                 { q -> actions.ui { it.copy(query = q) } },
@@ -505,11 +470,11 @@ fun PersonalInfoContent(
                 { actions.edit { it.copy(professions = emptyList()) } },
                 { actions.ui { it.copy(professionsOpen = false) } },
             )
-        }, { actions.ui { it.copy(professionsOpen = false) } })
+        }
     }
     if (state.photoSheet) {
         // Take photo / Choose from gallery; "Remove photo" waits for a backend endpoint (BE-30).
-        Sheet({
+        ProfileSheet({ actions.ui { it.copy(photoSheet = false) } }) {
             ShifaDialogSheet(
                 tr(Res.string.changePhoto),
                 tr(Res.string.chooseFromGallery),
@@ -517,21 +482,7 @@ fun PersonalInfoContent(
                 cancelText = tr(Res.string.takePhoto),
                 onCancel = actions.camera,
             )
-        }, { actions.ui { it.copy(photoSheet = false) } })
-    }
-    if (state.askDiscard) {
-        Sheet({
-            ShifaDialogSheet(
-                tr(Res.string.discardChangesTitle),
-                tr(Res.string.discard),
-                actions.discard,
-                body = tr(Res.string.discardChangesBody),
-                tone = DialogTone.Destructive,
-                icon = Res.drawable.ic_trash_22,
-                cancelText = tr(Res.string.keepEditing),
-                onCancel = { actions.ui { it.copy(askDiscard = false) } },
-            )
-        }, { actions.ui { it.copy(askDiscard = false) } })
+        }
     }
 }
 
@@ -560,12 +511,3 @@ private fun Gender?.label() =
         Gender.Female -> Res.string.female
         Gender.Other -> Res.string.other
     }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun Sheet(
-    content: @Composable () -> Unit,
-    onDismiss: () -> Unit,
-) = ModalBottomSheet(onDismiss, shape = RectangleShape, containerColor = Color.Transparent, dragHandle = null) {
-    content()
-}

@@ -6,6 +6,8 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
@@ -134,6 +136,21 @@ class AuthRepository(
             }
         }.map { r -> r.takeIf { it.found }?.let { ExistingPatient(it.fullName, it.photoUrl?.ifBlank { null }) } }
 
+    /**
+     * `POST /auth/reset-password` with the token (08 §1.11): both passwords exactly as typed. The backend answers 400
+     * both for a wrong current password and for a new one that breaks its policy; the form checks the policy first.
+     */
+    suspend fun changePassword(
+        current: String,
+        new: String,
+    ): Result<Unit> =
+        apiCall<JsonObject> {
+            client().post(ApiConfig.Endpoints.RESET_PASSWORD) {
+                contentType(ContentType.Application.Json)
+                setBody(ChangePasswordRequest(current, new))
+            }
+        }.map { }
+
     /** `POST /auth/register` (01 §2.6): the new doctor's token. The password is sent exactly as typed. */
     suspend fun register(request: RegisterRequest): Result<String> =
         apiCall<TokenResponse> {
@@ -160,3 +177,9 @@ class AuthRepository(
         const val APP = "doctor"
     }
 }
+
+@Serializable
+private class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String,
+)

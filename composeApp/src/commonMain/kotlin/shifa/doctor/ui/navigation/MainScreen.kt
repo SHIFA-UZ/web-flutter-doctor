@@ -59,6 +59,7 @@ import shifa.doctor.generated.resources.ic_home_bold_22
 import shifa.doctor.generated.resources.ic_logout_22
 import shifa.doctor.generated.resources.ic_more_22
 import shifa.doctor.generated.resources.ic_reports_22
+import shifa.doctor.generated.resources.ic_shield_22
 import shifa.doctor.generated.resources.ic_sparkles_18
 import shifa.doctor.generated.resources.ic_tasks_22
 import shifa.doctor.generated.resources.ic_user_22
@@ -77,6 +78,7 @@ import shifa.doctor.generated.resources.planPro
 import shifa.doctor.generated.resources.practiceTimezone
 import shifa.doctor.generated.resources.profile
 import shifa.doctor.generated.resources.schedule
+import shifa.doctor.generated.resources.security
 import shifa.doctor.generated.resources.servicesPricing
 import shifa.doctor.generated.resources.settings
 import shifa.doctor.generated.resources.shifaIntelligence
@@ -86,16 +88,18 @@ import shifa.doctor.generated.resources.talkWithAi
 import shifa.doctor.generated.resources.tasks
 import shifa.doctor.generated.resources.unreadBadge
 import shifa.doctor.generated.resources.unreadCountCap
-import shifa.doctor.ui.applock.AppLockSection
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
 import shifa.doctor.ui.auth.short
 import shifa.doctor.ui.debug.DebugMenuScreen
+import shifa.doctor.ui.profile.BillingScreen
+import shifa.doctor.ui.profile.ContactScreen
 import shifa.doctor.ui.profile.PersonalInfoScreen
 import shifa.doctor.ui.profile.ProfileActions
 import shifa.doctor.ui.profile.ProfileScreen
 import shifa.doctor.ui.profile.ProfileSection
+import shifa.doctor.ui.profile.SecurityScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -289,10 +293,16 @@ private fun RouteContent(
             TabPlaceholder(route.tab.label, route.tab.icon)
         }
     is ShellRoute.Profile ->
-        if (route.section == ProfileSection.PersonalInfo) {
-            PersonalInfoScreen(onClose = actions.back)
-        } else {
-            Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
+        when (route.section) {
+            ProfileSection.PersonalInfo -> PersonalInfoScreen(onClose = actions.back)
+            ProfileSection.Contact ->
+                ContactScreen(
+                    onClose = actions.back,
+                    onTimezone = { actions.push(ShellRoute.Profile(ProfileSection.Timezone)) },
+                )
+            ProfileSection.Subscription -> BillingScreen(onClose = actions.back)
+            ProfileSection.Security -> SecurityScreen(onClose = actions.back)
+            else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
         }
     ShellRoute.Schedule ->
         Pushed(Res.string.schedule, actions) {
@@ -337,7 +347,11 @@ private fun ProfileSectionPlaceholder(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
     ) {
-        AppLockSection()
+        ShifaSettingsItem(
+            tr(Res.string.security),
+            { actions.push(ShellRoute.Profile(ProfileSection.Security)) },
+            icon = Res.drawable.ic_shield_22,
+        )
         ShifaSettingsItem(
             tr(Res.string.language),
             { actions.push(ShellRoute.Language) },
@@ -359,6 +373,7 @@ private val ProfileSection.title: StringResource
             ProfileSection.Services -> Res.string.servicesPricing
             ProfileSection.Subscription -> Res.string.subscriptionAndBilling
             ProfileSection.Settings -> Res.string.settings
+            ProfileSection.Security -> Res.string.security
             ProfileSection.About -> Res.string.about
         }
 

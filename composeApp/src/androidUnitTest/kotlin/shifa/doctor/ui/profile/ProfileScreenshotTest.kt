@@ -30,4 +30,14 @@ class ProfileScreenshotTest {
 
     @Test
     fun personalInfoErrors() = captureRoboImage("screenshots/PersonalInfo_errors.png") { PersonalInfoErrorsPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1300dp-xhdpi")
+    fun contact() = captureRoboImage("screenshots/Contact_phoneError.png") { ContactPreview() }
+
+    @Test
+    fun billing() = captureRoboImage("screenshots/Billing_ibanError.png") { BillingPreview() }
+
+    @Test
+    fun security() = captureRoboImage("screenshots/Security_password.png") { SecurityPreview() }
 }

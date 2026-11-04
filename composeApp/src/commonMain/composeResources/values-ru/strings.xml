@@ -277,6 +277,7 @@
     <string name="certificateUploaded">Сертификат загружен</string>
     <string name="certificates">Сертификаты</string>
     <string name="changeOrResetPassword">Изменить или сбросить пароль здесь</string>
+    <string name="changePassword">Изменить пароль</string>
     <string name="changePhoto">Изменить фото</string>
     <string name="changePin">Изменить PIN-код</string>
     <string name="changeSlot">Изменить слот</string>
@@ -699,9 +700,12 @@
     <string name="contactAndClinicAddress">Контакты и адрес клиники</string>
     <string name="contactDetails">Контактные данные</string>
     <string name="contactDetailsSaved">Контактные данные сохранены</string>
+    <string name="contactSavedAddressFailed">Контакты сохранены, но адрес сохранить не удалось</string>
+    <string name="contactSection">Контакты</string>
     <string name="continue">Продолжить</string>
     <string name="continueWithoutWaiting">Продолжить, не дожидаясь</string>
     <string name="coordinatesFromAddress">Координаты по адресу</string>
+    <string name="coordinatesNotSet">Координаты не заданы</string>
     <string name="copd">ХОБЛ</string>
     <string name="copied">Скопировано</string>
     <string name="copiedToClipboard">скопировано в буфер обмена</string>
@@ -737,6 +741,7 @@
     <string name="currentAppointment">Текущий приём</string>
     <string name="currentLocation">Текущее местоположение</string>
     <string name="currentPassword">Текущий пароль</string>
+    <string name="currentPasswordIncorrect">Текущий пароль неверен</string>
     <string name="currentPasswordIsRequired">Текущий пароль обязателен</string>
     <string name="customTimesAddAtLeastOne">Добавьте хотя бы одно время</string>
     <string name="customTimesAddSlot">Добавить время</string>
@@ -997,6 +1002,7 @@
     <string name="factsAlreadyDocumented">Эти факты визита уже на временной шкале пациента.</string>
     <string name="failedToAssign">Не удалось назначить</string>
     <string name="failedToCancel">Не удалось отменить</string>
+    <string name="failedToChangePassword">Не удалось изменить пароль</string>
     <string name="failedToChangeSlot">Не удалось изменить слот</string>
     <string name="failedToCopySchedule">Не удалось скопировать расписание с выбранного дня.</string>
     <string name="failedToCreateTask">Не удалось создать задачу</string>
@@ -1278,6 +1284,7 @@
     <string name="invalidCredentials">Неверный email или пароль.</string>
     <string name="invalidDuration">Некорректная длительность.</string>
     <string name="invalidEmail">Пожалуйста, введите действительный адрес электронной почты</string>
+    <string name="invalidIban">Введите корректный IBAN или номер счёта</string>
     <string name="invalidInviteKey">Ключ недействителен или уже использован.</string>
     <string name="invalidOtp">Неверный или истекший код.</string>
     <string name="invalidPhone">Пожалуйста, введите действительный номер телефона</string>
@@ -1285,6 +1292,7 @@
     <string name="inviteReceivedFrom">%1$s пригласил(а) вас совместно вести этого пациента.</string>
     <string name="inviteSentWaiting">Приглашение отправлено. Ожидаем ответ от %1$s.</string>
     <string name="invitedBy">Вас пригласила клиника %1$s</string>
+    <string name="invoicingDetails">Реквизиты для счетов</string>
     <string name="isTyping">печатает</string>
     <string name="isWaiting">ожидает</string>
     <string name="issuePrescription">Рецепт</string>
@@ -1649,6 +1657,7 @@
     <string name="patientWithChronicDisease">Пациент с хроническим заболеванием</string>
     <string name="patients">Пациенты</string>
     <string name="patientsPageSubtitle">Управление списком пациентов и клиническими записями</string>
+    <string name="patientsSeePhone">Пациенты видят ваш номер телефона в подтверждённых записях</string>
     <string name="patientsWithDevice">Пациенты с устройством</string>
     <string name="patientsWithoutDevice">Пациенты без устройства</string>
     <string name="paymentAlreadyRecorded">Уже внесено за этот визит</string>
@@ -1851,6 +1860,7 @@
     <string name="searchTimezone">Поиск часового пояса</string>
     <string name="searchUsersPlaceholder">Поиск по имени, номеру, роли</string>
     <string name="searching">Поиск…</string>
+    <string name="security">Безопасность</string>
     <string name="selectChronicDisease">Выбрать хроническое заболевание</string>
     <string name="selectConversation">Выбрать беседу</string>
     <string name="selectDate">Выбрать дату</string>
@@ -2275,6 +2285,7 @@
     <string name="yesCancel">Да, отменить</string>
     <string name="yesterday">Вчера</string>
     <string name="yourCameraPreview">Предпросмотр вашей камеры</string>
+    <string name="yourCurrentPlan">Ваш текущий тариф</string>
     <string name="yourName">Ваше имя</string>
     <string name="youveSignedOut">Вы вышли из аккаунта.</string>
 </resources>

@@ -277,6 +277,7 @@
     <string name="certificateUploaded">Sertifikat yuklandi</string>
     <string name="certificates">Sertifikatlar</string>
     <string name="changeOrResetPassword">Parolni o'zgartiring yoki tiklang</string>
+    <string name="changePassword">Parolni o'zgartirish</string>
     <string name="changePhoto">Rasmni o'zgartirish</string>
     <string name="changePin">PIN kodni o'zgartirish</string>
     <string name="changeSlot">Vaqtni o'zgartirish</string>
@@ -699,9 +700,12 @@
     <string name="contactAndClinicAddress">Aloqa va klinika manzili</string>
     <string name="contactDetails">Aloqa ma'lumotlari</string>
     <string name="contactDetailsSaved">Aloqa ma'lumotlari saqlandi</string>
+    <string name="contactSavedAddressFailed">Aloqa saqlandi, lekin manzilni saqlab bo'lmadi</string>
+    <string name="contactSection">Aloqa</string>
     <string name="continue">Davom etish</string>
     <string name="continueWithoutWaiting">Kutmasdan davom etish</string>
     <string name="coordinatesFromAddress">Manzildan koordinatalar</string>
+    <string name="coordinatesNotSet">Koordinatalar kiritilmagan</string>
     <string name="copd">XOBIK</string>
     <string name="copied">Nusxa olindi</string>
     <string name="copiedToClipboard">xotiraga nusxalandi</string>
@@ -737,6 +741,7 @@
     <string name="currentAppointment">Joriy uchrashuv</string>
     <string name="currentLocation">Joriy joylashuv</string>
     <string name="currentPassword">Joriy parol</string>
+    <string name="currentPasswordIncorrect">Joriy parol noto'g'ri</string>
     <string name="currentPasswordIsRequired">Joriy parol talab qilinadi</string>
     <string name="customTimesAddAtLeastOne">Kamida bitta vaqt qo'shing</string>
     <string name="customTimesAddSlot">Vaqt qo'shish</string>
@@ -997,6 +1002,7 @@
     <string name="factsAlreadyDocumented">Bu tashrif faktlari allaqachon bemor vaqt chizig‘ida.</string>
     <string name="failedToAssign">Tayinlashda xatolik</string>
     <string name="failedToCancel">Bekor qilishda xatolik</string>
+    <string name="failedToChangePassword">Parolni o'zgartirib bo'lmadi</string>
     <string name="failedToChangeSlot">Vaqtni o'zgartirishda xatolik</string>
     <string name="failedToCopySchedule">Tanlangan kundan jadval nusxalanmadi.</string>
     <string name="failedToCreateTask">Vazifa yaratishda xatolik</string>
@@ -1278,6 +1284,7 @@
     <string name="invalidCredentials">Email yoki parol noto'g'ri.</string>
     <string name="invalidDuration">Noto'g'ri davomiylik.</string>
     <string name="invalidEmail">Iltimos, to'g'ri email manzil kiriting</string>
+    <string name="invalidIban">To'g'ri IBAN yoki hisob raqamini kiriting</string>
     <string name="invalidInviteKey">Bu kalit noto'g'ri yoki allaqachon ishlatilgan.</string>
     <string name="invalidOtp">Noto'g'ri yoki muddati o'tgan kod.</string>
     <string name="invalidPhone">Iltimos, to'g'ri telefon raqam kiriting</string>
@@ -1285,6 +1292,7 @@
     <string name="inviteReceivedFrom">%1$s sizni ushbu bemorni birga davolashga taklif qildi.</string>
     <string name="inviteSentWaiting">Taklif yuborildi. %1$s qabul qilishini kutmoqda.</string>
     <string name="invitedBy">Sizni %1$s taklif qildi</string>
+    <string name="invoicingDetails">Hisob-faktura ma'lumotlari</string>
     <string name="isTyping">yozmoqda</string>
     <string name="isWaiting">kutmoqda</string>
     <string name="issuePrescription">Retsept</string>
@@ -1649,6 +1657,7 @@
     <string name="patientWithChronicDisease">Surunkali kasallikka chalingan bemor</string>
     <string name="patients">Bemorlar</string>
     <string name="patientsPageSubtitle">Bemorlar ro'yxati va klinik yozuvlarni boshqaring</string>
+    <string name="patientsSeePhone">Tasdiqlangan qabullarda bemorlar telefon raqamingizni ko'radi</string>
     <string name="patientsWithDevice">Qurilmasi bor bemorlar</string>
     <string name="patientsWithoutDevice">Qurilmasi yo'q bemorlar</string>
     <string name="paymentAlreadyRecorded">Bu tashrif uchun allaqachon qayd etilgan</string>
@@ -1851,6 +1860,7 @@
     <string name="searchTimezone">Vaqt zonasini qidirish</string>
     <string name="searchUsersPlaceholder">Ism, raqam yoki rol bo'yicha qidirish</string>
     <string name="searching">Qidirilmoqda…</string>
+    <string name="security">Xavfsizlik</string>
     <string name="selectChronicDisease">Surunkali kasallikni tanlash</string>
     <string name="selectConversation">Suhbatni tanlash</string>
     <string name="selectDate">Sanani tanlash</string>
@@ -2275,6 +2285,7 @@
     <string name="yesCancel">Ha, bekor qilish</string>
     <string name="yesterday">Kecha</string>
     <string name="yourCameraPreview">Kamerangizni oldindan ko'rish</string>
+    <string name="yourCurrentPlan">Joriy tarifingiz</string>
     <string name="yourName">Sizning ismingiz</string>
     <string name="youveSignedOut">Siz tizimdan chiqdingiz.</string>
 </resources>

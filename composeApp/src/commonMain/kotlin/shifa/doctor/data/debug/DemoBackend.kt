@@ -156,6 +156,13 @@ class DemoBackend(
                     replace = true,
                 )
             request.method == HttpMethod.Post && path == Endpoints.DOCTOR_PHOTO -> photo()
+            // The demo password is the seed accounts' one; anything else is "current password is incorrect".
+            request.method == HttpMethod.Post && path == Endpoints.RESET_PASSWORD ->
+                if (jsonField(body, "currentPassword") == DEMO_PASSWORD) {
+                    ok(JsonObject(mapOf("message" to JsonPrimitive("Password updated successfully"))))
+                } else {
+                    fail(HttpStatusCode.BadRequest, "BAD_REQUEST")
+                }
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
             get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
             // Fixed counts so the badges show; the lists behind them come with their features.
@@ -328,3 +335,5 @@ class DemoBackend(
         val shared by lazy { DemoBackend() }
     }
 }
+
+internal const val DEMO_PASSWORD = "Dev12345!"
