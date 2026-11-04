@@ -356,6 +356,7 @@
     <string name="chronicDisease_ulcerativeColitis">Yaraqli kolit</string>
     <string name="city">Shahar</string>
     <string name="clearAll">Hammasini tozalash</string>
+    <string name="clearFilters">Filtrlarni tozalash</string>
     <string name="clickBelowToJoinCall">Qo'ng'iroqqa qo'shilish uchun quyidagi tugmani bosing</string>
     <string name="clinic">Klinika</string>
     <string name="clinicActionFailed">Bajarilmadi</string>
@@ -1540,6 +1541,8 @@
     <string name="noPatientSelected">Bemor tanlanmagan</string>
     <string name="noPatientsAvailable">Mavjud bemorlar yo'q</string>
     <string name="noPatientsFound">Bemorlar topilmadi</string>
+    <string name="noPatientsYet">Hali bemorlar yo'q</string>
+    <string name="noPatientsYetBody">Yozuvlarni yuritish uchun birinchi bemoringizni qo'shing.</string>
     <string name="noPhone">Telefon yo'q</string>
     <string name="noPrescriptions">Hali retseptlar yo'q</string>
     <string name="noPreviousDayScheduleToCopy">Oldingi kunda nusxa olish uchun jadval yo'q.</string>
@@ -1740,6 +1743,7 @@
     <string name="patientWillBeNotified">Bemor xabardor qilinadi.</string>
     <string name="patientWithChronicDisease">Surunkali kasallikka chalingan bemor</string>
     <string name="patients">Bemorlar</string>
+    <string name="patientsFilterTitle">Holat</string>
     <string name="patientsPageSubtitle">Bemorlar ro'yxati va klinik yozuvlarni boshqaring</string>
     <string name="patientsSeePhone">Tasdiqlangan qabullarda bemorlar telefon raqamingizni ko'radi</string>
     <string name="patientsWithDevice">Qurilmasi bor bemorlar</string>

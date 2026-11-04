@@ -2439,5 +2439,9 @@
   "scheduleLoadFailed": "Couldn't load your working hours.",
   "scheduleSaveFailed": "Couldn't save your working hours. Try again.",
   "scheduleSavedPeriodFailed": "Hours saved, but the new period couldn't be added. Try again.",
-  "dateHoursFailed": "Couldn't save these hours. Try again."
+  "dateHoursFailed": "Couldn't save these hours. Try again.",
+  "noPatientsYet": "No patients yet",
+  "noPatientsYetBody": "Add your first patient to start keeping records.",
+  "clearFilters": "Clear filters",
+  "patientsFilterTitle": "Status"
 }

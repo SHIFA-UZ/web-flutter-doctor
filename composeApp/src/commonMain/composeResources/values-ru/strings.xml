@@ -356,6 +356,7 @@
     <string name="chronicDisease_ulcerativeColitis">Язвенный колит</string>
     <string name="city">Город</string>
     <string name="clearAll">Очистить всё</string>
+    <string name="clearFilters">Сбросить фильтры</string>
     <string name="clickBelowToJoinCall">Нажмите ниже, чтобы присоединиться к звонку</string>
     <string name="clinic">Клиника</string>
     <string name="clinicActionFailed">Не удалось</string>
@@ -1540,6 +1541,8 @@
     <string name="noPatientSelected">Пациент не выбран</string>
     <string name="noPatientsAvailable">Нет доступных пациентов</string>
     <string name="noPatientsFound">Пациенты не найдены</string>
+    <string name="noPatientsYet">Пациентов пока нет</string>
+    <string name="noPatientsYetBody">Добавьте первого пациента, чтобы вести записи.</string>
     <string name="noPhone">Нет телефона</string>
     <string name="noPrescriptions">Рецептов пока нет</string>
     <string name="noPreviousDayScheduleToCopy">На предыдущий день нет расписания для копирования.</string>
@@ -1740,6 +1743,7 @@
     <string name="patientWillBeNotified">Пациент получит уведомление.</string>
     <string name="patientWithChronicDisease">Пациент с хроническим заболеванием</string>
     <string name="patients">Пациенты</string>
+    <string name="patientsFilterTitle">Статус</string>
     <string name="patientsPageSubtitle">Управление списком пациентов и клиническими записями</string>
     <string name="patientsSeePhone">Пациенты видят ваш номер телефона в подтверждённых записях</string>
     <string name="patientsWithDevice">Пациенты с устройством</string>

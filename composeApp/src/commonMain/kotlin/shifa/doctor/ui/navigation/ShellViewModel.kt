@@ -61,6 +61,11 @@ sealed interface ShellRoute {
     /** Profile → Schedule setup (area 04, SCHED-1 builds it). */
     data object Schedule : ShellRoute
 
+    /** Patients → one patient (PAT-05 builds the detail). */
+    data class Patient(
+        val id: Long,
+    ) : ShellRoute
+
     /** Profile → Locations (LOC-1); also reached from the schedule setup (SCHED-2). */
     data object Locations : ShellRoute
 

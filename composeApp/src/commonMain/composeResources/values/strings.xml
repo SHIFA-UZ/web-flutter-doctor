@@ -356,6 +356,7 @@
     <string name="chronicDisease_ulcerativeColitis">Ulcerative Colitis</string>
     <string name="city">City</string>
     <string name="clearAll">Clear all</string>
+    <string name="clearFilters">Clear filters</string>
     <string name="clickBelowToJoinCall">Click below to join the call</string>
     <string name="clinic">Clinic</string>
     <string name="clinicActionFailed">Failed</string>
@@ -1540,6 +1541,8 @@
     <string name="noPatientSelected">No patient selected</string>
     <string name="noPatientsAvailable">No patients available</string>
     <string name="noPatientsFound">No patients found</string>
+    <string name="noPatientsYet">No patients yet</string>
+    <string name="noPatientsYetBody">Add your first patient to start keeping records.</string>
     <string name="noPhone">No phone</string>
     <string name="noPrescriptions">No prescriptions yet</string>
     <string name="noPreviousDayScheduleToCopy">Previous day has no schedule to copy.</string>
@@ -1740,6 +1743,7 @@
     <string name="patientWillBeNotified">The patient will be notified.</string>
     <string name="patientWithChronicDisease">Patient with Chronic Disease</string>
     <string name="patients">Patients</string>
+    <string name="patientsFilterTitle">Status</string>
     <string name="patientsPageSubtitle">Manage your patient directory and clinical records</string>
     <string name="patientsSeePhone">Patients see your phone number on confirmed appointments</string>
     <string name="patientsWithDevice">Patients with device</string>

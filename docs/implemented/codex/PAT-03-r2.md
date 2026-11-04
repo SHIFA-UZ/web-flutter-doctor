@@ -1,0 +1,7 @@
+- **[P2] Ages retain the wrong date when the profile arrives late.** [PatientsScreen.kt:180–182](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/patients/PatientsScreen.kt:180) snapshots the practice clock before the profile is available, falling back to UTC. The profile collector updates only favourites. Opening Patients before profile loading completes can therefore show an incorrect birthday age when practice and UTC dates differ; refreshing does not correct it.
+
+- **[P2] Segment controls still clip on narrow screens or enlarged text.** [PatientsScreen.kt:353](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/patients/PatientsScreen.kt:353) places all three padded chips in a non-scrolling, non-wrapping `Row`. Their single-line labels exhaust the available width, squeezing or hiding Follow-ups, particularly with Russian labels or 200% font scaling. Make this row horizontally scrollable or wrapping.
+---
+**Answers (round 2, all fixed):**
+1. *Ages keep the wrong date when the profile arrives late:* the screen follows the signed-in doctor's id and practice zone together; when the zone arrives, "today" (for ages) moves to the practice date, as the favourites do.
+2. *Segments clip:* the All / Favorites / Follow-ups chips wrap (FlowRow) like the pager.

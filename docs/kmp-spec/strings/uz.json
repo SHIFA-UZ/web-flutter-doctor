@@ -2439,5 +2439,9 @@
   "scheduleLoadFailed": "Ish vaqtingizni yuklab bo'lmadi.",
   "scheduleSaveFailed": "Ish vaqtingizni saqlab bo'lmadi. Qayta urinib ko'ring.",
   "scheduleSavedPeriodFailed": "Vaqt saqlandi, lekin yangi davr qo'shilmadi. Qayta urinib ko'ring.",
-  "dateHoursFailed": "Bu vaqtni saqlab bo'lmadi. Qayta urinib ko'ring."
+  "dateHoursFailed": "Bu vaqtni saqlab bo'lmadi. Qayta urinib ko'ring.",
+  "noPatientsYet": "Hali bemorlar yo'q",
+  "noPatientsYetBody": "Yozuvlarni yuritish uchun birinchi bemoringizni qo'shing.",
+  "clearFilters": "Filtrlarni tozalash",
+  "patientsFilterTitle": "Holat"
 }

@@ -74,6 +74,7 @@ import shifa.doctor.generated.resources.moreOptions
 import shifa.doctor.generated.resources.navReports
 import shifa.doctor.generated.resources.needsProPlan
 import shifa.doctor.generated.resources.notifications
+import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.patients
 import shifa.doctor.generated.resources.personalInformation
 import shifa.doctor.generated.resources.planPremium
@@ -100,6 +101,7 @@ import shifa.doctor.ui.calendar.BlockPanelScreen
 import shifa.doctor.ui.calendar.BookingScreen
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
+import shifa.doctor.ui.patients.PatientsScreen
 import shifa.doctor.ui.profile.BillingScreen
 import shifa.doctor.ui.profile.ContactScreen
 import shifa.doctor.ui.profile.ExtendedProfileScreen
@@ -317,6 +319,8 @@ private fun RouteContent(
                     ),
                 )
                 if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
+            } else if (route.tab == ShellTab.Patients && !staff) {
+                PatientsScreen(onOpen = { actions.push(ShellRoute.Patient(it.id)) }, onCreate = null)
             } else if (route.tab == ShellTab.Calendar && !staff) {
                 CalendarScreen(
                     onOpen = {
@@ -368,6 +372,10 @@ private fun RouteContent(
         is ShellRoute.Booking -> BookingScreen(route.slot, route.opened, onClose = actions.back)
         is ShellRoute.Appointment -> AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back)
         ShellRoute.Locations -> LocationsScreen(onClose = actions.back)
+        is ShellRoute.Patient ->
+            Pushed(Res.string.patient, actions) {
+                TabPlaceholder(Res.string.patient, Res.drawable.ic_users_22)
+            }
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
     }
