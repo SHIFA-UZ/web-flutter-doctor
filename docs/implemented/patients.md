@@ -389,3 +389,29 @@ Built 2026-11-04. Spec 06 §7 (and §3.6–3.7). No screen.
 - **Tests:** `FormsRepositoryTest` (6: the lenient, ordered, cached list and the latest 025-2; POST then PUT with the
   cache taking each answer and no signature field sent; signature request, link and ICD search paths and parameters;
   a read after a sign-out; the file replacement; an overtaken read and a late save), `DemoBackendTest` (+1).
+
+## FORM-03 · 025-2 PDF
+
+Built 2026-11-04. Spec 06 §3.6; D-05 / BE-01 (backend rendering is still the better answer; this is the app-side
+renderer until then). No screen; FORM-04's save uses it. A "025-2 PDF" check (make, view, save) on the debug Spikes
+screen.
+
+- **Layout, shared** (`data/forms/Form0252Pdf.kt`, Flutter's `_build0252PortraitContent`): landscape A4, 40 pt
+  margins; the clinic, the order line and "STOMATOLOGIK BEMORNING TIBBIY KARTASI" with Nr., date and patient id; the
+  bordered patient block; every section in the form's order with its grey band (the ICD code and name above the
+  doctor's diagnosis); the dental chart (each history row with its date and doctor, this visit's rows, around the FDI
+  numbers; primary teeth; older single-value charts as one row per jaw); the return visits table; the patient's
+  signature with its date. The official form's **Uzbek labels in every app language** (as Flutter). Dates dd.MM.yyyy.
+  Text flows onto new pages and a section band keeps a line with it; a paragraph longer than the page is split
+  between words (Flutter's `MultiPage` did the same), and so is a return visit's finding; the dental chart keeps to
+  one page when it fits one, and a history row never leaves its date and doctor behind.
+- **Drawing, per platform** (`utils/PdfPages.kt`): simple commands (text in a box, rectangles, lines, images) with
+  `measurePdfText` and `renderPdf`: Android `PdfDocument` + `StaticLayout`, iOS `UIGraphicsPDFRenderer` + attributed
+  strings, both with the system fonts, so Cyrillic and Uzbek Latin need no bundled font (Flutter loaded DejaVu Sans).
+- **Checked on the emulator:** a sample form (Cyrillic name, a 60-sentence treatment, a chart with history, a return
+  visit) → 3 pages, 85 KB, shown in `PdfView` and pulled off the device: page 1 as above. **iOS: compiled and linked,
+  not run yet** (the next simulator pass).
+- **Tests:** `Form0252PdfTest` (6, with a fake text measure: the header, patient block and section order with the ICD
+  line; the chart's rows and notes around the numbers, primary and legacy charts; a long note split across pages with
+  nothing lost; the return visits and the signature only when present; a page-long return visit split; 25 history rows with their
+  captions).

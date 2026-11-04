@@ -65,6 +65,7 @@ fun SpikesScreen(modifier: Modifier = Modifier) {
             }
         }
         ScanSpike()
+        FormPdfSpike()
         ShifaSection("FCM token") {
             var token by remember { mutableStateOf("Asking Firebase…") }
             // Only the length and the tail: a push token is not shown or logged whole.
@@ -158,6 +159,51 @@ private fun ScanSpike() =
         shifa.doctor.ui.widgets.ShifaLink("Make PDF", { pdf = shifa.doctor.utils.imagesToPdf(pages) })
         pdf?.let {
             Text("PDF: ${it.size / 1024} KB", style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+            PdfView(it, Modifier.fillMaxWidth().height(ShifaSize.S320)) { Text("PDF did not open") }
+        }
+    }
+
+/** FORM-03: a sample 025-2 (Latin and Cyrillic, a dental chart, a return visit) through the platform PDF writer. */
+@Composable
+private fun FormPdfSpike() =
+    ShifaSection("025-2 PDF") {
+        var pdf by remember { mutableStateOf<ByteArray?>(null) }
+        val saver = shifa.doctor.utils.rememberFileSaver()
+        shifa.doctor.ui.widgets.ShifaLink("Make 025-2 PDF", {
+            pdf =
+                shifa.doctor.data.forms.Form0252Pdf().pdf(
+                    shifa.doctor.data.model.PatientForm(
+                        id = 1,
+                        patientId = 14,
+                        date = "2026-11-04",
+                        fullName = "Жасур Алиев (Jasur Aliyev)",
+                        age = 41,
+                        doctorName = "Ulugbek Karimov",
+                        doctorClinic = "Shifa Dev Clinic",
+                        formNumber = 12,
+                        complaints = "Og'riq 26-tishda, sovuqqa sezgirlik. Боль в зубе 26 при жевании.",
+                        diagnosis = "Pulpit",
+                        diagnosisCode = "K04.0",
+                        diagnosisDisplay = "Pulpitis",
+                        treatment = (1..60).joinToString(" ") { "Davolash bosqichi $it." },
+                        dentalChart =
+                            mapOf(
+                                "TOP_HIST_0_5" to "C",
+                                "TOP_HIST_0_date" to "2026-01-10",
+                                "TOP_HIST_0_doctor" to "Dr. A",
+                                "TOP_0_10" to "П",
+                                "BOTTOM_0_3" to "K",
+                            ),
+                        followups =
+                            listOf(
+                                shifa.doctor.data.model.FormFollowup("2026-11-10", "Davolash yakunlandi", "Karimov"),
+                            ),
+                    ),
+                )
+        })
+        pdf?.let {
+            Text("PDF: ${it.size / 1024} KB", style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+            shifa.doctor.ui.widgets.ShifaLink("Save to device", { saver.saveFile("form_025-2_spike.pdf", it) })
             PdfView(it, Modifier.fillMaxWidth().height(ShifaSize.S320)) { Text("PDF did not open") }
         }
     }
