@@ -2575,5 +2575,7 @@
   "stay": "Остаться",
   "visitBriefingDisclaimer": "Сводка ИИ — сверьте с оригиналами.",
   "attachedDocuments": "Прикреплённые документы",
-  "visitBriefingRowFailed": "Не удалось создать · Повторить"
+  "visitBriefingRowFailed": "Не удалось создать · Повторить",
+  "transcriptionFailed": "Не удалось распознать речь. Попробуйте ещё раз.",
+  "transcriptionReportFailed": "Не удалось отправить отчёт. Попробуйте ещё раз."
 }

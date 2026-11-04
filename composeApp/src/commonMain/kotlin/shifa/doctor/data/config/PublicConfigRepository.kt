@@ -110,6 +110,9 @@ class PublicConfigRepository(
     }
 }
 
+/** The app's one instance: what it reads once per run is kept here. */
+val publicConfigRepository by lazy { PublicConfigRepository() }
+
 /** Dotted numeric versions ("1.0.1"); anything after a dash ("-debug") is ignored, missing parts count as 0. */
 object Versions {
     fun isOlder(

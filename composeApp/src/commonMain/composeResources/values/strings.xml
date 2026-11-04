@@ -2318,8 +2318,10 @@
     <string name="transcribing">Transcribing…</string>
     <string name="transcriptionAdded">Transcription added</string>
     <string name="transcriptionAttachAudio">Attach the audio to the report</string>
+    <string name="transcriptionFailed">Speech recognition failed. Try again.</string>
     <string name="transcriptionFailedRetry">Transcription failed. Tap to retry.</string>
     <string name="transcriptionReportAction">Report</string>
+    <string name="transcriptionReportFailed">Couldn't send the report. Try again.</string>
     <string name="transcriptionReportHint">If the text looks wrong, tap Report to send it for QA (optional audio).</string>
     <string name="transcriptionReportThanks">Thank you — saved for QA.</string>
     <string name="transcriptionTimedOut">Transcription timed out. Try again.</string>

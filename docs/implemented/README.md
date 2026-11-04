@@ -128,6 +128,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | APPT-06 Visit briefing sheet | Done | Row on the appointment details, sheet with pending / ready / failed / empty, meta line, attached documents, Copy, Retry; reads every 3 s (10 s after a minute) only while open. See visits.md. |
 | AI-03 Recorder level | Done (level not yet seen on a phone) | `VoiceRecorder.level()` (Flutter's bar height from Android's peak / iOS metering), recording id and duration; the debug spike shows it. See visits.md. |
 | AI-05 Transcription | Done (no field yet) | `/ai/transcribe` multipart with the language hint and recording id, 90 s, typed 403 / 429 / 502, "(No speech detected)", reports and the public-config flag. See visits.md. |
+| AI-06 Speech text fields | Done | Mic in the visit's SOAP / free notes / focus mode and the 025-2 note fields (PRO), recording pill with live wave and time, transcript appended with a space, messages in the app's language, Report. See visits.md. |
 
 ## Log
 
@@ -209,3 +210,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · APPT-06 · Visit briefing sheet from the appointment details.
 - 2026-11-04 · AI-03 · The recorder's live level for the recording pill.
 - 2026-11-04 · AI-05 · Speech to text and transcription reports.
+- 2026-11-04 · AI-06 · Dictation in the visit notes and the 025-2 editor.

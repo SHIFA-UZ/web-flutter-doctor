@@ -32,6 +32,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -127,6 +128,10 @@ import shifa.doctor.ui.patients.ChronicWarning
 import shifa.doctor.ui.patients.genderLabel
 import shifa.doctor.ui.profile.DiscardChangesSheet
 import shifa.doctor.ui.profile.ProfileSheet
+import shifa.doctor.ui.speech.LocalDictation
+import shifa.doctor.ui.speech.SpeechOrPlainField
+import shifa.doctor.ui.speech.appendTranscript
+import shifa.doctor.ui.speech.rememberDictation
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -201,38 +206,41 @@ fun FormEditorScreen(
     val back = { if (viewModel.back()) onClose() }
     BackHandler(onBack = back)
     val locale = languageStorage.language.value.backendCode
-    FormEditorContent(
-        state,
-        engine,
-        locale,
-        FormEditorActions(
-            back = back,
-            retry = viewModel::load,
-            edit = viewModel::edit,
-            ui = viewModel::ui,
-            searchIcd = viewModel::searchIcd,
-            pickIcd = viewModel::pickIcd,
-            clearIcd = viewModel::clearIcd,
-            setCell = viewModel::setCell,
-            addRow = viewModel::addRow,
-            removeRow = viewModel::removeRow,
-            dentition = viewModel::setDentition,
-            openReturn = viewModel::openReturn,
-            removeReturn = viewModel::removeReturn,
-            requestSignature = viewModel::requestSignature,
-            save = viewModel::save,
-        ),
-        ClinicalPanelActions(
-            retry = clinical::retry,
-            openPicker = clinical::openPicker,
-            pickDisease = clinical::pickDisease,
-            toggle = clinical::toggle,
-            variable = clinical::setVariable,
-            search = clinical::search,
-            add = clinical::addFromSearch,
-            apply = clinical::apply,
-        ),
-    )
+    // Dictation for the form's text areas (AI-06).
+    CompositionLocalProvider(LocalDictation provides rememberDictation()) {
+        FormEditorContent(
+            state,
+            engine,
+            locale,
+            FormEditorActions(
+                back = back,
+                retry = viewModel::load,
+                edit = viewModel::edit,
+                ui = viewModel::ui,
+                searchIcd = viewModel::searchIcd,
+                pickIcd = viewModel::pickIcd,
+                clearIcd = viewModel::clearIcd,
+                setCell = viewModel::setCell,
+                addRow = viewModel::addRow,
+                removeRow = viewModel::removeRow,
+                dentition = viewModel::setDentition,
+                openReturn = viewModel::openReturn,
+                removeReturn = viewModel::removeReturn,
+                requestSignature = viewModel::requestSignature,
+                save = viewModel::save,
+            ),
+            ClinicalPanelActions(
+                retry = clinical::retry,
+                openPicker = clinical::openPicker,
+                pickDisease = clinical::pickDisease,
+                toggle = clinical::toggle,
+                variable = clinical::setVariable,
+                search = clinical::search,
+                add = clinical::addFromSearch,
+                apply = clinical::apply,
+            ),
+        )
+    }
     if (engine.picking) {
         ClinicalPickerSheet(
             engine,
@@ -311,6 +319,11 @@ fun FormEditorContent(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
                         codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
+                        // Dictation's messages (AI-06).
+                        val dictation = LocalDictation.current
+                        dictation?.state?.collectAsStateWithLifecycle()?.value?.banner?.let { b ->
+                            codeBanner(b) { dictation.dismiss() }?.invoke()
+                        }
                         Head(form, state)
                     }
                 }
@@ -318,21 +331,30 @@ fun FormEditorContent(
                 item { ClinicalPanel(engine, locale, engineActions) }
                 item {
                     Card(tr(Res.string.anamnesis)) {
-                        Area(form.complaints, tr(Res.string.complaints), 3, actions) { f, v -> f.copy(complaints = v) }
+                        Area(
+                            form.complaints,
+                            { it.complaints },
+                            tr(Res.string.complaints),
+                            3,
+                            actions,
+                        ) { f, v -> f.copy(complaints = v) }
                         Area(
                             form.otherIllnesses,
+                            { it.otherIllnesses },
                             tr(Res.string.otherIllnessesAndComplications),
                             3,
                             actions,
                         ) { f, v -> f.copy(otherIllnesses = v) }
                         Area(
                             form.moreDetails,
+                            { it.moreDetails },
                             tr(Res.string.moreDetailsOnAbove),
                             4,
                             actions,
                         ) { f, v -> f.copy(moreDetails = v) }
                         Area(
                             form.visualCheckup,
+                            { it.visualCheckup },
                             tr(Res.string.visualCheckup),
                             3,
                             actions,
@@ -351,31 +373,42 @@ fun FormEditorContent(
                     Card(tr(Res.string.examinationAndTreatment)) {
                         Area(
                             form.occlusion,
+                            { it.occlusion },
                             tr(Res.string.occlusionBiteType),
                             1,
                             actions,
                         ) { f, v -> f.copy(occlusion = v) }
                         Area(
                             form.oralCavityCondition,
+                            { it.oralCavityCondition },
                             tr(Res.string.oralCavityCondition),
                             3,
                             actions,
                         ) { f, v -> f.copy(oralCavityCondition = v) }
                         Area(
                             form.xrayLabData,
+                            { it.xrayLabData },
                             tr(Res.string.xrayLabExaminationData),
                             3,
                             actions,
                         ) { f, v -> f.copy(xrayLabData = v) }
-                        Area(form.treatment, tr(Res.string.treatment), 3, actions) { f, v -> f.copy(treatment = v) }
+                        Area(
+                            form.treatment,
+                            { it.treatment },
+                            tr(Res.string.treatment),
+                            3,
+                            actions,
+                        ) { f, v -> f.copy(treatment = v) }
                         Area(
                             form.treatmentResult,
+                            { it.treatmentResult },
                             tr(Res.string.treatmentResultProgress),
                             3,
                             actions,
                         ) { f, v -> f.copy(treatmentResult = v) }
                         Area(
                             form.recommendations,
+                            { it.recommendations },
                             tr(Res.string.recommendationsInstructions),
                             3,
                             actions,
@@ -452,9 +485,9 @@ private fun General(
     state: FormEditorUiState,
     actions: FormEditorActions,
 ) = Card(tr(Res.string.formGeneral)) {
-    Area(form.address, tr(Res.string.address), 2, actions) { f, v -> f.copy(address = v) }
-    Area(form.job, tr(Res.string.job), 1, actions) { f, v -> f.copy(job = v) }
-    Area(form.diagnosis, tr(Res.string.diagnosis), 3, actions) { f, v -> f.copy(diagnosis = v) }
+    Area(form.address, { it.address }, tr(Res.string.address), 2, actions) { f, v -> f.copy(address = v) }
+    Area(form.job, { it.job }, tr(Res.string.job), 1, actions) { f, v -> f.copy(job = v) }
+    Area(form.diagnosis, { it.diagnosis }, tr(Res.string.diagnosis), 3, actions) { f, v -> f.copy(diagnosis = v) }
     // ICD-10: the picked code as a chip with ×, then the search (250 ms; results under the field, flow §3.4).
     Text("ICD-10", style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
     val code = form.diagnosisCode
@@ -763,18 +796,30 @@ private fun Signature(
 @Composable
 private fun Area(
     value: String?,
+    get: (PatientForm) -> String?,
     label: String,
     lines: Int,
     actions: FormEditorActions,
     set: (PatientForm, String?) -> PatientForm,
-) = ShifaInputField(
-    value.orEmpty(),
-    { v -> actions.edit { set(it, v.ifEmpty { null }) } },
-    label,
-    Modifier.fillMaxWidth(),
-    // Notes get the kit's tall comment box; a short field (address, job, bite) stays one line.
-    multiline = lines > 2,
-)
+) = if (lines > 2) {
+    // Notes get the kit's tall comment box and the mic (AI-06); a short field (address, job, bite) stays one line.
+    SpeechOrPlainField(
+        value.orEmpty(),
+        { v -> actions.edit { set(it, v.ifEmpty { null }) } },
+        label,
+        label,
+        { t -> actions.edit { set(it, appendTranscript(get(it).orEmpty(), t)) } },
+        Modifier.fillMaxWidth(),
+        multiline = true,
+    )
+} else {
+    ShifaInputField(
+        value.orEmpty(),
+        { v -> actions.edit { set(it, v.ifEmpty { null }) } },
+        label,
+        Modifier.fillMaxWidth(),
+    )
+}
 
 @Composable
 private fun Card(

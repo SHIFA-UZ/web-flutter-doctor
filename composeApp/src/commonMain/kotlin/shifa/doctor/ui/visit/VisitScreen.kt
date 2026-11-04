@@ -24,6 +24,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -146,6 +147,10 @@ import shifa.doctor.ui.patients.ChronicWarning
 import shifa.doctor.ui.patients.chronicLabel
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
+import shifa.doctor.ui.speech.LocalDictation
+import shifa.doctor.ui.speech.SpeechOrPlainField
+import shifa.doctor.ui.speech.appendTranscript
+import shifa.doctor.ui.speech.rememberDictation
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -157,7 +162,6 @@ import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
-import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
@@ -291,11 +295,14 @@ fun VisitScreen(
             openPatient = { if (patientId != null) viewModel.leave(VisitExit.Patient) },
             openForm = { if (patientId != null) viewModel.leave(VisitExit.Form) },
         )
-    if (patientId == null) {
-        VisitContent(state, notes, actions)
-    } else {
-        // The documents and uploads need the patient: they start once the visit says who it is.
-        PatientParts(patientId, state, notes, actions, onOpenDocument)
+    // Dictation for the notes fields (AI-06): one recorder for the screen.
+    CompositionLocalProvider(LocalDictation provides rememberDictation()) {
+        if (patientId == null) {
+            VisitContent(state, notes, actions)
+        } else {
+            // The documents and uploads need the patient: they start once the visit says who it is.
+            PatientParts(patientId, state, notes, actions, onOpenDocument)
+        }
     }
     state.askLeave?.let { to ->
         ProfileSheet({ viewModel.ui { it.copy(askLeave = null) } }) {
@@ -403,6 +410,9 @@ internal fun VisitContent(
         state.focus -> FocusMode(notes, actions)
         else -> {
             Header(state, actions, clock, now)
+            // Dictation's messages (AI-06) join the visit's and the notes'.
+            val dictation = LocalDictation.current
+            val heard = dictation?.state?.collectAsStateWithLifecycle()?.value?.banner
             val gap = Modifier.padding(horizontal = ShifaSpacing.Inset.Md)
             LazyColumn(
                 Modifier.weight(1f).imePadding(),
@@ -410,12 +420,13 @@ internal fun VisitContent(
                 verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
             ) {
                 item { Box(gap) { Chips(state, actions) } }
-                listOfNotNull(state.banner, notes.banner).forEach { b ->
+                listOfNotNull(state.banner, notes.banner, heard).forEach { b ->
                     item {
                         Box(gap) {
                             codeBanner(b) {
                                 actions.ui { it.copy(banner = null) }
                                 actions.dismissNotesBanner()
+                                dictation?.dismiss()
                             }?.invoke()
                         }
                     }
@@ -639,13 +650,16 @@ private fun General(
     actions: VisitActions,
 ) {
     val text = notes.text
+    // A SOAP field recording keeps the section open (flow 05/05 §8: its pill would go with it).
+    val recordingSoap =
+        LocalDictation.current?.state?.collectAsStateWithLifecycle()?.value?.field?.startsWith("soap-") == true
     Column(
         Modifier.fillMaxWidth().background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .clickable { actions.ui { it.copy(soapOpen = !it.soapOpen) } }
+                .clickable(enabled = !recordingSoap) { actions.ui { it.copy(soapOpen = !it.soapOpen) } }
                 .padding(ShifaSize.S12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -665,18 +679,19 @@ private fun General(
         }
         if (state.soapOpen) {
             Column(Modifier.padding(ShifaSize.S12), verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                listOf<Triple<StringResource, String, (SoapNotes, String) -> SoapNotes>>(
-                    Triple(Res.string.soapSubjective, text.subjective) { n, v -> n.copy(subjective = v) },
-                    Triple(Res.string.soapObjective, text.objective) { n, v -> n.copy(objective = v) },
-                    Triple(Res.string.soapAssessment, text.assessment) { n, v -> n.copy(assessment = v) },
-                    Triple(Res.string.soapPlan, text.plan) { n, v -> n.copy(plan = v) },
-                ).forEach { (label, value, set) ->
-                    ShifaInputField(
-                        value,
+                listOf<Triple<StringResource, (SoapNotes) -> String, (SoapNotes, String) -> SoapNotes>>(
+                    Triple(Res.string.soapSubjective, { it.subjective }) { n, v -> n.copy(subjective = v) },
+                    Triple(Res.string.soapObjective, { it.objective }) { n, v -> n.copy(objective = v) },
+                    Triple(Res.string.soapAssessment, { it.assessment }) { n, v -> n.copy(assessment = v) },
+                    Triple(Res.string.soapPlan, { it.plan }) { n, v -> n.copy(plan = v) },
+                ).forEach { (label, get, set) ->
+                    SpeechOrPlainField(
+                        get(text),
                         { v -> actions.edit { set(it, v) } },
                         tr(label),
+                        "soap-${label.key}",
+                        { t -> actions.edit { set(it, appendTranscript(get(it), t)) } },
                         Modifier.fillMaxWidth(),
-                        clearable = false,
                         multiline = true,
                         areaMinHeight = ShifaSize.S56,
                     )
@@ -684,12 +699,13 @@ private fun General(
             }
         }
     }
-    ShifaInputField(
+    SpeechOrPlainField(
         text.free,
         { v -> actions.edit { it.copy(free = v) } },
         tr(Res.string.enterNotes),
+        "free",
+        { t -> actions.edit { it.copy(free = appendTranscript(it.free, t)) } },
         Modifier.fillMaxWidth(),
-        clearable = false,
         multiline = true,
     )
     notes.saveError?.let { codeBanner(it) {}?.invoke() }
@@ -1013,12 +1029,18 @@ private fun FocusMode(
     actions: VisitActions,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Surface)) {
     ShifaSubHeader(tr(Res.string.consultationFocusModeTitle), Modifier.statusBarsPadding(), onBack = actions.back)
-    ShifaInputField(
+    // Dictation's messages show here too (focus mode hides the workspace's banners).
+    val dictation = LocalDictation.current
+    dictation?.state?.collectAsStateWithLifecycle()?.value?.banner?.let { b ->
+        Box(Modifier.padding(horizontal = ShifaSpacing.Inset.Md)) { codeBanner(b) { dictation.dismiss() }?.invoke() }
+    }
+    SpeechOrPlainField(
         notes.text.free,
         { v -> actions.edit { it.copy(free = v) } },
         tr(Res.string.enterNotes),
+        "free",
+        { t -> actions.edit { it.copy(free = appendTranscript(it.free, t)) } },
         Modifier.fillMaxWidth().weight(1f).padding(ShifaSpacing.Inset.Md).imePadding(),
-        clearable = false,
         multiline = true,
     )
 }

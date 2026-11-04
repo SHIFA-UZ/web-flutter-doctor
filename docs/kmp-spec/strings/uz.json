@@ -2575,5 +2575,7 @@
   "stay": "Qolish",
   "visitBriefingDisclaimer": "AI xulosasi — asl hujjatlar bilan tekshiring.",
   "attachedDocuments": "Biriktirilgan hujjatlar",
-  "visitBriefingRowFailed": "Yaratib bo'lmadi · Qayta urinish"
+  "visitBriefingRowFailed": "Yaratib bo'lmadi · Qayta urinish",
+  "transcriptionFailed": "Nutqni aniqlab bo'lmadi. Qayta urinib ko'ring.",
+  "transcriptionReportFailed": "Hisobotni yuborib bo'lmadi. Qayta urinib ko'ring."
 }

@@ -2575,5 +2575,7 @@
   "stay": "Stay",
   "visitBriefingDisclaimer": "AI summary — verify against the originals.",
   "attachedDocuments": "Attached documents",
-  "visitBriefingRowFailed": "Could not be generated · Retry"
+  "visitBriefingRowFailed": "Could not be generated · Retry",
+  "transcriptionFailed": "Speech recognition failed. Try again.",
+  "transcriptionReportFailed": "Couldn't send the report. Try again."
 }

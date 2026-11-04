@@ -174,3 +174,31 @@ Built 2026-11-04. Spec 02 §7.2, ticket AI-05. No field yet (AI-06 uses it).
   `DoctorAiController.transcribe` (`file`, `languageHint`, `recordingId`) and the demo.
 - **Tests:** `TranscriptionRepositoryTest` (3: the multipart parts and trimmed answer, typed failures, the flag),
   `DemoBackendTest`.
+
+## AI-06 · Speech-enabled text fields
+
+Built 2026-11-04. Spec 02 §7.3, flow 05/05 §3, §5–§9, ticket AI-06. Board `DaVisit` general mode (the mic in each
+field, the recording pill).
+
+- **`ui/speech/Dictation.kt`** (a screen's state holder): one field records at a time (other mics wait), the live
+  level every 60 ms and the time, ✕ drops the recording (nothing sent), ✓ transcribes it (AI-05, the app's language,
+  the recording id) and appends it to the field that asked (`appendTranscript`: one space between, none after a space
+  or a new line) through the screen's state, so text typed meanwhile stays (even when the field left the screen). Messages in the app's language: "Transcription
+  added", "No speech detected", "Speech-to-text requires a Pro subscription." (403), "You've reached your daily AI
+  usage limit…" (429), "Transcription timed out" / "Speech recognition failed" (Flutter: "error: <message>"),
+  "Microphone permission denied", "Error recording voice"; Report under the field when the backend collects reports
+  (sends the transcript and the recording; a failure says so and keeps Report, 404 hides it). Focus mode shows the
+  messages too; the SOAP section doesn't collapse while one of its fields records.
+- **`ui/speech/SpeechTextField.kt`:** the mic in the field (only when the plan includes `SPEECH_TO_TEXT`, followed as
+  the profile loads; asks for
+  the microphone first), the dark recording pill under it (✕, a 40-bar wave, the time, ✓ or a spinner while
+  transcribing). `SpeechOrPlainField` + `LocalDictation`: a screen provides one dictation for its fields; previews
+  get plain fields.
+- **Where:** the visit's SOAP fields, free notes and focus mode (APPT-04/03); the 025-2 editor's note fields
+  (FORM-04: complaints, anamnesis, examination, treatment…; the one-line fields have no mic). Chat (CHAT-06) next.
+- **Not built:** the "Dictation needs PRO · Learn more" line for BASIC (the mic is simply hidden), a 5-minute cap,
+  insertion at the cursor (always appended, as Flutter), treating a phone-call interruption as ✓.
+- **Emulator (demo mode):** visit → mic in the notes → recording pill with its time → Process → "Transcription
+  added" and the demo sentence in the notes (the emulator's microphone records silence).
+- **Tests:** `DictationTest` (5: a failed report kept, one field at a time and the appended text with Report; no speech / 403 / 429 messages
+  and nothing added; ✕ sends nothing, a recorder that won't start; the spacing rule), screenshot `Speech_recording`.

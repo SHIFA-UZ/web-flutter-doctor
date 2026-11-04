@@ -2318,8 +2318,10 @@
     <string name="transcribing">Распознавание…</string>
     <string name="transcriptionAdded">Текст добавлен</string>
     <string name="transcriptionAttachAudio">Прикрепить аудио к отчёту</string>
+    <string name="transcriptionFailed">Не удалось распознать речь. Попробуйте ещё раз.</string>
     <string name="transcriptionFailedRetry">Не удалось расшифровать. Нажмите, чтобы повторить.</string>
     <string name="transcriptionReportAction">Сообщить</string>
+    <string name="transcriptionReportFailed">Не удалось отправить отчёт. Попробуйте ещё раз.</string>
     <string name="transcriptionReportHint">Если текст неверный — нажмите «Сообщить» для QA (аудио по желанию).</string>
     <string name="transcriptionReportThanks">Спасибо — сохранено для QA.</string>
     <string name="transcriptionTimedOut">Время расшифровки истекло. Попробуйте ещё раз.</string>

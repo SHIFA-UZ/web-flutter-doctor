@@ -2318,8 +2318,10 @@
     <string name="transcribing">Matnga o'girilmoqda…</string>
     <string name="transcriptionAdded">Matn qo'shildi</string>
     <string name="transcriptionAttachAudio">Audioni hisobotga biriktirish</string>
+    <string name="transcriptionFailed">Nutqni aniqlab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="transcriptionFailedRetry">Matnga o'girib bo'lmadi. Qayta urinish uchun bosing.</string>
     <string name="transcriptionReportAction">Xabar berish</string>
+    <string name="transcriptionReportFailed">Hisobotni yuborib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="transcriptionReportHint">Matn xato bo'lsa “Xabar berish” orqali QA uchun yuboring (audio ixtiyoriy).</string>
     <string name="transcriptionReportThanks">Rahmat — QA uchun saqlandi.</string>
     <string name="transcriptionTimedOut">Matnga o'girish vaqti tugadi. Qayta urinib ko'ring.</string>
