@@ -370,3 +370,16 @@ Built 2026-11-04. Flow `01/15-language-settings.md` §3a; board `DaProfile.dc.ht
   ru`; back to English (`en`).
 - **Tests:** the sync and storage were covered by CORE-04 / AUTH tests; `ProfileScreenshotTest` (+1:
   `Language_settings`).
+
+## SET-03 · App-lock settings
+
+Built 2026-11-04. Spec `08 §6.2`; flow `08/11` §3 and `08/10` §3.3.
+
+- **What was left:** the app-lock section itself (switch, PIN set / confirm, turn off with the PIN, biometric unlock)
+  came with LOCK-01 and moved onto the Security screen with PROF-04; the seven strings Flutter never translated
+  (`appLock, appLockSubtitle, biometricUnlock, setPin, pin, confirmPin, incorrectPin`) are in en / uz / ru.
+- **Added:** the Settings → Security row's preview: "App lock on" (· "Biometric unlock" when that is on) or "App lock
+  off", read again each time Settings shows (the lock is changed on the Security screen and Back lands here). The
+  generic "Password and app lock" subtitle from SET-01 is gone.
+- **Tests:** `SettingsViewModelTest` (+1: preview off, then on with biometrics after reopening); `Settings_doctor`
+  screenshot re-recorded.

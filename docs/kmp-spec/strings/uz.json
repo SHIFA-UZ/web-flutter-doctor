@@ -2356,7 +2356,8 @@
   "renewsOn": "{date} da yangilanadi",
   "settingsGeneral": "Umumiy",
   "startTabHelper": "Ilovani ochganda asosiy bo'lim. Bildirishnomalar baribir tegishli ekranni ochadi.",
-  "securitySubtitle": "Parol va ilova qulfi",
   "notificationsSystemSettings": "Tizim sozlamalarida boshqarish",
-  "uzbekCyrillic": "O'zbekcha (kirill)"
+  "uzbekCyrillic": "O'zbekcha (kirill)",
+  "appLockOn": "Ilova qulfi yoqilgan",
+  "appLockOff": "Ilova qulfi o'chirilgan"
 }

@@ -130,6 +130,8 @@
     <string name="appLock">Блокировка приложения</string>
     <string name="appLockAttemptsHint">После 5 неверных попыток вы выйдете из системы.</string>
     <string name="appLockChangeFailed">Не удалось изменить блокировку приложения. Попробуйте ещё раз.</string>
+    <string name="appLockOff">Блокировка выключена</string>
+    <string name="appLockOn">Блокировка включена</string>
     <string name="appLockSubtitle">Запрашивать PIN-код при повторном открытии приложения</string>
     <string name="appName">Shifa Doctor</string>
     <string name="appVersionLabel">Shifa Doctor · Версия %1$s</string>
@@ -1900,7 +1902,6 @@
     <string name="searchUsersPlaceholder">Поиск по имени, номеру, роли</string>
     <string name="searching">Поиск…</string>
     <string name="security">Безопасность</string>
-    <string name="securitySubtitle">Пароль и блокировка приложения</string>
     <string name="selectChronicDisease">Выбрать хроническое заболевание</string>
     <string name="selectConversation">Выбрать беседу</string>
     <string name="selectDate">Выбрать дату</string>

@@ -130,6 +130,8 @@
     <string name="appLock">App lock</string>
     <string name="appLockAttemptsHint">After 5 wrong attempts you will be signed out.</string>
     <string name="appLockChangeFailed">Couldn't change the app lock. Try again.</string>
+    <string name="appLockOff">App lock off</string>
+    <string name="appLockOn">App lock on</string>
     <string name="appLockSubtitle">Require PIN when reopening the app</string>
     <string name="appName">Shifa Doctor</string>
     <string name="appVersionLabel">Shifa Doctor · Version %1$s</string>
@@ -1900,7 +1902,6 @@
     <string name="searchUsersPlaceholder">Search by name, number, role</string>
     <string name="searching">Searching…</string>
     <string name="security">Security</string>
-    <string name="securitySubtitle">Password and app lock</string>
     <string name="selectChronicDisease">Select Chronic Disease</string>
     <string name="selectConversation">Select a conversation</string>
     <string name="selectDate">Select Date</string>

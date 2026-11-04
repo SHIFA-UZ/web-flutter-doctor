@@ -2356,7 +2356,8 @@
   "renewsOn": "Renews on {date}",
   "settingsGeneral": "General",
   "startTabHelper": "Main tab when you open the app. Notifications still open the relevant screen.",
-  "securitySubtitle": "Password and app lock",
   "notificationsSystemSettings": "Manage in system settings",
-  "uzbekCyrillic": "Uzbek (Cyrillic)"
+  "uzbekCyrillic": "Uzbek (Cyrillic)",
+  "appLockOn": "App lock on",
+  "appLockOff": "App lock off"
 }

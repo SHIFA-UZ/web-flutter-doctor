@@ -31,6 +31,8 @@ import kotlinx.coroutines.sync.withLock
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
+import shifa.doctor.data.applock.AppLockRepository
+import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.model.DoctorSettings
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
@@ -40,6 +42,9 @@ import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.FeatureGate
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
+import shifa.doctor.generated.resources.appLockOff
+import shifa.doctor.generated.resources.appLockOn
+import shifa.doctor.generated.resources.biometricUnlock
 import shifa.doctor.generated.resources.country
 import shifa.doctor.generated.resources.encryptedDocuments
 import shifa.doctor.generated.resources.germany
@@ -53,7 +58,6 @@ import shifa.doctor.generated.resources.notificationsSystemSettings
 import shifa.doctor.generated.resources.otherCountry
 import shifa.doctor.generated.resources.saveFailed
 import shifa.doctor.generated.resources.security
-import shifa.doctor.generated.resources.securitySubtitle
 import shifa.doctor.generated.resources.settings
 import shifa.doctor.generated.resources.settingsGeneral
 import shifa.doctor.generated.resources.startTabHelper
@@ -98,6 +102,9 @@ data class SettingsUiState(
     val banner: CodeBanner? = null,
     // A settings PATCH is on its way (flow 08/10 §3: a ring until it lands).
     val saving: Boolean = false,
+    // The Security row's preview (SET-03): app lock on, and with biometrics.
+    val appLock: Boolean = false,
+    val biometrics: Boolean = false,
 ) {
     val startTabs: List<ShellTab>
         get() = ShellTab.entries.filter { it != ShellTab.Tasks || tasksAllowed }
@@ -115,6 +122,7 @@ class SettingsViewModel(
     private val staff: Boolean,
     private val profile: ProfileRepository = profileRepository,
     private val language: LanguageStorage = languageStorage,
+    private val lock: AppLockRepository = appLockRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsUiState(staff = staff))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
@@ -135,6 +143,8 @@ class SettingsViewModel(
     }
 
     fun open() {
+        // Read on every open: the lock is set on the Security screen and Back lands here.
+        _state.update { it.copy(appLock = lock.enabled, biometrics = lock.biometricEnabled) }
         if (staff || writes.isLocked) return
         val me = profile.me.value ?: return
         confirmed = me.settings
@@ -284,7 +294,16 @@ fun SettingsContent(
                         tr(Res.string.security),
                         actions.security,
                         icon = Res.drawable.ic_shield_22,
-                        subtitle = tr(Res.string.securitySubtitle),
+                        subtitle =
+                            if (state.appLock) {
+                                listOfNotNull(
+                                    tr(Res.string.appLockOn),
+                                    tr(Res.string.biometricUnlock).takeIf { state.biometrics },
+                                )
+                                    .joinToString(" · ")
+                            } else {
+                                tr(Res.string.appLockOff)
+                            },
                         divider = s != null,
                     )
                     if (s != null) {

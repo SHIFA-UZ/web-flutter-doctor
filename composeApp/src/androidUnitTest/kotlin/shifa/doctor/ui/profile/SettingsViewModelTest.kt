@@ -140,4 +140,17 @@ class SettingsViewModelTest {
         settle { sent.size == 2 }
         assertThat(sent.last()).contains(""""defaultStartTab":"home"""")
     }
+
+    @Test
+    fun `the Security row says whether the app lock is on, read again on every open`() {
+        val store = shifa.doctor.data.storage.AppLockStorage(MapSettings())
+        val lock = shifa.doctor.data.applock.AppLockRepository({ store })
+        val classToTest = SettingsViewModel(false, repo, language, lock).apply { open() }
+        assertThat(classToTest.state.value.appLock).isFalse()
+        lock.turnOn("1234")
+        lock.setBiometric(true)
+        classToTest.open()
+        assertThat(classToTest.state.value.appLock).isTrue()
+        assertThat(classToTest.state.value.biometrics).isTrue()
+    }
 }

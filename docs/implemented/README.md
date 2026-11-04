@@ -80,7 +80,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SUB-02 Checkout and Stripe Connect | Done | Plan cards with prices and Upgrade, Stripe checkout and Connect onboarding in the in-app browser, plan re-read on return. See profile.md. |
 | SET-01 Settings | Done | Country, language row, starting screen, 2FA and encrypted-documents flags with queued whole-block PATCH; staff variant. See profile.md. |
 | SET-02 Language | Done | Language screen in Settings (own names, applies at once); sync, mini toggle and regional default were already in place. See profile.md. |
-| SET-03 | Not started | |
+| SET-03 App-lock settings | Done | Section and strings were in place (LOCK-01, PROF-04); the Settings Security row now previews the lock state. See profile.md. |
 
 ## Log
 
@@ -122,3 +122,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · SUB-02 · Plans, Stripe checkout and Connect onboarding with the return check.
 - 2026-11-04 · SET-01 · Settings screen with queued settings PATCH.
 - 2026-11-04 · SET-02 · Language screen.
+- 2026-11-04 · SET-03 · App-lock preview on the Settings Security row; M2 complete.
