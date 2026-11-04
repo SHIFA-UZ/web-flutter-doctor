@@ -302,6 +302,7 @@
     <string name="cannotOpenDocumentUrl">Невозможно открыть URL документа</string>
     <string name="cannotOpenLink">Не удалось открыть ссылку</string>
     <string name="cannotSaveNotes">Невозможно сохранить примечания.</string>
+    <string name="cantPreview">Этот тип файла нельзя просмотреть.</string>
     <string name="cardiologist">Кардиолог</string>
     <string name="carePartnershipDetail">Партнёрство</string>
     <string name="carePartnerships">Партнёрства по лечению</string>
@@ -769,6 +770,7 @@
     <string name="couldNotLoadRetry">Не удалось загрузить. Повторить</string>
     <string name="couldNotLoadThisDay">Не удалось загрузить этот день</string>
     <string name="couldNotOpenAppointment">Не удалось открыть запись.</string>
+    <string name="couldNotOpenPdf">Не удалось открыть этот PDF.</string>
     <string name="country">Страна</string>
     <string name="createAccount">Создать аккаунт</string>
     <string name="createAdminUser">Создать администратора</string>
@@ -941,8 +943,12 @@
     <string name="documentCategory_XRAY">Рентген</string>
     <string name="documentEverything">Задокументировать всё</string>
     <string name="documentGenerated">Документ успешно сгенерирован</string>
+    <string name="documentGone">Этот документ больше недоступен.</string>
     <string name="documentHistory">История документов</string>
     <string name="documentLocked">Заблокировано</string>
+    <string name="documentNoAccess">У вас нет доступа к этому документу.</string>
+    <string name="documentSaveFailed">Не удалось сохранить файл.</string>
+    <string name="documentSaved">Сохранено на устройстве</string>
     <string name="documentTitle">Название документа</string>
     <string name="documentUploaded">Документ успешно загружен</string>
     <string name="documenting">Документирование…</string>
@@ -1961,6 +1967,7 @@
     <string name="saveFailed">Не удалось сохранить. Попробуйте ещё раз.</string>
     <string name="saveForm">Сохранить форму</string>
     <string name="saveLocation">Сохранить местоположение</string>
+    <string name="saveToDevice">Сохранить на устройство</string>
     <string name="saved">Сохранено</string>
     <string name="savedToDownloads">Сохранено в «Загрузки»</string>
     <string name="scanFailed">Сканирование не удалось</string>

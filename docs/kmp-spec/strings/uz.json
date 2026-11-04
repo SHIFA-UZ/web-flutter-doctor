@@ -2481,5 +2481,12 @@
   "appointmentsLoadFailed": "Uchrashuvlarni yuklab bo'lmadi.",
   "upcoming": "Kelgusi",
   "visitOther": "Tashrif",
-  "statusPendingPayment": "To'lov kutilmoqda"
+  "statusPendingPayment": "To'lov kutilmoqda",
+  "documentNoAccess": "Bu hujjatga ruxsatingiz yo'q.",
+  "documentGone": "Bu hujjat endi mavjud emas.",
+  "cantPreview": "Bu turdagi faylni ko'rib bo'lmaydi.",
+  "couldNotOpenPdf": "Bu PDF-ni ochib bo'lmadi.",
+  "saveToDevice": "Qurilmaga saqlash",
+  "documentSaved": "Qurilmangizga saqlandi",
+  "documentSaveFailed": "Faylni saqlab bo'lmadi."
 }

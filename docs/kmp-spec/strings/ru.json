@@ -2481,5 +2481,12 @@
   "appointmentsLoadFailed": "Не удалось загрузить записи.",
   "upcoming": "Предстоящие",
   "visitOther": "Визит",
-  "statusPendingPayment": "Ожидает оплаты"
+  "statusPendingPayment": "Ожидает оплаты",
+  "documentNoAccess": "У вас нет доступа к этому документу.",
+  "documentGone": "Этот документ больше недоступен.",
+  "cantPreview": "Этот тип файла нельзя просмотреть.",
+  "couldNotOpenPdf": "Не удалось открыть этот PDF.",
+  "saveToDevice": "Сохранить на устройство",
+  "documentSaved": "Сохранено на устройстве",
+  "documentSaveFailed": "Не удалось сохранить файл."
 }

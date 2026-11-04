@@ -2481,5 +2481,12 @@
   "appointmentsLoadFailed": "Couldn't load the appointments.",
   "upcoming": "Upcoming",
   "visitOther": "Visit",
-  "statusPendingPayment": "Awaiting payment"
+  "statusPendingPayment": "Awaiting payment",
+  "documentNoAccess": "You don't have access to this document.",
+  "documentGone": "This document is no longer available.",
+  "cantPreview": "This file type can't be previewed.",
+  "couldNotOpenPdf": "Could not open this PDF.",
+  "saveToDevice": "Save to device",
+  "documentSaved": "Saved to your device",
+  "documentSaveFailed": "Couldn't save the file."
 }

@@ -100,6 +100,7 @@ import shifa.doctor.ui.calendar.BlockPanelScreen
 import shifa.doctor.ui.calendar.BookingScreen
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
+import shifa.doctor.ui.documents.DocumentViewerScreen
 import shifa.doctor.ui.patients.PatientDetailScreen
 import shifa.doctor.ui.patients.PatientsScreen
 import shifa.doctor.ui.profile.BillingScreen
@@ -389,6 +390,8 @@ private fun RouteContent(
                     actions.push(ShellRoute.Booking(slot, currentInstant().toEpochMilliseconds(), patient))
                 },
             )
+        is ShellRoute.Document ->
+            DocumentViewerScreen(route.patientId, route.documentId, route.title, route.clinicId, onBack = actions.back)
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
     }

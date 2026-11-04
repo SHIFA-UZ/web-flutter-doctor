@@ -254,3 +254,29 @@ Built 2026-11-04. Spec 06 §4.2, §9. No screen (DOCS-03 uses it); a "Photos to 
 - **Tests:** `ImagesToPdfTest` (5: the JPEG frame header after other segments and what can't be embedded; pages with
   the image bytes unchanged and others skipped; the cross-reference offsets point at every object; tall and wide
   photos fit the page). Checked on the emulator: two camera photos → a 2-page PDF shown by `PdfView`.
+
+## DOCS-05 · Document viewer
+
+Built 2026-11-04. Flow `06/08-document-viewer.md`; spec 06 §2.10. Not in the boards as a screen (the board's Documents
+tab opens one); built in the existing style. Route `ShellRoute.Document(patientId, documentId, title, clinicId)`,
+opened from the Documents tab (DOCS-04).
+
+- **Screen** (`ui/documents/DocumentViewer.kt`): back and the title; a page-shaped skeleton while downloading; then by
+  type (DOCS-01's sniffing): **images** pinch-zoom 1–4×, pan once zoomed, double tap 2×, fitted on open; **PDFs** in
+  the existing `PdfView` (Android `PdfRenderer`, iOS PDFKit) inside the same zoom; **anything else** (DOCX, unknown
+  bytes) "This file type can't be previewed." with Save to device (Flutter fed it to the PDF view and failed
+  silently); a PDF the renderer can't open says so, with Save too.
+- **States:** 403 "You don't have access to this document." with Request access (then back with "Request sent");
+  404 "This document is no longer available." with Back (dev answers 404 for a locked document too, see DOCS-01);
+  any other failure, or an empty answer, "Could not load document" with Retry and the request id.
+- **Save to device** (`FileSaver`, Downloads on Android): the server's file name, else the title with the type's
+  extension; "Saved to your device" or "Couldn't save the file.". The file stays in memory otherwise; nothing about
+  it is logged.
+- **Zoom** (`ui/widgets/Zoomable.kt`): two fingers zoom, one finger is left to the content at 1× (so PDF pages still
+  scroll) and pans once zoomed.
+- **Not built:** Share, Print, a page indicator, "Document info", the password-protected PDF message (the renderer's
+  failure is the generic one), downsampling huge images (uploads from the app are at most 1600 px).
+- **Leaving** releases the file and cancels a running download or request, so the shell (which keeps the
+  ViewModel) holds no document and reopening starts afresh.
+- **Tests:** `DocumentViewerViewModelTest` (5: a PDF typed by bytes; 403 / 404 / failure with request id / empty;
+  request access, then reopening; a failed save; late answers after leaving), screenshots `DocumentViewer_loading`, `_noAccess`, `_cantPreview`.

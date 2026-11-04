@@ -94,6 +94,14 @@ sealed interface ShellRoute {
         val patient: shifa.doctor.data.model.PatientOption? = null,
     ) : ShellRoute
 
+    /** A patient's document in the viewer (DOCS-05), in a clinic's scope when [clinicId] is set. */
+    data class Document(
+        val patientId: Long,
+        val documentId: Long,
+        val title: String,
+        val clinicId: Long? = null,
+    ) : ShellRoute
+
     /** Profile → one of its sections (PROF-02); each section's ticket builds its screen. */
     data class Profile(
         val section: ProfileSection,

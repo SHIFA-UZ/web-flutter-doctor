@@ -302,6 +302,7 @@
     <string name="cannotOpenDocumentUrl">Hujjat URL ni ochib bo'lmaydi</string>
     <string name="cannotOpenLink">Havolani ochib bo'lmadi</string>
     <string name="cannotSaveNotes">Izohlarni saqlab bo'lmaydi.</string>
+    <string name="cantPreview">Bu turdagi faylni ko'rib bo'lmaydi.</string>
     <string name="cardiologist">Kardiolog</string>
     <string name="carePartnershipDetail">Hamkorlik</string>
     <string name="carePartnerships">Davolash hamkorliklari</string>
@@ -769,6 +770,7 @@
     <string name="couldNotLoadRetry">Yuklab bo'lmadi. Qayta urinish</string>
     <string name="couldNotLoadThisDay">Bu kunni yuklab bo'lmadi</string>
     <string name="couldNotOpenAppointment">Uchrashuvni ochib bo'lmadi.</string>
+    <string name="couldNotOpenPdf">Bu PDF-ni ochib bo'lmadi.</string>
     <string name="country">Mamlakat</string>
     <string name="createAccount">Hisob yaratish</string>
     <string name="createAdminUser">Admin foydalanuvchi yaratish</string>
@@ -941,8 +943,12 @@
     <string name="documentCategory_XRAY">Rentgen</string>
     <string name="documentEverything">Hammasini hujjatlashtirish</string>
     <string name="documentGenerated">Hujjat muvaffaqiyatli yaratildi</string>
+    <string name="documentGone">Bu hujjat endi mavjud emas.</string>
     <string name="documentHistory">Hujjatlar tarixi</string>
     <string name="documentLocked">Qulflangan</string>
+    <string name="documentNoAccess">Bu hujjatga ruxsatingiz yo'q.</string>
+    <string name="documentSaveFailed">Faylni saqlab bo'lmadi.</string>
+    <string name="documentSaved">Qurilmangizga saqlandi</string>
     <string name="documentTitle">Hujjat nomi</string>
     <string name="documentUploaded">Hujjat muvaffaqiyatli yuklandi</string>
     <string name="documenting">Hujjatlashtirilmoqda…</string>
@@ -1961,6 +1967,7 @@
     <string name="saveFailed">Saqlab bo'lmadi. Qaytadan urinib ko'ring.</string>
     <string name="saveForm">Saqlash</string>
     <string name="saveLocation">Joylashuvni saqlash</string>
+    <string name="saveToDevice">Qurilmaga saqlash</string>
     <string name="saved">Saqlandi</string>
     <string name="savedToDownloads">Yuklanmalar papkasiga saqlandi</string>
     <string name="scanFailed">Skanerlash muvaffaqiyatsiz</string>

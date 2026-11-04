@@ -302,6 +302,7 @@
     <string name="cannotOpenDocumentUrl">Cannot open document URL</string>
     <string name="cannotOpenLink">Cannot open link</string>
     <string name="cannotSaveNotes">Cannot save notes.</string>
+    <string name="cantPreview">This file type can't be previewed.</string>
     <string name="cardiologist">Cardiologist</string>
     <string name="carePartnershipDetail">Partnership</string>
     <string name="carePartnerships">Care partnerships</string>
@@ -769,6 +770,7 @@
     <string name="couldNotLoadRetry">Couldn't load. Retry</string>
     <string name="couldNotLoadThisDay">Couldn't load this day</string>
     <string name="couldNotOpenAppointment">Couldn't open the appointment.</string>
+    <string name="couldNotOpenPdf">Could not open this PDF.</string>
     <string name="country">Country</string>
     <string name="createAccount">Create account</string>
     <string name="createAdminUser">Create admin user</string>
@@ -941,8 +943,12 @@
     <string name="documentCategory_XRAY">X-ray</string>
     <string name="documentEverything">Document everything</string>
     <string name="documentGenerated">Document generated successfully</string>
+    <string name="documentGone">This document is no longer available.</string>
     <string name="documentHistory">Document History</string>
     <string name="documentLocked">Locked</string>
+    <string name="documentNoAccess">You don't have access to this document.</string>
+    <string name="documentSaveFailed">Couldn't save the file.</string>
+    <string name="documentSaved">Saved to your device</string>
     <string name="documentTitle">Document Title</string>
     <string name="documentUploaded">Document uploaded successfully</string>
     <string name="documenting">Documenting…</string>
@@ -1961,6 +1967,7 @@
     <string name="saveFailed">Couldn't save. Try again.</string>
     <string name="saveForm">Save Form</string>
     <string name="saveLocation">Save Location</string>
+    <string name="saveToDevice">Save to device</string>
     <string name="saved">Saved</string>
     <string name="savedToDownloads">Saved to Downloads</string>
     <string name="scanFailed">Scan failed</string>
