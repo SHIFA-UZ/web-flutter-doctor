@@ -202,7 +202,7 @@ the simulator beyond building the framework.
 4. **Registration e-mail code:** still waiting on BE-03 (D-04); the doctor and staff registrations go straight in.
 5. **The shell is still a stand-in** (debug menu with sign-out and the app-lock section) until SHELL-01, next.
 
-## M2 · Shell and profile (in progress)
+## M2 · Shell and profile (done)
 
 One commit per ticket, each with a Codex review (`docs/implemented/codex/`). Details in `shell.md` and `profile.md`.
 Your calls D-15 (push at the end), D-16 (Daily may use production) and D-17 (translations as they are) are recorded.
@@ -217,8 +217,15 @@ Your calls D-15 (push at the end), D-16 (Daily may use production) and D-17 (tra
 | PROF-06 | `657cfbf` | Practice timezone sheet with the change warning |
 | PROF-07 | `aa384fd` | Clinic location on a map (coordinates saved; geocoding waits for BE-15) |
 | PROF-08 | `0f514ad` | Extended profile: biography, socials, service tags, certificates |
+| SVC-01 | `28c3b7b` | Services & pricing: grouped list, editor with prices per currency and location |
+| SVC-02 | `469d5e9` | Service groups editor (rename, reorder, add, delete) |
+| SUB-02 | `520ab11` | Plans with prices, Stripe checkout and Connect onboarding, plan re-read on return |
+| SET-01 | `8c46320` | Settings: country, starting screen, 2FA / encrypted-documents flags (queued PATCH) |
+| SET-02 | `9b30ba9` | Language screen |
+| SET-03 | `9b84c0f` | App-lock preview on the Settings security row |
 
-Checked on the emulator against dev (and put back afterwards): gender, postal code, billing name, a service tag;
+Checked on the emulator against dev (and put back afterwards): gender, postal code, billing name, a service tag, a
+service (created and deleted), the language (ru, then en);
 photo upload from the gallery and the camera; the camera refusal banner; the wrong-current-password path; the map;
 the timezone warning (cancelled).
 
@@ -232,7 +239,10 @@ the timezone warning (cancelled).
 4. **New backend items:** BE-30 (remove photo), BE-31 (a new photo needs a new URL; the app versions it meanwhile),
    BE-32 (a distinct code for a wrong current password).
 5. **iOS:** the photo picker, camera, downsampling and the map tap compile and link; none ran on a simulator yet.
-6. **A flaky test pattern:** "Dispatchers.Main is used concurrently with setting it" once, when a previous test class
+6. **Stripe on dev was not touched:** the checkout and Connect buttons create Stripe sessions, so they are covered by
+   tests and the demo backend only. Dev has BASIC and PRO plans; PREMIUM has no plan (admins set it).
+7. **Next (your D-08):** the KMP web target now that M2 is done, then M3.
+8. **A flaky test pattern:** "Dispatchers.Main is used concurrently with setting it" once, when a previous test class
    left a ViewModel coroutine running; it passes on rerun.
 
 ## Decisions
