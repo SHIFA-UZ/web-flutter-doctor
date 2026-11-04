@@ -22,3 +22,19 @@ Built 2026-11-04. Spec 05 §1, ticket APPT-01. No screen yet (the visit screens 
   Open summary waits for PDF-01.
 - A no-show, like a cancelled visit, has no main button in the panel (`ctaFor`).
 - **Tests:** `AppointmentModelsTest` (3: dev's response, the kind rules, the signature states), `AppointmentRulesTest` (no-show).
+
+## APPT-02 · Appointment detail and signature repository
+
+Built 2026-11-04. Spec 05 §2.2, §7, ticket APPT-02. No screen yet (the footer that shows it is APPT-04).
+
+- **Repository** (`data/appointments/AppointmentsRepository.kt`): `detail(id)` (`GET /appointments/{id}`),
+  `requestSignature(id)` (`PUT …/request-signature {}`), and `signatureUpdates(id)`: the visit now, then every 10 s
+  **only while** the signature is awaited; the flow ends once it is signed (or was never asked). Every read is
+  emitted as a Result: a passing failure (no network, 5xx, 429) is tried again at the next tick, a lasting one (404,
+  403…) ends it. The screen's ViewModel owns the one collection and starts it again after a request,
+  so there is never a second timer (Flutter started one per request and per screen load).
+- **Demo backend:** `GET /appointments/{id}` for the demo calendar's two visits (101 by video, 102 in the clinic, on
+  the next busy day within three), 404 for others; `PUT …/request-signature` records the time (404 for an unknown
+  visit) and the demo patient signs 15 s later.
+- **Tests:** `AppointmentsRepositoryTest` (3: polling while awaited with a failed read in between, ending when
+  signed; a visit not asked is read once, the request's PUT; a 404 ends it), `DemoBackendTest` (the demo visit and its signature).

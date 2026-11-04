@@ -85,6 +85,8 @@ object ApiConfig {
 
         fun appointmentPaymentReminder(id: Long) = "appointments/$id/notify-payment-reminder"
 
+        fun appointmentSignature(id: Long) = "appointments/$id/request-signature"
+
         const val SUBSCRIPTION_PLANS = "doctor/subscription/plans"
         const val SUBSCRIPTION_ME = "doctor/subscription/me"
         const val SUBSCRIPTION_CHECKOUT = "doctor/subscription/checkout"

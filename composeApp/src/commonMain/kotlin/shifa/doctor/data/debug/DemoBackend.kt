@@ -35,6 +35,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import shifa.doctor.data.api.ApiConfig.Endpoints
 import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.createHttpEngine
@@ -42,6 +43,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.isDebugBuild
+import kotlin.time.Duration.Companion.seconds
 
 /** Debug menu → Demo data: the shared client talks to [DemoBackend.shared]. Kept across launches; debug builds only. */
 object DemoMode {
@@ -107,6 +109,9 @@ class DemoBackend(
     // Uploaded documents per patient id, newest first, and their files by document id.
     private var uploads: Map<String, List<JsonElement>> = emptyMap()
     private val uploadFiles = mutableMapOf<Long, Pair<ByteArray, String>>()
+
+    // APPT-02: when each visit's signature was asked; the demo patient signs 15 s later.
+    private val signatureAsked = mutableMapOf<Long, kotlinx.datetime.Instant>()
     private var forms: Map<String, List<JsonElement>> = emptyMap()
     private var lastFormId = 500L
     private var lastDateId = 0L
@@ -456,6 +461,20 @@ class DemoBackend(
             // The booking list (CAL-7): the demo calendar's patients and a few more, one page.
             get && path == Endpoints.PATIENTS_FOR_ASSIGNMENT -> ok(apiJson.parseToJsonElement(DEMO_PATIENTS))
             request.method == HttpMethod.Post && path == Endpoints.SCHEDULE_BOOK -> Reply(HttpStatusCode.OK, "")
+            // A visit (APPT-02): the demo calendar's appointment on the next busy day, its signature as asked.
+            get && path.matches(Regex("appointments/\\d+")) ->
+                demoAppointment(path.substringAfter('/').toLong(), signatureAsked[path.substringAfter('/').toLong()])
+                    ?.let { ok(it) } ?: Reply(HttpStatusCode.NotFound, """{"status":404,"code":"NOT_FOUND"}""")
+            request.method == HttpMethod.Put && path.matches(Regex("appointments/\\d+/request-signature")) -> {
+                val id = path.split('/')[1].toLong()
+                // An unknown visit is 404, as the backend answers.
+                if (demoAppointment(id, null) == null) {
+                    Reply(HttpStatusCode.NotFound, """{"status":404,"code":"NOT_FOUND"}""")
+                } else {
+                    signatureAsked.getOrPut(id) { currentInstant() }
+                    Reply(HttpStatusCode.OK, "")
+                }
+            }
             // Appointment actions (CAL-6) succeed without changing the generated days: nothing is stored.
             path.startsWith("appointments/") && !get &&
                 (
@@ -951,6 +970,41 @@ internal fun demoOverlap(
  * A demo day (Tashkent, UTC+5): 30-minute slots 09:00–17:00, lunch blocked 13:00–14:00, and on even dates two
  * appointments (one by video, one in the clinic) so the calendar has something to show.
  */
+
+/**
+ * The demo calendar's appointment [id] as `GET /appointments/{id}` answers it, on the next busy day from today (busy
+ * days are even, so one of the next three: the 31st and the 1st are both odd); signed 15 s after [asked].
+ */
+internal fun demoAppointment(
+    id: Long,
+    asked: kotlinx.datetime.Instant?,
+    now: kotlinx.datetime.Instant = currentInstant(),
+): JsonObject? {
+    val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")
+    val today = now.toLocalDateTime(zone).date
+    val row =
+        (0..2).map { today.plus(it, kotlinx.datetime.DateTimeUnit.DAY) }
+            .flatMap { demoCalendar(it.toString()) }
+            .map { it.jsonObject }
+            .firstOrNull { it["appointmentId"]?.jsonPrimitive?.longOrNull == id } ?: return null
+    val signed = asked != null && now >= asked + 15.seconds
+    return JsonObject(
+        row.filterKeys {
+            it in setOf("startAt", "endAt", "patientId", "patientName", "location", "status", "paymentStatus", "reason")
+        } +
+            mapOf(
+                "id" to JsonPrimitive(id),
+                "doctorId" to JsonPrimitive(1),
+                "signatureRequested" to JsonPrimitive(asked != null),
+                "patientSignedAt" to if (signed) JsonPrimitive((asked!! + 15.seconds).toString()) else JsonNull,
+                "fulfilledLineIds" to JsonArray(emptyList()),
+                "documentIds" to JsonArray(emptyList()),
+                "attachmentCount" to JsonPrimitive(0),
+                "alreadySigned" to JsonPrimitive(signed),
+            ),
+    )
+}
+
 internal fun demoCalendar(day: String?): JsonArray {
     val date = runCatching { kotlinx.datetime.LocalDate.parse(day ?: "") }.getOrNull() ?: return JsonArray(emptyList())
     val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")

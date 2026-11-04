@@ -121,6 +121,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | FORM-04 025-2 editor | Done (no speech yet) | New (prefilled, chart carried over) or existing form, ICD-10, clinical engine, dental chart editor, return visits, signature; save = form → PDF → document → link → usage, resumable at the failed step. See patients.md. |
 | FORM-05 Forms tab + template picker | Done | Forms with signature / PDF badges, error with Retry (no Create until loaded), template sheet, Edit form on a form's PDF; checked on the emulator with the editor. See patients.md. |
 | APPT-01 Appointment model + visit route | Done (no screen yet) | `AppointmentDetail` as the doctor's GET really is (patient, signature, plan; no video flag), `VisitKind`, `ShellRoute.Visit(id, kind)` from Start / Continue. See visits.md. |
+| APPT-02 Appointment detail + signature | Done (no screen yet) | Detail, request signature, a 10 s poll only while the signature is awaited, ending when signed; demo visits sign 15 s after the request. See visits.md. |
 
 ## Log
 
@@ -195,3 +196,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · FORM-04 · 025-2 editor with the resumable save pipeline.
 - 2026-11-04 · FORM-05 · Forms tab, template sheet, Edit form on a form's PDF.
 - 2026-11-04 · APPT-01 · Appointment detail model, visit kind, the visit route.
+- 2026-11-04 · APPT-02 · Appointment detail, signature request and its poll.

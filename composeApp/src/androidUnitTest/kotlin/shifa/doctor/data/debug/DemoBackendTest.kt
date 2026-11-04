@@ -451,4 +451,26 @@ class DemoBackendTest {
             assertThat(repo.recordUsage("dis.003").isSuccess).isTrue()
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `a demo visit answers with its patient, and its signature arrives 15 s after the request`() =
+        runTest {
+            val repo = shifa.doctor.data.appointments.AppointmentsRepository({ client })
+            val visit = repo.detail(102).getOrThrow()
+            assertThat(visit.patientId to visit.patientName).isEqualTo(12L to "Jasur Karimov")
+            assertThat(visit.kind).isEqualTo(shifa.doctor.data.model.VisitKind.InPerson)
+            assertThat(visit.signature).isEqualTo(shifa.doctor.data.model.SignatureState.None)
+            assertThat(repo.requestSignature(102).isSuccess).isTrue()
+            assertThat(
+                repo.detail(102).getOrThrow().signature,
+            ).isEqualTo(shifa.doctor.data.model.SignatureState.Waiting)
+            assertThat(repo.detail(999).exceptionOrNull()).isInstanceOf(ApiException.NotFound::class.java)
+            assertThat(repo.requestSignature(999).exceptionOrNull()).isInstanceOf(ApiException.NotFound::class.java)
+            // Busy days are even: from the 31st (then the 1st) the visit is found two days on.
+            assertThat(demoAppointment(101, null, kotlinx.datetime.Instant.parse("2026-12-31T05:00:00Z"))).isNotNull()
+            val asked = kotlinx.datetime.Instant.parse("2026-11-04T05:00:00Z")
+            val later = demoAppointment(101, asked, asked + kotlin.time.Duration.parse("16s"))!!
+            assertThat(later["patientSignedAt"]?.jsonPrimitive?.content).isEqualTo("2026-11-04T05:00:15Z")
+            assertThat(forwarded).isEmpty()
+        }
 }
