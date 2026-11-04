@@ -2309,5 +2309,17 @@
   "changeTimezoneDayBefore": "{time} the day before",
   "changeTimezoneNextDay": "{time} the next day",
   "pickOnMap": "Pick on map",
-  "tapMapToMovePin": "Tap the map to move the pin"
+  "tapMapToMovePin": "Tap the map to move the pin",
+  "biographyHelper": "Shown to patients on your profile",
+  "serviceTagsHelper": "Short keywords patients search for, e.g. Braces, Root canal. Prices live in Services & pricing.",
+  "serviceTagTooLong": "Up to 40 characters",
+  "serviceTagDuplicate": "Already added",
+  "serviceTagLimit": "Up to 30 services",
+  "removeItem": "Remove {name}",
+  "noCertificatesYet": "No certificates yet",
+  "deleteCertificateTitle": "Delete certificate?",
+  "socialHelper": "Patients can open these from your profile",
+  "choosePdf": "Choose file (PDF)",
+  "fileTooLarge": "The file is too large (max {size} MB)",
+  "invalidHandle": "Enter a username like @name or a link"
 }

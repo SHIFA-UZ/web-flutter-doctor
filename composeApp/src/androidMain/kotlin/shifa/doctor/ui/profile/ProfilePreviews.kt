@@ -15,6 +15,7 @@ import shifa.doctor.generated.resources.invalidPhone
 import shifa.doctor.generated.resources.nameInvalid
 import shifa.doctor.generated.resources.networkError
 import shifa.doctor.generated.resources.photoUploadFailed
+import shifa.doctor.generated.resources.serviceTagDuplicate
 import shifa.doctor.ui.theme.PreviewTheme
 
 // DaProfile root (flow 08/01): complete, incomplete (with the completeness card), staff, and the error state.
@@ -181,5 +182,26 @@ internal fun SecurityPreview() =
                 currentError = Res.string.currentPasswordIncorrect,
             ),
             SecurityActions(),
+        )
+    }
+
+@Composable
+internal fun ExtendedProfilePreview() =
+    PreviewTheme {
+        val saved = ExtendedForm("Twenty years of painless root canals and implants.", "@drkarimova", "")
+        ExtendedProfileContent(
+            ExtendedUiState(
+                saved = saved,
+                form = saved.copy(instagram = "dr.karimova"),
+                tags = listOf("Braces", "Root canal", "Implants", "Whitening"),
+                tagInput = "braces",
+                tagError = Res.string.serviceTagDuplicate,
+                certificates =
+                    listOf(
+                        "https://x/certificates/karimova-12-1714000000.pdf",
+                        "https://x/certificates/diploma.jpg",
+                    ),
+            ),
+            ExtendedActions(),
         )
     }

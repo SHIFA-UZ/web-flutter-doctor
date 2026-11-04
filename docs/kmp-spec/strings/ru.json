@@ -2309,5 +2309,17 @@
   "changeTimezoneDayBefore": "{time} предыдущего дня",
   "changeTimezoneNextDay": "{time} следующего дня",
   "pickOnMap": "Выбрать на карте",
-  "tapMapToMovePin": "Нажмите на карту, чтобы переместить метку"
+  "tapMapToMovePin": "Нажмите на карту, чтобы переместить метку",
+  "biographyHelper": "Видно пациентам в вашем профиле",
+  "serviceTagsHelper": "Короткие слова, которые ищут пациенты, например: Брекеты, Лечение каналов. Цены задаются в «Услуги и цены».",
+  "serviceTagTooLong": "До 40 символов",
+  "serviceTagDuplicate": "Уже добавлено",
+  "serviceTagLimit": "До 30 услуг",
+  "removeItem": "Удалить {name}",
+  "noCertificatesYet": "Сертификатов пока нет",
+  "deleteCertificateTitle": "Удалить сертификат?",
+  "socialHelper": "Пациенты могут открыть их из вашего профиля",
+  "choosePdf": "Выбрать файл (PDF)",
+  "fileTooLarge": "Файл слишком большой (не более {size} МБ)",
+  "invalidHandle": "Введите имя пользователя вида @name или ссылку"
 }

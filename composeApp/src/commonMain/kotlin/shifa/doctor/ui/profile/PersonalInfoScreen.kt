@@ -38,7 +38,6 @@ import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
-import shifa.doctor.generated.resources.cameraAccessNeeded
 import shifa.doctor.generated.resources.changePhoto
 import shifa.doctor.generated.resources.chooseFromGallery
 import shifa.doctor.generated.resources.chooseOneOrMore
@@ -49,12 +48,10 @@ import shifa.doctor.generated.resources.enterLastName
 import shifa.doctor.generated.resources.female
 import shifa.doctor.generated.resources.firstName
 import shifa.doctor.generated.resources.gender
-import shifa.doctor.generated.resources.ic_alert_circle_16
 import shifa.doctor.generated.resources.lastName
 import shifa.doctor.generated.resources.male
 import shifa.doctor.generated.resources.nameInvalid
 import shifa.doctor.generated.resources.notSet
-import shifa.doctor.generated.resources.openSettings
 import shifa.doctor.generated.resources.other
 import shifa.doctor.generated.resources.personalInformation
 import shifa.doctor.generated.resources.photoUpdated
@@ -77,17 +74,13 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaAvatar
-import shifa.doctor.ui.widgets.ShifaBanner
-import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaInputField
-import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPickField
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.utils.PickedImage
-import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.rememberCameraLauncher
 import shifa.doctor.utils.rememberImagePickerLauncher
 import shifa.doctor.utils.tr
@@ -376,17 +369,7 @@ fun PersonalInfoContent(
         onKeep = { actions.ui { it.copy(askDiscard = false) } },
     ) {
         codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
-        if (state.cameraDenied) {
-            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                ShifaBanner(
-                    tr(Res.string.cameraAccessNeeded),
-                    Res.drawable.ic_alert_circle_16,
-                    ShifaBannerType.Warning,
-                    onClose = { actions.ui { it.copy(cameraDenied = false) } },
-                )
-                ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
-            }
-        }
+        if (state.cameraDenied) CameraDeniedBanner { actions.ui { it.copy(cameraDenied = false) } }
         // Photo block: 96 avatar and its label, one button for the sheet; a spinner over it while uploading.
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(

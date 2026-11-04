@@ -78,7 +78,7 @@ class DemoBackendTest {
         runTest {
             val reset =
                 apiCall<Unit> {
-                    client.post("doctors/me/certificate") {
+                    client.post("doctors/me/services") {
                         contentType(ContentType.Application.Json)
                         setBody("{}")
                     }
@@ -184,6 +184,15 @@ class DemoBackendTest {
             assertThat(
                 (auth.changePassword("wrong", "Abcdef1!").exceptionOrNull() as ApiException).status,
             ).isEqualTo(400)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `a certificate upload answers locally and joins the list`() =
+        runTest {
+            val profile = ProfileRepository({ client })
+            val url = profile.uploadCertificate("diploma.pdf", byteArrayOf(1), "application/pdf").getOrThrow()
+            assertThat(profile.refresh().getOrThrow().profile.certificateUrls).contains(url)
             assertThat(forwarded).isEmpty()
         }
 }

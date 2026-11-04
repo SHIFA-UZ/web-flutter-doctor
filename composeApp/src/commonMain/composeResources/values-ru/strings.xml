@@ -214,6 +214,7 @@
     <string name="billingEmail">Email для выставления счета</string>
     <string name="billingName">Имя для выставления счета</string>
     <string name="biography">Биография</string>
+    <string name="biographyHelper">Видно пациентам в вашем профиле</string>
     <string name="biometricSetupFailed">Не удалось включить разблокировку по биометрии</string>
     <string name="biometricUnlock">Разблокировка по биометрии</string>
     <string name="biometricsNotEnrolled">На этом телефоне не настроены Face ID или отпечаток пальца.</string>
@@ -300,6 +301,7 @@
     <string name="chooseFromGallery">Выбрать из галереи</string>
     <string name="chooseNewPasswordFor">Придумайте новый пароль для %1$s.</string>
     <string name="chooseOneOrMore">Выберите одну или несколько</string>
+    <string name="choosePdf">Выбрать файл (PDF)</string>
     <string name="choosePlace">Выбрать место</string>
     <string name="choosePlanForVisit">Выберите план для этого визита</string>
     <string name="chronicDisease">Хроническое заболевание</string>
@@ -767,6 +769,7 @@
     <string name="declineInvite">Отклонить</string>
     <string name="defaultVisitReason">Осмотр</string>
     <string name="delete">Удалить</string>
+    <string name="deleteCertificateTitle">Удалить сертификат?</string>
     <string name="deleteLocation">Удалить местоположение</string>
     <string name="deleteLocationConfirm">Удалить "%1$s"? Правила расписания и записи в этом местоположении сначала нужно удалить.</string>
     <string name="deleteUser">Удалить пользователя</string>
@@ -1032,6 +1035,7 @@
     <string name="female">Женский</string>
     <string name="fieldRequired">Это поле обязательно</string>
     <string name="fileAttachmentComingSoon">Прикрепление файлов - скоро</string>
+    <string name="fileTooLarge">Файл слишком большой (не более %1$s МБ)</string>
     <string name="filter">Фильтр</string>
     <string name="filterAllStatuses">Все статусы</string>
     <string name="filterByAccountType">Фильтр по типу аккаунта</string>
@@ -1292,6 +1296,7 @@
     <string name="invalidCredentials">Неверный email или пароль.</string>
     <string name="invalidDuration">Некорректная длительность.</string>
     <string name="invalidEmail">Пожалуйста, введите действительный адрес электронной почты</string>
+    <string name="invalidHandle">Введите имя пользователя вида @name или ссылку</string>
     <string name="invalidIban">Введите корректный IBAN или номер счёта</string>
     <string name="invalidInviteKey">Ключ недействителен или уже использован.</string>
     <string name="invalidOtp">Неверный или истекший код.</string>
@@ -1446,6 +1451,7 @@
     <string name="noAppointmentsToday">Нет записей на сегодня</string>
     <string name="noAvailabilityPublished">На %1$s доступное время ещё не опубликовано</string>
     <string name="noCarePartnerships">Партнёрств пока нет</string>
+    <string name="noCertificatesYet">Сертификатов пока нет</string>
     <string name="noCheckInsFound">Отметки не найдены</string>
     <string name="noChronicDisease">Нет хронических заболеваний</string>
     <string name="noClinic">Без клиники</string>
@@ -1792,6 +1798,7 @@
     <string name="remoteCareTasks">Задачи удаленного ухода</string>
     <string name="remoteCareTasksSubtitle">Контроль и управление наблюдением пациентов</string>
     <string name="remove">Удалить</string>
+    <string name="removeItem">Удалить %1$s</string>
     <string name="removeRow">Удалить строку</string>
     <string name="removeService">Удалить услугу</string>
     <string name="repeatPin">Повторите PIN-код</string>
@@ -1912,6 +1919,10 @@
     <string name="serviceManagedByClinicShort">Из каталога клиники</string>
     <string name="servicePriceLabel">Стоимость (например, 25.00)</string>
     <string name="servicePricesSection">Цены: добавьте строку по умолчанию для всех локаций или отдельные строки для конкретных клиник.</string>
+    <string name="serviceTagDuplicate">Уже добавлено</string>
+    <string name="serviceTagLimit">До 30 услуг</string>
+    <string name="serviceTagTooLong">До 40 символов</string>
+    <string name="serviceTagsHelper">Короткие слова, которые ищут пациенты, например: Брекеты, Лечение каналов. Цены задаются в «Услуги и цены».</string>
     <string name="serviceTitleLabel">Название</string>
     <string name="services">Услуги</string>
     <string name="servicesPricing">Услуги и цены</string>
@@ -1975,6 +1986,7 @@
     <string name="soapObjective">Объективно</string>
     <string name="soapPlan">План</string>
     <string name="soapSubjective">Субъективно</string>
+    <string name="socialHelper">Пациенты могут открыть их из вашего профиля</string>
     <string name="socialMedia">Социальные сети</string>
     <string name="socialMediaHint">@username или URL</string>
     <string name="someDataFailed">Часть данных не удалось загрузить</string>

@@ -40,4 +40,8 @@ class ProfileScreenshotTest {
 
     @Test
     fun security() = captureRoboImage("screenshots/Security_password.png") { SecurityPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1300dp-xhdpi")
+    fun extended() = captureRoboImage("screenshots/ExtendedProfile_tags.png") { ExtendedProfilePreview() }
 }

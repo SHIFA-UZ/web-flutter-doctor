@@ -1,0 +1,28 @@
+1. **P1 — Rapid tag edits can overwrite newer writes.** [ExtendedProfileScreen.kt:193](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:193) launches each whole-list PATCH independently. Adding A then B sends `[A]` and `[A,B]` concurrently; if `[A]` commits last, B disappears on reopen. Flow §8 requires a sequential queue.
+
+2. **P1 — Certificate deletion can erase a successful upload.** [ExtendedProfileScreen.kt:244](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:244) snapshots the visible list while uploads remain active. If POST appends B before a pending deletion PATCH applies its snapshot without B, that PATCH removes B from the backend. The upload callback can still display B and report success.
+
+3. **P2 — Overlapping failures restore unsaved state.** [ExtendedProfileScreen.kt:198](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:198) restores an optimistic `before` snapshot rather than confirmed state. Starting empty, add A then B; if A fails first and B fails second, the UI ends at `[A]` although neither saved. Certificate deletions use the same faulty rollback at line 251.
+
+4. **P2 — Leaving and reopening loses upload tracking.** [ExtendedProfileScreen.kt:150](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:150) ignores `uploading`, so Back exits without the required leave/cancel confirmation. The shell-scoped upload continues, but `open()` constructs fresh state with `uploading=false` at line 140, allowing another upload while the first remains active.
+
+5. **P2 — Upload completion can duplicate a certificate in cache.** [ProfileRepository.kt:106](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/profile/ProfileRepository.kt:106) blindly appends the returned URL. If a concurrent profile PATCH response or refresh already includes the backend-appended URL before POST returns, the cache gains it twice. Reopening displays duplicate rows, and subsequent deletion writes can persist those duplicates.
+
+6. **P2 — Conflicting tag writes never reconcile with the server.** [ExtendedProfileScreen.kt:194](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:194) handles 409 as an ordinary failure, restoring stale local data without refetching. Flow §8 requires the server list and conflict notice; another edit can otherwise overwrite the external changes.
+
+7. **P2 — Corrupt lists are silently replaced.** [ExtendedProfileScreen.kt:135](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:135) consumes parsed lists that fall back to empty without retaining a corruption indicator. Adding a tag then replaces unreadable saved services without the warning required by flow §6.
+
+8. **P2 — Oversized certificates are uploaded without validation.** [ExtendedProfileScreen.kt:215](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:215) checks only null and upload status before sending the bytes. A 25 MB PDF reaches POST instead of being rejected locally with the 10 MB limit message required by flow §8.
+
+9. **P2 — Invalid social handles can be saved.** [ExtendedProfileScreen.kt:262](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ExtendedProfileScreen.kt:262) only trims Telegram/Instagram values. It accepts invalid characters and lengths without inline errors, contrary to flow §§8–9.---
+**Answers:**
+1. *Rapid tag edits overtake each other (P1):* fixed; all tag and certificate writes go through one mutex and each sends the latest list when its turn comes, so the last write is always the newest list. Tested (three quick adds).
+2. *Delete erases an upload in flight (P1):* fixed by the same queue; the delete computes its list after the upload finished. Tested.
+3. *Rollback to an unsaved snapshot:* fixed; a failure goes back to the last server-confirmed lists (re-read from the server when possible).
+4. *Upload state lost on reopen:* fixed; reopening keeps `uploading` and the newer lists while a write is still queued, so no second upload starts.
+5. *Duplicate certificate in the cache:* fixed in `ProfileRepository.uploadCertificate`: the URL is added only if a refresh hasn't brought it already.
+6. *409 conflicts:* the backend has no versioning on these fields (whole-string writes, no 409). Any failure now re-reads the server's lists, which covers external changes as far as the API allows.
+7. *Corrupt stored lists:* kept; a bad value reads as empty and is logged (`stringList`). Recorded as not built in profile.md.
+8. *Oversized uploads:* fixed; files over the backend's 25 MB multipart limit are refused locally ("The file is too large (max 25 MB)"); the flow's 10 MB was unverified and the backend has no per-kind limit.
+9. *Invalid handles:* fixed; Telegram 5–32 letters/digits/_, Instagram 1–30 letters/digits/./_, "@name" or a profile link accepted, inline error otherwise. Tested.
+Second round below.

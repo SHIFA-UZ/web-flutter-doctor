@@ -214,6 +214,7 @@
     <string name="billingEmail">Hisob-faktura email</string>
     <string name="billingName">Hisob-faktura nomi</string>
     <string name="biography">Biografiya</string>
+    <string name="biographyHelper">Bemorlarga profilingizda ko'rsatiladi</string>
     <string name="biometricSetupFailed">Biometrik ochishni yoqib bo'lmadi</string>
     <string name="biometricUnlock">Biometrik ochish</string>
     <string name="biometricsNotEnrolled">Bu telefonda Face ID yoki barmoq izi sozlanmagan.</string>
@@ -300,6 +301,7 @@
     <string name="chooseFromGallery">Galereyadan tanlash</string>
     <string name="chooseNewPasswordFor">%1$s uchun yangi parol tanlang.</string>
     <string name="chooseOneOrMore">Bir yoki bir nechtasini tanlang</string>
+    <string name="choosePdf">Fayl tanlash (PDF)</string>
     <string name="choosePlace">Joyni tanlash</string>
     <string name="choosePlanForVisit">Ushbu tashrif uchun rejani tanlang</string>
     <string name="chronicDisease">Surunkali kasallik</string>
@@ -767,6 +769,7 @@
     <string name="declineInvite">Rad etish</string>
     <string name="defaultVisitReason">Ko'rik</string>
     <string name="delete">O'chirish</string>
+    <string name="deleteCertificateTitle">Sertifikat o'chirilsinmi?</string>
     <string name="deleteLocation">Joylashuvni o'chirish</string>
     <string name="deleteLocationConfirm">"%1$s" joylashuvini o'chirasizmi? Bu joylashuvdagi jadval qoidalari va uchrashuvlar avval olib tashlanishi kerak.</string>
     <string name="deleteUser">Foydalanuvchini o'chirish</string>
@@ -1032,6 +1035,7 @@
     <string name="female">Ayol</string>
     <string name="fieldRequired">Bu maydon majburiy</string>
     <string name="fileAttachmentComingSoon">Fayl biriktirish - tez orada</string>
+    <string name="fileTooLarge">Fayl juda katta (ko'pi bilan %1$s MB)</string>
     <string name="filter">Filtr</string>
     <string name="filterAllStatuses">Barcha holatlar</string>
     <string name="filterByAccountType">Hisob turi bo'yicha filtrlash</string>
@@ -1292,6 +1296,7 @@
     <string name="invalidCredentials">Email yoki parol noto'g'ri.</string>
     <string name="invalidDuration">Noto'g'ri davomiylik.</string>
     <string name="invalidEmail">Iltimos, to'g'ri email manzil kiriting</string>
+    <string name="invalidHandle">@name kabi foydalanuvchi nomi yoki havola kiriting</string>
     <string name="invalidIban">To'g'ri IBAN yoki hisob raqamini kiriting</string>
     <string name="invalidInviteKey">Bu kalit noto'g'ri yoki allaqachon ishlatilgan.</string>
     <string name="invalidOtp">Noto'g'ri yoki muddati o'tgan kod.</string>
@@ -1446,6 +1451,7 @@
     <string name="noAppointmentsToday">Bugun uchrashuvlar yo'q</string>
     <string name="noAvailabilityPublished">%1$s uchun hali bo'sh vaqtlar e'lon qilinmagan</string>
     <string name="noCarePartnerships">Hali hamkorlik yo‘q</string>
+    <string name="noCertificatesYet">Hali sertifikatlar yo'q</string>
     <string name="noCheckInsFound">Tekshiruvlar topilmadi</string>
     <string name="noChronicDisease">Surunkali kasallik yo'q</string>
     <string name="noClinic">Klinikasiz</string>
@@ -1792,6 +1798,7 @@
     <string name="remoteCareTasks">Masofaviy parvarish vazifalari</string>
     <string name="remoteCareTasksSubtitle">Bemor kuzatuvlarini nazorat qiling va boshqaring</string>
     <string name="remove">O'chirish</string>
+    <string name="removeItem">%1$s ni olib tashlash</string>
     <string name="removeRow">Qatorni olib tashlash</string>
     <string name="removeService">Xizmatni olib tashlash</string>
     <string name="repeatPin">PIN-kodni takrorlang</string>
@@ -1912,6 +1919,10 @@
     <string name="serviceManagedByClinicShort">Klinika boshqaruvi</string>
     <string name="servicePriceLabel">Narx miqdori (masalan, 25.00)</string>
     <string name="servicePricesSection">Narxlar: barcha joylar uchun standart qator qo'shing yoki alohida klinikalarni almashtirish uchun.</string>
+    <string name="serviceTagDuplicate">Allaqachon qo'shilgan</string>
+    <string name="serviceTagLimit">30 tagacha xizmat</string>
+    <string name="serviceTagTooLong">40 belgigacha</string>
+    <string name="serviceTagsHelper">Bemorlar qidiradigan qisqa so'zlar, masalan: Breket, Kanal davolash. Narxlar "Xizmatlar va narxlar" bo'limida.</string>
     <string name="serviceTitleLabel">Nomi</string>
     <string name="services">Xizmatlar</string>
     <string name="servicesPricing">Xizmatlar va narxlar</string>
@@ -1975,6 +1986,7 @@
     <string name="soapObjective">Obyektiv</string>
     <string name="soapPlan">Reja</string>
     <string name="soapSubjective">Subyektiv</string>
+    <string name="socialHelper">Bemorlar ularni profilingizdan ochishi mumkin</string>
     <string name="socialMedia">Ijtimoiy tarmoqlar</string>
     <string name="socialMediaHint">@username yoki URL</string>
     <string name="someDataFailed">Ayrim ma'lumotlarni yuklab bo'lmadi</string>

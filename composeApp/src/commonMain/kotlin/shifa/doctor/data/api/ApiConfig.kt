@@ -26,6 +26,7 @@ object ApiConfig {
         const val DOCTOR_SETTINGS = "doctors/me/settings"
         const val DOCTOR_SERVICES = "doctors/me/services"
         const val DOCTOR_PHOTO = "doctors/me/photo"
+        const val DOCTOR_CERTIFICATE = "doctors/me/certificate"
         const val DOCTOR_LOCATIONS = "doctors/me/locations"
         const val ME_PROFILE = "me/profile"
         const val ME_CLINICS = "me/clinics"

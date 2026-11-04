@@ -214,6 +214,7 @@
     <string name="billingEmail">Billing Email</string>
     <string name="billingName">Billing Name</string>
     <string name="biography">Biography</string>
+    <string name="biographyHelper">Shown to patients on your profile</string>
     <string name="biometricSetupFailed">Biometric unlock could not be enabled</string>
     <string name="biometricUnlock">Biometric unlock</string>
     <string name="biometricsNotEnrolled">No Face ID or fingerprint is set up on this phone.</string>
@@ -300,6 +301,7 @@
     <string name="chooseFromGallery">Choose from Gallery</string>
     <string name="chooseNewPasswordFor">Choose a new password for %1$s.</string>
     <string name="chooseOneOrMore">Choose one or more</string>
+    <string name="choosePdf">Choose file (PDF)</string>
     <string name="choosePlace">Choose Place</string>
     <string name="choosePlanForVisit">Choose the plan for this visit</string>
     <string name="chronicDisease">Chronic Disease</string>
@@ -767,6 +769,7 @@
     <string name="declineInvite">Decline</string>
     <string name="defaultVisitReason">Check-up</string>
     <string name="delete">Delete</string>
+    <string name="deleteCertificateTitle">Delete certificate?</string>
     <string name="deleteLocation">Delete location</string>
     <string name="deleteLocationConfirm">Delete "%1$s"? Schedule rules and appointments at this location must be removed first.</string>
     <string name="deleteUser">Delete user</string>
@@ -1032,6 +1035,7 @@
     <string name="female">Female</string>
     <string name="fieldRequired">This field is required</string>
     <string name="fileAttachmentComingSoon">File attachment coming soon</string>
+    <string name="fileTooLarge">The file is too large (max %1$s MB)</string>
     <string name="filter">Filter</string>
     <string name="filterAllStatuses">All statuses</string>
     <string name="filterByAccountType">Filter by Account Type</string>
@@ -1292,6 +1296,7 @@
     <string name="invalidCredentials">Incorrect email or password.</string>
     <string name="invalidDuration">Invalid duration.</string>
     <string name="invalidEmail">Please enter a valid email address</string>
+    <string name="invalidHandle">Enter a username like @name or a link</string>
     <string name="invalidIban">Enter a valid IBAN or account number</string>
     <string name="invalidInviteKey">This key is invalid or has already been used.</string>
     <string name="invalidOtp">Invalid or expired OTP.</string>
@@ -1446,6 +1451,7 @@
     <string name="noAppointmentsToday">No appointments today</string>
     <string name="noAvailabilityPublished">No availability published yet for %1$s</string>
     <string name="noCarePartnerships">No care partnerships yet</string>
+    <string name="noCertificatesYet">No certificates yet</string>
     <string name="noCheckInsFound">No check-ins found</string>
     <string name="noChronicDisease">No chronic disease</string>
     <string name="noClinic">No clinic</string>
@@ -1792,6 +1798,7 @@
     <string name="remoteCareTasks">Remote Care Tasks</string>
     <string name="remoteCareTasksSubtitle">Monitor and manage patient follow-ups</string>
     <string name="remove">Remove</string>
+    <string name="removeItem">Remove %1$s</string>
     <string name="removeRow">Remove row</string>
     <string name="removeService">Remove Service</string>
     <string name="repeatPin">Repeat your PIN</string>
@@ -1912,6 +1919,10 @@
     <string name="serviceManagedByClinicShort">Clinic-managed</string>
     <string name="servicePriceLabel">Price amount (e.g. 25.00)</string>
     <string name="servicePricesSection">Prices: add a default row for all locations, or separate rows to override specific clinics.</string>
+    <string name="serviceTagDuplicate">Already added</string>
+    <string name="serviceTagLimit">Up to 30 services</string>
+    <string name="serviceTagTooLong">Up to 40 characters</string>
+    <string name="serviceTagsHelper">Short keywords patients search for, e.g. Braces, Root canal. Prices live in Services &amp; pricing.</string>
     <string name="serviceTitleLabel">Title</string>
     <string name="services">Services</string>
     <string name="servicesPricing">Services &amp; Pricing</string>
@@ -1975,6 +1986,7 @@
     <string name="soapObjective">Objective</string>
     <string name="soapPlan">Plan</string>
     <string name="soapSubjective">Subjective</string>
+    <string name="socialHelper">Patients can open these from your profile</string>
     <string name="socialMedia">Social Media</string>
     <string name="socialMediaHint">@username or URL</string>
     <string name="someDataFailed">Some data could not be loaded</string>

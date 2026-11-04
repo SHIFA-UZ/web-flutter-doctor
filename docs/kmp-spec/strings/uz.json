@@ -2309,5 +2309,17 @@
   "changeTimezoneDayBefore": "{time} (bir kun oldin)",
   "changeTimezoneNextDay": "{time} (keyingi kun)",
   "pickOnMap": "Xaritadan tanlash",
-  "tapMapToMovePin": "Pinni ko'chirish uchun xaritaga bosing"
+  "tapMapToMovePin": "Pinni ko'chirish uchun xaritaga bosing",
+  "biographyHelper": "Bemorlarga profilingizda ko'rsatiladi",
+  "serviceTagsHelper": "Bemorlar qidiradigan qisqa so'zlar, masalan: Breket, Kanal davolash. Narxlar \"Xizmatlar va narxlar\" bo'limida.",
+  "serviceTagTooLong": "40 belgigacha",
+  "serviceTagDuplicate": "Allaqachon qo'shilgan",
+  "serviceTagLimit": "30 tagacha xizmat",
+  "removeItem": "{name} ni olib tashlash",
+  "noCertificatesYet": "Hali sertifikatlar yo'q",
+  "deleteCertificateTitle": "Sertifikat o'chirilsinmi?",
+  "socialHelper": "Bemorlar ularni profilingizdan ochishi mumkin",
+  "choosePdf": "Fayl tanlash (PDF)",
+  "fileTooLarge": "Fayl juda katta (ko'pi bilan {size} MB)",
+  "invalidHandle": "@name kabi foydalanuvchi nomi yoki havola kiriting"
 }

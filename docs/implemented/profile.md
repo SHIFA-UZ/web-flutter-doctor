@@ -222,3 +222,33 @@ Built 2026-11-04. Flows `08/03` §3.3 and §7, `08/04-map-pin-picker.md`; board 
 - **Tests:** `ProfileFormsViewModelTest` (+2: pin → form → PATCH with both coordinates, Back closing only the map and
   asking first after a move;
   Tashkent default); `Contact_phoneError` screenshot re-recorded with the coordinates line and the button.
+
+## PROF-08 · Extended profile
+
+Built 2026-11-04. Flow `08/07-extended-profile.md`; board `DaProfile.dc.html` (`profExtended`).
+
+- **Screen** (`ExtendedProfileScreen.kt`, Profile → Extended profile), on the shared form pieces:
+  - Biography (multiline, ≤ 2 000 with a counter from 1 800, "Shown to patients on your profile"), Telegram and
+    Instagram: saved together with Save (one `PATCH /doctors/me/profile`, changed keys only, "" clears). Flutter's
+    per-keystroke PATCHes are gone. Back with changes asks first.
+  - Service tags: input + Add (or the keyboard's Done), chips with ×. Each add or remove saves at once as the JSON
+    string the backend keeps (`ProfileRepository.saveServiceTags`); trimmed, inner spaces collapsed, 1–40 characters,
+    no duplicate in any case, at most 30. A failed write puts the list back with the error and request id.
+  - Certificates: the file names (tap opens the file in the in-app browser), delete with "Delete certificate?" (PATCH
+    of the remaining URLs, reverted on failure), "No certificates yet", and Upload certificate → tray with Take photo,
+    Choose from gallery (both JPEG ≤ 1600 px via `utils/ImagePicker`) or Choose file (PDF, `utils/DocumentPicker`) →
+    `POST /doctors/me/certificate` (multipart `file`; the backend adds the URL to the list). A refused camera shows the
+    shared "Camera access is needed" banner.
+- **Ordering:** every tag and certificate write (add, remove, upload, delete) waits its turn on one queue and sends
+  the latest list, so quick edits never overtake each other and a delete never drops an upload in flight; a failure
+  shows the server's lists again. Telegram / Instagram are checked ("@name" or a link); files over 25 MB (the backend's
+  limit) are refused before sending.
+- **Shared:** `ProfileRepository` uploads go through one multipart helper (photo and certificate);
+  `CameraDeniedBanner` and `DiscardChangesSheet` live in `ProfileForms.kt`.
+- **Not built:** upload progress bar and cancel, thumbnails, upload dates (not in the data), the corrupt-JSON warning
+  (a bad stored value reads as an empty list and is logged), "@handle" display of pasted URLs.
+- **Verified on the emulator against dev (2026-11-04):** a tag added (saved as `["Qatag"]`) and removed again (`[]`).
+- **Tests:** `ExtendedProfileViewModelTest` (7: tag rules and JSON payload, revert on failure, certificate upload and
+  delete payload, Save with changed keys only, rapid edits in order, delete waiting for an upload, handle and size
+  checks), `DemoBackendTest` (+1, certificate upload), `ProfileScreenshotTest`
+  (+1: `ExtendedProfile_tags`).

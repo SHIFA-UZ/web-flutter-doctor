@@ -74,7 +74,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | PROF-05 Profession catalogue | Done | Catalogue, fallback and picker came with AUTH-07 / PROF-03; dental detection (with Implantologist) ported with Flutter's tests. See profile.md. |
 | PROF-06 Timezone picker | Done | Shared timezone list (city, zone, offset; offset search), practice-timezone sheet over Profile and Contact with the change warning. See profile.md. |
 | PROF-07 Location (map pin) | Done (partly) | "Pick on map" on Contact: native map, tap to place the pin, coordinates saved with the address. Address search and reverse geocoding wait for BE-15. See profile.md. |
-| PROF-08 … SET-03 | Not started | |
+| PROF-08 Extended profile | Done | Biography and socials with Save; service tags and certificates saved at once (photo, gallery or PDF upload; delete). See profile.md. |
+| SVC-01 … SET-03 | Not started | |
 
 ## Log
 
@@ -110,3 +111,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · PROF-05 · Dental documentation detection and the pinned profession catalogue tests.
 - 2026-11-04 · PROF-06 · Practice timezone sheet with change warning; shared timezone list for registration and profile.
 - 2026-11-04 · PROF-07 · Map pin picker on Contact; coordinates saved; geocoding waits for BE-15.
+- 2026-11-04 · PROF-08 · Extended profile: biography, socials, service tags, certificates.

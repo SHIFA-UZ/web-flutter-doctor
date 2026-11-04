@@ -22,17 +22,25 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.cameraAccessNeeded
 import shifa.doctor.generated.resources.discard
 import shifa.doctor.generated.resources.discardChangesBody
 import shifa.doctor.generated.resources.discardChangesTitle
+import shifa.doctor.generated.resources.ic_alert_circle_16
 import shifa.doctor.generated.resources.ic_trash_22
 import shifa.doctor.generated.resources.keepEditing
+import shifa.doctor.generated.resources.openSettings
 import shifa.doctor.generated.resources.save
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.widgets.DialogTone
+import shifa.doctor.ui.widgets.ShifaBanner
+import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaDialogSheet
+import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.tr
 
 // What the profile edit forms (Personal information, Contact, Invoicing) share: the Back rules, the close after Save
@@ -132,3 +140,16 @@ internal fun ProfileSheet(
 ) = ModalBottomSheet(onDismiss, shape = RectangleShape, containerColor = Color.Transparent, dragHandle = null) {
     content()
 }
+
+/** "Camera access is needed to take a photo" with Open settings, after the camera permission was refused. */
+@Composable
+internal fun CameraDeniedBanner(onClose: () -> Unit) =
+    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+        ShifaBanner(
+            tr(Res.string.cameraAccessNeeded),
+            Res.drawable.ic_alert_circle_16,
+            ShifaBannerType.Warning,
+            onClose = onClose,
+        )
+        ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
+    }

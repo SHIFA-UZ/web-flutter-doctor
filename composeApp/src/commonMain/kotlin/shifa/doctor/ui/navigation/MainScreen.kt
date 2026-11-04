@@ -98,6 +98,7 @@ import shifa.doctor.ui.auth.short
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.profile.BillingScreen
 import shifa.doctor.ui.profile.ContactScreen
+import shifa.doctor.ui.profile.ExtendedProfileScreen
 import shifa.doctor.ui.profile.PersonalInfoScreen
 import shifa.doctor.ui.profile.PracticeTimezoneSheet
 import shifa.doctor.ui.profile.ProfileActions
@@ -317,6 +318,7 @@ private fun RouteContent(
                     if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
                 }
                 ProfileSection.Subscription -> BillingScreen(onClose = actions.back)
+                ProfileSection.Extended -> ExtendedProfileScreen(onClose = actions.back)
                 ProfileSection.Security -> SecurityScreen(onClose = actions.back)
                 else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
             }

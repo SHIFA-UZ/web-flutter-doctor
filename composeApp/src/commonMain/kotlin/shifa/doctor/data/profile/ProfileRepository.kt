@@ -15,9 +15,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonElement
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
+import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.model.DoctorBilling
 import shifa.doctor.data.model.DoctorContact
@@ -71,24 +74,10 @@ class ProfileRepository(
      */
     suspend fun uploadPhoto(photo: PickedImage): Result<String> {
         val started = generation
-        return apiCall<UploadAnswer> {
-            client().submitFormWithBinaryData(
-                ApiConfig.Endpoints.DOCTOR_PHOTO,
-                formData {
-                    append(
-                        "file",
-                        photo.bytes,
-                        Headers.build {
-                            append(HttpHeaders.ContentType, "image/jpeg")
-                            append(HttpHeaders.ContentDisposition, "filename=\"${photo.fileName}\"")
-                        },
-                    )
-                },
-            )
-            // Every upload lands on the same key (BE-31), so a version stops the image cache showing the old picture.
-        }.map {
-            val separator = if ('?' in it.photoUrl) '&' else '?'
-            it.photoUrl to "${it.photoUrl}${separator}v=${currentInstant().toEpochMilliseconds()}"
+        // Every upload lands on the same key (BE-31), so a version stops the image cache showing the old picture.
+        return upload(ApiConfig.Endpoints.DOCTOR_PHOTO, photo.fileName, photo.bytes, "image/jpeg").map {
+            val separator = if ('?' in it) '&' else '?'
+            it to "${it}${separator}v=${currentInstant().toEpochMilliseconds()}"
         }
             .onSuccess { pair ->
                 if (started == generation) {
@@ -98,6 +87,61 @@ class ProfileRepository(
                 }
             }.map { it.second }
     }
+
+    /**
+     * `POST /doctors/me/certificate` (multipart `file`: a JPEG or a PDF, 08 §1.10). The backend adds the file's URL to
+     * the stored list itself; it is added to the cached profile too and returned.
+     */
+    suspend fun uploadCertificate(
+        fileName: String,
+        bytes: ByteArray,
+        contentType: String,
+    ): Result<String> {
+        val started = generation
+        return upload(ApiConfig.Endpoints.DOCTOR_CERTIFICATE, fileName, bytes, contentType).onSuccess { url ->
+            if (started == generation) {
+                version++
+                _me.update { me ->
+                    // A refresh may already carry the URL the backend appended.
+                    val urls = me?.profile?.certificateUrls.orEmpty()
+                    me?.copy(profile = me.profile.copy(certificates = jsonList(if (url in urls) urls else urls + url)))
+                }
+            }
+        }
+    }
+
+    /** The service tags, written whole as the JSON string the backend keeps (08 §1.10). */
+    suspend fun saveServiceTags(tags: List<String>): Result<DoctorProfile> =
+        update(ProfileUpdateRequest(services = jsonList(tags)))
+
+    /** The certificate URLs left after a delete. */
+    suspend fun saveCertificates(urls: List<String>): Result<DoctorProfile> =
+        update(ProfileUpdateRequest(certificates = jsonList(urls)))
+
+    private suspend fun upload(
+        endpoint: String,
+        fileName: String,
+        bytes: ByteArray,
+        contentType: String,
+    ): Result<String> =
+        apiCall<UploadAnswer> {
+            client().submitFormWithBinaryData(
+                endpoint,
+                formData {
+                    append(
+                        "file",
+                        bytes,
+                        Headers.build {
+                            append(HttpHeaders.ContentType, contentType)
+                            // Quotes would end the header value early.
+                            append(HttpHeaders.ContentDisposition, "filename=\"${fileName.replace("\"", "")}\"")
+                        },
+                    )
+                },
+            )
+        }.map { it.photoUrl }
+
+    private fun jsonList(values: List<String>) = apiJson.encodeToString(ListSerializer(String.serializer()), values)
 
     /** How many services the doctor offers (`GET /doctors/me/services`; SVC-01 reads the services themselves). */
     suspend fun servicesCount(): Result<Int> =

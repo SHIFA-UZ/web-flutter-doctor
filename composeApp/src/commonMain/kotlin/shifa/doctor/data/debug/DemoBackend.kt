@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -156,6 +158,7 @@ class DemoBackend(
                     replace = true,
                 )
             request.method == HttpMethod.Post && path == Endpoints.DOCTOR_PHOTO -> photo()
+            request.method == HttpMethod.Post && path == Endpoints.DOCTOR_CERTIFICATE -> certificate()
             // The demo password is the seed accounts' one; anything else is "current password is incorrect".
             request.method == HttpMethod.Post && path == Endpoints.RESET_PASSWORD ->
                 if (jsonField(body, "currentPassword") == DEMO_PASSWORD) {
@@ -275,6 +278,23 @@ class DemoBackend(
         val profile = current["profile"]?.jsonObject ?: JsonObject(emptyMap())
         me = JsonObject(current + ("profile" to JsonObject(profile + ("photoUrl" to url))))
         return ok(JsonObject(mapOf("photoUrl" to url)))
+    }
+
+    /** Like the backend: the new file's URL joins the profile's certificate list (a JSON array in a string). */
+    private suspend fun certificate(): Reply {
+        val current = doctorMe()
+        val profile = current["profile"]?.jsonObject ?: JsonObject(emptyMap())
+        val list =
+            runCatching {
+                apiJson.decodeFromString<List<String>>(
+                    profile["certificates"]?.jsonPrimitive?.content ?: "[]",
+                )
+            }
+                .getOrDefault(emptyList())
+        val url = "https://api-dev.shifa.uz/certificates/demo-${list.size + 1}.pdf"
+        val json = apiJson.encodeToString(ListSerializer(String.serializer()), list + url)
+        me = JsonObject(current + ("profile" to JsonObject(profile + ("certificates" to JsonPrimitive(json)))))
+        return ok(JsonObject(mapOf("photoUrl" to JsonPrimitive(url))))
     }
 
     private suspend fun meProfile(): JsonObject {
