@@ -2321,5 +2321,15 @@
   "socialHelper": "Bemorlar ularni profilingizdan ochishi mumkin",
   "choosePdf": "Fayl tanlash (PDF)",
   "fileTooLarge": "Fayl juda katta (ko'pi bilan {size} MB)",
-  "invalidHandle": "@name kabi foydalanuvchi nomi yoki havola kiriting"
+  "invalidHandle": "@name kabi foydalanuvchi nomi yoki havola kiriting",
+  "servicePricesInvalid": "Kamida bitta to'g'ri narx kiriting",
+  "servicePriceDuplicate": "Valyuta va manzil takrorlangan",
+  "servicePriceInvalid": "150000 yoki 25.50 kabi summa kiriting",
+  "serviceSaved": "Xizmat saqlandi",
+  "serviceDeleted": "Xizmat o'chirildi",
+  "deleteServiceTitle": "Xizmat o'chirilsinmi?",
+  "noServicesYet": "Hali xizmatlar yo'q. Birinchisini quyida qo'shing.",
+  "freeRemovesPrices": "Mavjud narxlar o'chiriladi",
+  "removePriceRow": "Narxni olib tashlash",
+  "servicesSummary": "{services} ta xizmat · {groups} ta guruh"
 }

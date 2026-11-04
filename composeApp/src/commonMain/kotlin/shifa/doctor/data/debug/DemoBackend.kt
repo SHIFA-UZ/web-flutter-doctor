@@ -23,9 +23,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import shifa.doctor.data.api.ApiConfig.Endpoints
@@ -82,6 +84,8 @@ class DemoBackend(
     private val real by lazy(passthrough)
     private val mutex = Mutex()
     private var me: JsonObject? = null
+
+    private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
 
     fun engine(): HttpClientEngine =
         MockEngine { request ->
@@ -172,15 +176,18 @@ class DemoBackend(
             get && path == Endpoints.CHAT_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":3}"""))
             get && path == Endpoints.NOTIFICATIONS_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":12}"""))
             get && path == Endpoints.TASKS -> ok(apiJson.parseToJsonElement("[]"))
-            // Counts for the profile's completeness until SVC-01 / LOC-1 bring the real lists.
-            get && path == Endpoints.DOCTOR_SERVICES ->
-                ok(
-                    apiJson.parseToJsonElement("""[{"id":1,"title":"Consultation"}]"""),
-                )
-            get && path == Endpoints.DOCTOR_LOCATIONS ->
-                ok(
-                    apiJson.parseToJsonElement("""[{"id":1,"label":"Shifa Demo Clinic"}]"""),
-                )
+            // Services kept in memory (SVC-01); the location list until LOC-1.
+            get && path == Endpoints.DOCTOR_SERVICES -> ok(JsonArray(services))
+            request.method == HttpMethod.Post && path == Endpoints.DOCTOR_SERVICES -> saveService(null, body)
+            request.method == HttpMethod.Patch && path.startsWith(Endpoints.DOCTOR_SERVICES + "/") ->
+                saveService(path.substringAfterLast('/').toLongOrNull(), body)
+            request.method == HttpMethod.Delete && path.startsWith(Endpoints.DOCTOR_SERVICES + "/") -> {
+                val id = path.substringAfterLast('/').toLongOrNull()
+                services = services.filterNot { it.jsonObject["id"]?.jsonPrimitive?.content == id.toString() }
+                Reply(HttpStatusCode.NoContent, "")
+            }
+            get && path == Endpoints.SERVICE_GROUPS -> ok(JsonArray(emptyList()))
+            get && path == Endpoints.DOCTOR_LOCATIONS -> ok(apiJson.parseToJsonElement(DEMO_LOCATIONS))
             get -> null
             else -> refused()
         }
@@ -280,6 +287,35 @@ class DemoBackend(
         return ok(JsonObject(mapOf("photoUrl" to url)))
     }
 
+    /** Create ([id] null) or replace a service, answering it with its id like the backend. */
+    private fun saveService(
+        id: Long?,
+        body: String,
+    ): Reply {
+        val sent =
+            runCatching {
+                apiJson.parseToJsonElement(body).jsonObject
+            }.getOrNull() ?: return fail(HttpStatusCode.BadRequest, "VALIDATION")
+        val newId =
+            id ?: (
+                (
+                    services.mapNotNull {
+                        it.jsonObject["id"]?.jsonPrimitive?.content?.toLongOrNull()
+                    }.maxOrNull() ?: 0
+                ) + 1
+            )
+        val saved = JsonObject(sent + ("id" to JsonPrimitive(newId)) + ("clinicManaged" to JsonPrimitive(false)))
+        services =
+            if (id == null) {
+                services + saved
+            } else {
+                services.map {
+                    if (it.jsonObject["id"]?.jsonPrimitive?.content == id.toString()) saved else it
+                }
+            }
+        return ok(saved)
+    }
+
     /** Like the backend: the new file's URL joins the profile's certificate list (a JSON array in a string). */
     private suspend fun certificate(): Reply {
         val current = doctorMe()
@@ -357,3 +393,10 @@ class DemoBackend(
 }
 
 internal const val DEMO_PASSWORD = "Dev12345!"
+
+private const val DEMO_SERVICES =
+    """[{"id":1,"title":"Free first consultation","description":null,"isActive":true,"isFreeConsultation":true,"clinicManaged":false,"groupId":null,"groupName":null,"prices":[]},""" +
+        """{"id":2,"title":"Consultation","description":"First visit with an examination","isActive":true,"isFreeConsultation":false,"clinicManaged":false,"groupId":null,"groupName":null,"prices":[{"amountMinor":15000000,"currency":"UZS","locationId":null},{"amountMinor":2000,"currency":"USD","locationId":1}]},""" +
+        """{"id":3,"title":"Cleaning","description":null,"isActive":true,"isFreeConsultation":false,"clinicManaged":true,"groupId":null,"groupName":null,"prices":[{"amountMinor":30000000,"currency":"UZS","locationId":null}]}]"""
+
+private const val DEMO_LOCATIONS = """[{"id":1,"label":"Shifa Demo Clinic","clinic":"Shifa Demo Clinic","locationCity":"Tashkent","isPrimary":true}]"""

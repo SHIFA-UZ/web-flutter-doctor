@@ -252,3 +252,34 @@ Built 2026-11-04. Flow `08/07-extended-profile.md`; board `DaProfile.dc.html` (`
   delete payload, Save with changed keys only, rapid edits in order, delete waiting for an upload, handle and size
   checks), `DemoBackendTest` (+1, certificate upload), `ProfileScreenshotTest`
   (+1: `ExtendedProfile_tags`).
+
+## SVC-01 · Services & pricing
+
+Built 2026-11-04. Flow `08/08-services-and-pricing.md`; spec `08 §2`; board `DaProfile.dc.html` (`setServices`).
+
+- **Data** (`data/services/ServicesRepository.kt`, `data/model/ServiceModels.kt`): `GET /doctors/me/services`,
+  `/service-groups` (sorted by sort order, then name), `/locations`; `POST` / `PATCH /doctors/me/services[/{id}]`
+  with `{title, description, isActive, isFreeConsultation, groupId, prices[]}` and `DELETE`, every status checked
+  (Flutter ignored them). `paymentType` is never sent: the backend keeps it on PATCH and defaults new services to
+  PAY_NOW. Group writes are in the repository for SVC-02.
+- **List** (`ServicesScreen.kt`, Profile → Services & pricing): services grouped by group ("No group" first), each with
+  title, two-line description, price lines through `Money` ("150 000 UZS · All locations (default)", "20.00 USD ·
+  Clinic — City", "Location #id" for a removed one) or "Free consultation (video)", and "Clinic-managed" / "Inactive"
+  tags (inactive rows dimmed). Skeleton, error with the request id and Retry, empty state, sticky "Add Service".
+- **Editor** (in the same screen, on the shared form scaffold): Title (required, ≤ 80), Description (≤ 500), Group,
+  Active, Free consultation (video) (hides the prices; "Existing prices will be removed" when it had some), price rows
+  of amount + currency (UZS, USD, EUR, RUB, plus any unknown saved code) + scope (all locations or one location), Add
+  price, remove a row. Amounts go through `Money.parse` (UZS whole units, others ≤ 2 decimals); blank rows are skipped;
+  invalid ones are marked; at least one valid price; no duplicate currency + scope. Save → "Service saved"; Delete asks
+  "Delete service?". Back with changes asks first. A clinic-managed row doesn't open: "This service is managed under
+  Clinic → Services." An untouched price row sends its saved minor units back unchanged (a stored fractional UZS amount
+  isn't rounded); a delete that finds the service already gone counts as done; the list reloads each time the screen
+  opens.
+- **Not built:** the group filter chips and summary strip, swipe to delete, reordering (SVC-02 has the groups
+  editor).
+- **Verified on the emulator against dev (2026-11-04):** list with locations; a new "QA test" at 50 000 UZS saved as
+  `amountMinor` 5 000 000 for all locations (`paymentType` PAY_NOW by default), then deleted through the app; the
+  validation message when no price was entered.
+- **Tests:** `ServicesViewModelTest` (8: load with groups in order, failed load, clinic-managed, validation, create
+  payload, edit / free / delete, unchanged fractional UZS price, 404 delete), `DemoBackendTest` (+1: services in memory), `ProfileScreenshotTest` (+2:
+  `Services_list`, `Services_editor`).

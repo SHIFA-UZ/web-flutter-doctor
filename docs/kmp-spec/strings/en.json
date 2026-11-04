@@ -2321,5 +2321,15 @@
   "socialHelper": "Patients can open these from your profile",
   "choosePdf": "Choose file (PDF)",
   "fileTooLarge": "The file is too large (max {size} MB)",
-  "invalidHandle": "Enter a username like @name or a link"
+  "invalidHandle": "Enter a username like @name or a link",
+  "servicePricesInvalid": "Add at least one valid price",
+  "servicePriceDuplicate": "Duplicate currency and location combination",
+  "servicePriceInvalid": "Enter an amount like 150000 or 25.50",
+  "serviceSaved": "Service saved",
+  "serviceDeleted": "Service deleted",
+  "deleteServiceTitle": "Delete service?",
+  "noServicesYet": "No services yet. Add the first one below.",
+  "freeRemovesPrices": "Existing prices will be removed",
+  "removePriceRow": "Remove price",
+  "servicesSummary": "{services} services · {groups} groups"
 }

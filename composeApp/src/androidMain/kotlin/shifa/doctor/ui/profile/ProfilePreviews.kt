@@ -15,6 +15,7 @@ import shifa.doctor.generated.resources.invalidPhone
 import shifa.doctor.generated.resources.nameInvalid
 import shifa.doctor.generated.resources.networkError
 import shifa.doctor.generated.resources.photoUploadFailed
+import shifa.doctor.generated.resources.servicePriceInvalid
 import shifa.doctor.generated.resources.serviceTagDuplicate
 import shifa.doctor.ui.theme.PreviewTheme
 
@@ -203,5 +204,62 @@ internal fun ExtendedProfilePreview() =
                     ),
             ),
             ExtendedActions(),
+        )
+    }
+
+private val previewServices =
+    listOf(
+        shifa.doctor.data.model.DoctorService(1, "Free first consultation", null, true, true),
+        shifa.doctor.data.model.DoctorService(
+            2,
+            "Consultation",
+            "First visit with an examination and a treatment plan",
+            prices =
+                listOf(
+                    shifa.doctor.data.model.ServicePrice(15000000, "UZS"),
+                    shifa.doctor.data.model.ServicePrice(2000, "USD", 1),
+                ),
+        ),
+        shifa.doctor.data.model.DoctorService(
+            3,
+            "Braces",
+            groupName = "Orthodontics",
+            prices = listOf(shifa.doctor.data.model.ServicePrice(900000000, "UZS")),
+        ),
+        shifa.doctor.data.model.DoctorService(4, "Cleaning", isActive = false, clinicManaged = true),
+    )
+
+private val previewLocations =
+    listOf(shifa.doctor.data.model.DoctorLocation(1, "Shifa Clinic", locationCity = "Tashkent"))
+
+@Composable
+internal fun ServicesListPreview() =
+    PreviewTheme {
+        ServicesContent(
+            ServicesUiState(loading = false, services = previewServices, locations = previewLocations),
+            ServicesActions(),
+        )
+    }
+
+@Composable
+internal fun ServiceEditorPreview() =
+    PreviewTheme {
+        val draft =
+            ServiceDraft(
+                2,
+                "Consultation",
+                "First visit",
+                prices = listOf(PriceRow("150000", "UZS"), PriceRow("20", "USD", 1)),
+            )
+        ServicesContent(
+            ServicesUiState(
+                loading = false,
+                services = previewServices,
+                locations = previewLocations,
+                original = draft,
+                draft = draft.copy(prices = draft.prices + PriceRow("12.5", "UZS")),
+                rowErrors = mapOf(2 to Res.string.servicePriceInvalid),
+            ),
+            ServicesActions(),
         )
     }

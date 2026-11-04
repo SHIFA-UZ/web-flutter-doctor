@@ -78,7 +78,7 @@ class DemoBackendTest {
         runTest {
             val reset =
                 apiCall<Unit> {
-                    client.post("doctors/me/services") {
+                    client.post("demo/never-handled") {
                         contentType(ContentType.Application.Json)
                         setBody("{}")
                     }
@@ -193,6 +193,28 @@ class DemoBackendTest {
             val profile = ProfileRepository({ client })
             val url = profile.uploadCertificate("diploma.pdf", byteArrayOf(1), "application/pdf").getOrThrow()
             assertThat(profile.refresh().getOrThrow().profile.certificateUrls).contains(url)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `services are kept in memory - create, edit, delete`() =
+        runTest {
+            val repo = shifa.doctor.data.services.ServicesRepository({ client })
+            val before = repo.services().getOrThrow().size
+            val body =
+                shifa.doctor.data.model.UpsertService(
+                    "Braces",
+                    null,
+                    true,
+                    false,
+                    null,
+                    listOf(shifa.doctor.data.model.ServicePrice(100, "USD")),
+                )
+            val created = repo.save(null, body).getOrThrow()
+            assertThat(repo.save(created.id, body.copy(title = "Braces 2")).getOrThrow().title).isEqualTo("Braces 2")
+            assertThat(repo.services().getOrThrow().map { it.title }).contains("Braces 2")
+            repo.delete(created.id).getOrThrow()
+            assertThat(repo.services().getOrThrow()).hasSize(before)
             assertThat(forwarded).isEmpty()
         }
 }

@@ -2321,5 +2321,15 @@
   "socialHelper": "Пациенты могут открыть их из вашего профиля",
   "choosePdf": "Выбрать файл (PDF)",
   "fileTooLarge": "Файл слишком большой (не более {size} МБ)",
-  "invalidHandle": "Введите имя пользователя вида @name или ссылку"
+  "invalidHandle": "Введите имя пользователя вида @name или ссылку",
+  "servicePricesInvalid": "Добавьте хотя бы одну корректную цену",
+  "servicePriceDuplicate": "Повтор валюты и места",
+  "servicePriceInvalid": "Введите сумму вида 150000 или 25.50",
+  "serviceSaved": "Услуга сохранена",
+  "serviceDeleted": "Услуга удалена",
+  "deleteServiceTitle": "Удалить услугу?",
+  "noServicesYet": "Услуг пока нет. Добавьте первую ниже.",
+  "freeRemovesPrices": "Текущие цены будут удалены",
+  "removePriceRow": "Удалить цену",
+  "servicesSummary": "Услуг: {services} · групп: {groups}"
 }

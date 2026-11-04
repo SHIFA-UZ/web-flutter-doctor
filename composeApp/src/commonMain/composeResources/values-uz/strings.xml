@@ -772,6 +772,7 @@
     <string name="deleteCertificateTitle">Sertifikat o'chirilsinmi?</string>
     <string name="deleteLocation">Joylashuvni o'chirish</string>
     <string name="deleteLocationConfirm">"%1$s" joylashuvini o'chirasizmi? Bu joylashuvdagi jadval qoidalari va uchrashuvlar avval olib tashlanishi kerak.</string>
+    <string name="deleteServiceTitle">Xizmat o'chirilsinmi?</string>
     <string name="deleteUser">Foydalanuvchini o'chirish</string>
     <string name="deleteUserConfirm">Ushbu foydalanuvchi va uning barcha ma'lumotlari (uchrashuvlar, xabarlar, profil) butunlay o'chirilsinmi? Shundan so'ng telefon raqami va email yangi hisob yaratish uchun ishlatilishi mumkin. Bu amalni qaytarib bo'lmaydi.</string>
     <string name="dentalAddService">Xizmat qo'shish</string>
@@ -1059,6 +1060,7 @@
     <string name="form0252">Form 025-2</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
     <string name="formSavedSuccessfully">Forma muvaffaqiyatli saqlandi</string>
+    <string name="freeRemovesPrices">Mavjud narxlar o'chiriladi</string>
     <string name="freeSlots">Bo'sh vaqtlar</string>
     <string name="friday">Juma</string>
     <string name="fromDate">Boshlanish sanasi</string>
@@ -1488,6 +1490,7 @@
     <string name="noRecentVisit">So'nggi tashrif yo'q</string>
     <string name="noResults">Natija topilmadi</string>
     <string name="noReturnVisitsAddedYet">Qayta tashrif mavjud emas</string>
+    <string name="noServicesYet">Hali xizmatlar yo'q. Birinchisini quyida qo'shing.</string>
     <string name="noShowConfirmBody">Tashrif o'tkazib yuborilgan deb qayd etiladi. Bemorga xabar beriladi, vaqt esa hisobingiz uchun band bo'lib qoladi.</string>
     <string name="noShowMarked">Kelmadi deb belgilandi</string>
     <string name="noSlotsAvailable">Mavjud vaqtlar yo'q</string>
@@ -1799,6 +1802,7 @@
     <string name="remoteCareTasksSubtitle">Bemor kuzatuvlarini nazorat qiling va boshqaring</string>
     <string name="remove">O'chirish</string>
     <string name="removeItem">%1$s ni olib tashlash</string>
+    <string name="removePriceRow">Narxni olib tashlash</string>
     <string name="removeRow">Qatorni olib tashlash</string>
     <string name="removeService">Xizmatni olib tashlash</string>
     <string name="repeatPin">PIN-kodni takrorlang</string>
@@ -1908,6 +1912,7 @@
     <string name="sendVoice">Ovozli xabarni yuborish</string>
     <string name="serverError">Server xatosi. Keyinroq urinib ko'ring.</string>
     <string name="serviceCurrencyLabel">Valyuta (EUR/UZS/USD)</string>
+    <string name="serviceDeleted">Xizmat o'chirildi</string>
     <string name="serviceDescriptionLabel">Tavsif</string>
     <string name="serviceFreeConsultation">Bepul maslahat (video)</string>
     <string name="serviceFreeConsultationHint">Bemorlar ushbu xizmatni video qabul uchun tanlasalar, to'lovsiz darhol tasdiqlanadi.</string>
@@ -1917,8 +1922,12 @@
     <string name="serviceGroupsTitle">Xizmat guruhlari</string>
     <string name="serviceManagedByClinic">Bu xizmat Klinika → Xizmatlar bo'limida boshqariladi. Tahrirlashni u yerda qiling.</string>
     <string name="serviceManagedByClinicShort">Klinika boshqaruvi</string>
+    <string name="servicePriceDuplicate">Valyuta va manzil takrorlangan</string>
+    <string name="servicePriceInvalid">150000 yoki 25.50 kabi summa kiriting</string>
     <string name="servicePriceLabel">Narx miqdori (masalan, 25.00)</string>
+    <string name="servicePricesInvalid">Kamida bitta to'g'ri narx kiriting</string>
     <string name="servicePricesSection">Narxlar: barcha joylar uchun standart qator qo'shing yoki alohida klinikalarni almashtirish uchun.</string>
+    <string name="serviceSaved">Xizmat saqlandi</string>
     <string name="serviceTagDuplicate">Allaqachon qo'shilgan</string>
     <string name="serviceTagLimit">30 tagacha xizmat</string>
     <string name="serviceTagTooLong">40 belgigacha</string>
@@ -1928,6 +1937,7 @@
     <string name="servicesPricing">Xizmatlar va narxlar</string>
     <string name="servicesPricingPanelDesc">Tavsif va ko'p valyutali narxlarga ega hisob-fakturali xizmatlarni belgilang.</string>
     <string name="servicesPricingSubtitle">Xizmat nomlari, narxlari, valyutalari va tavsiflarini boshqaring</string>
+    <string name="servicesSummary">%1$s ta xizmat · %2$s ta guruh</string>
     <string name="sessionEndingSoon">Sessiya 5 daqiqadan so'ng tugaydi. Ishingizni saqlang.</string>
     <string name="sessionExpiredBanner">Sessiya muddati tugadi. Iltimos, qayta kiring.</string>
     <string name="setAsPrimary">Asosiy qilib belgilash</string>

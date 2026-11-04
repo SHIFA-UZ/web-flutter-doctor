@@ -772,6 +772,7 @@
     <string name="deleteCertificateTitle">Удалить сертификат?</string>
     <string name="deleteLocation">Удалить местоположение</string>
     <string name="deleteLocationConfirm">Удалить "%1$s"? Правила расписания и записи в этом местоположении сначала нужно удалить.</string>
+    <string name="deleteServiceTitle">Удалить услугу?</string>
     <string name="deleteUser">Удалить пользователя</string>
     <string name="deleteUserConfirm">Безвозвратно удалить этого пользователя и все его данные (записи, сообщения, профиль)? После этого номер телефона и email можно будет использовать для нового аккаунта. Это действие нельзя отменить.</string>
     <string name="dentalAddService">Добавить услугу</string>
@@ -1059,6 +1060,7 @@
     <string name="form0252">Форма 025-2</string>
     <string name="form0252MedicalDocument">Медицинский документ 025-2</string>
     <string name="formSavedSuccessfully">Форма успешно сохранена</string>
+    <string name="freeRemovesPrices">Текущие цены будут удалены</string>
     <string name="freeSlots">Свободные слоты</string>
     <string name="friday">Пятница</string>
     <string name="fromDate">Дата начала</string>
@@ -1488,6 +1490,7 @@
     <string name="noRecentVisit">Нет недавних визитов</string>
     <string name="noResults">Ничего не найдено</string>
     <string name="noReturnVisitsAddedYet">Пока нет повторных визитов</string>
+    <string name="noServicesYet">Услуг пока нет. Добавьте первую ниже.</string>
     <string name="noShowConfirmBody">Визит будет отмечен как пропущенный. Пациент получит уведомление, а слот останется занятым для вашей отчётности.</string>
     <string name="noShowMarked">Неявка отмечена</string>
     <string name="noSlotsAvailable">Нет доступных слотов</string>
@@ -1799,6 +1802,7 @@
     <string name="remoteCareTasksSubtitle">Контроль и управление наблюдением пациентов</string>
     <string name="remove">Удалить</string>
     <string name="removeItem">Удалить %1$s</string>
+    <string name="removePriceRow">Удалить цену</string>
     <string name="removeRow">Удалить строку</string>
     <string name="removeService">Удалить услугу</string>
     <string name="repeatPin">Повторите PIN-код</string>
@@ -1908,6 +1912,7 @@
     <string name="sendVoice">Отправить голосовое</string>
     <string name="serverError">Ошибка сервера. Попробуйте позже.</string>
     <string name="serviceCurrencyLabel">Валюта (EUR/UZS/USD)</string>
+    <string name="serviceDeleted">Услуга удалена</string>
     <string name="serviceDescriptionLabel">Описание</string>
     <string name="serviceFreeConsultation">Бесплатная консультация (видео)</string>
     <string name="serviceFreeConsultationHint">При выборе этой услуги для видеоприёма запись сразу подтверждается без оплаты.</string>
@@ -1917,8 +1922,12 @@
     <string name="serviceGroupsTitle">Группы услуг</string>
     <string name="serviceManagedByClinic">Эта услуга управляется в разделе Клиника → Услуги. Редактируйте её там.</string>
     <string name="serviceManagedByClinicShort">Из каталога клиники</string>
+    <string name="servicePriceDuplicate">Повтор валюты и места</string>
+    <string name="servicePriceInvalid">Введите сумму вида 150000 или 25.50</string>
     <string name="servicePriceLabel">Стоимость (например, 25.00)</string>
+    <string name="servicePricesInvalid">Добавьте хотя бы одну корректную цену</string>
     <string name="servicePricesSection">Цены: добавьте строку по умолчанию для всех локаций или отдельные строки для конкретных клиник.</string>
+    <string name="serviceSaved">Услуга сохранена</string>
     <string name="serviceTagDuplicate">Уже добавлено</string>
     <string name="serviceTagLimit">До 30 услуг</string>
     <string name="serviceTagTooLong">До 40 символов</string>
@@ -1928,6 +1937,7 @@
     <string name="servicesPricing">Услуги и цены</string>
     <string name="servicesPricingPanelDesc">Определите оплачиваемые услуги с описаниями и ценами в нескольких валютах.</string>
     <string name="servicesPricingSubtitle">Управляйте названиями услуг, ценами, валютами и описаниями</string>
+    <string name="servicesSummary">Услуг: %1$s · групп: %2$s</string>
     <string name="sessionEndingSoon">Сеанс завершится через 5 минут. Сохраните свою работу.</string>
     <string name="sessionExpiredBanner">Сеанс истёк. Войдите снова.</string>
     <string name="setAsPrimary">Сделать основным</string>

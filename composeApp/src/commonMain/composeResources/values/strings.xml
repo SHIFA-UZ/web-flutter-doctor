@@ -772,6 +772,7 @@
     <string name="deleteCertificateTitle">Delete certificate?</string>
     <string name="deleteLocation">Delete location</string>
     <string name="deleteLocationConfirm">Delete "%1$s"? Schedule rules and appointments at this location must be removed first.</string>
+    <string name="deleteServiceTitle">Delete service?</string>
     <string name="deleteUser">Delete user</string>
     <string name="deleteUserConfirm">Permanently delete this user and all their data (appointments, messages, profile)? The phone number and email can then be used to create a new account. This cannot be undone.</string>
     <string name="dentalAddService">Add service</string>
@@ -1059,6 +1060,7 @@
     <string name="form0252">Form 025-2</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
     <string name="formSavedSuccessfully">Form saved successfully</string>
+    <string name="freeRemovesPrices">Existing prices will be removed</string>
     <string name="freeSlots">Free Slots</string>
     <string name="friday">Friday</string>
     <string name="fromDate">From date</string>
@@ -1488,6 +1490,7 @@
     <string name="noRecentVisit">No recent visit</string>
     <string name="noResults">No results</string>
     <string name="noReturnVisitsAddedYet">No return visits added yet</string>
+    <string name="noServicesYet">No services yet. Add the first one below.</string>
     <string name="noShowConfirmBody">The visit will be recorded as missed. The patient is notified and the slot stays booked for your records.</string>
     <string name="noShowMarked">Marked as no-show</string>
     <string name="noSlotsAvailable">No slots available</string>
@@ -1799,6 +1802,7 @@
     <string name="remoteCareTasksSubtitle">Monitor and manage patient follow-ups</string>
     <string name="remove">Remove</string>
     <string name="removeItem">Remove %1$s</string>
+    <string name="removePriceRow">Remove price</string>
     <string name="removeRow">Remove row</string>
     <string name="removeService">Remove Service</string>
     <string name="repeatPin">Repeat your PIN</string>
@@ -1908,6 +1912,7 @@
     <string name="sendVoice">Send Voice</string>
     <string name="serverError">Server error. Please try again later.</string>
     <string name="serviceCurrencyLabel">Currency (EUR/UZS/USD)</string>
+    <string name="serviceDeleted">Service deleted</string>
     <string name="serviceDescriptionLabel">Description</string>
     <string name="serviceFreeConsultation">Free consultation (video)</string>
     <string name="serviceFreeConsultationHint">Patients who choose this service for a video visit are confirmed immediately with no payment.</string>
@@ -1917,8 +1922,12 @@
     <string name="serviceGroupsTitle">Service groups</string>
     <string name="serviceManagedByClinic">This service is managed under Clinic → Services. Edit it there.</string>
     <string name="serviceManagedByClinicShort">Clinic-managed</string>
+    <string name="servicePriceDuplicate">Duplicate currency and location combination</string>
+    <string name="servicePriceInvalid">Enter an amount like 150000 or 25.50</string>
     <string name="servicePriceLabel">Price amount (e.g. 25.00)</string>
+    <string name="servicePricesInvalid">Add at least one valid price</string>
     <string name="servicePricesSection">Prices: add a default row for all locations, or separate rows to override specific clinics.</string>
+    <string name="serviceSaved">Service saved</string>
     <string name="serviceTagDuplicate">Already added</string>
     <string name="serviceTagLimit">Up to 30 services</string>
     <string name="serviceTagTooLong">Up to 40 characters</string>
@@ -1928,6 +1937,7 @@
     <string name="servicesPricing">Services &amp; Pricing</string>
     <string name="servicesPricingPanelDesc">Define billable services with descriptions and multi-currency prices.</string>
     <string name="servicesPricingSubtitle">Manage service titles, prices, currencies and descriptions</string>
+    <string name="servicesSummary">%1$s services · %2$s groups</string>
     <string name="sessionEndingSoon">Your session ends in 5 minutes. Save your work.</string>
     <string name="sessionExpiredBanner">Your session has expired. Please sign in again.</string>
     <string name="setAsPrimary">Set as primary</string>

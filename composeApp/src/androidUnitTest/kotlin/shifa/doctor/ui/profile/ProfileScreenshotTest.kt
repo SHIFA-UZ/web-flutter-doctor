@@ -44,4 +44,12 @@ class ProfileScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h1300dp-xhdpi")
     fun extended() = captureRoboImage("screenshots/ExtendedProfile_tags.png") { ExtendedProfilePreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1200dp-xhdpi")
+    fun services() = captureRoboImage("screenshots/Services_list.png") { ServicesListPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun serviceEditor() = captureRoboImage("screenshots/Services_editor.png") { ServiceEditorPreview() }
 }

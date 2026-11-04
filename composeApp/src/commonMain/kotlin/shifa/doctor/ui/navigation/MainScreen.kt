@@ -105,6 +105,7 @@ import shifa.doctor.ui.profile.ProfileActions
 import shifa.doctor.ui.profile.ProfileScreen
 import shifa.doctor.ui.profile.ProfileSection
 import shifa.doctor.ui.profile.SecurityScreen
+import shifa.doctor.ui.profile.ServicesScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -319,6 +320,7 @@ private fun RouteContent(
                 }
                 ProfileSection.Subscription -> BillingScreen(onClose = actions.back)
                 ProfileSection.Extended -> ExtendedProfileScreen(onClose = actions.back)
+                ProfileSection.Services -> ServicesScreen(onClose = actions.back)
                 ProfileSection.Security -> SecurityScreen(onClose = actions.back)
                 else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
             }

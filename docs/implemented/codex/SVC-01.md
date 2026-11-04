@@ -1,0 +1,13 @@
+- **P1 — Editing silently reduces fractional UZS prices.** [ServicesScreen.kt:346](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:346) discards the remainder for every UZS price. An existing `amountMinor=12550` becomes `"125"`; changing only the title and saving sends `12500`. Preserve minor units in editable text; the whole-unit display rule must not alter stored prices.
+
+- **P2 — A pending delete can discard another service’s unsaved draft.** [ServicesScreen.kt:316](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:316) clears confirmation without setting a busy state. While DELETE runs, the doctor can return to the list and edit another service. The original deletion’s success then unconditionally calls `closeEditor()` at line 326, losing that new draft without confirmation. Block conflicting actions or close only the editor associated with the deletion.
+
+- **P2 — Reopening never reloads services.** [ServicesScreen.kt:363](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:363) reuses the shell-scoped ViewModel, but loading occurs only in its initializer. Closing and reopening retains outdated services, groups, and locations after external changes; the successful list also has no refresh action. Reload on entry or provide the flow’s pull-to-refresh behavior.
+
+- **P2 — Delete 404 leaves an undeletable stale row.** [ServicesScreen.kt:328](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:328) treats every deletion failure identically. If another client already deleted the service, the backend returns 404, but this screen retains the row and editor and displays an error indefinitely. Flow §8 explicitly requires treating this case as success and refreshing/removing the row.---
+**Answers (all fixed):**
+1. *Fractional UZS prices rounded on edit (P1):* a price row keeps its saved minor units and sends them back unchanged while its text still shows the saved amount; only an edited row is parsed again. Tested with 12550.
+2. *A delete closes another service's editor:* a finished delete closes the editor only when it is that service's. Tested.
+3. *No reload on reopen:* the screen reloads the list each time it shows (quietly when a list is already on screen).
+4. *404 on delete:* counts as deleted (the row goes away), as the flow asks. Tested.
+Local; no second round.

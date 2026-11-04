@@ -25,6 +25,12 @@ object ApiConfig {
         const val DOCTOR_BILLING = "doctors/me/billing"
         const val DOCTOR_SETTINGS = "doctors/me/settings"
         const val DOCTOR_SERVICES = "doctors/me/services"
+        const val SERVICE_GROUPS = "doctors/me/service-groups"
+
+        fun doctorService(id: Long) = "doctors/me/services/$id"
+
+        fun serviceGroup(id: Long) = "doctors/me/service-groups/$id"
+
         const val DOCTOR_PHOTO = "doctors/me/photo"
         const val DOCTOR_CERTIFICATE = "doctors/me/certificate"
         const val DOCTOR_LOCATIONS = "doctors/me/locations"
