@@ -113,6 +113,7 @@ import shifa.doctor.ui.profile.SecurityScreen
 import shifa.doctor.ui.profile.ServicesScreen
 import shifa.doctor.ui.profile.SettingsActions
 import shifa.doctor.ui.profile.SettingsScreen
+import shifa.doctor.ui.schedule.LocationsScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -309,6 +310,7 @@ private fun RouteContent(
                             }
                         },
                         schedule = { actions.push(ShellRoute.Schedule) },
+                        locations = { actions.push(ShellRoute.Locations) },
                         reports = { actions.push(ShellRoute.Reports) },
                         signOut = actions.signOut,
                     ),
@@ -364,6 +366,7 @@ private fun RouteContent(
         is ShellRoute.Block -> BlockPanelScreen(route.entry, route.opened, onClose = actions.back)
         is ShellRoute.Booking -> BookingScreen(route.slot, route.opened, onClose = actions.back)
         is ShellRoute.Appointment -> AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back)
+        ShellRoute.Locations -> LocationsScreen(onClose = actions.back)
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
     }

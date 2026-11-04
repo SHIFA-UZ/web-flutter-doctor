@@ -11,7 +11,6 @@ import io.ktor.http.contentType
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
-import shifa.doctor.data.model.DoctorLocation
 import shifa.doctor.data.model.DoctorService
 import shifa.doctor.data.model.ServiceGroup
 import shifa.doctor.data.model.UpsertService
@@ -26,9 +25,6 @@ class ServicesRepository(
     suspend fun groups(): Result<List<ServiceGroup>> =
         apiCall<List<ServiceGroup>> { client().get(ApiConfig.Endpoints.SERVICE_GROUPS) }
             .map { list -> list.sortedWith(compareBy({ it.sortOrder }, { it.name.lowercase() })) }
-
-    suspend fun locations(): Result<List<DoctorLocation>> =
-        apiCall<List<DoctorLocation>> { client().get(ApiConfig.Endpoints.DOCTOR_LOCATIONS) }
 
     /** Creates when [id] is null, else updates. */
     suspend fun save(

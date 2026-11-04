@@ -1388,11 +1388,18 @@
     <string name="loadingPatients">Bemorlar yuklanmoqda…</string>
     <string name="loadingTokens">Tokenlar yuklanmoqda...</string>
     <string name="location">Joylashuv</string>
+    <string name="locationDeleteBlocked">Bu manzilni o'chirib bo'lmaydi: u yagona manzilingiz yoki unda ish vaqti yoki kelgusi qabullar bor.</string>
+    <string name="locationDeleteFailed">Manzilni o'chirib bo'lmadi. Qayta urinib ko'ring.</string>
+    <string name="locationDeleted">Manzil o'chirildi</string>
     <string name="locationFeatureComingSoon">Joylashuv funksiyasi tez orada qo'shiladi. Iltimos, koordinatalarni qo'lda kiriting.</string>
     <string name="locationPermissionDenied">Joylashuv ruxsatlari rad etilgan.</string>
     <string name="locationPermissionDeniedForever">Joylashuv ruxsatlari doimiy ravishda rad etilgan. Iltimos, sozlamalarda yoqing.</string>
+    <string name="locationSaveFailed">Manzilni saqlab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="locationSaved">Joylashuv saqlandi</string>
     <string name="locationServicesDisabled">Joylashuv xizmatlari o'chirilgan. Iltimos, ularni yoqing.</string>
+    <string name="locations">Manzillar</string>
+    <string name="locationsLoadFailed">Manzillaringizni yuklab bo'lmadi.</string>
+    <string name="locationsSubtitle">Bemorlarni qabul qiladigan joylaringiz</string>
     <string name="locked">Bloklangan</string>
     <string name="login">Kirish</string>
     <string name="logout">Chiqish</string>
@@ -1798,6 +1805,7 @@
     <string name="priceScopeAllLocations">Barcha joylar (standart)</string>
     <string name="priceScopeLabel">Qo'llaniladi</string>
     <string name="primary">Asosiy</string>
+    <string name="primaryLocationHint">Bemorlar avval asosiy manzilni ko'radi. O'zgartirish uchun boshqasini asosiy qiling.</string>
     <string name="printSummary">Chop etish</string>
     <string name="proPlanRequired">PRO tarif kerak</string>
     <string name="processAndLeave">Qayta ishlash va chiqish</string>

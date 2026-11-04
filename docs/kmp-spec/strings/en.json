@@ -2413,5 +2413,13 @@
   "blockCountFailed": "Couldn't check for appointments in this period.",
   "blockFailed": "Couldn't block this time. Try again.",
   "blockManagedElsewhere": "This block can't be removed here.",
-  "unblockFailed": "Couldn't remove the block. Try again."
+  "unblockFailed": "Couldn't remove the block. Try again.",
+  "locations": "Locations",
+  "locationsSubtitle": "Where you see patients",
+  "locationDeleted": "Location deleted",
+  "locationDeleteBlocked": "This location can't be deleted: it's your only one, or it still has working hours or upcoming appointments.",
+  "locationsLoadFailed": "Couldn't load your locations.",
+  "locationSaveFailed": "Couldn't save the location. Try again.",
+  "locationDeleteFailed": "Couldn't delete the location. Try again.",
+  "primaryLocationHint": "Patients see the primary location first. Make another one primary to change it."
 }

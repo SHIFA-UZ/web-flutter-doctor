@@ -272,4 +272,28 @@ class DemoBackendTest {
             assertThat(repo.remove(9001).isSuccess).isTrue()
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `locations are kept in memory - a new primary demotes the old one, the last one can't go`() =
+        runTest {
+            val repo = shifa.doctor.data.locations.LocationsRepository { client }
+            repo.refresh().getOrThrow() // the screen reads the list before any change
+            repo.save(null, shifa.doctor.data.model.LocationRequest("Evening", isPrimary = true)).getOrThrow()
+            val list = repo.locations.value!!
+            assertThat(
+                list.map {
+                    it.label to it.isPrimary
+                },
+            ).containsExactly("Evening" to true, "Shifa Demo Clinic" to false).inOrder()
+            assertThat(repo.delete(list[0].id).isSuccess).isTrue()
+            assertThat(repo.locations.value!!.single().isPrimary).isTrue()
+            assertThat(
+                (
+                    repo.delete(
+                        repo.locations.value!!.single().id,
+                    ).exceptionOrNull() as shifa.doctor.data.model.ApiException
+                ).status,
+            ).isEqualTo(409)
+            assertThat(forwarded).isEmpty()
+        }
 }

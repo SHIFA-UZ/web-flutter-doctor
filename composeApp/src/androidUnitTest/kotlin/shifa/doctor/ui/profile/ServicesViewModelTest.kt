@@ -101,11 +101,20 @@ class ServicesViewModelTest {
         }
     }
 
-    private fun loaded() = ServicesViewModel(repo).also { vm -> settle { !vm.state.value.loading } }
+    private fun loaded() =
+        ServicesViewModel(
+            repo,
+            shifa.doctor.data.locations.LocationsRepository { createHttpClient({ null }, engine) },
+        ).also {
+                vm ->
+            settle { !vm.state.value.loading }
+        }
 
     @Test
     fun `services, groups in sort order and locations load together`() {
-        val s = loaded().state.value
+        val vm = loaded()
+        settle { vm.state.value.locations.isNotEmpty() } // the shared list arrives on its own
+        val s = vm.state.value
         assertThat(s.services.map { it.title }).containsExactly("Follow-up visit", "Cleaning")
         assertThat(s.groups.map { it.name }).containsExactly("Basics", "Ortho").inOrder()
         assertThat(s.locations.single().label).isEqualTo("Shifa Dev Clinic")

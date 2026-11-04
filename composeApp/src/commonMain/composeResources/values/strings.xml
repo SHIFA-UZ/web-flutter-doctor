@@ -1388,11 +1388,18 @@
     <string name="loadingPatients">Loading patients…</string>
     <string name="loadingTokens">Loading tokens...</string>
     <string name="location">Location</string>
+    <string name="locationDeleteBlocked">This location can't be deleted: it's your only one, or it still has working hours or upcoming appointments.</string>
+    <string name="locationDeleteFailed">Couldn't delete the location. Try again.</string>
+    <string name="locationDeleted">Location deleted</string>
     <string name="locationFeatureComingSoon">Location feature coming soon. Please enter coordinates manually.</string>
     <string name="locationPermissionDenied">Location permissions are denied.</string>
     <string name="locationPermissionDeniedForever">Location permissions are permanently denied. Please enable them in settings.</string>
+    <string name="locationSaveFailed">Couldn't save the location. Try again.</string>
     <string name="locationSaved">Location saved</string>
     <string name="locationServicesDisabled">Location services are disabled. Please enable them.</string>
+    <string name="locations">Locations</string>
+    <string name="locationsLoadFailed">Couldn't load your locations.</string>
+    <string name="locationsSubtitle">Where you see patients</string>
     <string name="locked">Locked</string>
     <string name="login">Login</string>
     <string name="logout">Logout</string>
@@ -1798,6 +1805,7 @@
     <string name="priceScopeAllLocations">All locations (default)</string>
     <string name="priceScopeLabel">Applies to</string>
     <string name="primary">Primary</string>
+    <string name="primaryLocationHint">Patients see the primary location first. Make another one primary to change it.</string>
     <string name="printSummary">Print</string>
     <string name="proPlanRequired">PRO plan required</string>
     <string name="processAndLeave">Process and leave</string>

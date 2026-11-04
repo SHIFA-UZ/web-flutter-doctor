@@ -53,6 +53,9 @@ object ApiConfig {
         const val DOCTOR_PHOTO = "doctors/me/photo"
         const val DOCTOR_CERTIFICATE = "doctors/me/certificate"
         const val DOCTOR_LOCATIONS = "doctors/me/locations"
+
+        fun doctorLocation(id: Long) = "doctors/me/locations/$id"
+
         const val ME_PROFILE = "me/profile"
         const val ME_CLINICS = "me/clinics"
         const val CHAT_UNREAD = "messages/unread-count"

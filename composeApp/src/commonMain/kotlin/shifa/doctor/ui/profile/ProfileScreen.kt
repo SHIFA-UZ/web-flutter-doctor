@@ -82,6 +82,8 @@ import shifa.doctor.generated.resources.ic_wallet_22
 import shifa.doctor.generated.resources.languageAndSecurity
 import shifa.doctor.generated.resources.languageSecurityNotifications
 import shifa.doctor.generated.resources.legalAndSupport
+import shifa.doctor.generated.resources.locations
+import shifa.doctor.generated.resources.locationsSubtitle
 import shifa.doctor.generated.resources.navReports
 import shifa.doctor.generated.resources.notSet
 import shifa.doctor.generated.resources.personalInformation
@@ -225,6 +227,7 @@ class ProfileViewModel(
 class ProfileActions(
     val open: (ProfileSection) -> Unit = {},
     val schedule: () -> Unit = {},
+    val locations: () -> Unit = {},
     val reports: () -> Unit = {},
     val signOut: () -> Unit = {},
     val retry: () -> Unit = {},
@@ -240,11 +243,13 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     ProfileScreenContent(
         state,
+        // Named: a new action must not shift the others (a positional list sent Reports to Locations once).
         ProfileActions(
-            actions.open,
-            actions.schedule,
-            actions.reports,
-            actions.signOut,
+            open = actions.open,
+            schedule = actions.schedule,
+            locations = actions.locations,
+            reports = actions.reports,
+            signOut = actions.signOut,
             retry = viewModel::retry,
             staffNote = viewModel::showStaffNote,
         ),
@@ -383,6 +388,12 @@ private fun DoctorProfile(
                 tr(Res.string.workingHoursAndLocations),
                 Res.drawable.ic_calendar_22,
                 onClick = actions.schedule,
+            ),
+            Row(
+                Res.string.locations,
+                tr(Res.string.locationsSubtitle),
+                Res.drawable.ic_pin_22,
+                onClick = actions.locations,
             ),
             Row(Res.string.subscriptionAndBilling, gate.tier?.name?.uppercase() ?: notSet, Res.drawable.ic_card_22) {
                 actions.open(ProfileSection.Subscription)

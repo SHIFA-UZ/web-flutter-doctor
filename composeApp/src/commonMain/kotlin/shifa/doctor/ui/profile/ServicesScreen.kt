@@ -39,6 +39,8 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
+import shifa.doctor.data.locations.LocationsRepository
+import shifa.doctor.data.locations.locationsRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.DoctorLocation
 import shifa.doctor.data.model.DoctorService
@@ -170,11 +172,20 @@ data class ServicesUiState(
  */
 class ServicesViewModel(
     private val repo: ServicesRepository = ServicesRepository(),
+    // The price scopes come from the shared location list (LOC-1).
+    private val places: LocationsRepository = locationsRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ServicesUiState())
     val state: StateFlow<ServicesUiState> = _state.asStateFlow()
 
     init {
+        // The price scopes follow the shared location list (LOC-1: no copy of their own).
+        viewModelScope.launch {
+            places.locations.collect {
+                    list ->
+                _state.update { it.copy(locations = list.orEmpty()) }
+            }
+        }
         load()
     }
 
@@ -187,7 +198,8 @@ class ServicesViewModel(
     private suspend fun fetch() =
         coroutineScope {
             val groups = async { repo.groups().getOrDefault(emptyList()) }
-            val locations = async { repo.locations().getOrDefault(emptyList()) }
+            // The shared list (collected in init) is read again; a failure keeps what it had.
+            launch { places.refresh() }
             repo.services().fold(
                 onSuccess = { list ->
                     _state.update {
@@ -195,7 +207,6 @@ class ServicesViewModel(
                             loading = false,
                             services = list,
                             groups = groups.await(),
-                            locations = locations.await(),
                         )
                     }
                 },

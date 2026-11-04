@@ -92,6 +92,7 @@ class DemoBackend(
 
     private var groups: List<JsonElement> = emptyList()
     private var lastGroupId = 0L
+    private var places: List<JsonElement> = apiJson.parseToJsonElement(DEMO_LOCATIONS).jsonArray.toList()
 
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
 
@@ -273,7 +274,23 @@ class DemoBackend(
                         path.endsWith("/change") ||
                         path.endsWith("/notify-payment-reminder")
                 ) -> Reply(HttpStatusCode.OK, "")
-            get && path == Endpoints.DOCTOR_LOCATIONS -> ok(apiJson.parseToJsonElement(DEMO_LOCATIONS))
+            // Locations (LOC-1) in memory: one primary, the last one can't be deleted (the backend's 409).
+            get && path == Endpoints.DOCTOR_LOCATIONS -> ok(JsonArray(places))
+            request.method == HttpMethod.Post && path == Endpoints.DOCTOR_LOCATIONS -> savePlace(null, body)
+            request.method == HttpMethod.Patch && path.startsWith(Endpoints.DOCTOR_LOCATIONS + "/") ->
+                savePlace(path.substringAfterLast('/').toLongOrNull(), body)
+            request.method == HttpMethod.Delete && path.startsWith(Endpoints.DOCTOR_LOCATIONS + "/") -> {
+                val id = path.substringAfterLast('/')
+                if (places.size <= 1) return fail(HttpStatusCode.Conflict, "CONFLICT")
+                val gone = places.firstOrNull { it.jsonObject["id"]?.jsonPrimitive?.content == id }
+                places = places - listOfNotNull(gone)
+                if (gone?.jsonObject?.get("isPrimary")?.jsonPrimitive?.content == "true") {
+                    places = listOf(
+                        JsonObject(places.first().jsonObject + ("isPrimary" to JsonPrimitive(true))),
+                    ) + places.drop(1)
+                }
+                Reply(HttpStatusCode.NoContent, "")
+            }
             get -> null
             else -> refused()
         }
@@ -371,6 +388,38 @@ class DemoBackend(
         val profile = current["profile"]?.jsonObject ?: JsonObject(emptyMap())
         me = JsonObject(current + ("profile" to JsonObject(profile + ("photoUrl" to url))))
         return ok(JsonObject(mapOf("photoUrl" to url)))
+    }
+
+    /** Create or merge a location; a new primary demotes the others; primary first, then by id (the backend's order). */
+    private fun savePlace(
+        id: Long?,
+        body: String,
+    ): Reply {
+        val sent = apiJson.parseToJsonElement(body).jsonObject
+        val old = places.firstOrNull { it.jsonObject["id"]?.jsonPrimitive?.content == id?.toString() }?.jsonObject
+        if (id != null && old == null) return fail(HttpStatusCode.NotFound, "NOT_FOUND")
+        val lastId = places.maxOfOrNull { it.jsonObject["id"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0 } ?: 0
+        val newId = id ?: (lastId + 1)
+        val primary =
+            sent["isPrimary"]?.jsonPrimitive?.content == "true" || places.isEmpty() ||
+                old?.get("isPrimary")?.jsonPrimitive?.content == "true"
+        // Blank clears, a missing key keeps (the backend's PATCH).
+        val merged =
+            (old.orEmpty() + sent.filterValues { it !is JsonNull }).mapValues { (_, v) ->
+                if (v is JsonPrimitive && v.isString && v.content.isBlank()) JsonNull else v
+            } + ("id" to JsonPrimitive(newId)) + ("isPrimary" to JsonPrimitive(primary))
+        val saved = JsonObject(merged)
+        places =
+            (
+                places.filterNot { it.jsonObject["id"]?.jsonPrimitive?.content == newId.toString() }.map {
+                    if (primary) JsonObject(it.jsonObject + ("isPrimary" to JsonPrimitive(false))) else it
+                } + saved
+            ).sortedWith(
+                compareBy({
+                    it.jsonObject["isPrimary"]?.jsonPrimitive?.content != "true"
+                }, { it.jsonObject["id"]?.jsonPrimitive?.content?.toLongOrNull() }),
+            )
+        return ok(saved)
     }
 
     /** Create ([id] null) or rename / reorder a group. */

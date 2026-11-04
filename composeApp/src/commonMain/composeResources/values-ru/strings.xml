@@ -1388,11 +1388,18 @@
     <string name="loadingPatients">Загрузка пациентов…</string>
     <string name="loadingTokens">Загрузка токенов...</string>
     <string name="location">Местоположение</string>
+    <string name="locationDeleteBlocked">Этот адрес нельзя удалить: он единственный, или у него есть часы работы или предстоящие приёмы.</string>
+    <string name="locationDeleteFailed">Не удалось удалить адрес. Попробуйте снова.</string>
+    <string name="locationDeleted">Адрес удалён</string>
     <string name="locationFeatureComingSoon">Функция определения местоположения скоро появится. Пожалуйста, введите координаты вручную.</string>
     <string name="locationPermissionDenied">Разрешения на определение местоположения отклонены.</string>
     <string name="locationPermissionDeniedForever">Разрешения на определение местоположения отклонены навсегда. Пожалуйста, включите их в настройках.</string>
+    <string name="locationSaveFailed">Не удалось сохранить адрес. Попробуйте снова.</string>
     <string name="locationSaved">Местоположение сохранено</string>
     <string name="locationServicesDisabled">Службы определения местоположения отключены. Пожалуйста, включите их.</string>
+    <string name="locations">Адреса приёма</string>
+    <string name="locationsLoadFailed">Не удалось загрузить адреса.</string>
+    <string name="locationsSubtitle">Где вы принимаете пациентов</string>
     <string name="locked">Заблокирован</string>
     <string name="login">Войти</string>
     <string name="logout">Выйти</string>
@@ -1798,6 +1805,7 @@
     <string name="priceScopeAllLocations">Все локации (по умолчанию)</string>
     <string name="priceScopeLabel">Действует для</string>
     <string name="primary">Основное</string>
+    <string name="primaryLocationHint">Пациенты сначала видят основной адрес. Чтобы изменить его, сделайте основным другой.</string>
     <string name="printSummary">Печать</string>
     <string name="proPlanRequired">Нужен тариф PRO</string>
     <string name="processAndLeave">Обработать и выйти</string>

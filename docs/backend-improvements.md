@@ -537,3 +537,16 @@ the DTO's `name` is not an entity property.
 name (or a fixed alphabetical order).
 
 **App until then:** reads the pages (500 each, at most 20) once per booking form, sorts by name and filters locally.
+
+## BE-34 Tell why a location can't be deleted
+
+**Needed by:** flow `04/13` §8 (deleting the primary, the last, or a location with rules or appointments); ticket LOC-1.
+
+**Now:** `DELETE /doctors/me/locations/{id}` answers 409 for three different reasons (the only location, schedule rules
+at it, upcoming appointments at it); only the English `message` differs, and the app never shows server text.
+
+**Change:** a `code` per reason, e.g. `LOCATION_LAST`, `LOCATION_HAS_RULES`, `LOCATION_HAS_APPOINTMENTS` (with the
+appointment count).
+
+**App until then:** one message names all three: "This location can't be deleted: it's your only one, or it still
+has working hours or upcoming appointments."

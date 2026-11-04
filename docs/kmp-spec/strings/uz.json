@@ -2413,5 +2413,13 @@
   "blockCountFailed": "Bu davrdagi qabullarni tekshirib bo'lmadi.",
   "blockFailed": "Vaqtni band qilib bo'lmadi. Qayta urinib ko'ring.",
   "blockManagedElsewhere": "Bu blokni bu yerda olib tashlab bo'lmaydi.",
-  "unblockFailed": "Blokni olib tashlab bo'lmadi. Qayta urinib ko'ring."
+  "unblockFailed": "Blokni olib tashlab bo'lmadi. Qayta urinib ko'ring.",
+  "locations": "Manzillar",
+  "locationsSubtitle": "Bemorlarni qabul qiladigan joylaringiz",
+  "locationDeleted": "Manzil o'chirildi",
+  "locationDeleteBlocked": "Bu manzilni o'chirib bo'lmaydi: u yagona manzilingiz yoki unda ish vaqti yoki kelgusi qabullar bor.",
+  "locationsLoadFailed": "Manzillaringizni yuklab bo'lmadi.",
+  "locationSaveFailed": "Manzilni saqlab bo'lmadi. Qayta urinib ko'ring.",
+  "locationDeleteFailed": "Manzilni o'chirib bo'lmadi. Qayta urinib ko'ring.",
+  "primaryLocationHint": "Bemorlar avval asosiy manzilni ko'radi. O'zgartirish uchun boshqasini asosiy qiling."
 }

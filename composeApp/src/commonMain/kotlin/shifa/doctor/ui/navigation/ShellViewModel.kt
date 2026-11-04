@@ -61,6 +61,9 @@ sealed interface ShellRoute {
     /** Profile → Schedule setup (area 04, SCHED-1 builds it). */
     data object Schedule : ShellRoute
 
+    /** Profile → Locations (LOC-1); also reached from the schedule setup (SCHED-2). */
+    data object Locations : ShellRoute
+
     /** Profile → Reports, pushed so Back returns to Profile (REP-1 builds it). */
     data object Reports : ShellRoute
 

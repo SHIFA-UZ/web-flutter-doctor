@@ -46,13 +46,3 @@ data class ServiceGroup(
     val name: String = "",
     val sortOrder: Int = 0,
 )
-
-/** `GET /doctors/me/locations` (only what the price scope needs here; LOC-1 owns the rest). */
-@Serializable
-data class DoctorLocation(
-    val id: Long = 0,
-    val label: String? = null,
-    val clinic: String? = null,
-    val locationCity: String? = null,
-    val isPrimary: Boolean = false,
-)

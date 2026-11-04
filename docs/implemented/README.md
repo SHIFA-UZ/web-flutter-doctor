@@ -90,7 +90,11 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CAL-6 Appointment panel | Done | Appointment details from the calendar: status, reschedule to a free slot, adjust duration, payment reminder, main button by time window, cancel. See calendar.md. |
 | CAL-7 Booking | Done | Book a free slot for a patient: picker (search by name or id), clinic or video, start and an end along the chain of free slots, reason; past-day guard; taken range kept with its message. See calendar.md. |
 | CAL-8 Blocks | Done | Block a day, some hours or several days from the calendar header (reason chips, cancel overlapping with a live count); blocked row panel with Remove block. See calendar.md. |
-| CAL-5, CAL-9 … LOC-2 | Not started | |
+| LOC-1 Locations | Done | Profile → Locations: list, add, edit (label, clinic, street, city, primary), delete with a confirmation; one shared list (services use it too). See schedule.md. |
+| CAL-9 Deep-link intents | Waits for its first caller | Go-to-appointment and quick-book are only started by push (D-15, at the end) and Home (M6); built with them instead of as unused code (2026-11-04). |
+| CAL-10 Staff calendars | Waits for CLINIC-05 | Needs the clinic workspace members (M11). |
+| CAL-5 N-day grid | Last in M3 | Tablet only (master plan: build last in M3 or in a tablet pass). |
+| SCHED-1, SCHED-2, LOC-2 | Not started | |
 
 ## Log
 
@@ -141,3 +145,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CAL-6 · Appointment panel: reschedule, duration, payment reminder, cancel.
 - 2026-11-04 · CAL-7 · Booking a free slot (multi-slot range) with the patient picker; BE-33.
 - 2026-11-04 · CAL-8 · Block time and the blocked-row panel; dropdowns scroll to their value.
+- 2026-11-04 · LOC-1 · Locations list and editor, one shared location list; BE-34.

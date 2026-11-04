@@ -27,6 +27,7 @@ import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
+import shifa.doctor.data.locations.locationsRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
@@ -154,6 +155,7 @@ private fun AppScreens() {
             ShellNotice.pending.value = null
             profileRepository.clear()
             calendarRepository.clear()
+            locationsRepository.clear()
         }
     }
     val locked by appLockRepository.locked.collectAsState()
