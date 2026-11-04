@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First frame of the Compose splash (Figma 1614:12212): blob teal, glass tile, white logo. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#59C3BD" />
+        </shape>
+    </item>
+
+    <item
+        android:width="178dp"
+        android:height="178dp"
+        android:gravity="center">
+        <shape android:shape="rectangle">
+            <solid android:color="#5CFFFFFF" />
+            <corners android:radius="37dp" />
+        </shape>
+    </item>
+
+    <item
+        android:width="111dp"
+        android:height="81dp"
+        android:drawable="@drawable/splash_logo"
+        android:gravity="center" />
+</layer-list>

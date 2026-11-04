@@ -1,30 +1,32 @@
 name: Deploy Doctor App to TestFlight
 
+# Tests run on pull requests (ci.yml), not here.
 on:
   workflow_dispatch:
-    inputs:
-      skip_tests:
-        description: 'Skip Flutter tests'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
-  group: doctor-testflight-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.35.5'
-  API_BASE_URL: 'https://api.shifa.uz'
+  # build number = offset + github.run_number. The Flutter app used 1 + run_number (last upload: run 5 =
+  # build 6). Same file name, same run counter, same offset: one rising sequence for both apps.
+  BUILD_NUMBER_OFFSET: 1
 
 jobs:
   build-and-deploy-ios:
-    name: Build and Deploy Shifa Doctor iOS
+    name: Build and Deploy iOS to TestFlight
     runs-on: macos-latest
+    # macOS minutes are billed at 10x. Cap so a hung run doesn't burn hours.
     timeout-minutes: 40
 
     steps:
-      - uses: actions/checkout@v4
+      #########################
+      # PHASE 1: CHECKOUT & SETUP
+      #########################
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       # Runs first, before the ~25 minute build, so a malformed key fails in
       # seconds instead of at the upload step.
@@ -75,70 +77,77 @@ jobs:
           echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
           echo "ASC_ISSUER_ID=$ASC_ISSUER_ID" >> "$GITHUB_ENV"
 
-      - uses: maxim-lobanov/setup-xcode@v1
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '26.0'
 
+      # setup-xcode selects Xcode 26 but does NOT install its iOS runtime.
+      # Fail loudly if the download fails — a masked failure here surfaces
+      # later as a confusing build error.
       - name: Install iOS platform
         run: |
           set -euo pipefail
-          echo "iOS SDKs before:"
-          xcodebuild -showsdks | grep -i ios || true
           xcodebuild -downloadPlatform iOS
-          echo "iOS SDKs after:"
           xcodebuild -showsdks | grep -i ios
 
-      - uses: subosito/flutter-action@v2
+      # Xcode's "Compile Kotlin Framework" build phase runs Gradle.
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+          distribution: 'zulu'
+          java-version: '17'
 
-      - name: Install Flutter dependencies
-        run: flutter pub get
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Run tests
-        if: ${{ !inputs.skip_tests }}
-        run: |
-          flutter analyze --no-fatal-infos --no-fatal-warnings
-          flutter test
+      - name: Cache Kotlin/Native toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
+      #########################
+      # PHASE 2: FIREBASE CONFIGURATION
+      #########################
 
       - name: Decode Firebase iOS config
         env:
           FIREBASE_IOS_CONFIG_BASE64: ${{ secrets.DOCTOR_FIREBASE_IOS_CONFIG_BASE64 }}
         run: |
           if [ -z "$FIREBASE_IOS_CONFIG_BASE64" ]; then
-            echo "::error::DOCTOR_FIREBASE_IOS_CONFIG_BASE64 secret not found!"
+            echo "DOCTOR_FIREBASE_IOS_CONFIG_BASE64 secret not found!"
             exit 1
           fi
-          echo "$FIREBASE_IOS_CONFIG_BASE64" | base64 --decode > ios/Runner/GoogleService-Info.plist
-          plutil -lint ios/Runner/GoogleService-Info.plist
+          echo "$FIREBASE_IOS_CONFIG_BASE64" | base64 --decode > iosApp/iosApp/GoogleService-Info.plist
+          plutil -lint iosApp/iosApp/GoogleService-Info.plist
+
+      #########################
+      # PHASE 3: FASTLANE
+      #########################
+
+      - name: Setup Ruby & cache gems (Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          working-directory: iosApp
+          bundler-cache: true
+
+      #########################
+      # PHASE 4: VERSIONING
+      #########################
 
       - name: Calculate version
         id: version
         run: |
-          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
-          BUILD_NUMBER=$(( 1 + ${{ github.run_number }} ))
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          BUILD_NUMBER=$(( BUILD_NUMBER_OFFSET + ${{ github.run_number }} ))
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Build: $BUILD_NUMBER"
 
-      - name: Setup Ruby & cache gems (CocoaPods, Fastlane)
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          working-directory: ios
-          bundler-cache: true
-
-      - name: Cache CocoaPods
-        uses: actions/cache@v4
-        with:
-          path: ios/Pods
-          key: doctor-pods-${{ hashFiles('ios/Podfile.lock') }}
-          restore-keys: doctor-pods-
-
-      - name: Install CocoaPods dependencies
-        working-directory: ios
-        run: bundle exec pod install
+      #########################
+      # PHASE 5: CODE SIGNING SETUP
+      #########################
 
       - name: Import iOS Distribution Certificate
         env:
@@ -146,7 +155,7 @@ jobs:
           CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
         run: |
           if [ -z "$CERTIFICATE_P12" ]; then
-            echo "::error::IOS_CERTIFICATE_P12_BASE64 secret not found!"
+            echo "IOS_CERTIFICATE_P12_BASE64 secret not found!"
             exit 1
           fi
 
@@ -178,26 +187,29 @@ jobs:
             "$KEYCHAIN_PATH"
 
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
           rm -rf "$CERT_DIR"
 
-      - name: Build iOS release (no codesign)
-        run: |
-          flutter build ios \
-            --release \
-            --no-codesign \
-            --dart-define=ENVIRONMENT=production \
-            --dart-define=API_BASE_URL=${{ env.API_BASE_URL }} \
-            --build-name=${{ steps.version.outputs.version_name }} \
-            --build-number=${{ steps.version.outputs.build_number }}
+      #########################
+      # PHASE 6: FASTLANE - BUILD, SIGN, ARCHIVE & UPLOAD
+      #########################
+
+      # Xcode's "Compile Kotlin Framework" phase reuses this; building it here prints Kotlin errors in full
+      # (fastlane only shows Xcode's summary).
+      - name: Build Kotlin framework
+        run: ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon
 
       - name: Build, Sign and Upload to TestFlight with Fastlane
-        working-directory: ios
+        working-directory: iosApp
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ env.ASC_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ env.ASC_ISSUER_ID }}
-          VERSION_NUMBER: ${{ steps.version.outputs.version_name }}
           BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
         run: bundle exec fastlane beta
+
+      #########################
+      # PHASE 7: ARTIFACTS & CLEANUP
+      #########################
 
       - name: Upload build logs (on failure)
         if: failure()
@@ -205,16 +217,18 @@ jobs:
         with:
           name: doctor-ios-logs-${{ steps.version.outputs.build_number }}
           path: |
-            ios/build/logs/**/*
+            iosApp/build/logs/**/*
             ~/Library/Logs/gym/**/*
           retention-days: 7
           if-no-files-found: ignore
 
       - name: Cleanup sensitive files
         if: always()
-        run: |
-          rm -f ios/Runner/GoogleService-Info.plist
-          rm -rf ~/private_keys
+        run: rm -rf ~/private_keys
+
+      #########################
+      # PHASE 8: SUMMARY
+      #########################
 
       - name: Deployment Summary
         if: success()
@@ -222,8 +236,21 @@ jobs:
           echo "============================================="
           echo "  iOS TestFlight Deployment Successful"
           echo "============================================="
-          echo "  App: Shifa Doctor"
           echo "  Bundle ID: uz.shifa.doc"
-          echo "  Version: ${{ steps.version.outputs.version_name }}"
           echo "  Build: ${{ steps.version.outputs.build_number }}"
+          echo "  Branch: ${{ github.ref_name }}"
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Apple processing: ~10-20 minutes"
+          echo "============================================="
+
+      - name: Failure Summary
+        if: failure()
+        run: |
+          echo "============================================="
+          echo "  iOS TestFlight Deployment FAILED"
+          echo "============================================="
+          echo "  Common issues:"
+          echo "    - Missing or invalid secrets"
+          echo "    - Code signing problems"
+          echo "    - Build number already used (raise BUILD_NUMBER_OFFSET)"
           echo "============================================="

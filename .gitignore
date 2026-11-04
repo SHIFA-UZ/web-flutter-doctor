@@ -71,3 +71,33 @@ build/
 !CLAUDE.md
 !README.md
 !docs/**/*.md
+
+# Kotlin Multiplatform app (doc-app2.0)
+.kotlin/
+.gradle/
+local.properties
+xcuserdata
+!src/**/build/
+iosApp/Configuration/Secrets.xcconfig
+iosApp/build/
+iosApp/fastlane/profiles/
+iosApp/fastlane/report.xml
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+captures
+.externalNativeBuild
+.cxx
+keystore.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+google-play-service-account.json
+# Roborazzi comparison files (temporary)
+composeApp/screenshots/*_compare.png
+composeApp/screenshots/*_actual.png
+composeApp/screenshots/*_diff.png

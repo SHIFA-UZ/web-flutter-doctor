@@ -1,20 +1,18 @@
 name: Deploy Doctor App to Google Play
 
+# Tests run on pull requests (ci.yml), not here.
 on:
   workflow_dispatch:
     inputs:
-      skip_tests:
-        description: 'Skip Flutter tests'
-        required: false
-        type: boolean
-        default: false
       track:
         description: 'Play track'
         required: true
         type: choice
         options:
           - internal
+          - alpha
           - beta
+          - production
         default: internal
 
 concurrency:
@@ -22,41 +20,26 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.35.5'
   JAVA_VERSION: '17'
-  API_BASE_URL: 'https://api.shifa.uz'
+  # versionCode = offset + github.run_number. The Flutter app used 1 + run_number (last upload: run 8 =
+  # versionCode 9). Same file name, same run counter, same offset: one rising sequence for both apps.
+  VERSION_CODE_OFFSET: 1
 
 jobs:
   build-and-deploy:
     name: Build & Deploy Shifa Doctor
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - name: Install Flutter dependencies
-        run: flutter pub get
-
-      - name: Run tests
-        if: ${{ !inputs.skip_tests }}
-        run: |
-          flutter analyze --no-fatal-infos --no-fatal-warnings
-          flutter test
+      - uses: gradle/actions/setup-gradle@v4
 
       - name: Decode Firebase Android config
         env:
@@ -66,15 +49,14 @@ jobs:
             echo "::error::DOCTOR_FIREBASE_ANDROID_CONFIG_BASE64 secret not found!"
             exit 1
           fi
-          echo "$FIREBASE_ANDROID_CONFIG_BASE64" | base64 --decode > android/app/google-services.json
+          echo "$FIREBASE_ANDROID_CONFIG_BASE64" | base64 --decode > composeApp/google-services.json
 
       - name: Calculate version
         id: version
         run: |
-          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
-          BUILD_NUMBER=$(( 1 + ${{ github.run_number }} ))
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          BUILD_NUMBER=$(( VERSION_CODE_OFFSET + ${{ github.run_number }} ))
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "versionCode: $BUILD_NUMBER"
 
       - name: Decode Android keystore
         env:
@@ -85,13 +67,13 @@ jobs:
             exit 1
           fi
           # Avoid echo mangling; strip whitespace/newlines from the secret.
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n\t ' | base64 --decode > android/app/upload-keystore.jks
-          if [ ! -s android/app/upload-keystore.jks ]; then
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n\t ' | base64 --decode > composeApp/upload-keystore.jks
+          if [ ! -s composeApp/upload-keystore.jks ]; then
             echo "::error::Decoded keystore is empty. Re-encode DOCTOR_ANDROID_KEYSTORE_BASE64."
             exit 1
           fi
 
-      - name: Create key.properties
+      - name: Create keystore.properties
         env:
           STORE_PASSWORD: ${{ secrets.DOCTOR_ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.DOCTOR_ANDROID_KEY_ALIAS }}
@@ -105,8 +87,8 @@ jobs:
           python3 - <<'PY'
           import os
           from pathlib import Path
-          Path("android/key.properties").write_text(
-              "storeFile=upload-keystore.jks\n"
+          Path("keystore.properties").write_text(
+              "storeFile=composeApp/upload-keystore.jks\n"
               f"storePassword={os.environ['STORE_PASSWORD']}\n"
               f"keyAlias={os.environ['KEY_ALIAS']}\n"
               f"keyPassword={os.environ['KEY_PASSWORD']}\n",
@@ -119,29 +101,24 @@ jobs:
           STORE_PASSWORD: ${{ secrets.DOCTOR_ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.DOCTOR_ANDROID_KEY_ALIAS }}
         run: |
-          if ! keytool -list \
-            -keystore android/app/upload-keystore.jks \
-            -storepass "$STORE_PASSWORD" \
+          if ! keytool -list -keystore composeApp/upload-keystore.jks -storepass "$STORE_PASSWORD" \
             -alias "$KEY_ALIAS" >/dev/null 2>&1; then
             echo "::error::Cannot unlock keystore with DOCTOR_ANDROID_KEYSTORE_PASSWORD + DOCTOR_ANDROID_KEY_ALIAS."
-            echo "Local check: keytool -list -keystore shifa-doc-upload-keystore.jks -alias YOUR_ALIAS"
             exit 1
           fi
-          echo "Keystore unlock OK for alias=$KEY_ALIAS"
+          echo "Keystore unlock OK"
 
       - name: Build Android App Bundle
-        run: |
-          flutter build appbundle \
-            --release \
-            --dart-define=ENVIRONMENT=production \
-            --dart-define=API_BASE_URL=${{ env.API_BASE_URL }} \
-            --build-name=${{ steps.version.outputs.version_name }} \
-            --build-number=${{ steps.version.outputs.build_number }}
+        run: ./gradlew :composeApp:bundleRelease -PversionBuild=${{ steps.version.outputs.build_number }} --no-daemon
 
       - name: Decode Google Play service account key
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64: ${{ secrets.DOCTOR_GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}
         run: |
+          if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64" ]; then
+            echo "::error::DOCTOR_GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 secret not found!"
+            exit 1
+          fi
           echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64" | base64 --decode > google-play-service-account.json
 
       - name: Upload to Google Play
@@ -149,14 +126,27 @@ jobs:
         with:
           serviceAccountJson: google-play-service-account.json
           packageName: com.shifa.doc
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          releaseFiles: composeApp/build/outputs/bundle/release/composeApp-release.aab
           track: ${{ inputs.track }}
           status: completed
+
+      - name: Upload AAB artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctor-release-${{ steps.version.outputs.build_number }}
+          path: composeApp/build/outputs/bundle/release/composeApp-release.aab
+          retention-days: 30
 
       - name: Cleanup sensitive files
         if: always()
         run: |
-          rm -f android/app/google-services.json
-          rm -f android/app/upload-keystore.jks
-          rm -f android/key.properties
+          rm -f composeApp/upload-keystore.jks
+          rm -f keystore.properties
           rm -f google-play-service-account.json
+
+      - name: Failure Summary
+        if: failure()
+        run: |
+          echo "Common issues: missing or invalid secrets, keystore signing, versionCode already used"
+          echo "(raise VERSION_CODE_OFFSET), service account missing permissions."

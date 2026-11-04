@@ -1,0 +1,30 @@
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+tab_width = 4
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_size = 4
+continuation_indent_size = 4
+max_line_length = 120
+# Compose functions are PascalCase.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# Trailing comments on parameters and arguments (`val x: Int? = null, // why`) are our style.
+ktlint_standard_value-parameter-comment = disabled
+ktlint_standard_value-argument-comment = disabled
+# Theme files are named after Figma (Color.kt holds ShifaColors).
+ktlint_standard_filename = disabled
+# The generated Compose resources (Res.string.x, Res.drawable.x) are imported on demand.
+ij_kotlin_packages_to_use_import_on_demand = shifa.composeapp.generated.resources.*
+
+[*.md]
+max_line_length = off
+trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_size = 2
