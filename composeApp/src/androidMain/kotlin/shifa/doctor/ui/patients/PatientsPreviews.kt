@@ -110,3 +110,33 @@ internal fun PatientDetailSparsePreview() =
 @Composable
 internal fun PatientDetailNotFoundPreview() =
     PreviewTheme { PatientDetailContent(PatientDetailUiState(notFound = true), PatientDetailActions()) }
+
+// PAT-06: Medical info with a second phone typed (Save shown) and allergies changed.
+@Composable
+internal fun PatientMedicalPreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(
+                record.copy(chronicDisease = "Diabetes (Type 2)", email = "jasur@example.com", address = "Chilonzor 9"),
+                today = today,
+                tab = RecordTab.Medical,
+                phones = listOf("+998 93 555 12 34", "+998 90"),
+                allergies = "Lidocaine, latex",
+            ),
+            PatientDetailActions(),
+        )
+    }
+
+// PAT-06: "Edit details" (the create sheet, filled; Save once something changed).
+@Composable
+internal fun EditPatientPreview() =
+    PreviewTheme {
+        val form = NewPatient.of(record)
+        CreatePatientTray(
+            CreatePatientUiState(form.copy(allergies = "Lidocaine, latex"), initial = form),
+            {},
+            {},
+            {},
+            {},
+        )
+    }

@@ -27,7 +27,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +60,7 @@ import shifa.doctor.data.patients.FavoritesRepository
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.favoritesRepository
 import shifa.doctor.data.patients.patientsRepository
+import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accountActive
@@ -74,6 +77,7 @@ import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.birthDate
 import shifa.doctor.generated.resources.bloodGroup
 import shifa.doctor.generated.resources.chronicDisease
+import shifa.doctor.generated.resources.chronicDiseaseUpdated
 import shifa.doctor.generated.resources.clinicalSummary
 import shifa.doctor.generated.resources.copied
 import shifa.doctor.generated.resources.copy
@@ -107,17 +111,20 @@ import shifa.doctor.generated.resources.overview
 import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.patientAccountExists
 import shifa.doctor.generated.resources.patientAppAccess
+import shifa.doctor.generated.resources.patientDetailsSaved
 import shifa.doctor.generated.resources.patientId
 import shifa.doctor.generated.resources.patientLoadFailed
 import shifa.doctor.generated.resources.patientNotFound
 import shifa.doctor.generated.resources.patientWithChronicDisease
 import shifa.doctor.generated.resources.phone
+import shifa.doctor.generated.resources.phoneUpdated
 import shifa.doctor.generated.resources.reminder1Hour
 import shifa.doctor.generated.resources.reminder24Hours
 import shifa.doctor.generated.resources.reminderTiming
 import shifa.doctor.generated.resources.removeFromFavorites
 import shifa.doctor.generated.resources.reportsSmsNotAllowed
 import shifa.doctor.generated.resources.retry
+import shifa.doctor.generated.resources.saved
 import shifa.doctor.generated.resources.shareCredentialsWithPatient
 import shifa.doctor.generated.resources.smsReminderDescription
 import shifa.doctor.generated.resources.smsReminderEnabled
@@ -134,6 +141,7 @@ import shifa.doctor.generated.resources.username
 import shifa.doctor.ui.calendar.longDate
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.profile.DiscardChangesSheet
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
@@ -155,7 +163,9 @@ import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.ui.widgets.TabItem
 import shifa.doctor.ui.widgets.UnderlineTabs
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.tr
 
@@ -186,14 +196,49 @@ data class PatientDetailUiState(
     val lastVisit: LocalDate? = null,
     val favorite: Boolean = false,
     val smsAllowed: Boolean = false,
-    val smsSaving: Boolean = false,
+    val saving: Boolean = false,
     val testing: Boolean = false,
     val creatingAccount: Boolean = false,
     // The new login, shown once in a dialog that only Done closes.
     val account: PatientAccount? = null,
     val chronicWarning: Boolean = false,
     val tab: RecordTab = RecordTab.Overview,
-)
+    // Medical info (PAT-06): phones and allergies are typed, then saved; null = not edited (the patient's own).
+    val phones: List<String>? = null,
+    val allergies: String? = null,
+    val phonesTried: Boolean = false,
+    val phoneTaken: Boolean = false,
+    val askRemovePhones: Boolean = false,
+    // Leaving the tab (to [leaveTo], or back when null) with typed phones or allergies asks first.
+    val askDiscard: Boolean = false,
+    val leaveTo: RecordTab? = null,
+    // "Edit details" sheet open (a nonce: a fresh form each time).
+    val editing: Long? = null,
+) {
+    val phoneRows: List<String> get() = phones ?: patient?.allPhones?.ifEmpty { null } ?: listOf("")
+
+    val allergyText: String get() = allergies ?: patient?.allergies.orEmpty()
+
+    val phonesDirty: Boolean
+        get() = phones != null && phones.map(String::trim).filter(String::isNotEmpty) != patient?.allPhones
+
+    val allergiesDirty: Boolean get() = allergies != null && allergies.trim() != patient?.allergies?.trim().orEmpty()
+
+    val medicalDirty: Boolean get() = phonesDirty || allergiesDirty
+
+    /** Typed phone rows that aren't phone numbers, once Save was tried. */
+    val badPhones: Set<Int>
+        get() =
+            if (!phonesTried) {
+                emptySet()
+            } else {
+                phoneRows.indices.filter {
+                    phoneRows[it].isNotBlank() && PhoneE164.normalize(
+                        phoneRows[it],
+                    ) == null
+                }.toSet()
+            }
+}
 
 /** The signed-in doctor as this screen needs them: id (favourites), practice zone (dates), SMS allowed. */
 data class DetailDoctor(
@@ -232,7 +277,7 @@ class PatientDetailViewModel(
             // A fresher copy (an edit, a refresh) replaces the shown one, but not over an SMS change being saved.
             repo.patients.collect { list ->
                 val fresh = list?.firstOrNull { it.id == id } ?: return@collect
-                if (!_state.value.smsSaving) _state.update { it.copy(patient = fresh) }
+                if (!_state.value.saving) _state.update { it.copy(patient = fresh) }
             }
         }
         viewModelScope.launch {
@@ -258,7 +303,7 @@ class PatientDetailViewModel(
         viewModelScope.launch {
             repo.patient(id).fold(
                 onSuccess = { p ->
-                    _state.update { it.copy(patient = if (it.smsSaving) it.patient else p, loading = false) }
+                    _state.update { it.copy(patient = if (it.saving) it.patient else p, loading = false) }
                     warnOnce(p)
                 },
                 onFailure = { e ->
@@ -291,18 +336,142 @@ class PatientDetailViewModel(
 
     fun ui(change: (PatientDetailUiState) -> PatientDetailUiState) = _state.update(change)
 
-    fun select(tab: RecordTab) = _state.update { it.copy(tab = tab) }
+    /** Typed phones or allergies make leaving Medical info ask first (flow 06/05 §7). */
+    fun select(tab: RecordTab) =
+        _state.update {
+            if (it.tab == RecordTab.Medical && tab != it.tab && it.medicalDirty) {
+                it.copy(askDiscard = true, leaveTo = tab)
+            } else {
+                it.copy(tab = tab)
+            }
+        }
+
+    /** Back: false while it asks to discard first. */
+    fun back(): Boolean {
+        if (!_state.value.medicalDirty) return true
+        _state.update { it.copy(askDiscard = true, leaveTo = null) }
+        return false
+    }
+
+    /** Drops the typed phones and allergies and goes where the doctor was going (the screen goes back when null). */
+    fun discard(): RecordTab? {
+        val to = _state.value.leaveTo
+        _state.update {
+            it.copy(
+                phones = null,
+                allergies = null,
+                phonesTried = false,
+                phoneTaken = false,
+                askDiscard = false,
+                leaveTo = null,
+                tab = to ?: it.tab,
+            )
+        }
+        return to
+    }
+
+    fun editPhones(rows: List<String>) =
+        _state.update { if (it.saving) it else it.copy(phones = rows, phoneTaken = false) }
+
+    fun editAllergies(text: String) = _state.update { if (it.saving) it else it.copy(allergies = text) }
+
+    /** The whole list in E.164, once each; removing every phone asks first ([confirmed]). */
+    fun savePhones(confirmed: Boolean = false) {
+        val s = _state.value
+        val patient = s.patient ?: return
+        if (s.saving || !s.phonesDirty) return
+        val bad = s.phoneRows.any { it.isNotBlank() && PhoneE164.normalize(it) == null }
+        if (bad) return _state.update { it.copy(phonesTried = true) }
+        val phones = s.phoneRows.mapNotNull { PhoneE164.normalize(it) }.distinct()
+        if (phones.isEmpty() && patient.allPhones.isNotEmpty() && !confirmed) {
+            return _state.update { it.copy(askRemovePhones = true) }
+        }
+        _state.update { it.copy(askRemovePhones = false) }
+        patch(
+            PatientRequest(phones = phones, phone = phones.firstOrNull().orEmpty()),
+            Res.string.phoneUpdated,
+            done = { it.copy(phones = null, phonesTried = false, phoneTaken = false) },
+            conflict = { it.copy(phoneTaken = true) },
+        )
+    }
+
+    fun saveAllergies() {
+        val s = _state.value
+        if (s.saving || !s.allergiesDirty) return
+        val text = s.allergyText.trim()
+        patch(
+            PatientRequest(allergies = text),
+            Res.string.saved,
+            { it.copy(allergies = text) },
+            done = { it.copy(allergies = null) },
+            // Rolled back like the dropdowns (flow 06/05 §5): the field shows the stored value again.
+            failed = { it.copy(allergies = null) },
+        )
+    }
+
+    /** "None" clears it on the server (""); the wire value is the English name (flow 06/05 §4). */
+    fun setChronic(disease: ChronicDisease) {
+        val wire = if (disease == ChronicDisease.None) "" else disease.wire
+        patch(
+            PatientRequest(chronicDisease = wire),
+            Res.string.chronicDiseaseUpdated,
+            { it.copy(chronicDisease = wire) },
+        )
+    }
+
+    fun setGender(gender: Gender?) {
+        val wire = gender?.wire.orEmpty()
+        patch(PatientRequest(gender = wire), Res.string.saved, { it.copy(gender = wire) })
+    }
+
+    fun setBloodGroup(group: String?) {
+        val wire = group.orEmpty()
+        patch(PatientRequest(bloodGroup = wire), Res.string.saved, { it.copy(bloodGroup = wire) })
+    }
+
+    fun openEdit() =
+        _state.update {
+            if (it.saving || it.patient == null) it else it.copy(editing = currentInstant().toEpochMilliseconds())
+        }
+
+    /** The "Edit details" sheet saved [p]. */
+    fun edited(p: Patient) =
+        _state.update {
+            // The sheet sends only what changed: typing left in the tab is superseded only where the sheet changed it.
+            val old = it.patient
+            val phonesChanged = old?.allPhones != p.allPhones
+            val allergiesChanged = old?.allergies != p.allergies
+            it.copy(
+                patient = p,
+                editing = null,
+                phones = it.phones.takeUnless { phonesChanged },
+                allergies = it.allergies.takeUnless { allergiesChanged },
+                phonesTried = it.phonesTried && !phonesChanged,
+                phoneTaken = it.phoneTaken && !phonesChanged,
+                banner = CodeBanner(Res.string.patientDetailsSaved, error = false),
+            )
+        }
+
+    fun closeEdit() = _state.update { it.copy(editing = null) }
 
     fun toggleFavorite() = favorites.toggle(id)
 
     fun acknowledgeChronic() = _state.update { it.copy(chronicWarning = false) }
 
-    fun setSms(on: Boolean) = saveSms(PatientRequest(smsReminderEnabled = on)) { it.copy(smsReminderEnabled = on) }
+    fun setSms(on: Boolean) = sms(PatientRequest(smsReminderEnabled = on)) { it.copy(smsReminderEnabled = on) }
 
     fun setSmsHours(hours: Int) =
-        saveSms(PatientRequest(smsReminderHoursBefore = hours)) {
+        sms(PatientRequest(smsReminderHoursBefore = hours)) {
             it.copy(smsReminderHoursBefore = kotlinx.serialization.json.JsonPrimitive(hours))
         }
+
+    private fun sms(
+        request: PatientRequest,
+        local: (Patient) -> Patient,
+    ) {
+        if (_state.value.patient?.allPhones.isNullOrEmpty()) return
+        patch(request, Res.string.smsReminderSaved, local)
+    }
 
     fun testSms() {
         if (_state.value.testing) return
@@ -358,31 +527,47 @@ class PatientDetailViewModel(
 
     fun closeAccount() = _state.update { it.copy(account = null) }
 
-    private fun saveSms(
+    /**
+     * One field's PATCH (only that field is sent, so a concurrent edit of another field isn't overwritten), one at a
+     * time: shown at once ([local]), rolled back on failure. [done] runs after a save, [conflict] on a 409 instead of
+     * the banner (a phone another patient has).
+     */
+    private fun patch(
         request: PatientRequest,
-        local: (Patient) -> Patient,
+        saved: StringResource,
+        local: (Patient) -> Patient = { it },
+        done: (PatientDetailUiState) -> PatientDetailUiState = { it },
+        conflict: ((PatientDetailUiState) -> PatientDetailUiState)? = null,
+        failed: (PatientDetailUiState) -> PatientDetailUiState = { it },
     ) {
         val before = _state.value.patient ?: return
-        if (_state.value.smsSaving || before.allPhones.isEmpty()) return
-        _state.update { it.copy(patient = local(before), smsSaving = true, banner = null) }
+        if (_state.value.saving) return
+        _state.update { it.copy(patient = local(before), saving = true, banner = null) }
         viewModelScope.launch {
             repo.update(id, request).fold(
                 onSuccess = { p ->
                     _state.update {
-                        it.copy(
-                            patient = p,
-                            smsSaving = false,
-                            banner = CodeBanner(Res.string.smsReminderSaved, error = false),
-                        )
+                        done(it.copy(patient = p, saving = false, banner = CodeBanner(saved, error = false)))
                     }
                 },
                 onFailure = { e ->
                     _state.update {
-                        it.copy(
-                            patient = before,
-                            smsSaving = false,
-                            banner = CodeBanner(e.toUserMessage(Res.string.failedToUpdate), requestId = e.requestId),
-                        )
+                        val back = it.copy(patient = before, saving = false)
+                        when {
+                            // Deleted elsewhere: the record leaves, as on a read (flow 06/05 §8).
+                            e is ApiException.NotFound -> back.copy(notFound = true)
+                            conflict != null && e is ApiException.Conflict -> conflict(back)
+                            else ->
+                                failed(
+                                    back.copy(
+                                        banner =
+                                            CodeBanner(
+                                                e.toUserMessage(Res.string.failedToUpdate),
+                                                requestId = e.requestId,
+                                            ),
+                                    ),
+                                )
+                        }
                     }
                 },
             )
@@ -406,8 +591,10 @@ data class PatientDetailActions(
     val smsHours: (Int) -> Unit = {},
     val testSms: () -> Unit = {},
     val createAccount: () -> Unit = {},
+    val medical: MedicalActions = MedicalActions(),
 )
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PatientDetailScreen(
     id: Long,
@@ -416,10 +603,12 @@ fun PatientDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.load() }
+    val back = { if (viewModel.back()) onBack() }
+    BackHandler(onBack = back)
     PatientDetailContent(
         state,
         PatientDetailActions(
-            back = onBack,
+            back = back,
             refresh = { viewModel.load(refresh = true) },
             ui = viewModel::ui,
             select = viewModel::select,
@@ -428,9 +617,44 @@ fun PatientDetailScreen(
             smsHours = viewModel::setSmsHours,
             testSms = viewModel::testSms,
             createAccount = viewModel::createAccount,
+            medical =
+                MedicalActions(
+                    phones = viewModel::editPhones,
+                    savePhones = { viewModel.savePhones() },
+                    allergies = viewModel::editAllergies,
+                    saveAllergies = viewModel::saveAllergies,
+                    chronic = viewModel::setChronic,
+                    gender = viewModel::setGender,
+                    bloodGroup = viewModel::setBloodGroup,
+                    editDetails = viewModel::openEdit,
+                ),
         ),
     )
-    state.patient?.chronic?.takeIf { state.chronicWarning }?.let { ChronicWarning(it, viewModel::acknowledgeChronic) }
+    val patient = state.patient
+    val editing = state.editing
+    if (patient != null && editing != null) {
+        CreatePatientSheet(
+            editing,
+            viewModel::edited,
+            viewModel::closeEdit,
+            editing = patient,
+            onGone = { viewModel.ui { it.copy(editing = null, notFound = true) } },
+        )
+    }
+    if (state.askDiscard) {
+        DiscardChangesSheet(
+            onDiscard = { if (viewModel.discard() == null) onBack() },
+            onKeep = { viewModel.ui { it.copy(askDiscard = false, leaveTo = null) } },
+        )
+    }
+    if (state.askRemovePhones) {
+        RemovePhones({ viewModel.savePhones(confirmed = true) }) {
+            viewModel.ui { it.copy(askRemovePhones = false) }
+        }
+    }
+    state.patient?.chronic?.takeIf {
+        state.chronicWarning
+    }?.let { ChronicWarning(chronicLabel(it), viewModel::acknowledgeChronic) }
     state.account?.let { Credentials(it, viewModel::closeAccount) }
 }
 
@@ -475,6 +699,7 @@ fun PatientDetailContent(
                         Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {
                             when (state.tab) {
                                 RecordTab.Overview -> Overview(patient, state, actions)
+                                RecordTab.Medical -> MedicalInfo(patient, state, actions.medical)
                                 else -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_users_22)
                             }
                         }
@@ -534,7 +759,7 @@ private fun Header(
                 StatusPill(p.status)
             }
             if (p.atRisk) IconChip(tr(Res.string.aiRiskDetected), Res.drawable.ic_sparkles_16, warning = true)
-            p.chronic?.let { IconChip(it, Res.drawable.ic_alert_16, warning = false) }
+            p.chronic?.let { IconChip(chronicLabel(it), Res.drawable.ic_alert_16, warning = false) }
         }
         Text(
             state.lastVisit?.let { tr(Res.string.lastVisitOn, longDate(it)) } ?: tr(Res.string.noRecentVisit),
@@ -612,7 +837,7 @@ private fun Stats(
 
 /** The stored code or word in the app's language; anything else as written. */
 @Composable
-private fun languageLabel(raw: String?): String? =
+internal fun languageLabel(raw: String?): String? =
     PatientLanguage.of(raw)?.let { tr(it.label) } ?: raw?.trim()?.takeIf(String::isNotEmpty)
 
 @Composable
@@ -622,7 +847,11 @@ private fun Overview(
     actions: PatientDetailActions,
 ) {
     Card(tr(Res.string.clinicalSummary)) {
-        SummaryRow(tr(Res.string.chronicDisease), p.chronic ?: tr(Res.string.none), p.chronic != null)
+        SummaryRow(
+            tr(Res.string.chronicDisease),
+            p.chronic?.let { chronicLabel(it) } ?: tr(Res.string.none),
+            p.chronic != null,
+        )
         val allergies = p.allergies?.trim()?.takeIf(String::isNotEmpty)
         SummaryRow(tr(Res.string.allergies), allergies ?: tr(Res.string.noKnownAllergies), allergies != null)
         SummaryRow(
@@ -674,7 +903,7 @@ private fun Sms(
     actions: PatientDetailActions,
 ) = Card(tr(Res.string.smsReminderTitle)) {
     val phone = p.allPhones.isNotEmpty()
-    val busy = state.smsSaving
+    val busy = state.saving
     Text(tr(Res.string.smsReminderDescription), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
     if (!phone) {
         Text(
@@ -725,7 +954,7 @@ private fun Card(
 }
 
 @Composable
-private fun SummaryRow(
+internal fun SummaryRow(
     label: String,
     value: String,
     alert: Boolean,

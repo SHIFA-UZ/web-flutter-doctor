@@ -2465,5 +2465,10 @@
   "removeFromFavorites": "Sevimlilardan olib tashlash",
   "tabComesLater": "Yozuvning bu qismi tez orada qo'shiladi.",
   "accountActive": "Hisob faol",
-  "lastVisitOn": "Oxirgi tashrif: {date}"
+  "lastVisitOn": "Oxirgi tashrif: {date}",
+  "editDetails": "Ma'lumotlarni tahrirlash",
+  "patientDetailsSaved": "Bemor ma'lumotlari saqlandi",
+  "chronicWarningNote": "Bu bemorni ochganda ogohlantirish ko'rsatiladi.",
+  "removeLastPhoneTitle": "Oxirgi telefon raqami o'chirilsinmi?",
+  "removeLastPhoneBody": "Telefon raqamisiz bemor SMS eslatmalarini olmaydi."
 }

@@ -145,3 +145,36 @@ appointment reminders). Phone layout: a pushed screen from the directory (`Shell
   403/503; the account shown once and 409), `PatientsViewModelTest` on the shared favourites; screenshots
   `PatientDetail_overview`, `PatientDetail_sparse`, `PatientDetail_notFound`. Checked against dev on the emulator
   (read only; the star set and cleared).
+
+## PAT-06 · Medical info
+
+Built 2026-11-04. Flow `06/05-edit-patient-medical-info.md`; spec 06 §2.4. Board `DaPatients`, `patDetail` Medical info
+(General Information with "Edit details", phones, chronic disease with its note, gender and blood group side by side
+on the board, stacked here on a phone, allergies with Save).
+
+- **Tab** (`ui/patients/PatientMedical.kt`): read-only rows (Patient ID as P-00042, birth date, email, the address as
+  "Street, City, District, Region" or the legacy address, language; empty rows left out), then the fields kept here.
+  **Dropdowns save at once** (chronic disease, gender, blood group; "None" / "Not specified" send "" to clear, checked
+  on dev); **phones and allergies save with their button** (allergies also on the keyboard's Done; Flutter lost
+  allergy text left without Done). Only the changed field is sent, so another field edited elsewhere isn't
+  overwritten. One save at a time: every input is locked under a thin bar; a failure rolls the value back with
+  "Failed to update" and the request id.
+- **Phones:** the whole list in E.164, once each (the backend sets `phone` from `phones`, checked on dev); a bad row is
+  marked, a phone another patient has (409) keeps the typing and says so; saving with no phone left asks first ("SMS
+  reminders stop"), here and in Edit details. A save answered 404 shows "Patient not found" (deleted elsewhere).
+- **Chronic disease:** the 22 conditions in the app's language (`ChronicDisease`, the English name stays on the wire);
+  a stored value outside the list shows as written until changed (Flutter couldn't show it); "A warning will be shown
+  when opening this patient." under a set condition. The header, summary and warning dialog use the same labels now.
+- **Leaving with typed phones or allergies** (another tab, Back, the system back) asks "Discard changes?". A pull to
+  refresh keeps the typing.
+- **Edit details** (the board's button; flow §12 "no way to edit name, email…"): the create sheet (PAT-04), filled,
+  titled "Edit details", Save enabled once something changed, sending only the changed fields as a PATCH (a cleared
+  text as ""); "Patient details saved". Typing left in the tab survives unless the sheet changed that field; a 404
+  there shows "Patient not found" too. A birth date can be changed but not cleared there (a PATCH keeps a null).
+  Address edits the legacy one-line address; the structured location parts aren't edited in the app (as before).
+- **Not built:** the prophylaxis card (clinic scope): the detail is only opened from the doctor's own directory today;
+  it comes with CLINIC-06, which opens it with a clinic id (the repository calls exist since PAT-02).
+- **Tests:** `PatientDetailViewModelTest` (+4: dropdown saves with clearing and rollback; a 404 on save; phones: bad row, 409, saved
+  list, last-phone question; the discard guard on tab and back, allergies save and rollback, Edit details over drafts),
+  `CreatePatientViewModelTest` (+3: edit filled, only changes sent as PATCH; removing every phone asks; a 404 hands back); screenshots `PatientDetail_medical`, `Patients_edit`. Checked on the emulator
+  against dev (read only in the app; the clearing and phone rules checked with direct requests, restored).

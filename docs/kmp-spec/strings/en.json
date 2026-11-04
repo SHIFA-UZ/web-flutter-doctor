@@ -2465,5 +2465,10 @@
   "removeFromFavorites": "Remove from favourites",
   "tabComesLater": "This part of the record is on its way.",
   "accountActive": "Account active",
-  "lastVisitOn": "Last visit: {date}"
+  "lastVisitOn": "Last visit: {date}",
+  "editDetails": "Edit details",
+  "patientDetailsSaved": "Patient details saved",
+  "chronicWarningNote": "A warning will be shown when opening this patient.",
+  "removeLastPhoneTitle": "Remove the last phone number?",
+  "removeLastPhoneBody": "Without a phone number the patient gets no SMS reminders."
 }

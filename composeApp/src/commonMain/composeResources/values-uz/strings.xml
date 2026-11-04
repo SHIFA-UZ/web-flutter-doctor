@@ -359,6 +359,7 @@
     <string name="chronicDisease_sickleCellDisease">O'roq hujayrali anemiya</string>
     <string name="chronicDisease_thalassemia">Talassemiya</string>
     <string name="chronicDisease_ulcerativeColitis">Yaraqli kolit</string>
+    <string name="chronicWarningNote">Bu bemorni ochganda ogohlantirish ko'rsatiladi.</string>
     <string name="city">Shahar</string>
     <string name="clearAll">Hammasini tozalash</string>
     <string name="clearFilters">Filtrlarni tozalash</string>
@@ -968,6 +969,7 @@
     <string name="durationMin">%1$s daqiqa</string>
     <string name="durationMinutes">%1$s daq</string>
     <string name="edit">Tahrirlash</string>
+    <string name="editDetails">Ma'lumotlarni tahrirlash</string>
     <string name="editGroup">Guruhni tahrirlash</string>
     <string name="editKey">Tahrirlash</string>
     <string name="editLocation">Joylashuvni tahrirlash</string>
@@ -1734,6 +1736,7 @@
     <string name="patientDetailTabProfile">Profil</string>
     <string name="patientDetailTabProphylaxis">Profilaktika</string>
     <string name="patientDetails">Bemor tafsilotlari</string>
+    <string name="patientDetailsSaved">Bemor ma'lumotlari saqlandi</string>
     <string name="patientEngagementBreakdown">Bemorlar faolligi taqsimoti</string>
     <string name="patientFormSaveAgainToRefreshPdf">PDF faylida imzo bo'lishi uchun formani qayta saqlang.</string>
     <string name="patientFormSignatureReceived">Bemor imzosi qabul qilindi.</string>
@@ -1901,6 +1904,8 @@
     <string name="remove">O'chirish</string>
     <string name="removeFromFavorites">Sevimlilardan olib tashlash</string>
     <string name="removeItem">%1$s ni olib tashlash</string>
+    <string name="removeLastPhoneBody">Telefon raqamisiz bemor SMS eslatmalarini olmaydi.</string>
+    <string name="removeLastPhoneTitle">Oxirgi telefon raqami o'chirilsinmi?</string>
     <string name="removePriceRow">Narxni olib tashlash</string>
     <string name="removeRow">Qatorni olib tashlash</string>
     <string name="removeService">Xizmatni olib tashlash</string>

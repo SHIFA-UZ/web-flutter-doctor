@@ -49,6 +49,7 @@ import shifa.doctor.generated.resources.createNewPatient
 import shifa.doctor.generated.resources.createPatient
 import shifa.doctor.generated.resources.createPatientFailed
 import shifa.doctor.generated.resources.createPatientInvalid
+import shifa.doctor.generated.resources.editDetails
 import shifa.doctor.generated.resources.email
 import shifa.doctor.generated.resources.english
 import shifa.doctor.generated.resources.female
@@ -72,6 +73,7 @@ import shifa.doctor.generated.resources.patientPhoneExists
 import shifa.doctor.generated.resources.phoneNumber
 import shifa.doctor.generated.resources.remove
 import shifa.doctor.generated.resources.russian
+import shifa.doctor.generated.resources.save
 import shifa.doctor.generated.resources.selectDate
 import shifa.doctor.generated.resources.tajik
 import shifa.doctor.generated.resources.turkmen
@@ -145,7 +147,21 @@ data class NewPatient(
     val allergies: String = "",
     val birthDate: LocalDate? = null,
 ) {
-    val dirty: Boolean get() = this != NewPatient()
+    companion object {
+        /** The form filled from a patient ("Edit details", flow 06/05 §7); an unknown language keeps the default. */
+        fun of(p: Patient) =
+            NewPatient(
+                name = p.name,
+                phones = p.allPhones.ifEmpty { listOf("") },
+                email = p.email.orEmpty(),
+                address = p.address.orEmpty(),
+                language = PatientLanguage.of(p.language) ?: PatientLanguage.Uzbek,
+                gender = Gender.entries.firstOrNull { it.wire.equals(p.gender?.trim(), ignoreCase = true) },
+                bloodGroup = p.bloodGroup?.trim()?.takeIf { it in BLOOD_GROUPS },
+                allergies = p.allergies.orEmpty(),
+                birthDate = p.birth,
+            )
+    }
 }
 
 data class CreatePatientUiState(
@@ -158,7 +174,14 @@ data class CreatePatientUiState(
     val pickingDate: Boolean = false,
     val askDiscard: Boolean = false,
     val created: Patient? = null,
+    // Editing an existing patient: the form it started from (only what changed is sent).
+    val initial: NewPatient? = null,
+    // Editing away the patient's every phone asks first (SMS reminders stop; flow 06/05 §8).
+    val askRemovePhones: Boolean = false,
+    val gone: Boolean = false,
 ) {
+    val dirty: Boolean get() = form != (initial ?: NewPatient())
+
     val nameMissing: Boolean get() = form.name.isBlank()
 
     /** Each typed phone row that isn't a phone number (empty rows are just dropped). */
@@ -180,8 +203,14 @@ data class CreatePatientUiState(
  */
 class CreatePatientViewModel(
     private val repo: PatientsRepository = patientsRepository,
+    // PAT-06 "Edit details": the same sheet, filled, saving with a PATCH of the changed fields.
+    private val editing: Patient? = null,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(CreatePatientUiState())
+    private val _state =
+        MutableStateFlow(
+            editing?.let { NewPatient.of(it) }?.let { CreatePatientUiState(form = it, initial = it) }
+                ?: CreatePatientUiState(),
+        )
     val state: StateFlow<CreatePatientUiState> = _state.asStateFlow()
 
     fun edit(change: (NewPatient) -> NewPatient) =
@@ -193,7 +222,7 @@ class CreatePatientViewModel(
     fun close(): Boolean {
         val s = _state.value
         if (s.saving) return false
-        if (s.form.dirty && !s.askDiscard) return false.also { _state.update { it.copy(askDiscard = true) } }
+        if (s.dirty && !s.askDiscard) return false.also { _state.update { it.copy(askDiscard = true) } }
         return true
     }
 
@@ -215,13 +244,61 @@ class CreatePatientViewModel(
         )
     }
 
-    fun create() {
+    /**
+     * What an edit sends: only the fields that differ from [initial]; a cleared text goes as "" (PATCH keeps a null).
+     * A birth date can't be cleared here (the sheet hides that while editing a patient who has one).
+     */
+    fun changes(
+        initial: NewPatient,
+        form: NewPatient,
+    ): PatientRequest {
+        val a = request(initial)
+        val b = request(form)
+
+        fun text(
+            x: String?,
+            y: String?,
+        ) = y.orEmpty().takeIf { it != x.orEmpty() }
+        val phones = b.phones.takeIf { it != a.phones }
+        return PatientRequest(
+            name = b.name.takeIf { it != a.name },
+            phones = phones,
+            phone = phones?.let { b.phone.orEmpty() },
+            email = text(a.email, b.email),
+            address = text(a.address, b.address),
+            birthDate = b.birthDate.takeIf { it != a.birthDate },
+            language = b.language.takeIf { it != a.language },
+            gender = text(a.gender, b.gender),
+            bloodGroup = text(a.bloodGroup, b.bloodGroup),
+            allergies = text(a.allergies, b.allergies),
+        )
+    }
+
+    fun create(confirmed: Boolean = false) {
         val s = _state.value
         if (s.saving) return
         if (!s.valid) return _state.update { it.copy(tried = true) }
-        _state.update { it.copy(saving = true, tried = true, banner = null, phoneTaken = false) }
+        val removesPhones =
+            s.initial?.phones?.any(String::isNotBlank) == true && s.form.phones.none { PhoneE164.normalize(it) != null }
+        if (removesPhones && !confirmed) return _state.update { it.copy(askRemovePhones = true) }
+        _state.update {
+            it.copy(
+                saving = true,
+                tried = true,
+                banner = null,
+                phoneTaken = false,
+                askRemovePhones = false,
+            )
+        }
         viewModelScope.launch {
-            repo.create(request(s.form)).fold(
+            val initial = s.initial
+            val result =
+                if (editing != null && initial != null) {
+                    repo.update(editing.id, changes(initial, s.form))
+                } else {
+                    repo.create(request(s.form))
+                }
+            result.fold(
                 onSuccess = { patient ->
                     _state.update { it.copy(saving = false, created = patient) }
                 },
@@ -229,9 +306,11 @@ class CreatePatientViewModel(
                     // 409 is the known phone (the server's text is never shown); 400 means the details; else retry.
                     val status = (e as? ApiException)?.status
                     _state.update {
-                        when (status) {
-                            409 -> it.copy(saving = false, phoneTaken = true)
-                            400 ->
+                        when {
+                            status == 409 -> it.copy(saving = false, phoneTaken = true)
+                            // Editing a patient deleted elsewhere: the caller shows "Patient not found".
+                            status == 404 && editing != null -> it.copy(saving = false, gone = true)
+                            status == 400 ->
                                 it.copy(
                                     saving = false,
                                     banner = CodeBanner(Res.string.createPatientInvalid, requestId = e.requestId),
@@ -253,20 +332,26 @@ class CreatePatientViewModel(
     }
 }
 
-/** The sheet for any caller: [onCreated] gets the new patient (the directory already has it), [onClose] on cancel. */
+/**
+ * The sheet for any caller: [onCreated] gets the new patient (the directory already has it), [onClose] on cancel.
+ * With [editing] it is "Edit details" for that patient, and [onCreated] gets the saved copy (the caller says so).
+ */
 @Composable
 fun CreatePatientSheet(
     opened: Long,
     onCreated: (Patient) -> Unit,
     onClose: () -> Unit,
+    editing: Patient? = null,
+    onGone: () -> Unit = {},
 ) {
-    val viewModel = viewModel(key = "create-patient-$opened") { CreatePatientViewModel() }
+    val viewModel = viewModel(key = "create-patient-$opened") { CreatePatientViewModel(editing = editing) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.gone) { if (state.gone) onGone() }
     LaunchedEffect(state.created) {
         state.created?.let {
             onCreated(it)
             // After the caller's navigation (opening a screen clears success notices), so it stays.
-            ShellNotice.pending.value = Notice(Res.string.patientCreated, success = true)
+            if (editing == null) ShellNotice.pending.value = Notice(Res.string.patientCreated, success = true)
         }
     }
     // A drag or a scrim tap can't hide it while saving or with input (it asks first); the form never vanishes.
@@ -275,12 +360,15 @@ fun CreatePatientSheet(
             state,
             viewModel::edit,
             viewModel::ui,
-            viewModel::create,
+            { viewModel.create() },
             { if (viewModel.close()) onClose() },
         )
     }
     if (state.askDiscard) {
         DiscardChangesSheet(onDiscard = onClose, onKeep = { viewModel.ui { it.copy(askDiscard = false) } })
+    }
+    if (state.askRemovePhones) {
+        RemovePhones({ viewModel.create(confirmed = true) }) { viewModel.ui { it.copy(askRemovePhones = false) } }
     }
     if (state.pickingDate) {
         DobPicker(state.form.birthDate) { picked ->
@@ -297,7 +385,7 @@ fun CreatePatientTray(
     ui: ((CreatePatientUiState) -> CreatePatientUiState) -> Unit,
     create: () -> Unit,
     close: () -> Unit,
-) = ShifaTray(tr(Res.string.createNewPatient), close) {
+) = ShifaTray(tr(if (state.initial != null) Res.string.editDetails else Res.string.createNewPatient), close) {
     val f = state.form
     val enabled = !state.saving
     Column(
@@ -315,7 +403,9 @@ fun CreatePatientTray(
             enabled = enabled,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
         )
-        Phones(state, edit, enabled)
+        PhoneRows(state.form.phones, state.badPhones.takeIf { state.tried }.orEmpty(), state.phoneTaken, enabled) { v ->
+            edit { it.copy(phones = v) }
+        }
         ShifaInputField(
             f.email,
             { v -> edit { it.copy(email = v) } },
@@ -381,7 +471,7 @@ fun CreatePatientTray(
             divider = false,
             // A picked date can be taken back (flow 06/02 §7; Flutter couldn't).
             trailing =
-                f.birthDate?.let {
+                f.birthDate?.takeIf { state.initial?.birthDate == null }?.let {
                     {
                         ShifaIconButton(Res.drawable.ic_x_16, tr(Res.string.clear), {
                             if (enabled) {
@@ -396,30 +486,31 @@ fun CreatePatientTray(
         )
     }
     ShifaPrimaryButton(
-        tr(Res.string.createPatient),
+        tr(if (state.initial != null) Res.string.save else Res.string.createPatient),
         create,
         Modifier.fillMaxWidth(),
-        enabled = enabled && !f.name.isBlank(),
+        enabled = enabled && !f.name.isBlank() && state.dirty,
         loading = state.saving,
     )
 }
 
 /** Phone rows (one at least), remove on each when there are several, "+ Add phone number"; errors under the group. */
 @Composable
-private fun Phones(
-    state: CreatePatientUiState,
-    edit: ((NewPatient) -> NewPatient) -> Unit,
+internal fun PhoneRows(
+    phones: List<String>,
+    bad: Set<Int>,
+    taken: Boolean,
     enabled: Boolean,
+    onChange: (List<String>) -> Unit,
 ) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-    val phones = state.form.phones
     phones.forEachIndexed { i, value ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             ShifaInputField(
                 value,
-                { v -> edit { f -> f.copy(phones = f.phones.toMutableList().also { it[i] = v }) } },
+                { v -> onChange(phones.toMutableList().also { it[i] = v }) },
                 tr(Res.string.phoneNumber),
                 Modifier.weight(1f),
-                isError = (state.tried && i in state.badPhones) || state.phoneTaken,
+                isError = i in bad || taken,
                 enabled = enabled,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             )
@@ -427,32 +518,32 @@ private fun Phones(
                 ShifaIconButton(
                     Res.drawable.ic_trash_22,
                     tr(Res.string.remove),
-                    { if (enabled) edit { f -> f.copy(phones = f.phones.filterIndexed { j, _ -> j != i }) } },
+                    { if (enabled) onChange(phones.filterIndexed { j, _ -> j != i }) },
                     variant = ShifaIconButtonVariant.Ghost,
                 )
             }
         }
     }
     when {
-        state.phoneTaken ->
+        taken ->
             Text(
                 tr(Res.string.patientPhoneExists),
                 style = ShifaTextStyles.metaSmall(),
                 color = ShifaColors.Text.Error,
             )
-        state.tried && state.badPhones.isNotEmpty() ->
+        bad.isNotEmpty() ->
             Text(
                 tr(Res.string.invalidPhone),
                 style = ShifaTextStyles.metaSmall(),
                 color = ShifaColors.Text.Error,
             )
     }
-    ShifaLink(tr(Res.string.addPhoneNumber), { if (enabled) edit { it.copy(phones = it.phones + "") } })
+    ShifaLink(tr(Res.string.addPhoneNumber), { if (enabled) onChange(phones + "") })
 }
 
 /** A labelled dropdown that keeps its own open state. */
 @Composable
-private fun Choice(
+internal fun Choice(
     label: String,
     options: List<String>,
     selected: Int,

@@ -32,4 +32,12 @@ class PatientsScreenshotTest {
 
     @Test
     fun detailNotFound() = captureRoboImage("screenshots/PatientDetail_notFound.png") { PatientDetailNotFoundPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h2000dp-xhdpi")
+    fun medical() = captureRoboImage("screenshots/PatientDetail_medical.png") { PatientMedicalPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun edit() = captureRoboImage("screenshots/Patients_edit.png") { EditPatientPreview() }
 }

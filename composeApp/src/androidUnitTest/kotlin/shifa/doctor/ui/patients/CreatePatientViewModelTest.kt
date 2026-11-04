@@ -19,6 +19,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
+import shifa.doctor.data.model.Patient
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.profile.Gender
 import shifa.doctor.generated.resources.Res
@@ -29,10 +30,12 @@ import shifa.doctor.ui.navigation.ShellNotice
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreatePatientViewModelTest {
     private val sent = mutableListOf<String>()
+    private val methods = mutableListOf<String>()
     private var status = HttpStatusCode.OK
     private val engine =
         MockEngine { req ->
             sent += req.body.toByteArray().decodeToString()
+            methods += "${req.method.value} ${req.url.encodedPath}"
             val json = headersOf(HttpHeaders.ContentType, "application/json")
             if (status == HttpStatusCode.OK) {
                 respond("""{"id":77,"name":"Anna Karimova"}""", status, json)
@@ -124,5 +127,64 @@ class CreatePatientViewModelTest {
         assertThat(PatientLanguage.of("uz")).isEqualTo(PatientLanguage.Uzbek)
         assertThat(PatientLanguage.of("Uzbek")).isEqualTo(PatientLanguage.Uzbek)
         assertThat(PatientLanguage.of("klingon")).isNull()
+    }
+
+    @Test
+    fun `edit details starts filled, sends only what changed with cleared text as empty, and needs a change`() {
+        val patient =
+            Patient(
+                12,
+                "Anna Karimova",
+                phones = listOf("+998901234567"),
+                email = "anna@example.com",
+                language = "ru",
+                gender = "Female",
+                birthDate = "1990-05-15",
+            )
+        val classToTest =
+            CreatePatientViewModel(PatientsRepository(client = { createHttpClient({ null }, engine) }), patient)
+                .also { created += it }
+        val s = classToTest.state.value
+        assertThat(s.form.name).isEqualTo("Anna Karimova")
+        assertThat(s.form.language).isEqualTo(PatientLanguage.Russian)
+        assertThat(s.form.gender).isEqualTo(Gender.Female)
+        assertThat(s.dirty).isFalse()
+        // Closing unchanged doesn't ask.
+        assertThat(classToTest.close()).isTrue()
+
+        classToTest.edit { it.copy(name = "Anna Karimova-Lee", email = "", allergies = "Latex") }
+        classToTest.create()
+        settle { classToTest.state.value.created != null }
+        assertThat(methods.last()).isEqualTo("PATCH /api/patients/12")
+        assertThat(sent.last()).isEqualTo("""{"name":"Anna Karimova-Lee","email":"","allergies":"Latex"}""")
+    }
+
+    @Test
+    fun `editing away every phone asks before saving`() {
+        val patient = Patient(12, "Anna Karimova", phones = listOf("+998901234567"))
+        val classToTest =
+            CreatePatientViewModel(PatientsRepository(client = { createHttpClient({ null }, engine) }), patient)
+                .also { created += it }
+        classToTest.edit { it.copy(phones = listOf("")) }
+        classToTest.create()
+        assertThat(classToTest.state.value.askRemovePhones).isTrue()
+        assertThat(methods).isEmpty()
+        classToTest.create(confirmed = true)
+        settle { classToTest.state.value.created != null }
+        assertThat(sent.last()).isEqualTo("""{"phones":[],"phone":""}""")
+    }
+
+    @Test
+    fun `editing a patient deleted elsewhere hands back instead of retrying`() {
+        status = HttpStatusCode.NotFound
+        val patient = Patient(12, "Anna Karimova")
+        val classToTest =
+            CreatePatientViewModel(PatientsRepository(client = { createHttpClient({ null }, engine) }), patient)
+                .also { created += it }
+        classToTest.edit { it.copy(name = "Anna K") }
+        classToTest.create()
+        settle { !classToTest.state.value.saving && classToTest.state.value.gone }
+        assertThat(classToTest.state.value.gone).isTrue()
+        assertThat(classToTest.state.value.banner).isNull()
     }
 }

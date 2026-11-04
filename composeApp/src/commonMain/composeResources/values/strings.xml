@@ -359,6 +359,7 @@
     <string name="chronicDisease_sickleCellDisease">Sickle Cell Disease</string>
     <string name="chronicDisease_thalassemia">Thalassemia</string>
     <string name="chronicDisease_ulcerativeColitis">Ulcerative Colitis</string>
+    <string name="chronicWarningNote">A warning will be shown when opening this patient.</string>
     <string name="city">City</string>
     <string name="clearAll">Clear all</string>
     <string name="clearFilters">Clear filters</string>
@@ -968,6 +969,7 @@
     <string name="durationMin">%1$s min</string>
     <string name="durationMinutes">%1$s min</string>
     <string name="edit">Edit</string>
+    <string name="editDetails">Edit details</string>
     <string name="editGroup">Edit group</string>
     <string name="editKey">Edit</string>
     <string name="editLocation">Edit location</string>
@@ -1734,6 +1736,7 @@
     <string name="patientDetailTabProfile">Profile</string>
     <string name="patientDetailTabProphylaxis">Prophylaxis</string>
     <string name="patientDetails">Patient Details</string>
+    <string name="patientDetailsSaved">Patient details saved</string>
     <string name="patientEngagementBreakdown">Patient engagement breakdown</string>
     <string name="patientFormSaveAgainToRefreshPdf">Save the form again to refresh the PDF so it includes the patient signature.</string>
     <string name="patientFormSignatureReceived">Patient signature received.</string>
@@ -1901,6 +1904,8 @@
     <string name="remove">Remove</string>
     <string name="removeFromFavorites">Remove from favourites</string>
     <string name="removeItem">Remove %1$s</string>
+    <string name="removeLastPhoneBody">Without a phone number the patient gets no SMS reminders.</string>
+    <string name="removeLastPhoneTitle">Remove the last phone number?</string>
     <string name="removePriceRow">Remove price</string>
     <string name="removeRow">Remove row</string>
     <string name="removeService">Remove Service</string>

@@ -2465,5 +2465,10 @@
   "removeFromFavorites": "Убрать из избранного",
   "tabComesLater": "Этот раздел записи скоро появится.",
   "accountActive": "Аккаунт активен",
-  "lastVisitOn": "Последний визит: {date}"
+  "lastVisitOn": "Последний визит: {date}",
+  "editDetails": "Изменить данные",
+  "patientDetailsSaved": "Данные пациента сохранены",
+  "chronicWarningNote": "При открытии этого пациента будет показано предупреждение.",
+  "removeLastPhoneTitle": "Удалить последний номер телефона?",
+  "removeLastPhoneBody": "Без номера телефона пациент не получает SMS-напоминания."
 }

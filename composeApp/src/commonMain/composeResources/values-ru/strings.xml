@@ -359,6 +359,7 @@
     <string name="chronicDisease_sickleCellDisease">Серповидноклеточная анемия</string>
     <string name="chronicDisease_thalassemia">Талассемия</string>
     <string name="chronicDisease_ulcerativeColitis">Язвенный колит</string>
+    <string name="chronicWarningNote">При открытии этого пациента будет показано предупреждение.</string>
     <string name="city">Город</string>
     <string name="clearAll">Очистить всё</string>
     <string name="clearFilters">Сбросить фильтры</string>
@@ -968,6 +969,7 @@
     <string name="durationMin">%1$s мин</string>
     <string name="durationMinutes">%1$s мин</string>
     <string name="edit">Изменить</string>
+    <string name="editDetails">Изменить данные</string>
     <string name="editGroup">Изменить группу</string>
     <string name="editKey">Изменить</string>
     <string name="editLocation">Редактировать местоположение</string>
@@ -1734,6 +1736,7 @@
     <string name="patientDetailTabProfile">Профиль</string>
     <string name="patientDetailTabProphylaxis">Профилактика</string>
     <string name="patientDetails">Детали пациента</string>
+    <string name="patientDetailsSaved">Данные пациента сохранены</string>
     <string name="patientEngagementBreakdown">Вовлечённость пациентов</string>
     <string name="patientFormSaveAgainToRefreshPdf">Сохраните форму ещё раз, чтобы обновить PDF с подписью пациента.</string>
     <string name="patientFormSignatureReceived">Подпись пациента получена.</string>
@@ -1901,6 +1904,8 @@
     <string name="remove">Удалить</string>
     <string name="removeFromFavorites">Убрать из избранного</string>
     <string name="removeItem">Удалить %1$s</string>
+    <string name="removeLastPhoneBody">Без номера телефона пациент не получает SMS-напоминания.</string>
+    <string name="removeLastPhoneTitle">Удалить последний номер телефона?</string>
     <string name="removePriceRow">Удалить цену</string>
     <string name="removeRow">Удалить строку</string>
     <string name="removeService">Удалить услугу</string>

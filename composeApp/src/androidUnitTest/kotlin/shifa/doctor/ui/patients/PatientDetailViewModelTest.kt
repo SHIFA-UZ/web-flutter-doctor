@@ -21,6 +21,9 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -29,9 +32,12 @@ import shifa.doctor.data.patients.FavoritesRepository
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.storage.FavoritesStorage
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.chronicDiseaseUpdated
 import shifa.doctor.generated.resources.failedToUpdate
 import shifa.doctor.generated.resources.patientAccountExists
+import shifa.doctor.generated.resources.phoneUpdated
 import shifa.doctor.generated.resources.reportsSmsNotAllowed
+import shifa.doctor.generated.resources.saved
 import shifa.doctor.generated.resources.smsReminderSaved
 import shifa.doctor.generated.resources.smsServiceUnavailable
 import shifa.doctor.generated.resources.smsTestSent
@@ -69,7 +75,9 @@ class PatientDetailViewModelTest {
                     path == "patients/98" -> error(HttpStatusCode.InternalServerError)
                     path == "patients/7" && req.method == HttpMethod.Patch ->
                         if (patchStatus == HttpStatusCode.OK) {
-                            json(patient().replace("\"smsReminderEnabled\":false", "\"smsReminderEnabled\":true"))
+                            // The server's copy with the sent fields applied.
+                            val sent = Json.parseToJsonElement(bodies.last()).jsonObject
+                            json(JsonObject(Json.parseToJsonElement(patient()).jsonObject + sent).toString())
                         } else {
                             error(patchStatus)
                         }
@@ -183,14 +191,14 @@ class PatientDetailViewModelTest {
     fun `an SMS change saves at once and rolls back when it fails`() {
         val classToTest = opened()
         classToTest.setSms(true)
-        settle { !classToTest.state.value.smsSaving }
+        settle { !classToTest.state.value.saving }
         assertThat(classToTest.state.value.patient?.smsReminderEnabled).isTrue()
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.smsReminderSaved)
         assertThat(bodies.last()).isEqualTo("""{"smsReminderEnabled":true}""")
 
         patchStatus = HttpStatusCode.InternalServerError
         classToTest.setSmsHours(1)
-        settle { !classToTest.state.value.smsSaving }
+        settle { !classToTest.state.value.saving }
         assertThat(bodies.last()).isEqualTo("""{"smsReminderHoursBefore":1}""")
         assertThat(classToTest.state.value.patient?.smsHours).isEqualTo(24)
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.failedToUpdate)
@@ -236,5 +244,105 @@ class PatientDetailViewModelTest {
         settle { !classToTest.state.value.creatingAccount }
         assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.patientAccountExists)
         assertThat(classToTest.state.value.account).isNull()
+    }
+
+    @Test
+    fun `dropdowns save one field at once, clearing with an empty value, and roll back on failure`() {
+        val classToTest = opened()
+        classToTest.setChronic(ChronicDisease.None)
+        settle { !classToTest.state.value.saving }
+        assertThat(bodies.last()).isEqualTo("""{"chronicDisease":""}""")
+        assertThat(classToTest.state.value.patient?.chronic).isNull()
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.chronicDiseaseUpdated)
+        classToTest.setChronic(ChronicDisease.DiabetesType2)
+        settle { !classToTest.state.value.saving }
+        assertThat(bodies.last()).isEqualTo("""{"chronicDisease":"Diabetes (Type 2)"}""")
+        classToTest.setGender(null)
+        settle { !classToTest.state.value.saving }
+        assertThat(bodies.last()).isEqualTo("""{"gender":""}""")
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.saved)
+
+        patchStatus = HttpStatusCode.InternalServerError
+        classToTest.setBloodGroup("O+")
+        settle { !classToTest.state.value.saving }
+        assertThat(bodies.last()).isEqualTo("""{"bloodGroup":"O+"}""")
+        assertThat(classToTest.state.value.patient?.bloodGroup).isNull()
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.failedToUpdate)
+    }
+
+    @Test
+    fun `phones save as one E164 list, a bad one or a taken one keeps the typing, and the last one asks first`() {
+        val classToTest = opened()
+        classToTest.editPhones(listOf("+998901234567", "12"))
+        classToTest.savePhones()
+        assertThat(classToTest.state.value.badPhones).containsExactly(1)
+        assertThat(calls.none { it.startsWith("PATCH") }).isTrue()
+
+        patchStatus = HttpStatusCode.Conflict
+        classToTest.editPhones(listOf("+998901234567", "90 111 22 33"))
+        classToTest.savePhones()
+        settle { !classToTest.state.value.saving }
+        assertThat(bodies.last()).isEqualTo("""{"phones":["+998901234567","+998901112233"],"phone":"+998901234567"}""")
+        assertThat(classToTest.state.value.phoneTaken).isTrue()
+        assertThat(classToTest.state.value.phones).hasSize(2)
+
+        patchStatus = HttpStatusCode.OK
+        classToTest.savePhones()
+        settle { !classToTest.state.value.saving }
+        assertThat(classToTest.state.value.phones).isNull()
+        assertThat(classToTest.state.value.patient?.allPhones).containsExactly("+998901234567", "+998901112233")
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.phoneUpdated)
+        assertThat(classToTest.state.value.phoneTaken).isFalse()
+
+        classToTest.editPhones(listOf(""))
+        classToTest.savePhones()
+        assertThat(classToTest.state.value.askRemovePhones).isTrue()
+        classToTest.savePhones(confirmed = true)
+        settle { !classToTest.state.value.saving }
+        assertThat(bodies.last()).isEqualTo("""{"phones":[],"phone":""}""")
+    }
+
+    @Test
+    fun `typed allergies ask before leaving the tab or the screen, and save on their own`() {
+        val classToTest = opened()
+        classToTest.select(RecordTab.Medical)
+        classToTest.editAllergies("Penicillin ")
+        classToTest.select(RecordTab.Overview)
+        assertThat(classToTest.state.value.askDiscard).isTrue()
+        assertThat(classToTest.state.value.tab).isEqualTo(RecordTab.Medical)
+        assertThat(classToTest.discard()).isEqualTo(RecordTab.Overview)
+        assertThat(classToTest.state.value.tab).isEqualTo(RecordTab.Overview)
+        assertThat(classToTest.state.value.allergies).isNull()
+
+        classToTest.select(RecordTab.Medical)
+        classToTest.editAllergies("Penicillin ")
+        assertThat(classToTest.back()).isFalse()
+        classToTest.saveAllergies()
+        settle { !classToTest.state.value.saving }
+        assertThat(bodies.last()).isEqualTo("""{"allergies":"Penicillin"}""")
+        assertThat(classToTest.state.value.allergiesDirty).isFalse()
+        assertThat(classToTest.back()).isTrue()
+
+        // A failed save shows the stored value again; Edit details supersedes typing left in the tab.
+        patchStatus = HttpStatusCode.InternalServerError
+        classToTest.editAllergies("Latex")
+        classToTest.saveAllergies()
+        settle { !classToTest.state.value.saving }
+        assertThat(classToTest.state.value.allergyText).isEqualTo("Penicillin")
+        classToTest.editPhones(listOf("+998901234567", "+998901112233"))
+        classToTest.editAllergies("Latex")
+        classToTest.edited(classToTest.state.value.patient!!.copy(allergies = "Dust"))
+        assertThat(classToTest.state.value.allergyText).isEqualTo("Dust")
+        // A field the sheet didn't change keeps its typing.
+        assertThat(classToTest.state.value.phones).hasSize(2)
+    }
+
+    @Test
+    fun `a save to a patient deleted elsewhere leaves the record`() {
+        val classToTest = opened()
+        patchStatus = HttpStatusCode.NotFound
+        classToTest.setGender(null)
+        settle { !classToTest.state.value.saving }
+        assertThat(classToTest.state.value.notFound).isTrue()
     }
 }
