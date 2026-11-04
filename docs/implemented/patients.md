@@ -415,3 +415,27 @@ screen.
   line; the chart's rows and notes around the numbers, primary and legacy charts; a long note split across pages with
   nothing lost; the return visits and the signature only when present; a page-long return visit split; 25 history rows with their
   captions).
+
+## CLIN-01 · Clinical engine API
+
+Built 2026-11-04. Spec 02 §5.1–5.2 (the engine fills the 025-2; its panel is CLIN-02, used by FORM-04). No screen.
+
+- **Models** (`data/model/ClinicalModels.kt`): `LocalizedName` with `forLocale` (Uzbek, also Cyrillic, and English
+  fall back to Russian, as Flutter), groups, diseases (ICD codes; chips on the detail read), chips (field, labels,
+  `[X]` variables, priority; occlusion chips add the Angle class and an ICD hint), shared oral-cavity / X-ray texts
+  (chip id `shared.<id>`, the groups they `correlates` with: new on dev, not in Flutter's model), top diagnoses, the
+  synthesize request and answer, and the engine's field names (`ClinicalField`). Every field has a default: Flutter's
+  `as String` casts threw on a missing one and the whole list was lost.
+- **Repository** (`data/clinical/ClinicalEngineRepository.kt`): groups (ordered; read once per sign-in), diseases of
+  a group, one disease with its chips (row by row: a bad chip is dropped, not the disease), top diagnoses (5), chip search (`q`, `locale`, 15), occlusion chips (once per
+  sign-in), shared texts by type, `synthesize(locale, diseaseId, selections)` → the field texts, and **`recordUsage`**
+  (`POST /record-usage {diseaseId}`): on dev and never called by Flutter, which is why the doctor's top-diagnoses list
+  is always empty; FORM-04 sends it when a form with a disease is saved. Failures come back typed (Flutter turned them
+  into empty lists). Every path checked against dev's OpenAPI and with real reads (groups, diseases, a disease's
+  chips, chip search, occlusion, shared mucosa and X-ray); synthesize and record-usage were not called on dev
+  (record-usage writes, synthesize may count usage).
+- **Demo:** one group, two diseases with chips (one with an `[X]` variable), an occlusion chip, two shared texts;
+  synthesize joins the picked chips' texts (shared texts too) per field with the variables filled in.
+- **Tests:** `ClinicalEngineRepositoryTest` (4: language fallbacks; lenient, ordered, once-read groups; a disease's
+  chips and variables, occlusion by priority, shared texts as chips; the synthesize body, record-usage, search and top
+  paths), `DemoBackendTest` (+1).

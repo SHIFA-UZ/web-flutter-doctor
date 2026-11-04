@@ -1,0 +1,7 @@
+- **[P2] One malformed chip rejects the entire disease.** [ClinicalEngineRepository.kt:51](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/clinical/ClinicalEngineRepository.kt:51) deserializes the disease and its nested chips together. A response containing `"chips":[null,{…valid chip…}]` fails the whole request instead of retaining the valid chips. Unlike the list endpoints, this bypasses row-level parsing, violating the requirement that one bad item must not drop the whole list.
+
+- **[P2] Demo synthesis silently discards shared templates.** [DemoBackend.kt:802](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/debug/DemoBackend.kt:802) builds its lookup from disease and occlusion chips only; lines 806–807 skip unmatched selections. Consequently, selecting the provided `shared.mucosa.A` or `shared.xray.caries` produces no `oral_cavity` or `xray` text. Include shared templates in the lookup using their `shared.<templateId>` identifiers.
+---
+**Answers (round 1, both fixed; small, so no second round):**
+1. *One bad chip rejects the whole disease:* fixed; a disease is read as an object and its chips row by row, so a null or malformed chip is dropped and the rest kept. Tested with `[null, a chip, a broken one]`.
+2. *Demo synthesize drops shared texts:* fixed; the demo knows shared texts by their `shared.<templateId>` chip ids. Tested with `shared.xray.caries`.

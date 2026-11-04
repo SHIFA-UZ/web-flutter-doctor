@@ -112,7 +112,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | FORM-01 Form models + dental codec | Done | `PatientForm` / `FormRequest` (no server fields, one ICD spelling), the 025-2 dental-chart key grammar ported with tests (FDI wins over legacy keys). See patients.md. |
 | FORM-02 Forms repository | Done | Cached list per patient, save (POST/PUT), request signature, link document, replace a document's file, ICD-10 search, latest 025-2. See patients.md. |
 | FORM-03 025-2 PDF | Done (iOS not run) | Shared layout (official Uzbek labels, sections, dental chart, return visits, signature; text flows across pages) drawn by PdfDocument / UIGraphicsPDFRenderer with system fonts. See patients.md. |
-| FORM-04 … CLIN-02 | Not started | |
+| CLIN-01 Clinical engine API | Done | Lenient models, groups / diseases / chips / occlusion / shared texts, synthesize, record-usage (new: Flutter never sent it). See patients.md. |
+| FORM-04, FORM-05, CLIN-02 | Not started | |
 
 ## Log
 
@@ -182,3 +183,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · FORM-01 · Form models and the dental-chart codec.
 - 2026-11-04 · FORM-02 · Forms repository.
 - 2026-11-04 · FORM-03 · 025-2 PDF in the app (shared layout, platform text drawing).
+- 2026-11-04 · CLIN-01 · Clinical engine API.

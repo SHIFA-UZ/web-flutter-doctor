@@ -413,4 +413,42 @@ class DemoBackendTest {
             assertThat(repo.searchIcd10("caries", "en").getOrThrow().map { it.code }).containsExactly("K02.0", "K02.1")
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the clinical engine answers locally - groups, diseases, chips, synthesize with variables`() =
+        runTest {
+            val repo = shifa.doctor.data.clinical.ClinicalEngineRepository { client }
+            val group = repo.groups().getOrThrow().single()
+            val diseases = repo.diseases(group.groupId).getOrThrow()
+            assertThat(diseases.map { it.diseaseId }).containsExactly("dis.001", "dis.003").inOrder()
+            assertThat(diseases.all { it.chips.isEmpty() }).isTrue()
+            val detail = repo.disease("dis.003").getOrThrow()
+            assertThat(detail.chips).hasSize(3)
+            assertThat(
+                repo.searchChips("сладк", "ru").getOrThrow().map { it.chipId },
+            ).containsExactly("dis.003.complaints.1")
+            assertThat(repo.sharedTemplates("xray").getOrThrow().single().chipId).isEqualTo("shared.xray.caries")
+            val fields =
+                repo.synthesize(
+                    "en",
+                    "dis.003",
+                    listOf(
+                        shifa.doctor.data.model.ClinicalChipSelection("dis.003.morbi.1", mapOf("X" to "3")),
+                        shifa.doctor.data.model.ClinicalChipSelection("occ.norm"),
+                        shifa.doctor.data.model.ClinicalChipSelection("shared.xray.caries"),
+                    ),
+                ).getOrThrow()
+            assertThat(
+                fields,
+            ).containsExactly(
+                "morbi",
+                "Reacting to food for 3 months",
+                "occlusion",
+                "Orthognathic occlusion",
+                "xray",
+                "Enamel radiolucency",
+            )
+            assertThat(repo.recordUsage("dis.003").isSuccess).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }

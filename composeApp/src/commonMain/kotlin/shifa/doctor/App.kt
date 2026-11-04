@@ -25,6 +25,7 @@ import kotlinx.coroutines.delay
 import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.calendar.calendarRepository
+import shifa.doctor.data.clinical.clinicalEngineRepository
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.forms.formsRepository
@@ -162,6 +163,7 @@ private fun AppScreens() {
             patientsRepository.clear()
             chronicWarned.clear()
             formsRepository.clear()
+            clinicalEngineRepository.clear()
         }
     }
     val locked by appLockRepository.locked.collectAsState()

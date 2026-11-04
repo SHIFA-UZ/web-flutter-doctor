@@ -417,6 +417,11 @@ class DemoBackend(
                 forms = forms + (patient to forms[patient].orEmpty().map { if (it == old) saved else it })
                 ok(saved)
             }
+            // Clinical engine (CLIN-01): one group, two diseases with chips, occlusion and shared texts; synthesize
+            // joins the picked chips' texts per field (with their [X] filled in), as the backend's result reads.
+            path.startsWith(
+                Endpoints.CLINICAL_ENGINE + "/",
+            ) -> clinical(path.removePrefix(Endpoints.CLINICAL_ENGINE + "/"), request, body)
             get && path == Endpoints.ICD10_SEARCH -> {
                 val q = request.url.parameters["q"].orEmpty().trim().lowercase()
                 ok(
@@ -741,6 +746,92 @@ class DemoBackend(
         return Reply(HttpStatusCode.NoContent, "")
     }
 
+    private fun clinical(
+        path: String,
+        request: HttpRequestData,
+        body: String,
+    ): Reply {
+        val engine = apiJson.parseToJsonElement(DEMO_CLINICAL).jsonObject
+        val diseases = engine.getValue("diseases").jsonArray
+
+        fun chips() = diseases.flatMap { it.jsonObject.getValue("chips").jsonArray }
+        return when {
+            path == "groups" -> ok(engine.getValue("groups"))
+            path.matches(Regex("groups/[^/]+/diseases")) ->
+                ok(
+                    JsonArray(
+                        diseases.map {
+                            JsonObject(it.jsonObject - "chips")
+                        }.filter { it["groupId"]?.jsonPrimitive?.content == path.split('/')[1] },
+                    ),
+                )
+            path.startsWith("diseases/") ->
+                diseases.firstOrNull {
+                    it.jsonObject["diseaseId"]?.jsonPrimitive?.content ==
+                        path.substringAfter(
+                            '/',
+                        )
+                }?.let(::ok)
+                    ?: fail(HttpStatusCode.NotFound, "NOT_FOUND")
+            path == "doctors/me/top-diagnoses" -> ok(JsonArray(emptyList()))
+            path == "chips/search" -> {
+                val q = request.url.parameters["q"].orEmpty().lowercase()
+                ok(
+                    JsonArray(
+                        chips().filter {
+                            q.isNotBlank() && q in
+                                it.jsonObject.getValue(
+                                    "labels",
+                                ).toString().lowercase()
+                        },
+                    ),
+                )
+            }
+            path == "occlusion/chips" -> ok(engine.getValue("occlusion"))
+            path.startsWith("shared/") ->
+                ok(
+                    JsonArray(
+                        engine.getValue("shared").jsonArray.filter {
+                            it.jsonObject["type"]?.jsonPrimitive?.content == path.substringAfter('/')
+                        },
+                    ),
+                )
+            path == "synthesize" -> {
+                val sent = apiJson.parseToJsonElement(body).jsonObject
+                val locale = sent["locale"]?.jsonPrimitive?.content ?: "ru"
+                // Shared texts are picked as chips with a `shared.<templateId>` id.
+                val shared =
+                    engine.getValue("shared").jsonArray.map { t ->
+                        JsonObject(
+                            t.jsonObject + (
+                                "chipId" to
+                                    JsonPrimitive(
+                                        "shared." + t.jsonObject["templateId"]?.jsonPrimitive?.content,
+                                    )
+                            ),
+                        )
+                    }
+                val all = chips() + engine.getValue("occlusion").jsonArray + shared
+                val fields = mutableMapOf<String, String>()
+                sent["selections"]?.jsonArray.orEmpty().forEach { sel ->
+                    val chip =
+                        all.firstOrNull { it.jsonObject["chipId"] == sel.jsonObject["chipId"] }?.jsonObject
+                            ?: return@forEach
+                    var text = chip.getValue("labels").jsonObject[locale]?.jsonPrimitive?.content.orEmpty()
+                    sel.jsonObject["variables"]?.jsonObject?.forEach {
+                            (k, v) ->
+                        text = text.replace("[$k]", v.jsonPrimitive.content)
+                    }
+                    val field = chip["field"]?.jsonPrimitive?.content ?: "occlusion"
+                    fields[field] = listOfNotNull(fields[field], text).joinToString(" ")
+                }
+                ok(JsonObject(mapOf("fields" to JsonObject(fields.mapValues { JsonPrimitive(it.value) }))))
+            }
+            path == "record-usage" -> Reply(HttpStatusCode.OK, "")
+            else -> fail(HttpStatusCode.NotFound, "NOT_FOUND")
+        }
+    }
+
     private fun ok(json: JsonElement) = Reply(HttpStatusCode.OK, apiJson.encodeToString(JsonElement.serializer(), json))
 
     // The backend's error body shape (17 §1), so the app's error path is exercised too.
@@ -980,3 +1071,18 @@ private val FORM_SERVER_FIELDS =
         "patientSignatureImageBase64",
         "createdByDoctorId",
     )
+
+private const val DEMO_CLINICAL =
+    """{"groups":[{"groupId":"grp.caries","sortOrder":1,"names":{"ru":"Кариес","uz":"Karies","en":"Caries"}}],
+    "diseases":[
+     {"diseaseId":"dis.003","number":3,"groupId":"grp.caries","slug":"moderate_caries","icdCodes":["K02.1"],
+      "names":{"ru":"Средний кариес","uz":"O'rta kariyes","en":"Moderate caries"},
+      "chips":[{"chipId":"dis.003.complaints.1","field":"complaints","labels":{"ru":"Боль от сладкого","uz":"Shirinlikdan og'riq","en":"Pain from sweets"},"variables":[],"priority":10},
+       {"chipId":"dis.003.morbi.1","field":"morbi","labels":{"ru":"Реакция на пищу около [X] месяцев","uz":"[X] oy oldin reaksiya boshlangan","en":"Reacting to food for [X] months"},"variables":["X"],"priority":50},
+       {"chipId":"dis.003.treatment_1.1","field":"treatment_1","labels":{"ru":"Препарирование и пломбирование","uz":"Preparatsiya va plomba","en":"Preparation and filling"},"variables":[],"priority":20}]},
+     {"diseaseId":"dis.001","number":1,"groupId":"grp.caries","slug":"initial_caries","icdCodes":["K02.0"],
+      "names":{"ru":"Начальный кариес","uz":"Boshlang'ich kariyes","en":"Initial caries"},
+      "chips":[{"chipId":"dis.001.complaints.1","field":"complaints","labels":{"ru":"Жалоб нет","uz":"Shikoyat yo'q","en":"No complaints"},"variables":[],"priority":10}]}],
+    "occlusion":[{"chipId":"occ.norm","angleClass":"I","icdHint":"K07.2","labels":{"ru":"Ортогнатический прикус","uz":"Ortognatik tishlam","en":"Orthognathic occlusion"},"variables":[],"priority":10}],
+    "shared":[{"templateId":"mucosa.A","type":"mucosa","field":"oral_cavity","labels":{"ru":"Абсолютная норма","uz":"Mutloq me'yor","en":"Normal"},"priority":10,"correlates":[]},
+     {"templateId":"xray.caries","type":"xray","field":"xray","labels":{"ru":"Очаг в эмали","uz":"Emalda o'choq","en":"Enamel radiolucency"},"priority":50,"correlates":["grp.caries"]}]}"""
