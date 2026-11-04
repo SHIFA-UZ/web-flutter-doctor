@@ -142,6 +142,9 @@ object ShifaDimens {
     // dropdown
     val DropdownMenuPaddingBottom = 13.dp
 
+    // Not in the design (its lists are short): a long list (times of day) scrolls inside this height.
+    val DropdownMenuMaxHeight = 320.dp
+
     // switch
     val SwitchWidth = 40.dp
     val SwitchKnob = 15.dp

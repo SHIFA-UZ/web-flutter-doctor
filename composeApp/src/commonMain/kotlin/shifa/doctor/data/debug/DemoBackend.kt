@@ -21,7 +21,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
@@ -229,6 +232,37 @@ class DemoBackend(
                     }
                 Reply(HttpStatusCode.NoContent, "")
             }
+            // Blocks (CAL-8): the count from the generated days; creating and removing answer without storing.
+            get && path == Endpoints.SCHEDULE_BLOCKS_OVERLAP ->
+                ok(
+                    JsonObject(
+                        mapOf(
+                            "count" to
+                                JsonPrimitive(
+                                    demoOverlap(request.url.parameters["startAt"], request.url.parameters["endAt"]),
+                                ),
+                        ),
+                    ),
+                )
+            request.method == HttpMethod.Post && path == Endpoints.SCHEDULE_BLOCKS -> {
+                val sent = apiJson.parseToJsonElement(body).jsonObject
+                val cancel = sent["cancelOverlappingAppointments"]?.jsonPrimitive?.content == "true"
+                val n =
+                    if (cancel) {
+                        demoOverlap(
+                            sent["startAt"]?.jsonPrimitive?.content,
+                            sent["endAt"]?.jsonPrimitive?.content,
+                        )
+                    } else {
+                        0
+                    }
+                ok(JsonObject(sent + ("id" to JsonPrimitive(9001)) + ("cancelledAppointmentCount" to JsonPrimitive(n))))
+            }
+            request.method == HttpMethod.Delete &&
+                path.startsWith(
+                    Endpoints.SCHEDULE_BLOCKS + "/",
+                )
+            -> Reply(HttpStatusCode.OK, "")
             // The booking list (CAL-7): the demo calendar's patients and a few more, one page.
             get && path == Endpoints.PATIENTS_FOR_ASSIGNMENT -> ok(apiJson.parseToJsonElement(DEMO_PATIENTS))
             request.method == HttpMethod.Post && path == Endpoints.SCHEDULE_BOOK -> Reply(HttpStatusCode.OK, "")
@@ -491,6 +525,27 @@ private const val DEMO_PATIENTS =
     """{"content":[{"id":11,"name":"Dilnoza Rahimova","photoUrl":null},""" +
         """{"id":12,"name":"Jasur Karimov","photoUrl":null},{"id":13,"name":"Malika Tursunova","photoUrl":null},""" +
         """{"id":14,"name":"Bekzod Aliyev","photoUrl":null},{"id":15,"name":"","photoUrl":null}],"last":true}"""
+
+/** Appointments of the generated days overlapping [startAt, endAt) (at most two months are looked at). */
+internal fun demoOverlap(
+    startAt: String?,
+    endAt: String?,
+): Int {
+    val start = runCatching { kotlinx.datetime.Instant.parse(startAt.orEmpty()) }.getOrNull() ?: return 0
+    val end = runCatching { kotlinx.datetime.Instant.parse(endAt.orEmpty()) }.getOrNull() ?: return 0
+    val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")
+    val first = start.toLocalDateTime(zone).date
+    return (0 until 62).asSequence()
+        .map { first.plus(kotlinx.datetime.DatePeriod(days = it)) }
+        .takeWhile { it.atStartOfDayIn(zone) < end }
+        .flatMap { demoCalendar(it.toString()).asSequence() }
+        .count {
+            val o = it.jsonObject
+            val from = kotlinx.datetime.Instant.parse(o["startAt"]!!.jsonPrimitive.content)
+            val to = kotlinx.datetime.Instant.parse(o["endAt"]!!.jsonPrimitive.content)
+            o["type"]?.jsonPrimitive?.content == "APPOINTMENT" && from < end && to > start
+        }
+}
 
 /**
  * A demo day (Tashkent, UTC+5): 30-minute slots 09:00–17:00, lunch blocked 13:00–14:00, and on even dates two

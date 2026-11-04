@@ -2403,5 +2403,15 @@
   "bookingFailed": "Band qilib bo'lmadi. Qayta urinib ko'ring.",
   "patientAssignedName": "Bemor biriktirildi: {name}",
   "patientNumber": "Bemor #{id}",
-  "bookingSameDayPast": "Bu vaqt bugun o'tib ketgan; tashrif sifatida yoziladi."
+  "bookingSameDayPast": "Bu vaqt bugun o'tib ketgan; tashrif sifatida yoziladi.",
+  "blockModeDay": "Kun",
+  "blockModeHours": "Soatlar",
+  "blockModeDays": "Bir necha kun",
+  "blockReasonBreak": "Tanaffus",
+  "blockReasonVacation": "Ta'til",
+  "blockReasonSick": "Kasallik",
+  "blockCountFailed": "Bu davrdagi qabullarni tekshirib bo'lmadi.",
+  "blockFailed": "Vaqtni band qilib bo'lmadi. Qayta urinib ko'ring.",
+  "blockManagedElsewhere": "Bu blokni bu yerda olib tashlab bo'lmaydi.",
+  "unblockFailed": "Blokni olib tashlab bo'lmadi. Qayta urinib ko'ring."
 }

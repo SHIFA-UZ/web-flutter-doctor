@@ -89,7 +89,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CAL-4 Calendar screen | Done | Doctor's Calendar tab: month picker, day agenda (compact and details rows), filters, timezone-mismatch banner, resume reads. See calendar.md. |
 | CAL-6 Appointment panel | Done | Appointment details from the calendar: status, reschedule to a free slot, adjust duration, payment reminder, main button by time window, cancel. See calendar.md. |
 | CAL-7 Booking | Done | Book a free slot for a patient: picker (search by name or id), clinic or video, start and an end along the chain of free slots, reason; past-day guard; taken range kept with its message. See calendar.md. |
-| CAL-5, CAL-8 … LOC-2 | Not started | |
+| CAL-8 Blocks | Done | Block a day, some hours or several days from the calendar header (reason chips, cancel overlapping with a live count); blocked row panel with Remove block. See calendar.md. |
+| CAL-5, CAL-9 … LOC-2 | Not started | |
 
 ## Log
 
@@ -139,3 +140,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CAL-4 · Calendar tab with the day agenda.
 - 2026-11-04 · CAL-6 · Appointment panel: reschedule, duration, payment reminder, cancel.
 - 2026-11-04 · CAL-7 · Booking a free slot (multi-slot range) with the patient picker; BE-33.
+- 2026-11-04 · CAL-8 · Block time and the blocked-row panel; dropdowns scroll to their value.

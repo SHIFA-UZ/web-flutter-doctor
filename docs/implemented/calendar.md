@@ -215,3 +215,41 @@ pushed screen ("Slot Details") like the appointment panel.
   60 minutes with the request body and the notice; video without `locationId` and the default reason; no patient and a
   past day send nothing; a taken range keeps the form; picker order and search; a new start resets the end and Back
   asks; a conflict narrows the range; one patient read during the prefetch; a taken start moves back with the banner), `DemoBackendTest` (+1), `CalendarScreenshotTest` (+2: `Calendar_booking`, `Calendar_bookingPast`).
+
+## CAL-8 · Blocks
+
+Built 2026-11-04. Flow `04/09-block-time.md`; spec 03 §1.8, §6; board `DaCalendar.dc.html` (block, blocked row).
+
+- **Data** (`data/calendar/BlocksRepository.kt`): `GET /schedule/blocks/overlapping-count?startAt=&endAt=` →
+  `{count}`, `POST /schedule/blocks {startAt, endAt, cancelOverlappingAppointments, reason?}` → the block with
+  `cancelledAppointmentCount`, `DELETE /schedule/blocks/{id}`; all checked against dev.
+- **Block time** (`ui/calendar/BlockTime.kt`, from the calendar header's block icon, a sheet over the selected day; the
+  flow's target layout): Day · Hours · Several days chips; Hours as Start / End time in quarter hours, 24-hour labels
+  up to 24:00 (no system 12-hour picker), "End time must be after start time." inline; Several days as From / To with
+  the calendar's month inline (days before today closed; From after To drags To and the other way round); reason chips
+  (Break, Vacation, Sick leave, Emergency) plus free text, empty by default (Flutter's "Emergency" was wrong for a
+  break); "Cancel overlapping appointments" on by default with its hint; the overlap line: red "{n} appointment(s)
+  will be cancelled." / amber "Some existing appointments fall within this period." / "Couldn't check for
+  appointments in this period." when the count can't be read (never a silent 0). The count is read 300 ms after the
+  last change of the range (not on every tap).
+- **Ranges:** wall times in the practice zone; a whole day is 00:00 to the next day's 00:00 (Flutter ended at 23:59),
+  so a DST day is 23 or 25 hours; several days run from From's 00:00 to the day after To. A time the day doesn't have
+  (inside a DST gap) is refused like an end before the start.
+- **Block:** the covered days the calendar holds or is still reading (`knownDays`, `CalendarRepository.pending()`) and today are read again, four at a time (`changed` now batches
+  for every caller; a vacation no longer means 30 sequential reads), also after a failure (the block may exist). The
+  shell says "Time blocked successfully" or "Time blocked. {n} appointment(s) cancelled.".
+- **Blocked row** (pushed panel): date and time ("All day" for a whole day), duration, the error-tinted card with the
+  reason ("Blocked" when none) and "Patients cannot book new appointments during this blocked period.", **Remove block**
+  behind a confirmation (Cancel / Remove block); every cached day showing that block is read again; "Block removed".
+  A block without an id says "This block can't be removed here." instead of a dead button.
+- **Shared:** `ShifaDropdown` lists its options in a scrolling list capped at `ShifaDimens.DropdownMenuMaxHeight` that
+  opens at the chosen value (not in the design: its lists are short; times of day are 96 entries). Field captions above
+  the time dropdowns here and in booking (a set dropdown shows only its value).
+- **Not built:** "Whose calendar?" for staff calendars (CAL-10), the list of affected patients before blocking (open
+  question), overnight ranges.
+- **Verified on dev (2026-11-04):** blocked 9 November 11:00–17:00 "Break" (dev answered 06:00–12:00 UTC), opened the
+  row, removed it (the day's blocks empty again).
+- **Tests:** `BlockViewModelTest` (9: + a DST-gap range refused, a covered day being read during the block read again; a whole day midnight to midnight with one debounced count; the request body, the
+  covered cached days re-read and the cancelled count; invalid hours count and send nothing; a failed count is said; From
+  / To dragging; a 25-hour DST day; removing re-reads every day showing the block, a block without an id sends
+  nothing), `DemoBackendTest` (+1), `CalendarScreenshotTest` (+2: `Calendar_blockTime`, `Calendar_blockPanel`).

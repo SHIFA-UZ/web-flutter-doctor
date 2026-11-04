@@ -2403,5 +2403,15 @@
   "bookingFailed": "Couldn't book. Try again.",
   "patientAssignedName": "Patient assigned: {name}",
   "patientNumber": "Patient #{id}",
-  "bookingSameDayPast": "This time has already passed today; it will be recorded as a walk-in."
+  "bookingSameDayPast": "This time has already passed today; it will be recorded as a walk-in.",
+  "blockModeDay": "Day",
+  "blockModeHours": "Hours",
+  "blockModeDays": "Several days",
+  "blockReasonBreak": "Break",
+  "blockReasonVacation": "Vacation",
+  "blockReasonSick": "Sick leave",
+  "blockCountFailed": "Couldn't check for appointments in this period.",
+  "blockFailed": "Couldn't block this time. Try again.",
+  "blockManagedElsewhere": "This block can't be removed here.",
+  "unblockFailed": "Couldn't remove the block. Try again."
 }

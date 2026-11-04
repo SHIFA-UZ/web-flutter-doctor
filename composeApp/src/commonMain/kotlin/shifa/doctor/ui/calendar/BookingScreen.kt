@@ -544,6 +544,7 @@ private fun TimeCard(
         fun label(at: Instant) = displayTime(state.clock.local(at).time)
         // Only a real choice gets a dropdown (04/06 §6): one start or one end is just the slot.
         if (starts.size > 1) {
+            FieldLabel(tr(Res.string.startTime))
             ShifaDropdown(
                 tr(Res.string.startTime),
                 starts.map { label(it.start) },
@@ -558,6 +559,7 @@ private fun TimeCard(
             )
         }
         if (ends.size > 1) {
+            FieldLabel(tr(Res.string.bookingEndTime))
             ShifaDropdown(
                 tr(Res.string.bookingEndTime),
                 ends.map { "${label(it)} · ${duration((it - state.start.start).inWholeMinutes.toInt())}" },

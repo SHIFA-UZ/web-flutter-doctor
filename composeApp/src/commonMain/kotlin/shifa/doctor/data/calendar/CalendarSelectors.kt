@@ -1,5 +1,8 @@
 package shifa.doctor.data.calendar
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -34,8 +37,19 @@ suspend fun CalendarRepository.changed(
     val touched = (days.toSet() + clock.today())
     // Every cached view of those dates (any location, any colleague) is stale now; the doctor's own is read again.
     invalidate(*state.value.days.keys.filter { it.date in touched }.toTypedArray())
-    touched.forEach { day(DayKey(it, doctorId), force = true) }
+    // Four at a time, the given days first (a block over a vacation touches many; Flutter read them one by one).
+    (days.toList() + clock.today()).distinct().chunked(BATCH).forEach { batch ->
+        coroutineScope { batch.map { async { day(DayKey(it, doctorId), force = true) } }.awaitAll() }
+    }
     AppointmentChanges.emit(touched)
+}
+
+/**
+ * The days of [dates] the calendar holds or is reading now: after a change over a long range these are re-read (the rest
+ * are read when shown). A read still running started before the change, so it counts too.
+ */
+fun CalendarRepository.knownDays(dates: List<LocalDate>): List<LocalDate> {
+    return (state.value.days.keys + pending()).map { it.date }.distinct().filter { it in dates }
 }
 
 /** Today's appointments in the practice zone, cancelled ones left out, in time order (reads the day if needed). */
@@ -72,3 +86,5 @@ suspend fun CalendarRepository.nextAppointment(
 
 private val CalendarEntry.Appointment.open: Boolean
     get() = status?.uppercase() !in setOf("CANCELLED", "COMPLETED", "NO_SHOW")
+
+private const val BATCH = 4

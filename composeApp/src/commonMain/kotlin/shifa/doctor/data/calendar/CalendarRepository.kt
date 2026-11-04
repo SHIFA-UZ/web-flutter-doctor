@@ -92,6 +92,9 @@ class CalendarRepository(
         return result
     }
 
+    /** The days being read right now, first reads and refreshes alike (a change re-reads them: they may predate it). */
+    fun pending(): Set<DayKey> = inFlight.value.keys
+
     /** Every day of [dates] not cached or not fresh, four at a time (03 §5); failures stay unread for the next try. */
     suspend fun month(
         dates: List<LocalDate>,

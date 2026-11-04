@@ -260,4 +260,16 @@ class DemoBackendTest {
             assertThat(booked.isSuccess).isTrue()
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `blocks answer locally, the count from the generated days`() =
+        runTest {
+            val repo = shifa.doctor.data.calendar.BlocksRepository { client }
+            val day = kotlinx.datetime.Instant.parse("2026-11-03T19:00:00Z") // 4 November in Tashkent: two appointments
+            val next = kotlinx.datetime.Instant.parse("2026-11-04T19:00:00Z")
+            assertThat(repo.overlapping(day, next).getOrThrow()).isEqualTo(2)
+            assertThat(repo.create(day, next, "Vacation", true).getOrThrow()).isEqualTo(2)
+            assertThat(repo.remove(9001).isSuccess).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }

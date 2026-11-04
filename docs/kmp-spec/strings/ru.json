@@ -2403,5 +2403,15 @@
   "bookingFailed": "Не удалось записать. Попробуйте снова.",
   "patientAssignedName": "Пациент записан: {name}",
   "patientNumber": "Пациент №{id}",
-  "bookingSameDayPast": "Это время сегодня уже прошло; запись сохранится как приём без записи."
+  "bookingSameDayPast": "Это время сегодня уже прошло; запись сохранится как приём без записи.",
+  "blockModeDay": "День",
+  "blockModeHours": "Часы",
+  "blockModeDays": "Несколько дней",
+  "blockReasonBreak": "Перерыв",
+  "blockReasonVacation": "Отпуск",
+  "blockReasonSick": "Больничный",
+  "blockCountFailed": "Не удалось проверить записи в этот период.",
+  "blockFailed": "Не удалось заблокировать время. Попробуйте снова.",
+  "blockManagedElsewhere": "Этот блок нельзя удалить здесь.",
+  "unblockFailed": "Не удалось снять блок. Попробуйте снова."
 }

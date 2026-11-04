@@ -9,7 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -95,23 +99,31 @@ fun ShifaDropdown(
             )
         }
         if (expanded) {
-            options.forEachIndexed { i, option ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .selectable(option == selected, role = Role.RadioButton) {
-                            onSelect(i)
-                            onExpandedChange(false)
+            // A long list (times of day) scrolls inside a capped height and opens at the chosen value.
+            val list = rememberLazyListState((options.indexOf(selected) - 1).coerceAtLeast(0))
+            LazyColumn(Modifier.heightIn(max = ShifaDimens.DropdownMenuMaxHeight), state = list) {
+                itemsIndexed(options) { i, option ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .selectable(option == selected, role = Role.RadioButton) {
+                                onSelect(i)
+                                onExpandedChange(false)
+                            }
+                            // Gap above each option is part of its touch target.
+                            .padding(
+                                start = ShifaSpacing.Inset.Sm,
+                                end = ShifaSpacing.Inset.Sm,
+                                top = ShifaSpacing.Gap.Md,
+                            ),
+                        horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (option == selected) {
+                            Icon(painterResource(Res.drawable.ic_check_12), null, tint = ShifaColors.Icon.Brand)
                         }
-                        // Gap above each option is part of its touch target.
-                        .padding(start = ShifaSpacing.Inset.Sm, end = ShifaSpacing.Inset.Sm, top = ShifaSpacing.Gap.Md),
-                    horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (option == selected) {
-                        Icon(painterResource(Res.drawable.ic_check_12), null, tint = ShifaColors.Icon.Brand)
+                        Text(option, Modifier.lineBox(style), style = style, color = ShifaColors.Text.Primary)
                     }
-                    Text(option, Modifier.lineBox(style), style = style, color = ShifaColors.Text.Primary)
                 }
             }
         }

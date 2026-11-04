@@ -180,3 +180,31 @@ internal fun BookingPastPreview() =
             )
         BookingContent(BookingUiState(past, clock, "Check-up"), BookingActions())
     }
+
+// CAL-8: the block tray over 4 November, some hours with a reason, two appointments to be cancelled.
+@Composable
+internal fun BlockTimePreview() =
+    PreviewTheme {
+        BlockTimeTray(
+            BlockUiState(
+                clock,
+                LocalDate(2026, 11, 4),
+                mode = BlockMode.Hours,
+                startMinute = 13 * 60,
+                endMinute = 17 * 60,
+                reason = "Break",
+                count = 2,
+            ),
+            BlockActions(),
+        )
+    }
+
+// The blocked row's panel.
+@Composable
+internal fun BlockPanelPreview() =
+    PreviewTheme {
+        BlockPanelContent(
+            BlockPanelUiState(shifa.doctor.data.model.CalendarEntry.Blocked(at(13, 0), at(14, 0), 1, "Lunch"), clock),
+            onClose = {},
+        )
+    }

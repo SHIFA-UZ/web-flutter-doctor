@@ -73,6 +73,12 @@ sealed interface ShellRoute {
         val opened: Long,
     ) : ShellRoute
 
+    /** Calendar → a blocked row's panel (CAL-8); [opened] as for [Appointment]. */
+    data class Block(
+        val entry: CalendarEntry.Blocked,
+        val opened: Long,
+    ) : ShellRoute
+
     /** Calendar → book a free slot (CAL-7); [opened] as for [Appointment]. */
     data class Booking(
         val slot: CalendarEntry.FreeSlot,

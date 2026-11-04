@@ -28,6 +28,11 @@ object ApiConfig {
         const val SERVICE_GROUPS = "doctors/me/service-groups"
         const val CALENDAR = "calendar"
         const val SCHEDULE_BOOK = "schedule/book"
+        const val SCHEDULE_BLOCKS = "schedule/blocks"
+        const val SCHEDULE_BLOCKS_OVERLAP = "schedule/blocks/overlapping-count"
+
+        fun scheduleBlock(id: Long) = "schedule/blocks/$id"
+
         const val PATIENTS_FOR_ASSIGNMENT = "patients/for-assignment"
 
         fun appointment(id: Long) = "appointments/$id"

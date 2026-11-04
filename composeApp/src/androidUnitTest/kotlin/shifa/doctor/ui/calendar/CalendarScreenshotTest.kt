@@ -34,4 +34,10 @@ class CalendarScreenshotTest {
 
     @Test
     fun bookingPast() = captureRoboImage("screenshots/Calendar_bookingPast.png") { BookingPastPreview() }
+
+    @Test
+    fun blockTime() = captureRoboImage("screenshots/Calendar_blockTime.png") { BlockTimePreview() }
+
+    @Test
+    fun blockPanel() = captureRoboImage("screenshots/Calendar_blockPanel.png") { BlockPanelPreview() }
 }

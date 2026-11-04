@@ -20,6 +20,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -59,6 +62,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.allDay
 import shifa.doctor.generated.resources.apply
 import shifa.doctor.generated.resources.appointments
+import shifa.doctor.generated.resources.blockTime
 import shifa.doctor.generated.resources.blocked
 import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.calendarTimezoneMismatchHint
@@ -73,6 +77,7 @@ import shifa.doctor.generated.resources.hiddenByFilters
 import shifa.doctor.generated.resources.hideDetails
 import shifa.doctor.generated.resources.ic_alert_circle_16
 import shifa.doctor.generated.resources.ic_block_16
+import shifa.doctor.generated.resources.ic_block_22
 import shifa.doctor.generated.resources.ic_refresh_22
 import shifa.doctor.generated.resources.ic_sliders_22
 import shifa.doctor.generated.resources.noItemsForThisDay
@@ -115,6 +120,7 @@ import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.TimeZones
+import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
 
@@ -260,6 +266,8 @@ fun CalendarScreen(
     viewModel: CalendarViewModel = viewModel { CalendarViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // The block sheet's open stamp (a fresh form each time), null when closed.
+    var blocking by rememberSaveable { mutableStateOf<Long?>(null) }
     // Back in the app (or the tab): the day again, within the throttle; the mismatch is re-evaluated by recomposition.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
     CalendarContent(
@@ -269,9 +277,11 @@ fun CalendarScreen(
             month = viewModel::month,
             retry = { viewModel.load(force = true) },
             open = onOpen,
+            block = { blocking = currentInstant().toEpochMilliseconds() },
             ui = viewModel::ui,
         ),
     )
+    blocking?.let { BlockTimeSheet(state.selected, it, onClose = { blocking = null }) }
 }
 
 class CalendarActions(
@@ -279,6 +289,8 @@ class CalendarActions(
     val month: (Int) -> Unit = {},
     val retry: () -> Unit = {},
     val open: (CalendarEntry) -> Unit = {},
+    // Block time over the selected day (CAL-8).
+    val block: () -> Unit = {},
     val ui: ((CalendarUiState) -> CalendarUiState) -> Unit = {},
 )
 
@@ -321,6 +333,12 @@ private fun Header(
         Text(tr(Res.string.calendar), style = ShifaTextStyles.trayTitle(), color = ShifaColors.Text.Primary)
         Text(longDate(state.selected), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
     }
+    ShifaIconButton(
+        Res.drawable.ic_block_22,
+        tr(Res.string.blockTime),
+        actions.block,
+        variant = ShifaIconButtonVariant.Ghost,
+    )
     ShifaIconButton(
         Res.drawable.ic_refresh_22,
         tr(Res.string.refresh),
