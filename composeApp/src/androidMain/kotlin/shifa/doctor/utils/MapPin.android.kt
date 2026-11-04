@@ -12,7 +12,9 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 
@@ -34,12 +36,16 @@ actual fun MapPin(
             MapView(context).apply {
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
+                // Pinch zooms; the built-in +/− buttons would sit under the screen's own controls.
+                zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
                 controller.setZoom(ZOOM)
             }
         }
     val marker = remember { Marker(map).apply { setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM) } }
     DisposableEffect(map) {
         map.overlays += marker
+        // OSM's tile policy: "© OpenStreetMap contributors" on the map.
+        map.overlays += CopyrightOverlay(context)
         map.overlays +=
             MapEventsOverlay(
                 object : MapEventsReceiver {

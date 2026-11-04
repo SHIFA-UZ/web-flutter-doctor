@@ -1696,6 +1696,7 @@
     <string name="photoUpdated">Фото обновлено</string>
     <string name="photoUploadFailed">Не удалось загрузить фото. Попробуйте ещё раз.</string>
     <string name="pickADate">Выберите дату</string>
+    <string name="pickOnMap">Выбрать на карте</string>
     <string name="pin">PIN-код</string>
     <string name="pinDigitsEntered">Введено %1$s из %2$s цифр</string>
     <string name="pinLengthHint">От 4 до 6 цифр</string>
@@ -2024,6 +2025,7 @@
     <string name="takeExtraCareForChronicDiseasePatient">Пожалуйста, будьте осторожны и дважды проверьте все процедуры, лекарства и методы лечения, которые вы планируете для этого пациента.</string>
     <string name="takePhoto">Сделать фото</string>
     <string name="talkWithAi">Разговор с ИИ</string>
+    <string name="tapMapToMovePin">Нажмите на карту, чтобы переместить метку</string>
     <string name="tapSlotOrManageHint">Сначала выберите строку в списке расписания выше — здесь завершите запись или изменение.</string>
     <string name="tapToSearch">Нажмите для поиска и выбора пациента</string>
     <string name="taskCancelled">Задача успешно отменена</string>

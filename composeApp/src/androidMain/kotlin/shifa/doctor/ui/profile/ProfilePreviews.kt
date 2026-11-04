@@ -137,6 +137,8 @@ private val contact =
         "Tashkent",
         "100115",
         "Bunyodkor Ave 12, 3rd floor",
+        41.2856,
+        69.2034,
     )
 
 @Composable
@@ -146,8 +148,6 @@ internal fun ContactPreview() =
             ContactUiState(
                 saved = contact,
                 form = contact.copy(phone = "12345"),
-                latitude = 41.2856,
-                longitude = 69.2034,
                 timeZone = "Asia/Tashkent",
                 phoneError = Res.string.invalidPhone,
             ),

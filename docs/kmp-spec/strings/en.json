@@ -2307,5 +2307,7 @@
   "changeTimezoneConfirm": "Change timezone",
   "noTimezoneFound": "No timezone found. Try the city name in English.",
   "changeTimezoneDayBefore": "{time} the day before",
-  "changeTimezoneNextDay": "{time} the next day"
+  "changeTimezoneNextDay": "{time} the next day",
+  "pickOnMap": "Pick on map",
+  "tapMapToMovePin": "Tap the map to move the pin"
 }

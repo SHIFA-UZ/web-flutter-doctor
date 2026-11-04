@@ -1696,6 +1696,7 @@
     <string name="photoUpdated">Photo updated</string>
     <string name="photoUploadFailed">Couldn't upload the photo. Try again.</string>
     <string name="pickADate">Pick a date</string>
+    <string name="pickOnMap">Pick on map</string>
     <string name="pin">PIN</string>
     <string name="pinDigitsEntered">%1$s of %2$s digits entered</string>
     <string name="pinLengthHint">4 to 6 digits</string>
@@ -2024,6 +2025,7 @@
     <string name="takeExtraCareForChronicDiseasePatient">Please be careful and double-check all procedures, medications, and treatments you are planning for this patient.</string>
     <string name="takePhoto">Take Photo</string>
     <string name="talkWithAi">Talk with AI</string>
+    <string name="tapMapToMovePin">Tap the map to move the pin</string>
     <string name="tapSlotOrManageHint">First pick an entry in the schedule list above — then book, reschedule, or cancel here.</string>
     <string name="tapToSearch">Tap to search and select patient</string>
     <string name="taskCancelled">Task cancelled successfully</string>

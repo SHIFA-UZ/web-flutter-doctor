@@ -1696,6 +1696,7 @@
     <string name="photoUpdated">Rasm yangilandi</string>
     <string name="photoUploadFailed">Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.</string>
     <string name="pickADate">Sanani tanlang</string>
+    <string name="pickOnMap">Xaritadan tanlash</string>
     <string name="pin">PIN kod</string>
     <string name="pinDigitsEntered">%2$s ta raqamdan %1$s tasi kiritildi</string>
     <string name="pinLengthHint">4 dan 6 tagacha raqam</string>
@@ -2024,6 +2025,7 @@
     <string name="takeExtraCareForChronicDiseasePatient">Iltimos, ehtiyot bo'ling va bu bemor uchun siz rejalashtirayotgan protseduralar, dorilar va davolanishni ikki martta tekshiring.</string>
     <string name="takePhoto">Rasm olish</string>
     <string name="talkWithAi">AI bilan suhbat</string>
+    <string name="tapMapToMovePin">Pinni ko'chirish uchun xaritaga bosing</string>
     <string name="tapSlotOrManageHint">Avval yuqoridagi jadvaldan band yoki bo'sh slotni tanlang — keyin shu yerda amalni yakunlang.</string>
     <string name="tapToSearch">Qidirish va tanlash uchun bosing</string>
     <string name="taskCancelled">Vazifa muvaffaqiyatli bekor qilindi</string>

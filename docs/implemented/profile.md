@@ -201,3 +201,24 @@ Built 2026-11-04. Flows `08/05-practice-timezone-picker.md`, `08/06-practice-tim
   failure keeps the old zone, 09:00 shift with day changes and DST, save surviving close/reopen and rotation),
   `TimeZonesTest` (+2: city / offset search incl. Etc/GMT+5, current zone order),
   `Register_timeZonePicker` screenshot re-recorded with the new rows.
+
+## PROF-07 · Location: map pin and coordinates
+
+Built 2026-11-04. Flows `08/03` §3.3 and §7, `08/04-map-pin-picker.md`; board `DaProfile.dc.html` (`profMap`).
+
+- **What it does:** Contact & clinic address gained "Pick on map". The map picker (inside the same screen, so the
+  form keeps its edits) opens on the saved pin, or on Tashkent's centre (41.2995, 69.2401) when there is none. It
+  shows the native map (`utils/MapPin`: osmdroid with OSM tiles and the "© OpenStreetMap contributors" credit on
+  Android, MapKit on iOS), one pin a tap moves, and a card with the coordinates (6 decimals), "Tap the map to move the
+  pin" and Confirm (also the header check). Confirm puts the coordinates into the form; Save sends `latitude` and
+  `longitude` together in the profile PATCH, even when no address field is filled (flow §12: the pin is never lost).
+  Back closes the map, not the form; after the pin moved, Back or × asks "Discard changes?" first. iOS moves the pin
+  with a tap gesture on MapKit (compiled, not yet run on a simulator).
+- **Not built (backend first, BE-15):** address search, reverse geocoding (fields from the pin), the static map
+  preview, the short address in the map card. The address fields are typed; no Google call from the app. Also not
+  built: "my location" (needs the location permission flow) and dragging the pin (tap to move).
+- **Verified on the emulator against dev (2026-11-04):** map opens with OSM tiles, a tap moves the pin and updates
+  the coordinates, Back closes the map without changes.
+- **Tests:** `ProfileFormsViewModelTest` (+2: pin → form → PATCH with both coordinates, Back closing only the map and
+  asking first after a move;
+  Tashkent default); `Contact_phoneError` screenshot re-recorded with the coordinates line and the button.

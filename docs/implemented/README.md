@@ -73,7 +73,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | PROF-04 Contact, invoicing, password | Done | Contact & clinic address (phone, e-mail, editable address fields, timezone row), Subscription & billing (current plan, invoicing card), Security (app lock + change password). Address search and map are PROF-07; plans and checkout SUB-02. See profile.md. |
 | PROF-05 Profession catalogue | Done | Catalogue, fallback and picker came with AUTH-07 / PROF-03; dental detection (with Implantologist) ported with Flutter's tests. See profile.md. |
 | PROF-06 Timezone picker | Done | Shared timezone list (city, zone, offset; offset search), practice-timezone sheet over Profile and Contact with the change warning. See profile.md. |
-| PROF-07 … SET-03 | Not started | |
+| PROF-07 Location (map pin) | Done (partly) | "Pick on map" on Contact: native map, tap to place the pin, coordinates saved with the address. Address search and reverse geocoding wait for BE-15. See profile.md. |
+| PROF-08 … SET-03 | Not started | |
 
 ## Log
 
@@ -108,3 +109,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · PROF-04 · Contact & clinic address, invoicing details, Security with password change; shared profile form pieces.
 - 2026-11-04 · PROF-05 · Dental documentation detection and the pinned profession catalogue tests.
 - 2026-11-04 · PROF-06 · Practice timezone sheet with change warning; shared timezone list for registration and profile.
+- 2026-11-04 · PROF-07 · Map pin picker on Contact; coordinates saved; geocoding waits for BE-15.

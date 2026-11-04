@@ -86,7 +86,7 @@ class ProfileFormsViewModelTest {
         assertThat(s.form.phone).isEqualTo("+998 90 000 00 00")
         assertThat(s.form.email).isEqualTo("demo.doctor@shifa.dev")
         assertThat(s.form.city).isEqualTo("Tashkent")
-        assertThat(s.latitude).isEqualTo(41.3111)
+        assertThat(s.form.latitude).isEqualTo(41.3111)
         assertThat(s.dirty).isFalse()
     }
 
@@ -153,6 +153,37 @@ class ProfileFormsViewModelTest {
         settle { classToTest.state.value.done }
         assertThat(sent.last()).isEqualTo("""doctors/me/profile {"locationRegion":"Tashkent"}""")
         assertThat(sent.count { it.startsWith("doctors/me/contact") }).isEqualTo(1)
+    }
+
+    @Test
+    fun `the map opens on the saved pin, a tap moves it, Confirm fills the form and Save sends both coordinates`() {
+        val classToTest = ContactViewModel(repo).apply { open() }
+        classToTest.openMap()
+        assertThat(classToTest.state.value.mapPin).isEqualTo(41.3111 to 69.2797)
+        assertThat(classToTest.back()).isFalse() // an unmoved pin: Back closes the map, not the form
+        assertThat(classToTest.state.value.mapPin).isNull()
+        classToTest.openMap()
+        classToTest.movePin(41.2856, 69.2034)
+        assertThat(classToTest.back()).isFalse() // a moved pin asks first
+        assertThat(classToTest.state.value.askDiscardPin).isTrue()
+        classToTest.discardPin()
+        assertThat(classToTest.state.value.mapPin).isNull()
+        assertThat(classToTest.state.value.dirty).isFalse()
+        classToTest.openMap()
+        classToTest.movePin(41.2856, 69.2034)
+        classToTest.confirmMap()
+        assertThat(classToTest.state.value.form.latitude).isEqualTo(41.2856)
+        classToTest.save()
+        settle { classToTest.state.value.done }
+        assertThat(sent).containsExactly("""doctors/me/profile {"latitude":41.2856,"longitude":69.2034}""")
+    }
+
+    @Test
+    fun `with no saved pin the map opens on Tashkent`() {
+        val classToTest = ContactViewModel(repo).apply { open() }
+        classToTest.edit { it.copy(latitude = null, longitude = null) }
+        classToTest.openMap()
+        assertThat(classToTest.state.value.mapPin).isEqualTo(41.2995 to 69.2401)
     }
 
     @Test

@@ -102,20 +102,25 @@ internal fun ProfileForm(
             content = content,
         )
     }
-    if (askDiscard) {
-        ProfileSheet(onKeep) {
-            ShifaDialogSheet(
-                tr(Res.string.discardChangesTitle),
-                tr(Res.string.discard),
-                onDiscard,
-                body = tr(Res.string.discardChangesBody),
-                tone = DialogTone.Destructive,
-                icon = Res.drawable.ic_trash_22,
-                cancelText = tr(Res.string.keepEditing),
-                onCancel = onKeep,
-            )
-        }
-    }
+    if (askDiscard) DiscardChangesSheet(onDiscard, onKeep)
+}
+
+/** "Discard changes?" with Discard (destructive) and Keep editing. */
+@Composable
+internal fun DiscardChangesSheet(
+    onDiscard: () -> Unit,
+    onKeep: () -> Unit,
+) = ProfileSheet(onKeep) {
+    ShifaDialogSheet(
+        tr(Res.string.discardChangesTitle),
+        tr(Res.string.discard),
+        onDiscard,
+        body = tr(Res.string.discardChangesBody),
+        tone = DialogTone.Destructive,
+        icon = Res.drawable.ic_trash_22,
+        cancelText = tr(Res.string.keepEditing),
+        onCancel = onKeep,
+    )
 }
 
 /** A bottom sheet that only hosts a drawn tray (`ShifaDialogSheet`, `ShifaPickerSheet`). */

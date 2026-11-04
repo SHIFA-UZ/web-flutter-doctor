@@ -2307,5 +2307,7 @@
   "changeTimezoneConfirm": "Изменить пояс",
   "noTimezoneFound": "Часовой пояс не найден. Введите название города на английском.",
   "changeTimezoneDayBefore": "{time} предыдущего дня",
-  "changeTimezoneNextDay": "{time} следующего дня"
+  "changeTimezoneNextDay": "{time} следующего дня",
+  "pickOnMap": "Выбрать на карте",
+  "tapMapToMovePin": "Нажмите на карту, чтобы переместить метку"
 }

@@ -1,13 +1,20 @@
 package shifa.doctor.ui.profile
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -31,6 +38,7 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.city
 import shifa.doctor.generated.resources.clinicAddress
+import shifa.doctor.generated.resources.confirm
 import shifa.doctor.generated.resources.contactAndClinicAddress
 import shifa.doctor.generated.resources.contactDetailsSaved
 import shifa.doctor.generated.resources.contactSavedAddressFailed
@@ -47,12 +55,16 @@ import shifa.doctor.generated.resources.notSet
 import shifa.doctor.generated.resources.patientsSeePhone
 import shifa.doctor.generated.resources.phone
 import shifa.doctor.generated.resources.phoneNumberRequired
+import shifa.doctor.generated.resources.pickOnMap
 import shifa.doctor.generated.resources.postalCode
 import shifa.doctor.generated.resources.practiceTimezone
 import shifa.doctor.generated.resources.region
 import shifa.doctor.generated.resources.saveFailed
+import shifa.doctor.generated.resources.selectLocationOnMap
+import shifa.doctor.generated.resources.selectedLocation
 import shifa.doctor.generated.resources.streetAddress
 import shifa.doctor.generated.resources.streetAddressHelper
+import shifa.doctor.generated.resources.tapMapToMovePin
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
@@ -61,8 +73,12 @@ import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaInputField
+import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
+import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.utils.MapPin
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.TimeZones
 import shifa.doctor.utils.isEmailAddress
@@ -79,16 +95,22 @@ data class ContactForm(
     val city: String = "",
     val postal: String = "",
     val street: String = "",
+    // From the map pin (PROF-07); saved with the address even when no address field is filled (flow 08/03 §12).
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
     val contact get() = phone to email
-    val address get() = listOf(country, region, district, city, postal, street)
+    val address get() = listOf(country, region, district, city, postal, street, latitude, longitude)
 }
 
 data class ContactUiState(
     val saved: ContactForm = ContactForm(),
     val form: ContactForm = saved,
-    val latitude: Double? = null,
-    val longitude: Double? = null,
+    // The map picker's pin while it is open (flow 08/04); null when closed.
+    val mapPin: Pair<Double, Double>? = null,
+    // Where the pin was when the map opened, and the "Discard changes?" question after it moved (flow 08/04 §7).
+    val mapStart: Pair<Double, Double>? = null,
+    val askDiscardPin: Boolean = false,
     val timeZone: String? = null,
     val phoneError: StringResource? = null,
     val emailError: StringResource? = null,
@@ -141,9 +163,9 @@ class ContactViewModel(
                             p?.locationCity.orEmpty(),
                             p?.locationPostalCode.orEmpty(),
                             p?.locationStreetAddress.orEmpty(),
+                            p?.latitude,
+                            p?.longitude,
                         ),
-                    latitude = p?.latitude,
-                    longitude = p?.longitude,
                     timeZone = p?.timeZone,
                 )
             }
@@ -155,8 +177,46 @@ class ContactViewModel(
 
     fun ui(change: (ContactUiState) -> ContactUiState) = _state.update(change)
 
+    /** The map opens on the current pin, or Tashkent's centre (flow 08/04 §3). */
+    fun openMap() =
+        _state.update {
+            val pin = (it.form.latitude ?: TASHKENT.first) to (it.form.longitude ?: TASHKENT.second)
+            it.copy(mapPin = pin, mapStart = pin)
+        }
+
+    fun movePin(
+        latitude: Double,
+        longitude: Double,
+    ) = _state.update { it.copy(mapPin = latitude to longitude) }
+
+    /** The pin goes into the form; nothing is saved until Save (flow 08/03 §10). */
+    fun confirmMap() =
+        _state.update { s ->
+            val pin = s.mapPin ?: return@update s
+            s.copy(
+                mapPin = null,
+                askDiscardPin = false,
+                form = s.form.copy(latitude = pin.first, longitude = pin.second),
+            )
+        }
+
+    /** Back or × on the map: a moved pin asks first; Back on the question closes the question. */
+    fun closeMap() =
+        _state.update {
+            when {
+                it.askDiscardPin -> it.copy(askDiscardPin = false)
+                it.mapPin != it.mapStart -> it.copy(askDiscardPin = true)
+                else -> it.copy(mapPin = null)
+            }
+        }
+
+    fun discardPin() = _state.update { it.copy(mapPin = null, askDiscardPin = false) }
+
+    fun keepPin() = _state.update { it.copy(askDiscardPin = false) }
+
     fun back(): Boolean {
         val s = _state.value
+        if (s.mapPin != null) return false.also { closeMap() }
         return when (backStep(s.saving, s.askDiscard, s.dirty)) {
             BackStep.Close -> true
             BackStep.Ask -> false.also { _state.update { it.copy(askDiscard = true) } }
@@ -210,6 +270,9 @@ class ContactViewModel(
                         locationCity = changed(f.city, o.city),
                         locationPostalCode = changed(f.postal, o.postal),
                         locationStreetAddress = changed(f.street, o.street),
+                        // Both together whenever the pin moved.
+                        latitude = f.latitude.takeIf { f.latitude != o.latitude || f.longitude != o.longitude },
+                        longitude = f.longitude.takeIf { f.latitude != o.latitude || f.longitude != o.longitude },
                     )
                 profile.update(request).exceptionOrNull()?.let { e ->
                     return@launch failed(
@@ -244,10 +307,24 @@ fun ContactScreen(
     LaunchedEffect(Unit) { viewModel.open() }
     val back = { if (viewModel.back()) onClose() }
     FormExitEffects(state.done, viewModel::closed, onClose, back)
-    ContactContent(
-        state,
-        ContactActions(back, viewModel::save, viewModel::edit, viewModel::ui, viewModel::discard, onTimezone),
-    )
+    val pin = state.mapPin
+    if (pin != null) {
+        MapPickerContent(pin, viewModel::movePin, viewModel::confirmMap, viewModel::closeMap)
+        if (state.askDiscardPin) DiscardChangesSheet(viewModel::discardPin, viewModel::keepPin)
+    } else {
+        ContactContent(
+            state,
+            ContactActions(
+                back,
+                viewModel::save,
+                viewModel::edit,
+                viewModel::ui,
+                viewModel::discard,
+                onTimezone,
+                viewModel::openMap,
+            ),
+        )
+    }
 }
 
 class ContactActions(
@@ -257,6 +334,7 @@ class ContactActions(
     val ui: ((ContactUiState) -> ContactUiState) -> Unit = {},
     val discard: () -> Unit = {},
     val timezone: () -> Unit = {},
+    val map: () -> Unit = {},
 )
 
 @Composable
@@ -323,20 +401,13 @@ fun ContactContent(
                     style = ShifaTextStyles.metaSmall(),
                     color = ShifaColors.Text.Secondary,
                 )
-                // Read-only until the map picker (PROF-07) sets them.
-                val lat = state.latitude
-                val lng = state.longitude
+                // Set by the map pin; no reverse geocoding until the backend proxy exists (BE-15).
                 Text(
-                    if (lat != null && lng != null) {
-                        "${coordinate(
-                            lat,
-                        )}, ${coordinate(lng)}"
-                    } else {
-                        tr(Res.string.coordinatesNotSet)
-                    },
+                    coordinates(f.latitude, f.longitude) ?: tr(Res.string.coordinatesNotSet),
                     style = ShifaTextStyles.metaSmall(),
                     color = ShifaColors.Text.Secondary,
                 )
+                ShifaSecondaryButton(tr(Res.string.pickOnMap), actions.map, Modifier.fillMaxWidth(), enabled = enabled)
             }
         }
         // Address and zone are set together; the zone saves on its own screen (flow 08/03 §3.4).
@@ -364,4 +435,49 @@ private fun coordinate(value: Double): String {
     val sign = if (micro < 0) "-" else ""
     val abs = kotlin.math.abs(micro)
     return "$sign${abs / 1_000_000}.${(abs % 1_000_000).toString().padStart(6, '0')}"
+}
+
+private val TASHKENT = 41.2995 to 69.2401
+
+private fun coordinates(
+    latitude: Double?,
+    longitude: Double?,
+) = if (latitude != null && longitude != null) "${coordinate(latitude)}, ${coordinate(longitude)}" else null
+
+/** Flow 08/04: the map with one pin (a tap moves it), and a card with the coordinates and Confirm. */
+@Composable
+private fun MapPickerContent(
+    pin: Pair<Double, Double>,
+    onMove: (Double, Double) -> Unit,
+    onConfirm: () -> Unit,
+    onClose: () -> Unit,
+) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
+    ShifaSubHeader(
+        tr(Res.string.selectLocationOnMap),
+        Modifier.statusBarsPadding(),
+        onBack = onClose,
+        onCheck = onConfirm,
+        checkDescription = Res.string.confirm,
+    )
+    Box(Modifier.weight(1f)) {
+        MapPin(pin.first, pin.second, Modifier.fillMaxSize(), onPick = onMove)
+        ShifaSection(
+            tr(Res.string.selectedLocation),
+            Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(ShifaSpacing.Inset.Md),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
+                Text(
+                    coordinates(pin.first, pin.second).orEmpty(),
+                    style = ShifaTextStyles.dialogBody(),
+                    color = ShifaColors.Text.Primary,
+                )
+                Text(
+                    tr(Res.string.tapMapToMovePin),
+                    style = ShifaTextStyles.metaSmall(),
+                    color = ShifaColors.Text.Secondary,
+                )
+                ShifaPrimaryButton(tr(Res.string.confirm), onConfirm, Modifier.fillMaxWidth())
+            }
+        }
+    }
 }

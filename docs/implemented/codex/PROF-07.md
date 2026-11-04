@@ -1,0 +1,7 @@
+- **P1 — iOS cannot select a location.** [ContactScreen.kt:444](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ContactScreen.kt:444) exposes the picker on both platforms, but [MapPin.ios.kt:23](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/iosMain/kotlin/shifa/doctor/utils/MapPin.ios.kt:23) ignores `onPick` and installs no selection gesture. Tapping never changes coordinates; Confirm can only return the incoming pin or the Tashkent default.
+
+- **P2 — Back silently discards a moved pin.** [ContactScreen.kt:197](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ContactScreen.kt:197) clears `mapPin` unconditionally; system Back calls it at line 201, and the header closes through the same callback. After moving the pin, either action loses the selection immediately. Flow `04-map-pin-picker.md` §§7, 9–10 explicitly requires “Discard the new pin position?” with Discard/Keep actions.---
+**Answers (both fixed):**
+1. *iOS can't move the pin (P1):* the iOS `MapPin` now has a tap gesture (`UITapGestureRecognizer` → `convertPoint(toCoordinateFromView)` → `onPick`), like Android's tap. Compiles and links; not yet run on a simulator.
+2. *Back drops a moved pin:* Back or × after the pin moved asks "Discard changes?" (the shared `DiscardChangesSheet`); an unmoved pin just closes. Tested.
+Local; no second round.

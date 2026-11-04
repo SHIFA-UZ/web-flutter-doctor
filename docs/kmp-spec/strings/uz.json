@@ -2307,5 +2307,7 @@
   "changeTimezoneConfirm": "Mintaqani o'zgartirish",
   "noTimezoneFound": "Vaqt mintaqasi topilmadi. Shahar nomini ingliz tilida yozing.",
   "changeTimezoneDayBefore": "{time} (bir kun oldin)",
-  "changeTimezoneNextDay": "{time} (keyingi kun)"
+  "changeTimezoneNextDay": "{time} (keyingi kun)",
+  "pickOnMap": "Xaritadan tanlash",
+  "tapMapToMovePin": "Pinni ko'chirish uchun xaritaga bosing"
 }
