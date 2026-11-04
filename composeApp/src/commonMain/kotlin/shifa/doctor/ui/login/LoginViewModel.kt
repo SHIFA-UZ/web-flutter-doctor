@@ -25,12 +25,15 @@ import shifa.doctor.generated.resources.notDoctorAccount
 import shifa.doctor.generated.resources.requestTimeout
 import shifa.doctor.generated.resources.sessionExpiredBanner
 import shifa.doctor.generated.resources.somethingWentWrong
+import shifa.doctor.generated.resources.youveSignedOut
 
 /** What the banner says and how it looks; strings are kept as keys so a language switch re-renders them (flow §8). */
 data class LoginBanner(
     val text: StringResource,
     val error: Boolean,
     val requestId: String? = null,
+    // A calm note, not a warning ("You've signed out"): the design's teal banner.
+    val neutral: Boolean = false,
 )
 
 data class LoginUiState(
@@ -106,9 +109,11 @@ class LoginViewModel(
         LoginBanner(
             when (reason) {
                 SessionEndReason.AccountDisabled -> Res.string.accountDisabledBanner
+                SessionEndReason.SignedOut -> Res.string.youveSignedOut
                 else -> Res.string.sessionExpiredBanner
             },
             error = reason == SessionEndReason.AccountDisabled,
+            neutral = reason == SessionEndReason.SignedOut,
         )
 
     private companion object {

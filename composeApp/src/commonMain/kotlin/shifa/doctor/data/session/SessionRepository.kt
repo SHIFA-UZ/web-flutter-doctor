@@ -51,7 +51,7 @@ class SessionRepository(
 
     private val _ended = MutableSharedFlow<SessionEndReason>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    /** The last reason a session ended by itself (not by sign-out); the sign-in screen shows its banner once. */
+    /** The last reason a session ended (sign-out included); the sign-in screen shows its banner once. */
     val ended: SharedFlow<SessionEndReason> = _ended.asSharedFlow()
 
     init {
@@ -87,8 +87,17 @@ class SessionRepository(
             }
         }
 
-    /** The doctor signed out (one dialog, one navigation: the shell reacts to [session] turning null). */
-    fun signOut() = synchronized(this) { clear() }
+    /**
+     * The doctor signed out (one dialog, one navigation: the shell reacts to [session] turning null; Sign In says "You've
+     * signed out"). The app-lock PIN and the language stay (flow 08/15 §4). Unregistering the push token waits for the
+     * Firebase cleanup (D-15, PUSH-01).
+     */
+    fun signOut() =
+        synchronized(this) {
+            if (_session.value == null) return@synchronized
+            clear()
+            _ended.tryEmit(SessionEndReason.SignedOut)
+        }
 
     /** The network ended the session that sent [token]; a report about any other (earlier) session is ignored. */
     fun end(

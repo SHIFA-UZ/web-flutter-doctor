@@ -1,6 +1,7 @@
 package shifa.doctor
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,14 +24,19 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.signOut
 import shifa.doctor.ui.auth.LanguageSwitch
 import shifa.doctor.ui.auth.LocalLanguageSwitch
+import shifa.doctor.ui.auth.SignOutSheet
+import shifa.doctor.ui.auth.SignOutViewModel
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.debug.spikeAutoRun
 import shifa.doctor.ui.emailcode.CodeScreen
@@ -48,6 +54,7 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
 import shifa.doctor.utils.isDebugBuild
+import shifa.doctor.utils.tr
 
 /** Root of the app: language, theme, and the top-level screens (no navigation library: CLAUDE.md). */
 @Composable
@@ -205,10 +212,18 @@ private fun AppScreens() {
                 DebugMenuScreen(onBack = { screen = Screen.SignIn })
             }
             // SHELL-01 replaces this. Debug builds reach the debug menu meanwhile.
+            // SHELL-01 replaces this; until then it offers the sign-out question (AUTH-09).
             Screen.Shell ->
-                Column(Modifier.fillMaxSize()) {
-                    ShellNoticeBanner()
-                    Box(Modifier.weight(1f)) { if (isDebugBuild) DebugMenuScreen() else Placeholder() }
+                ScopedViewModels {
+                    val signOut = viewModel { SignOutViewModel() }
+                    val question by signOut.state.collectAsState()
+                    Column(Modifier.fillMaxSize()) {
+                        ShellNoticeBanner()
+                        Box(Modifier.weight(1f)) {
+                            if (isDebugBuild) DebugMenuScreen(onSignOut = signOut::ask) else Placeholder(signOut::ask)
+                        }
+                    }
+                    SignOutSheet(question, signOut::confirm, signOut::cancel)
                 }
         }
     }
@@ -217,9 +232,14 @@ private fun AppScreens() {
 private fun debugLink(open: () -> Unit): @Composable () -> Unit = { ShifaLink("Debug menu", open) }
 
 @Composable
-private fun Placeholder() =
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun Placeholder(onSignOut: () -> Unit) =
+    Column(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text("Shifa Doctor", style = MaterialTheme.typography.headlineSmall)
+        ShifaLink(tr(Res.string.signOut), onSignOut)
     }
 
 /** A ViewModel store for what's inside, cleared when it leaves (a backend switch drops every ViewModel). */

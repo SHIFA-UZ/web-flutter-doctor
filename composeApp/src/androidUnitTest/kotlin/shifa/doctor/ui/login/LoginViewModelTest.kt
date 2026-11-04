@@ -36,6 +36,7 @@ import shifa.doctor.generated.resources.enterEmailOrPhone
 import shifa.doctor.generated.resources.invalidCredentials
 import shifa.doctor.generated.resources.minimum6Characters
 import shifa.doctor.generated.resources.networkError
+import shifa.doctor.generated.resources.youveSignedOut
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
@@ -136,5 +137,14 @@ class LoginViewModelTest {
         assertThat(vm.state.value.banner).isEqualTo(LoginBanner(Res.string.accountDisabledBanner, error = true))
         vm.dismissBanner()
         assertThat(vm.state.value.banner).isNull()
+    }
+
+    @Test
+    fun `signing out yourself gets a neutral note, not an error`() {
+        sessions.signIn(jwt(4_000_000_000L))
+        sessions.signOut()
+        assertThat(
+            vm().state.value.banner,
+        ).isEqualTo(LoginBanner(Res.string.youveSignedOut, error = false, neutral = true))
     }
 }

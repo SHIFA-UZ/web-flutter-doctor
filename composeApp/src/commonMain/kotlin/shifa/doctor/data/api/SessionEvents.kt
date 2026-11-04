@@ -1,7 +1,10 @@
 package shifa.doctor.data.api
 
-/** Why the backend (or the pre-flight check) ended the session; the sign-in screen words its banner from it. */
-enum class SessionEndReason { Expired, Unauthorized, AccountDisabled }
+/**
+ * Why a session ended; the sign-in screen words its banner from it. [SignedOut] is the doctor's own choice (AUTH-09),
+ * the others come from the backend or the pre-flight expiry check.
+ */
+enum class SessionEndReason { Expired, Unauthorized, AccountDisabled, SignedOut }
 
 /**
  * The one place a session ends from the network (17 §1): [apiCall] reports here with the token the failing request

@@ -1656,6 +1656,7 @@
     <string name="pin">PIN kod</string>
     <string name="pinLengthRule">PIN kod 4 dan 6 tagacha raqamdan iborat bo'lishi kerak</string>
     <string name="pinLockoutBanner">PIN kod juda ko'p marta noto'g'ri kiritildi. Iltimos, qayta kiring.</string>
+    <string name="pinStaysSet">PIN-kodingiz ushbu qurilmada saqlanib qoladi.</string>
     <string name="pinsDoNotMatch">PIN kodlar mos kelmadi</string>
     <string name="place">Joy</string>
     <string name="planCurrencyUnknown">Reja valyutasi noma'lum</string>
@@ -1892,6 +1893,7 @@
     <string name="signInWithPhone">Telefon raqami bilan kirish</string>
     <string name="signOut">Chiqish</string>
     <string name="signOutConfirm">Chiqishni xohlaysizmi?</string>
+    <string name="signOutTitle">Tizimdan chiqasizmi?</string>
     <string name="signatureNotYet">Bemor hali imzo qo'ymagan. Xulosada imzo qatori bo'sh bo'ladi.</string>
     <string name="signatureRequestSent">Bemorga imzo so'rovi yuborildi</string>
     <string name="signedOutElsewhere">Siz tizimdan chiqarildingiz. Iltimos, qayta kiring.</string>
@@ -2231,4 +2233,5 @@
     <string name="yesterday">Kecha</string>
     <string name="yourCameraPreview">Kamerangizni oldindan ko'rish</string>
     <string name="yourName">Sizning ismingiz</string>
+    <string name="youveSignedOut">Siz tizimdan chiqdingiz.</string>
 </resources>

@@ -59,7 +59,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | AUTH-06 Create account (doctor) | Done (no e-mail code: D-04) | Step 1 form, duplicate-doctor check, existing-patient confirmation, step 2 with the practice timezone only (AUTH-07 adds the rest), `register` → shell. Invited address locked. Found BE-29 (register re-keys an existing doctor). See auth.md. |
 | AUTH-07 Registration step 2 | Done | Date of birth (Material date picker), gender, address, clinic search, professions (multi), timezone; PATCHed once after `register`, failure leaves a shell notice. Pickers built here are the ones PROF-05/06 reuse. See auth.md. |
 | AUTH-08 Receptionist registration | Done | One-step staff form on the registration screen: clinic card, invited address read-only (editable only when the invitation has none, C-4), names, timezone, passwords; `register-clinic-staff` → session → shell (SHELL-02 gives staff their shell). See auth.md. |
-| AUTH-09 … LOCK-02 | Not started | |
+| AUTH-09 Sign out | Done (push token: D-15) | One sign-out question (`SignOutSheet` + `SignOutViewModel`) for every place that offers it, PIN line when app lock is on, one navigation through the session, "You've signed out" on Sign In. Offered in the shell stand-in until SHELL-01. See auth.md. |
+| LOCK-01, LOCK-02 | Not started | |
 
 ## Log
 
@@ -80,3 +81,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · AUTH-06 · Doctor registration step 1, existing patient, timezone step; picker sheet and pick field in the kit.
 - 2026-11-04 · AUTH-07 · Registration step 2: birth date, gender, address, clinic and profession pickers, one profile PATCH.
 - 2026-11-04 · AUTH-08 · Receptionist registration on the same screen (`register-clinic-staff`).
+- 2026-11-04 · AUTH-09 · Sign-out question and neutral "You've signed out" on Sign In.

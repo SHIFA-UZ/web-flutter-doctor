@@ -1656,6 +1656,7 @@
     <string name="pin">PIN-код</string>
     <string name="pinLengthRule">PIN-код должен содержать от 4 до 6 цифр</string>
     <string name="pinLockoutBanner">Слишком много неверных попыток ввода PIN-кода. Войдите снова.</string>
+    <string name="pinStaysSet">Ваш PIN-код останется на этом устройстве.</string>
     <string name="pinsDoNotMatch">PIN-коды не совпадают</string>
     <string name="place">Место</string>
     <string name="planCurrencyUnknown">Валюта плана неизвестна</string>
@@ -1892,6 +1893,7 @@
     <string name="signInWithPhone">Войти по номеру телефона</string>
     <string name="signOut">Выйти</string>
     <string name="signOutConfirm">Вы уверены, что хотите выйти?</string>
+    <string name="signOutTitle">Выйти из аккаунта?</string>
     <string name="signatureNotYet">Пациент ещё не подписал. В резюме строка подписи останется пустой.</string>
     <string name="signatureRequestSent">Запрос подписи отправлен пациенту</string>
     <string name="signedOutElsewhere">Вы вышли из системы. Войдите снова.</string>
@@ -2231,4 +2233,5 @@
     <string name="yesterday">Вчера</string>
     <string name="yourCameraPreview">Предпросмотр вашей камеры</string>
     <string name="yourName">Ваше имя</string>
+    <string name="youveSignedOut">Вы вышли из аккаунта.</string>
 </resources>

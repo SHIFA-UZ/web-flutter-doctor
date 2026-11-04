@@ -67,13 +67,14 @@ class SessionRepositoryTest {
     }
 
     @Test
-    fun `sign-out ends the session without a reason, a later report is ignored`() {
+    fun `sign-out says so once, a later report about that token is ignored`() {
         val r = repo()
         r.signIn(valid)
         r.signOut()
+        r.signOut()
         SessionEvents.end(SessionEndReason.Unauthorized, valid)
         assertThat(r.session.value).isNull()
-        assertThat(r.ended.replayCache).isEmpty()
+        assertThat(r.ended.replayCache).containsExactly(SessionEndReason.SignedOut)
     }
 
     @Test

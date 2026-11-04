@@ -18,11 +18,14 @@ import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoBootGate
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.signOut
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
+import shifa.doctor.utils.tr
 
 /**
  * Debug menu (CORE-08), debug builds only, English (not translated): demo data, the development backend, and the
@@ -33,6 +36,7 @@ import shifa.doctor.ui.widgets.ShifaSwitch
 fun DebugMenuScreen(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
+    onSignOut: (() -> Unit)? = null,
 ) {
     var spikes by remember { mutableStateOf(spikeAutoRun) } // -spikeAutoRun (iOS check) starts there
     val demo by DemoMode.enabled.collectAsState()
@@ -62,6 +66,7 @@ fun DebugMenuScreen(
                         DemoBootGate.entries[(gate.ordinal + 1) % DemoBootGate.entries.size],
                     )
                 },
+                onSignOut = onSignOut,
             )
         }
     }
@@ -78,6 +83,8 @@ fun DebugMenuScreenContent(
     bootGate: String,
     onBootGate: () -> Unit,
     modifier: Modifier = Modifier,
+    // Signed in (the shell's stand-in until SHELL-01): the sign-out question (AUTH-09).
+    onSignOut: (() -> Unit)? = null,
 ) = Column(
     modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
     verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
@@ -96,6 +103,7 @@ fun DebugMenuScreenContent(
             trailing = { ShifaSwitch(development, onDevelopment) },
         )
         ShifaSettingsItem("Splash gate (demo data)", onBootGate, subtitle = "$bootGate · restart the app to see it")
-        ShifaSettingsItem("Native spikes", onSpikes, divider = false)
+        ShifaSettingsItem("Native spikes", onSpikes, divider = onSignOut != null)
+        onSignOut?.let { ShifaSettingsItem(tr(Res.string.signOut), it, divider = false) }
     }
 }

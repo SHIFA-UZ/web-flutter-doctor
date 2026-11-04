@@ -244,3 +244,26 @@ Built 2026-11-04. Flow `01/10-receptionist-create-account.md`; board `DaAuth.dc.
 - **Demo data:** a write, so refused like `register` (try the form with `DEMO-RECEPTION`).
 - **Tests:** `RegisterViewModelTest` (+4), `RegisterScreenshotTest` (+2: staff, staff without an address).
 
+## AUTH-09 · Sign out
+
+Built 2026-11-04. Flow `08/15-logout-confirmation.md` (and `01` §2.10); board `DaApp.dc.html`, the `signOutOpen`
+question.
+
+- **One question for every entry** (`ui/auth/SignOut.kt`): `SignOutViewModel` (`ask`, `cancel`, `confirm`; the PIN
+  state comes from the new `data/applock/AppLockRepository`, which LOCK-01 grows) and
+  `SignOutSheet` (a `ShifaDialogSheet` in a `ModalBottomSheet`, the DialogStates form on phones): the logout disc,
+  "Sign out?", "Are you sure you want to sign out?" plus "Your PIN stays set on this device." when app lock has a PIN,
+  "Sign Out" (destructive) and "Cancel". Cancel, a tap outside and Back cancel; a second confirm does nothing. The
+  More sheet, Profile and Security (SHELL-01, PROF, SET) reuse it instead of Flutter's four copies.
+- **Confirm:** `SessionRepository.signOut()` clears the token, last activity and the language-sync memory (the PIN
+  and the language stay, flow §4) and records `SessionEndReason.SignedOut`; the shell's "no session → Sign In" effect
+  is the single navigation, and every shell ViewModel goes with the shell's store. Sign In shows a neutral "You've
+  signed out." (flow §5, NEW) in the design's calm teal banner (the design has no info banner). Works offline: nothing is sent.
+- **Not built:** `PUT /doctors/me/fcm-token ""` waits for PUSH-01 and the Firebase cleanup (D-15). The extra lines
+  for a running upload, recording or call (flow §3, §7) come with the features that own those (chat, documents,
+  voice, video).
+- **Where it is now:** the shell stand-in offers it (debug menu row "Sign Out" in debug builds, a link in release)
+  until SHELL-01 builds the More sheet.
+- **Tests:** `SignOutViewModelTest` (2), `LoginViewModelTest` (+1), `SessionRepositoryTest` (sign-out now records
+  its reason), `SignOutScreenshotTest` (1).
+
