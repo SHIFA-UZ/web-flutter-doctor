@@ -155,3 +155,21 @@ invoicing card), `08/11-security.md` (password card); board `DaProfile.dc.html` 
   billing keeps a newer Stripe account), `ShellViewModelTest` (+1, notices),
   `DemoBackendTest` (+1, password change), `ProfileScreenshotTest` (+3: `Contact_phoneError`, `Billing_ibanError`,
   `Security_password`; `PersonalInfo_errors` re-recorded: the Save check hides during an upload).
+
+## PROF-05 · Profession catalogue and dental detection
+
+Built 2026-11-04. Spec `08 §4`.
+
+- **Catalogue:** done earlier and recorded there. `GET /public/professions` (138 entries with both labels) with the
+  bundled copy as the immediate fallback (AUTH-07, PROF-03); `Profession.label()` per locale (uz Latin, ўзбекча
+  transliterated, en / ru English: the catalogue has no Russian labels); search over English, Uzbek Latin and Cyrillic
+  (`List<Profession>.matching`); the shared `ProfessionPickerSheet` with legacy "Current: …" rows (PROF-03). The
+  stored value stays the English labels joined with ", ".
+- **Dental detection** (`data/catalog/DocumentationTemplate.kt`): `isDentalProfession` / `documentationTemplateFor`
+  ported from Flutter's `isDentalDocumentationProfession` (its English, Uzbek and Russian keys). It also catches
+  Implantologist, which Flutter missed, plus the Uzbek labels of the catalogue's oral and maxillofacial surgeons. Any
+  dental entry in a multi-profession value picks the dental template. The consult screens and the treatment-plan
+  wizard will use it (CONSULT / PLAN tickets).
+- **Tests:** `ProfessionCatalogTest` (5): Flutter's pinned catalogue checks (138 entries, Urologist → Urolog, ten
+  specialties), every dental entry in English and Uzbek, Russian / Uzbek free text, a multi-profession value, and no
+  other catalogue entry flagged.
