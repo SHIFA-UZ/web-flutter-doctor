@@ -47,6 +47,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaPickerSheet
 import shifa.doctor.utils.TimeZones
 import shifa.doctor.utils.currentInstant
+import shifa.doctor.utils.displayMinutes
 import shifa.doctor.utils.tr
 
 /**
@@ -272,5 +273,5 @@ internal fun nineOClockIn(
         val minutes = 9 * 60 + diff / 60
         val day = minutes.floorDiv(24 * 60)
         val m = minutes.mod(24 * 60)
-        "${(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}" to day
+        displayMinutes(m) to day
     }.getOrNull()

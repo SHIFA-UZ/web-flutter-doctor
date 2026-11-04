@@ -67,7 +67,6 @@ import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.register.DobPicker
-import shifa.doctor.ui.register.displayDate
 import shifa.doctor.ui.register.label
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
@@ -81,6 +80,7 @@ import shifa.doctor.ui.widgets.ShifaPickField
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.utils.PickedImage
+import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.rememberCameraLauncher
 import shifa.doctor.utils.rememberImagePickerLauncher
 import shifa.doctor.utils.tr

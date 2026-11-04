@@ -52,6 +52,7 @@ import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.utils.UzbekCyrillic
 import shifa.doctor.utils.currentInstant
+import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.tr
 
 /**
@@ -192,9 +193,6 @@ internal fun DobPicker(
 private fun Long.toDate() = Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
 
 /** dd.MM.yyyy, the usual form in all three languages (flow 01/08 §12: never the ISO string the backend gets). */
-internal fun displayDate(date: LocalDate) =
-    "${date.dayOfMonth.toString().padStart(2, '0')}.${date.monthNumber.toString().padStart(2, '0')}.${date.year}"
-
 private fun Gender?.label() =
     when (this) {
         null -> Res.string.notSet

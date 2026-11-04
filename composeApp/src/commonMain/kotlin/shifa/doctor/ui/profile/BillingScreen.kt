@@ -68,7 +68,6 @@ import shifa.doctor.generated.resources.upgradeToPlan
 import shifa.doctor.generated.resources.yourCurrentPlan
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
-import shifa.doctor.ui.register.displayDate
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
@@ -78,6 +77,7 @@ import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.utils.Money
+import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.isEmailAddress
 import shifa.doctor.utils.normalizedEmail
 import shifa.doctor.utils.rememberInAppBrowser

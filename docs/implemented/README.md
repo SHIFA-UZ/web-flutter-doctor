@@ -81,6 +81,9 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SET-01 Settings | Done | Country, language row, starting screen, 2FA and encrypted-documents flags with queued whole-block PATCH; staff variant. See profile.md. |
 | SET-02 Language | Done | Language screen in Settings (own names, applies at once); sync, mini toggle and regional default were already in place. See profile.md. |
 | SET-03 App-lock settings | Done | Section and strings were in place (LOCK-01, PROF-04); the Settings Security row now previews the lock state. See profile.md. |
+| TZ-1 Practice clock | Done | PracticeClock (CORE-09) plus shared date/time formatters and DST tests. See calendar.md. |
+| TZ-2 Timezone list | Done | Detection and the shared list came with registration and PROF-06. See calendar.md. |
+| CAL-1 … LOC-2 | Not started | |
 
 ## Log
 
@@ -123,3 +126,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · SET-01 · Settings screen with queued settings PATCH.
 - 2026-11-04 · SET-02 · Language screen.
 - 2026-11-04 · SET-03 · App-lock preview on the Settings Security row; M2 complete.
+- 2026-11-04 · TZ-1, TZ-2 · Shared date/time formatters and DST tests; M3 started.

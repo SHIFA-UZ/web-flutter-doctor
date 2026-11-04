@@ -100,7 +100,6 @@ import shifa.doctor.generated.resources.subscriptionAndBilling
 import shifa.doctor.generated.resources.workingHoursAndLocations
 import shifa.doctor.generated.resources.yourName
 import shifa.doctor.ui.auth.AuthTitle
-import shifa.doctor.ui.register.displayDate
 import shifa.doctor.ui.register.label
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
@@ -117,6 +116,7 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.utils.TimeZones
 import shifa.doctor.utils.appVersion
+import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.tr
 
