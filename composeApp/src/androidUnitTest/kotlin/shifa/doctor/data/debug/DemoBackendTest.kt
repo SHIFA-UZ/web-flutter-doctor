@@ -501,6 +501,30 @@ class DemoBackendTest {
         }
 
     @Test
+    fun `the demo patient's active plan, its open lines, and fulfilling one`() =
+        runTest {
+            val repo = shifa.doctor.data.treatmentplans.TreatmentPlansRepository({ client })
+            val plan = repo.plans(1, 12, status = "ACTIVE").getOrThrow().single()
+            assertThat(repo.plans(1, 99, status = "ACTIVE").getOrThrow()).isEmpty()
+            assertThat(repo.plans(2, 12, status = "ACTIVE").getOrThrow()).isEmpty()
+            val detail = repo.detail(plan.id).getOrThrow()
+            assertThat(detail.lines.map { it.tooth }).containsExactly("36", "36", "46", null).inOrder()
+            val open = repo.candidates(plan.id, 102).getOrThrow()
+            assertThat(open.map { it.lineId }).doesNotContain(13L)
+            val after = repo.fulfill(plan.id, 102, listOf(open.first().lineId)).getOrThrow()
+            assertThat(after.summary.linesCompletedCount).isEqualTo(2)
+            assertThat(repo.candidates(plan.id, 102).getOrThrow()).hasSize(open.size - 1)
+            // Every line done: the plan is completed, no longer among the active ones.
+            repo.fulfill(plan.id, 102, open.drop(1).map { it.lineId }).getOrThrow()
+            assertThat(
+                repo.detail(plan.id).getOrThrow().summary.status,
+            ).isEqualTo(shifa.doctor.data.model.PlanStatus.Completed)
+            assertThat(repo.plans(1, 12, status = "ACTIVE").getOrThrow()).isEmpty()
+            assertThat(repo.plans(1, 12, status = "COMPLETED").getOrThrow()).hasSize(1)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
     fun `a demo briefing is ready for the video visit, failed for the other until asked again`() =
         runTest {
             val repo = shifa.doctor.data.appointments.AppointmentsRepository({ client })

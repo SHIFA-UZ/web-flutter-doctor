@@ -18,4 +18,12 @@ class ClinicsRepository(
                 ApiConfig.Endpoints.ME_CLINICS,
             )
         }
+
+    /**
+     * The clinic the doctor works in now: Flutter's selected clinic defaults to the first membership; null for a solo
+     * doctor. ponytail: always the first until CLINIC-01 adds choosing (and remembering) one.
+     */
+    suspend fun selected(): Result<MyClinic?> = mine().map { it.firstOrNull() }
 }
+
+val clinicsRepository = ClinicsRepository()

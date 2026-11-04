@@ -407,3 +407,32 @@ uploads with progress, a per-file failure and a refresh (APPT-04, `DocumentUploa
   - Screenshots: `Visit_photoSource`, `End_confirm` (the Photos row), `Visit_workspace` (chips below the fold).
   - **Emulator (demo):** Before from the gallery, After from the emulator camera; both chips shown; Back asked; End
     showed Photos 2; the summary had 3 pages, the photos on pages 2 and 3. Demo mode is off again.
+
+## TP-01 · Treatment plans data (pulled forward for the visit)
+
+Built 2026-11-05. Spec 09 §4.5, §6–§8, ticket TP-01; only the part the visit (DENTAL-03, TP-06) needs. Endpoints
+checked against dev's OpenAPI. Dev has no treatment plans (`GET /treatment-plans?clinicId=2` is `[]`), and a plan
+can't be deleted once made, so the shapes are tested with fixtures and the demo backend only.
+
+- **Models** (`data/model/TreatmentPlanModels.kt`): `TreatmentPlanSummary`, `PlanLine`, `TreatmentPlanDetail`,
+  `FulfillmentCandidate`, and the `PlanStatus` / `LineStatus` / `PlanKind` enums (unknown values are `Unknown`, not a
+  crash).
+  - `PlanLine.tooth` reads the FDI key from the line's `specialtyMetadata` JSON string.
+  - The detail reads the nested `summary` or an older flat one. One unreadable line is skipped, not the plan.
+- **Repository** (`data/treatmentplans/TreatmentPlansRepository.kt`): `plans(clinicId, patientId, status, planKind)`,
+  `detail`, `candidates(planId, appointmentId)` and `fulfill`.
+  - Every failure is a failure. Flutter returned null or `[]`, so an error looked like "no plans".
+  - Nothing is cached yet: the visit reads a patient's plans once when it opens. The ticket's caches come with the
+    plan screens (TP-02), scoped to the session and backend so another account or backend can't see them.
+  - One unreadable plan, line or attending doctor is skipped, not the whole list or plan.
+- **Selected clinic:** `clinicsRepository.selected()` is the first membership, Flutter's default. ponytail: choosing
+  and remembering a clinic comes with CLINIC-01.
+- **Demo:** Jasur Karimov (12) has "Treatment of 36 and 46" in the demo clinic (1 only): root canal and crown on 36, a
+  filling on 46 (done), cleaning (general). Candidates and fulfil keep their state in memory; with every line done the
+  plan is COMPLETED (09 §4.5) and leaves the active list.
+- **Not built (their tickets, M11):** visits, free slots, doctor locations, plan services, the wizard's writes and the
+  status PATCH (TP-02…05).
+- **Tests:**
+  - `TreatmentPlansRepositoryTest`: the query, an odd plan or doctor skipped, a failure not empty; the detail nested
+    and flat, line teeth and unknown statuses; candidates and the fulfil body.
+  - `DemoBackendTest`: the demo plan in its clinic only, candidates, fulfil, completion.

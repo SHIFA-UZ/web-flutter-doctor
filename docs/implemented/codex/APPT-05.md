@@ -5,6 +5,7 @@
 - **[P2] Photo additions have no required limit.** [VisitViewModel.kt:663](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/visit/VisitViewModel.kt:663) appends indefinitely, contrary to flow 04 §8’s 20-photo cap and banner. Compression bounds individual image dimensions, but retained bytes and PDF pages still grow without bound.
 
 - **[P2] Leaving retains every photo in the shell’s ViewModel store.** Photos added at [VisitViewModel.kt:663](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/visit/VisitViewModel.kt:663) are never cleared by `go()` at line 685, including after successful End or confirmed discard. The shell retains these ViewModels, while each reopened visit gets a new key ([VisitScreen.kt:343](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/visit/VisitScreen.kt:343)); photo memory therefore accumulates across finished visits.
+
 ---
 **Answers (round 1, all fixed and tested; the fixes are small and covered by tests, so no second round):**
 1. *A failed summary let the photos go without asking:* fixed. Back asks while the visit has photos and no filed

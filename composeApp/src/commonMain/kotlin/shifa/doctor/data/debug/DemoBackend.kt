@@ -32,10 +32,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.put
 import shifa.doctor.data.api.ApiConfig.Endpoints
 import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.createHttpEngine
@@ -119,6 +121,9 @@ class DemoBackend(
 
     // DENTAL-02: each visit's dental record.
     private val dentalRecords = mutableMapOf<Long, JsonObject>()
+
+    // TP-01: the demo patient's one active dental plan; the lines completed so far.
+    private val planLinesDone = mutableSetOf(DEMO_PLAN_DONE_LINE)
     private var visitDrafts = mapOf(DEMO_DRAFT_ID to 101L)
 
     /** The visit's manual note replaced (the backend keeps one per visit and updates it), else added. */
@@ -533,6 +538,31 @@ class DemoBackend(
                 briefingRetried[id] = currentInstant()
                 ok(demoBriefing(id, briefingRetried[id]))
             }
+            // Treatment plans (TP-01): Jasur Karimov (12) has one active dental plan in the demo clinic.
+            get && path == Endpoints.TREATMENT_PLANS -> {
+                val q = request.url.parameters
+                val plan = demoPlanSummary()
+                val mine =
+                    q["clinicId"] == "1" && q["patientId"].let { it == null || it == "12" } && q["planKind"] != "VISIT" &&
+                        q["status"].let { it == null || it == plan["status"]?.jsonPrimitive?.content }
+                ok(JsonArray(if (mine) listOf(plan) else emptyList()))
+            }
+            get && path == Endpoints.treatmentPlanDetail(DEMO_PLAN_ID) -> ok(demoPlanDetail())
+            get && path == Endpoints.fulfillmentCandidates(DEMO_PLAN_ID) -> ok(demoCandidates())
+            request.method == HttpMethod.Post &&
+                path.matches(
+                    Regex("treatment-plans/$DEMO_PLAN_ID/appointments/\\d+/fulfill"),
+                )
+            -> {
+                val ids =
+                    runCatching {
+                        apiJson.parseToJsonElement(
+                            body,
+                        ).jsonObject["lineIds"]!!.jsonArray.map { it.jsonPrimitive.content.toLong() }
+                    }.getOrDefault(emptyList())
+                planLinesDone += ids
+                ok(demoPlanDetail())
+            }
             // A visit's dental record (DENTAL-02): stored as given, `{}` until the first save.
             path.matches(Regex("appointments/\\d+/dental-documentation")) -> {
                 val id = path.split('/')[1].toLong()
@@ -705,6 +735,103 @@ class DemoBackend(
         val base = """{"transcriptionFeedbackEnabled":"false"${block?.let { ""","doctorApp":$it""" } ?: ""}}"""
         return apiJson.parseToJsonElement(base).jsonObject
     }
+
+    // The demo plan's lines: tooth (null: general), id, title, price.
+    private fun demoPlanLines() =
+        listOf(
+            DemoPlanLine("36", 11L, "Root canal treatment", 80_000_000L),
+            DemoPlanLine("36", 12L, "Ceramic crown", 150_000_000L),
+            DemoPlanLine("46", DEMO_PLAN_DONE_LINE, "Composite filling", 60_000_000L),
+            DemoPlanLine(null, 14L, "Professional cleaning", 40_000_000L),
+        )
+
+    private data class DemoPlanLine(
+        val fdi: String?,
+        val id: Long,
+        val title: String,
+        val price: Long,
+    )
+
+    private fun demoPlanSummary(): JsonObject {
+        val lines = demoPlanLines()
+        val total = lines.sumOf { it.price }
+        return buildJsonObject {
+            put("id", DEMO_PLAN_ID)
+            put("clinicId", 1)
+            put("patientId", 12)
+            put("patientName", "Jasur Karimov")
+            put("attendingDoctorId", 1)
+            put("attendingDoctorName", "Aziza Karimova")
+            put("title", "Treatment of 36 and 46")
+            put("diagnosis", "K04.0 Pulpitis")
+            // Every line done completes the plan (09 §4.5: the backend does it when the visit completes).
+            put("status", if (lines.all { it.id in planLinesDone }) "COMPLETED" else "ACTIVE")
+            put("planKind", "COMPREHENSIVE")
+            put("totalMinor", total)
+            put("paidMinor", DEMO_PLAN_PAID)
+            put("owedMinor", total - DEMO_PLAN_PAID)
+            put("currency", "UZS")
+            put("planPaymentStatus", "PARTIAL")
+            put("visitCount", 2)
+            put("linesCompletedCount", lines.count { it.id in planLinesDone })
+            put("linesTotalCount", lines.size)
+        }
+    }
+
+    private fun demoPlanDetail(): JsonObject =
+        buildJsonObject {
+            put("summary", demoPlanSummary())
+            put(
+                "lines",
+                JsonArray(
+                    demoPlanLines().mapIndexed { i, l ->
+                        buildJsonObject {
+                            put("id", l.id)
+                            put("title", l.title)
+                            put("quantity", 1)
+                            put("unitPriceMinor", l.price)
+                            put("discountMinor", 0)
+                            put("currency", "UZS")
+                            put("sortOrder", i)
+                            put("status", if (l.id in planLinesDone) "COMPLETED" else "PLANNED")
+                            put("lineTotalMinor", l.price)
+                            // The backend's metadata is a JSON string.
+                            l.fdi?.let {
+                                put(
+                                    "specialtyMetadata",
+                                    buildJsonObject {
+                                        put("fdi", it)
+                                        put("dentition", "permanent")
+                                        put("source", "PLAN_WIZARD")
+                                    }.toString(),
+                                )
+                            }
+                        }
+                    },
+                ),
+            )
+            put("installmentPlans", JsonArray(emptyList()))
+            put("dentalPlanDocumentation", DEMO_PLAN_DENTAL)
+        }
+
+    private fun demoCandidates(): JsonArray =
+        JsonArray(
+            demoPlanLines().filter { it.id !in planLinesDone }.map { l ->
+                buildJsonObject {
+                    put("lineId", l.id)
+                    put("title", l.title)
+                    put("fdi", l.fdi)
+                    put("dentition", "permanent")
+                    put("unitPriceMinor", l.price)
+                    put("quantity", 1)
+                    put("discountMinor", 0)
+                    put("currency", "UZS")
+                    put("lineTotalMinor", l.price)
+                    put("status", "PLANNED")
+                    put("toothMatch", false)
+                }
+            },
+        )
 
     private suspend fun doctorMe(): JsonObject =
         me ?: apiJson.parseToJsonElement(
@@ -1012,6 +1139,14 @@ class DemoBackend(
         const val DEMO_DOCTOR_KEY = "DEMO-DOCTOR"
         const val DEMO_RECEPTION_KEY = "DEMO-RECEPTION"
         const val DEMO_PATIENT_EMAIL = "demo.patient@shifa.dev"
+
+        private const val DEMO_PLAN_ID = 501L
+        private const val DEMO_PLAN_DONE_LINE = 13L
+        private const val DEMO_PLAN_PAID = 100_000_000L
+
+        // The plan's dental record (a JSON string): services planned on 36, 46 and one general.
+        private const val DEMO_PLAN_DENTAL =
+            """{"version":2,"dentition":"permanent","teeth":{"36":[{},{}],"46":[{}],"__general__":[{}]}}"""
 
         // The shape of dev's GET /me/clinics (2026-11-04), one demo clinic.
         private const val DEMO_CLINICS =
