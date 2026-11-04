@@ -1,0 +1,72 @@
+{
+  "profile": {
+    "id": 9001,
+    "firstName": "Aziza",
+    "lastName": "Karimova",
+    "dob": null,
+    "gender": null,
+    "address": "Chilonzor 9, Tashkent",
+    "clinic": "Shifa Demo Clinic",
+    "clinicId": null,
+    "profession": "Cardiologist",
+    "avatarUrl": null,
+    "photoUrl": null,
+    "scheduleValidFrom": "2026-09-30",
+    "scheduleValidUntil": "2027-10-30",
+    "biography": "Demo profile for the debug menu. Not a real doctor.",
+    "services": null,
+    "certificates": null,
+    "telegram": null,
+    "instagram": null,
+    "latitude": 41.3111,
+    "longitude": 69.2797,
+    "locationCountry": "Uzbekistan",
+    "locationRegion": null,
+    "locationDistrict": null,
+    "locationCity": "Tashkent",
+    "locationPostalCode": null,
+    "locationStreetAddress": null,
+    "timeZone": "Asia/Tashkent",
+    "consultationPriceMinor": 15000000,
+    "consultationCurrency": "UZS",
+    "smsRemindersAllowed": false
+  },
+  "contact": {
+    "phone": "+998900000000",
+    "email": "demo.doctor@shifa.dev"
+  },
+  "billing": {
+    "billingName": null,
+    "billingEmail": null,
+    "iban": null,
+    "taxId": null,
+    "stripeConnectAccountId": null,
+    "clickMerchantId": null,
+    "paymeMerchantId": null
+  },
+  "settings": {
+    "country": null,
+    "language": "en",
+    "twoFA": false,
+    "encryptedDocs": true,
+    "defaultStartTab": "home"
+  },
+  "subscription": {
+    "tier": "PREMIUM",
+    "features": [
+      "CALENDAR",
+      "DOCUMENTS",
+      "CHAT",
+      "PATIENT_MANAGEMENT",
+      "BASIC_ANALYTICS",
+      "VIDEO_CONSULTATION",
+      "AI_NOTES",
+      "SPEECH_TO_TEXT",
+      "PATIENT_BRIEFING",
+      "ASK_SHIFA_AI",
+      "REMOTE_CARE_TASKS",
+      "ADVANCED_ANALYTICS",
+      "DIFFERENTIAL_DIAGNOSIS"
+    ]
+  }
+}

@@ -147,3 +147,24 @@ Debug builds open the Spikes screen until AUTH-01 (the debug menu keeps it after
 - The sample page is `composeResources/files/spike.pdf` (hand-written, 636 bytes).
 - Codex fixed seven defects in the copied code (URL logging, player state machine and leak, PDF threading, cleanup and
   iOS refresh, the auto-run timer). **The patient app still has the same code:** worth a follow-up there.
+
+## CORE-08 · Demo backend and debug menu (`data/debug/DemoBackend.kt`, `ui/debug/DebugMenuScreen.kt`)
+
+Built 2026-11-04 on `doc-app2.0`, after the patient app's `DemoBackend`.
+
+- **`DemoMode`** (debug builds, kept across launches) switches the shared `httpClient` to a `MockEngine` client per
+  backend. **`DemoBackend`** answers every endpoint the app calls so far: `GET doctors/me` (fixture) and
+  `PUT doctors/me/language` (204; stored, so `doctors/me` shows it). `auth/login` and any unhandled GET go to the real
+  backend (sign-in works; reads are safe); every other write is refused, other `auth/` calls included (registration,
+  OTP and password reset write: Codex CORE-08), with the backend's error shape
+  (`403 code DEMO_WRITE_REFUSED`), so demo mode never changes production. "One handler per endpoint" grows with each
+  feature ticket (CLAUDE.md "Debug builds"); `DemoBackendTest` lists the handled endpoints.
+- **Fixtures come from real development responses:** `composeResources/files/demo/doctors-me.json` is the dev
+  `GET /doctors/me` for `seed.doctor1@shifa.dev` (2026-11-04) with the name, contacts, bio and coordinates replaced
+  ("Aziza Karimova", `demo.doctor@shifa.dev`). It shows the shape the app must read: `consultationPriceMinor` 15 000 000
+  = 150 000 UZS, `timeZone` Asia/Tashkent, `subscription.features` the 13 backend feature names.
+- **Debug menu** (debug builds; App shows it until AUTH-01 adds the shell, then Profile → Debug): Demo data, Development
+  backend (switching signs out, since a token from one backend is invalid on the other) and Native spikes.
+  **Not built:** fake pushes; their payloads are defined by PUSH-01 and NOTIF-*, which add them here.
+- **Tests:** `DemoBackendTest` (3: fixture answer, language write and read-back, `auth`/unknown GET passthrough and
+  write refusal).

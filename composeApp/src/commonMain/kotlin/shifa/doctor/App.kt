@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
-import shifa.doctor.ui.debug.SpikesScreen
+import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.theme.ShifaTheme
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
@@ -32,9 +32,9 @@ fun App() {
     ProvideAppLocale(language.resourceCode) {
         CompositionLocalProvider(LocalUzbekCyrillic provides language.cyrillic) {
             ShifaTheme {
-                // Until AUTH-01: debug builds open the native spikes (CORE-07), release builds a placeholder.
+                // Until AUTH-01: debug builds open the debug menu (CORE-08), release builds a placeholder.
                 if (isDebugBuild) {
-                    SpikesScreen()
+                    DebugMenuScreen()
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Shifa Doctor", style = MaterialTheme.typography.headlineSmall)

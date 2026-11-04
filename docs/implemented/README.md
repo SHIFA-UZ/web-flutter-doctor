@@ -46,7 +46,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CORE-05 HTTP client | Done | Ktor client + `apiCall` with the 17 §1 session rule (401 with token or `ACCOUNT_DISABLED` ends it, 403 never), `code`/`requestId` errors, no server text in logs, SSE reader, dev-host switch, `TokenStorage` + `Jwt` (from CORE-06), language sync call. See foundation.md. |
 | CORE-06 Storage, session | Done | `SessionRepository` (restore without network, sign-in, sign-out, ends on `SessionEvents`; logout clears only the token and last activity), `AppLockStorage` with a salted iterated PIN hash (bug 1), language sync wired to the session. See foundation.md. |
 | CORE-07 Native spikes | Done (Daily skipped, FCM blocked) | AAC record + play, PDF view and map pin work on the emulator and the simulator (osmdroid / MapKit, no Google key). FCM token: debug build rejected ("FCM Registration failed!"), credentials. Daily: skipped, needs an appointment room token + SDKs. Outcomes in `CLAUDE.md` and foundation.md. |
-| CORE-08 … CORE-09 | Not started | |
+| CORE-08 Demo backend, debug menu | Done (fake pushes deferred) | `DemoBackend` (MockEngine) answers every endpoint called so far from a scrubbed dev fixture; `auth/` and unknown GETs go to the real backend, other writes are refused. Debug menu: demo data, development backend, native spikes. Fake pushes come with PUSH-01/NOTIF. See foundation.md. |
+| CORE-09 | Not started | |
 
 ## Log
 
@@ -57,3 +58,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CORE-05 · HTTP client with the new session rule and code-based errors; verified against dev (doctor tokens last 30 days there).
 - 2026-11-04 · CORE-06 · Session repository and the hashed app-lock PIN.
 - 2026-11-04 · CORE-07 · Native spikes on emulator and simulator: audio, PDF view, map pin work; FCM blocked by credentials; Daily skipped.
+- 2026-11-04 · CORE-08 · Demo backend from real dev fixtures, debug menu.

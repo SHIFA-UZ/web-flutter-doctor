@@ -14,6 +14,8 @@ import io.ktor.http.encodedPath
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import shifa.doctor.data.debug.BackendChoice
+import shifa.doctor.data.debug.DemoBackend
+import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.utils.Jwt
@@ -39,20 +41,20 @@ internal val apiJson =
         coerceInputValues = true // a null list reads as the default, not a dropped item
     }
 
-// One client per backend (Debug menu → Development backend), built on first use. The token is the current
-// session's, so the session repository (and its SessionEvents listener) exists before any request carries one.
-private val realClients =
+// One client per backend (Debug menu → Development backend), and a demo one per backend (Debug menu → Demo data),
+// built on first use. The token is the current session's, so the session repository (and its SessionEvents
+// listener) exists before any request carries one.
+private fun clients(engine: () -> HttpClientEngine) =
     BackendChoice.Backend.entries.associateWith {
-        lazy {
-            createHttpClient(
-                { sessionRepository.session.value?.token },
-                baseUrl = it.baseUrl,
-            )
-        }
+        lazy { createHttpClient({ sessionRepository.session.value?.token }, engine(), it.baseUrl) }
     }
 
-/** The app-wide client for the chosen backend. */
-val httpClient: HttpClient get() = realClients.getValue(BackendChoice.current.value).value
+private val realClients = clients(::createHttpEngine)
+private val demoClients = clients { DemoBackend.shared.engine() }
+
+/** The app-wide client for the chosen backend; the demo backend's while Debug menu → Demo data is on. */
+val httpClient: HttpClient get() =
+    (if (DemoMode.enabled.value) demoClients else realClients).getValue(BackendChoice.current.value).value
 
 /**
  * The Ktor client (CLAUDE.md "Data layer"). [token] is read per request. It goes only to the backend host, never on

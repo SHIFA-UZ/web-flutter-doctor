@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -53,7 +52,6 @@ fun SpikesScreen(modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(ShifaSpacing.Inset.Md),
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
