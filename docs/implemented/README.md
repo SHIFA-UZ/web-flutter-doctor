@@ -131,6 +131,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | AI-06 Speech text fields | Done | Mic in the visit's SOAP / free notes / focus mode and the 025-2 note fields (PRO), recording pill with live wave and time, transcript appended with a space, messages in the app's language, Report. See visits.md. |
 | SCRIBE-01 AI scribe recording | Done (in-person; video with VIDEO-02) | Start AI Notes (PRO), recording pill, upload with the visit and language, awaiting-scribe flag for End, 429 / 403 messages, failed upload kept for another try; From Shifa AI reads again. See visits.md. |
 | PDF-01 Visit summary document | Done (made in the app; BE-01 pending) | A4 summary: header, patient and visit, clinical notes across pages, signatures, footer with page numbers; en/uz/ru labels; shared `PdfFlow` with the 025-2. Wired by APPT-07. See visits.md. |
+| APPT-07 End appointment (+ SCRIBE-02) | Done (no plan / payment steps yet) | Checklist sheet, then notes → complete → AI notes wait (3 s / 120 s, Continue without waiting) → summary PDF filed under the patient; failure before completion keeps the visit open, after it only the summary is retried. See visits.md. |
+| SCRIBE-02 Scribe wait | Done with APPT-07 | The End pipeline's AI step: cancellable, elapsed time shown. |
 
 ## Log
 
@@ -215,3 +217,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · AI-06 · Dictation in the visit notes and the 025-2 editor.
 - 2026-11-04 · SCRIBE-01 · AI scribe recording and upload from the visit.
 - 2026-11-04 · PDF-01 · The visit summary PDF, made in the app.
+- 2026-11-04 · APPT-07, SCRIBE-02 · End appointment with the summary document and the scribe wait.

@@ -4,29 +4,46 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.appointments.appointmentsRepository
+import shifa.doctor.data.calendar.calendarRepository
+import shifa.doctor.data.calendar.changed
 import shifa.doctor.data.catalog.DocumentationTemplate
 import shifa.doctor.data.catalog.documentationTemplateFor
 import shifa.doctor.data.consultation.ConsultationRepository
+import shifa.doctor.data.consultation.VisitSummary
+import shifa.doctor.data.consultation.VisitSummaryLabels
+import shifa.doctor.data.consultation.VisitSummaryPdf
 import shifa.doctor.data.consultation.consultationRepository
+import shifa.doctor.data.documents.DocumentsRepository
+import shifa.doctor.data.documents.UploadFile
+import shifa.doctor.data.documents.documentsRepository
 import shifa.doctor.data.forms.FormsRepository
 import shifa.doctor.data.forms.formsRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.AppointmentDetail
+import shifa.doctor.data.model.DocumentCategory
+import shifa.doctor.data.model.DocumentFile
 import shifa.doctor.data.model.FormTemplates
 import shifa.doctor.data.model.Patient
+import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
 import shifa.doctor.data.model.SignatureState
 import shifa.doctor.data.model.VisitKind
+import shifa.doctor.data.model.composeVisitDocumentationText
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
@@ -34,19 +51,66 @@ import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
+import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
 import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiNotesNotReadyTryLater
 import shifa.doctor.generated.resources.aiNotesUploaded
 import shifa.doctor.generated.resources.appointmentLoadFailed
+import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.noForm0252Yet
+import shifa.doctor.generated.resources.noItemsToSave
+import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.generated.resources.scribeUploadFailed
 import shifa.doctor.generated.resources.signatureRequestFailed
+import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.patients.chronicWarned
+import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.currentInstant
+import shifa.doctor.utils.displayDate
+import shifa.doctor.utils.displayTime
+import shifa.doctor.utils.doctorDisplayName
+import kotlin.time.Duration.Companion.seconds
 
 /** How the visit is documented (05 §2.4): free notes, the dental record (DENTAL-02) or the 025-2 form. */
 enum class VisitMode { General, Dental, Form0252 }
+
+/** The End pipeline's steps (flow 05/12 §3), as the progress list shows them. Plan and payment join with DENTAL-03. */
+enum class EndStep { Notes, Complete, Scribe, Summary }
+
+/** The End sheet and its progress (APPT-07). */
+data class EndUiState(
+    // The confirmation sheet with the checklist.
+    val confirm: Boolean = false,
+    val running: Boolean = false,
+    val steps: List<EndStep> = emptyList(),
+    val at: EndStep? = null,
+    // Seconds waited for the AI notes (the step shows them; Continue without waiting skips).
+    val scribeSeconds: Int = 0,
+    // The visit was completed on the server: from here only the summary can be retried.
+    val completed: Boolean = false,
+    // Done: the summary saved, or why there is none.
+    val done: Boolean = false,
+    val summary: PatientDocument? = null,
+    val noSummary: StringResource? = null,
+    // The visit was completed but its summary couldn't be saved: Retry summary (the sheet, or the footer once closed).
+    val summaryFailed: Boolean = false,
+    // The sheet was closed on a failed summary; the footer offers Retry summary.
+    val hidden: Boolean = false,
+    val error: CodeBanner? = null,
+)
+
+/** The words the summary and its document need, in the app's language (the screen builds them). */
+class EndLabels(
+    val summary: VisitSummaryLabels = VisitSummaryLabels(),
+    val aiHeading: String = "From Shifa AI",
+    val doctorHeading: String = "Doctor notes",
+    val documentTitle: (date: String, time: String) -> String = { d, t -> "Appointment documentation $d $t" },
+    val endedAt: (LocalDateTime) -> String = { "${displayDate(it.date)} ${displayTime(it.time)}" },
+    val visitType: (VisitKind) -> String = { it.name },
+    val gender: (String) -> String? = { it },
+)
 
 /** Where the doctor goes from the visit: back, the patient's record, the 025-2 editor (the notes are saved first). */
 enum class VisitExit { Back, Patient, Form }
@@ -87,6 +151,8 @@ data class VisitUiState(
     val scribeRetry: Boolean = false,
     // A recording is on its way: no second one meanwhile (uploads never overlap).
     val scribeUploading: Boolean = false,
+    // APPT-07: End appointment.
+    val end: EndUiState = EndUiState(),
 ) {
     val kind: VisitKind get() = visit?.kind ?: VisitKind.InPerson
 
@@ -107,6 +173,14 @@ class VisitViewModel(
     private val consultation: ConsultationRepository = consultationRepository,
     private val language: () -> AppLanguage = { languageStorage.language.value },
     private val profession: () -> String? = { profileRepository.me.value?.profile?.profession },
+    private val documents: DocumentsRepository = documentsRepository,
+    private val summaryPdf: (VisitSummary, VisitSummaryLabels) -> ByteArray? = { s, l -> VisitSummaryPdf().pdf(s, l) },
+    private val clock: () -> PracticeClock = { PracticeClock(profileRepository.me.value?.profile?.timeZone) },
+    // The calendar's day of the visit and today read again once the visit is completed (flow 05/12 step 4).
+    private val completedOn: suspend (PracticeClock, LocalDate) -> Unit = { c, d -> calendarRepository.changed(c, d) },
+    private val doctor: () -> Pair<String, String?> = {
+        profileRepository.me.value?.profile.let { doctorDisplayName(it?.firstName, it?.lastName, null) to it?.clinic }
+    },
     private val warned: MutableSet<Long> = chronicWarned,
 ) : ViewModel() {
     private val _state = MutableStateFlow(VisitUiState())
@@ -259,6 +333,217 @@ class VisitViewModel(
         }
     }
 
+    /** Set by the screen: the summary's words in the app's language. */
+    var endLabels = EndLabels()
+
+    private var ending: Job? = null
+    private var waitingScribe: Job? = null
+    private var endedAt: LocalDateTime? = null
+
+    fun openEnd() = _state.update { if (it.end.running) it else it.copy(end = EndUiState(confirm = true)) }
+
+    /** Closes the sheet; a completed visit whose summary failed keeps that state for the footer's Retry summary. */
+    fun closeEnd() =
+        _state.update {
+            when {
+                it.end.running -> it
+                it.end.completed && it.end.summaryFailed -> it.copy(end = it.end.copy(hidden = true))
+                else -> it.copy(end = EndUiState())
+            }
+        }
+
+    /**
+     * End appointment (APPT-07, flow 05/12): the notes saved, the visit completed (`awaitingScribe` when a recording
+     * went to the scribe), the scribe's notes waited for (SCRIBE-02: every 3 s, at most 120 s, "Continue without
+     * waiting"), the visit and its notes read again, then the summary made and filed under the patient. A failure
+     * before completion leaves the visit open (End again); after it, only the summary is retried ("Visit completed.
+     * Summary could not be saved.", Flutter left the doctor stuck). Runs once at a time.
+     */
+    fun end() {
+        val s = _state.value
+        if (s.end.running || s.visit == null) return
+        val steps =
+            listOfNotNull(EndStep.Notes, EndStep.Complete, EndStep.Scribe.takeIf { s.awaitingScribe }, EndStep.Summary)
+        _state.update { it.copy(end = EndUiState(running = true, steps = steps, at = EndStep.Notes)) }
+        ending =
+            viewModelScope.launch {
+                if (!notes.flush()) return@launch fail(CodeBanner(Res.string.notesSaveFailed))
+                step(EndStep.Complete)
+                val body = notes.state.value.text.body(notes.labels)
+                val done =
+                    consultation.complete(
+                        appointmentId,
+                        doctorNotes = body,
+                        awaitingScribe = s.awaitingScribe,
+                    ).getOrElse {
+                            e ->
+                        return@launch fail(CodeBanner(e.toUserMessage(Res.string.endFailed), requestId = e.requestId))
+                    }
+                endedAt = clock().local(currentInstant())
+                _state.update {
+                    it.copy(
+                        visit = it.visit?.copy(status = "COMPLETED"),
+                        end = it.end.copy(completed = true),
+                    )
+                }
+                s.visit.start?.let { start -> launch { completedOn(clock(), clock().local(start).date) } }
+                if ((done.scribePending || s.awaitingScribe) && !done.hasScribeNote) waitForScribe()
+                summary()
+            }
+    }
+
+    private fun step(at: EndStep) =
+        _state.update { s ->
+            // A step that turned out to be needed (the server says the scribe is pending) joins the list.
+            val steps = if (at in s.end.steps) s.end.steps else s.end.steps.dropLast(1) + at + s.end.steps.last()
+            s.copy(end = s.end.copy(at = at, steps = steps))
+        }
+
+    private fun fail(error: CodeBanner) =
+        _state.update {
+            it.copy(end = it.end.copy(running = false, at = null, error = error))
+        }
+
+    /** SCRIBE-02: the scribe's status every 3 s (120 s at most) until its notes are there, or the doctor skips. */
+    private suspend fun waitForScribe() {
+        step(EndStep.Scribe)
+        coroutineScope {
+            val started = currentInstant()
+            val ticker =
+                launch {
+                    while (true) {
+                        _state.update {
+                            it.copy(
+                                end = it.end.copy(scribeSeconds = (currentInstant() - started).inWholeSeconds.toInt()),
+                            )
+                        }
+                        delay(1.seconds)
+                    }
+                }
+            waitingScribe = launch { consultation.scribeUpdates(appointmentId).collect {} }
+            waitingScribe?.join()
+            ticker.cancel()
+        }
+    }
+
+    /** Continue without waiting: the summary is made without the AI notes (they arrive later). */
+    fun skipScribe() {
+        waitingScribe?.cancel()
+    }
+
+    /** Retry summary: the visit is already completed; the re-read and the summary run again. */
+    fun retrySummary() {
+        val s = _state.value.end
+        if (s.running || !s.completed) return
+        _state.update {
+            it.copy(
+                end =
+                    it.end.copy(
+                        running = true,
+                        summaryFailed = false,
+                        hidden = false,
+                        error = null,
+                        at = EndStep.Summary,
+                    ),
+            )
+        }
+        ending = viewModelScope.launch { summary() }
+    }
+
+    private suspend fun summary() {
+        step(EndStep.Summary)
+        val visit = appointments.detail(appointmentId).getOrNull() ?: _state.value.visit
+        notes.read()
+        val n = notes.state.value
+        // Unread notes would make a summary without them (or none at all): it fails and is retried instead.
+        if (n.loadError != null) return summaryFailed()
+        val labels = endLabels
+        // The doctor's text as typed when the server has no manual note yet (Flutter's extraDoctorNotes).
+        val local = n.text.body(notes.labels).takeIf { n.notes.orEmpty().none { note -> !note.fromAi } }.orEmpty()
+        val text =
+            composeVisitDocumentationText(
+                labels.aiHeading,
+                labels.doctorHeading,
+                n.notes.orEmpty(),
+                n.drafts.orEmpty(),
+                local,
+            )
+        if (visit != null) _state.update { it.copy(visit = visit.copy(status = "COMPLETED")) }
+        if (text.isBlank()) {
+            val pending = _state.value.awaitingScribe
+            return _state.update {
+                it.copy(
+                    end =
+                        it.end.copy(
+                            running = false,
+                            done = true,
+                            at = null,
+                            noSummary = if (pending) AI_LATER else Res.string.noItemsToSave,
+                        ),
+                )
+            }
+        }
+        val patient = _state.value.patient
+        val at = endedAt ?: clock().local(currentInstant())
+        val (doctorName, clinic) = doctor()
+        val start = visit?.start
+        val end = visit?.end
+        val pdf =
+            summaryPdf(
+                VisitSummary(
+                    appointmentId = appointmentId,
+                    clinic = clinic,
+                    endedAt = labels.endedAt(at),
+                    patientName = visit?.patientName ?: patient?.name.orEmpty(),
+                    patientId = visit?.patientId,
+                    birthDate = patient?.birth?.let(::displayDate),
+                    gender = patient?.gender?.takeIf { it.isNotBlank() }?.let(labels.gender),
+                    doctorName = doctorName,
+                    profession = profession(),
+                    visitType = labels.visitType(visit?.kind ?: VisitKind.InPerson),
+                    minutes = if (start != null && end != null) (end - start).inWholeMinutes.toInt() else null,
+                    notes = text,
+                    signatureBase64 = visit?.patientSignatureImageBase64,
+                    signedOn =
+                        visit?.signedAt?.let {
+                            clock().local(
+                                it,
+                            )
+                        }?.let { "${displayDate(it.date)} ${displayTime(it.time)}" },
+                ),
+                labels.summary,
+            )
+        val patientId = visit?.patientId
+        val uploaded =
+            if (pdf == null || patientId == null) {
+                null
+            } else {
+                val day = at.date.toString()
+                documents.upload(
+                    patientId,
+                    UploadFile(pdf, "appointment_${appointmentId}_$day.pdf", DocumentFile.PDF),
+                    labels.documentTitle(displayDate(at.date), displayTime(at.time)),
+                    DocumentCategory.APPOINTMENT_NOTE.name,
+                    appointmentId = appointmentId,
+                ).getOrNull()
+            }
+        if (uploaded == null) return summaryFailed()
+        _state.update { it.copy(end = it.end.copy(running = false, at = null, done = true, summary = uploaded)) }
+    }
+
+    private fun summaryFailed() =
+        _state.update {
+            it.copy(
+                end =
+                    it.end.copy(
+                        running = false,
+                        at = null,
+                        summaryFailed = true,
+                        error = CodeBanner(Res.string.summaryNotSaved),
+                    ),
+            )
+        }
+
     /** A mode change saves the notes first (they autosave, so nothing is asked; the backend can't empty them). */
     fun mode(to: VisitMode) {
         if (to == _state.value.mode) return _state.update { it.copy(menu = false) }
@@ -331,3 +616,5 @@ class VisitViewModel(
     /** The screen went where [VisitUiState.left] said. */
     fun leaving() = _state.update { it.copy(left = null) }
 }
+
+private val AI_LATER = Res.string.aiDocumentationWillAppearShortly

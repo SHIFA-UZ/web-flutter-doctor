@@ -109,6 +109,7 @@
     <string name="aiInsightAppointments">Сегодня осталось %1$s приёмов.</string>
     <string name="aiInsightTasks">%1$s задач на контроль ожидают.</string>
     <string name="aiNote">Заметка ИИ</string>
+    <string name="aiNotesHeading">От Shifa AI</string>
     <string name="aiNotesNeedPro">Для AI-заметок нужен PRO</string>
     <string name="aiNotesNotReadyTryLater">Заметки AI ещё не готовы. Попробуйте снова через 30 секунд.</string>
     <string name="aiNotesUploaded">Запись загружена. Заметки будут готовы через несколько минут.</string>
@@ -1016,7 +1017,15 @@
     <string name="encryptedDocuments">Зашифрованные документы</string>
     <string name="endAnyway">Всё равно завершить</string>
     <string name="endAppointment">Завершить прием</string>
+    <string name="endChecklistChars">%1$s символов</string>
+    <string name="endChecklistNone">Нет</string>
+    <string name="endChecklistNotRequested">Не запрошено</string>
+    <string name="endChecklistProcessing">Ещё готовятся — до 2 мин</string>
+    <string name="endChecklistReady">Готово</string>
+    <string name="endChecklistRequested">Запрошено, не подписано</string>
+    <string name="endChecklistSigned">Подписано</string>
     <string name="endDate">Дата окончания</string>
+    <string name="endFailed">Не удалось завершить приём. Он остаётся открытым: попробуйте ещё раз.</string>
     <string name="endOffline">Нет подключения к интернету. Завершите визит, когда подключитесь.</string>
     <string name="endTimeMustBeAfterStartTime">Время окончания должно быть после времени начала.</string>
     <string name="endVisitChecklistAi">AI-заметки</string>
@@ -1027,7 +1036,9 @@
     <string name="endVisitChecklistPlan">Пункты плана лечения</string>
     <string name="endVisitChecklistSignature">Подпись</string>
     <string name="endVisitNothingToSave">Нечего сохранять. Визит будет отмечен как завершённый без резюме.</string>
+    <string name="endVisitSub">%1$s · %2$s · время приёма %3$s мин</string>
     <string name="endVisitTitle">Завершить приём</string>
+    <string name="endingAppointment">Завершаем приём…</string>
     <string name="engagementSummary">Активность пациентов</string>
     <string name="engineApplied">Форма заполнена клиническим модулем. Проверьте перед сохранением.</string>
     <string name="engineApplyFailed">Не удалось заполнить форму. Попробуйте ещё раз.</string>
@@ -2239,6 +2250,7 @@
     <string name="stepCompleting">Завершаем визит…</string>
     <string name="stepOfTotal">Шаг %1$s из %2$s</string>
     <string name="stepRecordingPayment">Вносим оплату…</string>
+    <string name="stepSavingNotes">Сохраняем заметки…</string>
     <string name="stepSavingSummary">Сохраняем резюме…</string>
     <string name="stepWaitingAi">Ожидаем AI-заметки…</string>
     <string name="streetAddress">Адрес улицы</string>
@@ -2258,6 +2270,7 @@
     <string name="summaryDocumentTitle">Документация приёма %1$s %2$s</string>
     <string name="summaryFooter">Создано в Shifa · Конфиденциально</string>
     <string name="summaryMinutes">%1$s мин</string>
+    <string name="summaryNotSaved">Приём завершён. Не удалось сохранить итоги.</string>
     <string name="summaryPage">Стр. %1$s / %2$s</string>
     <string name="summaryPatientSignature">Подпись пациента</string>
     <string name="summaryPdf">PDF сводка</string>

@@ -175,3 +175,26 @@ internal fun BriefingFailedPreview() =
             {},
         )
     }
+
+// APPT-07: End appointment, what will be saved (notes, AI notes processing, signature awaited).
+@Composable
+internal fun EndConfirmPreview() =
+    PreviewTheme {
+        EndConfirm(state.copy(awaitingScribe = true), notes, "10:00–10:30", 18, EndActions())
+    }
+
+// APPT-07 / SCRIBE-02: the steps, waiting for the AI notes (0:42) with Continue without waiting.
+@Composable
+internal fun EndProgressPreview() =
+    PreviewTheme {
+        EndProgress(
+            EndUiState(
+                running = true,
+                steps = listOf(EndStep.Notes, EndStep.Complete, EndStep.Scribe, EndStep.Summary),
+                at = EndStep.Scribe,
+                scribeSeconds = 42,
+                completed = true,
+            ),
+            EndActions(),
+        )
+    }

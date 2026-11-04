@@ -2592,5 +2592,18 @@
   "summarySignedElectronically": "Подписано электронно {date} в приложении SHIFA для пациентов",
   "summaryFooter": "Создано в Shifa · Конфиденциально",
   "summaryPage": "Стр. {page} / {pages}",
-  "summaryDocumentTitle": "Документация приёма {date} {time}"
+  "summaryDocumentTitle": "Документация приёма {date} {time}",
+  "endVisitSub": "{patient} · {time} · время приёма {minutes} мин",
+  "endChecklistChars": "{count} символов",
+  "endChecklistNone": "Нет",
+  "endChecklistReady": "Готово",
+  "endChecklistProcessing": "Ещё готовятся — до 2 мин",
+  "endChecklistSigned": "Подписано",
+  "endChecklistRequested": "Запрошено, не подписано",
+  "endChecklistNotRequested": "Не запрошено",
+  "stepSavingNotes": "Сохраняем заметки…",
+  "endFailed": "Не удалось завершить приём. Он остаётся открытым: попробуйте ещё раз.",
+  "summaryNotSaved": "Приём завершён. Не удалось сохранить итоги.",
+  "endingAppointment": "Завершаем приём…",
+  "aiNotesHeading": "От Shifa AI"
 }

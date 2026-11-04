@@ -43,6 +43,7 @@ import kotlinx.datetime.Instant
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.consultation.VisitSummaryLabels
 import shifa.doctor.data.model.DocumentCategory
 import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
@@ -54,10 +55,12 @@ import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addToNotes
 import shifa.doctor.generated.resources.aiNote
+import shifa.doctor.generated.resources.aiNotesHeading
 import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiSuggestedDiagnoses
 import shifa.doctor.generated.resources.allergyChip
 import shifa.doctor.generated.resources.apply
+import shifa.doctor.generated.resources.appointmentEndedDocumentationSaved
 import shifa.doctor.generated.resources.appointmentGone
 import shifa.doctor.generated.resources.appointmentLoadFailed
 import shifa.doctor.generated.resources.back
@@ -65,6 +68,8 @@ import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.complaints
 import shifa.doctor.generated.resources.consultationFocusModeTitle
 import shifa.doctor.generated.resources.consultationUploadHint
+import shifa.doctor.generated.resources.dateOfBirth
+import shifa.doctor.generated.resources.dentalClinicalNotes
 import shifa.doctor.generated.resources.diagnosis
 import shifa.doctor.generated.resources.discard
 import shifa.doctor.generated.resources.docMode0252
@@ -75,9 +80,13 @@ import shifa.doctor.generated.resources.docSectionImaging
 import shifa.doctor.generated.resources.docSectionLaboratory
 import shifa.doctor.generated.resources.docSectionOther
 import shifa.doctor.generated.resources.docSectionPrivate
+import shifa.doctor.generated.resources.doctor
+import shifa.doctor.generated.resources.doctorNotesSection
 import shifa.doctor.generated.resources.documents
 import shifa.doctor.generated.resources.documentsFinalizeHint
 import shifa.doctor.generated.resources.draft
+import shifa.doctor.generated.resources.duration
+import shifa.doctor.generated.resources.endAppointment
 import shifa.doctor.generated.resources.enterNotes
 import shifa.doctor.generated.resources.firstVisit
 import shifa.doctor.generated.resources.focusMode
@@ -89,6 +98,9 @@ import shifa.doctor.generated.resources.formSignedBadge
 import shifa.doctor.generated.resources.formsTab
 import shifa.doctor.generated.resources.fromLast0252Form
 import shifa.doctor.generated.resources.fromShifaAi
+import shifa.doctor.generated.resources.gender
+import shifa.doctor.generated.resources.genderFemale
+import shifa.doctor.generated.resources.genderMale
 import shifa.doctor.generated.resources.ic_alert_16
 import shifa.doctor.generated.resources.ic_chev_d_16
 import shifa.doctor.generated.resources.ic_chev_l_16
@@ -104,6 +116,7 @@ import shifa.doctor.generated.resources.ic_upload_16
 import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.ic_x_16
 import shifa.doctor.generated.resources.icdAppliedOpenForm
+import shifa.doctor.generated.resources.inPerson
 import shifa.doctor.generated.resources.lastForm0252
 import shifa.doctor.generated.resources.lastVisitOn
 import shifa.doctor.generated.resources.leaveAnyway
@@ -112,7 +125,9 @@ import shifa.doctor.generated.resources.notes
 import shifa.doctor.generated.resources.notesNotSavedBody
 import shifa.doctor.generated.resources.notesNotSavedTitle
 import shifa.doctor.generated.resources.openForm0252
+import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.patientAgeYears
+import shifa.doctor.generated.resources.patientId
 import shifa.doctor.generated.resources.patientRecordUnavailable
 import shifa.doctor.generated.resources.patientSigned
 import shifa.doctor.generated.resources.recommended
@@ -120,6 +135,7 @@ import shifa.doctor.generated.resources.recordingForAiNotes
 import shifa.doctor.generated.resources.requestSignature
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.retryScribeUpload
+import shifa.doctor.generated.resources.retrySummary
 import shifa.doctor.generated.resources.saveAsNote
 import shifa.doctor.generated.resources.soapAssessment
 import shifa.doctor.generated.resources.soapNotesSectionSubtitle
@@ -133,6 +149,19 @@ import shifa.doctor.generated.resources.startAiNotes
 import shifa.doctor.generated.resources.startAiNotesAgain
 import shifa.doctor.generated.resources.startsIn
 import shifa.doctor.generated.resources.stay
+import shifa.doctor.generated.resources.summaryAppointmentId
+import shifa.doctor.generated.resources.summaryDoctorSignature
+import shifa.doctor.generated.resources.summaryDocumentTitle
+import shifa.doctor.generated.resources.summaryFooter
+import shifa.doctor.generated.resources.summaryMinutes
+import shifa.doctor.generated.resources.summaryNotSaved
+import shifa.doctor.generated.resources.summaryPage
+import shifa.doctor.generated.resources.summaryPatientSignature
+import shifa.doctor.generated.resources.summarySignatures
+import shifa.doctor.generated.resources.summarySignedElectronically
+import shifa.doctor.generated.resources.summaryTitle
+import shifa.doctor.generated.resources.summaryVideoVisit
+import shifa.doctor.generated.resources.summaryVisitType
 import shifa.doctor.generated.resources.tabComesLater
 import shifa.doctor.generated.resources.treatment
 import shifa.doctor.generated.resources.upload
@@ -152,6 +181,8 @@ import shifa.doctor.ui.documents.documentTitle
 import shifa.doctor.ui.documents.rememberUploadSources
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.navigation.Notice
+import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.patients.ChronicWarning
 import shifa.doctor.ui.patients.chronicLabel
 import shifa.doctor.ui.profile.ProfileChip
@@ -250,6 +281,9 @@ class VisitActions(
     val finishScribe: () -> Unit = {},
     val retryScribe: () -> Unit = {},
     val dismissScribe: () -> Unit = {},
+    // APPT-07: the End sheet; Retry summary from the footer after it was closed on a failed summary.
+    val openEnd: () -> Unit = {},
+    val retrySummary: () -> Unit = {},
 )
 
 /**
@@ -281,6 +315,7 @@ fun VisitScreen(
             tr(Res.string.soapAssessment),
             tr(Res.string.soapPlan),
         )
+    viewModel.endLabels = rememberEndLabels()
     LaunchedEffect(viewModel) { viewModel.load() }
     LaunchedEffect(state.left) {
         val to = state.left ?: return@LaunchedEffect
@@ -322,6 +357,8 @@ fun VisitScreen(
             finishScribe = { scribe.finishWith { audio, id -> viewModel.uploadScribe(audio, id) } },
             retryScribe = viewModel::retryScribe,
             dismissScribe = scribe::dismiss,
+            openEnd = viewModel::openEnd,
+            retrySummary = viewModel::retrySummary,
         )
     // Dictation for the notes fields (AI-06); the AI scribe (SCRIBE-01) has its own recorder, its state passed down.
     CompositionLocalProvider(LocalDictation provides rememberDictation()) {
@@ -345,6 +382,38 @@ fun VisitScreen(
         }
     }
     if (state.menu) NotesMenu(state, actions)
+    val end = state.end
+    if ((end.confirm || end.running || end.completed || end.error != null) && !end.hidden) {
+        val clock = remember { PracticeClock(profileRepository.me.value?.profile?.timeZone) }
+        val visit = state.visit
+        val schedule =
+            if (visit?.start != null && visit.end != null) {
+                "${displayTime(clock.local(visit.start!!).time)}–${displayTime(clock.local(visit.end!!).time)}"
+            } else {
+                ""
+            }
+        val minutes = visit?.start?.let { ((currentInstant() - it).inWholeMinutes).toInt().coerceAtLeast(0) } ?: 0
+        val doneText = end.noSummary ?: Res.string.appointmentEndedDocumentationSaved
+        val title = end.summary?.let { documentTitle(it) }
+        EndSheet(
+            state,
+            notes,
+            schedule,
+            minutes,
+            EndActions(
+                end = viewModel::end,
+                close = viewModel::closeEnd,
+                skipScribe = viewModel::skipScribe,
+                retrySummary = viewModel::retrySummary,
+                finish = {
+                    ShellNotice.pending.value =
+                        if (end.summaryFailed) Notice(Res.string.summaryNotSaved) else Notice(doneText, success = true)
+                    viewModel.leave(force = true)
+                },
+                openSummary = { end.summary?.let { d -> patientId?.let { onOpenDocument(it, d, title.orEmpty()) } } },
+            ),
+        )
+    }
     state.patient?.chronic?.takeIf { state.chronicWarning }?.let {
         ChronicWarning(chronicLabel(it)) { viewModel.ui { s -> s.copy(chronicWarning = false) } }
     }
@@ -400,6 +469,8 @@ private fun PatientParts(
             finishScribe = actions.finishScribe,
             retryScribe = actions.retryScribe,
             dismissScribe = actions.dismissScribe,
+            openEnd = actions.openEnd,
+            retrySummary = actions.retrySummary,
             documents =
                 DocumentsActions(
                     retry = documents::load,
@@ -1042,6 +1113,13 @@ private fun Footer(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10),
     ) {
+        // End appointment (APPT-07) for a visit still open; the signature state or request beside it.
+        if (state.visit?.completed != true) {
+            ShifaPrimaryButton(tr(Res.string.endAppointment), actions.openEnd, Modifier.weight(1f), destructive = true)
+        } else if (state.end.summaryFailed) {
+            // Completed, but its summary wasn't saved: try again from here (flow 05/12 §6).
+            ShifaPrimaryButton(tr(Res.string.retrySummary), actions.retrySummary, Modifier.weight(1f))
+        }
         when (state.signature) {
             SignatureState.Signed ->
                 Text(
@@ -1202,3 +1280,59 @@ private fun ScribeRecorder(
 }
 
 private const val SCRIBE = "scribe"
+
+/** The summary's words in the app's language (PDF-01), for End appointment. */
+@Composable
+private fun rememberEndLabels(): EndLabels {
+    val summary =
+        VisitSummaryLabels(
+            title = tr(Res.string.summaryTitle),
+            appointmentId =
+                tr(Res.string.summaryAppointmentId, "%ID%").let {
+                        t ->
+                    { id: Long -> t.replace("%ID%", "$id") }
+                },
+            patient = tr(Res.string.patient),
+            patientId = tr(Res.string.patientId),
+            birthDate = tr(Res.string.dateOfBirth),
+            gender = tr(Res.string.gender),
+            doctor = tr(Res.string.doctor),
+            visitType = tr(Res.string.summaryVisitType),
+            duration = tr(Res.string.duration),
+            minutes = tr(Res.string.summaryMinutes, "%M%").let { t -> { m: Int -> t.replace("%M%", "$m") } },
+            notes = tr(Res.string.dentalClinicalNotes),
+            signatures = tr(Res.string.summarySignatures),
+            doctorSignature = tr(Res.string.summaryDoctorSignature),
+            patientSignature = tr(Res.string.summaryPatientSignature),
+            signedElectronically =
+                tr(Res.string.summarySignedElectronically, "%D%").let {
+                        t ->
+                    { d: String -> t.replace("%D%", d) }
+                },
+            footer = tr(Res.string.summaryFooter),
+            page =
+                tr(Res.string.summaryPage, "%P%", "%N%").let {
+                        t ->
+                    { p: Int, n: Int -> t.replace("%P%", "$p").replace("%N%", "$n") }
+                },
+        )
+    val inPerson = tr(Res.string.inPerson)
+    val video = tr(Res.string.summaryVideoVisit)
+    val title = tr(Res.string.summaryDocumentTitle, "%D%", "%T%")
+    val male = tr(Res.string.genderMale)
+    val female = tr(Res.string.genderFemale)
+    return EndLabels(
+        summary = summary,
+        aiHeading = tr(Res.string.aiNotesHeading),
+        doctorHeading = tr(Res.string.doctorNotesSection),
+        documentTitle = { d, t -> title.replace("%D%", d).replace("%T%", t) },
+        visitType = { if (it == VisitKind.Video) video else inPerson },
+        gender = { g ->
+            when (g.trim().lowercase()) {
+                "male" -> male
+                "female" -> female
+                else -> g
+            }
+        },
+    )
+}

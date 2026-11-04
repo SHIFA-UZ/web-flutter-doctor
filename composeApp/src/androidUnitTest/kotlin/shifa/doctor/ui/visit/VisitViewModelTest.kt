@@ -26,9 +26,13 @@ import shifa.doctor.data.model.SignatureState
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
+import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
 import shifa.doctor.generated.resources.aiNotesUploaded
+import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.noForm0252Yet
+import shifa.doctor.generated.resources.noItemsToSave
 import shifa.doctor.generated.resources.patientSignatureRequestSent
+import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.stopAll
 
 class VisitViewModelTest {
@@ -38,6 +42,13 @@ class VisitViewModelTest {
     private var notesStatus = HttpStatusCode.OK
     private var uploadStatus = HttpStatusCode.Accepted
     private var drafts = "[]"
+    private var completeStatus = HttpStatusCode.OK
+    private var completeBody = """{"status":"COMPLETED"}"""
+    private var documentStatus = HttpStatusCode.OK
+    private var scribePending = false
+    private var notesList = "[]"
+    private val completedDays = mutableListOf<kotlinx.datetime.LocalDate>()
+    private var notesReadFails = false
     private var forms = """[{"id":3,"patientId":14,"templateId":"025-2","date":"2026-10-20","complaints":"Pain","diagnosis":"Caries"}]"""
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val engine =
@@ -51,13 +62,24 @@ class VisitViewModelTest {
                 path == "appointments/7" && visitStatus != HttpStatusCode.OK ->
                     respond("""{"status":404,"code":"NOT_FOUND"}""", visitStatus, json)
                 path == "appointments/7" -> ok(visit)
+                path == "appointments/7/complete" -> respond(completeBody, completeStatus, json)
+                path == "appointments/7/scribe-status" ->
+                    ok("""{"status":"processing","hasScribeNote":${!scribePending}}""")
+                path == "patients/14/documents" && method == "POST" ->
+                    if (documentStatus == HttpStatusCode.OK) {
+                        ok("""{"id":300,"title":"Appointment documentation","canView":true}""")
+                    } else {
+                        respond("""{"status":500}""", documentStatus, json)
+                    }
                 path == "appointments/7/request-signature" -> {
                     visit = visit.dropLast(1) + ""","signatureRequested":true}"""
                     ok("")
                 }
                 path == "appointments/7/consultation-notes" && method == "PUT" ->
                     respond("""{"status":${notesStatus.value}}""", notesStatus, json)
-                path == "appointments/7/consultation-notes" -> ok("[]")
+                path == "appointments/7/consultation-notes" && notesReadFails ->
+                    respond("""{"status":500}""", HttpStatusCode.InternalServerError, json)
+                path == "appointments/7/consultation-notes" -> ok(notesList)
                 path == "appointments/7/draft-notes" -> ok(drafts)
                 path == "consultations/upload-recording" ->
                     if (uploadStatus == HttpStatusCode.Accepted) {
@@ -110,6 +132,10 @@ class VisitViewModelTest {
             language = { shifa.doctor.data.storage.AppLanguage.English },
             profession = { profession },
             warned = warned,
+            documents = shifa.doctor.data.documents.DocumentsRepository(client),
+            summaryPdf = { _, _ -> "%PDF summary".encodeToByteArray() },
+            doctor = { "Dr. Karimov" to "Shifa Dev Clinic" },
+            completedOn = { _, day -> completedDays += day },
         ).also {
             created += it
             it.load()
@@ -219,5 +245,110 @@ class VisitViewModelTest {
         classToTest.helper(VisitHelper.Ai)
         settle { classToTest.state.value.helper == VisitHelper.Ai }
         assertThat(classToTest.notes.state.value.drafts?.single()?.id).isEqualTo("d1")
+    }
+
+    private fun ended(classToTest: VisitViewModel) =
+        settle {
+            !classToTest.state.value.end.running && classToTest.state.value.end.at == null
+        }
+
+    @Test
+    fun `ending saves the notes, completes the visit, and files the summary under the patient`() {
+        val classToTest = opened()
+        classToTest.notes.edit { it.copy(free = "Filling of 36") }
+        notesList = """[{"id":1,"body":"Filling of 36","source":"MANUAL"}]"""
+        classToTest.openEnd()
+        classToTest.end()
+        ended(classToTest)
+        val end = classToTest.state.value.end
+        assertThat(end.done).isTrue()
+        assertThat(end.summary?.id).isEqualTo(300L)
+        assertThat(end.steps).containsExactly(EndStep.Notes, EndStep.Complete, EndStep.Summary).inOrder()
+        val writes = calls.filter { !it.startsWith("GET") }.map { it.substringBefore(" {").substringBefore(" --") }
+        assertThat(writes).containsExactly(
+            "PUT appointments/7/consultation-notes",
+            "PUT appointments/7/complete",
+            "POST patients/14/documents",
+        ).inOrder()
+        val upload = calls.single { it.startsWith("POST patients/14/documents") }
+        assertThat(upload).contains("APPOINTMENT_NOTE")
+        assertThat(upload).contains("name=appointmentId")
+        assertThat(classToTest.state.value.visit?.completed).isTrue()
+        // The calendar's day of the visit is read again.
+        settle { completedDays.isNotEmpty() }
+        assertThat(completedDays.single()).isEqualTo(kotlinx.datetime.LocalDate(2026, 11, 4))
+    }
+
+    @Test
+    fun `nothing written ends the visit without a summary`() {
+        val classToTest = opened()
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.done).isTrue()
+        assertThat(classToTest.state.value.end.noSummary).isEqualTo(Res.string.noItemsToSave)
+        assertThat(calls.none { it.startsWith("POST patients/14/documents") }).isTrue()
+    }
+
+    @Test
+    fun `a failed complete leaves the visit open, a failed summary is retried alone`() {
+        completeStatus = HttpStatusCode.InternalServerError
+        completeBody = """{"status":500}"""
+        val classToTest = opened()
+        classToTest.notes.edit { it.copy(free = "Pain") }
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.completed).isFalse()
+        assertThat(classToTest.state.value.end.error?.text).isEqualTo(Res.string.endFailed)
+        completeStatus = HttpStatusCode.OK
+        completeBody = """{"status":"COMPLETED"}"""
+        documentStatus = HttpStatusCode.InternalServerError
+        notesList = """[{"id":1,"body":"Pain","source":"MANUAL"}]"""
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.completed).isTrue()
+        assertThat(classToTest.state.value.end.summaryFailed).isTrue()
+        assertThat(classToTest.state.value.end.error?.text).isEqualTo(Res.string.summaryNotSaved)
+        documentStatus = HttpStatusCode.OK
+        val completes = calls.count { it.startsWith("PUT appointments/7/complete") }
+        classToTest.retrySummary()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.done).isTrue()
+        assertThat(calls.count { it.startsWith("PUT appointments/7/complete") }).isEqualTo(completes)
+    }
+
+    @Test
+    fun `with a recording at the scribe, End waits for its notes and can go on without them`() {
+        scribePending = true
+        completeBody = """{"status":"COMPLETED","scribePending":true}"""
+        val classToTest = opened()
+        runBlocking { classToTest.uploadScribe(byteArrayOf(1), "rec-1") }
+        classToTest.end()
+        settle { classToTest.state.value.end.at == EndStep.Scribe }
+        assertThat(classToTest.state.value.end.steps).contains(EndStep.Scribe)
+        assertThat(calls.any { it.contains("awaitingScribe") }).isTrue()
+        classToTest.skipScribe()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.done).isTrue()
+        assertThat(classToTest.state.value.end.noSummary).isEqualTo(Res.string.aiDocumentationWillAppearShortly)
+    }
+
+    @Test
+    fun `an unreadable re-read fails the summary instead of filing it blank, and closing keeps Retry summary`() {
+        val classToTest = opened()
+        classToTest.notes.edit { it.copy(free = "Typed only") }
+        notesReadFails = true
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.summaryFailed).isTrue()
+        assertThat(calls.none { it.startsWith("POST patients/14/documents") }).isTrue()
+        classToTest.closeEnd()
+        assertThat(classToTest.state.value.end.hidden).isTrue()
+        assertThat(classToTest.state.value.end.summaryFailed).isTrue()
+        // Read again, the server has no manual note yet: the typed text makes the summary.
+        notesReadFails = false
+        classToTest.retrySummary()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.done).isTrue()
+        assertThat(classToTest.state.value.end.hidden).isFalse()
     }
 }

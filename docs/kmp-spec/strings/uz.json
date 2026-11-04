@@ -2592,5 +2592,18 @@
   "summarySignedElectronically": "{date} da SHIFA Patient ilovasi orqali elektron imzolangan",
   "summaryFooter": "Shifa tomonidan yaratilgan · Maxfiy",
   "summaryPage": "{page} / {pages}-sahifa",
-  "summaryDocumentTitle": "Qabul hujjati {date} {time}"
+  "summaryDocumentTitle": "Qabul hujjati {date} {time}",
+  "endVisitSub": "{patient} · {time} · qabul vaqti {minutes} daq",
+  "endChecklistChars": "{count} belgi",
+  "endChecklistNone": "Yo'q",
+  "endChecklistReady": "Tayyor",
+  "endChecklistProcessing": "Hali tayyorlanmoqda — 2 daqiqagacha",
+  "endChecklistSigned": "Imzolangan",
+  "endChecklistRequested": "So'ralgan, imzolanmagan",
+  "endChecklistNotRequested": "So'ralmagan",
+  "stepSavingNotes": "Qaydlar saqlanmoqda…",
+  "endFailed": "Qabulni yakunlab bo'lmadi. U ochiq qoldi: qayta urinib ko'ring.",
+  "summaryNotSaved": "Qabul yakunlandi. Xulosani saqlab bo'lmadi.",
+  "endingAppointment": "Qabul yakunlanmoqda…",
+  "aiNotesHeading": "Shifa AI dan"
 }

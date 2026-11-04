@@ -26,4 +26,10 @@ class VisitScreenshotTest {
 
     @Test
     fun briefingFailed() = captureRoboImage("screenshots/Briefing_failed.png") { BriefingFailedPreview() }
+
+    @Test
+    fun endConfirm() = captureRoboImage("screenshots/End_confirm.png") { EndConfirmPreview() }
+
+    @Test
+    fun endProgress() = captureRoboImage("screenshots/End_progress.png") { EndProgressPreview() }
 }

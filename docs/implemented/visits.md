@@ -254,3 +254,37 @@ answer); until then it is made in the app, as the 025-2 is (FORM-03).
 - **Checked:** the debug spike's sample (Cyrillic and Latin, 3 pages, 69 KB) on the emulator, pulled and rendered.
 - **Tests:** `VisitSummaryPdfTest` (3: the signatures never split from their band; the order, the footer, no signature; long notes over pages with page numbers,
   nothing under the margin, the signature image and date), `Form0252PdfTest` (after the move).
+
+## APPT-07 + SCRIBE-02 · End appointment
+
+Built 2026-11-04. Flow 05/12, spec 05 §2.3, tickets APPT-07 and SCRIBE-02 (the scribe wait is a step of the same
+pipeline, so both are in one change). Board `DaVisit` "end visit" and "end progress".
+
+- **Footer:** End Appointment (destructive) beside the signature, while the visit is open.
+- **Sheet** (`ui/visit/EndVisit.kt`): "End appointment", "{patient} · {time} · visit time {n} min", what will be
+  saved: Notes ({n} characters / None), AI notes (Ready / Still processing — up to 2 min / None), Signature (Signed /
+  Requested, not signed / Not requested); "Nothing to save…" when so; with a signature awaited, the hint, **Wait for
+  signature** and **End anyway**, else Back to notes and End appointment. Dental services, plan items, payment and
+  photos join with DENTAL-02/03 and APPT-05.
+- **Pipeline** (`VisitViewModel.end`): Saving notes (the autosave flushed; a failure stops, the visit stays open) →
+  Completing visit (`PUT …/complete` with the notes and `awaitingScribe`; a failure stops: "Couldn't end the
+  appointment. It is still open: try again.") → **Waiting for AI notes (m:ss)** when a recording went to the scribe
+  or the server says it is pending (every 3 s, at most 120 s, **Continue without waiting**; SCRIBE-02, cancellable,
+  Flutter's dialog wasn't) → Saving summary: the visit, notes and drafts read again, the documentation text composed
+  (Shifa AI first), the summary PDF made (PDF-01) and filed under the patient (`APPOINTMENT_NOTE`, "Appointment
+  documentation {date} {time}", with the visit's id). Nothing written: "No items to save. Appointment ended." (or "AI
+  documentation will appear shortly" while the scribe works), no PDF. Runs once at a time; the sheet can't be closed
+  while it runs.
+- **After completion only the summary is retried:** "Visit completed. Summary could not be saved." with **Retry
+  summary** (re-read and summary again; the visit isn't completed twice) and Close, which stays on the visit with
+  **Retry summary** in its footer (Flutter left the doctor stuck on a completed visit). Notes that can't be read again
+  fail the summary rather than leave them out; text typed but not yet on the server is used. The calendar's day of the visit and today are read again once it is completed.
+- **Done:** "Appointment Ended", the steps checked, "Appointment ended. Documentation saved."; **Done** goes back with
+  that notice, **Open Summary** opens the PDF in the viewer.
+- **Not built:** Book follow-up (flow 05/14, its own ticket), plan ticks and payment steps (DENTAL-03 / TP-06), a
+  saved "summary job" retried on the next launch, offline disabling of End.
+- **Tests:** `VisitViewModelTest` (+6: an unreadable re-read and the footer's Retry summary; the whole pipeline in order and the calendar day; nothing to save; a failed
+  complete then a failed summary retried alone; the scribe step skipped), screenshots `End_confirm`, `End_progress`,
+  `Visit_workspace` / `Visit_form0252` (the End button). **Emulator (demo mode):** a typed note → End Appointment →
+  the checklist (13 characters, AI notes none, not requested) → End appointment → the steps → "Appointment ended.
+  Documentation saved." → Open Summary shows the filed PDF (Tashkent time) → Done returns with the notice.

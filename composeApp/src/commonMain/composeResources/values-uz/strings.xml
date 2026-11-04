@@ -109,6 +109,7 @@
     <string name="aiInsightAppointments">Bugun yana %1$s ta uchrashuvingiz bor.</string>
     <string name="aiInsightTasks">%1$s ta kuzatuv vazifasi kutilmoqda.</string>
     <string name="aiNote">AI qaydi</string>
+    <string name="aiNotesHeading">Shifa AI dan</string>
     <string name="aiNotesNeedPro">AI qaydlari uchun PRO kerak</string>
     <string name="aiNotesNotReadyTryLater">AI yozuvchining qaydlari hali tayyor emas. Iltimos, 30 soniyadan so'ng qayta urinib ko'ring.</string>
     <string name="aiNotesUploaded">Yozuv yuklandi. Yozuvlar bir necha daqiqada tayyor bo'ladi.</string>
@@ -1016,7 +1017,15 @@
     <string name="encryptedDocuments">Shifrlangan hujjatlar</string>
     <string name="endAnyway">Baribir yakunlash</string>
     <string name="endAppointment">Uchrashuvni yakunlash</string>
+    <string name="endChecklistChars">%1$s belgi</string>
+    <string name="endChecklistNone">Yo'q</string>
+    <string name="endChecklistNotRequested">So'ralmagan</string>
+    <string name="endChecklistProcessing">Hali tayyorlanmoqda — 2 daqiqagacha</string>
+    <string name="endChecklistReady">Tayyor</string>
+    <string name="endChecklistRequested">So'ralgan, imzolanmagan</string>
+    <string name="endChecklistSigned">Imzolangan</string>
     <string name="endDate">Tugash sanasi</string>
+    <string name="endFailed">Qabulni yakunlab bo'lmadi. U ochiq qoldi: qayta urinib ko'ring.</string>
     <string name="endOffline">Internetga ulanmagansiz. Ulanganingizda tashrifni yakunlang.</string>
     <string name="endTimeMustBeAfterStartTime">Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak.</string>
     <string name="endVisitChecklistAi">AI qaydlari</string>
@@ -1027,7 +1036,9 @@
     <string name="endVisitChecklistPlan">Davolash rejasi bandlari</string>
     <string name="endVisitChecklistSignature">Imzo</string>
     <string name="endVisitNothingToSave">Saqlanadigan narsa yo'q. Tashrif xulosasiz yakunlangan deb belgilanadi.</string>
+    <string name="endVisitSub">%1$s · %2$s · qabul vaqti %3$s daq</string>
     <string name="endVisitTitle">Qabulni yakunlash</string>
+    <string name="endingAppointment">Qabul yakunlanmoqda…</string>
     <string name="engagementSummary">Bemorlar faoliyati</string>
     <string name="engineApplied">Shakl klinik dvigateldan to'ldirildi. Saqlashdan oldin tekshiring.</string>
     <string name="engineApplyFailed">Shaklni to'ldirib bo'lmadi. Qayta urinib ko'ring.</string>
@@ -2239,6 +2250,7 @@
     <string name="stepCompleting">Tashrif yakunlanmoqda…</string>
     <string name="stepOfTotal">%2$s qadamdan %1$s-qadam</string>
     <string name="stepRecordingPayment">To'lov qayd etilmoqda…</string>
+    <string name="stepSavingNotes">Qaydlar saqlanmoqda…</string>
     <string name="stepSavingSummary">Xulosa saqlanmoqda…</string>
     <string name="stepWaitingAi">AI qaydlari kutilmoqda…</string>
     <string name="streetAddress">Ko'cha manzili</string>
@@ -2258,6 +2270,7 @@
     <string name="summaryDocumentTitle">Qabul hujjati %1$s %2$s</string>
     <string name="summaryFooter">Shifa tomonidan yaratilgan · Maxfiy</string>
     <string name="summaryMinutes">%1$s daq</string>
+    <string name="summaryNotSaved">Qabul yakunlandi. Xulosani saqlab bo'lmadi.</string>
     <string name="summaryPage">%1$s / %2$s-sahifa</string>
     <string name="summaryPatientSignature">Bemor imzosi</string>
     <string name="summaryPdf">Xulosa PDF</string>
