@@ -221,6 +221,7 @@
     <string name="assignResult">Natijani tayinlash</string>
     <string name="asthma">Astma</string>
     <string name="attachFile">Fayl biriktirish</string>
+    <string name="attachedDocuments">Biriktirilgan hujjatlar</string>
     <string name="attachmentsAttached">Hujjatlar biriktirilgan</string>
     <string name="attentionRequired">E'tibor talab qiladi</string>
     <string name="attentionRequiredSubtitle">Hujjatlar, xabarlar va amal talab qiladigan elementlar</string>
@@ -2501,9 +2502,11 @@
     <string name="viewVisitBriefing">Tashrif brifingi</string>
     <string name="visit">Qabul</string>
     <string name="visitBriefingCopy">Nusxalash</string>
+    <string name="visitBriefingDisclaimer">AI xulosasi — asl hujjatlar bilan tekshiring.</string>
     <string name="visitBriefingEmpty">Hali hujjat yoki brifing yo‘q.</string>
     <string name="visitBriefingFailed">Tashrif brifingini yaratib bo‘lmadi.</string>
     <string name="visitBriefingPending">Biriktirilgan hujjatlardan brifing yaratilmoqda…</string>
+    <string name="visitBriefingRowFailed">Yaratib bo'lmadi · Qayta urinish</string>
     <string name="visitBriefingStillGenerating">Hali yaratilmoqda — buni yopib, keyinroq qaytishingiz mumkin.</string>
     <string name="visitBriefingSubtitle">Bemorga biriktirilgan hujjatlar asosida AI xulosasi.</string>
     <string name="visitBriefingTitle">Tashrif brifingi</string>

@@ -75,3 +75,29 @@ data class AppointmentDetail(
 
     val completed: Boolean get() = status.equals("COMPLETED", ignoreCase = true)
 }
+
+/** A visit briefing's state for the sheet (flow 05/02 §4): SKIPPED reads as None, GENERATING as Pending. */
+enum class BriefingStatus { None, Pending, Ready, Failed }
+
+/** `GET /appointments/{id}/briefing`: Shifa AI's summary of the documents the patient attached before the visit. */
+@Serializable
+data class AppointmentBriefing(
+    val appointmentId: Long = 0,
+    val status: String = "NONE",
+    val briefingText: String? = null,
+    val documentCount: Int = 0,
+    val generatedAt: String? = null,
+    val error: String? = null,
+) {
+    val state: BriefingStatus
+        get() =
+            when (status.uppercase()) {
+                "PENDING", "GENERATING" -> BriefingStatus.Pending
+                "FAILED" -> BriefingStatus.Failed
+                // A ready briefing without text is nothing to show.
+                "READY" -> if (briefingText.isNullOrBlank()) BriefingStatus.None else BriefingStatus.Ready
+                else -> BriefingStatus.None
+            }
+
+    val generated: Instant? get() = generatedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
+}

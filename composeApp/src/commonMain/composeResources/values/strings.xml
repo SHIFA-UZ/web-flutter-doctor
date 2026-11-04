@@ -221,6 +221,7 @@
     <string name="assignResult">Assign Result</string>
     <string name="asthma">Asthma</string>
     <string name="attachFile">Attach file</string>
+    <string name="attachedDocuments">Attached documents</string>
     <string name="attachmentsAttached">Docs attached</string>
     <string name="attentionRequired">Attention required</string>
     <string name="attentionRequiredSubtitle">Documents, messages, and items needing action</string>
@@ -2501,9 +2502,11 @@
     <string name="viewVisitBriefing">Visit briefing</string>
     <string name="visit">Visit</string>
     <string name="visitBriefingCopy">Copy</string>
+    <string name="visitBriefingDisclaimer">AI summary — verify against the originals.</string>
     <string name="visitBriefingEmpty">No pre-appointment documents or briefing yet.</string>
     <string name="visitBriefingFailed">Could not generate the visit briefing.</string>
     <string name="visitBriefingPending">Generating briefing from attached documents…</string>
+    <string name="visitBriefingRowFailed">Could not be generated · Retry</string>
     <string name="visitBriefingStillGenerating">Still generating — you can close this and check back.</string>
     <string name="visitBriefingSubtitle">AI summary of documents the patient attached before this appointment.</string>
     <string name="visitBriefingTitle">Visit briefing</string>

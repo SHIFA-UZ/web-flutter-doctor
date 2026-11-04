@@ -304,5 +304,21 @@
     "uz": {
       "other": "{count} forma"
     }
+  },
+  "visitBriefingRowDocs": {
+    "en": {
+      "one": "AI summary of {count} attached document",
+      "other": "AI summary of {count} attached documents"
+    },
+    "replaces": [],
+    "ru": {
+      "few": "Сводка ИИ по {count} прикреплённым документам",
+      "many": "Сводка ИИ по {count} прикреплённым документам",
+      "one": "Сводка ИИ по {count} прикреплённому документу",
+      "other": "Сводка ИИ по {count} прикреплённым документам"
+    },
+    "uz": {
+      "other": "{count} ta biriktirilgan hujjat bo'yicha AI xulosasi"
+    }
   }
 }

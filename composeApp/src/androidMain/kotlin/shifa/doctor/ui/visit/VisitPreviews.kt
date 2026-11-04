@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:max-line-length")
+
 package shifa.doctor.ui.visit
 
 import androidx.compose.runtime.Composable
@@ -121,3 +123,45 @@ internal fun VisitForm0252Preview() =
 // APPT-04: clinic staff get the board's "Visits are run by the doctor".
 @Composable
 internal fun VisitStaffPreview() = PreviewTheme { StaffCannotRunVisits {} }
+
+// APPT-06: a ready briefing with its meta line, the attached original, Copy.
+@Composable
+internal fun BriefingReadyPreview() =
+    PreviewTheme {
+        BriefingTray(
+            BriefingUiState(
+                shifa.doctor.data.model.AppointmentBriefing(
+                    101,
+                    "READY",
+                    "Reason: follow-up after treatment.\n- Blood count from 22.10: haemoglobin slightly low.\n- No allergies recorded.",
+                    1,
+                    "2026-11-04T04:00:00Z",
+                ),
+                documents =
+                    listOf(
+                        PatientDocument(5, "Complete blood count", "2026-10-22", url = "f", category = "BLOOD_TEST"),
+                    ),
+            ),
+            false,
+            clock,
+            {},
+            {},
+            {},
+            {},
+        )
+    }
+
+// APPT-06: a failed briefing with Retry briefing.
+@Composable
+internal fun BriefingFailedPreview() =
+    PreviewTheme {
+        BriefingTray(
+            BriefingUiState(shifa.doctor.data.model.AppointmentBriefing(102, "FAILED")),
+            false,
+            clock,
+            {},
+            {},
+            {},
+            {},
+        )
+    }

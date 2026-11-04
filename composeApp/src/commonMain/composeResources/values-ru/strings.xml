@@ -221,6 +221,7 @@
     <string name="assignResult">Назначить результат</string>
     <string name="asthma">Астма</string>
     <string name="attachFile">Прикрепить файл</string>
+    <string name="attachedDocuments">Прикреплённые документы</string>
     <string name="attachmentsAttached">Документы прикреплены</string>
     <string name="attentionRequired">Требует внимания</string>
     <string name="attentionRequiredSubtitle">Документы, сообщения и задачи</string>
@@ -2501,9 +2502,11 @@
     <string name="viewVisitBriefing">Брифинг визита</string>
     <string name="visit">Приём</string>
     <string name="visitBriefingCopy">Копировать</string>
+    <string name="visitBriefingDisclaimer">Сводка ИИ — сверьте с оригиналами.</string>
     <string name="visitBriefingEmpty">Документов или брифинга пока нет.</string>
     <string name="visitBriefingFailed">Не удалось создать брифинг визита.</string>
     <string name="visitBriefingPending">Формируется брифинг по прикреплённым документам…</string>
+    <string name="visitBriefingRowFailed">Не удалось создать · Повторить</string>
     <string name="visitBriefingStillGenerating">Ещё создаётся — можно закрыть и вернуться позже.</string>
     <string name="visitBriefingSubtitle">ИИ-сводка по документам, прикреплённым пациентом до приёма.</string>
     <string name="visitBriefingTitle">Брифинг визита</string>

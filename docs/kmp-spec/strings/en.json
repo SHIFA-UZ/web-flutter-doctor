@@ -2572,5 +2572,8 @@
   "icdAppliedOpenForm": "Applied: {code}. Open Form 025-2 to finish the diagnosis.",
   "formListEntry": "{name}, {date}",
   "focusMode": "Focus mode",
-  "stay": "Stay"
+  "stay": "Stay",
+  "visitBriefingDisclaimer": "AI summary — verify against the originals.",
+  "attachedDocuments": "Attached documents",
+  "visitBriefingRowFailed": "Could not be generated · Retry"
 }

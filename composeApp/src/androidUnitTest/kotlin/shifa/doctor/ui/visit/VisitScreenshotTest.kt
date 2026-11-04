@@ -20,4 +20,10 @@ class VisitScreenshotTest {
 
     @Test
     fun staff() = captureRoboImage("screenshots/Visit_staff.png") { VisitStaffPreview() }
+
+    @Test
+    fun briefingReady() = captureRoboImage("screenshots/Briefing_ready.png") { BriefingReadyPreview() }
+
+    @Test
+    fun briefingFailed() = captureRoboImage("screenshots/Briefing_failed.png") { BriefingFailedPreview() }
 }

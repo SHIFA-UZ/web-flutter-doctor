@@ -380,9 +380,15 @@ private fun RouteContent(
                 patient = route.patient,
             )
         is ShellRoute.Appointment ->
-            AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back, onStart = {
-                actions.push(ShellRoute.Visit(it.appointmentId, it.kind, currentInstant().toEpochMilliseconds()))
-            })
+            AppointmentPanelScreen(
+                route.appointment,
+                route.opened,
+                onClose = actions.back,
+                onStart = {
+                    actions.push(ShellRoute.Visit(it.appointmentId, it.kind, currentInstant().toEpochMilliseconds()))
+                },
+                onOpenDocument = { patientId, d -> actions.push(ShellRoute.Document(patientId, d.id, d.title)) },
+            )
         // The visit workspace (APPT-04); a video visit's call pane joins with VIDEO-02.
         is ShellRoute.Visit ->
             VisitScreen(

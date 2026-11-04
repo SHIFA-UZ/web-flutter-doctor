@@ -52,6 +52,9 @@
     <plurals name="visitBriefingMeta">
         <item quantity="other">%1$s ta hujjat · %2$s da yaratilgan</item>
     </plurals>
+    <plurals name="visitBriefingRowDocs">
+        <item quantity="other">%1$s ta biriktirilgan hujjat bo'yicha AI xulosasi</item>
+    </plurals>
     <plurals name="visitFactsCommitted">
         <item quantity="other">%1$s ta fakt hujjatlashtirildi. Ular bemorning vaqt chizig'ida.</item>
     </plurals>

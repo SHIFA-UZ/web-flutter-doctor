@@ -2572,5 +2572,8 @@
   "icdAppliedOpenForm": "Qo'llandi: {code}. Tashxisni yakunlash uchun 025-2 shaklini oching.",
   "formListEntry": "{name}, {date}",
   "focusMode": "Diqqat rejimi",
-  "stay": "Qolish"
+  "stay": "Qolish",
+  "visitBriefingDisclaimer": "AI xulosasi — asl hujjatlar bilan tekshiring.",
+  "attachedDocuments": "Biriktirilgan hujjatlar",
+  "visitBriefingRowFailed": "Yaratib bo'lmadi · Qayta urinish"
 }

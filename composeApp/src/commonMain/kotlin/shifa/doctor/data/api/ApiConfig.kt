@@ -87,6 +87,10 @@ object ApiConfig {
 
         fun appointmentSignature(id: Long) = "appointments/$id/request-signature"
 
+        fun appointmentBriefing(id: Long) = "appointments/$id/briefing"
+
+        fun appointmentBriefingRetry(id: Long) = "appointments/$id/briefing/retry"
+
         fun consultationNotes(id: Long) = "appointments/$id/consultation-notes"
 
         fun draftNotes(id: Long) = "appointments/$id/draft-notes"

@@ -91,6 +91,12 @@
         <item quantity="one">%1$s документ · создано в %2$s</item>
         <item quantity="other">%1$s документа · создано в %2$s</item>
     </plurals>
+    <plurals name="visitBriefingRowDocs">
+        <item quantity="few">Сводка ИИ по %1$s прикреплённым документам</item>
+        <item quantity="many">Сводка ИИ по %1$s прикреплённым документам</item>
+        <item quantity="one">Сводка ИИ по %1$s прикреплённому документу</item>
+        <item quantity="other">Сводка ИИ по %1$s прикреплённым документам</item>
+    </plurals>
     <plurals name="visitFactsCommitted">
         <item quantity="few">Задокументировано %1$s факта. Всё на временной шкале пациента.</item>
         <item quantity="many">Задокументировано %1$s фактов. Всё на временной шкале пациента.</item>

@@ -81,4 +81,24 @@ class AppointmentsRepositoryTest {
             }
             assertThat(calls).hasSize(1)
         }
+
+    @Test
+    fun `the briefing is read every 3 s while being made, every 10 s after a minute, and ends when ready`() =
+        runTest {
+            val pending = """{"appointmentId":7,"status":"PENDING"}"""
+            val classToTest =
+                repo(*Array(22) { pending }, """{"appointmentId":7,"status":"READY","briefingText":"Text"}""")
+            val started = testScheduler.currentTime
+            val times = mutableListOf<Long>()
+            classToTest.briefingUpdates(7, time = testScheduler.timeSource).test {
+                repeat(23) {
+                    awaitItem()
+                    times += testScheduler.currentTime - started
+                }
+                awaitComplete()
+            }
+            // 0, 3 … 60 s every 3 s (21 reads), then 70 and 80 s.
+            assertThat(times.take(21)).isEqualTo((0..20).map { it * 3_000L })
+            assertThat(times.drop(21)).containsExactly(70_000L, 80_000L).inOrder()
+        }
 }

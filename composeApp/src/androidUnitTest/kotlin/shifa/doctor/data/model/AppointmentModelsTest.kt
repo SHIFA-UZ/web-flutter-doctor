@@ -47,4 +47,19 @@ class AppointmentModelsTest {
         assertThat(read("""{"id":1,"alreadySigned":true}""").signature).isEqualTo(SignatureState.Signed)
         assertThat(read("""{"id":1,"status":"completed"}""").completed).isTrue()
     }
+
+    @Test
+    fun `a briefing's status reads as the sheet shows it`() {
+        fun state(json: String) = apiJson.decodeFromString(AppointmentBriefing.serializer(), json).state
+        assertThat(
+            state("""{"appointmentId":7,"status":"NONE","briefingText":null,"documentCount":0}"""),
+        ).isEqualTo(BriefingStatus.None)
+        assertThat(state("""{"status":"SKIPPED"}""")).isEqualTo(BriefingStatus.None)
+        assertThat(state("""{"status":"GENERATING"}""")).isEqualTo(BriefingStatus.Pending)
+        assertThat(state("""{"status":"pending"}""")).isEqualTo(BriefingStatus.Pending)
+        assertThat(state("""{"status":"READY","briefingText":"  "}""")).isEqualTo(BriefingStatus.None)
+        assertThat(state("""{"status":"READY","briefingText":"Text"}""")).isEqualTo(BriefingStatus.Ready)
+        assertThat(state("""{"status":"FAILED"}""")).isEqualTo(BriefingStatus.Failed)
+        assertThat(state("""{"status":"SOMETHING_NEW"}""")).isEqualTo(BriefingStatus.None)
+    }
 }

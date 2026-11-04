@@ -58,6 +58,7 @@ import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.DayOccupancy
+import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.adjustDuration
@@ -74,6 +75,7 @@ import shifa.doctor.generated.resources.currentSlot
 import shifa.doctor.generated.resources.dateAndTime
 import shifa.doctor.generated.resources.durationChanged
 import shifa.doctor.generated.resources.encouragePayment
+import shifa.doctor.generated.resources.ic_sparkles_22
 import shifa.doctor.generated.resources.ic_trash_22
 import shifa.doctor.generated.resources.keepAppointment
 import shifa.doctor.generated.resources.moveTo
@@ -92,6 +94,10 @@ import shifa.doctor.generated.resources.unknownPatient
 import shifa.doctor.generated.resources.videoCall
 import shifa.doctor.generated.resources.videoEndedHint
 import shifa.doctor.generated.resources.videoStartHint
+import shifa.doctor.generated.resources.visitBriefingPending
+import shifa.doctor.generated.resources.visitBriefingRowDocs
+import shifa.doctor.generated.resources.visitBriefingRowFailed
+import shifa.doctor.generated.resources.visitBriefingTitle
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
@@ -106,6 +112,7 @@ import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.visit.BriefingSheet
 import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaChip
@@ -123,6 +130,7 @@ import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
+import shifa.doctor.utils.trPlural
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -370,6 +378,8 @@ fun AppointmentPanelScreen(
     onClose: () -> Unit,
     // Start / Continue: the visit's screen (APPT-01).
     onStart: (CalendarEntry.Appointment) -> Unit = {},
+    // An attached document from the briefing: the patient, the document.
+    onOpenDocument: (Long, PatientDocument) -> Unit = { _, _ -> },
     viewModel: AppointmentPanelViewModel =
         viewModel(key = "appointment-${appointment.appointmentId}-$opened") {
             AppointmentPanelViewModel(appointment, PracticeClock(profileRepository.me.value?.profile?.timeZone))
@@ -377,12 +387,14 @@ fun AppointmentPanelScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) { viewModel.follow() }
+    var briefingOpen by remember { mutableStateOf(false) }
     FormExitEffects(state.closed, {}, onClose, viewModel::back)
     AppointmentPanel(
         state,
         PanelActions(
             back = viewModel::back,
             ui = viewModel::ui,
+            briefing = { briefingOpen = true },
             primary = { kind ->
                 // ponytail: Open summary waits for the summary document (PDF-01); Ended does nothing.
                 if (kind == CtaKind.Start || kind == CtaKind.Continue) onStart(appointment)
@@ -396,6 +408,19 @@ fun AppointmentPanelScreen(
             durations = { viewModel.durations },
         ),
     )
+    if (briefingOpen) {
+        BriefingSheet(
+            appointment.appointmentId,
+            appointment.patientId,
+            appointment.status.equals("COMPLETED", ignoreCase = true),
+            state.clock,
+            onOpenDocument = { d ->
+                briefingOpen = false
+                appointment.patientId?.let { onOpenDocument(it, d) }
+            },
+            onClose = { briefingOpen = false },
+        )
+    }
 }
 
 class PanelActions(
@@ -409,6 +434,8 @@ class PanelActions(
     val cancel: () -> Unit = {},
     // The visit itself (start, continue, summary) comes with the visit flows (M5).
     val primary: (CtaKind) -> Unit = {},
+    // The visit briefing sheet (APPT-06).
+    val briefing: () -> Unit = {},
     val durations: () -> List<Int> = { emptyList() },
 )
 
@@ -451,6 +478,24 @@ fun AppointmentPanel(
                         }
                     }
                     StatusChips(a)
+                }
+            }
+            // The visit briefing when the patient attached documents or one exists (flow 05/02 §2; board region 6).
+            val briefing = a.briefingStatus?.uppercase()?.takeIf { it != "NONE" && it != "SKIPPED" }
+            if (briefing != null || a.attachmentCount > 0) {
+                ShifaSection(null) {
+                    ShifaSettingsItem(
+                        tr(Res.string.visitBriefingTitle),
+                        actions.briefing,
+                        icon = Res.drawable.ic_sparkles_22,
+                        subtitle =
+                            when (briefing) {
+                                "PENDING", "GENERATING" -> tr(Res.string.visitBriefingPending)
+                                "FAILED" -> tr(Res.string.visitBriefingRowFailed)
+                                else -> trPlural(Res.plurals.visitBriefingRowDocs, a.attachmentCount, a.attachmentCount)
+                            },
+                        divider = false,
+                    )
                 }
             }
             // Only a visit that can still change opens the reschedule sheet; the header already says when.

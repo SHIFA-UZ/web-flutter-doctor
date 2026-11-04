@@ -499,4 +499,19 @@ class DemoBackendTest {
             assertThat(shifa.doctor.data.model.joinedManualNotes(repo.notes(102).getOrThrow())).isEqualTo("Follow up")
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `a demo briefing is ready for the video visit, failed for the other until asked again`() =
+        runTest {
+            val repo = shifa.doctor.data.appointments.AppointmentsRepository({ client })
+            assertThat(repo.briefing(101).getOrThrow().state).isEqualTo(shifa.doctor.data.model.BriefingStatus.Ready)
+            assertThat(repo.briefing(102).getOrThrow().state).isEqualTo(shifa.doctor.data.model.BriefingStatus.Failed)
+            assertThat(
+                repo.retryBriefing(102).getOrThrow().state,
+            ).isEqualTo(shifa.doctor.data.model.BriefingStatus.Pending)
+            val asked = kotlinx.datetime.Instant.parse("2026-11-04T05:00:00Z")
+            val later = demoBriefing(102, asked, asked + kotlin.time.Duration.parse("7s"))
+            assertThat(later["status"]?.jsonPrimitive?.content).isEqualTo("READY")
+            assertThat(forwarded).isEmpty()
+        }
 }

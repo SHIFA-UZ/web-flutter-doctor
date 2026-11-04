@@ -18,10 +18,13 @@ import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.model.AppointmentBriefing
 import shifa.doctor.data.model.AppointmentDetail
+import shifa.doctor.data.model.BriefingStatus
 import shifa.doctor.data.model.SignatureState
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 @Serializable
 private data class ChangeSlot(
@@ -113,6 +116,41 @@ class AppointmentsRepository(
             }
         }
 
+    suspend fun briefing(id: Long): Result<AppointmentBriefing> =
+        apiCall<AppointmentBriefing> { client().get(ApiConfig.Endpoints.appointmentBriefing(id)) }
+
+    /** `POST …/briefing/retry`: the backend makes the briefing again (a failed or stuck one). */
+    suspend fun retryBriefing(id: Long): Result<AppointmentBriefing> =
+        apiCall<AppointmentBriefing> {
+            client().post(ApiConfig.Endpoints.appointmentBriefingRetry(id)) {
+                contentType(ContentType.Application.Json)
+                setBody(JsonObject(emptyMap()))
+            }
+        }
+
+    /**
+     * The briefing now, then every 3 s while it is being made; after [slowAfter] every 10 s (flow 05/02 §8: "still
+     * generating"). The flow ends when it is ready, failed or not there, or on a failed read (the sheet offers Retry),
+     * and stops with its collector (Flutter's delayed callbacks kept firing after the sheet closed).
+     */
+    fun briefingUpdates(
+        id: Long,
+        every: Duration = BRIEFING_POLL,
+        slowAfter: Duration = BRIEFING_SLOW_AFTER,
+        slow: Duration = BRIEFING_SLOW_POLL,
+        time: TimeSource = TimeSource.Monotonic,
+    ): Flow<Result<AppointmentBriefing>> =
+        flow {
+            // Slower once a minute has passed since the start, slow reads included.
+            val started = time.markNow()
+            while (true) {
+                val read = briefing(id)
+                emit(read)
+                if (read.getOrNull()?.state != BriefingStatus.Pending) return@flow
+                delay(if (started.elapsedNow() >= slowAfter) slow else every)
+            }
+        }
+
     /** `POST /appointments/{id}/notify-payment-reminder {}`. */
     suspend fun remindPayment(id: Long): Result<Unit> =
         apiCall<Unit> {
@@ -126,3 +164,6 @@ class AppointmentsRepository(
 val appointmentsRepository by lazy { AppointmentsRepository() }
 
 val SIGNATURE_POLL = 10.seconds
+val BRIEFING_POLL = 3.seconds
+val BRIEFING_SLOW_AFTER = 60.seconds
+val BRIEFING_SLOW_POLL = 10.seconds

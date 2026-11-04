@@ -119,3 +119,26 @@ WORKSPACE" (phone: one column), "STAFF CANNOT RUN VISITS", "NOT FOUND", the note
   **Emulator (demo mode):** calendar → 6 Nov → Jasur Karimov → Start Appointment → the workspace ("Starts in",
   first visit, grouped documents); a typed note, Request Signature → "Waiting for patient signature..." → "Patient
   Signed ✓" about 15 s later.
+
+## APPT-06 · Visit briefing sheet
+
+Built 2026-11-04. Flow 05/02, spec 05 §7, ticket APPT-06. Board `DaVisit` "APPOINTMENT DETAILS" (the "Visit
+briefing" row) and the "briefing" overlay.
+
+- **Where:** the calendar's appointment details show a "Visit briefing" row when the patient attached documents or a
+  briefing exists (not NONE / SKIPPED): its line says how many documents, "Generating…", or "Could not be generated
+  · Retry". Home's button joins with HOME-03.
+- **Sheet** (`ui/visit/Briefing.kt`): the subtitle; then a 3-line skeleton, "Generating briefing from attached
+  documents…" (with "Still generating — you can close this and check back." after a minute), the briefing text
+  (selectable; the markdown subset shows as plain text until the shared AI text renderer, `ponytail:`), the failed
+  text, or the empty text; the meta line "{n} documents · generated {date time}" (practice time zone, new); the
+  **attached documents** (this visit's, from the patient's list, whatever the briefing's state; tap opens the viewer); "AI summary — verify against
+  the originals."; Copy (ready); Retry briefing (failed or pending, not after the visit; one at a time).
+- **Reads** (`AppointmentsRepository.briefingUpdates`): every 3 s while being made, every 10 s once a minute has passed,
+  ending when ready / failed / none or on a failed read; they stop when the sheet closes (Flutter's delayed callbacks
+  kept firing); closing also cancels a Retry on its way.
+- **Demo backend:** the video visit's briefing is ready (with the blood count attached to it), the clinic visit's
+  failed; Retry makes it pending for 6 s, then ready.
+- **Tests:** `AppointmentModelsTest` (the status mapping), `AppointmentsRepositoryTest` (3 s then 10 s, ends when
+  ready), `BriefingViewModelTest` (2: retry once, this visit's documents only; a failed read), `DemoBackendTest`,
+  screenshots `Briefing_ready`, `Briefing_failed`.

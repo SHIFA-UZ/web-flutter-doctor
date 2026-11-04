@@ -111,6 +111,9 @@ class DemoBackend(
     private val uploadFiles = mutableMapOf<Long, Pair<ByteArray, String>>()
 
     // APPT-02: when each visit's signature was asked; the demo patient signs 15 s later.
+    // APPT-06: when a briefing was asked again; it is ready 6 s later.
+    private val briefingRetried = mutableMapOf<Long, kotlinx.datetime.Instant>()
+
     // AI-11: each visit's saved notes, and Shifa AI's pending drafts (one for the video visit until saved or dropped).
     private val visitNotes = mutableMapOf<Long, List<JsonObject>>()
     private var visitDrafts = mapOf(DEMO_DRAFT_ID to 101L)
@@ -490,6 +493,14 @@ class DemoBackend(
                     signatureAsked.getOrPut(id) { currentInstant() }
                     Reply(HttpStatusCode.OK, "")
                 }
+            }
+            // The visit briefing (APPT-06): ready for the video visit, failed for the clinic one until asked again.
+            get && path.matches(Regex("appointments/\\d+/briefing")) ->
+                ok(demoBriefing(path.split('/')[1].toLong(), briefingRetried[path.split('/')[1].toLong()]))
+            request.method == HttpMethod.Post && path.matches(Regex("appointments/\\d+/briefing/retry")) -> {
+                val id = path.split('/')[1].toLong()
+                briefingRetried[id] = currentInstant()
+                ok(demoBriefing(id, briefingRetried[id]))
             }
             // A visit's notes (AI-11).
             path.matches(Regex("appointments/\\d+/consultation-notes")) -> {
@@ -1089,6 +1100,40 @@ internal fun demoAppointment(
     )
 }
 
+/** A demo visit's briefing: 101 ready, others failed; asked again, pending for 6 s and then ready. */
+internal fun demoBriefing(
+    id: Long,
+    retried: kotlinx.datetime.Instant?,
+    now: kotlinx.datetime.Instant = currentInstant(),
+): JsonObject {
+    val status =
+        when {
+            retried != null && now < retried + 6.seconds -> "PENDING"
+            retried != null || id == 101L -> "READY"
+            else -> "FAILED"
+        }
+    val text =
+        "**Reason:** follow-up after treatment.\n- Blood count from 22.10: haemoglobin slightly low.\n" +
+            "- No allergies recorded.\nCheck the haemoglobin trend before prescribing."
+    return JsonObject(
+        mapOf(
+            "appointmentId" to JsonPrimitive(id),
+            "status" to JsonPrimitive(status),
+            "briefingText" to if (status == "READY") JsonPrimitive(text) else JsonNull,
+            "documentCount" to JsonPrimitive(1),
+            "generatedAt" to
+                if (status == "READY") {
+                    JsonPrimitive(
+                        (retried ?: now - 3600.seconds).toString(),
+                    )
+                } else {
+                    JsonNull
+                },
+            "error" to JsonNull,
+        ),
+    )
+}
+
 private const val DEMO_DRAFT_ID = "6f1c2a7e-0d3b-4c55-9a51-2b8e3f4d1a90"
 
 // A scribe draft for the demo video visit (AI-11): SOAP, then the transcript the app hides.
@@ -1155,6 +1200,8 @@ internal fun demoCalendar(day: String?): JsonArray {
                         "reason" to "Follow-up",
                         "status" to "CONFIRMED",
                         "paymentStatus" to "PAID",
+                        "attachmentCount" to 1,
+                        "briefingStatus" to "READY",
                     )
                 busy && m == 15 * 60 ->
                     row(
@@ -1168,6 +1215,7 @@ internal fun demoCalendar(day: String?): JsonArray {
                         "reason" to "First visit",
                         "status" to "REQUESTED",
                         "paymentStatus" to "PENDING",
+                        "briefingStatus" to "FAILED",
                     )
                 else -> row(m, m + 30, "type" to "FREE_SLOT")
             }
@@ -1177,7 +1225,7 @@ internal fun demoCalendar(day: String?): JsonArray {
 
 private const val DEMO_DOCUMENTS =
     """[{"id":901,"title":"Complete blood count","date":"2026-10-22","url":"demo","canView":true,"creatorLabel":"Demo Doctor",
-    "creatorType":"DOCTOR","category":"BLOOD_TEST","isSharedWithTeam":true,"uploadedByPatient":false,"appointmentId":null},
+    "creatorType":"DOCTOR","category":"BLOOD_TEST","isSharedWithTeam":true,"uploadedByPatient":false,"appointmentId":101},
     {"id":902,"title":"ECG","date":"2026-09-29","url":null,"canView":false,"creatorLabel":"Demo Patient",
     "creatorType":"PATIENT","category":"ECG","isSharedWithTeam":false,"uploadedByPatient":true,"appointmentId":null}]"""
 

@@ -69,6 +69,10 @@
         <item quantity="one">%1$s document · generated %2$s</item>
         <item quantity="other">%1$s documents · generated %2$s</item>
     </plurals>
+    <plurals name="visitBriefingRowDocs">
+        <item quantity="one">AI summary of %1$s attached document</item>
+        <item quantity="other">AI summary of %1$s attached documents</item>
+    </plurals>
     <plurals name="visitFactsCommitted">
         <item quantity="one">Documented %1$s fact. It is on the patient timeline.</item>
         <item quantity="other">Documented %1$s facts. They are on the patient timeline.</item>

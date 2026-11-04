@@ -125,6 +125,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | AI-11 Consultation notes & scribe API | Done (no screen yet) | Notes, drafts (confirm / discard), complete, scribe status with a cancellable 3 s / 120 s wait, the documentation helpers (Flutter's tests ported); failed reads are failures, not empty lists. See visits.md. |
 | APPT-03 Visit notes + autosave | Done (no screen yet) | SOAP + free notes as one labelled body, saved 2 s after the last edit and on leave, earlier notes filled once, drafts saved / dropped; notes can't be emptied (backend). See visits.md. |
 | APPT-04 Visit workspace | Done (phone; no End, video pane, dental yet) | Header with the visit clock, patient chips, notes card (modes, menu, Shifa AI and last-025-2 helpers, SOAP + free notes autosaved, focus mode), grouped documents with upload, signature footer; leaving saves; staff screen. See visits.md. |
+| APPT-06 Visit briefing sheet | Done | Row on the appointment details, sheet with pending / ready / failed / empty, meta line, attached documents, Copy, Retry; reads every 3 s (10 s after a minute) only while open. See visits.md. |
 
 ## Log
 
@@ -203,3 +204,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · AI-11 · Consultation notes, AI drafts, complete and the scribe status.
 - 2026-11-04 · APPT-03 · Visit notes with a 2 s autosave and flush on leave.
 - 2026-11-04 · APPT-04 · Visit workspace (General and 025-2 modes, helpers, documents, signature).
+- 2026-11-04 · APPT-06 · Visit briefing sheet from the appointment details.
