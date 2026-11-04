@@ -222,4 +222,38 @@ class ShellViewModelTest {
             assertThat(ShellNotice.pending.value).isEqualTo(Res.string.tasksNotOnPlan)
             ShellNotice.pending.value = null
         }
+
+    @Test
+    fun `Shifa Intelligence takes over the content, a tab tap or Back leaves it, the plan gates it`() {
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.select(ShellTab.Patients)
+        classToTest.openIntelligence()
+        assertThat(classToTest.state.value.intelligence).isTrue()
+        assertThat(classToTest.back()).isTrue()
+        assertThat(classToTest.state.value.intelligence).isFalse()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Patients) // the tab underneath is untouched
+        classToTest.openIntelligence()
+        classToTest.select(ShellTab.Chat)
+        assertThat(classToTest.state.value.intelligence).isFalse()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Chat)
+        tier = "BASIC"
+        val basic = vm()
+        basic.settle()
+        basic.openIntelligence()
+        assertThat(basic.state.value.intelligence).isFalse()
+    }
+
+    @Test
+    fun `coming back reads the clinics and the profile again`() {
+        val classToTest = vm()
+        classToTest.settle()
+        assertThat(classToTest.state.value.hasClinic).isTrue()
+        clinics = "[]"
+        tier = "PRO"
+        classToTest.onResume()
+        waitFor { classToTest.state.value.hasClinic == false && !classToTest.state.value.canTasks }
+        assertThat(classToTest.state.value.hasClinic).isFalse()
+        assertThat(classToTest.state.value.canTasks).isFalse()
+    }
 }

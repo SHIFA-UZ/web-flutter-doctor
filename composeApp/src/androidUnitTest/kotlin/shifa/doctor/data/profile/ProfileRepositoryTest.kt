@@ -113,4 +113,33 @@ class ProfileRepositoryTest {
         assertThat(DoctorProfile(certificates = "not json").certificateUrls).isEmpty()
         assertThat(DoctorProfile().serviceTags).isEmpty()
     }
+
+    @Test
+    fun `an older read that answers last can't overwrite a newer one`() =
+        runTest {
+            val first = CompletableDeferred<Unit>()
+            var calls = 0
+            val repo =
+                ProfileRepository {
+                    createHttpClient(
+                        { null },
+                        MockEngine {
+                            val n = ++calls
+                            if (n == 1) first.await() // the first read is slow
+                            val name = if (n == 1) "Old" else "New"
+                            respond(
+                                """{"profile":{"firstName":"$name"}}""",
+                                HttpStatusCode.OK,
+                                headersOf(HttpHeaders.ContentType, "application/json"),
+                            )
+                        },
+                    )
+                }
+            val older = async { repo.refresh() }
+            yield()
+            repo.refresh()
+            first.complete(Unit)
+            older.await()
+            assertThat(repo.me.value?.profile?.firstName).isEqualTo("New")
+        }
 }

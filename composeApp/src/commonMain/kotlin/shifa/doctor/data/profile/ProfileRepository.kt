@@ -35,11 +35,16 @@ class ProfileRepository(
     // Bumped by [clear]: an answer to a request started before a sign-out never lands in the next session's profile.
     private var generation = 0
 
+    // Bumped by every read and every saved write: a read that started before a newer read or save answered never
+    // overwrites it (two quick resumes, a save during a refresh).
+    private var version = 0
+
     /** `GET /doctors/me`. */
     suspend fun refresh(): Result<DoctorMe> {
         val started = generation
+        val mine = ++version
         return apiCall<DoctorMe> { client().get(ApiConfig.Endpoints.DOCTOR_ME) }.onSuccess {
-            if (started == generation) _me.value = it
+            if (started == generation && mine == version) _me.value = it
         }
     }
 
@@ -86,7 +91,12 @@ class ProfileRepository(
                 contentType(ContentType.Application.Json)
                 setBody(body)
             }
-        }.onSuccess { saved -> if (started == generation) _me.update { it?.let { me -> into(me, saved) } } }
+        }.onSuccess { saved ->
+            if (started == generation) {
+                version++
+                _me.update { it?.let { me -> into(me, saved) } }
+            }
+        }
     }
 }
 

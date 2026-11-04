@@ -91,3 +91,20 @@ Built 2026-11-04. Spec `01` §5.3, `08` §5; flow `01/16` §6–7; D-03 (the use
 - **Tests:** `FeatureGateTest` (2: codes, unknown/list/tier), `ShellViewModelTest` (+1: losing Tasks; the mock now
   lists features per tier like the backend).
 
+## SHELL-05 · Intelligence mode and resume refresh
+
+Built 2026-11-04. Spec `01` §5.4, §6.6; flow `01/16` §2, §7.
+
+- **Intelligence mode:** More → Shifa Intelligence (only with `ASK_SHIFA_AI`) sets `intelligence`, which replaces the
+  content area while the bar stays (Flutter's `workspaceMode`); the tab underneath keeps its stack and state. Any tab
+  tap leaves it (tapping the tab underneath just closes it), so does system Back; losing the feature with a new plan
+  closes it too. The surface itself is a placeholder until area 03 (AI-01…); there it will refresh appointment data
+  on leaving (the AI may have booked).
+- **Resume** (`onResume`, `ON_RESUME`): notifications count, clinic membership (`/me/clinics`) and the profile
+  (`/doctors/me`, so a changed plan reaches the gates through SHELL-04's watcher) are read again. A newer resume
+  cancels an older refresh still out, and `ProfileRepository` drops any read that started before a newer read or
+  save answered, so a late old answer can't restore a lost clinic or a downgraded plan. Feature screens
+  refresh their own data; the 60 s location ticker is not carried over (M3).
+- **Tests:** `ShellViewModelTest` (+2: the mode with gate, tab tap and Back; resume re-reads), `ShellScreenshotTest`
+  (+1: Intelligence over Calendar).
+

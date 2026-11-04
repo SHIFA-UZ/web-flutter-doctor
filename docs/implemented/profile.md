@@ -17,7 +17,8 @@ Built 2026-11-04. Spec `08` §1.1, §10, §11. No screen.
   cleared) and `update(ProfileUpdateRequest)` (partial: the backend ignores nulls, so clearing a text field means
   sending "") put the block the backend answers with into `me` on success and leave it alone on failure;
   `meProfile()`. `clear()` (on every session end, from `App.kt`) also bumps a generation, so an answer that arrives
-  after a sign-out never lands in the next session's profile. `services` and `certificates` (JSON arrays in a string)
+  after a sign-out never lands in the next session's profile. Reads and saves are also ordered: a read that started before a newer
+  read or save answered is dropped (SHELL-05 review). `services` and `certificates` (JSON arrays in a string)
   are decoded at the boundary (`serviceTags`, `certificateUrls`); a malformed one reads as empty and is logged. Photo/certificate uploads (PROF-03) and the password change (PROF-04) come
   with their screens.
 - **Demo data:** like the backend, the profile PATCH merges and contact/billing/settings replace their block; each

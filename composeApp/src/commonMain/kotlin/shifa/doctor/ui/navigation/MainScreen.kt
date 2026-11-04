@@ -145,9 +145,11 @@ fun MainScreen(
     val signOut = viewModel { SignOutViewModel() }
     val question by signOut.state.collectAsStateWithLifecycle()
     // Home's root lets the system close the app; everything else is handled here (flow 01/16 §7).
-    BackHandler(enabled = state.moreOpen || state.stack.size > 1 || state.tab != state.home) { viewModel.back() }
+    BackHandler(enabled = state.moreOpen || state.intelligence || state.stack.size > 1 || state.tab != state.home) {
+        viewModel.back()
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshNotifications() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     MainScreenContent(
         state,
@@ -156,6 +158,7 @@ fun MainScreen(
             push = viewModel::push,
             back = { viewModel.back() },
             openMore = viewModel::openMore,
+            openIntelligence = viewModel::openIntelligence,
             closeMore = viewModel::closeMore,
             signOut = {
                 viewModel.closeMore()
@@ -171,6 +174,7 @@ class ShellActions(
     val push: (ShellRoute) -> Unit = {},
     val back: () -> Unit = {},
     val openMore: () -> Unit = {},
+    val openIntelligence: () -> Unit = {},
     val closeMore: () -> Unit = {},
     val signOut: () -> Unit = {},
 )
@@ -187,8 +191,13 @@ fun MainScreenContent(
             // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
             val saved = rememberSaveableStateHolder()
             Box(Modifier.weight(1f)) {
-                saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
-                    RouteContent(state.route, actions, state.staff)
+                if (state.intelligence) {
+                    // Area 03 builds the surface; the tab underneath keeps its stack and state.
+                    TabPlaceholder(Res.string.shifaIntelligence, Res.drawable.ic_sparkles_18)
+                } else {
+                    saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
+                        RouteContent(state.route, actions, state.staff)
+                    }
                 }
             }
         }
@@ -261,10 +270,6 @@ private fun RouteContent(
     ShellRoute.Language ->
         Pushed(Res.string.language, actions) {
             TabPlaceholder(Res.string.language, Res.drawable.ic_globe_22)
-        }
-    ShellRoute.Intelligence ->
-        Pushed(Res.string.shifaIntelligence, actions) {
-            TabPlaceholder(Res.string.shifaIntelligence, Res.drawable.ic_sparkles_18)
         }
     ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
 }
@@ -353,7 +358,7 @@ internal fun MoreSheetContent(
                 badge = if (state.canIntelligence) null else tr(Res.string.planPro),
                 ai = true,
                 enabled = state.canIntelligence,
-            ) { actions.push(ShellRoute.Intelligence) }
+            ) { actions.openIntelligence() }
             HorizontalDivider(Modifier.padding(vertical = ShifaSize.S6), ShifaSize.S1, ShifaColors.Border.Default)
         }
         ShellTab.entries.filterNot { it.inBar }.forEach { tab ->

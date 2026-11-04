@@ -53,9 +53,6 @@ sealed interface ShellRoute {
     /** More → Language (SET-02 builds the screen). */
     data object Language : ShellRoute
 
-    /** More → Shifa Intelligence (area 03 builds it). */
-    data object Intelligence : ShellRoute
-
     /** Profile → Debug menu, debug builds only. */
     data object Debug : ShellRoute
 }
@@ -66,6 +63,8 @@ data class ShellUiState(
     val tab: ShellTab = if (staff) ShellTab.Clinic else ShellTab.Home,
     val stacks: Map<ShellTab, List<ShellRoute>> = emptyMap(),
     val moreOpen: Boolean = false,
+    // SHELL-05: Shifa Intelligence replaces the tab's content while the bar stays (01 §5.4, §6.6).
+    val intelligence: Boolean = false,
     // Null until `GET /me/clinics` answers; a failure counts as no clinic for this session (flow 01/16 §6).
     val hasClinic: Boolean? = null,
     // SHELL-04: what the plan allows; unknown until the profile answers (D-03).
@@ -109,6 +108,7 @@ class ShellViewModel(
 ) : ViewModel() {
     private var chatPolling: Job? = null
     private var notificationsRefresh: Job? = null
+    private var resumeRefresh: Job? = null
 
     private val _state = MutableStateFlow(ShellUiState(staff = staff))
     val state: StateFlow<ShellUiState> = _state.asStateFlow()
@@ -154,7 +154,10 @@ class ShellViewModel(
     private fun onPlan(gate: FeatureGate) {
         if (gate == _state.value.gate) return
         val lostTasks = _state.value.tab == ShellTab.Tasks && !gate.allows(DoctorFeature.RemoteCareTasks)
-        _state.update { it.copy(gate = gate, tab = if (lostTasks) it.home else it.tab) }
+        val lostAi = !gate.allows(DoctorFeature.AskShifaAi)
+        _state.update {
+            it.copy(gate = gate, tab = if (lostTasks) it.home else it.tab, intelligence = it.intelligence && !lostAi)
+        }
         if (lostTasks) ShellNotice.pending.value = Res.string.tasksNotOnPlan
     }
 
@@ -172,6 +175,16 @@ class ShellViewModel(
             return closeMore()
         }
         pending = null
+        // Any tab tap leaves Shifa Intelligence (01 §5.4); a tap on the tab under it just closes it.
+        if (s0.intelligence) {
+            return _state.update {
+                it.copy(
+                    intelligence = false,
+                    moreOpen = false,
+                    tab = clamp(tab, it),
+                )
+            }
+        }
         _state.update { s ->
             val target = clamp(tab, s)
             if (target == s.tab) {
@@ -224,6 +237,35 @@ class ShellViewModel(
 
     fun closeMore() = _state.update { it.copy(moreOpen = false) }
 
+    /** More → Shifa Intelligence, when the plan includes it (`ASK_SHIFA_AI`). */
+    fun openIntelligence() =
+        _state.update {
+            if (it.canIntelligence) {
+                it.copy(
+                    intelligence = true,
+                    moreOpen = false,
+                )
+            } else {
+                it.copy(moreOpen = false)
+            }
+        }
+
+    /**
+     * Back in front (01 §6.6): the profile (a changed plan reaches the gates), clinic membership and the
+     * notifications count are read again. Feature screens refresh their own data.
+     */
+    fun onResume() {
+        refreshNotifications()
+        if (_state.value.staff) return
+        // A newer resume cancels the older refresh still out; the profile also drops reads older than its latest.
+        resumeRefresh?.cancel()
+        resumeRefresh =
+            viewModelScope.launch {
+                clinics.mine().onSuccess { list -> _state.update { it.copy(hasClinic = list.isNotEmpty()) } }
+                profile.refresh()
+            }
+    }
+
     /**
      * System Back (flow 01/16 §7 target): close More; pop a pushed screen; from another tab's root go Home. False on
      * Home's root: the app may close.
@@ -232,6 +274,7 @@ class ShellViewModel(
         val s = _state.value
         when {
             s.moreOpen -> closeMore()
+            s.intelligence -> _state.update { it.copy(intelligence = false) }
             s.stack.size > 1 -> _state.update { it.copy(stacks = it.stacks + (it.tab to it.stack.dropLast(1))) }
             s.tab != s.home -> _state.update { it.copy(tab = it.home) }
             else -> return false

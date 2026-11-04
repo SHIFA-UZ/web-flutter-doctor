@@ -67,7 +67,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SHELL-02 Clinic-staff shell | Done | Chat / Clinic / Notifications / Profile (their photo), starts on Clinic, no saved start tab, never calls `/doctors/me`, Back → Clinic → exit; Language and Sign Out in their Profile. See shell.md. |
 | SHELL-03 Badges | Done | Chat unread polled every 10 s only while the app is in front, notifications unread on each return, active tasks once (PREMIUM); bar badges (staff: chat + notifications) and More counts, "99+" cap, screen-reader "Chat, 3 unread". See shell.md. |
 | SHELL-04 Plan gating | Done | `FeatureGate` (backend `SubscriptionFeature` codes and tiers), gating on `subscription.features`, unknown allows nothing (D-03); the shell uses it; a plan change later moves a doctor off Tasks with a note. Also SUB-01's source. See shell.md. |
-| SHELL-05 … SET-03 | Not started | |
+| SHELL-05 Intelligence mode, resume refresh | Done (AI surface: area 03) | Shifa Intelligence replaces the tab content with the bar kept (tab tap or Back leaves it, the tab underneath untouched, gated on `ASK_SHIFA_AI`); every resume re-reads the profile, clinics and notifications. See shell.md. |
+| PROF-02 … SET-03 | Not started | |
 
 ## Log
 
@@ -96,3 +97,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · SHELL-02 · Clinic-staff shell (D-02: staff on mobile).
 - 2026-11-04 · SHELL-03 · Unread badges and active-task count.
 - 2026-11-04 · SHELL-04 · Feature gating on the plan's features (D-03).
+- 2026-11-04 · SHELL-05 · Intelligence mode in the shell and the resume refresh.

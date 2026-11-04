@@ -27,4 +27,7 @@ class ShellScreenshotTest {
 
     @Test
     fun staff() = captureRoboImage("screenshots/Shell_staff.png") { ShellStaffPreview() }
+
+    @Test
+    fun intelligence() = captureRoboImage("screenshots/Shell_intelligence.png") { ShellIntelligencePreview() }
 }

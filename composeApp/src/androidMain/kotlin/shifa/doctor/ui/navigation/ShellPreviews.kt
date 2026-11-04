@@ -68,3 +68,14 @@ internal fun ShellStaffPreview() =
     PreviewTheme {
         MainScreenContent(ShellUiState(staff = true, chatUnread = 2, notificationsUnread = 7), ShellActions())
     }
+
+// SHELL-05: Shifa Intelligence over the content, the bar staying (area 03 builds the surface).
+@Preview(widthDp = 402, heightDp = 874)
+@Composable
+internal fun ShellIntelligencePreview() =
+    PreviewTheme {
+        MainScreenContent(
+            ShellUiState(gate = FeatureGate.forTier(DoctorTier.Premium), intelligence = true, tab = ShellTab.Calendar),
+            ShellActions(),
+        )
+    }
