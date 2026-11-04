@@ -54,6 +54,20 @@ object ApiConfig {
 
         fun patientDocuments(id: Long) = "patients/$id/documents"
 
+        fun patientDocument(
+            id: Long,
+            documentId: Long,
+        ) = "patients/$id/documents/$documentId"
+
+        fun patientForms(id: Long) = "patients/$id/forms"
+
+        fun patientForm(
+            id: Long,
+            formId: Long,
+        ) = "patients/$id/forms/$formId"
+
+        const val ICD10_SEARCH = "icd10/search"
+
         fun patientDocumentDownload(
             id: Long,
             documentId: Long,

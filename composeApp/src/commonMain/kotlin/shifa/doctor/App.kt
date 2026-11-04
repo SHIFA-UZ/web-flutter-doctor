@@ -27,6 +27,7 @@ import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
+import shifa.doctor.data.forms.formsRepository
 import shifa.doctor.data.locations.locationsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
@@ -160,6 +161,7 @@ private fun AppScreens() {
             locationsRepository.clear()
             patientsRepository.clear()
             chronicWarned.clear()
+            formsRepository.clear()
         }
     }
     val locked by appLockRepository.locked.collectAsState()

@@ -366,3 +366,26 @@ Built 2026-11-04. Spec 06 §3.2–3.3. No screen.
   migration with the FDI value winning in either order; editable and history rows, sparse and ordered, out-of-range
   cells dropped, next index; prefill), `FormModelsTest` (3: lenient read, the request without server fields, one ICD
   spelling; days and empties left out; the dental codes).
+
+## FORM-02 · Forms repository
+
+Built 2026-11-04. Spec 06 §7 (and §3.6–3.7). No screen.
+
+- **Repository** (`data/forms/FormsRepository.kt`): `list(patientId)` (`GET /patients/{id}/forms`, one bad row never
+  drops the rest, newest first by date then id) kept per patient as a flow (`forms(patientId)`) for the Forms tab, the
+  documents' Edit and the prefill; `save(form)` POSTs a new form and PUTs an existing one (FORM-01's request: no
+  server fields), and the answer replaces the cached form; `requestSignature` (`PUT …/request-signature`, `{}`);
+  `linkDocument` (`POST …/link-document?documentId=`); `searchIcd10(q, lang, limit = 20)` (`GET /icd10/search`;
+  dev answers `{code, title, subtitle}` in en, ru and uz, checked; rows without a code dropped); `latest0252`. Nothing that
+  ends after a sign-out lands in the cache, and a list read that a save, a signature request or a link overtook is
+  dropped; cleared on sign-out.
+- **Replacing a document's file** (`DocumentsRepository.replaceFile`, `PUT …/documents/{id}` multipart, the file only,
+  its own content type): a re-saved 025-2 keeps its document (06 §3.6).
+- Checked against dev's OpenAPI (every path and answer: request-signature and link-document answer the form) and the
+  ICD search with real reads; dev has no form for the seed patients, so nothing was written there.
+- **Demo:** forms in memory per patient (create, update replacing the content but the server's fields, signature
+  requested, document linked), five dental ICD-10
+  codes for the search, a replaced file served back.
+- **Tests:** `FormsRepositoryTest` (6: the lenient, ordered, cached list and the latest 025-2; POST then PUT with the
+  cache taking each answer and no signature field sent; signature request, link and ICD search paths and parameters;
+  a read after a sign-out; the file replacement; an overtaken read and a late save), `DemoBackendTest` (+1).

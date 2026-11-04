@@ -384,4 +384,33 @@ class DemoBackendTest {
             assertThat(back.mime).isEqualTo("application/pdf")
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `forms answer locally - create, update, signature request, link, ICD search`() =
+        runTest {
+            val repo = shifa.doctor.data.forms.FormsRepository { client }
+            assertThat(repo.list(12).getOrThrow()).isEmpty()
+            val made =
+                repo.save(
+                    shifa.doctor.data.model.PatientForm(
+                        patientId = 12,
+                        date = "2026-11-04",
+                        fullName = "Jasur Karimov",
+                    ),
+                ).getOrThrow()
+            val edited = repo.save(made.copy(diagnosis = "Caries")).getOrThrow()
+            assertThat(edited.id to edited.diagnosis).isEqualTo(made.id to "Caries")
+            assertThat(repo.requestSignature(12, made.id!!).getOrThrow().signatureRequested).isTrue()
+            assertThat(repo.linkDocument(12, made.id!!, 1000).getOrThrow().documentId).isEqualTo(1000L)
+            assertThat(repo.list(12).getOrThrow().single().diagnosis).isEqualTo("Caries")
+            // A save replaces the form's content: an emptied chart is gone; the server's own fields stay.
+            val charted = repo.save(edited.copy(dentalChart = mapOf("11" to "C"))).getOrThrow()
+            assertThat(charted.dentalChart).containsExactly("11", "C")
+            val cleared = repo.save(charted.copy(dentalChart = emptyMap(), signatureRequested = false)).getOrThrow()
+            assertThat(cleared.dentalChart).isEmpty()
+            assertThat(cleared.signatureRequested).isTrue()
+            assertThat(repo.list(14).getOrThrow()).isEmpty()
+            assertThat(repo.searchIcd10("caries", "en").getOrThrow().map { it.code }).containsExactly("K02.0", "K02.1")
+            assertThat(forwarded).isEmpty()
+        }
 }

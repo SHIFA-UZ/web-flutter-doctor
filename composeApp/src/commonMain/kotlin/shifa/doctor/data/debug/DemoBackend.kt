@@ -106,6 +106,8 @@ class DemoBackend(
     // Uploaded documents per patient id, newest first, and their files by document id.
     private var uploads: Map<String, List<JsonElement>> = emptyMap()
     private val uploadFiles = mutableMapOf<Long, Pair<ByteArray, String>>()
+    private var forms: Map<String, List<JsonElement>> = emptyMap()
+    private var lastFormId = 500L
     private var lastDateId = 0L
     private var places: List<JsonElement> = apiJson.parseToJsonElement(DEMO_LOCATIONS).jsonArray.toList()
 
@@ -368,6 +370,61 @@ class DemoBackend(
                         }
                     else -> Reply(HttpStatusCode.OK, "", demoPdf())
                 }
+            // A re-saved form's new PDF replaces the document's file (FORM-02).
+            request.method == HttpMethod.Put && path.matches(Regex("patients/\\d+/documents/\\d+")) -> {
+                val id = path.substringAfterLast('/').toLong()
+                filePart(raw)?.let { uploadFiles[id] = it }
+                ok(
+                    JsonObject(
+                        mapOf(
+                            "id" to JsonPrimitive(id),
+                            "title" to JsonPrimitive("Document"),
+                            "canView" to JsonPrimitive(true),
+                        ),
+                    ),
+                )
+            }
+            // Forms (FORM-02) in memory per patient: list, create, update, the signature request, the PDF link.
+            get && path.matches(Regex("patients/\\d+/forms")) -> ok(JsonArray(forms[path.split('/')[1]].orEmpty()))
+            request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/forms")) -> {
+                val patient = path.split('/')[1]
+                val saved =
+                    JsonObject(apiJson.parseToJsonElement(body).jsonObject + ("id" to JsonPrimitive(++lastFormId)))
+                forms = forms + (patient to forms[patient].orEmpty() + saved)
+                ok(saved)
+            }
+            path.matches(Regex("patients/\\d+/forms/\\d+(/request-signature|/link-document)?")) && !get -> {
+                val parts = path.split('/')
+                val (patient, formId) = parts[1] to parts[3]
+                val old =
+                    forms[patient]
+                        .orEmpty()
+                        .firstOrNull { it.jsonObject["id"]?.jsonPrimitive?.content == formId }
+                        ?.jsonObject ?: return fail(HttpStatusCode.NotFound, "NOT_FOUND")
+                val change =
+                    when (parts.getOrNull(4)) {
+                        "request-signature" -> mapOf("signatureRequested" to JsonPrimitive(true))
+                        "link-document" ->
+                            mapOf(
+                                "documentId" to JsonPrimitive(request.url.parameters["documentId"]?.toLongOrNull()),
+                            )
+                        // A save replaces what the form holds (an emptied chart or list is left out of the body):
+                        // only the server's own fields carry over.
+                        else ->
+                            old.filterKeys { it in FORM_SERVER_FIELDS } + apiJson.parseToJsonElement(body).jsonObject
+                    }
+                val saved = JsonObject(if (parts.getOrNull(4) == null) change else old + change)
+                forms = forms + (patient to forms[patient].orEmpty().map { if (it == old) saved else it })
+                ok(saved)
+            }
+            get && path == Endpoints.ICD10_SEARCH -> {
+                val q = request.url.parameters["q"].orEmpty().trim().lowercase()
+                ok(
+                    JsonArray(
+                        apiJson.parseToJsonElement(DEMO_ICD10).jsonArray.filter { q in it.toString().lowercase() },
+                    ),
+                )
+            }
             request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/documents/\\d+/request-access")) ->
                 ok(JsonObject(emptyMap()))
             request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/create-account")) ->
@@ -908,3 +965,18 @@ private fun filePart(raw: ByteArray): Pair<ByteArray, String>? {
             ?: "application/octet-stream"
     return raw.copyOfRange(start + 4, end) to type
 }
+
+private const val DEMO_ICD10 =
+    """[{"code":"K02.0","title":"Caries enamel","subtitle":"K02"},{"code":"K02.1","title":"Caries dentine","subtitle":"K02"},
+    {"code":"K04.0","title":"Pulpitis","subtitle":"K04"},{"code":"K05.1","title":"Chronic gingivitis","subtitle":"K05"},
+    {"code":"K08.1","title":"Loss of teeth due to accident, extraction or local periodontal disease","subtitle":"K08"}]"""
+
+private val FORM_SERVER_FIELDS =
+    setOf(
+        "id",
+        "patientId",
+        "signatureRequested",
+        "patientSignedAt",
+        "patientSignatureImageBase64",
+        "createdByDoctorId",
+    )

@@ -13,6 +13,7 @@ import io.ktor.client.statement.readBytes
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -77,15 +78,7 @@ class DocumentsRepository(
             client().submitFormWithBinaryData(
                 ApiConfig.Endpoints.patientDocuments(patientId),
                 formData {
-                    append(
-                        "file",
-                        file.bytes,
-                        Headers.build {
-                            append(HttpHeaders.ContentType, file.mime)
-                            // Quotes would end the header value early.
-                            append(HttpHeaders.ContentDisposition, "filename=\"${file.fileName.replace("\"", "")}\"")
-                        },
-                    )
+                    append("file", file.bytes, filePart(file))
                     append("title", title)
                     append("category", category)
                     appointmentId?.let { append("appointmentId", it.toString()) }
@@ -99,6 +92,33 @@ class DocumentsRepository(
                     if (total != null && total > 0) progress((sent.toFloat() / total).coerceIn(0f, 1f))
                 }
             }
+        }
+
+    /**
+     * Replaces a document's file (`PUT …/documents/{id}`, multipart `file` only): a re-saved 025-2 keeps its document
+     * and gets the new PDF (06 §3.6). The content type is the file's own (Flutter always declared a PDF).
+     */
+    suspend fun replaceFile(
+        patientId: Long,
+        documentId: Long,
+        file: UploadFile,
+        clinicId: Long? = null,
+    ): Result<PatientDocument> =
+        apiCall<PatientDocument> {
+            client().submitFormWithBinaryData(
+                ApiConfig.Endpoints.patientDocument(patientId, documentId),
+                formData { append("file", file.bytes, filePart(file)) },
+            ) {
+                method = HttpMethod.Put
+                clinicId?.let { parameter("clinicId", it) }
+            }
+        }
+
+    private fun filePart(file: UploadFile) =
+        Headers.build {
+            append(HttpHeaders.ContentType, file.mime)
+            // Quotes would end the header value early.
+            append(HttpHeaders.ContentDisposition, "filename=\"${file.fileName.replace("\"", "")}\"")
         }
 
     suspend fun requestAccess(
