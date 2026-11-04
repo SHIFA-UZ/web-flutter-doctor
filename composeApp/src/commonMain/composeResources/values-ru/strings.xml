@@ -2478,6 +2478,7 @@
     <string name="viewSummary">Открыть резюме</string>
     <string name="viewUsers">Пользователи</string>
     <string name="viewVisitBriefing">Брифинг визита</string>
+    <string name="visit">Приём</string>
     <string name="visitBriefingCopy">Копировать</string>
     <string name="visitBriefingEmpty">Документов или брифинга пока нет.</string>
     <string name="visitBriefingFailed">Не удалось создать брифинг визита.</string>

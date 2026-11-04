@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.subscription.DoctorFeature
@@ -78,6 +79,16 @@ sealed interface ShellRoute {
      */
     data class Appointment(
         val appointment: CalendarEntry.Appointment,
+        val opened: Long,
+    ) : ShellRoute
+
+    /**
+     * A visit's screen (APPT-01): in the clinic or on video, opened from its id only (the screen reads the rest, the
+     * patient included, from `GET /appointments/{id}`); [opened] as for [Appointment].
+     */
+    data class Visit(
+        val appointmentId: Long,
+        val kind: VisitKind,
         val opened: Long,
     ) : ShellRoute
 

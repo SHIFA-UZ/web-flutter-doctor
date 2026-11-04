@@ -2478,6 +2478,7 @@
     <string name="viewSummary">Xulosani ko'rish</string>
     <string name="viewUsers">Foydalanuvchilar</string>
     <string name="viewVisitBriefing">Tashrif brifingi</string>
+    <string name="visit">Qabul</string>
     <string name="visitBriefingCopy">Nusxalash</string>
     <string name="visitBriefingEmpty">Hali hujjat yoki brifing yo‘q.</string>
     <string name="visitBriefingFailed">Tashrif brifingini yaratib bo‘lmadi.</string>

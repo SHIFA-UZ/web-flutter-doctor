@@ -197,13 +197,16 @@ banner, anything else to a generic retry.
 
 **Needed by:** flows `04/02`, `04/05`, `02/02`; tickets CAL-1, HOME-01. Spec `15` §4 row 4 (half done).
 
-**Now:** `AppointmentDto` has `isVideoConsultation` (done); the calendar `EntryDto` has `location`, `locationId`,
-`locationLabel` but no kind flag, so a day list still has to guess from the word "video".
+**Now:** only the patient-side `AppointmentDto` has `isVideoConsultation`. The doctor's `GET /api/appointments/{id}`
+(`AppointmentController.AppointmentDto`, checked on dev 2026-11-04) has no kind flag, and neither has the calendar
+`EntryDto` (`location`, `locationId`, `locationLabel`), so the doctor app still guesses from the word "video".
 
-**Change:** add `isVideo: Boolean` to `EntryDto` (and `consultationType` if a third kind ever exists).
+**Change:** add `isVideo: Boolean` to `EntryDto` and `isVideoConsultation` to the doctor's `AppointmentDto` (and
+`consultationType` if a third kind ever exists).
 
-**App until then:** one mapper function `EntryDto.isVideoFallback()` = `locationId == null && location contains
-"video"` (case-insensitive, three languages), marked `ponytail:`; the appointment detail uses the real flag.
+**App until then:** one function, `VisitKind.of(flag, location)` (`data/model/AppointmentModels.kt`, marked
+`ponytail:`): the flag when sent, else `location` containing "video" (case-insensitive). The calendar and the
+appointment detail both go through it.
 
 ## BE-10 Cancel reason; mark no-show
 

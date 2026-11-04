@@ -62,9 +62,10 @@ sealed interface CalendarEntry {
         val briefingStatus: String? = null,
         val attachmentCount: Int = 0,
     ) : CalendarEntry {
-        // ponytail: the calendar has no video flag yet (BE-09); the booked location text says "Video". Replace with
-        // the backend's `isVideo` when it ships.
-        val isVideo: Boolean get() = location?.contains("video", ignoreCase = true) == true
+        // The calendar has no video flag yet (BE-09): VisitKind reads the booked location.
+        val kind: VisitKind get() = VisitKind.of(null, location)
+
+        val isVideo: Boolean get() = kind == VisitKind.Video
 
         val cancelled: Boolean get() = status.equals("CANCELLED", ignoreCase = true)
     }

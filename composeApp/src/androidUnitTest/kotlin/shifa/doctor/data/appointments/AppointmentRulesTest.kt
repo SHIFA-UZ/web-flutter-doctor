@@ -43,6 +43,7 @@ class AppointmentRulesTest {
             ctaFor(appt("2026-11-04T04:00:00Z", "2026-11-04T04:30:00Z", "IN_PROGRESS"), now),
         ).isEqualTo(Cta(CtaKind.Continue, true))
         assertThat(ctaFor(appt("2026-11-04T06:00:00Z", "2026-11-04T06:30:00Z", "CANCELLED"), now)).isNull()
+        assertThat(ctaFor(appt("2026-11-04T04:00:00Z", "2026-11-04T04:30:00Z", "NO_SHOW"), now)).isNull()
     }
 
     @Test

@@ -2549,5 +2549,6 @@
   "editForm": "Edit form",
   "historyOtherTeethHidden": "Earlier rows recorded for the other teeth are hidden; switch back to see them.",
   "previousChartUnavailable": "The previous chart couldn't be loaded; this form starts empty.",
-  "formsUnavailableNotice": "Forms couldn't be loaded, so Edit form isn't shown on their PDFs."
+  "formsUnavailableNotice": "Forms couldn't be loaded, so Edit form isn't shown on their PDFs.",
+  "visit": "Visit"
 }

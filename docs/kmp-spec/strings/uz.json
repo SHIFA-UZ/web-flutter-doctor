@@ -2549,5 +2549,6 @@
   "editForm": "Formani tahrirlash",
   "historyOtherTeethHidden": "Boshqa tishlar uchun yozilgan oldingi qatorlar yashirilgan; ko'rish uchun qayta almashtiring.",
   "previousChartUnavailable": "Oldingi karta yuklanmadi; bu forma bo'sh boshlanadi.",
-  "formsUnavailableNotice": "Formalar yuklanmadi, shuning uchun ularning PDF fayllarida «Formani tahrirlash» ko'rsatilmaydi."
+  "formsUnavailableNotice": "Formalar yuklanmadi, shuning uchun ularning PDF fayllarida «Formani tahrirlash» ko'rsatilmaydi.",
+  "visit": "Qabul"
 }

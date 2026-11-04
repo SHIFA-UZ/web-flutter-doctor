@@ -368,6 +368,8 @@ fun AppointmentPanelScreen(
     appointment: CalendarEntry.Appointment,
     opened: Long,
     onClose: () -> Unit,
+    // Start / Continue: the visit's screen (APPT-01).
+    onStart: (CalendarEntry.Appointment) -> Unit = {},
     viewModel: AppointmentPanelViewModel =
         viewModel(key = "appointment-${appointment.appointmentId}-$opened") {
             AppointmentPanelViewModel(appointment, PracticeClock(profileRepository.me.value?.profile?.timeZone))
@@ -381,6 +383,10 @@ fun AppointmentPanelScreen(
         PanelActions(
             back = viewModel::back,
             ui = viewModel::ui,
+            primary = { kind ->
+                // ponytail: Open summary waits for the summary document (PDF-01); Ended does nothing.
+                if (kind == CtaKind.Start || kind == CtaKind.Continue) onStart(appointment)
+            },
             applyDuration = viewModel::applyDuration,
             remind = viewModel::remindPayment,
             reschedule = viewModel::rescheduleOn,

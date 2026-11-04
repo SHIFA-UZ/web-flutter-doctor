@@ -2478,6 +2478,7 @@
     <string name="viewSummary">View summary</string>
     <string name="viewUsers">View Users</string>
     <string name="viewVisitBriefing">Visit briefing</string>
+    <string name="visit">Visit</string>
     <string name="visitBriefingCopy">Copy</string>
     <string name="visitBriefingEmpty">No pre-appointment documents or briefing yet.</string>
     <string name="visitBriefingFailed">Could not generate the visit briefing.</string>

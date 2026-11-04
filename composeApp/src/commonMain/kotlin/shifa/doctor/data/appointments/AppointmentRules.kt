@@ -32,7 +32,8 @@ fun ctaFor(
 ): Cta? {
     val status = appointment.status?.uppercase()
     return when {
-        status == "CANCELLED" -> null
+        // A cancelled or no-show visit is read-only: no main button (flow 05/01 §5).
+        status == "CANCELLED" || status == "NO_SHOW" -> null
         status == "COMPLETED" -> Cta(CtaKind.OpenSummary, true)
         status == "IN_PROGRESS" -> Cta(CtaKind.Continue, true)
         appointment.isVideo && now < appointment.start - 5.minutes -> Cta(CtaKind.Start, false, CtaHint.VideoTooEarly)

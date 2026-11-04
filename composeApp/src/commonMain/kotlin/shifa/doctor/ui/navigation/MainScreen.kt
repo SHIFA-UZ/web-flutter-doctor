@@ -43,6 +43,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.model.VisitKind
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.calendar
@@ -68,6 +69,7 @@ import shifa.doctor.generated.resources.ic_tasks_22
 import shifa.doctor.generated.resources.ic_user_22
 import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.ic_users_bold_22
+import shifa.doctor.generated.resources.ic_video_22
 import shifa.doctor.generated.resources.language
 import shifa.doctor.generated.resources.more
 import shifa.doctor.generated.resources.moreOptions
@@ -87,10 +89,13 @@ import shifa.doctor.generated.resources.settings
 import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.signOut
 import shifa.doctor.generated.resources.subscriptionAndBilling
+import shifa.doctor.generated.resources.tabComesLater
 import shifa.doctor.generated.resources.talkWithAi
 import shifa.doctor.generated.resources.tasks
 import shifa.doctor.generated.resources.unreadBadge
 import shifa.doctor.generated.resources.unreadCountCap
+import shifa.doctor.generated.resources.videoCall
+import shifa.doctor.generated.resources.visit
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
@@ -378,7 +383,18 @@ private fun RouteContent(
                 onClose = actions.back,
                 patient = route.patient,
             )
-        is ShellRoute.Appointment -> AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back)
+        is ShellRoute.Appointment ->
+            AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back, onStart = {
+                actions.push(ShellRoute.Visit(it.appointmentId, it.kind, currentInstant().toEpochMilliseconds()))
+            })
+        // ponytail: the visit screen comes with APPT-04 (in the clinic) and VIDEO-02 (video).
+        is ShellRoute.Visit ->
+            Pushed(if (route.kind == VisitKind.Video) Res.string.videoCall else Res.string.visit, actions) {
+                TabPlaceholder(
+                    Res.string.tabComesLater,
+                    if (route.kind == VisitKind.Video) Res.drawable.ic_video_22 else Res.drawable.ic_calendar_22,
+                )
+            }
         ShellRoute.Locations -> LocationsScreen(onClose = actions.back)
         is ShellRoute.Patient ->
             PatientDetailScreen(
