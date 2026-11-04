@@ -1157,6 +1157,7 @@
     <string name="formTemplateNamed">Form %1$s</string>
     <string name="formsLoadFailed">Could not load forms</string>
     <string name="formsTab">Forms</string>
+    <string name="formsUnavailableNotice">Forms couldn't be loaded, so Edit form isn't shown on their PDFs.</string>
     <string name="freeRemovesPrices">Existing prices will be removed</string>
     <string name="freeSlot">Free slot</string>
     <string name="freeSlots">Free Slots</string>

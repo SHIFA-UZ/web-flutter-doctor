@@ -59,4 +59,13 @@ class PatientsScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h1600dp-xhdpi")
     fun documents() = captureRoboImage("screenshots/PatientDetail_documents.png") { PatientDocumentsPreview() }
+
+    @Test
+    fun forms() = captureRoboImage("screenshots/PatientDetail_forms.png") { PatientFormsPreview() }
+
+    @Test
+    fun formsEmpty() = captureRoboImage("screenshots/PatientDetail_formsEmpty.png") { PatientFormsEmptyPreview() }
+
+    @Test
+    fun formTemplate() = captureRoboImage("screenshots/FormTemplate.png") { FormTemplatePreview() }
 }

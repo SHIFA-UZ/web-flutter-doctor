@@ -40,6 +40,7 @@ import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.createHttpEngine
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.utils.PhoneE164
+import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.isDebugBuild
 
 /** Debug menu → Demo data: the shared client talks to [DemoBackend.shared]. Kept across launches; debug builds only. */
@@ -347,7 +348,8 @@ class DemoBackend(
                         mapOf(
                             "id" to JsonPrimitive(id),
                             "title" to JsonPrimitive(field("title") ?: "Document"),
-                            "date" to JsonPrimitive("2026-11-04"),
+                            // The server's day (UTC), as the backend stamps an upload.
+                            "date" to JsonPrimitive(currentInstant().toString().take(10)),
                             "url" to JsonPrimitive("demo"),
                             "canView" to JsonPrimitive(true),
                             "category" to JsonPrimitive(field("category")),

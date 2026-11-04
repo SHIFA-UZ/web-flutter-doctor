@@ -391,6 +391,9 @@ private fun RouteContent(
                     actions.push(ShellRoute.Booking(slot, currentInstant().toEpochMilliseconds(), patient))
                 },
                 onOpenDocument = { d, title -> actions.push(ShellRoute.Document(route.id, d.id, title)) },
+                onOpenForm = { formId ->
+                    actions.push(ShellRoute.Form(route.id, formId, currentInstant().toEpochMilliseconds()))
+                },
             )
         is ShellRoute.Form -> FormEditorScreen(route.patientId, route.formId, route.opened, onClose = actions.back)
         is ShellRoute.Document ->

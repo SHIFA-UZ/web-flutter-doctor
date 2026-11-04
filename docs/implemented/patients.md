@@ -509,3 +509,32 @@ opened)`, opened from the Forms tab and a form document's Edit (FORM-05).
   replaced; the engine's texts and diagnosis; the ICD search's 250 ms and a pick; a signature request saving first;
   chart cells, rows, dentition and the discard question), screenshot `FormEditor_top`. Checked on the emulator with
   FORM-05 (next ticket), in demo mode.
+
+## FORM-05 · Forms tab and template picker
+
+Built 2026-11-04. Flow `06/09-forms-tab-and-template-picker.md`; spec 06 §2.7, §3.1. Board `DaPatients` "Forms" tab
+(header "Forms" with the count and Create Form, the empty card, rows with badges) and its template menu ("Select
+Form Template").
+
+- **Tab** (`ui/forms/PatientForms.kt`, the record's fifth tab "Forms", not "Prescriptions"): the patient's forms
+  newest first (date, then id), each card: icon, "Form 025-2" (an unknown template "Form {id}"), the date, the badges
+  **Signed ✓** / **Signature requested** and **No PDF** (no linked document), chevron; the whole card opens it in the
+  editor; from 150 % text the badges go under the date. A screen reader hears one line ("Form 025-2, 05.11.2026, Signed ✓"). Empty: "No forms yet". A failed read
+  is "Could not load forms" with Retry and **no Create Form** until the list is known (flow §6: Flutter showed the
+  empty state, inviting a duplicate); a failed refresh is a banner over the list. Read each time the tab shows;
+  the list is the repository's cache, so a form saved in the editor is there on return.
+- **Create Form** (in the header, as the board) opens the **template sheet** with the one template and its
+  description "Dental outpatient card (Uzbekistan form 025-2)"; kept although there is one template, as the board
+  shows it (flow §13 leaves it open). Navigation passes ids only (`ShellRoute.Form(patientId, formId)`).
+- **Documents tab**: a document that is a form's PDF gets **Edit form** beside Open (flow 06/06 §3.3; it needs the
+  link and access, not the file); the tab reads the forms too and, if they fail, says why Edit is missing. The localised "Form 025-2 (date)" title now takes the form's day from the uploaded title (the upload's
+  date is the server's day, a day off around midnight in Tashkent). The demo backend stamps uploads with today.
+- **Not built:** long-press "Open PDF" / "Request signature" (flow §7 target), year dividers, the author line for
+  forms by other clinic doctors (flow §13 open), Create Form in the header ⋮ and Documents ⋮ menus (the record has
+  neither menu yet), forms in the activity timeline (flow 06/11).
+- **Tests:** `PatientFormsViewModelTest` (2: newest first, a saved form shown without another read, PDFs mapped to
+  their forms; a failed first read as an error, a failed refresh as a banner), screenshots `PatientDetail_forms`,
+  `PatientDetail_formsEmpty`, `FormTemplate`, `PatientDetail_documents` (Edit form). **Emulator (demo mode):** Forms
+  tab empty → Create Form → template → editor (prefilled) → diagnosis → Save → "Form saved successfully", back on
+  Forms with "1 form" and no "No PDF"; Documents shows "Form 025-2 (05.11.2026)" with Edit form (opens the saved form)
+  and Open (the PDF, diagnosis in it). FORM-04's editor checked end to end with it.

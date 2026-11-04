@@ -1157,6 +1157,7 @@
     <string name="formTemplateNamed">%1$s shakli</string>
     <string name="formsLoadFailed">Formalarni yuklab bo'lmadi</string>
     <string name="formsTab">Shakllar</string>
+    <string name="formsUnavailableNotice">Formalar yuklanmadi, shuning uchun ularning PDF fayllarida «Formani tahrirlash» ko'rsatilmaydi.</string>
     <string name="freeRemovesPrices">Mavjud narxlar o'chiriladi</string>
     <string name="freeSlot">Bo'sh vaqt</string>
     <string name="freeSlots">Bo'sh vaqtlar</string>

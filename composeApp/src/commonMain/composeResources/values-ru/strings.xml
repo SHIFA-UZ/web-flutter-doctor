@@ -1157,6 +1157,7 @@
     <string name="formTemplateNamed">Форма %1$s</string>
     <string name="formsLoadFailed">Не удалось загрузить формы</string>
     <string name="formsTab">Формы</string>
+    <string name="formsUnavailableNotice">Не удалось загрузить формы, поэтому «Изменить форму» у их PDF не показано.</string>
     <string name="freeRemovesPrices">Текущие цены будут удалены</string>
     <string name="freeSlot">Свободное время</string>
     <string name="freeSlots">Свободные слоты</string>

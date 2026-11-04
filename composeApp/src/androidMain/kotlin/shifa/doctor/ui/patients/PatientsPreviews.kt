@@ -3,6 +3,8 @@ package shifa.doctor.ui.patients
 import androidx.compose.runtime.Composable
 import kotlinx.datetime.LocalDate
 import shifa.doctor.data.model.Patient
+import shifa.doctor.ui.forms.FormTemplateTray
+import shifa.doctor.ui.forms.PatientFormsUiState
 import shifa.doctor.ui.theme.PreviewTheme
 
 private val today = LocalDate(2026, 11, 4)
@@ -236,5 +238,59 @@ internal fun PatientDocumentsPreview() =
                     ),
                 ),
             ),
+            // FORM-05: the form PDF is linked to its form, so it gets Edit form.
+            forms = PatientFormsUiState(listOf(form(31, "2026-10-21", documentId = 8))),
         )
     }
+
+private fun form(
+    id: Long,
+    date: String,
+    documentId: Long? = null,
+    signedAt: String? = null,
+    requested: Boolean = false,
+    template: String = "025-2",
+) = shifa.doctor.data.model.PatientForm(
+    id = id,
+    patientId = record.id,
+    templateId = template,
+    date = date,
+    fullName = record.name,
+    documentId = documentId,
+    patientSignedAt = signedAt,
+    signatureRequested = requested,
+)
+
+// FORM-05: the Forms tab: signed, signature requested, no PDF, and a template this app doesn't know.
+@Composable
+internal fun PatientFormsPreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(record, today = today, tab = RecordTab.Forms),
+            PatientDetailActions(),
+            forms =
+                PatientFormsUiState(
+                    listOf(
+                        form(33, "2026-11-04", documentId = 102, signedAt = "2026-11-04T09:10:00Z"),
+                        form(32, "2026-10-21", documentId = 101, requested = true),
+                        form(31, "2026-10-01"),
+                        form(30, "2026-09-12", documentId = 90, template = "027"),
+                    ),
+                ),
+        )
+    }
+
+// FORM-05: no forms yet.
+@Composable
+internal fun PatientFormsEmptyPreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(record, today = today, tab = RecordTab.Forms),
+            PatientDetailActions(),
+            forms = PatientFormsUiState(emptyList()),
+        )
+    }
+
+// FORM-05: the template sheet.
+@Composable
+internal fun FormTemplatePreview() = PreviewTheme { FormTemplateTray({}, {}) }

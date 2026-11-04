@@ -118,7 +118,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CLIN-01 Clinical engine API | Done | Lenient models, groups / diseases / chips / occlusion / shared texts, synthesize, record-usage (new: Flutter never sent it). See patients.md. |
 | CLIN-02 Clinical engine panel | Done (hosted by FORM-04) | Disease picker and frequent diagnoses, chips per field with [X] values, search, occlusion and ready texts; Apply hands the texts over once (Flutter overwrote on every toggle). See patients.md. |
 | FORM-04 025-2 editor | Done (no speech yet) | New (prefilled, chart carried over) or existing form, ICD-10, clinical engine, dental chart editor, return visits, signature; save = form → PDF → document → link → usage, resumable at the failed step. See patients.md. |
-| FORM-05 | Not started | |
+| FORM-05 Forms tab + template picker | Done | Forms with signature / PDF badges, error with Retry (no Create until loaded), template sheet, Edit form on a form's PDF; checked on the emulator with the editor. See patients.md. |
 
 ## Log
 
@@ -191,3 +191,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CLIN-01 · Clinical engine API.
 - 2026-11-04 · CLIN-02 · Clinical engine panel (explicit Apply, the board's).
 - 2026-11-04 · FORM-04 · 025-2 editor with the resumable save pipeline.
+- 2026-11-04 · FORM-05 · Forms tab, template sheet, Edit form on a form's PDF.

@@ -292,7 +292,7 @@ Shared fixes made on the way:
 - The calendar refresh reads four days at a time.
 - Profile actions are passed by name: a positional list had sent Reports to the new Locations row.
 
-## M4 · Patients, documents, forms (in progress)
+## M4 · Patients, documents, forms (done on Android; iOS compiled and linked, not run)
 
 | Ticket | Commit | What it is |
 |---|---|---|
@@ -310,6 +310,11 @@ Shared fixes made on the way:
 | DOCS-03 | `1f44453` | Upload: PDF, photo, gallery, multi-page scan → title and required type → upload with progress, Cancel, Retry |
 | FORM-01 | `843e004` | 025-2 form models and the dental-chart codec (ported, with tests Flutter never had) |
 | FORM-02 | `51610cb` | Forms repository: cached list, save, signature request, PDF link, file replacement, ICD-10 search |
+| FORM-03 | `2e5c600` | 025-2 PDF made in the app: one shared layout, platform text drawing (Cyrillic renders), landscape A4 |
+| CLIN-01 | `f18d9d5` | Clinical engine API: groups, diseases, chips (one bad chip no longer drops a disease), synthesize, usage |
+| CLIN-02 | `3689dbb` | Clinical engine panel in the form: group → disease → chips with values, search, explicit Apply |
+| FORM-04 | `5ab03ad` | 025-2 editor: prefill and carried-over chart, ICD-10, engine, chart editor, return visits, signature; one save pipeline that resumes at the failed step |
+| FORM-05 | last M4 commit | Forms tab with signature / PDF badges, template sheet, Edit form on a form's PDF |
 
 Checked against dev on the emulator, dev left as it was: the patients list, a patient's record (last visit, tabs,
 Medical info, Edit details opened), the favourite star set and cleared, booking from the record up to the booking
@@ -317,12 +322,23 @@ screen (nothing booked), the Documents tab and dev's real PDF in the viewer. Cle
 checked with direct requests and put back. Writes that can't be undone on dev (create patient, upload, request
 access) were checked in demo mode only.
 
+The milestone's check, on the Android emulator: create a patient, upload a scanned multi-page document and open it
+(DOCS-03/05, demo mode), and fill a 025-2 from the Forms tab, save it, then see its PDF in the documents list with
+Edit form, and open it (FORM-05, demo mode). The signature request is covered by unit tests, not tapped on the
+device. **iOS:** every ticket compiles and links for the simulator, but nothing of M4 ran on iOS yet; the PDF writer's
+iOS side (`UIGraphicsPDFRenderer`) is the part most worth a run.
+
 Your calls / open points from M4:
 - **Patient language is stored as codes** (uz, ru, en…; Flutter stored words). The detail reads both. Confirm.
 - **Prophylaxis card** moved from PAT-06 to CLINIC-06: only the clinic workspace opens a patient with a clinic id.
 - **Tablet two-pane** for patients: the same open call as CAL-5.
-- **025-2 PDF (FORM-03, next):** BE-01 (backend rendering) is still the better answer; until then I'm building the
-  PDF in the app (platform text drawing for Cyrillic, one shared layout).
+- **025-2 PDF (FORM-03):** built in the app (platform text drawing, one shared layout); BE-01 (backend rendering) is
+  still the better long-term answer.
+- **Clinical engine:** its language codes and whether it stays open to every plan (the board says PRO) are in the
+  README's decisions to confirm. Apply is explicit, as the board shows.
+- **025-2 chart:** history rows now remember which teeth they were written for (a key of ours, `…_HIST_{i}_dentition`,
+  which Flutter's reader skips), so switching adult / child teeth no longer puts old findings under other teeth.
+- **Template sheet** kept with one template, as the board shows (the flow left skipping it open).
 - **Dev facts:** a locked document's download answers 404, not 403; the backend sets `phone` from `phones`; an empty
   string clears a patient field.
 

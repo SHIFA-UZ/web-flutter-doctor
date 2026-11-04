@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
@@ -44,7 +45,10 @@ import shifa.doctor.generated.resources.documentHistory
 import shifa.doctor.generated.resources.documentsEmptyHint
 import shifa.doctor.generated.resources.documentsLoadFailed
 import shifa.doctor.generated.resources.documentsNoMatch
+import shifa.doctor.generated.resources.editForm
 import shifa.doctor.generated.resources.formDocumentTitle
+import shifa.doctor.generated.resources.formsUnavailableNotice
+import shifa.doctor.generated.resources.ic_edit_16
 import shifa.doctor.generated.resources.ic_external_16
 import shifa.doctor.generated.resources.ic_lock_16
 import shifa.doctor.generated.resources.ic_users_16
@@ -173,6 +177,8 @@ data class DocumentsActions(
     val cancelUpload: () -> Unit = {},
     val retryUpload: () -> Unit = {},
     val dismissUpload: () -> Unit = {},
+    // FORM-05: a linked form's PDF opens its form in the editor.
+    val editForm: (Long) -> Unit = {},
 )
 
 /** The tab's rows in the record's lazy list (200+ documents stay lazy, flow §8). */
@@ -181,6 +187,9 @@ fun LazyListScope.documentRows(
     actions: DocumentsActions,
     gap: Modifier,
     upload: UploadUiState = UploadUiState(),
+    // Each linked document's form (FORM-05), for "Edit form"; [formsFailed]: they couldn't be read (flow §6 notice).
+    formOf: Map<Long, Long> = emptyMap(),
+    formsFailed: Boolean = false,
 ) {
     item {
         Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S10)) {
@@ -201,6 +210,13 @@ fun LazyListScope.documentRows(
             }
             UploadStatus(upload, actions.cancelUpload, actions.retryUpload, actions.dismissUpload)
             codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
+            if (formsFailed && state.documents?.any { it.kind == DocumentCategory.FORM_025_2 } == true) {
+                Text(
+                    tr(Res.string.formsUnavailableNotice),
+                    style = ShifaTextStyles.metaSmall(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            }
             if (state.documents?.isNotEmpty() == true) {
                 ShifaSearchField(state.query, actions.search, tr(Res.string.search), Modifier.fillMaxWidth())
             }
@@ -249,7 +265,7 @@ fun LazyListScope.documentRows(
             }
         else ->
             items(state.shown, key = { "document-${it.id}" }) { d ->
-                Box(gap) { DocumentCard(d, d.id in state.requesting, actions) }
+                Box(gap) { DocumentCard(d, d.id in state.requesting, actions, formOf[d.id]) }
             }
     }
 }
@@ -265,6 +281,8 @@ internal fun DocumentCard(
     d: PatientDocument,
     requesting: Boolean,
     actions: DocumentsActions,
+    // The form this document is the PDF of: "Edit form" next to Open (flow 06/06 §3.3).
+    formId: Long? = null,
 ) {
     val tap: (() -> Unit)? =
         when {
@@ -286,14 +304,27 @@ internal fun DocumentCard(
                     )
                 }
             }
-            d.openable -> {
+            // Edit needs the form link and access; Open needs the file too (flow §3.3).
+            d.openable || formId != null -> {
                 {
-                    ShifaIconButton(
-                        Res.drawable.ic_external_16,
-                        tr(Res.string.openDocument),
-                        { actions.open(d) },
-                        variant = ShifaIconButtonVariant.Secondary,
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                        formId?.let { id ->
+                            ShifaIconButton(
+                                Res.drawable.ic_edit_16,
+                                tr(Res.string.editForm),
+                                { actions.editForm(id) },
+                                variant = ShifaIconButtonVariant.Secondary,
+                            )
+                        }
+                        if (d.openable) {
+                            ShifaIconButton(
+                                Res.drawable.ic_external_16,
+                                tr(Res.string.openDocument),
+                                { actions.open(d) },
+                                variant = ShifaIconButtonVariant.Secondary,
+                            )
+                        }
+                    }
                 }
             }
             else -> null
@@ -367,13 +398,19 @@ private fun creator(label: String?): String =
         else -> label.trim()
     }
 
-private const val LARGE_TEXT = 1.5f
+internal const val LARGE_TEXT = 1.5f
 
 /** A 025-2 form's PDF reads "Form 025-2 (12.03.2026)" in the app's language; others as uploaded. */
 @Composable
 internal fun documentTitle(d: PatientDocument): String =
     if (d.kind == DocumentCategory.FORM_025_2) {
-        tr(Res.string.formDocumentTitle, d.day?.let(::displayDate) ?: "—")
+        // The form's own day, which the editor writes into the title ("Form 025-2 (2026-11-05)"); the upload's date
+        // can be a day off (the server's, not the practice's, around midnight).
+        val formDay =
+            FORM_DAY.find(
+                d.title,
+            )?.groupValues?.get(1)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        tr(Res.string.formDocumentTitle, (formDay ?: d.day)?.let(::displayDate) ?: "—")
     } else {
         d.title.ifBlank { "—" }
     }
@@ -394,3 +431,5 @@ private fun categoryChip(d: PatientDocument) {
         ProfileChip(label, ShifaColors.Bg.Canvas, ShifaColors.Text.Secondary)
     }
 }
+
+private val FORM_DAY = Regex("""\((\d{4}-\d{2}-\d{2})\)""")

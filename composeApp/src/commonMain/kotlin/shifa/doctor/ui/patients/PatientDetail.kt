@@ -157,6 +157,11 @@ import shifa.doctor.ui.documents.documentTitle
 import shifa.doctor.ui.documents.rememberUploadSources
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.forms.FormTemplateTray
+import shifa.doctor.ui.forms.FormsActions
+import shifa.doctor.ui.forms.PatientFormsUiState
+import shifa.doctor.ui.forms.PatientFormsViewModel
+import shifa.doctor.ui.forms.formRows
 import shifa.doctor.ui.profile.DiscardChangesSheet
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
@@ -672,6 +677,7 @@ data class PatientDetailActions(
     val book: () -> Unit = {},
     val retryVisits: () -> Unit = {},
     val documents: DocumentsActions = DocumentsActions(),
+    val forms: FormsActions = FormsActions(),
 )
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -683,19 +689,27 @@ fun PatientDetailScreen(
     onBook: (CalendarEntry.FreeSlot, PatientOption) -> Unit = { _, _ -> },
     // A viewable document, for the viewer (DOCS-05): the document and the title to show.
     onOpenDocument: (PatientDocument, String) -> Unit = { _, _ -> },
+    // A form in the 025-2 editor (FORM-04): its id, or null for a new one.
+    onOpenForm: (Long?) -> Unit = {},
     viewModel: PatientDetailViewModel = viewModel(key = "patient-$id") { PatientDetailViewModel(id) },
     documents: PatientDocumentsViewModel = viewModel(key = "patient-documents-$id") { PatientDocumentsViewModel(id) },
     uploads: DocumentUploadViewModel = viewModel(key = "patient-upload-$id") { DocumentUploadViewModel(id) },
+    forms: PatientFormsViewModel = viewModel(key = "patient-forms-$id") { PatientFormsViewModel(id) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val docs by documents.state.collectAsStateWithLifecycle()
     val upload by uploads.state.collectAsStateWithLifecycle()
+    val formsState by forms.state.collectAsStateWithLifecycle()
     // Each finished upload: the list again, with the new document on top.
     LaunchedEffect(upload.uploaded) { if (upload.uploaded > 0) documents.load() }
     val sources = rememberUploadSources(uploads)
     LaunchedEffect(Unit) { viewModel.load() }
     // Read each time the tab shows, back from the viewer included (access may have changed, flow 06/06 §5).
-    LaunchedEffect(state.tab) { if (state.tab == RecordTab.Documents) documents.load() }
+    // The documents tab reads the forms too: a form's PDF gets "Edit form" (flow 06/06).
+    LaunchedEffect(state.tab) {
+        if (state.tab == RecordTab.Documents) documents.load()
+        if (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms) forms.load()
+    }
     val titleOf = @Composable { d: PatientDocument -> documentTitle(d) }
     val back = { if (viewModel.back()) onBack() }
     BackHandler(onBack = back)
@@ -715,6 +729,7 @@ fun PatientDetailScreen(
             refresh = {
                 viewModel.load(refresh = true)
                 if (state.tab == RecordTab.Documents) documents.load()
+                if (state.tab == RecordTab.Documents || state.tab == RecordTab.Forms) forms.load()
             },
             ui = viewModel::ui,
             select = viewModel::select,
@@ -736,6 +751,14 @@ fun PatientDetailScreen(
                     cancelUpload = uploads::cancelUpload,
                     retryUpload = uploads::retry,
                     dismissUpload = { uploads.ui { it.copy(banner = null) } },
+                    editForm = onOpenForm,
+                ),
+            forms =
+                FormsActions(
+                    retry = forms::load,
+                    create = { forms.ui { it.copy(picking = true) } },
+                    open = { f -> f.id?.let(onOpenForm) },
+                    ui = forms::ui,
                 ),
             medical =
                 MedicalActions(
@@ -751,8 +774,18 @@ fun PatientDetailScreen(
         ),
         docs,
         upload,
+        formsState,
     )
     UploadSheets(upload, uploads, sources)
+    if (formsState.picking) {
+        val close = { forms.ui { it.copy(picking = false) } }
+        ProfileSheet(close) {
+            FormTemplateTray({
+                close()
+                onOpenForm(null)
+            }, close)
+        }
+    }
     val patient = state.patient
     val booking = state.booking
     if (patient != null && booking != null) {
@@ -795,6 +828,7 @@ fun PatientDetailContent(
     actions: PatientDetailActions,
     documents: PatientDocumentsUiState = PatientDocumentsUiState(),
     upload: UploadUiState = UploadUiState(),
+    forms: PatientFormsUiState = PatientFormsUiState(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     // No title: the header below names the patient (flow 06/03 §3.1).
     ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
@@ -831,7 +865,16 @@ fun PatientDetailContent(
                         // Long lists are rows of the lazy list (100+ visits, flow 06/03 §8).
                         RecordTab.Appointments -> appointmentRows(state, actions, gap)
                         RecordTab.Activity -> activityRows(state, actions, gap)
-                        RecordTab.Documents -> documentRows(documents, actions.documents, gap, upload)
+                        RecordTab.Documents ->
+                            documentRows(
+                                documents,
+                                actions.documents,
+                                gap,
+                                upload,
+                                forms.byDocument,
+                                forms.failed,
+                            )
+                        RecordTab.Forms -> formRows(forms, actions.forms, gap)
                         else ->
                             item {
                                 Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {
