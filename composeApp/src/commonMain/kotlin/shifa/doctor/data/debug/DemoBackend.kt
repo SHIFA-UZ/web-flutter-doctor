@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.toInstant
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
@@ -192,6 +193,7 @@ class DemoBackend(
             }
             get && path == Endpoints.SERVICE_GROUPS -> ok(JsonArray(groups))
             // Plans like dev's; the hosted pages are placeholders (nothing reaches Stripe in demo mode).
+            get && path == Endpoints.CALENDAR -> ok(demoCalendar(request.url.parameters["day"]))
             get && path == Endpoints.SUBSCRIPTION_PLANS -> ok(apiJson.parseToJsonElement(DEMO_PLANS))
             // The demo doctor's plan is admin-set: no paid subscription.
             get && path == Endpoints.SUBSCRIPTION_ME -> ok(JsonNull)
@@ -467,3 +469,68 @@ private const val DEMO_LOCATIONS = """[{"id":1,"label":"Shifa Demo Clinic","clin
 private const val DEMO_PLANS =
     """[{"code":"BASIC","name":"Basic","priceMinor":9900,"currency":"EUR","interval":"MONTH"},""" +
         """{"code":"PRO","name":"Pro","priceMinor":19900,"currency":"EUR","interval":"MONTH"}]"""
+
+/**
+ * A demo day (Tashkent, UTC+5): 30-minute slots 09:00–17:00, lunch blocked 13:00–14:00, and on even dates two
+ * appointments (one by video, one in the clinic) so the calendar has something to show.
+ */
+internal fun demoCalendar(day: String?): JsonArray {
+    val date = runCatching { kotlinx.datetime.LocalDate.parse(day ?: "") }.getOrNull() ?: return JsonArray(emptyList())
+    val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")
+
+    fun at(minutes: Int) =
+        kotlinx.datetime.LocalDateTime(
+            date,
+            kotlinx.datetime.LocalTime(minutes / 60, minutes % 60),
+        ).toInstant(zone).toString()
+
+    fun row(
+        start: Int,
+        end: Int,
+        vararg fields: Pair<String, Any>,
+    ) = JsonObject(
+        mapOf(
+            "startAt" to JsonPrimitive(at(start)),
+            "endAt" to JsonPrimitive(at(end)),
+            "locationId" to JsonPrimitive(1),
+            "locationLabel" to JsonPrimitive("Shifa Demo Clinic"),
+        ) + fields.associate { (k, v) -> k to if (v is Number) JsonPrimitive(v) else JsonPrimitive(v.toString()) },
+    )
+    val busy = date.dayOfMonth % 2 == 0
+    val lunch = 13 * 60
+    val rows =
+        (9 * 60 until 17 * 60 step 30).mapNotNull { m ->
+            when {
+                m == lunch -> row(m, m + 60, "type" to "BLOCKED", "blockId" to 1, "blockReason" to "Lunch")
+                m == lunch + 30 -> null
+                busy && m == 10 * 60 ->
+                    row(
+                        m,
+                        m + 30,
+                        "type" to "APPOINTMENT",
+                        "appointmentId" to 101,
+                        "patientId" to 11,
+                        "patientName" to "Dilnoza Rahimova",
+                        "location" to "Video Consultation",
+                        "reason" to "Follow-up",
+                        "status" to "CONFIRMED",
+                        "paymentStatus" to "PAID",
+                    )
+                busy && m == 15 * 60 ->
+                    row(
+                        m,
+                        m + 30,
+                        "type" to "APPOINTMENT",
+                        "appointmentId" to 102,
+                        "patientId" to 12,
+                        "patientName" to "Jasur Karimov",
+                        "location" to "Shifa Demo Clinic",
+                        "reason" to "First visit",
+                        "status" to "REQUESTED",
+                        "paymentStatus" to "PENDING",
+                    )
+                else -> row(m, m + 30, "type" to "FREE_SLOT")
+            }
+        }
+    return JsonArray(rows)
+}

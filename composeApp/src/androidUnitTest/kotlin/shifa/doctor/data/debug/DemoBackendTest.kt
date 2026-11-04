@@ -217,4 +217,16 @@ class DemoBackendTest {
             assertThat(repo.services().getOrThrow()).hasSize(before)
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the calendar answers locally - slots, a lunch block and two appointments on even dates`() =
+        runTest {
+            val repo = shifa.doctor.data.calendar.CalendarRepository({ client })
+            val day = repo.day(shifa.doctor.data.calendar.DayKey(kotlinx.datetime.LocalDate(2026, 11, 4))).getOrThrow()
+            val counts = shifa.doctor.data.model.DayOccupancy.of(day)
+            assertThat(counts.appointments).isEqualTo(2)
+            assertThat(counts.blocked).isEqualTo(1)
+            assertThat(counts.freeSlots).isEqualTo(12)
+            assertThat(forwarded).isEmpty()
+        }
 }

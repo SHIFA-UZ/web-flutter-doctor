@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import kotlinx.coroutines.delay
 import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.profile.profileRepository
@@ -152,6 +153,7 @@ private fun AppScreens() {
         if (session == null) {
             ShellNotice.pending.value = null
             profileRepository.clear()
+            calendarRepository.clear()
         }
     }
     val locked by appLockRepository.locked.collectAsState()

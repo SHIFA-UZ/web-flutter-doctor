@@ -26,6 +26,7 @@ object ApiConfig {
         const val DOCTOR_SETTINGS = "doctors/me/settings"
         const val DOCTOR_SERVICES = "doctors/me/services"
         const val SERVICE_GROUPS = "doctors/me/service-groups"
+        const val CALENDAR = "calendar"
         const val SUBSCRIPTION_PLANS = "doctor/subscription/plans"
         const val SUBSCRIPTION_ME = "doctor/subscription/me"
         const val SUBSCRIPTION_CHECKOUT = "doctor/subscription/checkout"
