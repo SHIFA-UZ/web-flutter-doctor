@@ -1109,7 +1109,7 @@ internal fun SummaryRow(
 }
 
 @Composable
-private fun ChronicWarning(
+internal fun ChronicWarning(
     disease: String,
     onOk: () -> Unit,
 ) = ProfileSheet(onOk) {

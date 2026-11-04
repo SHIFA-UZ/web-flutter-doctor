@@ -133,6 +133,7 @@
     <string name="amountGreaterThanZero">Введите сумму больше 0</string>
     <string name="analytics">Аналитика</string>
     <string name="analyticsNoData">Нет данных</string>
+    <string name="anamnesis">Анамнез</string>
     <string name="anotherUser">Другой пользователь</string>
     <string name="appAccounts">Аккаунты в приложении</string>
     <string name="appActivatedSubtitle">Приложение активировано на телефоне</string>
@@ -834,6 +835,7 @@
     <string name="dentalAddService">Добавить услугу</string>
     <string name="dentalChart">Зубная карта</string>
     <string name="dentalClinicalNotes">Клинические заметки</string>
+    <string name="dentalCodesLegend">Коды: O отсутствует · R корень · C кариес · P пульпит · Pt периодонтит · П пломба · A пародонтоз · I, II, III подвижность · K коронка · И имплант</string>
     <string name="dentalDentitionPermanent">Постоянные зубы</string>
     <string name="dentalDentitionPrimary">Молочные (детские) зубы</string>
     <string name="dentalDiscount">Скидка</string>
@@ -908,6 +910,7 @@
     <string name="doctorNotesSection">Заметки врача</string>
     <string name="doctorPhoneExists">Аккаунт врача с этим номером телефона уже существует. Войдите в него.</string>
     <string name="doctorProfileIdNotFound">Ошибка: ID профиля врача не найден. Обновите список.</string>
+    <string name="doctorSetOnSave">%1$s · при сохранении</string>
     <string name="doctors">Врачи</string>
     <string name="doctorsSurname">Фамилия врача</string>
     <string name="document">Документ</string>
@@ -989,6 +992,7 @@
     <string name="durationMinutes">%1$s мин</string>
     <string name="edit">Изменить</string>
     <string name="editDetails">Изменить данные</string>
+    <string name="editForm">Изменить форму</string>
     <string name="editGroup">Изменить группу</string>
     <string name="editKey">Изменить</string>
     <string name="editLocation">Редактировать местоположение</string>
@@ -1062,6 +1066,7 @@
     <string name="eventIdLabel">eventId: %1$s</string>
     <string name="every1Hour">Каждый час</string>
     <string name="everyNHours">Каждые %1$d ч.</string>
+    <string name="examinationAndTreatment">Осмотр и лечение</string>
     <string name="exampleMainClinic">например: Основная клиника</string>
     <string name="exercise">Упражнение</string>
     <string name="existingCalendarPeriods">Существующие периоды календаря</string>
@@ -1132,9 +1137,25 @@
     <string name="forceLogout">Принудительный выход</string>
     <string name="forgotPassword">Забыли пароль?</string>
     <string name="form0252">Форма 025-2</string>
+    <string name="form0252Description">Стоматологическая амбулаторная карта (форма 025-2, Узбекистан)</string>
     <string name="form0252MedicalDocument">Медицинский документ 025-2</string>
+    <string name="formDocumentFailed">Форма сохранена, но её PDF не удалось загрузить. Попробуйте ещё раз.</string>
     <string name="formDocumentTitle">Форма 025-2 (%1$s)</string>
+    <string name="formGeneral">Общее</string>
+    <string name="formLoadFailed">Не удалось загрузить форму.</string>
+    <string name="formNeedsDiagnosis">Перед сохранением добавьте хотя бы диагноз или жалобы.</string>
+    <string name="formNoPdf">Нет PDF</string>
+    <string name="formNotSignedYet">Ещё не подписано</string>
+    <string name="formPdfFailed">Форма сохранена, но её PDF не удалось создать. Попробуйте ещё раз.</string>
+    <string name="formSaveFailed">Не удалось сохранить форму. Попробуйте ещё раз.</string>
     <string name="formSavedSuccessfully">Форма успешно сохранена</string>
+    <string name="formSections">Разделы</string>
+    <string name="formSignatureRequestedBadge">Подпись запрошена</string>
+    <string name="formSignatureSavedFirst">Сначала форма сохраняется, затем запрос уходит в приложение пациента.</string>
+    <string name="formSignedAt">Подписано: %1$s</string>
+    <string name="formSignedBadge">Подписано ✓</string>
+    <string name="formTemplateNamed">Форма %1$s</string>
+    <string name="formsLoadFailed">Не удалось загрузить формы</string>
     <string name="formsTab">Формы</string>
     <string name="freeRemovesPrices">Текущие цены будут удалены</string>
     <string name="freeSlot">Свободное время</string>
@@ -1172,6 +1193,7 @@
     <string name="hideDetails">Скрыть детали</string>
     <string name="hidePassword">Скрыть пароль</string>
     <string name="history">История</string>
+    <string name="historyOtherTeethHidden">Прежние строки для других зубов скрыты; переключитесь обратно, чтобы их увидеть.</string>
     <string name="holdToCollapseAnswer">Удерживайте, чтобы свернуть ответ</string>
     <string name="holdToExpandAnswer">Удерживайте, чтобы увеличить ответ</string>
     <string name="home">Главная</string>
@@ -1180,6 +1202,7 @@
     <string name="iUnderstand">Я понимаю</string>
     <string name="ibanAccountNumber">IBAN / Номер счета</string>
     <string name="icd10SearchHint">Поиск по коду или названию ICD-10</string>
+    <string name="icdSearchFailed">Не удалось выполнить поиск МКБ-10. Нажмите, чтобы повторить.</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Изображение недоступно</string>
     <string name="inClinic">В клинике</string>
@@ -1453,6 +1476,7 @@
     <string name="login">Войти</string>
     <string name="logout">Выйти</string>
     <string name="longitude">Долгота</string>
+    <string name="lowerJaw">Нижняя челюсть</string>
     <string name="maintenanceBody">Shifa Doctor временно недоступен из-за технических работ. Попробуйте снова через несколько минут.</string>
     <string name="maintenanceTitle">Скоро вернёмся</string>
     <string name="makeAppointment">Записать на приём</string>
@@ -1567,6 +1591,7 @@
     <string name="noFailedOrUnprocessedStripeWebhooks">Нет неуспешных или необработанных Stripe webhook событий.</string>
     <string name="noFileData">Нет данных файла для загрузки</string>
     <string name="noFileSelected">Файл не выбран</string>
+    <string name="noFormsYet">Форм пока нет</string>
     <string name="noFreeSlots">Нет свободных слотов</string>
     <string name="noFreeSlotsThisDay">На этот день нет свободного времени</string>
     <string name="noItemsForThisDay">Нет элементов на этот день</string>
@@ -1574,6 +1599,7 @@
     <string name="noKnownAllergies">Аллергии не известны</string>
     <string name="noLocationsYet">Местоположений пока нет. Нажмите "Добавить местоположение", чтобы создать первое.</string>
     <string name="noLogsFound">Записи журнала не найдены</string>
+    <string name="noMatches">Ничего не найдено</string>
     <string name="noMessages">Нет сообщений</string>
     <string name="noNextPatient">Нет ближайших записей</string>
     <string name="noNotifications">Нет уведомлений</string>
@@ -1864,6 +1890,7 @@
     <string name="preparingAiDocumentation">Готовим документацию AI-секретаря из записи…</string>
     <string name="prescriptions">Рецепты</string>
     <string name="previous">Назад</string>
+    <string name="previousChartUnavailable">Не удалось загрузить прежнюю карту; форма начинается с пустой.</string>
     <string name="previousMonth">Предыдущий месяц</string>
     <string name="pricePerMonth">%1$s / мес.</string>
     <string name="priceScopeAllLocations">Все локации (по умолчанию)</string>
@@ -1975,6 +2002,7 @@
     <string name="retryWebhookEventBody">Это повторно обработает сохранённый Stripe webhook payload.\n\neventType: %1$s\neventId: %2$s</string>
     <string name="retryWebhookEventTitle">Повторить webhook событие?</string>
     <string name="retrying">Повтор...</string>
+    <string name="returnVisit">Повторный визит</string>
     <string name="returnVisits">Повторные визиты</string>
     <string name="review">Просмотр</string>
     <string name="revoke">Отозвать</string>
@@ -2211,6 +2239,7 @@
     <string name="talkWithAi">Разговор с ИИ</string>
     <string name="tapMapToMovePin">Нажмите на карту, чтобы переместить метку</string>
     <string name="tapSlotOrManageHint">Сначала выберите строку в списке расписания выше — здесь завершите запись или изменение.</string>
+    <string name="tapToAddFindings">Нажмите, чтобы добавить данные</string>
     <string name="tapToSearch">Нажмите для поиска и выбора пациента</string>
     <string name="taskCancelled">Задача успешно отменена</string>
     <string name="taskCompleted">Выполнено</string>
@@ -2251,6 +2280,7 @@
     <string name="tokenRevoked">Токен отозван</string>
     <string name="tooManyRequests">Слишком много запросов. Попробуйте позже.</string>
     <string name="tooManySlotsError">Слишком много слотов: сделайте слоты длиннее или интервал короче.</string>
+    <string name="tooth">Зуб</string>
     <string name="toothCanine">Клык</string>
     <string name="toothIncisors">Резцы</string>
     <string name="toothMap">Карта зубов</string>
@@ -2407,6 +2437,7 @@
     <string name="uploadedByName">Загрузил(а): %1$s</string>
     <string name="uploading">Загрузка...</string>
     <string name="uploadingFile">Загрузка файла...</string>
+    <string name="upperJaw">Верхняя челюсть</string>
     <string name="usa">США</string>
     <string name="useBiometrics">Использовать Face ID / отпечаток</string>
     <string name="useEndAppointmentToSave">Используйте "Завершить прием", чтобы сохранить всю документацию</string>

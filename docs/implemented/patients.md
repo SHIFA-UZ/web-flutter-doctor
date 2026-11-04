@@ -465,3 +465,47 @@ editor (FORM-04 hosts it and writes the texts into the form).
   once with the exact selections; the search's two letters and pause, a hit joining its field; a saved form restored
   without synthesising; an Apply overtaken by a disease change; Retry restoring a saved form with a searched chip),
   screenshots `Clinical_empty`, `Clinical_disease`.
+
+## FORM-04 · 025-2 editor
+
+Built 2026-11-04. Flow `06/10-medical-form-025-2.md`; spec 06 §3.4–3.7. Board `DaPatients` "Form 025-2 editor"
+(section chips, the read-only head, General with ICD-10, Clinical engine, Anamnesis, Dental chart, Examination and
+treatment, Return visits, Patient signature, the Cancel / Save Form bar). Route `ShellRoute.Form(patientId, formId,
+opened)`, opened from the Forms tab and a form document's Edit (FORM-05).
+
+- **Opening** (`ui/forms/FormEditorViewModel.kt`): the patient and their forms read together. A **new** form: today on
+  the practice clock, the patient's name, **gender** (Flutter never set it), address and age at the form date, and
+  the latest 025-2's chart carried over (its teeth and history; its rows become dated, signed history:
+  `DentalChartCodec.prefillFromLatest`, dated and signed by that form as in Flutter; each history row is tagged
+  `{jaw}_HIST_{i}_dentition`, ours, so rows for the other teeth are hidden after a dentition switch, in the PDF too).
+  If only the forms list fails, a new form opens empty with "The previous chart couldn't be loaded". An **existing**
+  form: as saved, legacy tooth keys migrated. The chronic-disease warning once per patient per session (shared with
+  the record).
+- **Screen** (`ui/forms/FormEditorScreen.kt`): the section chips jump to their section; the head (patient id, date,
+  name, gender, age); General (address, job, diagnosis) with the **ICD-10** chip (×) and search (250 ms, the app's
+  language, 20 hits, "No matches"); the **clinical engine** card (CLIN-02; Apply writes its texts into their fields
+  and the disease as the diagnosis with its first code, only fields it returned); anamnesis; the **dental chart**
+  (adult / primary teeth, the codes legend, per jaw the read-only history rows with their date and doctor, the FDI
+  numbers, editable rows whose cells offer the twelve codes or blank, Add row / Remove row; the grid scrolls sideways
+  on a phone; a tooth's own stored code shows read-only under its number, as Flutter's form; switching the teeth
+  clears the editable rows); examination and treatment with the doctor ("… · set on save"); **return visits** (a sheet with the
+  month and the findings; edit, remove); the **signature** (received with its date and "save again to refresh the
+  PDF", requested, or Request patient signature, which saves a new or changed form first).
+- **Save** is one pipeline: the form (POST / PUT) → its PDF (FORM-03) → the document (category `FORM_025_2`, "Form
+  025-2 (2026-11-04)", `form_025-2_2026-11-04.pdf`: the linked document's file replaced, else uploaded and linked) →
+  the disease's usage (CLIN-01). A failing step says which ("The form is saved, but its PDF couldn't be …") and Save
+  goes on from there (a form edited since, or saved by a signature request, is saved and its PDF remade): the form
+  isn't posted again and an uploaded PDF isn't uploaded again (flow §8; Flutter could
+  leave a form without its PDF or upload a second one). Then back with "Form saved successfully". **Validation:** at
+  least a diagnosis or complaints (flow Fix; Flutter's validators were empty). Unsaved changes ask before leaving; no
+  leaving while saving.
+- **Not built:** speech input on the text fields (AI-06, later in M5), the ⋮ "Open PDF", the embedded mode for the
+  visit screens (APPT-04 builds it on this ViewModel, with its parent's save contract), a sticky dirty indicator;
+  editing a tooth's own code (the visit chart, DENTAL-01). ICD search failures say so, with tap to retry.
+- **Tests:** `FormEditorViewModelTest` (11: a new form from the patient and the latest chart (history dated and signed
+  by it), the chronic warning once; an edit after a failed step saved again with the uploaded file replaced; a
+  signature request after a failed save; a new form without the previous chart;
+  validation, then the whole pipeline in order; a failed link retried alone; an existing form PUT with its file
+  replaced; the engine's texts and diagnosis; the ICD search's 250 ms and a pick; a signature request saving first;
+  chart cells, rows, dentition and the discard question), screenshot `FormEditor_top`. Checked on the emulator with
+  FORM-05 (next ticket), in demo mode.

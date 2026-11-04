@@ -117,7 +117,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | FORM-03 025-2 PDF | Done (iOS not run) | Shared layout (official Uzbek labels, sections, dental chart, return visits, signature; text flows across pages) drawn by PdfDocument / UIGraphicsPDFRenderer with system fonts. See patients.md. |
 | CLIN-01 Clinical engine API | Done | Lenient models, groups / diseases / chips / occlusion / shared texts, synthesize, record-usage (new: Flutter never sent it). See patients.md. |
 | CLIN-02 Clinical engine panel | Done (hosted by FORM-04) | Disease picker and frequent diagnoses, chips per field with [X] values, search, occlusion and ready texts; Apply hands the texts over once (Flutter overwrote on every toggle). See patients.md. |
-| FORM-04, FORM-05 | Not started | |
+| FORM-04 025-2 editor | Done (no speech yet) | New (prefilled, chart carried over) or existing form, ICD-10, clinical engine, dental chart editor, return visits, signature; save = form → PDF → document → link → usage, resumable at the failed step. See patients.md. |
+| FORM-05 | Not started | |
 
 ## Log
 
@@ -189,3 +190,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · FORM-03 · 025-2 PDF in the app (shared layout, platform text drawing).
 - 2026-11-04 · CLIN-01 · Clinical engine API.
 - 2026-11-04 · CLIN-02 · Clinical engine panel (explicit Apply, the board's).
+- 2026-11-04 · FORM-04 · 025-2 editor with the resumable save pipeline.

@@ -22,6 +22,9 @@
     <plurals name="discardTicks">
         <item quantity="other">Belgilangan %1$s ta band bekor qilinsinmi?</item>
     </plurals>
+    <plurals name="formsCount">
+        <item quantity="other">%1$s forma</item>
+    </plurals>
     <plurals name="hoursAgo">
         <item quantity="other">%1$s soat oldin</item>
     </plurals>

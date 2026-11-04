@@ -34,6 +34,12 @@
     <plurals name="discardTicks">
         <item quantity="other">Снять отметки с пунктов (%1$s)?</item>
     </plurals>
+    <plurals name="formsCount">
+        <item quantity="few">%1$s формы</item>
+        <item quantity="many">%1$s форм</item>
+        <item quantity="one">%1$s форма</item>
+        <item quantity="other">%1$s формы</item>
+    </plurals>
     <plurals name="hoursAgo">
         <item quantity="few">%1$s часа назад</item>
         <item quantity="many">%1$s часов назад</item>

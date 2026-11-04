@@ -101,6 +101,7 @@ import shifa.doctor.ui.calendar.BookingScreen
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.documents.DocumentViewerScreen
+import shifa.doctor.ui.forms.FormEditorScreen
 import shifa.doctor.ui.patients.PatientDetailScreen
 import shifa.doctor.ui.patients.PatientsScreen
 import shifa.doctor.ui.profile.BillingScreen
@@ -391,6 +392,7 @@ private fun RouteContent(
                 },
                 onOpenDocument = { d, title -> actions.push(ShellRoute.Document(route.id, d.id, title)) },
             )
+        is ShellRoute.Form -> FormEditorScreen(route.patientId, route.formId, route.opened, onClose = actions.back)
         is ShellRoute.Document ->
             DocumentViewerScreen(route.patientId, route.documentId, route.title, route.clinicId, onBack = actions.back)
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)

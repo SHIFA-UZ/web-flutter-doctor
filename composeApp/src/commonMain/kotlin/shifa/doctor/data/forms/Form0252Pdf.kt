@@ -262,7 +262,7 @@ class Form0252Pdf(
             val total =
                 if (rows) {
                     jaws.sumOf { jaw ->
-                        DentalChartCodec.historyRows(
+                        DentalChartCodec.visibleHistoryRows(
                             chart,
                             jaw,
                         ).sumOf { (ROW + if (caption(it).isBlank()) 0f else NOTE).toDouble() } +
@@ -277,7 +277,7 @@ class Form0252Pdf(
                 // History rows (dated, signed) then this visit's rows, above the upper numbers and below them.
                 jaws.forEach { jaw ->
                     if (jaw == DentalChartCodec.BOTTOM) numbers(upper)
-                    DentalChartCodec.historyRows(chart, jaw).forEach { h ->
+                    DentalChartCodec.visibleHistoryRows(chart, jaw).forEach { h ->
                         val caption = caption(h)
                         // A history row and its date and doctor stay on one page.
                         need(ROW + if (caption.isBlank()) 0f else NOTE)

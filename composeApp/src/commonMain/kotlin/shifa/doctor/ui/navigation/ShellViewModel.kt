@@ -94,6 +94,13 @@ sealed interface ShellRoute {
         val patient: shifa.doctor.data.model.PatientOption? = null,
     ) : ShellRoute
 
+    /** A patient's 025-2 form, new ([formId] null) or existing (FORM-04); [opened] as for [Appointment]. */
+    data class Form(
+        val patientId: Long,
+        val formId: Long?,
+        val opened: Long,
+    ) : ShellRoute
+
     /** A patient's document in the viewer (DOCS-05), in a clinic's scope when [clinicId] is set. */
     data class Document(
         val patientId: Long,

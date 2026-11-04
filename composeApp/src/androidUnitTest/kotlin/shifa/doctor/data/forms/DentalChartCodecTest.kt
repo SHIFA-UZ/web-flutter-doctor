@@ -1,7 +1,6 @@
 package shifa.doctor.data.forms
 
 import com.google.common.truth.Truth.assertThat
-import kotlinx.datetime.LocalDate
 import org.junit.Test
 
 class DentalChartCodecTest {
@@ -82,7 +81,7 @@ class DentalChartCodecTest {
                 "TOP_1_0" to "  ",
                 "BOTTOM_0_7" to "K",
             )
-        val out = codec.prefillFromLatest(latest, LocalDate(2026, 11, 4), "Dr. Karimov")
+        val out = codec.prefillFromLatest(latest, "2026-11-04", "Dr. Karimov")
         assertThat(out["16"]).isEqualTo("C")
         assertThat(out["__dentition__"]).isEqualTo("permanent")
         assertThat(out.keys.none { codec.isEditableCell(it) }).isTrue()
@@ -95,5 +94,20 @@ class DentalChartCodecTest {
         assertThat(out["BOTTOM_HIST_0_7"]).isEqualTo("K")
         assertThat(codec.displayHistoryDate("2026-03-12")).isEqualTo("12.03.2026")
         assertThat(codec.displayHistoryDate("12/03")).isEqualTo("12/03")
+    }
+
+    @Test
+    fun `carried history is tagged with its teeth and hidden under the other dentition`() {
+        val latest = mapOf("TOP_0_0" to "C", "TOP_HIST_0_1" to "R", "TOP_HIST_0_date" to "2026-01-05")
+        val chart = codec.prefillFromLatest(latest, "2026-10-20", "Dr. Rahimova")
+        assertThat(chart).containsEntry("TOP_HIST_0_dentition", "permanent")
+        assertThat(chart).containsEntry("TOP_HIST_1_dentition", "permanent")
+        assertThat(codec.visibleHistoryRows(chart, codec.TOP).map { it.cells.size }).containsExactly(16, 16)
+        val child = codec.withDentition(chart, Dentition.Primary)
+        assertThat(codec.visibleHistoryRows(child, codec.TOP)).isEmpty()
+        // Rows without a tag (written by Flutter) show under either.
+        assertThat(
+            codec.visibleHistoryRows(child - "TOP_HIST_1_dentition", codec.TOP).map { it.index },
+        ).containsExactly(1)
     }
 }

@@ -288,5 +288,21 @@
     "uz": {
       "other": "{count} sahifa skanerlandi"
     }
+  },
+  "formsCount": {
+    "en": {
+      "one": "{count} form",
+      "other": "{count} forms"
+    },
+    "replaces": [],
+    "ru": {
+      "few": "{count} формы",
+      "many": "{count} форм",
+      "one": "{count} форма",
+      "other": "{count} формы"
+    },
+    "uz": {
+      "other": "{count} forma"
+    }
   }
 }

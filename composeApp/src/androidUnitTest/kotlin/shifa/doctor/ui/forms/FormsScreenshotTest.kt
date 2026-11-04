@@ -17,4 +17,8 @@ class FormsScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h1400dp-xhdpi")
     fun clinicalDisease() = captureRoboImage("screenshots/Clinical_disease.png") { ClinicalPanelDiseasePreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1400dp-xhdpi")
+    fun editorTop() = captureRoboImage("screenshots/FormEditor_top.png") { FormEditorTopPreview() }
 }

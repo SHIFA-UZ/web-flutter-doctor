@@ -133,6 +133,7 @@
     <string name="amountGreaterThanZero">Enter an amount greater than 0</string>
     <string name="analytics">Analytics</string>
     <string name="analyticsNoData">No data yet</string>
+    <string name="anamnesis">Anamnesis</string>
     <string name="anotherUser">Another user</string>
     <string name="appAccounts">App Accounts</string>
     <string name="appActivatedSubtitle">App activated on a phone</string>
@@ -834,6 +835,7 @@
     <string name="dentalAddService">Add service</string>
     <string name="dentalChart">Dental Chart</string>
     <string name="dentalClinicalNotes">Clinical notes</string>
+    <string name="dentalCodesLegend">Codes: O missing · R root · C caries · P pulpitis · Pt periodontitis · П filling · A paradontosis · I, II, III mobility · K crown · И implant</string>
     <string name="dentalDentitionPermanent">Adult teeth</string>
     <string name="dentalDentitionPrimary">Primary (child) teeth</string>
     <string name="dentalDiscount">Discount</string>
@@ -908,6 +910,7 @@
     <string name="doctorNotesSection">Doctor notes</string>
     <string name="doctorPhoneExists">A doctor account with this phone number already exists. Sign in instead.</string>
     <string name="doctorProfileIdNotFound">Error: Doctor profile ID not found. Please refresh the list.</string>
+    <string name="doctorSetOnSave">%1$s · set on save</string>
     <string name="doctors">Doctors</string>
     <string name="doctorsSurname">Doctor's surname</string>
     <string name="document">Document</string>
@@ -989,6 +992,7 @@
     <string name="durationMinutes">%1$s min</string>
     <string name="edit">Edit</string>
     <string name="editDetails">Edit details</string>
+    <string name="editForm">Edit form</string>
     <string name="editGroup">Edit group</string>
     <string name="editKey">Edit</string>
     <string name="editLocation">Edit location</string>
@@ -1062,6 +1066,7 @@
     <string name="eventIdLabel">eventId: %1$s</string>
     <string name="every1Hour">Every 1 hour</string>
     <string name="everyNHours">Every %1$d hours</string>
+    <string name="examinationAndTreatment">Examination and treatment</string>
     <string name="exampleMainClinic">e.g. Main Clinic</string>
     <string name="exercise">Exercise</string>
     <string name="existingCalendarPeriods">Existing calendar periods</string>
@@ -1132,9 +1137,25 @@
     <string name="forceLogout">Force Logout</string>
     <string name="forgotPassword">Forgot Password?</string>
     <string name="form0252">Form 025-2</string>
+    <string name="form0252Description">Dental outpatient card (Uzbekistan form 025-2)</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
+    <string name="formDocumentFailed">The form is saved, but its PDF couldn't be uploaded. Try again.</string>
     <string name="formDocumentTitle">Form 025-2 (%1$s)</string>
+    <string name="formGeneral">General</string>
+    <string name="formLoadFailed">Couldn't load the form.</string>
+    <string name="formNeedsDiagnosis">Add at least a diagnosis or complaints before saving.</string>
+    <string name="formNoPdf">No PDF</string>
+    <string name="formNotSignedYet">Not signed yet</string>
+    <string name="formPdfFailed">The form is saved, but its PDF couldn't be made. Try again.</string>
+    <string name="formSaveFailed">Couldn't save the form. Try again.</string>
     <string name="formSavedSuccessfully">Form saved successfully</string>
+    <string name="formSections">Sections</string>
+    <string name="formSignatureRequestedBadge">Signature requested</string>
+    <string name="formSignatureSavedFirst">The form is saved first, then the request goes to the patient app.</string>
+    <string name="formSignedAt">Signed at %1$s</string>
+    <string name="formSignedBadge">Signed ✓</string>
+    <string name="formTemplateNamed">Form %1$s</string>
+    <string name="formsLoadFailed">Could not load forms</string>
     <string name="formsTab">Forms</string>
     <string name="freeRemovesPrices">Existing prices will be removed</string>
     <string name="freeSlot">Free slot</string>
@@ -1172,6 +1193,7 @@
     <string name="hideDetails">Hide details</string>
     <string name="hidePassword">Hide password</string>
     <string name="history">History</string>
+    <string name="historyOtherTeethHidden">Earlier rows recorded for the other teeth are hidden; switch back to see them.</string>
     <string name="holdToCollapseAnswer">Hold to collapse answer</string>
     <string name="holdToExpandAnswer">Hold to expand answer</string>
     <string name="home">Home</string>
@@ -1180,6 +1202,7 @@
     <string name="iUnderstand">I Understand</string>
     <string name="ibanAccountNumber">IBAN / Account number</string>
     <string name="icd10SearchHint">Search ICD-10 code or title</string>
+    <string name="icdSearchFailed">Couldn't search ICD-10. Tap to try again.</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Image not available</string>
     <string name="inClinic">In Clinic</string>
@@ -1453,6 +1476,7 @@
     <string name="login">Login</string>
     <string name="logout">Logout</string>
     <string name="longitude">Longitude</string>
+    <string name="lowerJaw">Lower jaw</string>
     <string name="maintenanceBody">Shifa Doctor is temporarily unavailable for maintenance. Please try again in a few minutes.</string>
     <string name="maintenanceTitle">We'll be right back</string>
     <string name="makeAppointment">Make appointment</string>
@@ -1567,6 +1591,7 @@
     <string name="noFailedOrUnprocessedStripeWebhooks">No failed or unprocessed Stripe webhook events.</string>
     <string name="noFileData">No file data to upload</string>
     <string name="noFileSelected">No file selected</string>
+    <string name="noFormsYet">No forms yet</string>
     <string name="noFreeSlots">No free slots</string>
     <string name="noFreeSlotsThisDay">No free slots on this day</string>
     <string name="noItemsForThisDay">No items for this day</string>
@@ -1574,6 +1599,7 @@
     <string name="noKnownAllergies">No known allergies</string>
     <string name="noLocationsYet">No locations yet. Tap "Add location" to create your first one.</string>
     <string name="noLogsFound">No logs found</string>
+    <string name="noMatches">No matches</string>
     <string name="noMessages">No messages</string>
     <string name="noNextPatient">No upcoming appointments</string>
     <string name="noNotifications">No notifications</string>
@@ -1864,6 +1890,7 @@
     <string name="preparingAiDocumentation">Preparing AI scribe documentation from the recording…</string>
     <string name="prescriptions">Prescriptions</string>
     <string name="previous">Previous</string>
+    <string name="previousChartUnavailable">The previous chart couldn't be loaded; this form starts empty.</string>
     <string name="previousMonth">Previous month</string>
     <string name="pricePerMonth">%1$s / month</string>
     <string name="priceScopeAllLocations">All locations (default)</string>
@@ -1975,6 +2002,7 @@
     <string name="retryWebhookEventBody">This will reprocess the stored Stripe webhook payload.\n\neventType: %1$s\neventId: %2$s</string>
     <string name="retryWebhookEventTitle">Retry webhook event?</string>
     <string name="retrying">Retrying...</string>
+    <string name="returnVisit">Return visit</string>
     <string name="returnVisits">Return visits</string>
     <string name="review">Review</string>
     <string name="revoke">Revoke</string>
@@ -2211,6 +2239,7 @@
     <string name="talkWithAi">Talk with AI</string>
     <string name="tapMapToMovePin">Tap the map to move the pin</string>
     <string name="tapSlotOrManageHint">First pick an entry in the schedule list above — then book, reschedule, or cancel here.</string>
+    <string name="tapToAddFindings">Tap to add findings</string>
     <string name="tapToSearch">Tap to search and select patient</string>
     <string name="taskCancelled">Task cancelled successfully</string>
     <string name="taskCompleted">Completed</string>
@@ -2251,6 +2280,7 @@
     <string name="tokenRevoked">Token revoked</string>
     <string name="tooManyRequests">Too many requests. Please try again later.</string>
     <string name="tooManySlotsError">Too many slots: make the slots longer or the range shorter.</string>
+    <string name="tooth">Tooth</string>
     <string name="toothCanine">Canine</string>
     <string name="toothIncisors">Incisors</string>
     <string name="toothMap">Tooth map</string>
@@ -2407,6 +2437,7 @@
     <string name="uploadedByName">Uploaded by %1$s</string>
     <string name="uploading">Uploading...</string>
     <string name="uploadingFile">Uploading file...</string>
+    <string name="upperJaw">Upper jaw</string>
     <string name="usa">USA</string>
     <string name="useBiometrics">Use Face ID / fingerprint</string>
     <string name="useEndAppointmentToSave">Use "End Appointment" to save all documentation</string>

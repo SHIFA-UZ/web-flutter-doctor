@@ -80,3 +80,48 @@ internal fun ClinicalPanelDiseasePreview() =
             ClinicalPanelActions(),
         )
     }
+
+private val editing =
+    shifa.doctor.data.model.PatientForm(
+        id = 9,
+        patientId = 14,
+        date = "2026-11-04",
+        fullName = "Jasur Aliyev",
+        gender = "male",
+        age = 41,
+        address = "Chilonzor 9, Tashkent",
+        diagnosis = "Acute pulpitis",
+        diagnosisCode = "K04.0",
+        diagnosisDisplay = "Pulpitis",
+        complaints = "Night pain in 26, worse from cold.",
+        treatment = "Pulp removal, temporary filling.",
+        dentalChart =
+            mapOf(
+                "TOP_HIST_0_5" to "C",
+                "TOP_HIST_0_date" to "2026-10-20",
+                "TOP_HIST_0_doctor" to "Dr. Karimov",
+                "TOP_0_10" to "P",
+                "BOTTOM_0_3" to "П",
+            ),
+        followups = listOf(shifa.doctor.data.model.FormFollowup("2026-11-11", "Permanent filling placed", "Karimov")),
+        signatureRequested = true,
+    )
+
+// FORM-04: the editor's top: header, General with the ICD chip, the engine card.
+@Composable
+internal fun FormEditorTopPreview() =
+    PreviewTheme {
+        FormEditorContent(
+            FormEditorUiState(
+                loading = false,
+                form = editing,
+                original = editing,
+                today = kotlinx.datetime.LocalDate(2026, 11, 4),
+                doctorName = "Dr. Karimov",
+            ),
+            ClinicalPanelUiState(loading = false),
+            "en",
+            FormEditorActions(),
+            ClinicalPanelActions(),
+        )
+    }

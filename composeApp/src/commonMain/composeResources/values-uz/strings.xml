@@ -133,6 +133,7 @@
     <string name="amountGreaterThanZero">0 dan katta summa kiriting</string>
     <string name="analytics">Tahlillar</string>
     <string name="analyticsNoData">Ma'lumot yo'q</string>
+    <string name="anamnesis">Anamnez</string>
     <string name="anotherUser">Boshqa foydalanuvchi</string>
     <string name="appAccounts">Ilova hisoblari</string>
     <string name="appActivatedSubtitle">Ilova telefonda faollashtirilgan</string>
@@ -834,6 +835,7 @@
     <string name="dentalAddService">Xizmat qo'shish</string>
     <string name="dentalChart">Tish diagrammasi</string>
     <string name="dentalClinicalNotes">Klinik izohlar</string>
+    <string name="dentalCodesLegend">Kodlar: O yo'q · R ildiz · C karies · P pulpit · Pt periodontit · П plomba · A paradontoz · I, II, III qimirlash · K koronka · И implant</string>
     <string name="dentalDentitionPermanent">Kattalar tishlari</string>
     <string name="dentalDentitionPrimary">Sut (bolalar) tishlari</string>
     <string name="dentalDiscount">Chegirma</string>
@@ -908,6 +910,7 @@
     <string name="doctorNotesSection">Shifokor izohlari</string>
     <string name="doctorPhoneExists">Bu telefon raqami bilan shifokor hisobi allaqachon mavjud. Tizimga kiring.</string>
     <string name="doctorProfileIdNotFound">Xato: Shifokor profil ID topilmadi. Iltimos, ro'yxatni yangilang.</string>
+    <string name="doctorSetOnSave">%1$s · saqlashda qo'yiladi</string>
     <string name="doctors">Shifokorlar</string>
     <string name="doctorsSurname">Davolovchi shifokor familiyasi</string>
     <string name="document">Hujjat</string>
@@ -989,6 +992,7 @@
     <string name="durationMinutes">%1$s daq</string>
     <string name="edit">Tahrirlash</string>
     <string name="editDetails">Ma'lumotlarni tahrirlash</string>
+    <string name="editForm">Formani tahrirlash</string>
     <string name="editGroup">Guruhni tahrirlash</string>
     <string name="editKey">Tahrirlash</string>
     <string name="editLocation">Joylashuvni tahrirlash</string>
@@ -1062,6 +1066,7 @@
     <string name="eventIdLabel">eventId: %1$s</string>
     <string name="every1Hour">Har 1 soatda</string>
     <string name="everyNHours">Har %1$d soatda</string>
+    <string name="examinationAndTreatment">Tekshiruv va davolash</string>
     <string name="exampleMainClinic">masalan: Asosiy klinika</string>
     <string name="exercise">Mashq</string>
     <string name="existingCalendarPeriods">Mavjud kalendar davrlari</string>
@@ -1132,9 +1137,25 @@
     <string name="forceLogout">Majburan chiqish</string>
     <string name="forgotPassword">Parolni unutdingizmi?</string>
     <string name="form0252">Form 025-2</string>
+    <string name="form0252Description">Stomatologik ambulator karta (O'zbekiston 025-2 shakli)</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
+    <string name="formDocumentFailed">Shakl saqlandi, lekin uning PDF faylini yuklab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="formDocumentTitle">025-2 shakli (%1$s)</string>
+    <string name="formGeneral">Umumiy</string>
+    <string name="formLoadFailed">Shaklni yuklab bo'lmadi.</string>
+    <string name="formNeedsDiagnosis">Saqlashdan oldin kamida tashxis yoki shikoyatlarni kiriting.</string>
+    <string name="formNoPdf">PDF yo'q</string>
+    <string name="formNotSignedYet">Hali imzolanmagan</string>
+    <string name="formPdfFailed">Shakl saqlandi, lekin uning PDF faylini yaratib bo'lmadi. Qayta urinib ko'ring.</string>
+    <string name="formSaveFailed">Shaklni saqlab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="formSavedSuccessfully">Forma muvaffaqiyatli saqlandi</string>
+    <string name="formSections">Bo'limlar</string>
+    <string name="formSignatureRequestedBadge">Imzo so'ralgan</string>
+    <string name="formSignatureSavedFirst">Avval shakl saqlanadi, so'ng so'rov bemor ilovasiga yuboriladi.</string>
+    <string name="formSignedAt">Imzolangan: %1$s</string>
+    <string name="formSignedBadge">Imzolangan ✓</string>
+    <string name="formTemplateNamed">%1$s shakli</string>
+    <string name="formsLoadFailed">Formalarni yuklab bo'lmadi</string>
     <string name="formsTab">Shakllar</string>
     <string name="freeRemovesPrices">Mavjud narxlar o'chiriladi</string>
     <string name="freeSlot">Bo'sh vaqt</string>
@@ -1172,6 +1193,7 @@
     <string name="hideDetails">Batafsilni yashirish</string>
     <string name="hidePassword">Parolni yashirish</string>
     <string name="history">Tarix</string>
+    <string name="historyOtherTeethHidden">Boshqa tishlar uchun yozilgan oldingi qatorlar yashirilgan; ko'rish uchun qayta almashtiring.</string>
     <string name="holdToCollapseAnswer">Javobni yig'ish uchun bosib turing</string>
     <string name="holdToExpandAnswer">Javobni kattalashtirish uchun bosib turing</string>
     <string name="home">Bosh sahifa</string>
@@ -1180,6 +1202,7 @@
     <string name="iUnderstand">Tushundim</string>
     <string name="ibanAccountNumber">IBAN / Hisob raqami</string>
     <string name="icd10SearchHint">ICD-10 kodi yoki nomi bo'yicha qidiring</string>
+    <string name="icdSearchFailed">ICD-10 bo'yicha qidirib bo'lmadi. Qayta urinish uchun bosing.</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Rasm mavjud emas</string>
     <string name="inClinic">Klinikada</string>
@@ -1453,6 +1476,7 @@
     <string name="login">Kirish</string>
     <string name="logout">Chiqish</string>
     <string name="longitude">Uzunlik</string>
+    <string name="lowerJaw">Pastki jag'</string>
     <string name="maintenanceBody">Shifa Doctor texnik ishlar sababli vaqtincha mavjud emas. Iltimos, bir necha daqiqadan so'ng qayta urinib ko'ring.</string>
     <string name="maintenanceTitle">Tez orada qaytamiz</string>
     <string name="makeAppointment">Randevu yaratish</string>
@@ -1567,6 +1591,7 @@
     <string name="noFailedOrUnprocessedStripeWebhooks">Muvaffaqiyatsiz yoki qayta ishlanmagan Stripe webhook hodisalari yo'q.</string>
     <string name="noFileData">Yuklash uchun fayl ma'lumotlari yo'q</string>
     <string name="noFileSelected">Fayl tanlanmagan</string>
+    <string name="noFormsYet">Hali formalar yo'q</string>
     <string name="noFreeSlots">Bo'sh vaqtlar yo'q</string>
     <string name="noFreeSlotsThisDay">Bu kunda bo'sh vaqt yo'q</string>
     <string name="noItemsForThisDay">Ushbu kun uchun elementlar yo'q</string>
@@ -1574,6 +1599,7 @@
     <string name="noKnownAllergies">Ma'lum allergiya yo'q</string>
     <string name="noLocationsYet">Hali joylashuvlar yo'q. Birinchisini yaratish uchun "Joylashuv qo'shish"ni bosing.</string>
     <string name="noLogsFound">Yozuvlar topilmadi</string>
+    <string name="noMatches">Hech narsa topilmadi</string>
     <string name="noMessages">Xabarlar yo'q</string>
     <string name="noNextPatient">Yaqin uchrashuvlar yo'q</string>
     <string name="noNotifications">Bildirishnomalar yo'q</string>
@@ -1864,6 +1890,7 @@
     <string name="preparingAiDocumentation">Yozuvdan AI bayonnoma tayyorlanmoqda…</string>
     <string name="prescriptions">Retseptlar</string>
     <string name="previous">Oldingi</string>
+    <string name="previousChartUnavailable">Oldingi karta yuklanmadi; bu forma bo'sh boshlanadi.</string>
     <string name="previousMonth">Oldingi oy</string>
     <string name="pricePerMonth">%1$s / oy</string>
     <string name="priceScopeAllLocations">Barcha joylar (standart)</string>
@@ -1975,6 +2002,7 @@
     <string name="retryWebhookEventBody">Bu saqlangan Stripe webhook payloadini qayta ishlaydi.\n\neventType: %1$s\neventId: %2$s</string>
     <string name="retryWebhookEventTitle">Webhook hodisasini qayta urinishmi?</string>
     <string name="retrying">Qayta urinilmoqda...</string>
+    <string name="returnVisit">Qayta tashrif</string>
     <string name="returnVisits">Qayta tashriflar</string>
     <string name="review">Ko'rib chiqish</string>
     <string name="revoke">Bekor qilish</string>
@@ -2211,6 +2239,7 @@
     <string name="talkWithAi">AI bilan suhbat</string>
     <string name="tapMapToMovePin">Pinni ko'chirish uchun xaritaga bosing</string>
     <string name="tapSlotOrManageHint">Avval yuqoridagi jadvaldan band yoki bo'sh slotni tanlang — keyin shu yerda amalni yakunlang.</string>
+    <string name="tapToAddFindings">Topilmalarni qo'shish uchun bosing</string>
     <string name="tapToSearch">Qidirish va tanlash uchun bosing</string>
     <string name="taskCancelled">Vazifa muvaffaqiyatli bekor qilindi</string>
     <string name="taskCompleted">Bajarildi</string>
@@ -2251,6 +2280,7 @@
     <string name="tokenRevoked">Token bekor qilindi</string>
     <string name="tooManyRequests">Juda ko'p so'rovlar. Keyinroq urinib ko'ring.</string>
     <string name="tooManySlotsError">Slotlar juda ko'p: slotlarni uzunroq yoki vaqtni qisqaroq qiling.</string>
+    <string name="tooth">Tish</string>
     <string name="toothCanine">Qoziq tish</string>
     <string name="toothIncisors">Kesuvchi tishlar</string>
     <string name="toothMap">Tishlar holati</string>
@@ -2407,6 +2437,7 @@
     <string name="uploadedByName">Yukladi: %1$s</string>
     <string name="uploading">Yuklanmoqda...</string>
     <string name="uploadingFile">Fayl yuklanmoqda...</string>
+    <string name="upperJaw">Yuqori jag'</string>
     <string name="usa">AQSH</string>
     <string name="useBiometrics">Face ID / barmoq izidan foydalanish</string>
     <string name="useEndAppointmentToSave">Barcha hujjatlarni saqlash uchun "Uchrashuvni tugatish" tugmasidan foydalaning</string>
