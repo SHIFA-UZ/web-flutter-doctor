@@ -325,18 +325,20 @@ fun ShifaLink(
     modifier: Modifier = Modifier,
     variant: ShifaLinkVariant = ShifaLinkVariant.Default,
     style: TextStyle = MaterialTheme.typography.titleSmall,
+    enabled: Boolean = true,
 ) {
     val color =
-        when (variant) {
-            ShifaLinkVariant.Quiet -> ShifaColors.Text.Primary
-            ShifaLinkVariant.Danger -> ShifaColors.Text.Error
+        when {
+            !enabled -> ShifaColors.Text.Disabled
+            variant == ShifaLinkVariant.Quiet -> ShifaColors.Text.Primary
+            variant == ShifaLinkVariant.Danger -> ShifaColors.Text.Error
             else -> ShifaColors.Text.Link
         }
     Box(
         modifier
             .defaultMinSize(minHeight = ShifaSize.Touch)
             .clip(ShifaRadius.Xs)
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(

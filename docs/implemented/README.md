@@ -52,7 +52,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CORE-08 Demo backend, debug menu | Done (fake pushes deferred) | `DemoBackend` (MockEngine) answers every endpoint called so far from a scrubbed dev fixture; `auth/` and unknown GETs go to the real backend, other writes are refused. Debug menu: demo data, development backend, native spikes. Fake pushes come with PUSH-01/NOTIF. See foundation.md. |
 | CORE-09 Utils | Done | `PracticeClock` (practice-zone today/now, DST-safe conversions, mismatch flag, zone-less timestamps as UTC), `Money` (UZS whole sums, grouped), `PhoneE164`, `PasswordPolicy` (the backend's patterns), document picker / share / in-app browser / file saver. `sanitizeErrorMessage` not ported (17 §1). See foundation.md. |
 | AUTH-01 Splash | Done | Session restore + BE-04 boot check in parallel (0.8 s for a returning doctor), force-update and maintenance frames, top-level navigation. See auth.md. |
-| AUTH-02 … LOCK-02 | Not started | |
+| AUTH-02 Sign In | Done | Shared `AuthFrame` (bar, banner, language pill, centred scrolling content); validation, password sent as typed, banners by error type, forced-logout reason banner. Signed in against dev on the emulator. See auth.md. |
+| AUTH-03 … LOCK-02 | Not started | |
 
 ## Log
 
@@ -66,3 +67,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CORE-08 · Demo backend from real dev fixtures, debug menu.
 - 2026-11-04 · CORE-09 · Practice clock, money, phone and password rules, platform helpers. M0 complete.
 - 2026-11-04 · AUTH-01 · Splash with session restore, the BE-04 boot gate and the app's top-level navigation.
+- 2026-11-04 · AUTH-02 · Sign In on the shared auth frame; real sign-in against dev verified.

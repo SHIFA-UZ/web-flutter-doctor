@@ -30,3 +30,33 @@ Built 2026-11-04. Flow `docs/ux-flows/01-launch-auth-shell/01-splash.md`; board 
   (LOCK-01), the deep-link parking (CAL-9/PUSH).
 - **Tests:** `PublicConfigRepositoryTest` (5), `SplashViewModelTest` (6), `DemoBackendTest` (+1),
   `SplashScreenshotTest` (4).
+
+## AUTH-02 · Sign In
+
+Built 2026-11-04. Flow `01-launch-auth-shell/02-login.md`; board `DaAuth.dc.html`, default branch (Sign In).
+
+- **`AuthFrame`** (`ui/auth/`) is the frame every sign-in screen shares: a fixed bar (Back only when there is somewhere
+  to go: none on Sign In; an optional bar title; the language pill), the banner slot under it, then the content
+  centred while it fits and scrolling otherwise (keyboard, 200 % text; flow §3 item 9). `AuthLogo` (80/120),
+  `AuthTitle` (28 centred or 24 left). The language pill (EN / UZ / ЎЗ / RU, flow 01/15) reads `LocalLanguageSwitch`,
+  which `App` provides; picking one is an explicit choice and re-renders at once.
+- **`LoginViewModel`:** the identifier must not be blank (sent trimmed); the password needs 6+ characters after
+  trimming but goes **as typed** (Flutter trimmed what it sent, flow §12). `POST /auth/login?app=doctor`: the backend then
+  issues a DOCTOR or CLINIC_STAFF token or refuses with 403 ("This account isn't a doctor or clinic staff account.",
+  new `notDoctorAccount`); without it a doctor whose main role is PATIENT got a patient token. While signing in, the other actions are disabled. Errors are banners
+  (not snackbars), kept as string keys so a language switch re-renders them: 401/400 → "Incorrect email or
+  password.", timeout → "Request timed out", no network → "Network error", anything else → the code-mapped text or
+  "Something went wrong" (never server text or HTML). The reason the last session ended (expired, 401, disabled)
+  greets the doctor once (flow 01/14). `forcePasswordReset` is read and ignored (only doctor-created patient accounts
+  carry it).
+- **Navigation:** each top-level screen has its own ViewModel store, cleared when it leaves (a finished sign-in can't
+  resurface after a forced logout); the secondary auth screens handle system Back. Sign In → the shell for both roles (the staff shell comes with SHELL-02); "Sign in with Email",
+  "Forgot Password?" and "Create account" open a placeholder until AUTH-03…05. Debug builds have a "Debug menu" link.
+- **Verified on the emulator against dev:** debug menu → Development backend, then `seed.doctor1@shifa.dev` /
+  `Dev12345!` signs in and reaches the shell placeholder.
+- **Kit changes:** `ShifaBanner` got an optional close button (`onClose`, the board's Dismiss); `ShifaInputField` got
+  `fieldModifier` (focus requesters, later autofill). New strings `showPassword`, `hidePassword` (en/uz/ru).
+- **Not built:** autofill content types (flow §12; needs a check that the content-type semantics work on iOS),
+  `POST /auth/check-identifier` for an identifier hint (17 §4 optional), the inactivity and PIN-lockout banners (their
+  reasons come with LOCK-01/02).
+- **Tests:** `LoginViewModelTest` (5), `LoginScreenshotTest` (5: empty, errors, loading, failed, session expired).

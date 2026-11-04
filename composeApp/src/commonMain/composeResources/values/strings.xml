@@ -1043,6 +1043,7 @@
     <string name="heartDisease">Heart Disease</string>
     <string name="hideAiAndFormNotes">Hide</string>
     <string name="hideAiReminders">Hide reminders</string>
+    <string name="hidePassword">Hide password</string>
     <string name="history">History</string>
     <string name="holdToCollapseAnswer">Hold to collapse answer</string>
     <string name="holdToExpandAnswer">Hold to expand answer</string>
@@ -1446,6 +1447,7 @@
     <string name="noUsersFound">No users found</string>
     <string name="none">None</string>
     <string name="notAvailableShort">N/A</string>
+    <string name="notDoctorAccount">This account isn't a doctor or clinic staff account.</string>
     <string name="notFound">Resource not found</string>
     <string name="notMe">This is not me</string>
     <string name="notNow">Not now</string>
@@ -1862,6 +1864,7 @@
     <string name="showAppointments">Show Appointments</string>
     <string name="showBlockedTime">Show blocked time</string>
     <string name="showFreeSlots">Show Free Slots</string>
+    <string name="showPassword">Show password</string>
     <string name="showingProfilesCount">Profiles: %1$s of %2$s</string>
     <string name="showingUsersCount">Users: %1$s of %2$s</string>
     <string name="sidebarAiCta">Talk with AI</string>

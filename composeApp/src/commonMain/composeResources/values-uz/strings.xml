@@ -1043,6 +1043,7 @@
     <string name="heartDisease">Yurak kasalligi</string>
     <string name="hideAiAndFormNotes">Yashirish</string>
     <string name="hideAiReminders">Eslatmalarni yashirish</string>
+    <string name="hidePassword">Parolni yashirish</string>
     <string name="history">Tarix</string>
     <string name="holdToCollapseAnswer">Javobni yig'ish uchun bosib turing</string>
     <string name="holdToExpandAnswer">Javobni kattalashtirish uchun bosib turing</string>
@@ -1446,6 +1447,7 @@
     <string name="noUsersFound">Foydalanuvchilar topilmadi</string>
     <string name="none">Yo'q</string>
     <string name="notAvailableShort">Mavjud emas</string>
+    <string name="notDoctorAccount">Bu hisob shifokor yoki klinika xodimi hisobi emas.</string>
     <string name="notFound">Resurs topilmadi</string>
     <string name="notMe">Bu men emasman</string>
     <string name="notNow">Hozir emas</string>
@@ -1862,6 +1864,7 @@
     <string name="showAppointments">Uchrashuvlarni ko'rsatish</string>
     <string name="showBlockedTime">Bloklangan vaqtlarni ko'rsatish</string>
     <string name="showFreeSlots">Bo'sh vaqtlarni ko'rsatish</string>
+    <string name="showPassword">Parolni ko'rsatish</string>
     <string name="showingProfilesCount">Profillar: %1$s / %2$s</string>
     <string name="showingUsersCount">Foydalanuvchilar: %1$s / %2$s</string>
     <string name="sidebarAiCta">AI bilan suhbatlashish</string>

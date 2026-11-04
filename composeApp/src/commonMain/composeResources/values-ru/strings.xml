@@ -1043,6 +1043,7 @@
     <string name="heartDisease">Болезнь сердца</string>
     <string name="hideAiAndFormNotes">Скрыть</string>
     <string name="hideAiReminders">Скрыть напоминания</string>
+    <string name="hidePassword">Скрыть пароль</string>
     <string name="history">История</string>
     <string name="holdToCollapseAnswer">Удерживайте, чтобы свернуть ответ</string>
     <string name="holdToExpandAnswer">Удерживайте, чтобы увеличить ответ</string>
@@ -1446,6 +1447,7 @@
     <string name="noUsersFound">Пользователи не найдены</string>
     <string name="none">Нет</string>
     <string name="notAvailableShort">Н/Д</string>
+    <string name="notDoctorAccount">Это не учётная запись врача или сотрудника клиники.</string>
     <string name="notFound">Ресурс не найден</string>
     <string name="notMe">Это не я</string>
     <string name="notNow">Не сейчас</string>
@@ -1862,6 +1864,7 @@
     <string name="showAppointments">Показать записи</string>
     <string name="showBlockedTime">Показать заблокированное время</string>
     <string name="showFreeSlots">Показать свободные слоты</string>
+    <string name="showPassword">Показать пароль</string>
     <string name="showingProfilesCount">Профили: %1$s из %2$s</string>
     <string name="showingUsersCount">Пользователи: %1$s из %2$s</string>
     <string name="sidebarAiCta">Поговорить с AI</string>

@@ -60,6 +60,7 @@ fun ShifaInputField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: (@Composable () -> Unit)? = null,
     multiline: Boolean = false, // the comment field: grows from Figma's 134, text from the top
+    fieldModifier: Modifier = Modifier, // on the editable field itself: focus requesters, autofill content types
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
@@ -74,7 +75,7 @@ fun ShifaInputField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = fieldModifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = !multiline,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = ShifaColors.Text.Primary),

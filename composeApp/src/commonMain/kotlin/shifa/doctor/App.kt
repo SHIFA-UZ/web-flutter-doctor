@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -25,9 +26,15 @@ import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.ui.auth.AuthFrame
+import shifa.doctor.ui.auth.LanguageSwitch
+import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.debug.DebugMenuScreen
+import shifa.doctor.ui.debug.spikeAutoRun
+import shifa.doctor.ui.login.LoginScreen
 import shifa.doctor.ui.splash.SplashScreen
 import shifa.doctor.ui.theme.ShifaTheme
+import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
 import shifa.doctor.utils.isDebugBuild
@@ -42,7 +49,10 @@ fun App() {
         if (session != null) languageRepository.sync(language.backendCode)
     }
     ProvideAppLocale(language.resourceCode) {
-        CompositionLocalProvider(LocalUzbekCyrillic provides language.cyrillic) {
+        CompositionLocalProvider(
+            LocalUzbekCyrillic provides language.cyrillic,
+            LocalLanguageSwitch provides LanguageSwitch(language, languageStorage::set),
+        ) {
             ShifaTheme {
                 // Debug menu → Demo data or Development backend restarts everything from the splash.
                 val demo by DemoMode.enabled.collectAsState()
@@ -53,20 +63,60 @@ fun App() {
     }
 }
 
-private enum class Screen { Splash, SignIn, Shell }
+private enum class Screen { Splash, SignIn, EmailSignIn, ForgotPassword, VerifyKey, Debug, Shell }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun AppScreens() {
-    // Not saveable: a recreated process starts at the splash again, which restores the session (01 §2.9).
+    // Not saveable: a recreated process starts at the splash again, which restores the session (01 §2.9). Each
+    // screen has its own ViewModel store, cleared when it leaves (Login must not keep a finished sign-in).
     var screen by remember { mutableStateOf(Screen.Splash) }
     val session by sessionRepository.session.collectAsState()
     // One navigation for every way a session ends (sign-out, 401, expiry, disabled account: 17 §1, AUTH-09).
     LaunchedEffect(session) { if (session == null && screen == Screen.Shell) screen = Screen.SignIn }
     Crossfade(screen) {
         when (it) {
-            Screen.Splash -> SplashScreen(onFinished = { s -> screen = if (s != null) Screen.Shell else Screen.SignIn })
-            // AUTH-02 and SHELL-01 replace these. Debug builds reach the debug menu meanwhile.
-            Screen.SignIn, Screen.Shell -> if (isDebugBuild) DebugMenuScreen() else Placeholder()
+            Screen.Splash ->
+                ScopedViewModels {
+                    SplashScreen(onFinished = { s ->
+                        screen =
+                            when {
+                                spikeAutoRun -> Screen.Debug // the iOS spike check (CORE-07)
+                                s != null -> Screen.Shell
+                                else -> Screen.SignIn
+                            }
+                    })
+                }
+            Screen.SignIn ->
+                ScopedViewModels {
+                    LoginScreen(
+                        onSignedIn = { screen = Screen.Shell },
+                        onEmailSignIn = { screen = Screen.EmailSignIn },
+                        onForgotPassword = { screen = Screen.ForgotPassword },
+                        onCreateAccount = { screen = Screen.VerifyKey },
+                        debugMenu =
+                            if (isDebugBuild) {
+                                (
+                                    {
+                                        ShifaLink(
+                                            "Debug menu",
+                                            { screen = Screen.Debug },
+                                        )
+                                    }
+                                )
+                            } else {
+                                null
+                            },
+                    )
+                }
+            // AUTH-03…05 replace these.
+            Screen.EmailSignIn, Screen.ForgotPassword, Screen.VerifyKey ->
+                AuthFrame(
+                    onBack = { screen = Screen.SignIn },
+                ) {}
+            Screen.Debug -> DebugMenuScreen(onBack = { screen = Screen.SignIn })
+            // SHELL-01 replaces this. Debug builds reach the debug menu meanwhile.
+            Screen.Shell -> if (isDebugBuild) DebugMenuScreen() else Placeholder()
         }
     }
 }

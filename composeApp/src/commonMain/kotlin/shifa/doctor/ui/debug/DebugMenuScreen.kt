@@ -30,7 +30,10 @@ import shifa.doctor.ui.widgets.ShifaSwitch
  * Fake pushes come with the push tickets (PUSH-01, NOTIF-*), which define the payloads.
  */
 @Composable
-fun DebugMenuScreen(modifier: Modifier = Modifier) {
+fun DebugMenuScreen(
+    modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
+) {
     var spikes by remember { mutableStateOf(spikeAutoRun) } // -spikeAutoRun (iOS check) starts there
     val demo by DemoMode.enabled.collectAsState()
     val gate by DemoMode.bootGate.collectAsState()
@@ -41,20 +44,26 @@ fun DebugMenuScreen(modifier: Modifier = Modifier) {
             SpikesScreen()
         }
     } else {
-        DebugMenuScreenContent(
-            demo = demo,
-            backendUrl = backend.baseUrl,
-            development = backend == BackendChoice.Backend.Development,
-            onDemo = DemoMode::set,
-            onDevelopment = { dev ->
-                sessionRepository.signOut()
-                BackendChoice.set(if (dev) BackendChoice.Backend.Development else BackendChoice.Backend.Production)
-            },
-            onSpikes = { spikes = true },
-            bootGate = gate.name,
-            onBootGate = { DemoMode.setBootGate(DemoBootGate.entries[(gate.ordinal + 1) % DemoBootGate.entries.size]) },
-            modifier = modifier,
-        )
+        Column(modifier.fillMaxSize()) {
+            onBack?.let { ShifaSubHeader("Debug", Modifier.statusBarsPadding(), onBack = it) }
+            DebugMenuScreenContent(
+                demo = demo,
+                backendUrl = backend.baseUrl,
+                development = backend == BackendChoice.Backend.Development,
+                onDemo = DemoMode::set,
+                onDevelopment = { dev ->
+                    sessionRepository.signOut()
+                    BackendChoice.set(if (dev) BackendChoice.Backend.Development else BackendChoice.Backend.Production)
+                },
+                onSpikes = { spikes = true },
+                bootGate = gate.name,
+                onBootGate = {
+                    DemoMode.setBootGate(
+                        DemoBootGate.entries[(gate.ordinal + 1) % DemoBootGate.entries.size],
+                    )
+                },
+            )
+        }
     }
 }
 
