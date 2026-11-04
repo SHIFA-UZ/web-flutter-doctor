@@ -202,6 +202,39 @@ the simulator beyond building the framework.
 4. **Registration e-mail code:** still waiting on BE-03 (D-04); the doctor and staff registrations go straight in.
 5. **The shell is still a stand-in** (debug menu with sign-out and the app-lock section) until SHELL-01, next.
 
+## M2 · Shell and profile (in progress)
+
+One commit per ticket, each with a Codex review (`docs/implemented/codex/`). Details in `shell.md` and `profile.md`.
+Your calls D-15 (push at the end), D-16 (Daily may use production) and D-17 (translations as they are) are recorded.
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| SHELL-01…05 | `2d44a11`, `cc35d13`, `b1adf8e`, `9ee6fc7`, `8486464` | Tab shell, staff shell, badges, plan gating, Intelligence mode, resume refresh |
+| PROF-01, PROF-02 | `1434bb6`, `4b97c0d` | Profile data layer; Profile root for doctors and staff |
+| PROF-03 | `30949f6` | Personal information, photo from gallery or camera |
+| PROF-04 | `c0417b2` | Contact & clinic address, invoicing details, Security (password change + app lock) |
+| PROF-05 | `f96faa2` | Dental documentation detection (Implantologist included) |
+| PROF-06 | `657cfbf` | Practice timezone sheet with the change warning |
+| PROF-07 | `aa384fd` | Clinic location on a map (coordinates saved; geocoding waits for BE-15) |
+| PROF-08 | `0f514ad` | Extended profile: biography, socials, service tags, certificates |
+
+Checked on the emulator against dev (and put back afterwards): gender, postal code, billing name, a service tag;
+photo upload from the gallery and the camera; the camera refusal banner; the wrong-current-password path; the map;
+the timezone warning (cancelled).
+
+**For you to look at:**
+1. **Picker crash fixed:** `androidx.biometric` 1.1.0 pulled `androidx.fragment` 1.2.5, which crashed every activity
+   result launcher (gallery, camera, file). `fragment` 1.8.9 is now a direct dependency.
+2. **Square crop before a photo upload** (flow 08/02): Android has no platform cropper, so it needs a library (uCrop)
+   or a custom screen. Not built; say if you want it.
+3. **Dev seed doctor (`seed.doctor1`) now has a profile photo** (from the upload test); there is no endpoint to remove
+   it (BE-30).
+4. **New backend items:** BE-30 (remove photo), BE-31 (a new photo needs a new URL; the app versions it meanwhile),
+   BE-32 (a distinct code for a wrong current password).
+5. **iOS:** the photo picker, camera, downsampling and the map tap compile and link; none ran on a simulator yet.
+6. **A flaky test pattern:** "Dispatchers.Main is used concurrently with setting it" once, when a previous test class
+   left a ViewModel coroutine running; it passes on rerun.
+
 ## Decisions
 
 - **D-00:** one branch, `doc-app2.0`.
