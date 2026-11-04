@@ -342,6 +342,39 @@ Your calls / open points from M4:
 - **Dev facts:** a locked document's download answers 404, not 403; the backend sets `phone` from `phones`; an empty
   string clears a patient field.
 
+## M5 · Appointments, scribe, video (in progress)
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| APPT-01 | `5ba04d0` | The doctor's appointment detail as the server really sends it (patient, signature, plan; no video flag, BE-09 corrected), the visit route from Start / Continue, no Start for a no-show |
+| APPT-02 | `b5d0490` | Detail, signature request, and a read every 10 s only while the signature is awaited |
+| AI-11 | `4870a26` | Consultation notes, AI drafts, complete, scribe status (a failed read is a failure, not Flutter's empty list) |
+| APPT-03 | `eee8959` | The visit's notes saved 2 s after the last edit and on leaving (Flutter: only on leave), saves in order |
+| APPT-04 | `ebce636` | The visit workspace: header and visit clock, patient alerts, notes with modes, Shifa AI and last-025-2 helpers, documents with upload, signature footer; leaving saves first |
+| APPT-06 | `2353feb` | The visit briefing sheet from the appointment details |
+| AI-03 | `0df16b4` | The recorder's level, recording id and duration |
+| AI-05 | `6a90d23` | Speech to text with the app's language; typed 403 / 429 / 502 |
+| AI-06 | `6bc9065` | Dictation in the visit notes and the 025-2 form's note fields (PRO) |
+| SCRIBE-01 | `5898e35` | Recording the consultation for the AI scribe; keeps recording in the background on Android (a microphone foreground service); a failed upload is kept to send again |
+| PDF-01 | `8854274` | The visit summary PDF made in the app (en, uz, ru) until the backend renders it (BE-01) |
+| APPT-07 + SCRIBE-02 | `aea1c0c` | End appointment: checklist, then notes → complete → wait for the AI notes (Continue without waiting) → summary filed under the patient; after completion only the summary is retried |
+
+Checked on the Android emulator in demo mode: start a visit from the calendar, type and dictate notes (the emulator's
+microphone records silence; the demo answers with a fixed sentence), ask for the signature (signed 15 s later), record
+for the scribe and see its draft under From Shifa AI, record with the app in the background, end the visit and open
+the filed summary. Nothing in M5 has run on iOS yet (everything compiles and links).
+
+Notes from M5:
+- **One commit (`b5d0490`, APPT-02) has a lint-only issue** (an orphaned comment) fixed in the next commit; the branch
+  head is clean. My lint check filtered for "error", which ktlint's style failures don't print; fixed since.
+- **A real bug caught by a test:** a retry ran the upload inside a state update, which can run twice; it uploaded the
+  recording twice. Fixed before commit (SCRIBE-01).
+- **Backend facts:** the doctor's appointment detail has no video flag (only the patient side has it); notes are one
+  manual note per visit, updated, and blank text is ignored, so notes can't be emptied; a second scribe recording for a
+  visit is accepted and ignored.
+- **Left for their tickets:** dental record (DENTAL-*), treatment plan and payment steps at End (DENTAL-03, TP-06),
+  before/after photos (APPT-05), carrying an AI ICD code into the 025-2 (APPT-08), video (VIDEO-*), follow-up booking.
+
 ## Decisions
 
 - **D-00:** one branch, `doc-app2.0`.
