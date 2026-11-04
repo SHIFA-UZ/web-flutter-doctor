@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -163,8 +164,10 @@ fun ShifaOptionList(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
     heading: String? = null,
+    // Role.RadioButton for a one-of list (a language, a country): read as a group of radio choices.
+    role: Role = Role.Button,
 ) {
-    Column(modifier.fillMaxWidth()) {
+    Column(modifier.fillMaxWidth().let { if (role == Role.RadioButton) it.selectableGroup() else it }) {
         heading?.let {
             Text(
                 it.uppercase(),
@@ -181,7 +184,7 @@ fun ShifaOptionList(
             if (item.separatorBefore) {
                 HorizontalDivider(Modifier.padding(vertical = ShifaSize.S4), ShifaSize.S1, ShifaColors.Border.Default)
             }
-            OptionRow(item) { onSelect(i) }
+            OptionRow(item, role) { onSelect(i) }
         }
     }
 }
@@ -190,6 +193,7 @@ fun ShifaOptionList(
 @Composable
 internal fun OptionRow(
     item: OptionItem,
+    role: Role = Role.Button,
     onClick: () -> Unit,
 ) = Row(
     Modifier
@@ -197,8 +201,13 @@ internal fun OptionRow(
         .defaultMinSize(minHeight = ShifaSize.Touch)
         .clip(ShifaRadius.ControlMd)
         .background(if (item.selected) ShifaColors.Bg.Selected else Color.Transparent)
-        .clickable(role = Role.Button, onClick = onClick)
-        .semantics { selected = item.selected }
+        .let {
+            if (role == Role.RadioButton) {
+                it.selectable(selected = item.selected, role = role, onClick = onClick)
+            } else {
+                it.clickable(role = role, onClick = onClick).semantics { selected = item.selected }
+            }
+        }
         .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),
     horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
     verticalAlignment = Alignment.CenterVertically,

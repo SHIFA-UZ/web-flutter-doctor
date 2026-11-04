@@ -353,3 +353,20 @@ Built 2026-11-04. Flow `08/10-settings-root.md`; spec `08 §1.8`; board `DaProfi
   notification-permission state ("Allowed" / "Blocked").
 - **Tests:** `SettingsViewModelTest` (6: whole-block payload with the language code, quick toggles in order, revert
   on failure, Tasks gating and staff, partial revert, start-tab repair), `ProfileScreenshotTest` (+1: `Settings_doctor`).
+
+## SET-02 · Language
+
+Built 2026-11-04. Flow `01/15-language-settings.md` §3a; board `DaProfile.dc.html` (`langSettings`).
+
+- **Screen** (`ui/profile/LanguageScreen.kt`, Settings → Language; replaces the placeholder): "Select Language" and the
+  four languages, each in its own name (English, O'zbekcha, Ўзбекча, Русский) with the name in the current language
+  under it; a tap applies at once (no Save). The list scrolls and reads as a radio group (`ShifaOptionList(role =
+  Role.RadioButton)`, also used by the Settings country and starting-screen sheets).
+- **Already in place and reused:** the mini toggle on the sign-in screens (`ui/auth/LanguageSwitch`, AUTH-02), the
+  regional default (Uzbekistan → Uzbek, `LanguageStorage.applyRegionalDefault`), and the backend sync in `App`
+  (`PUT /doctors/me/language` on sign-in and every change, Cyrillic Uzbek as `uz`, deduplicated by
+  `LanguageRepository`); the settings PATCH (SET-01) carries the language too.
+- **Verified on the emulator against dev (2026-11-04):** Russian applied at once and dev showed `settings.language =
+  ru`; back to English (`en`).
+- **Tests:** the sync and storage were covered by CORE-04 / AUTH tests; `ProfileScreenshotTest` (+1:
+  `Language_settings`).

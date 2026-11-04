@@ -98,6 +98,7 @@ import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.profile.BillingScreen
 import shifa.doctor.ui.profile.ContactScreen
 import shifa.doctor.ui.profile.ExtendedProfileScreen
+import shifa.doctor.ui.profile.LanguageScreen
 import shifa.doctor.ui.profile.PersonalInfoScreen
 import shifa.doctor.ui.profile.PracticeTimezoneSheet
 import shifa.doctor.ui.profile.ProfileActions
@@ -343,10 +344,7 @@ private fun RouteContent(
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
-        ShellRoute.Language ->
-            Pushed(Res.string.language, actions) {
-                TabPlaceholder(Res.string.language, Res.drawable.ic_globe_22)
-            }
+        ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
     }
 }

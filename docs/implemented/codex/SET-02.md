@@ -1,0 +1,7 @@
+- **P2 — Language options become unreachable on short screens.** [LanguageScreen.kt:45](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/LanguageScreen.kt:45) uses a non-scrollable `Column`. In landscape with 200% font scaling, the header and four two-line rows exceed the available height; lower options are clipped with no way to scroll to them. Make the list scrollable.
+
+- **P2 — Language choices lack radio-group accessibility semantics.** [LanguageScreen.kt:48](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/LanguageScreen.kt:48) uses `ShifaOptionList`, whose [SelectionControls.kt:201](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/widgets/SelectionControls.kt:201) assigns `Role.Button`, without a selectable group. Screen readers therefore announce buttons rather than mutually exclusive radio choices, contrary to flow §8. Use radio-button selection semantics within a selectable group.---
+**Answers (both fixed):**
+1. *Clipped on short screens:* the list scrolls.
+2. *No radio semantics:* `ShifaOptionList` takes a `role`; with `Role.RadioButton` the list is a selectable group and each row a selectable radio choice. The language list and the Settings country and starting-screen sheets use it. Screenshots unchanged.
+Local; no second round.

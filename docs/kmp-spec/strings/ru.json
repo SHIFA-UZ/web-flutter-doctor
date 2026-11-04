@@ -2357,5 +2357,6 @@
   "settingsGeneral": "Общие",
   "startTabHelper": "Главная вкладка при открытии приложения. Уведомления по-прежнему открывают нужный экран.",
   "securitySubtitle": "Пароль и блокировка приложения",
-  "notificationsSystemSettings": "Управление в настройках системы"
+  "notificationsSystemSettings": "Управление в настройках системы",
+  "uzbekCyrillic": "Узбекский (кириллица)"
 }

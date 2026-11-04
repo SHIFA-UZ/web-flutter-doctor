@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -332,6 +333,7 @@ fun SettingsContent(
                                 )
                             },
                             { i -> actions.change { it.copy(country = SettingsCountry.entries[i].wire) } },
+                            role = Role.RadioButton,
                         )
                     }
                 SettingsPick.StartTab ->
@@ -339,6 +341,7 @@ fun SettingsContent(
                         ShifaOptionList(
                             state.startTabs.map { OptionItem(tr(it.label), selected = it.key == s.defaultStartTab) },
                             { i -> actions.change { it.copy(defaultStartTab = state.startTabs[i].key) } },
+                            role = Role.RadioButton,
                         )
                     }
             }

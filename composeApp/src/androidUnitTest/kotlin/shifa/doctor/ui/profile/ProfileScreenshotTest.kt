@@ -59,4 +59,7 @@ class ProfileScreenshotTest {
 
     @Test
     fun settings() = captureRoboImage("screenshots/Settings_doctor.png") { SettingsPreview() }
+
+    @Test
+    fun language() = captureRoboImage("screenshots/Language_settings.png") { LanguagePreview() }
 }

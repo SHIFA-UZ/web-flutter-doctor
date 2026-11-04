@@ -308,3 +308,6 @@ internal fun SettingsPreview() =
             "O'zbekcha",
         )
     }
+
+@Composable
+internal fun LanguagePreview() = PreviewTheme { LanguageContent(shifa.doctor.data.storage.AppLanguage.Uzbek, {}, {}) }

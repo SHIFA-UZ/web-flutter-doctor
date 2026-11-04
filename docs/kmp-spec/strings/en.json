@@ -2357,5 +2357,6 @@
   "settingsGeneral": "General",
   "startTabHelper": "Main tab when you open the app. Notifications still open the relevant screen.",
   "securitySubtitle": "Password and app lock",
-  "notificationsSystemSettings": "Manage in system settings"
+  "notificationsSystemSettings": "Manage in system settings",
+  "uzbekCyrillic": "Uzbek (Cyrillic)"
 }
