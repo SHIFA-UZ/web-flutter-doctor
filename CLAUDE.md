@@ -168,6 +168,10 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   `SessionEvents`; a 403 never does** (clinic staff legitimately get 403 on doctor-only routes; the feature shows its
   own message). Screens show `e.toUserMessage(Res.string.<featureFallback>)`, which maps the `code`, never English
   text; show `requestId` in the error banner's detail.
+- The session lives in `SessionRepository` (`data/session/`): `restore()` on cold start, `signIn(token)`, `signOut()`;
+  the shell reacts to `session` turning null. Nothing else writes the token, and the HTTP client reads it from
+  `session`. A network session end names the token it was about, so a late 401 can't end a newer session. The app-lock PIN is stored only as a
+  salted hash (`AppLockStorage`).
 - Repositories take `HttpClient` (and `TokenStorage` if needed) via constructor and return `Result<T>`. Map HTTP
   errors to the sealed `ApiException` (ValidationError, Unauthorized, NotFound, Conflict, RateLimit, ServerError,
   NetworkError…). DTOs tolerate `null` in list fields and unknown keys; one bad item must not drop the whole list.

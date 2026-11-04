@@ -71,7 +71,7 @@ Built 2026-11-04 on `doc-app2.0`, copied from the patient app's `data/api` and c
   `SecurityConfig`), and never over a header the caller set (`auth/verify` sends a Firebase bearer). Pre-flight
   (Flutter's rule): a token more than 30 s past `exp` ends the session and fails with `Unauthorized(SESSION_EXPIRED)`
   without a request.
-- **Session rule** (17 §1), only in `apiCall`: a 401 to a request that carried a token → `SessionEvents.end(Unauthorized)`;
+- **Session rule** (17 §1), only in `apiCall`: a 401 to a request that carried a token → `SessionEvents.end(Unauthorized, token)`;
   `code = ACCOUNT_DISABLED` → `AccountDisabled`; any other 403 never ends the session. The backend sends
   `ACCOUNT_DISABLED` as a 403 (`JwtAuthFilter`), so that code is the one 403 that does. CORE-06's session repository
   listens.
@@ -96,3 +96,31 @@ Built 2026-11-04 on `doc-app2.0`, copied from the patient app's `data/api` and c
   notes say.
 - **Tests:** `ApiCallTest` (11: session rule cases, pre-flight, token placement, HTML and numeric error bodies,
   messages, masking), `SseTest` (3), `JwtTest` (3), `LanguageRepositoryTest` (2).
+
+## CORE-06 · Storage and session (`data/session/SessionRepository.kt`, `data/storage/AppLockStorage.kt`, `utils/Crypto.kt`)
+
+Built 2026-11-04 on `doc-app2.0`. `TokenStorage`, the secure store and the `Jwt` reader came with CORE-05.
+
+- **`SessionRepository`:** `session: StateFlow<Session?>` (`Session(token, role)`, `isClinicStaff`). `restore()` is
+  01 §2.9 without the network: a saved token counts only if it is not 30 s past `exp` and its role is `DOCTOR` or
+  `CLINIC_STAFF` (an `ADMIN` token is dropped: the admin panel is web). `signIn(token): Result<Session>` after any login, registration
+  or reset. `signOut()` for the doctor's own sign-out. `end(reason, token)` comes from `SessionEvents` (17 §1) and
+  ends the session only if `token` is the current one (a late 401 from a previous session can't sign out the next);
+  it replays the reason on `ended` for the sign-in banner. Every change runs under one lock (`SynchronizedObject`,
+  atomicfu 0.27.0 added directly): requests end sessions from any thread. `SessionEvents` is a synchronous listener
+  the repository sets when created, and the HTTP client takes its token from `session`, so no request carries a token
+  before the listener exists (Codex CORE-06 round 1).
+- **What a logout clears** (01 §4, "cleared on logout: yes"): the token and `shifa_doctor_last_activity_ms`, and the
+  language-sync dedupe. Kept: app-lock PIN and flags, language, OTP history, active location. Sending an empty FCM
+  token on logout (01 §2.10 step 1) comes with PUSH-01; dropping cached data comes with each feature's repository.
+- **`AppLockStorage`** (Fix line, bug 1): the PIN is never stored. It keeps a 16-byte random salt and a 10 000-round
+  salted SHA-256 (`app_lock_pin_salt`, `app_lock_pin_hash`), compared in constant time; 4–6 digits are valid and
+  verified at their full length (Flutter auto-checked at 4, so 5- and 6-digit PINs never worked). The failed-attempt
+  count is stored (`app_lock_failed_attempts`, max 5) so a rebuilt lock screen doesn't reset it. Flags:
+  `app_lock_enabled`, `biometric_enabled`. `clear()` when the lock is turned off. Nothing here is cleared on logout.
+  SHA-256 and the salt come from the platform (`MessageDigest`/`SecureRandom`, CommonCrypto/`SecRandomCopyBytes`).
+- **Language sync wired:** `App.kt` calls `languageRepository.sync` when a session exists and on every language change.
+- **Keys** follow 01 §4; the Flutter store isn't migrated (the KMP app is a fresh install of the same listing; doctors
+  sign in again once).
+- **Tests:** `SessionRepositoryTest` (6: restore, expired/admin/garbage tokens, sign-in, what a session end clears,
+  sign-out then a late report, a late 401 after a new sign-in), `AppLockStorageTest` (5).

@@ -80,6 +80,7 @@ kotlin {
 
             // Kotlinx Coroutines
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.atomicfu) // SynchronizedObject: the session lock (CORE-06)
 
             // Kotlinx DateTime
             implementation(libs.kotlinx.datetime)

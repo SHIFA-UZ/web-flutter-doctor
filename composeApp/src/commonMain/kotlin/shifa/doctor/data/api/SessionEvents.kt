@@ -1,23 +1,27 @@
 package shifa.doctor.data.api
 
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-
 /** Why the backend (or the pre-flight check) ended the session; the sign-in screen words its banner from it. */
 enum class SessionEndReason { Expired, Unauthorized, AccountDisabled }
 
 /**
- * The one place a session ends from the network (17 §1): [apiCall] reports here, the session repository (CORE-06)
- * clears the token and the app returns to sign-in. Screens never decide this themselves.
+ * The one place a session ends from the network (17 §1): [apiCall] reports here with the token the failing request
+ * carried, and the session repository ends that session only if it is still the current one (a late 401 from a
+ * previous session must not sign out the next). Delivery is synchronous, so nothing is lost before a collector starts.
  */
 object SessionEvents {
-    private val _ended =
-        MutableSharedFlow<SessionEndReason>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    val ended: SharedFlow<SessionEndReason> = _ended.asSharedFlow()
+    /** Set by the session repository when it is created, before any request can carry a token. */
+    var listener: (reason: SessionEndReason, token: String) -> Unit = { _, _ -> }
 
-    fun end(reason: SessionEndReason) {
-        _ended.tryEmit(reason)
+    /** Never throws into the request that reported it: a failing listener is logged and the call fails as usual. */
+    fun end(
+        reason: SessionEndReason,
+        token: String,
+    ) {
+        runCatching {
+            listener(
+                reason,
+                token,
+            )
+        }.onFailure { httpLogger.log("FAILED session end: ${it::class.simpleName}") }
     }
 }

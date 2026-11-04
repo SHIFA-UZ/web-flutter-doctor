@@ -15,7 +15,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.model.ApiException
-import shifa.doctor.data.storage.tokenStorage
+import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.utils.Jwt
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -39,12 +39,13 @@ internal val apiJson =
         coerceInputValues = true // a null list reads as the default, not a dropped item
     }
 
-// One client per backend (Debug menu → Development backend), built on first use. CORE-08 adds the demo clients.
+// One client per backend (Debug menu → Development backend), built on first use. The token is the current
+// session's, so the session repository (and its SessionEvents listener) exists before any request carries one.
 private val realClients =
     BackendChoice.Backend.entries.associateWith {
         lazy {
             createHttpClient(
-                { tokenStorage.token },
+                { sessionRepository.session.value?.token },
                 baseUrl = it.baseUrl,
             )
         }
@@ -84,7 +85,7 @@ fun createHttpClient(
                 stored != null
             ) {
                 if (Jwt.isExpired(stored, nowEpochSeconds(), ApiConfig.EXPIRY_GRACE_SECONDS)) {
-                    SessionEvents.end(SessionEndReason.Expired)
+                    SessionEvents.end(SessionEndReason.Expired, stored)
                     throw ApiException.Unauthorized(SESSION_EXPIRED_LOCALLY, null)
                 }
                 request.bearerAuth(stored)

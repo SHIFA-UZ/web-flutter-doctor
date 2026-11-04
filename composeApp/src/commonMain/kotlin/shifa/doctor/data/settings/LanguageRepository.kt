@@ -51,3 +51,5 @@ class LanguageRepository(
         state.update { Synced(it.session + 1, null) }
     }
 }
+
+val languageRepository by lazy { LanguageRepository() }

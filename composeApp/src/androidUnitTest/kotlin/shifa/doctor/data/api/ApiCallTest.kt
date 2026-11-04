@@ -1,6 +1,5 @@
 package shifa.doctor.data.api
 
-import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -46,6 +45,12 @@ internal fun jwt(
 }
 
 class ApiCallTest {
+    private val ended = mutableListOf<Pair<SessionEndReason, String>>()
+
+    init {
+        SessionEvents.listener = { reason, token -> ended += reason to token }
+    }
+
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val requests = mutableListOf<HttpRequestData>()
 
@@ -78,7 +83,7 @@ class ApiCallTest {
     @Test
     fun `a 401 to a request with a token ends the session and keeps code and requestId`() =
         runTest {
-            SessionEvents.ended.test {
+            run {
                 val body = """{"error":"Authentication required","code":"UNAUTHORIZED","requestId":"r-1"}"""
                 val e =
                     apiCall<Me> {
@@ -89,14 +94,14 @@ class ApiCallTest {
                 assertThat(e).isInstanceOf(ApiException.Unauthorized::class.java)
                 assertThat((e as ApiException).code).isEqualTo("UNAUTHORIZED")
                 assertThat(e.requestId).isEqualTo("r-1")
-                assertThat(awaitItem()).isEqualTo(SessionEndReason.Unauthorized)
+                assertThat(ended).containsExactly(SessionEndReason.Unauthorized to jwt(NOW + 3600))
             }
         }
 
     @Test
     fun `a 401 on a public path (wrong password) does not end the session`() =
         runTest {
-            SessionEvents.ended.test {
+            run {
                 val e =
                     apiCall<Me> {
                         client(
@@ -105,14 +110,14 @@ class ApiCallTest {
                     }
                 assertThat(e.exceptionOrNull()).isInstanceOf(ApiException.Unauthorized::class.java)
                 assertThat(requests.single().headers[HttpHeaders.Authorization]).isNull()
-                expectNoEvents()
+                assertThat(ended).isEmpty()
             }
         }
 
     @Test
     fun `a 403 never ends the session`() =
         runTest {
-            SessionEvents.ended.test {
+            run {
                 val e =
                     apiCall<Me> {
                         client(
@@ -120,27 +125,27 @@ class ApiCallTest {
                         ).get("doctors/me")
                     }
                 assertThat(e.exceptionOrNull()).isInstanceOf(ApiException.Forbidden::class.java)
-                expectNoEvents()
+                assertThat(ended).isEmpty()
             }
         }
 
     @Test
     fun `ACCOUNT_DISABLED ends the session with its reason, whatever the status`() =
         runTest {
-            SessionEvents.ended.test {
+            run {
                 apiCall<Me> {
                     client(
                         respond = error(HttpStatusCode.Forbidden, """{"code":"ACCOUNT_DISABLED"}"""),
                     ).get("doctors/me")
                 }
-                assertThat(awaitItem()).isEqualTo(SessionEndReason.AccountDisabled)
+                assertThat(ended).containsExactly(SessionEndReason.AccountDisabled to jwt(NOW + 3600))
             }
         }
 
     @Test
     fun `an expired token ends the session before any request`() =
         runTest {
-            SessionEvents.ended.test {
+            run {
                 val e =
                     apiCall<Me> {
                         client(
@@ -150,7 +155,7 @@ class ApiCallTest {
                 assertThat(e).isInstanceOf(ApiException.Unauthorized::class.java)
                 assertThat((e as ApiException).code).isEqualTo("SESSION_EXPIRED")
                 assertThat(requests).isEmpty()
-                assertThat(awaitItem()).isEqualTo(SessionEndReason.Expired)
+                assertThat(ended).containsExactly(SessionEndReason.Expired to jwt(NOW - 31))
             }
         }
 

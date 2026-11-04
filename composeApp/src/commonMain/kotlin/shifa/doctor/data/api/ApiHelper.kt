@@ -49,8 +49,8 @@ internal suspend fun failure(response: HttpResponse): ApiException {
     val status = response.status.value
     // 15 §1: the backend can answer with an HTML error page; only JSON is read as an error body.
     val error = if (response.contentType()?.match(ContentType.Application.Json) == true) errorBody(response) else null
-    val sentToken = response.call.request.headers[HttpHeaders.Authorization] != null
-    endsSession(status, error?.code, sentToken)?.let(SessionEvents::end)
+    val sentToken = response.call.request.headers[HttpHeaders.Authorization]?.removePrefix("Bearer ")
+    sentToken?.let { token -> endsSession(status, error?.code, sentToken = true)?.let { SessionEvents.end(it, token) } }
     logFailure(response, error, null)
     return ApiException.of(status, error?.code, error?.requestId)
 }
