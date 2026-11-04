@@ -2012,6 +2012,7 @@
     <string name="retry">Qayta urinish</string>
     <string name="retryBriefing">Qayta urinish</string>
     <string name="retryMetaLine">retryCount: %1$s · lastRetryAt: %2$s · retriedByAdminUserId: %3$s</string>
+    <string name="retryScribeUpload">Yozuvni qayta yuklash</string>
     <string name="retrySelected">Tanlanganlarni qayta urinish</string>
     <string name="retrySelectedWebhookEventsBody">%1$s ta webhook hodisasini qayta urinish arafasidasiz. Har bir tanlangan hodisa saqlangan payload orqali qayta ijro etiladi.</string>
     <string name="retrySelectedWebhookEventsTitle">Tanlangan webhook hodisalarini qayta urinishmi?</string>
@@ -2056,6 +2057,7 @@
     <string name="scheduleValidFromNew">Yangi davr boshlanishi</string>
     <string name="scheduleValidUntil">Jadval tugaguncha amal qiladi:</string>
     <string name="scheduled">Rejalashtirilgan</string>
+    <string name="scribeUploadFailed">Yozuvni yuklab bo'lmadi. U saqlanib qoldi: qayta urinib ko'ring.</string>
     <string name="search">Qidirish</string>
     <string name="searchByNameOrId">Ism yoki ID bo'yicha qidirish</string>
     <string name="searchDoctorsAndPatients">Shifokorlar va bemorlarni qidirish</string>
@@ -2213,6 +2215,7 @@
     <string name="staffVisitsTitle">Qabulni shifokor o'tkazadi</string>
     <string name="start">Boshlash</string>
     <string name="startAiNotes">AI yozuvlarni boshlash</string>
+    <string name="startAiNotesAgain">AI qaydlarni qayta boshlash</string>
     <string name="startAnyway">Baribir boshlash</string>
     <string name="startAppointment">Qabulni boshlash</string>
     <string name="startDate">Boshlanish sanasi</string>

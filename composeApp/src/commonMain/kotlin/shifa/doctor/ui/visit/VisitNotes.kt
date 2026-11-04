@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -103,13 +104,18 @@ class VisitNotes(
     private var reads = 0
 
     fun load() {
+        scope.launch { read() }
+    }
+
+    /** The notes and drafts read now; returns when they are in [state] (or a newer read took over). */
+    suspend fun read() {
         val read = ++reads
         _state.update { it.copy(loadError = null) }
-        scope.launch {
+        coroutineScope {
             val drafts = async { repo.drafts(appointmentId) }
             val notes = repo.notes(appointmentId)
             val draftList = drafts.await()
-            if (read != reads) return@launch
+            if (read != reads) return@coroutineScope
             val failure = notes.exceptionOrNull() ?: draftList.exceptionOrNull()
             val manual = notes.getOrNull()?.let(::joinedManualNotes).orEmpty()
             val fill = !hydrated && manual.isNotEmpty() && _state.value.text.blank

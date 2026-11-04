@@ -1,11 +1,16 @@
 package shifa.doctor.data.consultation
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +29,7 @@ import shifa.doctor.data.model.CompleteResult
 import shifa.doctor.data.model.ConsultationNote
 import shifa.doctor.data.model.DraftNote
 import shifa.doctor.data.model.ScribeStatus
+import shifa.doctor.data.storage.AppLanguage
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -111,6 +117,44 @@ class ConsultationRepository(
             }
         }
 
+    /**
+     * `POST /consultations/upload-recording` (SCRIBE-01, 05 §2.2): the visit's recording for the AI scribe, as
+     * `audio` (AAC `.m4a`) with the visit and the app's language. The backend answers 202 and makes the notes in the
+     * background; 403 without `AI_NOTES` (PRO), 429 over the daily AI limit. A second recording for a visit whose notes
+     * are already on their way is accepted and ignored by the backend.
+     */
+    suspend fun uploadRecording(
+        appointmentId: Long,
+        audio: ByteArray,
+        language: AppLanguage,
+        recordingId: String?,
+    ): Result<Unit> =
+        apiCall<Unit> {
+            client().submitFormWithBinaryData(
+                ApiConfig.Endpoints.SCRIBE_UPLOAD,
+                formData {
+                    append(
+                        "audio",
+                        audio,
+                        Headers.build {
+                            append(HttpHeaders.ContentType, "audio/mp4")
+                            append(
+                                HttpHeaders.ContentDisposition,
+                                "filename=\"ai_notes_${recordingId ?: appointmentId}.m4a\"",
+                            )
+                        },
+                    )
+                    append("appointmentId", appointmentId.toString())
+                    append("language", language.backendCode)
+                },
+            ) {
+                timeout {
+                    requestTimeoutMillis = UPLOAD_TIMEOUT_MS
+                    socketTimeoutMillis = UPLOAD_TIMEOUT_MS
+                }
+            }
+        }
+
     suspend fun scribeStatus(appointmentId: Long): Result<ScribeStatus> =
         apiCall<ScribeStatus> { client().get(ApiConfig.Endpoints.scribeStatus(appointmentId)) }
 
@@ -142,6 +186,9 @@ class ConsultationRepository(
             }
         }
 }
+
+// A long consultation is several MB over mobile data.
+private const val UPLOAD_TIMEOUT_MS = 180_000L
 
 val SCRIBE_POLL = 3.seconds
 val SCRIBE_TIMEOUT = 120.seconds

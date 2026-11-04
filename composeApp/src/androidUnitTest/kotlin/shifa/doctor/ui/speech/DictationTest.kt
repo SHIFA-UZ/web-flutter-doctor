@@ -153,4 +153,23 @@ class DictationTest {
         settle { classToTest.state.value.banner?.text == Res.string.transcriptionReportThanks }
         assertThat(classToTest.state.value.reportable).isNull()
     }
+
+    @Test
+    fun `a recording that isn't for a field is handed over with its id, a spinner meanwhile`() {
+        val classToTest = dictation()
+        classToTest.start("scribe")
+        var got: Pair<Int, String?>? = null
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        classToTest.finishWith { audio, id ->
+            got = audio.size to id
+            gate.await()
+            shifa.doctor.ui.emailcode.CodeBanner(Res.string.transcriptionAdded, error = false)
+        }
+        assertThat(classToTest.state.value.transcribing).isTrue()
+        gate.complete(Unit)
+        settle { classToTest.state.value.banner != null }
+        assertThat(got).isEqualTo(3 to "rec-1")
+        assertThat(classToTest.state.value.field).isNull()
+        assertThat(transcribed).isEqualTo(0)
+    }
 }

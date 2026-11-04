@@ -102,6 +102,13 @@ fun SpeechOrPlainField(
     }
 }
 
+/** The plan includes [feature] (02 §7.3, 05/06 §6); follows the profile as it loads. */
+@Composable
+fun rememberAllowed(feature: DoctorFeature): Boolean {
+    val me by profileRepository.me.collectAsStateWithLifecycle()
+    return FeatureGate.of(me?.subscription).allows(feature)
+}
+
 /** The plan includes speech to text (02 §7.3: without it the mic isn't shown); follows the profile as it loads. */
 @Composable
 fun rememberSpeechAllowed(): Boolean {
@@ -166,7 +173,7 @@ fun SpeechTextField(
 
 /** The dark pill: ✕, the live wave, the time, ✓ (a spinner while transcribing). */
 @Composable
-internal fun RecordingPill(
+fun RecordingPill(
     state: DictationState,
     cancel: () -> Unit,
     done: () -> Unit,

@@ -103,7 +103,17 @@ private val documents =
 @Composable
 internal fun VisitWorkspacePreview() =
     PreviewTheme {
-        VisitContent(state, notes, VisitActions(), documents, clock = clock, now = { now })
+        VisitContent(
+            state,
+            notes,
+            VisitActions(),
+            documents,
+            clock = clock,
+            now = { now },
+            // SCRIBE-01: the AI scribe recording, 1:05 in.
+            scribe = shifa.doctor.ui.speech.DictationState(field = "scribe", level = 0.5f, seconds = 65),
+            scribeAllowed = true,
+        )
     }
 
 // APPT-04: Form 025-2 mode, the patient's signed form and Open Form 025-2; no helper.

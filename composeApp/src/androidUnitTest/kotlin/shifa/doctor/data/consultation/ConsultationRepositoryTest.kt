@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.storage.AppLanguage
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -117,5 +118,24 @@ class ConsultationRepositoryTest {
                 ).scribeUpdates(7, timeout = 300.milliseconds).toList()
             assertThat(none).isEmpty()
             assertThat(started.elapsedNow()).isLessThan(5.seconds)
+        }
+
+    @Test
+    fun `a scribe recording goes as audio with the visit and the app's language`() =
+        runTest {
+            val classToTest = repo(HttpStatusCode.Accepted to """{"message":"ok"}""")
+            assertThat(
+                classToTest.uploadRecording(7, byteArrayOf(1, 2), AppLanguage.UzbekCyrillic, "rec-1").isSuccess,
+            ).isTrue()
+            val sent = calls.single()
+            assertThat(sent).startsWith("POST /api/consultations/upload-recording")
+            assertThat(sent).contains("name=audio")
+            assertThat(sent).contains("filename=\"ai_notes_rec-1.m4a\"")
+            assertThat(
+                sent.substringAfter("name=appointmentId").substringAfter("\r\n\r\n").substringBefore("\r\n"),
+            ).isEqualTo("7")
+            assertThat(
+                sent.substringAfter("name=language").substringAfter("\r\n\r\n").substringBefore("\r\n"),
+            ).isEqualTo("uz")
         }
 }

@@ -139,6 +139,26 @@ class Dictation(
     }
 
     /**
+     * ✓ for a recording that isn't text for a field (the AI scribe, SCRIBE-01): [process] gets the audio and its id
+     * and says how it went; the pill shows a spinner meanwhile.
+     */
+    fun finishWith(process: suspend (audio: ByteArray, recordingId: String?) -> CodeBanner?) {
+        val s = _state.value
+        if (s.field == null || s.transcribing) return
+        ticking?.cancel()
+        val id = recorder.recordingId
+        val audio = recorder.stop()
+        if (audio == null) {
+            return _state.update { DictationState(banner = CodeBanner(Res.string.noSpeechDetected, error = false)) }
+        }
+        _state.update { it.copy(transcribing = true, level = 0f) }
+        scope.launch {
+            val banner = process(audio, id)
+            _state.update { DictationState(banner = banner) }
+        }
+    }
+
+    /**
      * "Report": the last transcript and its recording go to the backend's QA collection. A failure says so and keeps
      * Report for another try; 404 (no longer collected) only hides it.
      */

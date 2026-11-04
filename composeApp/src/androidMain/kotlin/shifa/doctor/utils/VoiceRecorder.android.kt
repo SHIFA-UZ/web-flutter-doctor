@@ -46,6 +46,8 @@ private class AndroidVoiceRecorder(
             r.start()
             recordingId = newRecordingId()
             startedAt = System.currentTimeMillis()
+            // The microphone keeps recording in the background (SCRIBE-01).
+            RecordingService.start(context)
         }.onFailure {
             httpLogger.log("FAILED to start recording: ${it::class.simpleName}")
             stop()
@@ -58,6 +60,7 @@ private class AndroidVoiceRecorder(
         recorder = null
         file = null
         lastDurationSeconds = ((System.currentTimeMillis() - startedAt) / 1000).toInt()
+        RecordingService.stop(context)
         // stop() throws when nothing was recorded yet.
         val recorded = runCatching { r.stop() }.isSuccess
         r.release()

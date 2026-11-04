@@ -30,11 +30,17 @@ import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.storage.AppLanguage
+import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.aiDailyLimitReached
+import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiNotesNotReadyTryLater
+import shifa.doctor.generated.resources.aiNotesUploaded
 import shifa.doctor.generated.resources.appointmentLoadFailed
 import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.patientSignatureRequestSent
+import shifa.doctor.generated.resources.scribeUploadFailed
 import shifa.doctor.generated.resources.signatureRequestFailed
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.patients.chronicWarned
@@ -75,6 +81,12 @@ data class VisitUiState(
     val askLeave: VisitExit? = null,
     // Ready to go there (the screen navigates, then calls [VisitViewModel.leaving]).
     val left: VisitExit? = null,
+    // SCRIBE-01: a recording went to the AI scribe (End waits for its notes, SCRIBE-02).
+    val awaitingScribe: Boolean = false,
+    // A recording that couldn't be uploaded is kept for another try.
+    val scribeRetry: Boolean = false,
+    // A recording is on its way: no second one meanwhile (uploads never overlap).
+    val scribeUploading: Boolean = false,
 ) {
     val kind: VisitKind get() = visit?.kind ?: VisitKind.InPerson
 
@@ -92,7 +104,8 @@ class VisitViewModel(
     private val appointments: AppointmentsRepository = appointmentsRepository,
     private val patients: PatientsRepository = patientsRepository,
     private val forms: FormsRepository = formsRepository,
-    consultation: ConsultationRepository = consultationRepository,
+    private val consultation: ConsultationRepository = consultationRepository,
+    private val language: () -> AppLanguage = { languageStorage.language.value },
     private val profession: () -> String? = { profileRepository.me.value?.profile?.profession },
     private val warned: MutableSet<Long> = chronicWarned,
 ) : ViewModel() {
@@ -194,6 +207,58 @@ class VisitViewModel(
         }
     }
 
+    private var unsent: Pair<ByteArray, String?>? = null
+
+    /**
+     * SCRIBE-01 (flow 05/06 §5): the consultation's recording to the AI scribe; its notes come back as Shifa AI's
+     * drafts. A failed upload keeps the recording for "Upload the recording again" (Flutter lost it). The answer is
+     * the message to show.
+     */
+    suspend fun uploadScribe(
+        audio: ByteArray,
+        recordingId: String?,
+    ): CodeBanner {
+        unsent = audio to recordingId
+        _state.update { it.copy(scribeUploading = true, scribeRetry = false) }
+        val result =
+            try {
+                consultation.uploadRecording(appointmentId, audio, language(), recordingId)
+            } finally {
+                _state.update { it.copy(scribeUploading = false) }
+            }
+        if (result.isSuccess) unsent = null
+        _state.update {
+            it.copy(
+                awaitingScribe = it.awaitingScribe || result.isSuccess,
+                scribeRetry = result.isFailure,
+            )
+        }
+        return result.fold(
+            { CodeBanner(Res.string.aiNotesUploaded, error = false) },
+            { e ->
+                CodeBanner(
+                    when (e) {
+                        is ApiException.RateLimit -> Res.string.aiDailyLimitReached
+                        is ApiException.Forbidden -> Res.string.aiNotesNeedPro
+                        else -> Res.string.scribeUploadFailed
+                    },
+                    requestId = e.requestId,
+                )
+            },
+        )
+    }
+
+    /** The kept recording, sent again. */
+    fun retryScribe() {
+        if (_state.value.scribeUploading) return
+        val (audio, id) = unsent ?: return
+        viewModelScope.launch {
+            // The upload first: it updates the state itself, so it can't run inside an update (which may run again).
+            val banner = uploadScribe(audio, id)
+            _state.update { it.copy(banner = banner) }
+        }
+    }
+
     /** A mode change saves the notes first (they autosave, so nothing is asked; the backend can't empty them). */
     fun mode(to: VisitMode) {
         if (to == _state.value.mode) return _state.update { it.copy(menu = false) }
@@ -203,6 +268,15 @@ class VisitViewModel(
 
     /** The helper from the notes menu; says so when there is nothing to show (board `DaVisit` notes menu). */
     fun helper(which: VisitHelper) {
+        _state.update { it.copy(menu = false) }
+        // Shifa AI's part is read again first: the scribe's notes arrive while the visit is open (flow 05/06 §6).
+        viewModelScope.launch {
+            if (which == VisitHelper.Ai) notes.read()
+            showHelper(which)
+        }
+    }
+
+    private fun showHelper(which: VisitHelper) {
         val n = notes.state.value
         val empty =
             when (which) {

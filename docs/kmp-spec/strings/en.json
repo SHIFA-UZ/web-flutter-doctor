@@ -2577,5 +2577,8 @@
   "attachedDocuments": "Attached documents",
   "visitBriefingRowFailed": "Could not be generated · Retry",
   "transcriptionFailed": "Speech recognition failed. Try again.",
-  "transcriptionReportFailed": "Couldn't send the report. Try again."
+  "transcriptionReportFailed": "Couldn't send the report. Try again.",
+  "startAiNotesAgain": "Start AI Notes again",
+  "scribeUploadFailed": "Couldn't upload the recording. It is kept: try again.",
+  "retryScribeUpload": "Upload the recording again"
 }

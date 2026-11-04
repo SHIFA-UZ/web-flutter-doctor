@@ -129,6 +129,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | AI-03 Recorder level | Done (level not yet seen on a phone) | `VoiceRecorder.level()` (Flutter's bar height from Android's peak / iOS metering), recording id and duration; the debug spike shows it. See visits.md. |
 | AI-05 Transcription | Done (no field yet) | `/ai/transcribe` multipart with the language hint and recording id, 90 s, typed 403 / 429 / 502, "(No speech detected)", reports and the public-config flag. See visits.md. |
 | AI-06 Speech text fields | Done | Mic in the visit's SOAP / free notes / focus mode and the 025-2 note fields (PRO), recording pill with live wave and time, transcript appended with a space, messages in the app's language, Report. See visits.md. |
+| SCRIBE-01 AI scribe recording | Done (in-person; video with VIDEO-02) | Start AI Notes (PRO), recording pill, upload with the visit and language, awaiting-scribe flag for End, 429 / 403 messages, failed upload kept for another try; From Shifa AI reads again. See visits.md. |
 
 ## Log
 
@@ -211,3 +212,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · AI-03 · The recorder's live level for the recording pill.
 - 2026-11-04 · AI-05 · Speech to text and transcription reports.
 - 2026-11-04 · AI-06 · Dictation in the visit notes and the 025-2 editor.
+- 2026-11-04 · SCRIBE-01 · AI scribe recording and upload from the visit.

@@ -10,6 +10,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -24,6 +25,8 @@ import shifa.doctor.data.forms.FormsRepository
 import shifa.doctor.data.model.SignatureState
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.aiDailyLimitReached
+import shifa.doctor.generated.resources.aiNotesUploaded
 import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.stopAll
@@ -33,6 +36,8 @@ class VisitViewModelTest {
     private var visit = """{"id":7,"patientId":14,"patientName":"Jasur Aliyev","startAt":"2026-11-04T05:00:00Z","endAt":"2026-11-04T05:30:00Z","location":"Shifa Dev Clinic","status":"CONFIRMED"}"""
     private var visitStatus = HttpStatusCode.OK
     private var notesStatus = HttpStatusCode.OK
+    private var uploadStatus = HttpStatusCode.Accepted
+    private var drafts = "[]"
     private var forms = """[{"id":3,"patientId":14,"templateId":"025-2","date":"2026-10-20","complaints":"Pain","diagnosis":"Caries"}]"""
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val engine =
@@ -53,7 +58,13 @@ class VisitViewModelTest {
                 path == "appointments/7/consultation-notes" && method == "PUT" ->
                     respond("""{"status":${notesStatus.value}}""", notesStatus, json)
                 path == "appointments/7/consultation-notes" -> ok("[]")
-                path == "appointments/7/draft-notes" -> ok("[]")
+                path == "appointments/7/draft-notes" -> ok(drafts)
+                path == "consultations/upload-recording" ->
+                    if (uploadStatus == HttpStatusCode.Accepted) {
+                        respond("""{"message":"ok"}""", HttpStatusCode.Accepted, json)
+                    } else {
+                        respond("""{"status":${uploadStatus.value}}""", uploadStatus, json)
+                    }
                 path == "patients/14" ->
                     ok(
                         """{"id":14,"name":"Jasur Aliyev","birthDate":"1985-01-11","chronicDisease":"Asthma","allergies":"Penicillin"}""",
@@ -96,8 +107,9 @@ class VisitViewModelTest {
             PatientsRepository(client = client),
             FormsRepository(client),
             ConsultationRepository(client),
-            { profession },
-            warned,
+            language = { shifa.doctor.data.storage.AppLanguage.English },
+            profession = { profession },
+            warned = warned,
         ).also {
             created += it
             it.load()
@@ -182,5 +194,30 @@ class VisitViewModelTest {
         settle { saved.state.value.left != null }
         assertThat(saved.state.value.left).isEqualTo(VisitExit.Back)
         assertThat(saved.state.value.askLeave).isNull()
+    }
+
+    @Test
+    fun `a scribe recording is uploaded and awaited, and one over the limit is kept to send again`() {
+        val classToTest = opened()
+        uploadStatus = HttpStatusCode.TooManyRequests
+        val limited = runBlocking { classToTest.uploadScribe(byteArrayOf(1, 2, 3), "rec-1") }
+        assertThat(limited.text).isEqualTo(Res.string.aiDailyLimitReached)
+        assertThat(classToTest.state.value.scribeRetry).isTrue()
+        assertThat(classToTest.state.value.awaitingScribe).isFalse()
+        uploadStatus = HttpStatusCode.Accepted
+        classToTest.retryScribe()
+        settle { classToTest.state.value.awaitingScribe }
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.aiNotesUploaded)
+        assertThat(classToTest.state.value.scribeRetry).isFalse()
+        assertThat(calls.count { it.startsWith("POST consultations/upload-recording") }).isEqualTo(2)
+    }
+
+    @Test
+    fun `From Shifa AI reads the drafts again, so the scribe's note shows once it is there`() {
+        val classToTest = opened()
+        drafts = """[{"id":"d1","body":"SOAP"}]"""
+        classToTest.helper(VisitHelper.Ai)
+        settle { classToTest.state.value.helper == VisitHelper.Ai }
+        assertThat(classToTest.notes.state.value.drafts?.single()?.id).isEqualTo("d1")
     }
 }

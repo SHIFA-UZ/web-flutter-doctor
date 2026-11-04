@@ -50,9 +50,11 @@ import shifa.doctor.data.model.SignatureState
 import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.model.stripScribeTranscript
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addToNotes
 import shifa.doctor.generated.resources.aiNote
+import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiSuggestedDiagnoses
 import shifa.doctor.generated.resources.allergyChip
 import shifa.doctor.generated.resources.apply
@@ -93,7 +95,9 @@ import shifa.doctor.generated.resources.ic_chev_l_16
 import shifa.doctor.generated.resources.ic_chev_r_16
 import shifa.doctor.generated.resources.ic_clipboard_22
 import shifa.doctor.generated.resources.ic_eye_16
+import shifa.doctor.generated.resources.ic_lock_16
 import shifa.doctor.generated.resources.ic_menu_16
+import shifa.doctor.generated.resources.ic_mic_16
 import shifa.doctor.generated.resources.ic_plus_16
 import shifa.doctor.generated.resources.ic_sparkles_22
 import shifa.doctor.generated.resources.ic_upload_16
@@ -112,8 +116,10 @@ import shifa.doctor.generated.resources.patientAgeYears
 import shifa.doctor.generated.resources.patientRecordUnavailable
 import shifa.doctor.generated.resources.patientSigned
 import shifa.doctor.generated.resources.recommended
+import shifa.doctor.generated.resources.recordingForAiNotes
 import shifa.doctor.generated.resources.requestSignature
 import shifa.doctor.generated.resources.retry
+import shifa.doctor.generated.resources.retryScribeUpload
 import shifa.doctor.generated.resources.saveAsNote
 import shifa.doctor.generated.resources.soapAssessment
 import shifa.doctor.generated.resources.soapNotesSectionSubtitle
@@ -123,6 +129,8 @@ import shifa.doctor.generated.resources.soapPlan
 import shifa.doctor.generated.resources.soapSubjective
 import shifa.doctor.generated.resources.staffVisitsBody
 import shifa.doctor.generated.resources.staffVisitsTitle
+import shifa.doctor.generated.resources.startAiNotes
+import shifa.doctor.generated.resources.startAiNotesAgain
 import shifa.doctor.generated.resources.startsIn
 import shifa.doctor.generated.resources.stay
 import shifa.doctor.generated.resources.tabComesLater
@@ -130,6 +138,7 @@ import shifa.doctor.generated.resources.treatment
 import shifa.doctor.generated.resources.upload
 import shifa.doctor.generated.resources.videoCall
 import shifa.doctor.generated.resources.visitTime
+import shifa.doctor.generated.resources.voiceRecordingFinishHint
 import shifa.doctor.generated.resources.waitingForPatientSignature
 import shifa.doctor.ui.calendar.status
 import shifa.doctor.ui.documents.DocumentCard
@@ -147,9 +156,12 @@ import shifa.doctor.ui.patients.ChronicWarning
 import shifa.doctor.ui.patients.chronicLabel
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
+import shifa.doctor.ui.speech.DictationState
 import shifa.doctor.ui.speech.LocalDictation
+import shifa.doctor.ui.speech.RecordingPill
 import shifa.doctor.ui.speech.SpeechOrPlainField
 import shifa.doctor.ui.speech.appendTranscript
+import shifa.doctor.ui.speech.rememberAllowed
 import shifa.doctor.ui.speech.rememberDictation
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
@@ -174,6 +186,7 @@ import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.displayTime
+import shifa.doctor.utils.rememberMicPermission
 import shifa.doctor.utils.tr
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -231,6 +244,12 @@ class VisitActions(
     val openPatient: () -> Unit = {},
     val openForm: () -> Unit = {},
     val documents: DocumentsActions = DocumentsActions(),
+    // SCRIBE-01: start (after the microphone is allowed), drop, process the recording; a failed upload sent again.
+    val startScribe: () -> Unit = {},
+    val cancelScribe: () -> Unit = {},
+    val finishScribe: () -> Unit = {},
+    val retryScribe: () -> Unit = {},
+    val dismissScribe: () -> Unit = {},
 )
 
 /**
@@ -278,6 +297,10 @@ fun VisitScreen(
     }
     BackHandler(onBack = back)
     val patientId = state.visit?.patientId
+    val scribe = rememberDictation()
+    val scribeState by scribe.state.collectAsStateWithLifecycle()
+    val scribeAllowed = rememberAllowed(DoctorFeature.AiNotes)
+    val askScribe = rememberMicPermission { granted -> if (granted) scribe.start(SCRIBE) else scribe.denied() }
     val actions =
         VisitActions(
             back = back,
@@ -294,14 +317,19 @@ fun VisitScreen(
             requestSignature = viewModel::requestSignature,
             openPatient = { if (patientId != null) viewModel.leave(VisitExit.Patient) },
             openForm = { if (patientId != null) viewModel.leave(VisitExit.Form) },
+            startScribe = askScribe,
+            cancelScribe = scribe::cancel,
+            finishScribe = { scribe.finishWith { audio, id -> viewModel.uploadScribe(audio, id) } },
+            retryScribe = viewModel::retryScribe,
+            dismissScribe = scribe::dismiss,
         )
-    // Dictation for the notes fields (AI-06): one recorder for the screen.
+    // Dictation for the notes fields (AI-06); the AI scribe (SCRIBE-01) has its own recorder, its state passed down.
     CompositionLocalProvider(LocalDictation provides rememberDictation()) {
         if (patientId == null) {
-            VisitContent(state, notes, actions)
+            VisitContent(state, notes, actions, scribe = scribeState, scribeAllowed = scribeAllowed)
         } else {
             // The documents and uploads need the patient: they start once the visit says who it is.
-            PatientParts(patientId, state, notes, actions, onOpenDocument)
+            PatientParts(patientId, state, notes, actions, onOpenDocument, scribeState, scribeAllowed)
         }
     }
     state.askLeave?.let { to ->
@@ -329,6 +357,8 @@ private fun PatientParts(
     notes: VisitNotesState,
     actions: VisitActions,
     onOpenDocument: (Long, PatientDocument, String) -> Unit,
+    scribe: DictationState,
+    scribeAllowed: Boolean,
     documents: PatientDocumentsViewModel =
         viewModel(key = "visit-documents-$patientId") { PatientDocumentsViewModel(patientId) },
     uploads: DocumentUploadViewModel =
@@ -365,6 +395,11 @@ private fun PatientParts(
             requestSignature = actions.requestSignature,
             openPatient = actions.openPatient,
             openForm = actions.openForm,
+            startScribe = actions.startScribe,
+            cancelScribe = actions.cancelScribe,
+            finishScribe = actions.finishScribe,
+            retryScribe = actions.retryScribe,
+            dismissScribe = actions.dismissScribe,
             documents =
                 DocumentsActions(
                     retry = documents::load,
@@ -379,6 +414,8 @@ private fun PatientParts(
         ),
         docs,
         upload,
+        scribe = scribe,
+        scribeAllowed = scribeAllowed,
     )
     UploadSheets(upload, uploads, sources)
 }
@@ -392,6 +429,9 @@ internal fun VisitContent(
     upload: UploadUiState = UploadUiState(),
     clock: PracticeClock = PracticeClock(profileRepository.me.value?.profile?.timeZone),
     now: () -> Instant = ::currentInstant,
+    // The AI scribe's recording (SCRIBE-01): its state and whether the plan has AI notes; null: not offered.
+    scribe: DictationState? = null,
+    scribeAllowed: Boolean = false,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     val visit = state.visit
     when {
@@ -413,6 +453,7 @@ internal fun VisitContent(
             // Dictation's messages (AI-06) join the visit's and the notes'.
             val dictation = LocalDictation.current
             val heard = dictation?.state?.collectAsStateWithLifecycle()?.value?.banner
+            val scribed = scribe?.banner
             val gap = Modifier.padding(horizontal = ShifaSpacing.Inset.Md)
             LazyColumn(
                 Modifier.weight(1f).imePadding(),
@@ -420,18 +461,19 @@ internal fun VisitContent(
                 verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
             ) {
                 item { Box(gap) { Chips(state, actions) } }
-                listOfNotNull(state.banner, notes.banner, heard).forEach { b ->
+                listOfNotNull(state.banner, notes.banner, heard, scribed).forEach { b ->
                     item {
                         Box(gap) {
                             codeBanner(b) {
                                 actions.ui { it.copy(banner = null) }
                                 actions.dismissNotesBanner()
                                 dictation?.dismiss()
+                                actions.dismissScribe()
                             }?.invoke()
                         }
                     }
                 }
-                item { Box(gap) { NotesCard(state, notes, actions) } }
+                item { Box(gap) { NotesCard(state, notes, actions, scribe, scribeAllowed) } }
                 documentRows(documents, upload, actions.documents, gap, hasPatient = visit.patientId != null)
             }
             Footer(state, actions)
@@ -588,6 +630,8 @@ private fun NotesCard(
     state: VisitUiState,
     notes: VisitNotesState,
     actions: VisitActions,
+    scribe: DictationState?,
+    scribeAllowed: Boolean,
 ) = Card {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
         Text(
@@ -630,7 +674,7 @@ private fun NotesCard(
         null -> Unit
     }
     when (state.mode) {
-        VisitMode.General -> General(state, notes, actions)
+        VisitMode.General -> General(state, notes, actions, scribe, scribeAllowed)
         VisitMode.Dental -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_clipboard_22)
         VisitMode.Form0252 -> Form0252(state.forms, state.visit?.patientId != null, actions)
     }
@@ -648,6 +692,8 @@ private fun General(
     state: VisitUiState,
     notes: VisitNotesState,
     actions: VisitActions,
+    scribe: DictationState?,
+    scribeAllowed: Boolean,
 ) {
     val text = notes.text
     // A SOAP field recording keeps the section open (flow 05/05 §8: its pill would go with it).
@@ -708,6 +754,7 @@ private fun General(
         Modifier.fillMaxWidth(),
         multiline = true,
     )
+    scribe?.let { ScribeRecorder(state, it, scribeAllowed, actions) }
     notes.saveError?.let { codeBanner(it) {}?.invoke() }
     notes.loadError?.let {
         Row(
@@ -1104,3 +1151,54 @@ private fun NotesMenu(
         }
     }
 }
+
+/**
+ * Start AI Notes under the free notes (flow 05/06, board `DaVisit` "AI scribe"): PRO only (`AI_NOTES`; without it the
+ * button shows locked), the recording pill with "Recording for AI Notes" and its hint, ✓ uploads (a spinner meanwhile),
+ * then "Start AI Notes again". A failed upload offers to send the kept recording again; nothing new starts while a
+ * recording is on its way.
+ */
+@Composable
+private fun ScribeRecorder(
+    state: VisitUiState,
+    rec: DictationState,
+    allowed: Boolean,
+    actions: VisitActions,
+) {
+    when {
+        !allowed ->
+            ShifaSecondaryButton(tr(Res.string.aiNotesNeedPro), {
+            }, Modifier.fillMaxWidth(), icon = Res.drawable.ic_lock_16, enabled = false)
+        rec.field == SCRIBE ->
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                Text(
+                    tr(Res.string.recordingForAiNotes),
+                    style = ShifaTextStyles.buttonCompact(),
+                    color = ShifaColors.Text.Primary,
+                )
+                RecordingPill(rec, actions.cancelScribe, actions.finishScribe)
+                Text(
+                    tr(Res.string.voiceRecordingFinishHint),
+                    style = ShifaTextStyles.caption(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            }
+        state.scribeRetry || state.scribeUploading ->
+            ShifaSecondaryButton(
+                tr(Res.string.retryScribeUpload),
+                actions.retryScribe,
+                Modifier.fillMaxWidth(),
+                loading = state.scribeUploading,
+                enabled = !state.scribeUploading,
+            )
+        else ->
+            ShifaSecondaryButton(
+                tr(if (state.awaitingScribe) Res.string.startAiNotesAgain else Res.string.startAiNotes),
+                actions.startScribe,
+                Modifier.fillMaxWidth(),
+                icon = Res.drawable.ic_mic_16,
+            )
+    }
+}
+
+private const val SCRIBE = "scribe"

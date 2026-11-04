@@ -494,6 +494,19 @@ class DemoBackend(
                     Reply(HttpStatusCode.OK, "")
                 }
             }
+            // The AI scribe (SCRIBE-01): a recording is accepted and the visit gets a scribe draft at once.
+            request.method == HttpMethod.Post && path == Endpoints.SCRIBE_UPLOAD -> {
+                val visit =
+                    Regex(
+                        "name=\"?appointmentId\"?(?:\\r\\n[^\\r\\n]+)*\\r\\n\\r\\n(\\d+)",
+                    ).find(body)?.groupValues?.get(1)?.toLongOrNull()
+                if (visit == null || demoAppointment(visit, null) == null) {
+                    Reply(HttpStatusCode.NotFound, """{"status":404,"code":"NOT_FOUND"}""")
+                } else {
+                    visitDrafts = visitDrafts + ("demo-scribe-$visit" to visit)
+                    Reply(HttpStatusCode.Accepted, """{"message":"Recording uploaded","jobId":"demo"}""")
+                }
+            }
             // Speech to text (AI-05): a fixed sentence for any recording; reports are taken and dropped.
             request.method == HttpMethod.Post && path == Endpoints.AI_TRANSCRIBE ->
                 ok(
@@ -533,8 +546,8 @@ class DemoBackend(
             get && path.matches(Regex("appointments/\\d+/draft-notes")) ->
                 ok(
                     JsonArray(
-                        visitDrafts.filterValues { it == path.split('/')[1].toLong() }.keys.map {
-                            apiJson.parseToJsonElement(DEMO_DRAFT)
+                        visitDrafts.filterValues { it == path.split('/')[1].toLong() }.keys.map { id ->
+                            JsonObject(apiJson.parseToJsonElement(DEMO_DRAFT).jsonObject + ("id" to JsonPrimitive(id)))
                         },
                     ),
                 )

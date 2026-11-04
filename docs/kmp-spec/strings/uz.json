@@ -2577,5 +2577,8 @@
   "attachedDocuments": "Biriktirilgan hujjatlar",
   "visitBriefingRowFailed": "Yaratib bo'lmadi · Qayta urinish",
   "transcriptionFailed": "Nutqni aniqlab bo'lmadi. Qayta urinib ko'ring.",
-  "transcriptionReportFailed": "Hisobotni yuborib bo'lmadi. Qayta urinib ko'ring."
+  "transcriptionReportFailed": "Hisobotni yuborib bo'lmadi. Qayta urinib ko'ring.",
+  "startAiNotesAgain": "AI qaydlarni qayta boshlash",
+  "scribeUploadFailed": "Yozuvni yuklab bo'lmadi. U saqlanib qoldi: qayta urinib ko'ring.",
+  "retryScribeUpload": "Yozuvni qayta yuklash"
 }

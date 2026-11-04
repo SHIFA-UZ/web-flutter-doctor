@@ -2012,6 +2012,7 @@
     <string name="retry">Retry</string>
     <string name="retryBriefing">Retry briefing</string>
     <string name="retryMetaLine">retryCount: %1$s · lastRetryAt: %2$s · retriedByAdminUserId: %3$s</string>
+    <string name="retryScribeUpload">Upload the recording again</string>
     <string name="retrySelected">Retry selected</string>
     <string name="retrySelectedWebhookEventsBody">You are about to retry %1$s webhook event(s). Each selected event will be replayed from stored payload.</string>
     <string name="retrySelectedWebhookEventsTitle">Retry selected webhook events?</string>
@@ -2056,6 +2057,7 @@
     <string name="scheduleValidFromNew">New period from</string>
     <string name="scheduleValidUntil">Schedule valid until:</string>
     <string name="scheduled">Scheduled</string>
+    <string name="scribeUploadFailed">Couldn't upload the recording. It is kept: try again.</string>
     <string name="search">Search</string>
     <string name="searchByNameOrId">Search by name or ID</string>
     <string name="searchDoctorsAndPatients">Search doctors and patients</string>
@@ -2213,6 +2215,7 @@
     <string name="staffVisitsTitle">Visits are run by the doctor</string>
     <string name="start">Start</string>
     <string name="startAiNotes">Start AI Notes</string>
+    <string name="startAiNotesAgain">Start AI Notes again</string>
     <string name="startAnyway">Start anyway</string>
     <string name="startAppointment">Start Appointment</string>
     <string name="startDate">Start Date</string>

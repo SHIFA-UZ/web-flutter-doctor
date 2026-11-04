@@ -532,4 +532,31 @@ class DemoBackendTest {
             ).isTrue()
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `a demo scribe recording gives the visit a draft`() =
+        runTest {
+            val repo = shifa.doctor.data.consultation.ConsultationRepository({ client })
+            assertThat(repo.drafts(102).getOrThrow()).isEmpty()
+            assertThat(
+                repo.uploadRecording(
+                    102,
+                    byteArrayOf(1),
+                    shifa.doctor.data.storage.AppLanguage.English,
+                    "rec-1",
+                ).isSuccess,
+            ).isTrue()
+            val draft = repo.drafts(102).getOrThrow().single()
+            assertThat(draft.id).isEqualTo("demo-scribe-102")
+            assertThat(repo.confirmDraft(draft.id, 12, 102).isSuccess).isTrue()
+            assertThat(
+                repo.uploadRecording(
+                    999,
+                    byteArrayOf(1),
+                    shifa.doctor.data.storage.AppLanguage.English,
+                    null,
+                ).isFailure,
+            ).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }

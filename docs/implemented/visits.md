@@ -202,3 +202,34 @@ field, the recording pill).
   added" and the demo sentence in the notes (the emulator's microphone records silence).
 - **Tests:** `DictationTest` (5: a failed report kept, one field at a time and the appended text with Report; no speech / 403 / 429 messages
   and nothing added; ✕ sends nothing, a recorder that won't start; the spacing rule), screenshot `Speech_recording`.
+
+## SCRIBE-01 · AI scribe recording
+
+Built 2026-11-04. Flow 05/06, spec 05 §2.2, ticket SCRIBE-01. Board `DaVisit` "AI scribe".
+
+- **Start AI Notes** under the free notes (PRO: `AI_NOTES`; without it the button shows locked, "AI notes need
+  PRO"). It asks for the microphone, then "Recording for AI Notes", the recording pill (AI-06's: ✕, live wave, the
+  time, ✓) and "Stop when you are done — pauses and filler words are fine." It is a second dictation with its own
+  recorder (`Dictation.finishWith` hands the audio over instead of transcribing it).
+- **✓** uploads the recording (`ConsultationRepository.uploadRecording`: `audio` as `ai_notes_<recording id>.m4a`,
+  `appointmentId`, `language` = the app's backend code; 180 s timeout) with a spinner in the pill; then "Recording
+  uploaded. Notes will be ready in a few minutes." and the visit is marked **awaiting the scribe** (End, APPT-07,
+  sends `awaitingScribe` and waits, SCRIBE-02); the button reads "Start AI Notes again". 429: "You've reached your
+  daily AI usage limit…", 403: "AI notes need PRO", else "Couldn't upload the recording. It is kept: try again." with
+  **Upload the recording again** (Flutter lost the audio).
+- **Background:** on Android the recorder starts a foreground service of type microphone (`utils/RecordingService`,
+  notification "Recording the consultation") for as long as it records (dictation too), so the consultation keeps
+  recording with the screen off or another app open (Android 9+ gives a background app silence); checked on the
+  emulator. iOS records in the background with its `audio` mode (not run yet). No upload overlaps another (an
+  uploading flag; the retry button busy meanwhile). The screen wrapper owns the scribe's recorder; the content gets
+  its state and callbacks.
+- **From Shifa AI** now reads the notes and drafts again before it opens (the scribe's draft arrives while the visit
+  is open; flow 05/06 §6 target).
+- **Fix found on the way:** `retryScribe` first ran the upload inside a state update, whose lambda can run more than
+  once; it uploaded twice. Caught by the test.
+- **Not built:** the scribe in the video call (VIDEO-02), the leave-while-recording question and a duration cap (flow
+  §7–8 targets), "a recording is already processing" (the backend accepts a second one and ignores it).
+- **Tests:** `ConsultationRepositoryTest` (the upload's parts), `DictationTest` (`finishWith`), `VisitViewModelTest`
+  (upload, the limit kept for a retry, sent again once; From Shifa AI reads again), `DemoBackendTest` (an upload gives
+  the visit a draft). **Emulator (demo mode):** Start AI Notes → recording 0:05 → Process → "Recording uploaded…",
+  "Start AI Notes again" → From Shifa AI shows the scribe's draft with K04.0.

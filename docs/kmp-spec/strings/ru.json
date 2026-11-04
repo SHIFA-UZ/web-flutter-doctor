@@ -2577,5 +2577,8 @@
   "attachedDocuments": "Прикреплённые документы",
   "visitBriefingRowFailed": "Не удалось создать · Повторить",
   "transcriptionFailed": "Не удалось распознать речь. Попробуйте ещё раз.",
-  "transcriptionReportFailed": "Не удалось отправить отчёт. Попробуйте ещё раз."
+  "transcriptionReportFailed": "Не удалось отправить отчёт. Попробуйте ещё раз.",
+  "startAiNotesAgain": "Снова запустить заметки ИИ",
+  "scribeUploadFailed": "Не удалось загрузить запись. Она сохранена: попробуйте ещё раз.",
+  "retryScribeUpload": "Загрузить запись снова"
 }

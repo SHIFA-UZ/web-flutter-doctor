@@ -88,6 +88,7 @@ object ApiConfig {
         fun appointmentSignature(id: Long) = "appointments/$id/request-signature"
 
         const val AI_TRANSCRIBE = "ai/transcribe"
+        const val SCRIBE_UPLOAD = "consultations/upload-recording"
         const val AI_TRANSCRIPTION_FEEDBACK = "ai/transcription-feedback"
 
         fun appointmentBriefing(id: Long) = "appointments/$id/briefing"

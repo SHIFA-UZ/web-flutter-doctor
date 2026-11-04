@@ -2012,6 +2012,7 @@
     <string name="retry">Повторить</string>
     <string name="retryBriefing">Повторить брифинг</string>
     <string name="retryMetaLine">retryCount: %1$s · lastRetryAt: %2$s · retriedByAdminUserId: %3$s</string>
+    <string name="retryScribeUpload">Загрузить запись снова</string>
     <string name="retrySelected">Повторить выбранные</string>
     <string name="retrySelectedWebhookEventsBody">Вы собираетесь повторить %1$s webhook событие(й). Каждое выбранное событие будет переиграно из сохранённого payload.</string>
     <string name="retrySelectedWebhookEventsTitle">Повторить выбранные webhook события?</string>
@@ -2056,6 +2057,7 @@
     <string name="scheduleValidFromNew">Новый период с</string>
     <string name="scheduleValidUntil">Расписание действительно до:</string>
     <string name="scheduled">Запланировано</string>
+    <string name="scribeUploadFailed">Не удалось загрузить запись. Она сохранена: попробуйте ещё раз.</string>
     <string name="search">Поиск</string>
     <string name="searchByNameOrId">Поиск по имени или ID</string>
     <string name="searchDoctorsAndPatients">Поиск врачей и пациентов</string>
@@ -2213,6 +2215,7 @@
     <string name="staffVisitsTitle">Приём ведёт врач</string>
     <string name="start">Начать</string>
     <string name="startAiNotes">Начать AI заметки</string>
+    <string name="startAiNotesAgain">Снова запустить заметки ИИ</string>
     <string name="startAnyway">Всё равно начать</string>
     <string name="startAppointment">Начать прием</string>
     <string name="startDate">Дата начала</string>
