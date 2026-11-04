@@ -358,11 +358,16 @@ Your calls / open points from M4:
 | SCRIBE-01 | `5898e35` | Recording the consultation for the AI scribe; keeps recording in the background on Android (a microphone foreground service); a failed upload is kept to send again |
 | PDF-01 | `8854274` | The visit summary PDF made in the app (en, uz, ru) until the backend renders it (BE-01) |
 | APPT-07 + SCRIBE-02 | `aea1c0c` | End appointment: checklist, then notes → complete → wait for the AI notes (Continue without waiting) → summary filed under the patient; after completion only the summary is retried |
+| APPT-08 | `cca43a4` | Apply on an AI ICD suggestion carries the code into a new 025-2 |
+| DENTAL-01 | `816e0a3` | The FDI tooth map and the dental record codec (legacy keys, totals per currency) |
+| DENTAL-02 | `8727e58` | The dental visit record: services per tooth and general, discount, notes, totals per currency, 1200 ms autosave; End reads and saves it first, the summary lists it by tooth |
 
 Checked on the Android emulator in demo mode: start a visit from the calendar, type and dictate notes (the emulator's
 microphone records silence; the demo answers with a fixed sentence), ask for the signature (signed 15 s later), record
 for the scribe and see its draft under From Shifa AI, record with the app in the background, end the visit and open
-the filed summary. Nothing in M5 has run on iOS yet (everything compiles and links).
+the filed summary; as a dentist (the demo doctor's profession switched in the profile), add services to a tooth,
+discount and notes, leave and reopen (all read back), end the visit and see the dental section in the summary. Nothing
+in M5 has run on iOS yet (everything compiles and links).
 
 Notes from M5:
 - **One commit (`b5d0490`, APPT-02) has a lint-only issue** (an orphaned comment) fixed in the next commit; the branch
@@ -372,8 +377,8 @@ Notes from M5:
 - **Backend facts:** the doctor's appointment detail has no video flag (only the patient side has it); notes are one
   manual note per visit, updated, and blank text is ignored, so notes can't be emptied; a second scribe recording for a
   visit is accepted and ignored.
-- **Left for their tickets:** dental record (DENTAL-*), treatment plan and payment steps at End (DENTAL-03, TP-06),
-  before/after photos (APPT-05), carrying an AI ICD code into the 025-2 (APPT-08), video (VIDEO-*), follow-up booking.
+- **Left for their tickets:** dental plan mode and the plan editor (DENTAL-03/04), treatment plan and payment steps at
+  End (TP-01, TP-06), before/after photos (APPT-05), video (VIDEO-*), the PDF goldens (PDF-02), follow-up booking.
 
 ## Decisions
 
