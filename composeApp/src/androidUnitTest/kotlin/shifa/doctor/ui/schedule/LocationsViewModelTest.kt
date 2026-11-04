@@ -132,4 +132,21 @@ class LocationsViewModelTest {
         assertThat(classToTest.state.value.locations).hasSize(2)
         assertThat(classToTest.state.value.error).isNotNull()
     }
+
+    @Test
+    fun `the map pin goes into the form and is saved with the location, Back with a moved pin asks`() {
+        val classToTest = opened()
+        classToTest.open(classToTest.state.value.locations!![1])
+        classToTest.openMap()
+        assertThat(classToTest.state.value.map?.pin).isEqualTo(41.2995 to 69.2401) // no pin yet: Tashkent's centre
+        classToTest.movePin(41.31, 69.28)
+        assertThat(classToTest.back()).isFalse()
+        assertThat(classToTest.state.value.map?.asking).isTrue()
+        classToTest.back() // closes the question, the map stays
+        classToTest.confirmMap()
+        assertThat(classToTest.state.value.map).isNull()
+        classToTest.save()
+        settle { writes.isNotEmpty() }
+        assertThat(writes.single()).contains(""""latitude":41.31,"longitude":69.28""")
+    }
 }

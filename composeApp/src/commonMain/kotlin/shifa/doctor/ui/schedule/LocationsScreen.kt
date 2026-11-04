@@ -62,6 +62,7 @@ import shifa.doctor.generated.resources.locationSaved
 import shifa.doctor.generated.resources.locationsLoadFailed
 import shifa.doctor.generated.resources.manageLocations
 import shifa.doctor.generated.resources.noLocationsYet
+import shifa.doctor.generated.resources.pickOnMap
 import shifa.doctor.generated.resources.primary
 import shifa.doctor.generated.resources.primaryLocationHint
 import shifa.doctor.generated.resources.retry
@@ -71,10 +72,13 @@ import shifa.doctor.generated.resources.streetAddress
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.BackStep
+import shifa.doctor.ui.profile.MapPickerHost
+import shifa.doctor.ui.profile.PinEdit
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileForm
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.profile.backStep
+import shifa.doctor.ui.profile.coordinates
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -101,6 +105,9 @@ data class LocationDraft(
     val city: String = "",
     val isPrimary: Boolean = false,
     val wasPrimary: Boolean = false,
+    // The pin (LOC-2); none means none is sent, so the backend keeps what it has.
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
     /** Blanks go as "" so the backend clears them (a missing key keeps the old value). */
     fun request() =
@@ -110,6 +117,8 @@ data class LocationDraft(
             address = street.trim(),
             locationStreetAddress = street.trim(),
             locationCity = city.trim(),
+            latitude = latitude,
+            longitude = longitude,
             isPrimary = isPrimary,
         )
 
@@ -123,6 +132,8 @@ data class LocationDraft(
                 l.locationCity.orEmpty(),
                 l.isPrimary,
                 l.isPrimary,
+                l.latitude,
+                l.longitude,
             )
     }
 }
@@ -139,6 +150,8 @@ data class LocationsUiState(
     val saving: Boolean = false,
     val askDiscard: Boolean = false,
     val askDelete: Boolean = false,
+    // The map picker over the editor (LOC-2, the contact address's picker).
+    val map: PinEdit? = null,
 ) {
     val dirty: Boolean get() = draft != original
 }
@@ -269,9 +282,30 @@ class LocationsViewModel(
         }
     }
 
-    /** Back: in the editor, changes ask first; true when the screen itself may close. */
+    fun openMap() = _state.update { s -> s.draft?.let { s.copy(map = PinEdit.at(it.latitude, it.longitude)) } ?: s }
+
+    fun movePin(
+        latitude: Double,
+        longitude: Double,
+    ) = _state.update { it.copy(map = it.map?.moved(latitude, longitude)) }
+
+    /** The pin goes into the form; nothing is saved until Save. */
+    fun confirmMap() =
+        _state.update { s ->
+            val pin = s.map?.pin ?: return@update s
+            s.copy(map = null, draft = s.draft?.copy(latitude = pin.first, longitude = pin.second))
+        }
+
+    fun closeMap() = _state.update { it.copy(map = it.map?.closing()) }
+
+    fun discardPin() = _state.update { it.copy(map = null) }
+
+    fun keepPin() = _state.update { it.copy(map = it.map?.copy(asking = false)) }
+
+    /** Back: the map closes first; in the editor, changes ask first; true when the screen itself may close. */
     fun back(): Boolean {
         val s = _state.value
+        if (s.map != null) return false.also { closeMap() }
         if (s.draft == null) return true
         when (backStep(s.saving, s.askDiscard, s.dirty)) {
             BackStep.Close ->
@@ -299,6 +333,7 @@ class LocationsActions(
     val edit: ((LocationDraft) -> LocationDraft) -> Unit = {},
     val save: () -> Unit = {},
     val delete: () -> Unit = {},
+    val map: () -> Unit = {},
 )
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -310,18 +345,32 @@ fun LocationsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.load() }
     BackHandler { if (viewModel.back()) onClose() }
-    LocationsContent(
-        state,
-        LocationsActions(
-            back = { if (viewModel.back()) onClose() },
-            retry = viewModel::load,
-            open = viewModel::open,
-            ui = viewModel::ui,
-            edit = viewModel::edit,
-            save = viewModel::save,
-            delete = viewModel::delete,
-        ),
-    )
+    // The editor and the map never share the screen (a hidden field would keep the keyboard and take typing).
+    val map = state.map
+    if (map != null) {
+        MapPickerHost(
+            map,
+            viewModel::movePin,
+            viewModel::confirmMap,
+            viewModel::closeMap,
+            viewModel::discardPin,
+            viewModel::keepPin,
+        )
+    } else {
+        LocationsContent(
+            state,
+            LocationsActions(
+                back = { if (viewModel.back()) onClose() },
+                retry = viewModel::load,
+                open = viewModel::open,
+                ui = viewModel::ui,
+                edit = viewModel::edit,
+                save = viewModel::save,
+                delete = viewModel::delete,
+                map = viewModel::openMap,
+            ),
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -442,6 +491,11 @@ private fun LocationEditor(
                 it.copy(city = v)
             }
         }, tr(Res.string.city), Modifier.fillMaxWidth(), enabled = enabled)
+        // LOC-2: the pin on the map; the address fields stay typed until geocoding exists (BE-15).
+        coordinates(d.latitude, d.longitude)?.let {
+            Text(it, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+        }
+        ShifaSecondaryButton(tr(Res.string.pickOnMap), actions.map, Modifier.fillMaxWidth(), enabled = enabled)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 tr(Res.string.setAsPrimary),

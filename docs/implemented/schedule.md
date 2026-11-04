@@ -103,3 +103,23 @@ expandable cards. Reached from Profile → Schedule (`ShellRoute.Schedule`, the 
   nothing; day ranges checked, copy and Mon–Fri; save with the period after the last one and the notice; a failed
   period keeps the hours saved; switching location asks and a crossing period is refused; extra hours written at once
   and deleted), `ScheduleScreenshotTest` (+1: `Schedule_week`).
+
+## LOC-2 · Location map pin
+
+Built 2026-11-04. Flow `04/13` §3 (the address block) with `08/04-map-pin-picker.md`; spec 03 §3.
+
+- **What it does:** the location editor gained **Pick on map**: the same picker as the contact address (PROF-07): the
+  native map (osmdroid with OSM tiles on Android, MapKit on iOS) on the saved pin or Tashkent's centre, a tap moves the
+  pin, the coordinates card and Confirm. Confirm puts the pin into the form (shown as "41.311100, 69.279700"), Save
+  sends `latitude` / `longitude` with the location. Back closes the map first; after the pin moved it asks "Discard
+  changes?". No pin chosen means none is sent, so the backend keeps what it has.
+- **Shared:** the picker moved out of `ContactScreen` into `ui/profile/MapPicker.kt` (`PinEdit`: pin, start, the
+  discard question; `MapPickerHost`; `coordinates`); the contact screen uses it unchanged (its tests and screenshots
+  pass as before).
+- **Not built (backend first, BE-15, D-06):** address search, reverse geocoding (country, region, district, city,
+  postal code and street from the pin). The street and city stay typed.
+- **Verified on the emulator against dev (2026-11-04):** Pick on map opened on Tashkent's centre for Shifa Dev Clinic;
+  Back closed the map, then the unchanged editor (nothing saved).
+- **Tests:** `LocationsViewModelTest` (+1: the pin goes into the form and the request, Back with a moved pin asks),
+  `ProfileFormsViewModelTest` (the contact picker unchanged), `ScheduleScreenshotTest` (`Schedule_locationEditor`
+  re-recorded with Pick on map).
