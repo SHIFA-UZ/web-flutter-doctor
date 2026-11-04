@@ -292,6 +292,40 @@ Shared fixes made on the way:
 - The calendar refresh reads four days at a time.
 - Profile actions are passed by name: a positional list had sent Reports to the new Locations row.
 
+## M4 · Patients, documents, forms (in progress)
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| PAT-01 | `8a37f93` | Patient models: display id, age on the practice date, status, phones, location; lenient reads |
+| PAT-02 | `08b7b65` | Patients repository: one directory flow (60 s TTL), one patient, create, update, account, test SMS, prophylaxis |
+| PAT-03 | `54c1638` | Patients tab: search (name, id, phone digits), All / Favorites / Follow-ups, status filter, pages |
+| PAT-04 | `4c735eb` | Create patient sheet (directory and booking): E.164 phones, birth date, language as codes |
+| PAT-05 | `f4d45d4` | Patient detail: header, stats, pinned record tabs, clinical summary, patient-app login shown once, SMS reminders |
+| PAT-06 | `237f751` | Medical info: per-field saves with rollback, localised chronic diseases, Edit details (the create sheet, PATCH of changes) |
+| PAT-07 | `4bd57cd` | Appointments and Activity tabs on the practice clock; New appointment → free-slot sheet → CAL-7 booking |
+| DOCS-01 | `62b002a` | Document models (27 categories) and repository: list, download typed by bytes, request access |
+| DOCS-02 | `2156b69` | Photos to one PDF, in shared code: 48 KB for two camera photos (Android's PdfDocument made MBs a page) |
+| DOCS-05 | `806123e` | Viewer: zoomable image or PDF, "can't preview" with Save, 403 / 404 / Retry; frees the file on leaving |
+| DOCS-04 | `3736db6` | Documents tab: search, cards (lock, chip, shared mark, byline), open, request access |
+| DOCS-03 | `1f44453` | Upload: PDF, photo, gallery, multi-page scan → title and required type → upload with progress, Cancel, Retry |
+| FORM-01 | `843e004` | 025-2 form models and the dental-chart codec (ported, with tests Flutter never had) |
+| FORM-02 | `51610cb` | Forms repository: cached list, save, signature request, PDF link, file replacement, ICD-10 search |
+
+Checked against dev on the emulator, dev left as it was: the patients list, a patient's record (last visit, tabs,
+Medical info, Edit details opened), the favourite star set and cleared, booking from the record up to the booking
+screen (nothing booked), the Documents tab and dev's real PDF in the viewer. Clearing a field and the phone rules were
+checked with direct requests and put back. Writes that can't be undone on dev (create patient, upload, request
+access) were checked in demo mode only.
+
+Your calls / open points from M4:
+- **Patient language is stored as codes** (uz, ru, en…; Flutter stored words). The detail reads both. Confirm.
+- **Prophylaxis card** moved from PAT-06 to CLINIC-06: only the clinic workspace opens a patient with a clinic id.
+- **Tablet two-pane** for patients: the same open call as CAL-5.
+- **025-2 PDF (FORM-03, next):** BE-01 (backend rendering) is still the better answer; until then I'm building the
+  PDF in the app (platform text drawing for Cyrillic, one shared layout).
+- **Dev facts:** a locked document's download answers 404, not 403; the backend sets `phone` from `phones`; an empty
+  string clears a patient field.
+
 ## Decisions
 
 - **D-00:** one branch, `doc-app2.0`.
