@@ -1368,6 +1368,7 @@
     <string name="moreActions">More actions</string>
     <string name="moreDetailsOnAbove">More details on above</string>
     <string name="moreDocumentationOptions">More documentation options</string>
+    <string name="moreOptions">More options</string>
     <string name="morningTime">Morning Time</string>
     <string name="muteMic">Mute microphone</string>
     <string name="mySchedule">My schedule</string>
@@ -1380,6 +1381,7 @@
     <string name="navSettings">Settings</string>
     <string name="navTreatments">Treatments</string>
     <string name="needsConnection">This action needs an internet connection.</string>
+    <string name="needsProPlan">Needs the Pro plan</string>
     <string name="networkError">Network error. Please check your connection.</string>
     <string name="neverLoggedIn">Never logged in</string>
     <string name="newAppointment">New appointment</string>
@@ -1666,6 +1668,8 @@
     <string name="pinsDontMatch">PINs don't match. Start again.</string>
     <string name="place">Place</string>
     <string name="planCurrencyUnknown">Plan currency unknown</string>
+    <string name="planPremium">Premium</string>
+    <string name="planPro">Pro</string>
     <string name="plansLoadFailed">Could not load treatment plans</string>
     <string name="pleaseChoosePlace">Please choose a place</string>
     <string name="pleaseConfirmNewPasswordError">Please confirm new password</string>
@@ -1973,6 +1977,7 @@
     <string name="systemConfiguration">System Configuration</string>
     <string name="takeExtraCareForChronicDiseasePatient">Please be careful and double-check all procedures, medications, and treatments you are planning for this patient.</string>
     <string name="takePhoto">Take Photo</string>
+    <string name="talkWithAi">Talk with AI</string>
     <string name="tapSlotOrManageHint">First pick an entry in the schedule list above — then book, reschedule, or cancel here.</string>
     <string name="tapToSearch">Tap to search and select patient</string>
     <string name="taskCancelled">Task cancelled successfully</string>

@@ -1368,6 +1368,7 @@
     <string name="moreActions">Boshqa amallar</string>
     <string name="moreDetailsOnAbove">Aynan shu kasalliklarning rivojlanishi</string>
     <string name="moreDocumentationOptions">Hujjatlashtirishning boshqa usullari</string>
+    <string name="moreOptions">Boshqa bo'limlar</string>
     <string name="morningTime">Ertalabki vaqt</string>
     <string name="muteMic">Mikrofonni o'chirish</string>
     <string name="mySchedule">Mening taqvimim</string>
@@ -1380,6 +1381,7 @@
     <string name="navSettings">Sozlamalar</string>
     <string name="navTreatments">Davolash</string>
     <string name="needsConnection">Bu amal uchun internet aloqasi kerak.</string>
+    <string name="needsProPlan">Pro tarifi kerak</string>
     <string name="networkError">Tarmoq xatosi. Iltimos, ulanishni tekshiring.</string>
     <string name="neverLoggedIn">Hech qachon kirmagan</string>
     <string name="newAppointment">Yangi uchrashuv</string>
@@ -1666,6 +1668,8 @@
     <string name="pinsDontMatch">PIN-kodlar mos kelmadi. Qaytadan boshlang.</string>
     <string name="place">Joy</string>
     <string name="planCurrencyUnknown">Reja valyutasi noma'lum</string>
+    <string name="planPremium">Premium</string>
+    <string name="planPro">Pro</string>
     <string name="plansLoadFailed">Davolash rejalarini yuklab bo'lmadi</string>
     <string name="pleaseChoosePlace">Iltimos, joy tanlang</string>
     <string name="pleaseConfirmNewPasswordError">Iltimos, yangi parolni tasdiqlang</string>
@@ -1973,6 +1977,7 @@
     <string name="systemConfiguration">Tizim sozlamalari</string>
     <string name="takeExtraCareForChronicDiseasePatient">Iltimos, ehtiyot bo'ling va bu bemor uchun siz rejalashtirayotgan protseduralar, dorilar va davolanishni ikki martta tekshiring.</string>
     <string name="takePhoto">Rasm olish</string>
+    <string name="talkWithAi">AI bilan suhbat</string>
     <string name="tapSlotOrManageHint">Avval yuqoridagi jadvaldan band yoki bo'sh slotni tanlang — keyin shu yerda amalni yakunlang.</string>
     <string name="tapToSearch">Qidirish va tanlash uchun bosing</string>
     <string name="taskCancelled">Vazifa muvaffaqiyatli bekor qilindi</string>

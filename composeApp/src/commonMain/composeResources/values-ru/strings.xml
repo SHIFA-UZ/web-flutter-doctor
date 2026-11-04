@@ -1368,6 +1368,7 @@
     <string name="moreActions">Другие действия</string>
     <string name="moreDetailsOnAbove">Подробнее о вышеизложенном</string>
     <string name="moreDocumentationOptions">Другие варианты документирования</string>
+    <string name="moreOptions">Другие разделы</string>
     <string name="morningTime">Утреннее время</string>
     <string name="muteMic">Выключить микрофон</string>
     <string name="mySchedule">Моё расписание</string>
@@ -1380,6 +1381,7 @@
     <string name="navSettings">Настройки</string>
     <string name="navTreatments">Лечение</string>
     <string name="needsConnection">Для этого действия нужно подключение к интернету.</string>
+    <string name="needsProPlan">Нужен тариф Pro</string>
     <string name="networkError">Ошибка сети. Пожалуйста, проверьте ваше соединение.</string>
     <string name="neverLoggedIn">Входов не было</string>
     <string name="newAppointment">Новая запись</string>
@@ -1666,6 +1668,8 @@
     <string name="pinsDontMatch">PIN-коды не совпадают. Начните заново.</string>
     <string name="place">Место</string>
     <string name="planCurrencyUnknown">Валюта плана неизвестна</string>
+    <string name="planPremium">Premium</string>
+    <string name="planPro">Pro</string>
     <string name="plansLoadFailed">Не удалось загрузить планы лечения</string>
     <string name="pleaseChoosePlace">Пожалуйста, выберите место</string>
     <string name="pleaseConfirmNewPasswordError">Пожалуйста, подтвердите новый пароль</string>
@@ -1973,6 +1977,7 @@
     <string name="systemConfiguration">Настройки системы</string>
     <string name="takeExtraCareForChronicDiseasePatient">Пожалуйста, будьте осторожны и дважды проверьте все процедуры, лекарства и методы лечения, которые вы планируете для этого пациента.</string>
     <string name="takePhoto">Сделать фото</string>
+    <string name="talkWithAi">Разговор с ИИ</string>
     <string name="tapSlotOrManageHint">Сначала выберите строку в списке расписания выше — здесь завершите запись или изменение.</string>
     <string name="tapToSearch">Нажмите для поиска и выбора пациента</string>
     <string name="taskCancelled">Задача успешно отменена</string>

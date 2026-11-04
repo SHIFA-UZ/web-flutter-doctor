@@ -156,6 +156,7 @@ class DemoBackend(
                     replace = true,
                 )
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
+            get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
             get -> null
             else -> refused()
         }
@@ -285,6 +286,13 @@ class DemoBackend(
         const val DEMO_DOCTOR_KEY = "DEMO-DOCTOR"
         const val DEMO_RECEPTION_KEY = "DEMO-RECEPTION"
         const val DEMO_PATIENT_EMAIL = "demo.patient@shifa.dev"
+
+        // The shape of dev's GET /me/clinics (2026-11-04), one demo clinic.
+        private const val DEMO_CLINICS =
+            """[{"clinicId":1,"name":"Shifa Demo Clinic","timeZone":"Asia/Tashkent","currency":"UZS",
+            "phone":"+998900000001","email":"clinic@shifa.dev","address":"Chilonzor 9, Tashkent",
+            "membershipRole":"DOCTOR","isPracticeClinic":false,"defaultDoctorRevenueSharePercent":null,
+            "canManageFinanceSettings":false}]"""
 
         // A slice of the dev catalogue (2026-11-04: 138 entries of {id, english, uzbek, name, category, displayOrder}).
         private const val DEMO_PROFESSIONS =

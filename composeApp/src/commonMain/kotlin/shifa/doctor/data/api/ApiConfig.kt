@@ -25,6 +25,7 @@ object ApiConfig {
         const val DOCTOR_BILLING = "doctors/me/billing"
         const val DOCTOR_SETTINGS = "doctors/me/settings"
         const val ME_PROFILE = "me/profile"
+        const val ME_CLINICS = "me/clinics"
         const val PUBLIC_PROFESSIONS = "public/professions"
         const val PUBLIC_CLINICS = "public/clinics"
         const val RESET_PASSWORD = "auth/reset-password"
