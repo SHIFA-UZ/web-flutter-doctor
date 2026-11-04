@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.close
+import shifa.doctor.generated.resources.couldNotLoadRetry
 import shifa.doctor.generated.resources.ic_chev_d_20
 import shifa.doctor.generated.resources.ic_x_16
 import shifa.doctor.generated.resources.noResults
@@ -44,8 +47,9 @@ import shifa.doctor.utils.tr
 
 /**
  * The board's "pick" field (DaAuth `isPick`): looks like an input, opens a [ShifaPickerSheet] when tapped. [value]
- * empty shows [placeholder].
+ * empty shows [placeholder]; [chips] (a multi-select's picks) show as tags inside the field instead.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ShifaPickField(
     label: String,
@@ -56,6 +60,7 @@ fun ShifaPickField(
     supportingText: String? = null,
     isError: Boolean = false,
     enabled: Boolean = true,
+    chips: List<String> = emptyList(),
 ) = Column(modifier, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs)) {
     val border =
         when {
@@ -76,14 +81,24 @@ fun ShifaPickField(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            if (value.isNotEmpty()) Text(label, style = ShifaTextStyles.caption(), color = ShifaColors.Text.Tertiary)
-            Text(
-                value.ifEmpty { placeholder },
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (value.isNotEmpty()) ShifaColors.Text.Primary else ShifaColors.Text.Tertiary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (value.isNotEmpty() || chips.isNotEmpty()) {
+                Text(label, style = ShifaTextStyles.caption(), color = ShifaColors.Text.Tertiary)
+            }
+            if (chips.isNotEmpty()) {
+                FlowRow(
+                    Modifier.padding(vertical = ShifaSize.S4),
+                    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+                ) { chips.forEach { ShifaTag(it, type = ShifaTagType.Primary) } }
+            } else {
+                Text(
+                    value.ifEmpty { placeholder },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (value.isNotEmpty()) ShifaColors.Text.Primary else ShifaColors.Text.Tertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         Icon(painterResource(Res.drawable.ic_chev_d_20), null, tint = ShifaColors.Icon.Secondary)
     }
@@ -99,8 +114,9 @@ fun ShifaPickField(
 
 /**
  * The board's picker sheet (DaAuth picker: timezone, clinic, profession): title and close, a search field, the
- * options (lazy: a timezone search lists hundreds), "No results", and an optional [footer] (Clear, Done). Host it in a
- * `ModalBottomSheet`; it only draws.
+ * options (lazy: a timezone search lists hundreds), "No results", and an optional [footer] (Clear, Done). While the
+ * list is empty, [loadingText] ("Searching…") or, with [onRetry], "Couldn't load. Retry" replace "No results"; with
+ * options (a bundled fallback) the retry link sits above them. Host it in a `ModalBottomSheet`; it only draws.
  */
 @Composable
 fun ShifaPickerSheet(
@@ -112,6 +128,8 @@ fun ShifaPickerSheet(
     onPick: (Int) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    loadingText: String? = null,
+    onRetry: (() -> Unit)? = null,
     footer: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(topStart = ShifaSize.S24, topEnd = ShifaSize.S24)
@@ -139,10 +157,17 @@ fun ShifaPickerSheet(
             )
         }
         ShifaSearchField(query, onQuery, searchPlaceholder)
+        if (onRetry != null && items.isNotEmpty()) ShifaLink(tr(Res.string.couldNotLoadRetry), onRetry)
         Box(Modifier.fillMaxWidth().heightIn(min = ShifaSize.S120, max = ShifaSize.S320)) {
-            if (items.isEmpty()) {
+            if (items.isEmpty() && onRetry != null) {
+                ShifaLink(
+                    tr(Res.string.couldNotLoadRetry),
+                    onRetry,
+                    Modifier.align(Alignment.Center).padding(vertical = ShifaSpacing.Inset.Lg),
+                )
+            } else if (items.isEmpty()) {
                 Text(
-                    tr(Res.string.noResults),
+                    loadingText ?: tr(Res.string.noResults),
                     Modifier.fillMaxWidth().padding(vertical = ShifaSpacing.Inset.Lg),
                     style = ShifaTextStyles.bodyText(),
                     color = ShifaColors.Text.Secondary,

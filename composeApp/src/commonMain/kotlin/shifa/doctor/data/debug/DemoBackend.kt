@@ -134,6 +134,9 @@ class DemoBackend(
             request.method == HttpMethod.Post && path == Endpoints.VERIFY_KEY -> ok(verifyKey(body))
             request.method == HttpMethod.Post && path == Endpoints.CHECK_EXISTING_DOCTOR -> existingDoctor(body)
             request.method == HttpMethod.Post && path == Endpoints.CHECK_EXISTING_PATIENT -> ok(existingPatient(body))
+            get && path == Endpoints.PUBLIC_PROFESSIONS -> ok(apiJson.parseToJsonElement(DEMO_PROFESSIONS))
+            get && path == Endpoints.PUBLIC_CLINICS -> ok(clinics(request.url.parameters["search"]))
+            request.method == HttpMethod.Patch && path == Endpoints.DOCTOR_PROFILE -> updateProfile(body)
             get -> null
             else -> refused()
         }
@@ -200,6 +203,25 @@ class DemoBackend(
         return apiJson.parseToJsonElement(answer).jsonObject
     }
 
+    private fun clinics(search: String?): JsonElement {
+        val all = listOf(1 to "Shifa Demo Clinic", 2 to "Tashkent Demo Dental", 3 to "Samarkand Demo Centre")
+        val hits = all.filter { search == null || it.second.contains(search, ignoreCase = true) }
+        return apiJson.parseToJsonElement(
+            hits.joinToString(",", "[", "]") { """{"id":${it.first},"name":"${it.second}"}""" },
+        )
+    }
+
+    // The profile keys the app sends are merged into the demo doctor's profile, so later reads show them.
+    private suspend fun updateProfile(body: String): Reply {
+        val patch =
+            runCatching { apiJson.parseToJsonElement(body).jsonObject }.getOrNull()
+                ?: return fail(HttpStatusCode.BadRequest, "VALIDATION")
+        val current = doctorMe()
+        val profile = JsonObject((current["profile"]?.jsonObject ?: JsonObject(emptyMap())) + patch)
+        me = JsonObject(current + ("profile" to profile))
+        return ok(profile)
+    }
+
     private fun jsonField(
         body: String,
         name: String,
@@ -229,6 +251,15 @@ class DemoBackend(
         const val DEMO_DOCTOR_KEY = "DEMO-DOCTOR"
         const val DEMO_RECEPTION_KEY = "DEMO-RECEPTION"
         const val DEMO_PATIENT_EMAIL = "demo.patient@shifa.dev"
+
+        // A slice of the dev catalogue (2026-11-04: 138 entries of {id, english, uzbek, name, category, displayOrder}).
+        private const val DEMO_PROFESSIONS =
+            """[{"english":"Dentist","uzbek":"Stomatolog","category":"Dental"},
+            {"english":"Orthodontist","uzbek":"Ortodont","category":"Dental"},
+            {"english":"Cardiologist","uzbek":"Kardiolog","category":"Medical"},
+            {"english":"Neurologist","uzbek":"Nevrolog","category":"Medical"},
+            {"english":"Pediatrician","uzbek":"Pediatr","category":"Children & Development"},
+            {"english":"Urologist","uzbek":"Urolog","category":"Surgical"}]"""
         val shared by lazy { DemoBackend() }
     }
 }

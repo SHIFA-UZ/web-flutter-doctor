@@ -22,11 +22,14 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.api.jwt
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.catalog.CatalogRepository
 import shifa.doctor.data.config.BootGate
 import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.CheckExistingPatientRequest
+import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.model.RegisterRequest
+import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.settings.LanguageRepository
 import java.io.File
 
@@ -82,7 +85,7 @@ class DemoBackendTest {
                 contentType(ContentType.Application.Json)
                 setBody("{}")
             }
-            client.get("public/professions")
+            client.get("public/doctors")
             val write =
                 apiCall<Unit> {
                     client.put("doctors/me/profile") {
@@ -90,7 +93,7 @@ class DemoBackendTest {
                         setBody("{}")
                     }
                 }
-            assertThat(forwarded).containsExactly("POST /api/auth/login", "GET /api/public/professions").inOrder()
+            assertThat(forwarded).containsExactly("POST /api/auth/login", "GET /api/public/doctors").inOrder()
             assertThat((write.exceptionOrNull() as ApiException).code).isEqualTo("DEMO_WRITE_REFUSED")
         }
 
@@ -130,6 +133,20 @@ class DemoBackendTest {
             assertThat(auth.existingPatient(patient.copy(email = "new@shifa.dev")).getOrThrow()).isNull()
             val register = auth.register(RegisterRequest("A", "B", "new@shifa.dev", "Secret1!", "DEMO-DOCTOR"))
             assertThat((register.exceptionOrNull() as ApiException).code).isEqualTo("DEMO_WRITE_REFUSED")
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `professions, clinics and the profile PATCH answer locally`() =
+        runTest {
+            val catalog = CatalogRepository({ client })
+            assertThat(catalog.professions().getOrThrow().map { it.english }).contains("Dentist")
+            assertThat(catalog.clinics("dental").getOrThrow().map { it.name }).containsExactly("Tashkent Demo Dental")
+            assertThat(
+                ProfileRepository { client }.update(ProfileUpdateRequest(address = "Chilonzor 5")).isSuccess,
+            ).isTrue()
+            val me = apiCall<JsonObject> { client.get(ApiConfig.Endpoints.DOCTOR_ME) }.getOrThrow()
+            assertThat(me["profile"]!!.jsonObject["address"]!!.jsonPrimitive.content).isEqualTo("Chilonzor 5")
             assertThat(forwarded).isEmpty()
         }
 }

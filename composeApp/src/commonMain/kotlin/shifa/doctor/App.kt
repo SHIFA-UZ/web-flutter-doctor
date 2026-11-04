@@ -2,6 +2,7 @@ package shifa.doctor
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +39,8 @@ import shifa.doctor.ui.emailcode.EmailCodeMode
 import shifa.doctor.ui.emailcode.EmailEntryScreen
 import shifa.doctor.ui.emailcode.ResetPasswordScreen
 import shifa.doctor.ui.login.LoginScreen
+import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.ui.navigation.ShellNoticeBanner
 import shifa.doctor.ui.register.RegisterScreen
 import shifa.doctor.ui.register.VerifyKeyScreen
 import shifa.doctor.ui.splash.SplashScreen
@@ -120,7 +123,10 @@ private fun AppScreens() {
         if (screen == from) screen = to
     }
     // One navigation for every way a session ends (sign-out, 401, expiry, disabled account: 17 §1, AUTH-09).
-    LaunchedEffect(session) { if (session == null && screen == Screen.Shell) screen = Screen.SignIn }
+    // Keyed on the screen too: a screen that finishes late (registration) must not open the shell after the session
+    // ended. A note left for the shell belongs to the session that left it.
+    LaunchedEffect(session, screen) { if (session == null && screen == Screen.Shell) screen = Screen.SignIn }
+    LaunchedEffect(session) { if (session == null) ShellNotice.pending.value = null }
     Crossfade(screen) {
         when (it) {
             Screen.Splash ->
@@ -204,7 +210,11 @@ private fun AppScreens() {
                 DebugMenuScreen(onBack = { screen = Screen.SignIn })
             }
             // SHELL-01 replaces this. Debug builds reach the debug menu meanwhile.
-            Screen.Shell -> if (isDebugBuild) DebugMenuScreen() else Placeholder()
+            Screen.Shell ->
+                Column(Modifier.fillMaxSize()) {
+                    ShellNoticeBanner()
+                    Box(Modifier.weight(1f)) { if (isDebugBuild) DebugMenuScreen() else Placeholder() }
+                }
         }
     }
 }

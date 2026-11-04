@@ -15,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.LocalDate
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -22,6 +23,11 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.api.jwt
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.catalog.CatalogRepository
+import shifa.doctor.data.catalog.Clinic
+import shifa.doctor.data.catalog.Profession
+import shifa.doctor.data.profile.Gender
+import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.TokenStorage
@@ -34,8 +40,10 @@ import shifa.doctor.generated.resources.invalidPhone
 import shifa.doctor.generated.resources.networkError
 import shifa.doctor.generated.resources.passwordRequired
 import shifa.doctor.generated.resources.passwordsDoNotMatch
+import shifa.doctor.generated.resources.profileExtrasNotSaved
 import shifa.doctor.generated.resources.registrationConflict
 import shifa.doctor.generated.resources.timezoneDetectionFailed
+import shifa.doctor.ui.navigation.ShellNotice
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterViewModelTest {
@@ -49,30 +57,37 @@ class RegisterViewModelTest {
             "check-existing-doctor" to (HttpStatusCode.NotFound to """{"error":404,"status":404,"code":"NOT_FOUND","requestId":"r1"}"""),
             "check-existing-patient" to (HttpStatusCode.OK to """{"email":null,"found":false,"fullName":null,"photoUrl":null}"""),
             "register" to (HttpStatusCode.OK to """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""),
+            "profile" to (HttpStatusCode.OK to """{}"""),
+            "professions" to (HttpStatusCode.OK to """[{"id":59,"english":"Dentist","uzbek":"Stomatolog","name":"Dentist","category":"Dental","displayOrder":1},{"english":"Orthodontist","uzbek":"Ortodont"},{"english":"Cardiologist","uzbek":"Kardiolog"}]"""),
+            "clinics" to (HttpStatusCode.OK to """[{"id":2,"name":"Shifa Dev Clinic"},{"id":1,"name":"Tashkent Med Center"}]"""),
         )
     private var offline = false
-    private val auth =
-        AuthRepository {
-            createHttpClient(
-                { null },
-                MockEngine { req ->
-                    if (offline) throw java.io.IOException("offline")
-                    val name = req.url.encodedPath.substringAfterLast('/')
-                    calls += name to req.body.toByteArray().decodeToString()
-                    val (status, body) = replies.getValue(name)
-                    respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
-                },
-            )
-        }
+    private val client =
+        createHttpClient(
+            { null },
+            MockEngine { req ->
+                if (offline) throw java.io.IOException("offline")
+                val name = req.url.encodedPath.substringAfterLast('/')
+                val search = req.url.parameters["search"]?.let { "?search=$it" }.orEmpty()
+                calls += name + search to req.body.toByteArray().decodeToString()
+                val (status, body) = replies.getValue(name)
+                respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+            },
+        )
+    private val auth = AuthRepository { client }
 
-    @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    private val main = UnconfinedTestDispatcher()
+
+    @Before fun setUp() = Dispatchers.setMain(main)
 
     @After fun tearDown() = Dispatchers.resetMain()
 
     private fun vm(
         invite: Invite = Invite("KEY-1", false),
         zone: String? = "Asia/Tashkent",
-    ) = RegisterViewModel(invite, auth, sessions) { zone }
+    ) = RegisterViewModel(invite, auth, sessions, {
+        zone
+    }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository { client })
 
     private fun RegisterViewModel.settle() {
         repeat(200) {
@@ -132,7 +147,7 @@ class RegisterViewModelTest {
         calls.clear()
         var doctorCalls = 0
         replies["check-existing-doctor"] = HttpStatusCode.NotFound to """{"error":404,"status":404,"code":"NOT_FOUND"}"""
-        val phoneVm = RegisterViewModel(Invite("KEY-1", false), phoneAuth { doctorCalls++ == 1 }, sessions) { "UTC" }
+        val phoneVm = RegisterViewModel(Invite("KEY-1", false), phoneAuth { doctorCalls++ == 1 }, sessions, { "UTC" })
         phoneVm.fill()
         phoneVm.next()
         phoneVm.settle()
@@ -240,5 +255,144 @@ class RegisterViewModelTest {
         offlineVm.settle()
         assertThat(offlineVm.state.value.step).isEqualTo(RegisterStep.Form)
         assertThat(offlineVm.state.value.banner?.text).isEqualTo(Res.string.networkError)
+    }
+
+    private fun RegisterViewModel.toStep2() {
+        fill()
+        next()
+        settle()
+    }
+
+    private fun RegisterViewModel.waitPicker() {
+        repeat(200) {
+            if (!state.value.pickerLoading) return
+            Thread.sleep(10)
+        }
+    }
+
+    @Test
+    fun `step 2 details are PATCHed once after register, without the timezone again`() {
+        val vm = vm()
+        vm.toStep2()
+        vm.pickDob(LocalDate(1990, 3, 12))
+        vm.pickGender(Gender.Female)
+        vm.onAddress("  Chilonzor 5 ")
+        vm.pickClinic(Clinic(2, "Shifa Dev Clinic"))
+        vm.toggleProfession(Profession("Dentist", "Stomatolog"))
+        vm.toggleProfession(Profession("Orthodontist", "Ortodont"))
+        vm.register()
+        vm.settle()
+        assertThat(calls.takeLast(2).map { it.first }).containsExactly("register", "profile").inOrder()
+        assertThat(calls.last().second).isEqualTo(
+            """{"dob":"1990-03-12","gender":"Female","address":"Chilonzor 5","clinicId":2,"profession":"Dentist, Orthodontist"}""",
+        )
+        assertThat(vm.state.value.signedIn).isNotNull()
+    }
+
+    @Test
+    fun `nothing filled in means no PATCH, a failed PATCH still signs in and leaves a note for the shell`() {
+        ShellNotice.pending.value = null
+        val empty = vm()
+        empty.toStep2()
+        empty.register()
+        empty.settle()
+        assertThat(calls.map { it.first }).doesNotContain("profile")
+        replies["profile"] = HttpStatusCode.InternalServerError to """{"status":500,"code":"INTERNAL"}"""
+        val vm = vm()
+        vm.toStep2()
+        vm.onAddress("Chilonzor 5")
+        vm.register()
+        vm.settle()
+        assertThat(vm.state.value.signedIn).isNotNull()
+        assertThat(ShellNotice.pending.value).isEqualTo(Res.string.profileExtrasNotSaved)
+        ShellNotice.pending.value = null
+    }
+
+    @Test
+    fun `clinics list on open, filter locally under two characters, search the backend from two, retry after a failure`() {
+        val vm = vm()
+        vm.toStep2()
+        vm.openPicker(RegisterPicker.Clinic)
+        vm.waitPicker()
+        assertThat(vm.state.value.clinics.map { it.name }).containsExactly("Shifa Dev Clinic", "Tashkent Med Center")
+        vm.onQuery("t")
+        vm.waitPicker()
+        assertThat(vm.state.value.clinics.map { it.name }).containsExactly("Tashkent Med Center")
+        vm.onQuery("sh")
+        main.scheduler.advanceTimeBy(400) // the 300 ms debounce, on the test clock
+        vm.waitPicker()
+        assertThat(calls.last().first).isEqualTo("clinics?search=sh")
+        replies["clinics"] = HttpStatusCode.InternalServerError to """{"status":500,"code":"INTERNAL"}"""
+        vm.retryPicker()
+        main.scheduler.advanceTimeBy(400)
+        vm.waitPicker()
+        assertThat(vm.state.value.pickerFailed).isTrue()
+        vm.pickClinic(null)
+        assertThat(vm.state.value.picker).isNull()
+    }
+
+    @Test
+    fun `professions load once, match either language, and toggle`() {
+        val vm = vm()
+        vm.toStep2()
+        vm.openPicker(RegisterPicker.Profession)
+        vm.waitPicker()
+        vm.onQuery("kardio")
+        assertThat(vm.state.value.professionOptions.map { it.english }).containsExactly("Cardiologist")
+        vm.toggleProfession(vm.state.value.professionOptions.single())
+        vm.toggleProfession(Profession("Dentist", null))
+        vm.toggleProfession(Profession("Dentist", null))
+        assertThat(vm.state.value.professions.map { it.english }).containsExactly("Cardiologist")
+        vm.closePicker()
+        vm.openPicker(RegisterPicker.Profession)
+        assertThat(calls.count { it.first == "professions" }).isEqualTo(1)
+    }
+
+    @Test
+    fun `an unreachable catalogue falls back to the bundled one, and Cyrillic finds the Uzbek label`() {
+        replies["professions"] = HttpStatusCode.ServiceUnavailable to """{"status":503,"code":"UNAVAILABLE"}"""
+        val vm = vm()
+        vm.toStep2()
+        vm.openPicker(RegisterPicker.Profession)
+        vm.waitPicker()
+        assertThat(vm.state.value.pickerFailed).isTrue() // the bundled list shows, with Retry above it
+        vm.onQuery("Стоматолог")
+        assertThat(vm.state.value.professionOptions.map { it.english }).containsExactly("Dentist")
+        replies["professions"] = HttpStatusCode.OK to """[{"english":"Cardiologist","uzbek":"Kardiolog"}]"""
+        vm.retryPicker()
+        vm.waitPicker()
+        assertThat(vm.state.value.pickerFailed).isFalse()
+        assertThat(vm.state.value.catalog.map { it.english }).containsExactly("Cardiologist")
+    }
+
+    @Test
+    fun `a PATCH that ends the session does not open the shell`() {
+        replies["profile"] = HttpStatusCode.Unauthorized to """{"status":401,"code":"SESSION_INVALID","requestId":"r7"}"""
+        val vm =
+            RegisterViewModel(Invite("KEY-1", false), auth, sessions, {
+                "UTC"
+            }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository(tokenClient))
+        vm.toStep2()
+        vm.onAddress("Chilonzor 5")
+        vm.register()
+        vm.settle()
+        assertThat(sessions.session.value).isNull()
+        assertThat(vm.state.value.signedIn).isNull()
+        assertThat(vm.state.value.banner?.requestId).isEqualTo("r7")
+    }
+
+    // Sends the session's token, so a 401 ends the session as in the app.
+    private val tokenClient = {
+        createHttpClient(
+            { sessions.session.value?.token },
+            MockEngine { req ->
+                val (status, body) = replies.getValue(req.url.encodedPath.substringAfterLast('/'))
+                respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+            },
+        )
+    }
+
+    private companion object {
+        const val BUNDLED = """[{"english":"Dentist","uzbek":"Stomatolog"},{"english":"Urologist","uzbek":"Urolog"}]"""
     }
 }

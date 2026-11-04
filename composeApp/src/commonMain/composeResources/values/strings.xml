@@ -274,8 +274,10 @@
     <string name="checkInDetails">Check-in Details</string>
     <string name="checkIns">Check-ins</string>
     <string name="checkingCall">Checking…</string>
+    <string name="chooseAClinic">Choose a clinic</string>
     <string name="chooseFromGallery">Choose from Gallery</string>
     <string name="chooseNewPasswordFor">Choose a new password for %1$s.</string>
+    <string name="chooseOneOrMore">Choose one or more</string>
     <string name="choosePlace">Choose Place</string>
     <string name="choosePlanForVisit">Choose the plan for this visit</string>
     <string name="chronicDisease">Chronic Disease</string>
@@ -304,6 +306,7 @@
     <string name="chronicDisease_thalassemia">Thalassemia</string>
     <string name="chronicDisease_ulcerativeColitis">Ulcerative Colitis</string>
     <string name="city">City</string>
+    <string name="clearAll">Clear all</string>
     <string name="clickBelowToJoinCall">Click below to join the call</string>
     <string name="clinic">Clinic</string>
     <string name="clinicActionFailed">Failed</string>
@@ -1405,6 +1408,7 @@
     <string name="noCarePartnerships">No care partnerships yet</string>
     <string name="noCheckInsFound">No check-ins found</string>
     <string name="noChronicDisease">No chronic disease</string>
+    <string name="noClinic">No clinic</string>
     <string name="noContact">No contact</string>
     <string name="noConversations">No conversations yet</string>
     <string name="noData">No data available</string>
@@ -1810,6 +1814,7 @@
     <string name="searchTasksOrPatients">Search tasks or patients</string>
     <string name="searchTimezone">Search timezone</string>
     <string name="searchUsersPlaceholder">Search by name, number, role</string>
+    <string name="searching">Searching…</string>
     <string name="selectChronicDisease">Select Chronic Disease</string>
     <string name="selectConversation">Select a conversation</string>
     <string name="selectDate">Select Date</string>

@@ -33,10 +33,15 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.catalog.Clinic
+import shifa.doctor.data.catalog.Profession
+import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.session.Session
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.accountInformation
 import shifa.doctor.generated.resources.confirmPassword
 import shifa.doctor.generated.resources.confirmRegistration
 import shifa.doctor.generated.resources.createAccount
@@ -97,10 +102,19 @@ class RegisterActions(
     val register: () -> Unit = {},
     val back: () -> Unit = {},
     val dismissBanner: () -> Unit = {},
-    val openTimeZones: () -> Unit = {},
-    val closeTimeZones: () -> Unit = {},
-    val onTimeZoneQuery: (String) -> Unit = {},
+    val openPicker: (RegisterPicker) -> Unit = {},
+    val closePicker: () -> Unit = {},
+    val onQuery: (String) -> Unit = {},
+    val retryPicker: () -> Unit = {},
     val pickTimeZone: (String) -> Unit = {},
+    val pickClinic: (Clinic?) -> Unit = {},
+    val toggleProfession: (Profession) -> Unit = {},
+    val clearProfessions: () -> Unit = {},
+    val openDob: () -> Unit = {},
+    val pickDob: (LocalDate?) -> Unit = {},
+    val toggleGender: () -> Unit = {},
+    val pickGender: (Gender?) -> Unit = {},
+    val onAddress: (String) -> Unit = {},
     val keepEditing: () -> Unit = {},
     val discard: () -> Unit = {},
 )
@@ -122,24 +136,33 @@ fun RegisterScreen(
     RegisterScreenContent(
         state,
         RegisterActions(
-            viewModel::onFirstName,
-            viewModel::onLastName,
-            viewModel::onEmail,
-            viewModel::onPhone,
-            viewModel::onPassword,
-            viewModel::onConfirm,
-            viewModel::togglePassword,
-            viewModel::toggleConfirm,
-            viewModel::next,
-            viewModel::register,
-            back,
-            viewModel::dismissBanner,
-            viewModel::openTimeZones,
-            viewModel::closeTimeZones,
-            viewModel::onTimeZoneQuery,
-            viewModel::pickTimeZone,
-            viewModel::keepEditing,
-            onExit,
+            onFirstName = viewModel::onFirstName,
+            onLastName = viewModel::onLastName,
+            onEmail = viewModel::onEmail,
+            onPhone = viewModel::onPhone,
+            onPassword = viewModel::onPassword,
+            onConfirm = viewModel::onConfirm,
+            togglePassword = viewModel::togglePassword,
+            toggleConfirm = viewModel::toggleConfirm,
+            next = viewModel::next,
+            register = viewModel::register,
+            back = back,
+            dismissBanner = viewModel::dismissBanner,
+            openPicker = viewModel::openPicker,
+            closePicker = viewModel::closePicker,
+            onQuery = viewModel::onQuery,
+            retryPicker = { viewModel.retryPicker() },
+            pickTimeZone = viewModel::pickTimeZone,
+            pickClinic = viewModel::pickClinic,
+            toggleProfession = viewModel::toggleProfession,
+            clearProfessions = viewModel::clearProfessions,
+            openDob = viewModel::openDob,
+            pickDob = viewModel::pickDob,
+            toggleGender = viewModel::toggleGender,
+            pickGender = viewModel::pickGender,
+            onAddress = viewModel::onAddress,
+            keepEditing = viewModel::keepEditing,
+            discard = onExit,
         ),
     )
 }
@@ -156,22 +179,31 @@ fun RegisterScreenContent(
         centered = state.step == RegisterStep.ExistingPatient,
         banner = codeBanner(state.banner, actions.dismissBanner),
     ) {
-        AuthTitle(tr(Res.string.createAccount))
+        AuthTitle(
+            tr(if (state.step == RegisterStep.Details) Res.string.accountInformation else Res.string.createAccount),
+        )
         when (state.step) {
             RegisterStep.Form -> FormStep(state, actions)
             RegisterStep.ExistingPatient -> ExistingPatientStep(state, actions)
             RegisterStep.Details -> DetailsStep(state, actions)
         }
     }
-    if (state.pickingTimeZone) {
+    state.picker?.let { picker ->
         ModalBottomSheet(
-            actions.closeTimeZones,
+            actions.closePicker,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             shape = RectangleShape,
             containerColor = Color.Transparent,
             dragHandle = null,
-        ) { TimeZonePicker(state, actions) }
+        ) {
+            when (picker) {
+                RegisterPicker.TimeZone -> TimeZonePicker(state, actions)
+                RegisterPicker.Clinic -> ClinicPicker(state, actions)
+                RegisterPicker.Profession -> ProfessionPicker(state, actions)
+            }
+        }
     }
+    if (state.pickingDob) DobPicker(state.dob, actions.pickDob)
     if (state.askDiscard) {
         ModalBottomSheet(
             actions.keepEditing,
@@ -203,8 +235,8 @@ internal fun TimeZonePicker(
     val detected = tr(Res.string.detectedOnThisDevice)
     ShifaPickerSheet(
         tr(Res.string.practiceTimezone),
-        state.timeZoneQuery,
-        actions.onTimeZoneQuery,
+        state.query,
+        actions.onQuery,
         tr(Res.string.searchTimezone),
         zones.map {
             OptionItem(
@@ -218,7 +250,7 @@ internal fun TimeZonePicker(
             )
         },
         onPick = { actions.pickTimeZone(zones[it]) },
-        onClose = actions.closeTimeZones,
+        onClose = actions.closePicker,
     )
 }
 
@@ -290,19 +322,8 @@ private fun ColumnScope.ExistingPatientStep(
     )
 }
 
-// Step 2 (flow 01/08). AUTH-07 adds date of birth, gender, address, clinic and professions above the timezone.
 @Composable
-private fun ColumnScope.DetailsStep(
-    state: RegisterUiState,
-    actions: RegisterActions,
-) {
-    TimeZoneField(state, actions, hint = true)
-    StepDots(1)
-    ShifaPrimaryButton(tr(Res.string.createAccount), actions.register, Modifier.fillMaxWidth(), loading = state.loading)
-}
-
-@Composable
-private fun TimeZoneField(
+internal fun TimeZoneField(
     state: RegisterUiState,
     actions: RegisterActions,
     hint: Boolean,
@@ -310,7 +331,7 @@ private fun TimeZoneField(
     tr(Res.string.practiceTimezone),
     state.timeZone.orEmpty(),
     tr(Res.string.practiceTimezonePlaceholder),
-    actions.openTimeZones,
+    { actions.openPicker(RegisterPicker.TimeZone) },
     Modifier.fillMaxWidth(),
     supportingText =
         state.timeZoneError?.let { tr(it) }
@@ -352,7 +373,7 @@ private fun Passwords(
 }
 
 @Composable
-private fun TextField(
+internal fun TextField(
     value: String,
     onValue: (String) -> Unit,
     label: String,
@@ -379,7 +400,7 @@ private fun TextField(
 
 /** The board's two progress dots (flow §3a: two steps, not Flutter's three); the active one is wide and teal. */
 @Composable
-private fun ColumnScope.StepDots(current: Int) {
+internal fun ColumnScope.StepDots(current: Int) {
     val label = tr(Res.string.stepOfTotal, current + 1, STEPS)
     Row(
         Modifier.align(Alignment.CenterHorizontally).semantics { contentDescription = label },

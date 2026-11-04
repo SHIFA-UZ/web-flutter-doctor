@@ -27,7 +27,20 @@ class RegisterScreenshotTest {
         }
 
     @Test
+    @Config(qualifiers = "w402dp-h1100dp-xhdpi")
     fun details() = captureRoboImage("screenshots/Register_details.png") { RegisterDetailsPreview() }
+
+    @Test
+    fun clinicPicker() = captureRoboImage("screenshots/Register_clinicPicker.png") { ClinicPickerPreview() }
+
+    @Test
+    fun clinicPickerFailed() =
+        captureRoboImage("screenshots/Register_clinicPickerFailed.png") {
+            ClinicPickerFailedPreview()
+        }
+
+    @Test
+    fun professionPicker() = captureRoboImage("screenshots/Register_professionPicker.png") { ProfessionPickerPreview() }
 
     @Test
     fun noTimeZone() = captureRoboImage("screenshots/Register_noTimeZone.png") { RegisterNoTimeZonePreview() }

@@ -274,8 +274,10 @@
     <string name="checkInDetails">Tekshiruv tafsilotlari</string>
     <string name="checkIns">Tekshiruvlar</string>
     <string name="checkingCall">Tekshirilmoqda…</string>
+    <string name="chooseAClinic">Klinikani tanlang</string>
     <string name="chooseFromGallery">Galereyadan tanlash</string>
     <string name="chooseNewPasswordFor">%1$s uchun yangi parol tanlang.</string>
+    <string name="chooseOneOrMore">Bir yoki bir nechtasini tanlang</string>
     <string name="choosePlace">Joyni tanlash</string>
     <string name="choosePlanForVisit">Ushbu tashrif uchun rejani tanlang</string>
     <string name="chronicDisease">Surunkali kasallik</string>
@@ -304,6 +306,7 @@
     <string name="chronicDisease_thalassemia">Talassemiya</string>
     <string name="chronicDisease_ulcerativeColitis">Yaraqli kolit</string>
     <string name="city">Shahar</string>
+    <string name="clearAll">Hammasini tozalash</string>
     <string name="clickBelowToJoinCall">Qo'ng'iroqqa qo'shilish uchun quyidagi tugmani bosing</string>
     <string name="clinic">Klinika</string>
     <string name="clinicActionFailed">Bajarilmadi</string>
@@ -1405,6 +1408,7 @@
     <string name="noCarePartnerships">Hali hamkorlik yo‘q</string>
     <string name="noCheckInsFound">Tekshiruvlar topilmadi</string>
     <string name="noChronicDisease">Surunkali kasallik yo'q</string>
+    <string name="noClinic">Klinikasiz</string>
     <string name="noContact">Aloqa yo'q</string>
     <string name="noConversations">Hali suhbatlar yo'q</string>
     <string name="noData">Ma'lumot mavjud emas</string>
@@ -1810,6 +1814,7 @@
     <string name="searchTasksOrPatients">Vazifa yoki bemorlarni qidirish</string>
     <string name="searchTimezone">Vaqt zonasini qidirish</string>
     <string name="searchUsersPlaceholder">Ism, raqam yoki rol bo'yicha qidirish</string>
+    <string name="searching">Qidirilmoqda…</string>
     <string name="selectChronicDisease">Surunkali kasallikni tanlash</string>
     <string name="selectConversation">Suhbatni tanlash</string>
     <string name="selectDate">Sanani tanlash</string>

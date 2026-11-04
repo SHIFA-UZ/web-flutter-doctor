@@ -2,8 +2,12 @@ package shifa.doctor.ui.register
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import kotlinx.datetime.LocalDate
 import shifa.doctor.data.auth.ExistingPatient
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.catalog.Clinic
+import shifa.doctor.data.catalog.Profession
+import shifa.doctor.data.profile.Gender
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.doctorAccountExists
 import shifa.doctor.generated.resources.enterFirstName
@@ -64,11 +68,52 @@ internal fun RegisterExistingPatientPreview() =
         )
     }
 
-@Preview(widthDp = 402, heightDp = 874)
+private val details =
+    typed.copy(
+        step = RegisterStep.Details,
+        timeZone = "Asia/Tashkent",
+        dob = LocalDate(1990, 3, 12),
+        gender = Gender.Female,
+        address = "Chilonzor 5, Tashkent",
+        clinic = Clinic(2, "Shifa Dev Clinic"),
+        professions = listOf(Profession("Dentist", "Stomatolog"), Profession("Orthodontist", "Ortodont")),
+    )
+
+@Preview(widthDp = 402, heightDp = 1100)
 @Composable
-internal fun RegisterDetailsPreview() =
+internal fun RegisterDetailsPreview() = PreviewTheme { RegisterScreenContent(details, RegisterActions()) }
+
+@Preview(widthDp = 402, heightDp = 640)
+@Composable
+internal fun ClinicPickerPreview() =
     PreviewTheme {
-        RegisterScreenContent(typed.copy(step = RegisterStep.Details, timeZone = "Asia/Tashkent"), RegisterActions())
+        ClinicPicker(
+            details.copy(clinics = listOf(Clinic(2, "Shifa Dev Clinic"), Clinic(1, "Tashkent Med Center"))),
+            RegisterActions(),
+        )
+    }
+
+@Preview(widthDp = 402, heightDp = 640)
+@Composable
+internal fun ClinicPickerFailedPreview() =
+    PreviewTheme { ClinicPicker(details.copy(clinic = null, pickerFailed = true), RegisterActions()) }
+
+@Preview(widthDp = 402, heightDp = 640)
+@Composable
+internal fun ProfessionPickerPreview() =
+    PreviewTheme {
+        ProfessionPicker(
+            details.copy(
+                catalog =
+                    listOf(
+                        Profession("Dentist", "Stomatolog"),
+                        Profession("Orthodontist", "Ortodont"),
+                        Profession("Cardiologist", "Kardiolog"),
+                        Profession("Neurologist", "Nevrolog"),
+                    ),
+            ),
+            RegisterActions(),
+        )
     }
 
 @Preview(widthDp = 402, heightDp = 874)

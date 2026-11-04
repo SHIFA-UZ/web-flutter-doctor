@@ -186,3 +186,34 @@ Built 2026-11-04. Flow `01/07-create-account-step1.md` (and `01/08` for the time
 - **Tests:** `RegisterViewModelTest` (7), `TimeZonesTest` (2), `DemoBackendTest` (+1), `RegisterScreenshotTest` (6:
   form, errors, existing patient, step 2, no timezone, picker).
 
+## AUTH-07 · Registration step 2 (account information)
+
+Built 2026-11-04. Flow `01/08-account-information-step2.md`; board `DaAuth.dc.html`, branch `reg2` and its picker
+sheets (`clinic`, `prof` multi). Built on AUTH-06's screen (`ui/register/RegisterDetails.kt`).
+
+- **Fields** (all optional except the timezone), title "Account Information": date of birth (pick field → Material
+  `DatePickerDialog`, 1900 to today, opens 25 years back, shown `dd.MM.yyyy`, sent `YYYY-MM-DD`; the picker works in UTC
+  midnights so the date never shifts), gender (`ShifaDropdown`: Not set / Male / Female / Other, sent in English),
+  address (trimmed, empty omitted), clinic, professions (chips inside the field), practice timezone (AUTH-06).
+- **Clinic sheet:** `GET /public/clinics` on open; under two characters the list is filtered here, from two the
+  backend's `?search=` runs 300 ms after the last keystroke (flow §8 target); "Searching…", "Couldn't load. Retry",
+  "No results"; "No clinic" clears a choice. Dev has 2 clinics.
+- **Profession sheet:** `GET /public/professions` once (138 on dev and production, each with `english` and `uzbek`);
+  when the backend can't be reached the copy bundled in `files/catalog/professions.json` (production's list of
+  2026-11-04) is shown with "Couldn't load. Retry" above it, so a doctor can always pick and can retry; search matches English, Uzbek Latin and its Cyrillic form; several can be picked; "Clear all" and "Done". Labels: Uzbek (Latin, or transliterated for Ўзбекча) in uz,
+  English otherwise (the catalogue has no Russian). The English label is what is stored (08 §4.1), joined with ", ".
+- **Create account:** `register` (with the timezone), then **one** `PATCH /doctors/me/profile` with only the filled-in
+  keys (no timezone again, flow §12); nothing filled in → no PATCH. Registration is final either way: a failed PATCH
+  sets `ShellNotice.pending` = "Some profile details could not be saved. You can edit them in Profile.", shown as a
+  closable warning banner at the top of the shell (`ShellNoticeBanner`; SHELL-01 moves it under its bar), cleared when
+  the session ends. If the session ended meanwhile (401, disabled account) nothing opens: `App.kt` sends a shell
+  without a session back to Sign In on every screen change. Nothing is kept for later logins (Flutter re-PATCHed on every login, flow §12).
+- **Back** from step 2 returns to step 1 with step 2's entries kept (flow §2 target).
+- **Not built:** dental detection and the `Implantologist` fix are PROF-05's (profile side); the board's checkbox column
+  in the multi picker is a tick on the right like the single pickers (`OptionRow`).
+- **Demo data:** six professions, three demo clinics (searchable), and the profile PATCH merges into the demo doctor.
+- **Kit:** `ShifaPickField(chips)`, `ShifaPickerSheet(loadingText, onRetry)`.
+- **Tests:** `RegisterViewModelTest` (+6: bundled fallback and Cyrillic search, a session-ending PATCH, PATCH body, no PATCH / failed PATCH note, clinic search with debounce and
+  retry, professions), `DemoBackendTest` (+1), `RegisterScreenshotTest` (+3: clinic, clinic failed, professions; step 2
+  re-recorded with all fields).
+

@@ -274,8 +274,10 @@
     <string name="checkInDetails">Детали отметки</string>
     <string name="checkIns">Отметки</string>
     <string name="checkingCall">Проверяем…</string>
+    <string name="chooseAClinic">Выберите клинику</string>
     <string name="chooseFromGallery">Выбрать из галереи</string>
     <string name="chooseNewPasswordFor">Придумайте новый пароль для %1$s.</string>
+    <string name="chooseOneOrMore">Выберите одну или несколько</string>
     <string name="choosePlace">Выбрать место</string>
     <string name="choosePlanForVisit">Выберите план для этого визита</string>
     <string name="chronicDisease">Хроническое заболевание</string>
@@ -304,6 +306,7 @@
     <string name="chronicDisease_thalassemia">Талассемия</string>
     <string name="chronicDisease_ulcerativeColitis">Язвенный колит</string>
     <string name="city">Город</string>
+    <string name="clearAll">Очистить всё</string>
     <string name="clickBelowToJoinCall">Нажмите ниже, чтобы присоединиться к звонку</string>
     <string name="clinic">Клиника</string>
     <string name="clinicActionFailed">Не удалось</string>
@@ -1405,6 +1408,7 @@
     <string name="noCarePartnerships">Партнёрств пока нет</string>
     <string name="noCheckInsFound">Отметки не найдены</string>
     <string name="noChronicDisease">Нет хронических заболеваний</string>
+    <string name="noClinic">Без клиники</string>
     <string name="noContact">Нет контакта</string>
     <string name="noConversations">Пока нет бесед</string>
     <string name="noData">Нет данных</string>
@@ -1810,6 +1814,7 @@
     <string name="searchTasksOrPatients">Поиск задач или пациентов</string>
     <string name="searchTimezone">Поиск часового пояса</string>
     <string name="searchUsersPlaceholder">Поиск по имени, номеру, роли</string>
+    <string name="searching">Поиск…</string>
     <string name="selectChronicDisease">Выбрать хроническое заболевание</string>
     <string name="selectConversation">Выбрать беседу</string>
     <string name="selectDate">Выбрать дату</string>
