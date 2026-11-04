@@ -439,3 +439,29 @@ Built 2026-11-04. Spec 02 §5.1–5.2 (the engine fills the 025-2; its panel is 
 - **Tests:** `ClinicalEngineRepositoryTest` (4: language fallbacks; lenient, ordered, once-read groups; a disease's
   chips and variables, occlusion by priority, shared texts as chips; the synthesize body, record-usage, search and top
   paths), `DemoBackendTest` (+1).
+
+## CLIN-02 · Clinical engine panel
+
+Built 2026-11-04. Spec 02 §5.3; board `DaPatients` form editor, "Clinical engine" card. A component of the 025-2
+editor (FORM-04 hosts it and writes the texts into the form).
+
+- **Panel** (`ui/forms/ClinicalPanel.kt`): before a disease, the hint, the doctor's frequent diagnoses as shortcuts
+  (top 5) and "Choose a disease" (a sheet: groups, then the group's diseases with their ICD codes). With a disease:
+  its name and codes with Change, the phrase search (from 2 letters, 350 ms after typing; a hit joins its field),
+  then the chips per form field in the form's order (complaints, disease development, objective examination,
+  occlusion with the occlusion chips, oral cavity and X-ray with their ready texts, the disease's group's texts first,
+  treatment stages 1 and 2, recommendations); a picked chip with `[X]` values shows a field per value. Every title is
+  translated (Flutter's were hard-coded English and Uzbek).
+- **Choosing a disease** picks all its chips (as Flutter); occlusion and ready-text picks stay. **Apply** (the
+  board's button) synthesises once and hands the texts, the disease and the picks to the form. **Changed from
+  Flutter:** it re-synthesised 350 ms after every toggle and wrote over the form's fields, including what the doctor
+  had just typed; now nothing changes in the form until Apply. A saved form's disease and picks come back as they
+  were, without synthesising (picks found by search included: their own disease is read to show them; a failed restore
+  is retried with Retry). Choosing another disease cancels a running Apply.
+- **Not gated by plan:** the board marks the card PRO, but the backend has no feature code for the engine and Flutter
+  showed it to everyone; left open (an open point for the user, in the README decisions).
+- **Tests:** `ClinicalPanelViewModelTest` (6: the catalogue loads once with the frequent diagnoses, a group's
+  diseases; a chosen disease picks its chips and keeps occlusion picks, values, the group's X-ray text first, Apply
+  once with the exact selections; the search's two letters and pause, a hit joining its field; a saved form restored
+  without synthesising; an Apply overtaken by a disease change; Retry restoring a saved form with a searched chip),
+  screenshots `Clinical_empty`, `Clinical_disease`.

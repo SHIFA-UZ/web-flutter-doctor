@@ -2501,5 +2501,21 @@
   "documentUploadedNamed": "Документ «{title}» загружен",
   "upload": "Загрузить",
   "discardScannedPages": "Удалить отсканированные страницы?",
-  "onlyPdfOrImages": "Можно загружать только PDF и изображения."
+  "onlyPdfOrImages": "Можно загружать только PDF и изображения.",
+  "clinicalEngine": "Клинический модуль",
+  "clinicalEngineHint": "Выберите заболевание, чтобы заполнить форму. Потом всё можно изменить.",
+  "chooseDisease": "Выберите заболевание",
+  "frequentDiagnoses": "Ваши частые диагнозы",
+  "searchPhrases": "Поиск фраз",
+  "engineApplied": "Форма заполнена клиническим модулем. Проверьте перед сохранением.",
+  "engineLoadFailed": "Не удалось загрузить клинический модуль.",
+  "engineApplyFailed": "Не удалось заполнить форму. Попробуйте ещё раз.",
+  "diseaseDevelopment": "Развитие заболевания",
+  "objectiveExam": "Объективный осмотр",
+  "treatmentStage1": "Лечение (этап 1)",
+  "treatmentStage2": "Лечение (этап 2 / эпикриз)",
+  "oralCavityTexts": "Полость рта: готовые тексты",
+  "xrayTexts": "Рентген: готовые тексты",
+  "change": "Изменить",
+  "diseaseGroups": "Группы заболеваний"
 }

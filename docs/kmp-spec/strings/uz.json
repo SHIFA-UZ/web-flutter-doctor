@@ -2501,5 +2501,21 @@
   "documentUploadedNamed": "“{title}” hujjati yuklandi",
   "upload": "Yuklash",
   "discardScannedPages": "Skanerlangan sahifalar o'chirilsinmi?",
-  "onlyPdfOrImages": "Faqat PDF va rasm fayllarini yuklash mumkin."
+  "onlyPdfOrImages": "Faqat PDF va rasm fayllarini yuklash mumkin.",
+  "clinicalEngine": "Klinik dvigatel",
+  "clinicalEngineHint": "Shaklni to'ldirish uchun kasallikni tanlang. Keyin hammasini tahrirlashingiz mumkin.",
+  "chooseDisease": "Kasallikni tanlang",
+  "frequentDiagnoses": "Ko'p qo'yadigan tashxislaringiz",
+  "searchPhrases": "Iboralarni qidirish",
+  "engineApplied": "Shakl klinik dvigateldan to'ldirildi. Saqlashdan oldin tekshiring.",
+  "engineLoadFailed": "Klinik dvigatelni yuklab bo'lmadi.",
+  "engineApplyFailed": "Shaklni to'ldirib bo'lmadi. Qayta urinib ko'ring.",
+  "diseaseDevelopment": "Kasallik rivojlanishi",
+  "objectiveExam": "Obyektiv tekshiruv",
+  "treatmentStage1": "Davolash (1-bosqich)",
+  "treatmentStage2": "Davolash (2-bosqich / epikriz)",
+  "oralCavityTexts": "Og'iz bo'shlig'i: tayyor matnlar",
+  "xrayTexts": "Rentgen: tayyor matnlar",
+  "change": "O'zgartirish",
+  "diseaseGroups": "Kasallik guruhlari"
 }

@@ -37,6 +37,9 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | D-15 | Push (FCM token, PUSH-01…03) moves to the very end, together with a clean-up of the Firebase project; the debug build's token refusal is part of that. | The user's call, 2026-11-04 |
 | D-16 | Daily video may be tested against the production backend (`POST /video/token`), as the patient app does. | The user's call, 2026-11-04 |
 | D-17 | The uz/ru texts written for the port stay as they are for now (no native-speaker pass before release prep). | The user's call, 2026-11-04 |
+| — | **Open, to confirm:** patient language stored as codes (uz, ru, en…; Flutter stored words), PAT-04. | My call, 2026-11-04 |
+| — | **Open, to confirm:** the clinical engine card is open to every plan (the board marks it PRO; the backend has no feature code and Flutter showed it to everyone), CLIN-02. | My call, 2026-11-04 |
+| — | The clinical engine fills the form only on **Apply** (the board's button); Flutter re-filled the fields after every chip toggle, over the doctor's typing. CLIN-02. | My call, 2026-11-04 (board + safety) |
 
 ## Status
 
@@ -113,7 +116,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | FORM-02 Forms repository | Done | Cached list per patient, save (POST/PUT), request signature, link document, replace a document's file, ICD-10 search, latest 025-2. See patients.md. |
 | FORM-03 025-2 PDF | Done (iOS not run) | Shared layout (official Uzbek labels, sections, dental chart, return visits, signature; text flows across pages) drawn by PdfDocument / UIGraphicsPDFRenderer with system fonts. See patients.md. |
 | CLIN-01 Clinical engine API | Done | Lenient models, groups / diseases / chips / occlusion / shared texts, synthesize, record-usage (new: Flutter never sent it). See patients.md. |
-| FORM-04, FORM-05, CLIN-02 | Not started | |
+| CLIN-02 Clinical engine panel | Done (hosted by FORM-04) | Disease picker and frequent diagnoses, chips per field with [X] values, search, occlusion and ready texts; Apply hands the texts over once (Flutter overwrote on every toggle). See patients.md. |
+| FORM-04, FORM-05 | Not started | |
 
 ## Log
 
@@ -184,3 +188,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · FORM-02 · Forms repository.
 - 2026-11-04 · FORM-03 · 025-2 PDF in the app (shared layout, platform text drawing).
 - 2026-11-04 · CLIN-01 · Clinical engine API.
+- 2026-11-04 · CLIN-02 · Clinical engine panel (explicit Apply, the board's).

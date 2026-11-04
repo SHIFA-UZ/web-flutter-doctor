@@ -2501,5 +2501,21 @@
   "documentUploadedNamed": "Document “{title}” uploaded",
   "upload": "Upload",
   "discardScannedPages": "Discard the scanned pages?",
-  "onlyPdfOrImages": "Only PDF and image files can be uploaded."
+  "onlyPdfOrImages": "Only PDF and image files can be uploaded.",
+  "clinicalEngine": "Clinical engine",
+  "clinicalEngineHint": "Pick a disease to prefill the form. You can edit everything afterwards.",
+  "chooseDisease": "Choose a disease",
+  "frequentDiagnoses": "Your frequent diagnoses",
+  "searchPhrases": "Search phrases",
+  "engineApplied": "Form prefilled from the clinical engine. Review before saving.",
+  "engineLoadFailed": "Couldn't load the clinical engine.",
+  "engineApplyFailed": "Couldn't prefill the form. Try again.",
+  "diseaseDevelopment": "Disease development",
+  "objectiveExam": "Objective examination",
+  "treatmentStage1": "Treatment (stage 1)",
+  "treatmentStage2": "Treatment (stage 2 / epicrisis)",
+  "oralCavityTexts": "Oral cavity: ready texts",
+  "xrayTexts": "X-ray: ready texts",
+  "change": "Change",
+  "diseaseGroups": "Disease groups"
 }

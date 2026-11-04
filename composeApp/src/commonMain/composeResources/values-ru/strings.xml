@@ -310,6 +310,7 @@
     <string name="category">Категория</string>
     <string name="certificateUploaded">Сертификат загружен</string>
     <string name="certificates">Сертификаты</string>
+    <string name="change">Изменить</string>
     <string name="changeOrResetPassword">Изменить или сбросить пароль здесь</string>
     <string name="changePassword">Изменить пароль</string>
     <string name="changePhoto">Изменить фото</string>
@@ -332,6 +333,7 @@
     <string name="checkingCall">Проверяем…</string>
     <string name="checkoutFailed">Не удалось открыть страницу оплаты. Попробуйте ещё раз.</string>
     <string name="chooseAClinic">Выберите клинику</string>
+    <string name="chooseDisease">Выберите заболевание</string>
     <string name="chooseFromGallery">Выбрать из галереи</string>
     <string name="chooseNewPasswordFor">Придумайте новый пароль для %1$s.</string>
     <string name="chooseOneOrMore">Выберите одну или несколько</string>
@@ -713,6 +715,8 @@
     <string name="clinicWorkspaceSettings">Настройки</string>
     <string name="clinicWorkspaceTreatmentPlans">Планы лечения</string>
     <string name="clinicWorkspaceYourRole">Ваша роль</string>
+    <string name="clinicalEngine">Клинический модуль</string>
+    <string name="clinicalEngineHint">Выберите заболевание, чтобы заполнить форму. Потом всё можно изменить.</string>
     <string name="clinicalFindingsConclusion">Клинические данные и заключение</string>
     <string name="clinicalSummary">Клиническое резюме</string>
     <string name="clinicalTimeline">Клиническая шкала</string>
@@ -882,6 +886,8 @@
     <string name="discardRegistrationTitle">Отменить регистрацию?</string>
     <string name="discardScannedPages">Удалить отсканированные страницы?</string>
     <string name="discountRange">0–100</string>
+    <string name="diseaseDevelopment">Развитие заболевания</string>
+    <string name="diseaseGroups">Группы заболеваний</string>
     <string name="dismiss">Закрыть</string>
     <string name="district">Район</string>
     <string name="docMode0252">025-2 Стоматологическая карта</string>
@@ -1013,6 +1019,9 @@
     <string name="endVisitNothingToSave">Нечего сохранять. Визит будет отмечен как завершённый без резюме.</string>
     <string name="endVisitTitle">Завершить приём</string>
     <string name="engagementSummary">Активность пациентов</string>
+    <string name="engineApplied">Форма заполнена клиническим модулем. Проверьте перед сохранением.</string>
+    <string name="engineApplyFailed">Не удалось заполнить форму. Попробуйте ещё раз.</string>
+    <string name="engineLoadFailed">Не удалось загрузить клинический модуль.</string>
     <string name="english">Английский</string>
     <string name="enterAddressToFindCoordinates">Введите адрес для поиска координат</string>
     <string name="enterClinicOrWorkplaceName">Введите название вашей клиники или рабочего места</string>
@@ -1130,6 +1139,7 @@
     <string name="freeRemovesPrices">Текущие цены будут удалены</string>
     <string name="freeSlot">Свободное время</string>
     <string name="freeSlots">Свободные слоты</string>
+    <string name="frequentDiagnoses">Ваши частые диагнозы</string>
     <string name="friday">Пятница</string>
     <string name="fromDate">Дата начала</string>
     <string name="fromLast0252Form">Из последней формы 025-2</string>
@@ -1657,6 +1667,7 @@
     <string name="notifyPatient">Уведомить пациента</string>
     <string name="now">Сейчас</string>
     <string name="numeric">Числовой</string>
+    <string name="objectiveExam">Объективный осмотр</string>
     <string name="occlusionBiteType">Окклюзия / Тип прикуса</string>
     <string name="of">из</string>
     <string name="off">Выкл</string>
@@ -1685,6 +1696,7 @@
     <string name="optional">Необязательно</string>
     <string name="orAfter">или после</string>
     <string name="oralCavityCondition">Состояние полости рта, десен, альвеол, неба и слизистой оболочки полости рта</string>
+    <string name="oralCavityTexts">Полость рта: готовые тексты</string>
     <string name="other">Другой</string>
     <string name="otherCountry">Другое</string>
     <string name="otherIllnessesAndComplications">Другие заболевания и осложнения</string>
@@ -2006,6 +2018,7 @@
     <string name="searchPatientsDirectoryHint">Имя, телефон или ID</string>
     <string name="searchPatientsGlobalHint">Поиск по всем пациентам…</string>
     <string name="searchPatientsHint">Поиск по имени, телефону или ID…</string>
+    <string name="searchPhrases">Поиск фраз</string>
     <string name="searchProfession">Поиск профессии...</string>
     <string name="searchTasksOrPatients">Поиск задач или пациентов</string>
     <string name="searchTimezone">Поиск часового пояса</string>
@@ -2341,6 +2354,8 @@
     <string name="treatmentPlanWizardSymptoms">Симптомы (через запятую)</string>
     <string name="treatmentPlanWizardTitle">Мастер плана лечения</string>
     <string name="treatmentResultProgress">Результат лечения (прогресс/динамика)</string>
+    <string name="treatmentStage1">Лечение (этап 1)</string>
+    <string name="treatmentStage2">Лечение (этап 2 / эпикриз)</string>
     <string name="tuesday">Вторник</string>
     <string name="turkmen">Туркменский</string>
     <string name="turnOn">Включить</string>
@@ -2485,6 +2500,7 @@
     <string name="workplaceInformation">Информация о рабочем месте</string>
     <string name="wrongOrExpiredCodeBackToCode">Код неверный или устарел. Запросите новый код.</string>
     <string name="xrayLabExaminationData">Данные рентгенологического и лабораторного обследования</string>
+    <string name="xrayTexts">Рентген: готовые тексты</string>
     <string name="yes">Да</string>
     <string name="yesCancel">Да, отменить</string>
     <string name="yesterday">Вчера</string>

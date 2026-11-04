@@ -310,6 +310,7 @@
     <string name="category">Category</string>
     <string name="certificateUploaded">Certificate uploaded</string>
     <string name="certificates">Certificates</string>
+    <string name="change">Change</string>
     <string name="changeOrResetPassword">Change or reset your password here</string>
     <string name="changePassword">Change password</string>
     <string name="changePhoto">Change photo</string>
@@ -332,6 +333,7 @@
     <string name="checkingCall">Checking…</string>
     <string name="checkoutFailed">Couldn't open the payment page. Try again.</string>
     <string name="chooseAClinic">Choose a clinic</string>
+    <string name="chooseDisease">Choose a disease</string>
     <string name="chooseFromGallery">Choose from Gallery</string>
     <string name="chooseNewPasswordFor">Choose a new password for %1$s.</string>
     <string name="chooseOneOrMore">Choose one or more</string>
@@ -713,6 +715,8 @@
     <string name="clinicWorkspaceSettings">Settings</string>
     <string name="clinicWorkspaceTreatmentPlans">Treatment plans</string>
     <string name="clinicWorkspaceYourRole">Your role</string>
+    <string name="clinicalEngine">Clinical engine</string>
+    <string name="clinicalEngineHint">Pick a disease to prefill the form. You can edit everything afterwards.</string>
     <string name="clinicalFindingsConclusion">Clinical findings &amp; conclusion</string>
     <string name="clinicalSummary">Clinical summary</string>
     <string name="clinicalTimeline">Clinical timeline</string>
@@ -882,6 +886,8 @@
     <string name="discardRegistrationTitle">Discard registration?</string>
     <string name="discardScannedPages">Discard the scanned pages?</string>
     <string name="discountRange">0–100</string>
+    <string name="diseaseDevelopment">Disease development</string>
+    <string name="diseaseGroups">Disease groups</string>
     <string name="dismiss">Dismiss</string>
     <string name="district">District</string>
     <string name="docMode0252">Form 025-2</string>
@@ -1013,6 +1019,9 @@
     <string name="endVisitNothingToSave">Nothing to save. The visit will be marked as completed without a summary.</string>
     <string name="endVisitTitle">End appointment</string>
     <string name="engagementSummary">Patient Engagement</string>
+    <string name="engineApplied">Form prefilled from the clinical engine. Review before saving.</string>
+    <string name="engineApplyFailed">Couldn't prefill the form. Try again.</string>
+    <string name="engineLoadFailed">Couldn't load the clinical engine.</string>
     <string name="english">English</string>
     <string name="enterAddressToFindCoordinates">Enter address to find coordinates</string>
     <string name="enterClinicOrWorkplaceName">Enter your clinic or workplace name</string>
@@ -1130,6 +1139,7 @@
     <string name="freeRemovesPrices">Existing prices will be removed</string>
     <string name="freeSlot">Free slot</string>
     <string name="freeSlots">Free Slots</string>
+    <string name="frequentDiagnoses">Your frequent diagnoses</string>
     <string name="friday">Friday</string>
     <string name="fromDate">From date</string>
     <string name="fromLast0252Form">From last 025-2 form</string>
@@ -1657,6 +1667,7 @@
     <string name="notifyPatient">Notify patient</string>
     <string name="now">Now</string>
     <string name="numeric">Numeric</string>
+    <string name="objectiveExam">Objective examination</string>
     <string name="occlusionBiteType">Occlusion / Bite type</string>
     <string name="of">of</string>
     <string name="off">Off</string>
@@ -1685,6 +1696,7 @@
     <string name="optional">Optional</string>
     <string name="orAfter">or after</string>
     <string name="oralCavityCondition">Condition of the oral cavity, gums, alveoli, palate, and oral mucosa</string>
+    <string name="oralCavityTexts">Oral cavity: ready texts</string>
     <string name="other">Other</string>
     <string name="otherCountry">Other</string>
     <string name="otherIllnessesAndComplications">Other illnesses and complications</string>
@@ -2006,6 +2018,7 @@
     <string name="searchPatientsDirectoryHint">Name, phone, or ID</string>
     <string name="searchPatientsGlobalHint">Search all patients…</string>
     <string name="searchPatientsHint">Search by name, phone, or ID…</string>
+    <string name="searchPhrases">Search phrases</string>
     <string name="searchProfession">Search profession...</string>
     <string name="searchTasksOrPatients">Search tasks or patients</string>
     <string name="searchTimezone">Search timezone</string>
@@ -2341,6 +2354,8 @@
     <string name="treatmentPlanWizardSymptoms">Symptoms (comma separated)</string>
     <string name="treatmentPlanWizardTitle">Treatment plan wizard</string>
     <string name="treatmentResultProgress">Treatment result (progress/dynamics)</string>
+    <string name="treatmentStage1">Treatment (stage 1)</string>
+    <string name="treatmentStage2">Treatment (stage 2 / epicrisis)</string>
     <string name="tuesday">Tuesday</string>
     <string name="turkmen">Turkmen</string>
     <string name="turnOn">Turn on</string>
@@ -2485,6 +2500,7 @@
     <string name="workplaceInformation">Workplace Information</string>
     <string name="wrongOrExpiredCodeBackToCode">The code is wrong or has expired. Request a new code.</string>
     <string name="xrayLabExaminationData">X-ray and laboratory examination data</string>
+    <string name="xrayTexts">X-ray: ready texts</string>
     <string name="yes">Yes</string>
     <string name="yesCancel">Yes, Cancel</string>
     <string name="yesterday">Yesterday</string>

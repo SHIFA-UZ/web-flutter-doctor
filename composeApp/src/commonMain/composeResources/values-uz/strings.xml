@@ -310,6 +310,7 @@
     <string name="category">Kategoriya</string>
     <string name="certificateUploaded">Sertifikat yuklandi</string>
     <string name="certificates">Sertifikatlar</string>
+    <string name="change">O'zgartirish</string>
     <string name="changeOrResetPassword">Parolni o'zgartiring yoki tiklang</string>
     <string name="changePassword">Parolni o'zgartirish</string>
     <string name="changePhoto">Rasmni o'zgartirish</string>
@@ -332,6 +333,7 @@
     <string name="checkingCall">Tekshirilmoqda…</string>
     <string name="checkoutFailed">To'lov sahifasini ochib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="chooseAClinic">Klinikani tanlang</string>
+    <string name="chooseDisease">Kasallikni tanlang</string>
     <string name="chooseFromGallery">Galereyadan tanlash</string>
     <string name="chooseNewPasswordFor">%1$s uchun yangi parol tanlang.</string>
     <string name="chooseOneOrMore">Bir yoki bir nechtasini tanlang</string>
@@ -713,6 +715,8 @@
     <string name="clinicWorkspaceSettings">Sozlamalar</string>
     <string name="clinicWorkspaceTreatmentPlans">Davolash rejasi</string>
     <string name="clinicWorkspaceYourRole">Sizning rolingiz</string>
+    <string name="clinicalEngine">Klinik dvigatel</string>
+    <string name="clinicalEngineHint">Shaklni to'ldirish uchun kasallikni tanlang. Keyin hammasini tahrirlashingiz mumkin.</string>
     <string name="clinicalFindingsConclusion">Qayta kasallanib murojaat qilgan bemor anamnezi, statusi, tashxisi va davolanish kundaligi</string>
     <string name="clinicalSummary">Klinik xulosa</string>
     <string name="clinicalTimeline">Klinik vaqt chizig‘i</string>
@@ -882,6 +886,8 @@
     <string name="discardRegistrationTitle">Ro'yxatdan o'tish bekor qilinsinmi?</string>
     <string name="discardScannedPages">Skanerlangan sahifalar o'chirilsinmi?</string>
     <string name="discountRange">0–100</string>
+    <string name="diseaseDevelopment">Kasallik rivojlanishi</string>
+    <string name="diseaseGroups">Kasallik guruhlari</string>
     <string name="dismiss">Yopish</string>
     <string name="district">Tuman</string>
     <string name="docMode0252">025-2 Stomatologik karta</string>
@@ -1013,6 +1019,9 @@
     <string name="endVisitNothingToSave">Saqlanadigan narsa yo'q. Tashrif xulosasiz yakunlangan deb belgilanadi.</string>
     <string name="endVisitTitle">Qabulni yakunlash</string>
     <string name="engagementSummary">Bemorlar faoliyati</string>
+    <string name="engineApplied">Shakl klinik dvigateldan to'ldirildi. Saqlashdan oldin tekshiring.</string>
+    <string name="engineApplyFailed">Shaklni to'ldirib bo'lmadi. Qayta urinib ko'ring.</string>
+    <string name="engineLoadFailed">Klinik dvigatelni yuklab bo'lmadi.</string>
     <string name="english">Inglizcha</string>
     <string name="enterAddressToFindCoordinates">Koordinatalarni topish uchun manzilni kiriting</string>
     <string name="enterClinicOrWorkplaceName">Klinika yoki ish joyi nomini kiriting</string>
@@ -1130,6 +1139,7 @@
     <string name="freeRemovesPrices">Mavjud narxlar o'chiriladi</string>
     <string name="freeSlot">Bo'sh vaqt</string>
     <string name="freeSlots">Bo'sh vaqtlar</string>
+    <string name="frequentDiagnoses">Ko'p qo'yadigan tashxislaringiz</string>
     <string name="friday">Juma</string>
     <string name="fromDate">Boshlanish sanasi</string>
     <string name="fromLast0252Form">Oxirgi 025-2 shaklidan</string>
@@ -1657,6 +1667,7 @@
     <string name="notifyPatient">Bemorga xabar berish</string>
     <string name="now">Hozir</string>
     <string name="numeric">Raqamli</string>
+    <string name="objectiveExam">Obyektiv tekshiruv</string>
     <string name="occlusionBiteType">Tish jipslanishi (pripkus)</string>
     <string name="of">/</string>
     <string name="off">O'chirilgan</string>
@@ -1685,6 +1696,7 @@
     <string name="optional">Ixtiyoriy</string>
     <string name="orAfter">yoki keyin</string>
     <string name="oralCavityCondition">Og'iz bo'shlig'i, milk, alveola, tanglay shilliq qavatlari holati</string>
+    <string name="oralCavityTexts">Og'iz bo'shlig'i: tayyor matnlar</string>
     <string name="other">Boshqa</string>
     <string name="otherCountry">Boshqa</string>
     <string name="otherIllnessesAndComplications">Boshidan o'tkazgan va yo'ldosh kasalliklar</string>
@@ -2006,6 +2018,7 @@
     <string name="searchPatientsDirectoryHint">Ism, telefon yoki ID</string>
     <string name="searchPatientsGlobalHint">Barcha bemorlarni qidirish…</string>
     <string name="searchPatientsHint">Ism, telefon yoki ID bo'yicha qidirish…</string>
+    <string name="searchPhrases">Iboralarni qidirish</string>
     <string name="searchProfession">Kasbni qidirish...</string>
     <string name="searchTasksOrPatients">Vazifa yoki bemorlarni qidirish</string>
     <string name="searchTimezone">Vaqt zonasini qidirish</string>
@@ -2341,6 +2354,8 @@
     <string name="treatmentPlanWizardSymptoms">Simptomlar (vergul bilan)</string>
     <string name="treatmentPlanWizardTitle">Reja yordamchisi</string>
     <string name="treatmentResultProgress">Davolanish natijasi (epikriz)</string>
+    <string name="treatmentStage1">Davolash (1-bosqich)</string>
+    <string name="treatmentStage2">Davolash (2-bosqich / epikriz)</string>
     <string name="tuesday">Seshanba</string>
     <string name="turkmen">Turkman</string>
     <string name="turnOn">Yoqish</string>
@@ -2485,6 +2500,7 @@
     <string name="workplaceInformation">Ish joyi ma'lumotlari</string>
     <string name="wrongOrExpiredCodeBackToCode">Kod noto'g'ri yoki muddati o'tgan. Yangi kod so'rang.</string>
     <string name="xrayLabExaminationData">Rentgen labarator tekshiruv ma'lumotlari</string>
+    <string name="xrayTexts">Rentgen: tayyor matnlar</string>
     <string name="yes">Ha</string>
     <string name="yesCancel">Ha, bekor qilish</string>
     <string name="yesterday">Kecha</string>
