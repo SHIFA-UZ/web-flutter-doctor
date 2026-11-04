@@ -94,6 +94,7 @@ import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
 import shifa.doctor.ui.auth.short
+import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.profile.BillingScreen
 import shifa.doctor.ui.profile.ContactScreen
@@ -308,6 +309,9 @@ private fun RouteContent(
                     ),
                 )
                 if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
+            } else if (route.tab == ShellTab.Calendar && !staff) {
+                // Rows open their panels with CAL-6 (appointment) / CAL-7 (booking) / CAL-8 (block).
+                CalendarScreen(onOpen = {})
             } else {
                 TabPlaceholder(route.tab.label, route.tab.icon)
             }

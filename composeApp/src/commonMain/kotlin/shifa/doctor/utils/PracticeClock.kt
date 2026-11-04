@@ -28,6 +28,12 @@ class PracticeClock(
 
     val zone: TimeZone = parsed ?: TimeZone.UTC
 
+    /** The profile's zone id as given (null when missing or unknown). */
+    val zoneId: String? = parsed?.id
+
+    /** The phone's zone id, for the mismatch banner only. */
+    fun deviceZoneId(): String = deviceZone().id
+
     /** True when the profile had no usable time zone and [zone] is the UTC fallback. */
     val zoneMissing: Boolean = parsed == null
 

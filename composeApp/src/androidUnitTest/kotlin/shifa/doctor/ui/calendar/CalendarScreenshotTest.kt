@@ -13,4 +13,12 @@ import org.robolectric.annotation.GraphicsMode
 class CalendarScreenshotTest {
     @Test
     fun monthPicker() = captureRoboImage("screenshots/Calendar_monthPicker.png") { MonthPickerPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1400dp-xhdpi")
+    fun day() = captureRoboImage("screenshots/Calendar_day.png") { CalendarDayPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun details() = captureRoboImage("screenshots/Calendar_details.png") { CalendarDetailsPreview() }
 }

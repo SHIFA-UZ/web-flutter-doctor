@@ -113,6 +113,7 @@
     <string name="aids">OITS</string>
     <string name="all">Barchasi</string>
     <string name="allCaughtUp">Hammasi joyida!</string>
+    <string name="allDay">Kun bo'yi</string>
     <string name="allPatients">Barcha bemorlar</string>
     <string name="allRoles">Barcha rollar</string>
     <string name="allergies">Allergiyalar</string>
@@ -238,6 +239,7 @@
     <string name="blockTimeSuccess">Vaqt muvaffaqiyatli bloklandi</string>
     <string name="blockTimeSuccessWithCancel">Vaqt bloklandi. %1$s ta uchrashuv bekor qilindi.</string>
     <string name="blockTimeTitle">Vaqtni bloklash</string>
+    <string name="blocked">Band qilingan</string>
     <string name="blockedTime">Bloklangan</string>
     <string name="bloodGroup">Qon guruhi</string>
     <string name="book">Yozish</string>
@@ -734,6 +736,7 @@
     <string name="couldNotLoadDocument">Hujjatni yuklab bo'lmadi</string>
     <string name="couldNotLoadEarlierNotes">Oldingi qaydlarni yuklab bo'lmadi</string>
     <string name="couldNotLoadRetry">Yuklab bo'lmadi. Qayta urinish</string>
+    <string name="couldNotLoadThisDay">Bu kunni yuklab bo'lmadi</string>
     <string name="couldNotOpenAppointment">Uchrashuvni ochib bo'lmadi.</string>
     <string name="country">Mamlakat</string>
     <string name="createAccount">Hisob yaratish</string>
@@ -924,8 +927,11 @@
     <string name="droppedFacts">Tashlab yuborilgan (aytilmagan)</string>
     <string name="duration">Davomiylik</string>
     <string name="durationDays">Davomiylik (kunlar)</string>
+    <string name="durationHours">%1$s soat</string>
+    <string name="durationHoursMinutes">%1$s soat %2$s daq</string>
     <string name="durationLabelShort">Davomiyligi</string>
     <string name="durationMin">%1$s daqiqa</string>
+    <string name="durationMinutes">%1$s daq</string>
     <string name="edit">Tahrirlash</string>
     <string name="editGroup">Guruhni tahrirlash</string>
     <string name="editKey">Tahrirlash</string>
@@ -1070,6 +1076,7 @@
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
     <string name="formSavedSuccessfully">Forma muvaffaqiyatli saqlandi</string>
     <string name="freeRemovesPrices">Mavjud narxlar o'chiriladi</string>
+    <string name="freeSlot">Bo'sh vaqt</string>
     <string name="freeSlots">Bo'sh vaqtlar</string>
     <string name="friday">Juma</string>
     <string name="fromDate">Boshlanish sanasi</string>
@@ -1096,8 +1103,10 @@
     <string name="goodMorning">Xayrli tong</string>
     <string name="groupName">Guruh nomi</string>
     <string name="heartDisease">Yurak kasalligi</string>
+    <string name="hiddenByFilters">Filtrlar bilan yashirilgan</string>
     <string name="hideAiAndFormNotes">Yashirish</string>
     <string name="hideAiReminders">Eslatmalarni yashirish</string>
+    <string name="hideDetails">Batafsilni yashirish</string>
     <string name="hidePassword">Parolni yashirish</string>
     <string name="history">Tarix</string>
     <string name="holdToCollapseAnswer">Javobni yig'ish uchun bosib turing</string>
@@ -1846,6 +1855,7 @@
     <string name="requiresProPlan">Shifa intellekti uchun PRO tarif kerak.</string>
     <string name="resendCode">Kodni qayta yuborish</string>
     <string name="resendCodeIn">Kodni %1$s da qayta yuborish</string>
+    <string name="reset">Tiklash</string>
     <string name="resetDoctorCalendar">Shifokor taqvimini qayta o'rnatish</string>
     <string name="resetPassword">Parolni tiklash</string>
     <string name="resetPasswordFailed">Parolni tiklab bo'lmadi. Iltimos, qayta urinib ko'ring.</string>
@@ -1985,6 +1995,7 @@
     <string name="showAiReminders">Eslatmalarni ko'rsatish (%1$s)</string>
     <string name="showAppointments">Uchrashuvlarni ko'rsatish</string>
     <string name="showBlockedTime">Bloklangan vaqtlarni ko'rsatish</string>
+    <string name="showDetails">Batafsil ko'rsatish</string>
     <string name="showFreeSlots">Bo'sh vaqtlarni ko'rsatish</string>
     <string name="showPassword">Parolni ko'rsatish</string>
     <string name="showingProfilesCount">Profillar: %1$s / %2$s</string>
@@ -2049,7 +2060,13 @@
     <string name="startingScreen">Boshlang'ich ekran</string>
     <string name="startingScreenHint">Ilovani ochganda ko'rsatiladigan asosiy bo'lim. Bildirishnomalar tegishli ekranni ochadi.</string>
     <string name="status">Holat</string>
+    <string name="statusCancelled">Bekor qilingan</string>
+    <string name="statusCompleted">Yakunlangan</string>
+    <string name="statusConfirmed">Tasdiqlangan</string>
     <string name="statusFailed">XATO</string>
+    <string name="statusInProgress">Jarayonda</string>
+    <string name="statusNoShow">Kelmadi</string>
+    <string name="statusRequested">So'ralgan</string>
     <string name="statusUnprocessed">QAYTA ISHLANMAGAN</string>
     <string name="stepApplyingPlan">Davolash rejasi qo'llanmoqda…</string>
     <string name="stepCompleting">Tashrif yakunlanmoqda…</string>
@@ -2226,6 +2243,7 @@
     <string name="twoFactorAuthentication">Ikki bosqichli autentifikatsiya</string>
     <string name="typeANote">Izoh yozing</string>
     <string name="typeMessage">Xabar yozing...</string>
+    <string name="tzMismatchZones">Kalendar: %1$s · Telefon: %2$s</string>
     <string name="unauthorized">Ruxsatsiz. Iltimos, qayta kiring.</string>
     <string name="unauthorizedPleaseLoginAgain">Ruxsatsiz. Iltimos, qayta kiring.</string>
     <string name="unblockConfirm">Ushbu blokni olib tashlaysizmi? Bo'sh vaqtlar yana ochiladi.</string>

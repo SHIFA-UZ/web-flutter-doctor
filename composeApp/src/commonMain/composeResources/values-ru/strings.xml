@@ -113,6 +113,7 @@
     <string name="aids">СПИД</string>
     <string name="all">Все</string>
     <string name="allCaughtUp">Всё выполнено!</string>
+    <string name="allDay">Весь день</string>
     <string name="allPatients">Все пациенты</string>
     <string name="allRoles">Все роли</string>
     <string name="allergies">Аллергии</string>
@@ -238,6 +239,7 @@
     <string name="blockTimeSuccess">Время успешно заблокировано</string>
     <string name="blockTimeSuccessWithCancel">Время заблокировано. Отменено записей: %1$s.</string>
     <string name="blockTimeTitle">Заблокировать время</string>
+    <string name="blocked">Заблокировано</string>
     <string name="blockedTime">Заблокировано</string>
     <string name="bloodGroup">Группа крови</string>
     <string name="book">Записать</string>
@@ -734,6 +736,7 @@
     <string name="couldNotLoadDocument">Не удалось загрузить документ</string>
     <string name="couldNotLoadEarlierNotes">Не удалось загрузить предыдущие заметки</string>
     <string name="couldNotLoadRetry">Не удалось загрузить. Повторить</string>
+    <string name="couldNotLoadThisDay">Не удалось загрузить этот день</string>
     <string name="couldNotOpenAppointment">Не удалось открыть запись.</string>
     <string name="country">Страна</string>
     <string name="createAccount">Создать аккаунт</string>
@@ -924,8 +927,11 @@
     <string name="droppedFacts">Отброшено (не сказано)</string>
     <string name="duration">Продолжительность</string>
     <string name="durationDays">Продолжительность (дни)</string>
+    <string name="durationHours">%1$s ч</string>
+    <string name="durationHoursMinutes">%1$s ч %2$s мин</string>
     <string name="durationLabelShort">Длительность</string>
     <string name="durationMin">%1$s мин</string>
+    <string name="durationMinutes">%1$s мин</string>
     <string name="edit">Изменить</string>
     <string name="editGroup">Изменить группу</string>
     <string name="editKey">Изменить</string>
@@ -1070,6 +1076,7 @@
     <string name="form0252MedicalDocument">Медицинский документ 025-2</string>
     <string name="formSavedSuccessfully">Форма успешно сохранена</string>
     <string name="freeRemovesPrices">Текущие цены будут удалены</string>
+    <string name="freeSlot">Свободное время</string>
     <string name="freeSlots">Свободные слоты</string>
     <string name="friday">Пятница</string>
     <string name="fromDate">Дата начала</string>
@@ -1096,8 +1103,10 @@
     <string name="goodMorning">Доброе утро</string>
     <string name="groupName">Название группы</string>
     <string name="heartDisease">Болезнь сердца</string>
+    <string name="hiddenByFilters">Скрыто фильтрами</string>
     <string name="hideAiAndFormNotes">Скрыть</string>
     <string name="hideAiReminders">Скрыть напоминания</string>
+    <string name="hideDetails">Скрыть детали</string>
     <string name="hidePassword">Скрыть пароль</string>
     <string name="history">История</string>
     <string name="holdToCollapseAnswer">Удерживайте, чтобы свернуть ответ</string>
@@ -1846,6 +1855,7 @@
     <string name="requiresProPlan">Для Shifa Intelligence нужен тариф PRO.</string>
     <string name="resendCode">Отправить код снова</string>
     <string name="resendCodeIn">Отправить код снова через %1$s</string>
+    <string name="reset">Сбросить</string>
     <string name="resetDoctorCalendar">Сбросить календарь врача</string>
     <string name="resetPassword">Сброс пароля</string>
     <string name="resetPasswordFailed">Не удалось сбросить пароль. Попробуйте ещё раз.</string>
@@ -1985,6 +1995,7 @@
     <string name="showAiReminders">Показать напоминания (%1$s)</string>
     <string name="showAppointments">Показать записи</string>
     <string name="showBlockedTime">Показать заблокированное время</string>
+    <string name="showDetails">Показать детали</string>
     <string name="showFreeSlots">Показать свободные слоты</string>
     <string name="showPassword">Показать пароль</string>
     <string name="showingProfilesCount">Профили: %1$s из %2$s</string>
@@ -2049,7 +2060,13 @@
     <string name="startingScreen">Стартовый экран</string>
     <string name="startingScreenHint">Главная вкладка при запуске приложения. Уведомления по-прежнему открывают нужный экран.</string>
     <string name="status">Статус</string>
+    <string name="statusCancelled">Отменено</string>
+    <string name="statusCompleted">Завершено</string>
+    <string name="statusConfirmed">Подтверждено</string>
     <string name="statusFailed">ОШИБКА</string>
+    <string name="statusInProgress">Идёт приём</string>
+    <string name="statusNoShow">Неявка</string>
+    <string name="statusRequested">Запрошено</string>
     <string name="statusUnprocessed">НЕ ОБРАБОТАНО</string>
     <string name="stepApplyingPlan">Применяем план лечения…</string>
     <string name="stepCompleting">Завершаем визит…</string>
@@ -2226,6 +2243,7 @@
     <string name="twoFactorAuthentication">Двухфакторная аутентификация</string>
     <string name="typeANote">Введите примечание</string>
     <string name="typeMessage">Введите сообщение...</string>
+    <string name="tzMismatchZones">Календарь: %1$s · Телефон: %2$s</string>
     <string name="unauthorized">Не авторизован. Пожалуйста, войдите снова.</string>
     <string name="unauthorizedPleaseLoginAgain">Не авторизован. Пожалуйста, войдите снова.</string>
     <string name="unblockConfirm">Снять эту блокировку? Свободные слоты снова станут доступны.</string>

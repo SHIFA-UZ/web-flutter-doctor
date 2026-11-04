@@ -113,6 +113,7 @@
     <string name="aids">AIDS</string>
     <string name="all">All</string>
     <string name="allCaughtUp">All caught up!</string>
+    <string name="allDay">All day</string>
     <string name="allPatients">All patients</string>
     <string name="allRoles">All Roles</string>
     <string name="allergies">Allergies</string>
@@ -238,6 +239,7 @@
     <string name="blockTimeSuccess">Time blocked successfully</string>
     <string name="blockTimeSuccessWithCancel">Time blocked. %1$s appointment(s) cancelled.</string>
     <string name="blockTimeTitle">Block time</string>
+    <string name="blocked">Blocked</string>
     <string name="blockedTime">Blocked</string>
     <string name="bloodGroup">Blood group</string>
     <string name="book">Book</string>
@@ -734,6 +736,7 @@
     <string name="couldNotLoadDocument">Could not load document</string>
     <string name="couldNotLoadEarlierNotes">Could not load earlier notes</string>
     <string name="couldNotLoadRetry">Couldn't load. Retry</string>
+    <string name="couldNotLoadThisDay">Couldn't load this day</string>
     <string name="couldNotOpenAppointment">Couldn't open the appointment.</string>
     <string name="country">Country</string>
     <string name="createAccount">Create account</string>
@@ -924,8 +927,11 @@
     <string name="droppedFacts">Dropped (not said)</string>
     <string name="duration">Duration</string>
     <string name="durationDays">Duration (days)</string>
+    <string name="durationHours">%1$s h</string>
+    <string name="durationHoursMinutes">%1$s h %2$s min</string>
     <string name="durationLabelShort">Duration</string>
     <string name="durationMin">%1$s min</string>
+    <string name="durationMinutes">%1$s min</string>
     <string name="edit">Edit</string>
     <string name="editGroup">Edit group</string>
     <string name="editKey">Edit</string>
@@ -1070,6 +1076,7 @@
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
     <string name="formSavedSuccessfully">Form saved successfully</string>
     <string name="freeRemovesPrices">Existing prices will be removed</string>
+    <string name="freeSlot">Free slot</string>
     <string name="freeSlots">Free Slots</string>
     <string name="friday">Friday</string>
     <string name="fromDate">From date</string>
@@ -1096,8 +1103,10 @@
     <string name="goodMorning">Good morning</string>
     <string name="groupName">Group name</string>
     <string name="heartDisease">Heart Disease</string>
+    <string name="hiddenByFilters">Hidden by filters</string>
     <string name="hideAiAndFormNotes">Hide</string>
     <string name="hideAiReminders">Hide reminders</string>
+    <string name="hideDetails">Hide details</string>
     <string name="hidePassword">Hide password</string>
     <string name="history">History</string>
     <string name="holdToCollapseAnswer">Hold to collapse answer</string>
@@ -1846,6 +1855,7 @@
     <string name="requiresProPlan">Shifa Intelligence requires the PRO plan.</string>
     <string name="resendCode">Resend code</string>
     <string name="resendCodeIn">Resend code in %1$s</string>
+    <string name="reset">Reset</string>
     <string name="resetDoctorCalendar">Reset Doctor Calendar</string>
     <string name="resetPassword">Reset Password</string>
     <string name="resetPasswordFailed">Could not reset the password. Please try again.</string>
@@ -1985,6 +1995,7 @@
     <string name="showAiReminders">Show reminders (%1$s)</string>
     <string name="showAppointments">Show Appointments</string>
     <string name="showBlockedTime">Show blocked time</string>
+    <string name="showDetails">Show details</string>
     <string name="showFreeSlots">Show Free Slots</string>
     <string name="showPassword">Show password</string>
     <string name="showingProfilesCount">Profiles: %1$s of %2$s</string>
@@ -2049,7 +2060,13 @@
     <string name="startingScreen">Starting screen</string>
     <string name="startingScreenHint">Main tab when you open the app. Notifications still open the relevant screen.</string>
     <string name="status">Status</string>
+    <string name="statusCancelled">Cancelled</string>
+    <string name="statusCompleted">Complete</string>
+    <string name="statusConfirmed">Confirmed</string>
     <string name="statusFailed">FAILED</string>
+    <string name="statusInProgress">In progress</string>
+    <string name="statusNoShow">No-show</string>
+    <string name="statusRequested">Requested</string>
     <string name="statusUnprocessed">UNPROCESSED</string>
     <string name="stepApplyingPlan">Applying treatment plan…</string>
     <string name="stepCompleting">Completing visit…</string>
@@ -2226,6 +2243,7 @@
     <string name="twoFactorAuthentication">Two-factor Authentication</string>
     <string name="typeANote">Type a note</string>
     <string name="typeMessage">Type a message...</string>
+    <string name="tzMismatchZones">Calendar: %1$s · Phone: %2$s</string>
     <string name="unauthorized">Unauthorized. Please login again.</string>
     <string name="unauthorizedPleaseLoginAgain">Unauthorized: please login again.</string>
     <string name="unblockConfirm">Remove this block? Free slots will become available again.</string>

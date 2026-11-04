@@ -32,3 +32,66 @@ internal fun MonthPickerPreview() =
             Modifier.padding(ShifaSpacing.Inset.Md),
         )
     }
+
+private val clock =
+    shifa.doctor.utils.PracticeClock("Asia/Tashkent", {
+        kotlinx.datetime.Instant.parse("2026-11-04T05:15:00Z")
+    }, { kotlinx.datetime.TimeZone.of("Asia/Tashkent") })
+
+private fun at(
+    h: Int,
+    m: Int,
+) = kotlinx.datetime.Instant.parse(
+    "2026-11-04T${(h - 5).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00Z",
+)
+
+private val day =
+    listOf(
+        shifa.doctor.data.model.CalendarEntry.FreeSlot(at(9, 0), at(9, 30), 1, "Shifa Clinic"),
+        shifa.doctor.data.model.CalendarEntry.Appointment(
+            at(
+                10,
+                0,
+            ),
+            at(10, 30), 101, 11, "Dilnoza Rahimova", null, "CONFIRMED", "PAID", "Follow-up", "Video Consultation",
+        ),
+        shifa.doctor.data.model.CalendarEntry.Appointment(
+            at(
+                11,
+                0,
+            ),
+            at(
+                11,
+                30,
+            ),
+            102, 12, "Jasur Karimov", null, "CANCELLED", null, "First visit", "Shifa Clinic", 1, "Shifa Clinic",
+        ),
+        shifa.doctor.data.model.CalendarEntry.Blocked(at(13, 0), at(14, 0), 1, "Lunch"),
+        shifa.doctor.data.model.CalendarEntry.Appointment(
+            at(
+                15,
+                0,
+            ),
+            at(
+                16,
+                0,
+            ),
+            103, 13, "Malika Tursunova", null, "REQUESTED", "PENDING", "Braces check", "Shifa Clinic", 1, "Shifa Clinic",
+        ),
+    )
+
+private fun state(details: Boolean) =
+    CalendarUiState(
+        clock = clock,
+        cache =
+            shifa.doctor.data.calendar.CalendarCache(
+                days = mapOf(shifa.doctor.data.calendar.DayKey(LocalDate(2026, 11, 4)) to day),
+            ),
+        details = details,
+    )
+
+@Composable
+internal fun CalendarDayPreview() = PreviewTheme { CalendarContent(state(false), CalendarActions()) }
+
+@Composable
+internal fun CalendarDetailsPreview() = PreviewTheme { CalendarContent(state(true), CalendarActions()) }
