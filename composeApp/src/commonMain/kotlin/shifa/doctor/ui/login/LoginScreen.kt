@@ -104,6 +104,7 @@ fun LoginScreenContent(
                         if (b.error) Res.drawable.ic_alert_circle_16 else Res.drawable.ic_info_16,
                         if (b.error) ShifaBannerType.Error else ShifaBannerType.Warning,
                         onClose = onDismissBanner,
+                        detail = b.requestId,
                     )
                 }
             },

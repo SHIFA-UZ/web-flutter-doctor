@@ -20,6 +20,8 @@ import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.api.jwt
+import shifa.doctor.data.auth.AuthRepository
+import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.config.BootGate
 import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.model.ApiException
@@ -99,6 +101,18 @@ class DemoBackendTest {
             assertThat(config.bootGate("en").getOrNull()).isEqualTo(BootGate.Maintenance(null))
             gate = DemoBootGate.Update
             assertThat(config.bootGate("en").getOrNull()).isInstanceOf(BootGate.Update::class.java)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `verify-key opens both registrations from the demo keys and refuses others`() =
+        runTest {
+            val auth = AuthRepository { client }
+            assertThat(auth.verifyKey(DemoBackend.DEMO_DOCTOR_KEY).getOrThrow()).isEqualTo(Invite("DEMO-DOCTOR", false))
+            val reception = auth.verifyKey("demo-reception").getOrThrow()!!
+            assertThat(reception.receptionist).isTrue()
+            assertThat(reception.email).isEqualTo("demo.reception@shifa.dev")
+            assertThat(auth.verifyKey("NOPE").getOrThrow()).isNull()
             assertThat(forwarded).isEmpty()
         }
 }

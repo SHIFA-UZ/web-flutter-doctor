@@ -114,3 +114,25 @@ Built 2026-11-04. Flows `01/03`, `01/04` (reset mode), `01/05-reset-password.md`
   yet. Autofill `newPassword` hints wait for the autofill check (AUTH-02).
 - **Tests:** `ResetPasswordViewModelTest` (4), `ResetPasswordScreenshotTest` (3), plus the reset cases in
   `EmailCodeViewModelTest`.
+
+## AUTH-05 · Verify the invitation key
+
+Built 2026-11-04. Flow `01/06-verify-invite-key.md`; board `DaAuth.dc.html`, branch `verify`.
+
+- **Screen** (`ui/register/VerifyKeyScreen.kt`): bar title "Verify" with Back and the language pill, the 120 logo, "Enter
+  the invitation key from your e-mail." (flow target), the "One-time key" field with a Paste action (flow target), Next.
+  The field has no autocorrect or capitalisation (keyboards "fix" keys, flow §8).
+- **Behaviour:** the key is trimmed (keys pasted from e-mail carry spaces and line breaks); empty → "Please enter your
+  one-time key." inline, no request. `POST /auth/verify-key {key}`. `valid = false` → one neutral banner "This key is
+  invalid or has already been used." (typo and used key alike); other failures → "Request failed…", timeout, network.
+  A valid key opens registration with an `Invite` (purpose, clinic, invited address) carried in the navigation state,
+  **memory only** (Flutter also stored it in device prefs and never read it back): `CLINIC_RECEPTIONIST_INVITE` →
+  receptionist form (AUTH-08), anything else → Create account (AUTH-06). Back from registration returns to Sign In.
+- **Checked on dev:** an unknown key returns `200 {"valid":false,…}`; an empty one `400 VALIDATION` (never sent).
+- **While checking** the field and Paste are read-only (flow §6), so the answer always belongs to the key shown.
+- **Request id (all auth screens):** an error banner shows the failed call's `requestId` on a second line ("Request ID:
+  …", `ShifaBanner(detail)`, 17 §1); Login, e-mail, code, reset and key screens carry it. Not in the design: the
+  smallest addition in the banner's style.
+- **Demo data:** `auth/verify-key` is answered locally: `DEMO-DOCTOR` → doctor registration, `DEMO-RECEPTION` →
+  receptionist registration ("Demo Clinic", locked address); anything else is invalid.
+- **Tests:** `VerifyKeyViewModelTest` (4), `VerifyKeyScreenshotTest` (3: empty, invalid, failed), `DemoBackendTest` (+1).

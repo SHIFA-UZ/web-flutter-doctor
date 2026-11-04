@@ -3,6 +3,7 @@ package shifa.doctor.ui.widgets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,11 +19,13 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.dismiss
+import shifa.doctor.generated.resources.errorRequestId
 import shifa.doctor.generated.resources.ic_x_16
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.utils.tr
 
 enum class ShifaBannerType(
@@ -46,6 +49,8 @@ fun ShifaBanner(
     type: ShifaBannerType,
     modifier: Modifier = Modifier,
     onClose: (() -> Unit)? = null,
+    /** A second, smaller line: the failed call's request id (17 §1), so support can find it. */
+    detail: String? = null,
 ) {
     Row(
         modifier
@@ -58,7 +63,16 @@ fun ShifaBanner(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(painterResource(icon), contentDescription = null, tint = type.tint)
-        Text(text, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = ShifaColors.Text.Primary)
+        Column(Modifier.weight(1f)) {
+            Text(text, style = MaterialTheme.typography.bodyMedium, color = ShifaColors.Text.Primary)
+            detail?.let {
+                Text(
+                    tr(Res.string.errorRequestId, it),
+                    style = ShifaTextStyles.metaSmall(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            }
+        }
         onClose?.let {
             ShifaIconButton(Res.drawable.ic_x_16, tr(Res.string.dismiss), it, variant = ShifaIconButtonVariant.Ghost)
         }

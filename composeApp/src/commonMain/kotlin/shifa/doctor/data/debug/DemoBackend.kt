@@ -130,6 +130,7 @@ class DemoBackend(
             get && path == Endpoints.DOCTOR_ME -> ok(doctorMe())
             get && path == Endpoints.PUBLIC_CONFIG -> ok(publicConfig(bootGate()))
             request.method == HttpMethod.Put && path == Endpoints.DOCTOR_LANGUAGE -> setLanguage(body)
+            request.method == HttpMethod.Post && path == Endpoints.VERIFY_KEY -> ok(verifyKey(body))
             get -> null
             else -> refused()
         }
@@ -156,6 +157,20 @@ class DemoBackend(
             me = it
         }
 
+    // Checking a key writes nothing. DEMO-DOCTOR and DEMO-RECEPTION open the two registrations; any other key is invalid.
+    private fun verifyKey(body: String): JsonObject {
+        val key = runCatching { apiJson.parseToJsonElement(body).jsonObject["key"]?.jsonPrimitive?.content }.getOrNull()
+        val answer =
+            when (key?.trim()?.uppercase()) {
+                DEMO_DOCTOR_KEY -> """{"valid":true}""" // a doctor invitation has no purpose
+                DEMO_RECEPTION_KEY ->
+                    """{"valid":true,"purpose":"CLINIC_RECEPTIONIST_INVITE","clinicId":1,
+                    "clinicName":"Demo Clinic","emailSentTo":"demo.reception@shifa.dev"}"""
+                else -> """{"valid":false}"""
+            }
+        return apiJson.parseToJsonElement(answer).jsonObject
+    }
+
     private suspend fun setLanguage(body: String): Reply {
         val language =
             runCatching { apiJson.parseToJsonElement(body).jsonObject["language"]?.jsonPrimitive?.content }.getOrNull()
@@ -177,6 +192,8 @@ class DemoBackend(
     private fun refused() = fail(HttpStatusCode.Forbidden, "DEMO_WRITE_REFUSED")
 
     companion object {
+        const val DEMO_DOCTOR_KEY = "DEMO-DOCTOR"
+        const val DEMO_RECEPTION_KEY = "DEMO-RECEPTION"
         val shared by lazy { DemoBackend() }
     }
 }

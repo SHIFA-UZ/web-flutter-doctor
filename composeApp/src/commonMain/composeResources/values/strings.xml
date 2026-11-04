@@ -937,6 +937,7 @@
     <string name="errorOpeningDocument">Error opening document</string>
     <string name="errorPickingImage">Error picking image</string>
     <string name="errorRecordingVoice">Error recording voice</string>
+    <string name="errorRequestId">Request ID: %1$s</string>
     <string name="errorSaving">Error saving</string>
     <string name="errorSavingDocumentation">Error saving documentation</string>
     <string name="errorSavingForm">Error saving form</string>

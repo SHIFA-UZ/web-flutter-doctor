@@ -937,6 +937,7 @@
     <string name="errorOpeningDocument">Hujjatni ochishda xatolik</string>
     <string name="errorPickingImage">Rasmni tanlashda xatolik</string>
     <string name="errorRecordingVoice">Ovoz yozishda xatolik</string>
+    <string name="errorRequestId">So'rov ID: %1$s</string>
     <string name="errorSaving">Saqlashda xatolik</string>
     <string name="errorSavingDocumentation">Hujjatlarni saqlashda xatolik</string>
     <string name="errorSavingForm">Formani saqlashda xatolik</string>

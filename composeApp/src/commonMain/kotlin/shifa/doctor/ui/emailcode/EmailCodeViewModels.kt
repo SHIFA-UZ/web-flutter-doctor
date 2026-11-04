@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
+import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.OtpCooldown
@@ -33,6 +34,7 @@ enum class EmailCodeMode { SignIn, Reset }
 data class CodeBanner(
     val text: StringResource,
     val error: Boolean = true,
+    val requestId: String? = null,
 )
 
 data class EmailEntryUiState(
@@ -79,7 +81,10 @@ class EmailEntryViewModel(
             _state.update {
                 result.fold(
                     onSuccess = { _ -> it.copy(loading = false, sentTo = email) },
-                    onFailure = { e -> it.copy(loading = false, banner = CodeBanner(sendError(e))) },
+                    onFailure = {
+                            e ->
+                        it.copy(loading = false, banner = CodeBanner(sendError(e), requestId = e.requestId))
+                    },
                 )
             }
         }
@@ -137,7 +142,14 @@ class CodeViewModel(
                 result.fold(
                     onSuccess = { session -> it.copy(loading = false, signedIn = session) },
                     // A wrong or expired code clears the field for the next try (flow §5).
-                    onFailure = { e -> it.copy(loading = false, code = "", banner = CodeBanner(verifyError(e))) },
+                    onFailure = {
+                            e ->
+                        it.copy(
+                            loading = false,
+                            code = "",
+                            banner = CodeBanner(verifyError(e), requestId = e.requestId),
+                        )
+                    },
                 )
             }
         }
@@ -156,7 +168,10 @@ class CodeViewModel(
                             _ ->
                         it.copy(loading = false, banner = CodeBanner(Res.string.otpResent, error = false))
                     },
-                    onFailure = { e -> it.copy(loading = false, banner = CodeBanner(sendError(e))) },
+                    onFailure = {
+                            e ->
+                        it.copy(loading = false, banner = CodeBanner(sendError(e), requestId = e.requestId))
+                    },
                 )
             }
             tick()

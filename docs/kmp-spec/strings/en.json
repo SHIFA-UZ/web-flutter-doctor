@@ -1752,6 +1752,7 @@
   "required": "Required",
   "requirementMet": "met",
   "requirementNotMet": "not met",
+  "errorRequestId": "Request ID: {id}",
   "requiresProPlan": "Shifa Intelligence requires the PRO plan.",
   "resendCode": "Resend code",
   "resendCodeIn": "Resend code in {{time}}",

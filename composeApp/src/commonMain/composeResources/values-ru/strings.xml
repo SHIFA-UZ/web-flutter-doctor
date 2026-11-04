@@ -937,6 +937,7 @@
     <string name="errorOpeningDocument">Ошибка при открытии документа</string>
     <string name="errorPickingImage">Ошибка при выборе изображения</string>
     <string name="errorRecordingVoice">Ошибка записи голоса</string>
+    <string name="errorRequestId">ID запроса: %1$s</string>
     <string name="errorSaving">Ошибка сохранения</string>
     <string name="errorSavingDocumentation">Ошибка при сохранении документации</string>
     <string name="errorSavingForm">Ошибка сохранения формы</string>

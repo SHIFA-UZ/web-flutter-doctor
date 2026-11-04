@@ -42,3 +42,17 @@ data class ForgotPasswordResetRequest(
     val newPassword: String,
     val app: String,
 )
+
+@Serializable
+data class VerifyKeyRequest(
+    val key: String,
+)
+
+@Serializable
+data class VerifyKeyResponse(
+    val valid: Boolean = false,
+    val purpose: String? = null,
+    val clinicId: Long? = null,
+    val clinicName: String? = null,
+    val emailSentTo: String? = null,
+)

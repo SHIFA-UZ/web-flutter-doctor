@@ -22,6 +22,7 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.session.sessionRepository
@@ -37,6 +38,7 @@ import shifa.doctor.ui.emailcode.EmailCodeMode
 import shifa.doctor.ui.emailcode.EmailEntryScreen
 import shifa.doctor.ui.emailcode.ResetPasswordScreen
 import shifa.doctor.ui.login.LoginScreen
+import shifa.doctor.ui.register.VerifyKeyScreen
 import shifa.doctor.ui.splash.SplashScreen
 import shifa.doctor.ui.theme.ShifaTheme
 import shifa.doctor.ui.widgets.ShifaLink
@@ -90,6 +92,11 @@ private sealed interface Screen {
     ) : Screen
 
     data object VerifyKey : Screen
+
+    /** AUTH-06 (doctor) or AUTH-08 (receptionist), by the invitation's purpose. */
+    data class Register(
+        val invite: Invite,
+    ) : Screen
 
     data object Debug : Screen
 
@@ -169,8 +176,18 @@ private fun AppScreens() {
                     })
                 }
             }
-            // AUTH-05 replaces this.
             Screen.VerifyKey -> {
+                val back = { screen = Screen.SignIn }
+                BackHandler(onBack = back)
+                ScopedViewModels {
+                    VerifyKeyScreen(back, onVerified = {
+                            invite ->
+                        go(Screen.VerifyKey, Screen.Register(invite))
+                    })
+                }
+            }
+            // AUTH-06 and AUTH-08 replace this. Back from registration returns to Sign In (flow 01/06 §5).
+            is Screen.Register -> {
                 BackHandler { screen = Screen.SignIn }
                 AuthFrame(onBack = { screen = Screen.SignIn }) {}
             }

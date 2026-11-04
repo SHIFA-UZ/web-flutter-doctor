@@ -58,6 +58,7 @@ internal fun codeBanner(
                 if (b.error) Res.drawable.ic_alert_circle_16 else Res.drawable.ic_check_circle_16,
                 if (b.error) ShifaBannerType.Error else ShifaBannerType.Success,
                 onClose = onDismiss,
+                detail = b.requestId,
             )
         }
     }

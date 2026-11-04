@@ -15,6 +15,8 @@ import shifa.doctor.data.model.SendForgotPasswordOtpRequest
 import shifa.doctor.data.model.SendLoginOtpRequest
 import shifa.doctor.data.model.TokenResponse
 import shifa.doctor.data.model.VerifyEmailOtpRequest
+import shifa.doctor.data.model.VerifyKeyRequest
+import shifa.doctor.data.model.VerifyKeyResponse
 
 /** The sign-in calls (01 §2). They go without a token (`auth/` is public); the session repository keeps the result. */
 class AuthRepository(
@@ -83,7 +85,27 @@ class AuthRepository(
             }
         }.map { it.token }
 
+    /** `POST /auth/verify-key` (01 §2.5). Null when the key is unknown or already used (`valid = false`). */
+    suspend fun verifyKey(key: String): Result<Invite?> =
+        apiCall<VerifyKeyResponse> {
+            client().post(ApiConfig.Endpoints.VERIFY_KEY) {
+                contentType(ContentType.Application.Json)
+                setBody(VerifyKeyRequest(key))
+            }
+        }.map { r ->
+            r.takeIf { it.valid }?.let {
+                Invite(
+                    key,
+                    it.purpose == RECEPTIONIST_INVITE,
+                    it.clinicId,
+                    it.clinicName,
+                    it.emailSentTo?.trim()?.ifEmpty { null },
+                )
+            }
+        }
+
     private companion object {
+        const val RECEPTIONIST_INVITE = "CLINIC_RECEPTIONIST_INVITE"
         const val APP = "doctor"
     }
 }

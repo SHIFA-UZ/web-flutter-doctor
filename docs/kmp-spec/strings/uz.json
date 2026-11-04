@@ -1752,6 +1752,7 @@
   "required": "Majburiy",
   "requirementMet": "bajarildi",
   "requirementNotMet": "bajarilmadi",
+  "errorRequestId": "So'rov ID: {id}",
   "requiresProPlan": "Shifa intellekti uchun PRO tarif kerak.",
   "resendCode": "Kodni qayta yuborish",
   "resendCodeIn": "Kodni {{time}} da qayta yuborish",

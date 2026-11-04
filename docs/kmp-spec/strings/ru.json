@@ -1752,6 +1752,7 @@
   "required": "Обязательно",
   "requirementMet": "выполнено",
   "requirementNotMet": "не выполнено",
+  "errorRequestId": "ID запроса: {id}",
   "requiresProPlan": "Для Shifa Intelligence нужен тариф PRO.",
   "resendCode": "Отправить код снова",
   "resendCodeIn": "Отправить код снова через {{time}}",

@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
+import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.model.ApiException
@@ -120,7 +121,10 @@ class ResetPasswordViewModel(
             _state.update {
                 result.fold(
                     onSuccess = { session -> it.copy(loading = false, signedIn = session) },
-                    onFailure = { e -> it.copy(loading = false, banner = CodeBanner(error(e))) },
+                    onFailure = {
+                            e ->
+                        it.copy(loading = false, banner = CodeBanner(error(e), requestId = e.requestId))
+                    },
                 )
             }
         }

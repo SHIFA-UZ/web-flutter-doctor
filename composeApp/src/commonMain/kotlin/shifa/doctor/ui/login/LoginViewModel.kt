@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.SessionEndReason
+import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.model.ApiException
@@ -29,6 +30,7 @@ import shifa.doctor.generated.resources.somethingWentWrong
 data class LoginBanner(
     val text: StringResource,
     val error: Boolean,
+    val requestId: String? = null,
 )
 
 data class LoginUiState(
@@ -77,7 +79,13 @@ class LoginViewModel(
             _state.update {
                 result.fold(
                     onSuccess = { session -> it.copy(loading = false, signedIn = session) },
-                    onFailure = { e -> it.copy(loading = false, banner = LoginBanner(errorText(e), error = true)) },
+                    onFailure = {
+                            e ->
+                        it.copy(
+                            loading = false,
+                            banner = LoginBanner(errorText(e), error = true, requestId = e.requestId),
+                        )
+                    },
                 )
             }
         }

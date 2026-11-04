@@ -33,3 +33,6 @@ private val CODE_MESSAGES: Map<String, StringResource> =
         "TOKEN_INVALID" to Res.string.sessionExpiredBanner,
         "UNAVAILABLE" to Res.string.maintenanceBody,
     )
+
+/** The backend's trace id of a failed call, for the error banner's detail (17 §1); null for network failures. */
+val Throwable.requestId: String? get() = (this as? ApiException)?.requestId
