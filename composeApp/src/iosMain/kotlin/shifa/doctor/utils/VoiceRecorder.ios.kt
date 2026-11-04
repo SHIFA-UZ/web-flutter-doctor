@@ -34,6 +34,9 @@ import shifa.doctor.data.api.httpLogger
 @OptIn(ExperimentalForeignApi::class)
 private class IosVoiceRecorder : VoiceRecorder {
     private var recorder: AVAudioRecorder? = null
+    private var startedAt = 0.0
+    override var recordingId: String? = null
+    override var lastDurationSeconds = 0
 
     override fun start(): Boolean {
         stop()
@@ -50,21 +53,31 @@ private class IosVoiceRecorder : VoiceRecorder {
                 AVEncoderBitRateKey to 32_000,
             )
         val r = AVAudioRecorder(url, settings, null)
+        r.meteringEnabled = true
         if (!r.record()) {
             httpLogger.log("FAILED to start recording")
             return false
         }
         recorder = r
+        recordingId = newRecordingId()
+        startedAt = NSDate().timeIntervalSince1970
         return true
     }
 
     override fun stop(): ByteArray? {
         val r = recorder ?: return null
         recorder = null
+        lastDurationSeconds = (NSDate().timeIntervalSince1970 - startedAt).toInt()
         r.stop()
         val bytes = NSData.dataWithContentsOfURL(r.url)?.toByteArray()
         NSFileManager.defaultManager.removeItemAtURL(r.url, null)
         return bytes?.takeIf { it.isNotEmpty() }
+    }
+
+    override fun level(): Float {
+        val r = recorder ?: return 0f
+        r.updateMeters()
+        return levelFromDb(r.averagePowerForChannel(0u).toDouble())
     }
 }
 

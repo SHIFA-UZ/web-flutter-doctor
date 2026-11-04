@@ -142,3 +142,17 @@ briefing" row) and the "briefing" overlay.
 - **Tests:** `AppointmentModelsTest` (the status mapping), `AppointmentsRepositoryTest` (3 s then 10 s, ends when
   ready), `BriefingViewModelTest` (2: retry once, this visit's documents only; a failed read), `DemoBackendTest`,
   screenshots `Briefing_ready`, `Briefing_failed`.
+
+## AI-03 · Recorder level
+
+Built 2026-11-04. Spec 02 §3.5, ticket AI-03 (the recorder itself is CORE-07's spike, `utils/VoiceRecorder`: AAC-LC
+`.m4a`, 16 kHz mono 32 kbps, temp file deleted on stop).
+
+- **`VoiceRecorder.level()`**, 0..1 for the recording pill's wave: Android `MediaRecorder.maxAmplitude` (the peak
+  since the last read) as dBFS, iOS `AVAudioRecorder` metering (`averagePowerForChannel`); both through
+  `levelFromDb` (Flutter's bar height: 0.08 at −55 dB and below, 1 at −8 dB and above; 0 when not recording).
+  `recordingId` (made at start, sent with the transcription, AI-05) and `lastDurationSeconds`. The debug spike shows it every
+  60 ms while recording. Flutter's web WAV path and "no amplitude" probe aren't needed (native always reports).
+- **Checked:** the emulator records (33 KB `.m4a` in 2 s) and shows the bar, but its microphone has no input, so the
+  level stays near 0; the level is still to be checked on a phone (Android and iOS).
+- **Tests:** `VoiceLevelTest` (2: the dB mapping, new ids).

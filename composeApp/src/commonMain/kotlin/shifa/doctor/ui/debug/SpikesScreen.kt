@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -131,6 +132,16 @@ private fun AudioSpike() =
                 ShifaSecondaryButton(if (player.playback?.playing == true) "Pause" else "Play", { player.toggle(url) })
             }
         }
+        // AI-03: the microphone level every 60 ms while recording.
+        var level by remember { mutableStateOf(0f) }
+        LaunchedEffect(recording) {
+            while (recording) {
+                level = recorder.level()
+                delay(LEVEL_MS)
+            }
+            level = 0f
+        }
+        if (recording) LinearProgressIndicator({ level }, Modifier.fillMaxWidth())
         val playback = player.playback
         Text(
             if (playback == null) status else "$status · ${playback.position}s / ${playback.duration}s",
@@ -207,3 +218,5 @@ private fun FormPdfSpike() =
             PdfView(it, Modifier.fillMaxWidth().height(ShifaSize.S320)) { Text("PDF did not open") }
         }
     }
+
+private const val LEVEL_MS = 60L
