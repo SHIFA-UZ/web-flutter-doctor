@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Sign in and registration</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes au-spin{to{transform:rotate(360deg)}}
+@keyframes au-in{from{transform:translateY(calc(-1 * var(--size-8)));opacity:0}to{transform:none;opacity:1}}
+.au-in input,.au-in select{font: 600 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.au-in input::placeholder{color:var(--text-tertiary);font-weight:500}
+.au-btn:focus-visible,.au-in input:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.au-opt:hover{background:var(--bg-hover) !important}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; width: 100%; min-height: 100%; height: 100%; box-sizing: border-box; overflow-y: auto; background: {{wrapBg}}; font-family: var(--font-sans); color: var(--text-primary)">
+  <div style="min-height: 100%; display: flex; align-items: {{wrapAlign}}; justify-content: center; padding: {{wrapPad}}; box-sizing: border-box">
+    <div style="position: relative; width: 100%; max-width: {{cardMax}}; min-height: {{cardMinH}}; background: var(--bg-surface); border-radius: {{cardR}}; box-shadow: {{cardShadow}}; padding: {{cardPad}}; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-16)">
+
+      <div style="display: flex; align-items: center; gap: var(--size-8); min-height: var(--size-40)">
+        <sc-if value="{{v.back}}" hint-placeholder-val="{{ true }}">
+          <button class="au-btn sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{goBack}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+        </sc-if>
+        <span style="flex: 1 1 auto; text-align: center; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{v.barTitle}}</span>
+        <sc-if value="{{v.showLang}}" hint-placeholder-val="{{ true }}">
+          <div style="position: relative; flex: none">
+            <button class="au-btn sh-action sh-action--surface" onClick="{{toggleLang}}" aria-haspopup="listbox" aria-expanded="{{langOpenStr}}" aria-label="Language">{{langCode}}<span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span></button>
+            <sc-if value="{{langOpen}}" hint-placeholder-val="{{ false }}">
+              <ul role="listbox" aria-label="Language" style="position: absolute; z-index: 20; right: 0; top: var(--size-40); margin: 0; padding: var(--size-6); list-style: none; background: var(--bg-surface); border-radius: var(--radius-control-md); box-shadow: var(--shadow-dropdown); min-width: var(--size-96)">
+                <sc-for list="{{langs}}" as="l" hint-placeholder-count="4">
+                  <li><button class="au-opt au-btn sh-option" role="option" aria-selected="{{l.selStr}}" onClick="{{l.pick}}">{{l.code}}</button></li>
+                </sc-for>
+              </ul>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{v.barSpacer}}" hint-placeholder-val="{{ false }}"><span style="width: var(--size-40); flex: none"></span></sc-if>
+      </div>
+
+      <sc-if value="{{hasBanner}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display: flex; align-items: flex-start; gap: var(--size-10); padding: var(--size-12) var(--size-12) var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: {{banner.bg}}; box-shadow: inset 0 0 0 var(--size-2) {{banner.border}}; font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 500; animation: au-in .2s ease-out">
+          <span style="display: inline-flex; color: {{banner.icon}}; flex: none; padding-top: var(--size-2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{banner.d}}"></path></svg></span>
+          <span style="flex: 1 1 auto">{{banner.text}}</span>
+          <sc-if value="{{banner.hasAction}}" hint-placeholder-val="{{ false }}"><button class="au-btn sh-link" onClick="{{bannerAction}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans); white-space: nowrap">{{banner.actionLabel}}</button></sc-if>
+          <button class="au-btn sh-press" onClick="{{closeBanner}}" aria-label="Dismiss" style="color: var(--text-secondary); padding: 0; display: inline-flex; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+        </div>
+      </sc-if>
+
+      <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: {{v.justify}}; gap: var(--size-16); padding-bottom: var(--size-8)">
+        <sc-if value="{{v.hasLogo}}" hint-placeholder-val="{{ true }}">
+          <span aria-hidden="true" style="align-self: center; width: {{v.logo}}; height: {{v.logo}}; border-radius: var(--radius-xl); background: var(--interactive-primary); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; font-size: var(--font-size-40); font-weight: 700; box-shadow: var(--shadow-default)">S</span>
+        </sc-if>
+        <sc-if value="{{v.hasTitle}}" hint-placeholder-val="{{ true }}">
+          <h1 style="margin: 0; font-size: {{v.titleSize}}; line-height: 1.15; font-weight: 700; letter-spacing: var(--letter-spacing-tight); text-align: {{v.titleAlign}}">{{v.title}}</h1>
+        </sc-if>
+        <sc-if value="{{v.hasSub}}" hint-placeholder-val="{{ false }}"><p style="margin: calc(-1 * var(--size-6)) 0 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); text-align: {{v.titleAlign}}">{{v.sub}}</p></sc-if>
+        <sc-if value="{{v.keyChip}}" hint-placeholder-val="{{ false }}">
+          <span style="align-self: center; height: var(--size-28); padding: 0 var(--size-12); border-radius: var(--radius-full); border: var(--size-1) solid var(--border-brand); background: var(--bg-success-subtle); display: inline-flex; align-items: center; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; white-space: nowrap"><svg style="stroke: var(--icon-brand)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg>Key verified</span>
+        </sc-if>
+        <sc-if value="{{v.hasInfo}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: var(--size-14)">
+            <span aria-hidden="true" style="width: var(--size-96); height: var(--size-96); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-primary); font-size: var(--font-size-32); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">{{v.avatar}}</span>
+            <p style="margin: 0; padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); border: var(--size-1) solid var(--border-brand); background: var(--bg-success-subtle); font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 500">{{v.info}}</p>
+          </div>
+        </sc-if>
+        <sc-if value="{{v.hasStaffHead}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: var(--bg-canvas); display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{v.staffClinic}}</span><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{v.staffEmail}}</span></div>
+        </sc-if>
+
+        <sc-for list="{{v.fields}}" as="f" hint-placeholder-count="2">
+          <div class="au-in" style="display: flex; flex-direction: column; gap: var(--size-6)">
+            <label for="{{f.id}}" style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{f.label}}</label>
+            <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}">
+              <div style="height: var(--size-52); box-sizing: border-box; border: var(--size-2) solid {{f.border}}; border-radius: var(--radius-control-md); background: var(--bg-surface); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-6) 0 var(--size-14)">
+                <sc-if value="{{f.hasPrefix}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.prefix}}"></path></svg></span></sc-if>
+                <input id="{{f.id}}" type="{{f.type}}" value="{{f.val}}" onChange="{{f.onIn}}" onKeyDown="{{f.onKey}}" placeholder="{{f.ph}}" inputmode="{{f.im}}" autocomplete="{{f.ac}}" maxlength="{{f.max}}" aria-invalid="{{f.invalid}}" style="flex: 1 1 auto; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; padding: 0; letter-spacing: {{f.spacing}}">
+                <sc-if value="{{f.hasEye}}" hint-placeholder-val="{{ false }}"><button class="au-btn sh-icon-btn sh-icon-btn--ghost" onClick="{{f.toggleEye}}" aria-label="{{f.eyeLabel}}" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.eyeD}}"></path></svg></button></sc-if>
+                <sc-if value="{{f.hasPaste}}" hint-placeholder-val="{{ false }}"><button class="au-btn sh-action sh-action--secondary" onClick="{{f.paste}}" style="flex: none">Paste</button></sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{f.isPick}}" hint-placeholder-val="{{ false }}">
+              <button class="au-btn sh-press sh-input" id="{{f.id}}" onClick="{{f.pick}}" style="min-height: var(--size-52); display: flex; align-items: center; gap: var(--size-8); padding: var(--size-8) var(--size-14); height: auto; border-color: {{f.border}}">
+                <sc-if value="{{f.detecting}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>
+                <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--size-6); font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: {{f.pickWeight}}; color: {{f.pickInk}}">
+                  <sc-if value="{{f.hasChips}}" hint-placeholder-val="{{ false }}"><sc-for list="{{f.chips}}" as="c" hint-placeholder-count="2"><span style="height: var(--size-28); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-success-subtle); font-size: var(--font-size-12); line-height: var(--line-height-28); font-weight: 700; color: var(--text-primary); white-space: nowrap">{{c}}</span></sc-for></sc-if>
+                  <sc-if value="{{f.noChips}}" hint-placeholder-val="{{ true }}"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{f.display}}</span></sc-if>
+                </span>
+                <span style="display: inline-flex; color: var(--text-secondary); flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.pickIcon}}"></path></svg></span>
+              </button>
+            </sc-if>
+            <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}">
+              <div style="position: relative; height: var(--size-52); box-sizing: border-box; border: var(--size-2) solid var(--border-default); border-radius: var(--radius-control-md); background: var(--bg-surface)">
+                <select id="{{f.id}}" value="{{f.val}}" onChange="{{f.onIn}}" style="appearance: none; -webkit-appearance: none; width: 100%; height: 100%; border: 0; outline: 0; background: transparent; padding: 0 var(--size-40) 0 var(--size-14); cursor: pointer">
+                  <sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+                </select>
+                <span style="position: absolute; right: var(--size-14); top: var(--size-16); display: inline-flex; color: var(--text-secondary); pointer-events: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{f.isStatic}}" hint-placeholder-val="{{ false }}">
+              <div id="{{f.id}}" aria-readonly="true" style="height: var(--size-52); box-sizing: border-box; border: var(--size-2) solid var(--border-default); border-radius: var(--radius-control-md); background: var(--bg-canvas); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-14); font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 600; color: var(--text-secondary)"><span style="flex: 1 1 auto">{{f.val}}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.lock}}"></path></svg></div>
+            </sc-if>
+            <sc-if value="{{f.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{f.help}}</span></sc-if>
+            <sc-if value="{{f.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-error)">{{f.err}}</span></sc-if>
+            <sc-if value="{{f.hasCheck}}" hint-placeholder-val="{{ false }}">
+              <ul aria-live="polite" aria-label="Password requirements" style="margin: var(--size-2) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--size-4)">
+                <sc-for list="{{f.checks}}" as="c" hint-placeholder-count="6">
+                  <li style="display: flex; align-items: center; gap: var(--size-8); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: {{c.weight}}; color: {{c.ink}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.d}}"></path></svg>{{c.label}}</li>
+                </sc-for>
+              </ul>
+            </sc-if>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{v.forgot}}" hint-placeholder-val="{{ false }}">
+          <button class="au-btn sh-link" onClick="{{goForgot}}" style="align-self: flex-end; margin-top: calc(-1 * var(--size-6)); font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">Forgot Password?</button>
+        </sc-if>
+        <sc-if value="{{v.hasResend}}" hint-placeholder-val="{{ false }}">
+          <button class="au-btn sh-link" onClick="{{resend}}" aria-disabled="{{v.resendOffStr}}" style="align-self: center; font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">{{v.resendLabel}}</button>
+        </sc-if>
+        <sc-if value="{{v.hasDots}}" hint-placeholder-val="{{ false }}">
+          <div aria-label="{{v.dotsLabel}}" style="display: flex; justify-content: center; gap: var(--size-8); padding: var(--size-4) 0">
+            <sc-for list="{{v.dots}}" as="d" hint-placeholder-count="2"><span style="width: {{d.w}}; height: var(--size-8); border-radius: var(--radius-full); background: {{d.bg}}"></span></sc-for>
+          </div>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: var(--size-12); padding-top: var(--size-4)">
+          <sc-for list="{{v.buttons}}" as="b" hint-placeholder-count="2">
+            <button class="au-btn {{b.cls}}" onClick="{{b.go}}" aria-disabled="{{b.offStr}}" aria-busy="{{b.busyStr}}" style="display: inline-flex; align-items: center; justify-content: center; gap: var(--size-8)">
+              <sc-if value="{{b.loading}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>
+              <sc-if value="{{b.hasIcon}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg></sc-if>
+              <span>{{b.label}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{v.hasNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); border: var(--size-1) dashed var(--border-disabled); font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{v.note}}</p></sc-if>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{hasPicker}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; z-index: 30; background: var(--bg-overlay); display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+      <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="pk-t" style="max-width: {{dlgMax}}; border-radius: {{dlgR}}; overflow: hidden; padding: 0">
+        <div style="padding: var(--size-20) var(--size-20) var(--size-12); display: flex; flex-direction: column; gap: var(--size-12)">
+          <div style="display: flex; align-items: center; gap: var(--size-8)"><h2 id="pk-t" style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">{{pk.title}}</h2><button class="au-btn sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{closePicker}}" aria-label="Close" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+          <div class="au-in" style="height: var(--size-touch); box-sizing: border-box; border: var(--size-2) solid var(--border-default); border-radius: var(--radius-full); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-14)">
+            <span style="display: inline-flex; color: var(--text-tertiary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span>
+            <input value="{{pk.q}}" onChange="{{pk.onQ}}" placeholder="{{pk.ph}}" aria-label="{{pk.ph}}" style="flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; font-size: var(--font-size-14)">
+          </div>
+        </div>
+        <ul role="listbox" aria-multiselectable="{{pk.multiStr}}" style="flex: 1 1 auto; min-height: var(--size-120); overflow-y: auto; margin: 0; padding: 0 var(--size-12) var(--size-12); list-style: none">
+          <sc-if value="{{pk.searching}}" hint-placeholder-val="{{ false }}"><li style="padding: var(--size-10) var(--size-8); font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-tertiary)">Searching…</li></sc-if>
+          <sc-for list="{{pk.items}}" as="o" hint-placeholder-count="6">
+            <li><button class="au-opt au-btn sh-option" role="option" aria-selected="{{o.selStr}}" onClick="{{o.pick}}" style="display: flex; align-items: center">
+              <sc-if value="{{pk.multi}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: var(--size-20); height: var(--size-20); border-radius: var(--radius-sm); box-sizing: border-box; border: var(--size-2) solid {{o.boxBorder}}; background: {{o.boxBg}}; color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span></sc-if>
+              <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: {{o.weight}}">{{o.label}}</span><sc-if value="{{o.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{o.sub}}</span></sc-if></span>
+              <sc-if value="{{o.tick}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span></sc-if>
+            </button></li>
+          </sc-for>
+          <sc-if value="{{pk.empty}}" hint-placeholder-val="{{ false }}"><li style="padding: var(--size-24) var(--size-8); text-align: center; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">No results</li></sc-if>
+        </ul>
+        <div style="padding: var(--size-12) var(--size-20) var(--size-20); border-top: var(--size-1) solid var(--border-default); display: flex; gap: var(--size-12); justify-content: flex-end; flex-direction: {{dlgActDir}}">
+          <sc-if value="{{pk.canClear}}" hint-placeholder-val="{{ false }}"><button class="au-btn sh-btn sh-btn--secondary" onClick="{{pk.clear}}" >{{pk.clearLabel}}</button></sc-if>
+          <sc-if value="{{pk.multi}}" hint-placeholder-val="{{ false }}"><button class="au-btn sh-btn sh-btn--primary" onClick="{{closePicker}}" >Done</button></sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasOtp}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; z-index: 31; background: var(--bg-overlay); display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+      <div role="dialog" aria-modal="true" aria-labelledby="otp-t" class="au-in sh-sheet sh-sheet--alert" style="max-width: {{dlgMax}}; border-radius: {{dlgR}}">
+        <h2 id="otp-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Enter OTP</h2>
+        <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">A 6-digit code has been sent to {{otp.email}}. Check your inbox.</p>
+        <div style="height: var(--size-56); box-sizing: border-box; border: var(--size-2) solid {{otp.border}}; border-radius: var(--radius-control-md); display: flex; align-items: center; padding: 0 var(--size-14)">
+          <input value="{{otp.code}}" onChange="{{otp.onCode}}" onKeyDown="{{otp.onKey}}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="6-digit code" aria-invalid="{{otp.invalid}}" style="width: 100%; border: 0; outline: 0; background: transparent; text-align: center; letter-spacing: var(--letter-spacing-code); font-size: var(--font-size-24) !important">
+        </div>
+        <sc-if value="{{otp.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-error)">{{otp.err}}</span></sc-if>
+        <sc-if value="{{otp.hasOk}}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-primary)">Code resent.</span></sc-if>
+        <button class="au-btn sh-link" onClick="{{otp.resend}}" aria-disabled="{{otp.offStr}}" style="align-self: center; font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">{{otp.resendLabel}}</button>
+        <div style="display: flex; gap: var(--size-12); justify-content: flex-end; flex-direction: {{dlgActDir}}">
+          <button class="au-btn sh-btn sh-btn--secondary" onClick="{{otp.cancel}}" >Cancel</button>
+          <button class="au-btn sh-btn sh-btn--primary" onClick="{{otp.verify}}" aria-busy="{{otp.busyStr}}" >
+            <sc-if value="{{otp.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Verify
+          </button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasDiscard}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; z-index: 32; background: var(--bg-overlay); display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+      <div class="sh-sheet sh-sheet--alert" role="dialog" aria-modal="true" aria-labelledby="dc-t" style="max-width: {{dlgMax}}; border-radius: {{dlgR}}; align-items: center">
+        <span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: var(--bg-error-subtle); color: var(--text-error); display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.trash}}"></path></svg></span>
+        <h2 id="dc-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Discard registration?</h2>
+        <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">What you typed on this screen will be lost. Your invitation key stays valid.</p>
+        <div style="display: flex; gap: var(--size-12); width: 100%; justify-content: flex-end; flex-direction: {{dlgActDir}}">
+          <button class="au-btn sh-btn sh-btn--secondary" onClick="{{keepEditing}}" style="flex: {{dlgBtnFlex}}">Keep editing</button>
+          <button class="au-btn sh-btn sh-btn--primary is-destructive" onClick="{{confirmDiscard}}" style="flex: {{dlgBtnFlex}}">Discard</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"banner":{"editor":null},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      f: { id: '', pw: '', email: '', code: '', newPw: '', newPw2: '', key: '', first: '', last: '', regEmail: '', phone: '', pw1: '', pw2: '', dob: '', gender: '', address: '', clinic: '', profs: [], tz: '', sFirst: '', sLast: '', sTz: '', sPw: '', sPw2: '' },
+      err: {}, eye: {}, loading: null, cool: {}, now: Date.now(), existing: false, keyKind: null, picker: null, query: '', otp: null, langOpen: false, discard: false, detecting: false, staffEmail: 'new.receptionist@shifadental.uz'
+    };
+  }
+  componentDidMount() { this.iv = setInterval(() => { const r = this.r(); if (r.s === 'otp' || this.state.otp) this.setState({ now: Date.now() }); }, 1000); }
+  componentWillUnmount() { clearInterval(this.iv); clearTimeout(this.td); clearTimeout(this.tl); }
+  r() { return this.props.route || { s: 'login', p: {} }; }
+  setF(k, v) { const f = Object.assign({}, this.state.f); f[k] = v; const err = Object.assign({}, this.state.err); delete err[k]; this.setState({ f, err }); }
+  banner(kind, text, extra) { this.props.act('banner', Object.assign({ kind, text }, extra || {})); }
+  clear() { this.props.act('clearBanner'); }
+  // Fake backend: 700 ms, network-aware
+  call(name, ok) {
+    if (this.state.loading) return;
+    this.clear();
+    this.setState({ loading: name });
+    this.tl = setTimeout(() => {
+      this.setState({ loading: null });
+      if (this.props.store && this.props.store.online === false) { this.banner('error', 'Network error. Please check your connection.'); return; }
+      ok();
+    }, 700);
+  }
+  rules(p) {
+    return [
+      ['At least 8 characters', p.length >= 8, 'Password must be at least 8 characters'],
+      ['One uppercase letter', /[A-Z]/.test(p), 'One uppercase letter'],
+      ['One lowercase letter', /[a-z]/.test(p), 'One lowercase letter'],
+      ['One number', /\d/.test(p), 'One number'],
+      ['One special character (!@#$%^&* etc.)', /[^A-Za-z0-9\s]/.test(p), 'One special character (!@#$%^&* etc.)'],
+      ['At most 128 characters', p.length > 0 && p.length <= 128, 'Password must be at most 128 characters']
+    ];
+  }
+  pwErr(p) { if (!p) return 'Password is required'; const fail = this.rules(p).find((x) => !x[1]); return fail ? fail[2] : null; }
+  emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()); }
+  coolLeft(email) { const u = this.state.cool[email]; return u ? Math.max(0, Math.ceil((u - this.state.now) / 1000)) : 0; }
+  startCool(email) { const cool = Object.assign({}, this.state.cool); cool[email] = Date.now() + 60000; this.setState({ cool, now: Date.now() }); }
+  detectTz(field) {
+    this.setState({ detecting: true }); clearTimeout(this.td);
+    this.td = setTimeout(() => { const f = Object.assign({}, this.state.f); if (!f[field]) f[field] = (this.props.store && this.props.store.phoneTz) || 'Asia/Tashkent'; this.setState({ f, detecting: false }); }, 900);
+  }
+  go(s, p) { this.clear(); this.setState({ langOpen: false }); this.props.act('authGo', { s, p }); }
+  // ---------- submit handlers ----------
+  submitLogin() {
+    const f = this.state.f; const err = {};
+    if (!f.id.trim()) err.id = 'Enter email or phone';
+    if (f.pw.trim().length < 6) err.pw = 'Minimum 6 characters';
+    this.setState({ err }); if (Object.keys(err).length) return;
+    this.call('login', () => {
+      if (f.pw === 'wrong123') { this.banner('error', 'Incorrect email or password.'); return; }
+      const staff = f.id.trim().toLowerCase() === 'dilfuza@shifadental.uz';
+      this.props.act('signin', { role: staff ? 'staff' : 'doctor' });
+    });
+  }
+  submitEmail(mode) {
+    const e = this.state.f.email.trim().toLowerCase();
+    if (!e || !this.emailOk(e)) { this.setState({ err: { email: e ? 'Enter a valid email address' : 'Enter email address' } }); return; }
+    this.call('email', () => {
+      if (e === 'blocked@shifa.uz') { this.banner('error', 'Too many attempts. Please try again in 10 minutes.'); return; }
+      const f = Object.assign({}, this.state.f, { email: e, code: '' }); this.setState({ f });
+      if (this.coolLeft(e) === 0) this.startCool(e);
+      this.go('otp', { mode, email: e });
+    });
+  }
+  submitOtp() {
+    const p = this.r().p; const c = this.state.f.code;
+    if (!/^\d{6}$/.test(c)) { this.setState({ err: { code: 'Invalid or expired OTP.' } }); return; }
+    if (p.mode === 'reset') { this.clear(); this.props.act('authReplace', { s: 'reset', p: { email: p.email, code: c } }); return; }
+    this.call('otp', () => {
+      if (c !== '123456') { const f = Object.assign({}, this.state.f, { code: '' }); this.setState({ f }); this.banner('error', 'Invalid or expired OTP.'); return; }
+      this.props.act('signin', { role: p.email === 'dilfuza@shifadental.uz' ? 'staff' : 'doctor' });
+    });
+  }
+  resendCode(email, inDialog) {
+    if (this.coolLeft(email) > 0 || this.state.loading) return;
+    this.call('resend', () => { this.startCool(email); if (inDialog) this.setState({ otp: Object.assign({}, this.state.otp, { ok: true, err: '' }) }); else this.banner('success', 'Code resent.'); });
+  }
+  submitReset() {
+    const f = this.state.f; const p = this.r().p; const err = {};
+    const pe = this.pwErr(f.newPw); if (pe) err.newPw = pe;
+    if (!f.newPw2) err.newPw2 = 'Please confirm your password'; else if (f.newPw2 !== f.newPw) err.newPw2 = 'Passwords do not match.';
+    this.setState({ err }); if (Object.keys(err).length) return;
+    this.call('reset', () => {
+      if (p.code !== '123456') { this.banner('error', 'The code is wrong or has expired. Request a new code.', { action: () => this.props.act('authReplace', { s: 'otp', p: { mode: 'reset', email: p.email } }), actionLabel: 'Back to code', sticky: true }); return; }
+      this.props.act('signin', { role: 'doctor', banner: { kind: 'success', text: 'Password updated successfully' } });
+    });
+  }
+  submitKey() {
+    const k = this.state.f.key.trim().toUpperCase();
+    if (!k) { this.setState({ err: { key: 'Please enter your one-time key.' } }); return; }
+    this.call('key', () => {
+      if (k === 'SHIFA-DOC-2026') { this.setState({ keyKind: 'doctor', existing: false }); this.clear(); this.props.act('authReplace', { s: 'reg1', p: {} }); return; }
+      if (k === 'SHIFA-STAFF-2026') { this.setState({ keyKind: 'staff' }); this.clear(); this.props.act('authReplace', { s: 'staffReg', p: { clinic: 'Shifa Dental Clinic', email: this.state.staffEmail } }); this.detectTz('sTz'); return; }
+      this.banner('error', 'Invalid or already used key');
+    });
+  }
+  submitReg1() {
+    const f = this.state.f; const err = {};
+    if (!this.state.keyKind) { this.banner('warn', 'Please verify your invitation key first.'); this.props.act('authReplace', { s: 'verify', p: {} }); return; }
+    if (!f.first.trim()) err.first = 'Enter first name';
+    if (!f.last.trim()) err.last = 'Enter last name';
+    if (!f.regEmail.trim() || !this.emailOk(f.regEmail)) err.regEmail = 'Enter email address';
+    if (f.phone.trim() && f.phone.replace(/\D/g, '').length < 10) err.phone = 'Please enter a valid phone number';
+    const pe = this.pwErr(f.pw1); if (pe) err.pw1 = pe;
+    if (!f.pw2) err.pw2 = 'Please confirm your password'; else if (f.pw2 !== f.pw1) err.pw2 = 'Passwords do not match';
+    if (f.regEmail.trim().toLowerCase() === 'nilufar.karimova@shifa.uz') err.regEmail = 'A doctor account with this email already exists. Sign in instead.';
+    this.setState({ err }); if (Object.keys(err).length) return;
+    this.call('reg1', () => {
+      if (f.regEmail.trim().toLowerCase() === 'dilnoza.y@mail.uz') { this.setState({ existing: true }); this.detectTz('tz'); return; }
+      this.go('reg2', {}); this.detectTz('tz');
+    });
+  }
+  openOtp(after) {
+    const email = this.state.f.regEmail.trim().toLowerCase();
+    this.call('reg2', () => { if (this.coolLeft(email) === 0) this.startCool(email); this.setState({ otp: { email, code: '', err: '', ok: false, busy: false, after } }); });
+  }
+  verifyRegOtp() {
+    const o = this.state.otp; if (!o || o.busy) return;
+    if (!/^\d{6}$/.test(o.code)) { this.setState({ otp: Object.assign({}, o, { err: 'Invalid or expired OTP.', ok: false }) }); return; }
+    this.setState({ otp: Object.assign({}, o, { busy: true }) });
+    setTimeout(() => {
+      const cur = this.state.otp; if (!cur) return;
+      if (this.props.store && this.props.store.online === false) { this.setState({ otp: Object.assign({}, cur, { busy: false, err: 'Network error. Please check your connection.' }) }); return; }
+      if (cur.code !== '123456') { this.setState({ otp: Object.assign({}, cur, { busy: false, code: '', err: 'The code is wrong or has expired. Request a new code.', ok: false }) }); return; }
+      this.setState({ otp: null }); this.finishDoctor();
+    }, 700);
+  }
+  finishDoctor() {
+    const f = this.state.f; const st = this.props.store;
+    const first = f.first.trim(), last = f.last.trim();
+    const me = Object.assign({}, st.me, { first, last, name: 'Dr. ' + first + ' ' + last, email: f.regEmail.trim().toLowerCase(), phone: f.phone.trim(), professions: f.profs.length ? f.profs : st.me.professions, spec: f.profs[0] || st.me.spec, bio: '', photo: '' });
+    this.props.act('set', { me, firstDay: true, appointments: [], blocks: [], notifs: [], tasks: [], chats: [], docs: [], forms: [], partnerships: [], patients: [] });
+    this.props.act('signin', { role: 'doctor', banner: { kind: 'success', text: 'Welcome to Shifa, Dr. ' + last + '. Set your working hours to start taking bookings.' } });
+  }
+  submitStaff() {
+    const f = this.state.f; const err = {};
+    if (!f.sFirst.trim()) err.sFirst = 'Enter first name';
+    if (!f.sLast.trim()) err.sLast = 'Enter last name';
+    const pe = this.pwErr(f.sPw); if (pe) err.sPw = pe;
+    if (!f.sPw2) err.sPw2 = 'Please confirm your password'; else if (f.sPw2 !== f.sPw) err.sPw2 = 'Passwords do not match';
+    this.setState({ err }); if (Object.keys(err).length) return;
+    this.call('staff', () => {
+      const st = this.props.store;
+      this.props.act('set', { staffMe: Object.assign({}, st.staffMe, { name: f.sFirst.trim() + ' ' + f.sLast.trim(), email: this.state.staffEmail }) });
+      this.props.act('signin', { role: 'staff', banner: { kind: 'success', text: 'Your staff account is ready.' } });
+    });
+  }
+  backFrom(s) {
+    const f = this.state.f;
+    const dirty = s === 'reg1' ? [f.first, f.last, f.regEmail, f.phone, f.pw1, f.pw2].some((x) => x) : (s === 'staffReg' ? [f.sFirst, f.sLast, f.sPw, f.sPw2].some((x) => x) : false);
+    if (s === 'reg1' && this.state.existing) { this.setState({ existing: false }); return; }
+    if (dirty) { this.setState({ discard: true }); return; }
+    this.clear(); this.props.act('authBack');
+  }
+  // ---------- pickers ----------
+  openPicker(kind) { this.setState({ picker: kind, query: '' }); }
+  pickerData() {
+    const kind = this.state.picker; if (!kind) return null;
+    const q = this.state.query.trim().toLowerCase(); const f = this.state.f;
+    const tzField = kind === 'sTz' ? 'sTz' : 'tz';
+    if (kind === 'tz' || kind === 'sTz') {
+      const det = (this.props.store && this.props.store.phoneTz) || 'Asia/Tashkent';
+      const zones = [det].concat(['Asia/Tashkent', 'Asia/Samarkand', 'Asia/Almaty', 'Asia/Bishkek', 'Asia/Dushanbe', 'Asia/Ashgabat', 'Asia/Baku', 'Asia/Tbilisi', 'Asia/Yerevan', 'Asia/Dubai', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Istanbul', 'Europe/Moscow', 'Europe/Kyiv', 'Europe/Berlin', 'Europe/London', 'America/New_York', 'UTC'].filter((z) => z !== det));
+      const items = zones.filter((z) => z.toLowerCase().indexOf(q) >= 0).map((z) => ({ label: z, sub: z === det ? 'Detected on this device' : '', v: z }));
+      return { title: 'Practice timezone', ph: 'Search timezone', multi: false, items, sel: [f[tzField]], set: (v) => { this.setF(tzField, v); this.setState({ picker: null }); } };
+    }
+    if (kind === 'clinic') {
+      const all = [['Shifa Dental Clinic', 'Chilonzor, Tashkent'], ['Akfa Medline', 'Mirzo Ulugbek, Tashkent'], ['Medion Family Clinic', 'Yunusobod, Tashkent'], ['Doktor Plus', 'Andijan'], ['Samarkand Dental Centre', 'Samarkand'], ['Fergana City Hospital No. 2', 'Fergana'], ['Bukhara Smile Clinic', 'Bukhara']];
+      const items = all.filter(([n, c]) => (n + ' ' + c).toLowerCase().indexOf(q) >= 0).map(([n, c]) => ({ label: n, sub: c, v: n }));
+      return { title: 'Clinic', ph: 'Search', multi: false, items, sel: [f.clinic], searching: q.length >= 2, canClear: !!f.clinic, clearLabel: 'No clinic', clear: () => { this.setF('clinic', ''); this.setState({ picker: null }); }, set: (v) => { this.setF('clinic', v); this.setState({ picker: null }); } };
+    }
+    const profs = ['Therapeutic dentistry', 'Orthodontics', 'Oral surgery', 'Prosthodontics', 'Periodontics', 'Paediatric dentistry', 'General practice', 'Cardiology', 'Endocrinology', 'Dermatology', 'Gynaecology', 'Neurology', 'Ophthalmology', 'Otolaryngology (ENT)', 'Paediatrics', 'Psychiatry', 'Psychotherapy', 'Radiology', 'Rheumatology', 'Urology'];
+    const items = profs.filter((x) => x.toLowerCase().indexOf(q) >= 0).map((x) => ({ label: x, sub: '', v: x }));
+    return { title: 'Profession', ph: 'Search profession...', multi: true, items, sel: f.profs, canClear: f.profs.length > 0, clearLabel: 'Clear all', clear: () => this.setF('profs', []), set: (v) => { const cur = this.state.f.profs; this.setF('profs', cur.indexOf(v) >= 0 ? cur.filter((x) => x !== v) : cur.concat([v])); } };
+  }
+  // ---------- view model ----------
+  fld(id, label, o) {
+    o = o || {}; const f = this.state.f; const err = this.state.err[id]; const eye = !!this.state.eye[id]; const ic = this.props.lib.ic;
+    const kind = o.kind || 'input';
+    const base = { id: 'au-' + id, label, isInput: kind === 'input', isPick: kind === 'pick', isSelect: kind === 'select', isStatic: kind === 'static', err: err || '', hasErr: !!err, invalid: err ? 'true' : 'false', border: err ? 'var(--border-error)' : 'var(--border-default)', hasHelp: !!o.help, help: o.help || '', hasCheck: false, checks: [], hasPrefix: !!o.prefix, prefix: o.prefix || '', hasEye: !!o.pw, hasPaste: !!o.paste, paste: () => this.setF(id, 'SHIFA-DOC-2026'), spacing: o.spacing || '0', max: o.max || 200, im: o.im || 'text', ac: o.ac || 'off', ph: o.ph || '' };
+    base.val = o.value !== undefined ? o.value : f[id];
+    base.type = o.pw ? (eye ? 'text' : 'password') : (o.type || 'text');
+    base.eyeD = eye ? ic.eyeOff : ic.eye; base.eyeLabel = eye ? 'Hide password' : 'Show password';
+    base.toggleEye = () => { const e = Object.assign({}, this.state.eye); e[id] = !e[id]; this.setState({ eye: e }); };
+    base.onIn = (e) => { let v = e.target.value; if (o.digits) v = v.replace(/\D/g, '').slice(0, 6); this.setF(id, v); };
+    base.onKey = (e) => { if (e.key === 'Enter' && o.submit) { e.preventDefault(); o.submit(); } };
+    if (o.checklist && f[id]) { base.hasCheck = true; base.checks = this.rules(f[id]).map(([l, ok]) => ({ label: l, d: ok ? ic.check : ic.x, ink: ok ? 'var(--text-brand-strong)' : 'var(--text-tertiary)', weight: ok ? 700 : 500 })); }
+    if (kind === 'pick') {
+      const disp = o.display || ''; base.detecting = !!o.detecting; base.display = o.detecting ? 'Detecting…' : (disp || o.ph || ''); base.pickInk = disp && !o.detecting ? 'var(--text-primary)' : 'var(--text-tertiary)'; base.pickWeight = disp ? 600 : 500;
+      base.hasChips = !!(o.chips && o.chips.length); base.noChips = !base.hasChips; base.chips = o.chips || []; base.pickIcon = o.icon || ic.chevD; base.pick = o.detecting ? () => {} : o.pick;
+    }
+    if (kind === 'select') base.opts = o.opts;
+    return base;
+  }
+  btn(label, go, o) {
+    o = o || {}; const busy = this.state.loading === o.busyKey; const off = !!this.state.loading;
+    const prim = (o.kind || 'primary') === 'primary';
+    return { label, go: () => { if (!this.state.loading) go(); }, loading: busy && !!o.busyKey, hasIcon: !!o.icon && !busy, icon: o.icon || '', cls: 'au-btn sh-btn ' + (prim ? 'sh-btn--primary' : 'sh-btn--secondary'), spinTrack: prim ? 'var(--alpha-white-25)' : 'var(--alpha-teal-25)', cursor: off ? 'default' : 'pointer', opacity: off && !busy ? '0.6' : '1', offStr: off ? 'true' : 'false', busyStr: busy ? 'true' : 'false' };
+  }
+  view() {
+    const r = this.r(); const p = r.p || {}; const ic = this.props.lib.ic; const f = this.state.f;
+    const base = { back: true, barTitle: '', showLang: true, barSpacer: false, justify: 'center', hasLogo: false, logo: '80px', hasTitle: true, title: '', titleSize: 'var(--font-size-28)', titleAlign: 'center', hasSub: false, sub: '', keyChip: false, hasInfo: false, info: '', avatar: '', hasStaffHead: false, fields: [], forgot: false, hasResend: false, hasDots: false, dots: [], dotsLabel: '', buttons: [], hasNote: false, note: '' };
+    const V = (o) => Object.assign({}, base, o);
+    const dots = (n) => [0, 1].map((i) => ({ w: i === n ? '24px' : '8px', bg: i === n ? 'var(--interactive-primary)' : 'var(--bg-disabled)' }));
+    switch (r.s) {
+      case 'email': {
+        const reset = p.mode === 'reset';
+        return V({ title: reset ? 'Reset Password' : 'Sign in with Email', titleSize: 'var(--font-size-24)', titleAlign: 'left', hasSub: true, sub: 'Enter your email address to receive a verification code.', fields: [this.fld('email', 'Email', { prefix: ic.mail, type: 'email', im: 'email', ac: 'email', ph: 'name@example.com', submit: () => this.submitEmail(p.mode) })], buttons: [this.btn('Continue', () => this.submitEmail(p.mode), { busyKey: 'email' })], hasNote: true, note: '[Prototype: any address gets the code. blocked@shifa.uz shows the rate-limit message.]' });
+      }
+      case 'otp': {
+        const left = this.coolLeft(p.email);
+        return V({ title: 'Enter OTP', titleSize: 'var(--font-size-24)', titleAlign: 'left', hasSub: true, sub: 'A 6-digit code has been sent to ' + p.email + '. Check your inbox.', fields: [this.fld('code', 'Code', { im: 'numeric', ac: 'one-time-code', ph: '000000', max: 6, digits: true, spacing: '8px', submit: () => this.submitOtp() })], hasResend: true, resendLabel: left ? 'Resend code (' + left + ' s)' : 'Resend code', resendOffStr: left ? 'true' : 'false', resendInk: left ? 'var(--text-tertiary)' : 'var(--text-primary)', resendDeco: left ? 'none' : 'underline', resendCursor: left ? 'default' : 'pointer', buttons: [this.btn('Verify', () => this.submitOtp(), { busyKey: 'otp' })], hasNote: true, note: p.mode === 'reset' ? '[Prototype: the code is checked when you submit the new password. 123456 is correct.]' : '[Prototype: the code is 123456.]' });
+      }
+      case 'reset':
+        return V({ title: 'Reset Password', titleSize: 'var(--font-size-24)', titleAlign: 'left', hasSub: true, sub: 'Choose a new password for ' + p.email + '.', fields: [this.fld('newPw', 'New Password', { pw: true, ac: 'new-password', checklist: true }), this.fld('newPw2', 'Confirm password', { pw: true, ac: 'new-password', submit: () => this.submitReset() })], buttons: [this.btn('Submit', () => this.submitReset(), { busyKey: 'reset' })] });
+      case 'verify':
+        return V({ barTitle: 'Verify', hasLogo: true, logo: '120px', hasTitle: false, hasSub: true, sub: 'Enter the invitation key from your e-mail.', titleAlign: 'center', fields: [this.fld('key', 'One-time key', { ph: 'One-time key', paste: true, submit: () => this.submitKey() })], buttons: [this.btn('Next', () => this.submitKey(), { busyKey: 'key' })], hasNote: true, note: '[Prototype keys: SHIFA-DOC-2026 (doctor) and SHIFA-STAFF-2026 (clinic staff). Anything else is rejected.]' });
+      case 'reg1': {
+        if (this.state.existing) {
+          return V({ title: 'Create account', titleSize: 'var(--font-size-28)', hasInfo: true, avatar: this.props.lib.initials(f.first + ' ' + f.last), info: 'There is already a patient with this information. We are creating a doctor account for this patient.', fields: [this.fld('tz', 'Practice timezone', { kind: 'pick', display: f.tz, detecting: this.state.detecting, ph: 'Practice timezone (e.g. Europe/Berlin)', pick: () => this.openPicker('tz') }), this.fld('pw1', 'Password', { pw: true, ac: 'new-password', checklist: true }), this.fld('pw2', 'Confirm password', { pw: true, ac: 'new-password', submit: () => this.confirmExisting() })], buttons: [this.btn('Confirm registration', () => this.confirmExisting(), { busyKey: 'reg2' })] });
+        }
+        return V({ title: 'Create account', titleSize: 'var(--font-size-28)', keyChip: !!this.state.keyKind, justify: 'flex-start', fields: [this.fld('first', 'First name', { ac: 'given-name' }), this.fld('last', 'Last name', { ac: 'family-name' }), this.fld('regEmail', 'Email', { type: 'email', im: 'email', ac: 'email', ph: 'name@example.com' }), this.fld('phone', 'Phone Number (Optional)', { type: 'tel', im: 'tel', ac: 'tel', ph: '+998 90 000 00 00' }), this.fld('pw1', 'Password', { pw: true, ac: 'new-password', checklist: true }), this.fld('pw2', 'Confirm password', { pw: true, ac: 'new-password', submit: () => this.submitReg1() })], hasDots: true, dots: dots(0), dotsLabel: 'Step 1 of 2', buttons: [this.btn('Next', () => this.submitReg1(), { busyKey: 'reg1' })], hasNote: true, note: '[Prototype: dilnoza.y@mail.uz is an existing patient; nilufar.karimova@shifa.uz already has a doctor account.]' });
+      }
+      case 'reg2':
+        return V({ title: 'Account Information', titleSize: 'var(--font-size-28)', justify: 'flex-start', fields: [
+          this.fld('dob', 'Date of Birth', { type: 'date', ac: 'bday', help: 'Optional' }),
+          this.fld('gender', 'Gender', { kind: 'select', opts: [{ v: '', l: 'Not set' }, { v: 'Male', l: 'Male' }, { v: 'Female', l: 'Female' }, { v: 'Other', l: 'Other' }] }),
+          this.fld('address', 'Address', { ac: 'street-address', ph: 'Street, city' }),
+          this.fld('clinic', 'Clinic', { kind: 'pick', display: f.clinic, ph: 'Choose a clinic', icon: ic.search, pick: () => this.openPicker('clinic') }),
+          this.fld('profs', 'Profession', { kind: 'pick', display: '', chips: f.profs, ph: 'Choose one or more', icon: ic.search, pick: () => this.openPicker('prof') }),
+          this.fld('tz', 'Practice timezone', { kind: 'pick', display: f.tz, detecting: this.state.detecting, ph: 'Practice timezone (e.g. Europe/Berlin)', help: 'Your schedule and bookings use this timezone.', pick: () => this.openPicker('tz') })
+        ], hasDots: true, dots: dots(1), dotsLabel: 'Step 2 of 2', buttons: [this.btn('Create account', () => this.openOtp('doctor'), { busyKey: 'reg2' })] });
+      case 'staffReg':
+        return V({ title: 'Create account', titleSize: 'var(--font-size-28)', justify: 'flex-start', hasStaffHead: true, staffClinic: p.clinic || 'Shifa Dental Clinic', staffEmail: p.email || '—', fields: [
+          this.fld('sEmail', 'Email', { kind: 'static', value: p.email || '—' }),
+          this.fld('sFirst', 'First name', { ph: 'Enter first name', ac: 'given-name' }), this.fld('sLast', 'Last name', { ph: 'Enter last name', ac: 'family-name' }),
+          this.fld('sTz', 'Practice timezone', { kind: 'pick', display: f.sTz, detecting: this.state.detecting, ph: 'Practice timezone', help: 'Your own notifications use this timezone. Clinic times always show in the clinic’s timezone.', pick: () => this.openPicker('sTz') }),
+          this.fld('sPw', 'Password', { pw: true, ac: 'new-password', checklist: true }), this.fld('sPw2', 'Confirm password', { pw: true, ac: 'new-password', submit: () => this.submitStaff() })
+        ], buttons: [this.btn('Create account', () => this.submitStaff(), { busyKey: 'staff' })] });
+      default:
+        return V({ back: false, barSpacer: true, hasLogo: true, title: 'Sign In', fields: [this.fld('id', 'Email or Phone number', { ac: 'username', ph: 'name@example.com or +998…' }), this.fld('pw', 'Password', { pw: true, ac: 'current-password', submit: () => this.submitLogin() })], forgot: true, buttons: [this.btn('Sign In', () => this.submitLogin(), { busyKey: 'login' }), this.btn('Sign in with Email', () => { this.setF('email', ''); this.go('email', { mode: 'signin' }); }, { kind: 'secondary', icon: ic.mail }), this.btn('Create account', () => this.go('verify', {}), { kind: 'secondary' })], hasNote: true, note: '[Prototype: any password of 6+ characters signs you in as Dr. Nilufar Karimova. dilfuza@shifadental.uz signs in as clinic staff. Password wrong123 shows the error.]' });
+    }
+  }
+  confirmExisting() {
+    const f = this.state.f; const err = {};
+    const pe = this.pwErr(f.pw1); if (pe) err.pw1 = pe;
+    if (!f.pw2) err.pw2 = 'Please confirm your password'; else if (f.pw2 !== f.pw1) err.pw2 = 'Passwords do not match';
+    if (!f.tz) err.tz = 'We could not detect your timezone. Please choose it.';
+    this.setState({ err }); if (Object.keys(err).length) return;
+    this.openOtp('existing');
+  }
+  renderVals() {
+    if (!this.props.lib || !this.props.act) return { ready: false, notReady: true };
+    const lib = this.props.lib; const ic = lib.ic; const store = this.props.store || {}; const phone = !!this.props.phone;
+    const r = this.r(); const v = this.view(); const b = this.props.banner;
+    const lang = store.lang || 'EN';
+    const codes = [['EN', 'EN'], ['UZ', 'UZ'], ['UZC', 'ЎЗ'], ['RU', 'RU']];
+    const pk = this.pickerData(); let pkv = {};
+    if (pk) {
+      pkv = { title: pk.title, ph: pk.ph, q: this.state.query, onQ: (e) => this.setState({ query: e.target.value }), multi: pk.multi, multiStr: pk.multi ? 'true' : 'false', searching: !!pk.searching && !pk.items.length, empty: !pk.items.length, canClear: !!pk.canClear, clearLabel: pk.clearLabel || '', clear: pk.clear || (() => {}),
+        items: pk.items.map((o) => { const sel = pk.sel.indexOf(o.v) >= 0; return { label: o.label, sub: o.sub, hasSub: !!o.sub, selStr: sel ? 'true' : 'false', bg: sel && !pk.multi ? 'var(--bg-success-subtle)' : 'transparent', weight: sel ? 700 : 500, tick: sel && !pk.multi, boxBorder: sel ? 'var(--border-brand)' : 'var(--border-disabled)', boxBg: sel ? 'var(--interactive-primary)' : 'var(--bg-surface)', pick: () => pk.set(o.v) }; }) };
+    }
+    const o = this.state.otp; let otp = {};
+    if (o) {
+      const left = this.coolLeft(o.email);
+      otp = { email: o.email, code: o.code, border: o.err ? 'var(--border-error)' : 'var(--border-default)', invalid: o.err ? 'true' : 'false', hasErr: !!o.err, err: o.err, hasOk: !!o.ok && !o.err, busy: o.busy, busyStr: o.busy ? 'true' : 'false',
+        onCode: (e) => this.setState({ otp: Object.assign({}, this.state.otp, { code: e.target.value.replace(/\D/g, '').slice(0, 6), err: '' }) }),
+        onKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.verifyRegOtp(); } },
+        resendLabel: left ? 'Resend code in 0:' + lib.pad(left) : 'Resend code', offStr: left ? 'true' : 'false', resendInk: left ? 'var(--text-tertiary)' : 'var(--text-primary)', resendDeco: left ? 'none' : 'underline',
+        resend: () => this.resendCode(o.email, true), cancel: () => this.setState({ otp: null }), verify: () => this.verifyRegOtp() };
+    }
+    return {
+      ready: true, notReady: false, ic, v, banner: b || {}, hasBanner: !!b,
+      bannerAction: () => this.props.act('bannerAction'), closeBanner: () => this.clear(),
+      goBack: () => this.backFrom(r.s),
+      goForgot: () => { this.setF('email', this.emailOk(this.state.f.id) ? this.state.f.id.trim().toLowerCase() : ''); this.go('email', { mode: 'reset' }); },
+      resend: () => this.resendCode((r.p || {}).email, false),
+      langCode: (codes.find((c) => c[0] === lang) || codes[0])[1], langOpen: this.state.langOpen, langOpenStr: this.state.langOpen ? 'true' : 'false', toggleLang: () => this.setState({ langOpen: !this.state.langOpen }),
+      langs: codes.map(([k, c]) => ({ code: c, selStr: k === lang ? 'true' : 'false', bg: k === lang ? 'var(--bg-success-subtle)' : 'transparent', weight: k === lang ? 700 : 500, pick: () => { this.setState({ langOpen: false }); if (k !== lang) this.props.act('lang', k); } })),
+      hasPicker: !!pk, pk: pkv, closePicker: () => this.setState({ picker: null }),
+      hasOtp: !!o, otp,
+      hasDiscard: this.state.discard, keepEditing: () => this.setState({ discard: false }),
+      confirmDiscard: () => { const f = Object.assign({}, this.state.f, { first: '', last: '', regEmail: '', phone: '', pw1: '', pw2: '', sFirst: '', sLast: '', sPw: '', sPw2: '' }); this.setState({ discard: false, f, err: {}, keyKind: null }); this.clear(); this.props.act('authBack'); },
+      wrapBg: phone ? 'var(--bg-surface)' : 'var(--bg-canvas)', wrapAlign: phone ? 'stretch' : 'center', wrapPad: phone ? '0' : 'var(--size-48) var(--size-24)',
+      cardMax: phone ? 'none' : '520px', cardMinH: phone ? '100%' : '0', cardR: phone ? '0' : 'var(--radius-xl)', cardShadow: phone ? 'none' : 'var(--shadow-dropdown)', cardPad: phone ? 'var(--size-48) var(--size-24) var(--size-32)' : 'var(--size-24) var(--size-40) var(--size-32)',
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgMax: phone ? 'none' : '440px', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row', dlgBtnFlex: phone ? '1 1 auto' : '0 0 auto'
+    };
+  }
+}
+</script>
+</body>
+</html>

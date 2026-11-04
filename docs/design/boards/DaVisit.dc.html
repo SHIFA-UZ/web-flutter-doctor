@@ -1,0 +1,1376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Appointments and visit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes vs-spin{to{transform:rotate(360deg)}}
+@keyframes vs-up{from{transform:translateY(var(--size-30));opacity:0}to{transform:none;opacity:1}}
+@keyframes vs-wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+@keyframes vs-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.vs-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.vs-row:hover{background:var(--bg-hover) !important}
+
+.vs-in input,.vs-in select,.vs-in textarea{font: 600 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.vs-in input::placeholder,.vs-in textarea::placeholder{color:var(--text-tertiary);font-weight:500}
+.vs-scroll{scrollbar-width:thin}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div class="vs-in" style="position: relative; width: 100%; min-height: 100%; box-sizing: border-box; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans)">
+
+<!-- ======================= NOT FOUND ======================= -->
+<sc-if value="{{isGone}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; max-width: var(--layout-reading); margin: 0 auto; display: flex; flex-direction: column; gap: var(--size-16)">
+    <button class="vs-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+    <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-32) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center">
+      <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-error-subtle); color: var(--text-error); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.alertCircle}}"></path></svg></span>
+      <h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Failed to load</h1>
+      <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">This appointment no longer exists or was moved.</p>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ======================= STAFF CANNOT RUN VISITS ======================= -->
+<sc-if value="{{isDenied}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; max-width: var(--layout-reading); margin: 0 auto; display: flex; flex-direction: column; gap: var(--size-16)">
+    <button class="vs-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+    <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-32) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center">
+      <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-canvas); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.lock}}"></path></svg></span>
+      <h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Visits are run by the doctor</h1>
+      <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); max-width: var(--layout-dialog-sm)">Clinic staff can view, reschedule and cancel bookings from the clinic schedule.</p>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ======================= APPOINTMENT DETAILS ======================= -->
+<sc-if value="{{isDet}}" hint-placeholder-val="{{ true }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column">
+  <div style="flex: 1 1 auto; padding: {{pagePad}}; max-width: var(--layout-form-wide); width: 100%; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14)">
+    <header style="display: flex; align-items: flex-start; gap: var(--size-10)">
+      <button class="vs-b sh-icon-btn sh-icon-btn--surface" onClick="{{det.close}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-8); padding-top: var(--size-4)">
+        <h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Appointment Details</h1>
+        <sc-if value="{{det.forColleague}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600; color: var(--text-secondary)">{{det.doctorName}}</span></sc-if>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)">
+          <span class="{{det.st.cls}}" style="flex: none">{{det.st.label}}</span>
+          <sc-if value="{{det.hasPay}}" hint-placeholder-val="{{ false }}"><span class="{{det.pay.cls}}" style="flex: none">{{det.pay.label}}</span></sc-if>
+        </div>
+        <span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 600">{{det.when}}</span>
+        <span style="margin-top: calc(-1 * var(--size-6)); font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{det.dur}}</span>
+      </div>
+    </header>
+
+    <sc-if value="{{det.late}}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-8) var(--size-12); padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-warning)">
+        <span style="display: inline-flex; color: var(--text-primary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clock}}"></path></svg></span>
+        <span style="flex: 1 1 var(--basis-200); font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{det.lateText}}</span>
+        <button class="vs-b sh-action" onClick="{{det.start}}" style="flex: none">Start anyway</button>
+        <button class="vs-b sh-action sh-action--surface" onClick="{{det.askNoShow}}" style="flex: none">Mark as no-show</button>
+      </div>
+    </sc-if>
+
+    <button class="vs-b vs-row sh-press sh-press--card" onClick="{{det.openPatient}}" style="width: 100%; padding: var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+      <span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-16); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{det.pIni}}</span>
+      <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{det.pName}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{det.pSub}}</span></span>
+      <span style="display: inline-flex; color: var(--text-secondary)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+    </button>
+
+    <sc-if value="{{det.hasBriefing}}" hint-placeholder-val="{{ true }}">
+      <button class="vs-b sh-press sh-press--tint" onClick="{{det.openBrief}}" style="width: 100%; padding: var(--size-12) var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+        <span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg></span>
+        <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Visit briefing</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{det.briefSub}}</span></span>
+        <span style="display: inline-flex; color: var(--text-secondary)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+      </button>
+    </sc-if>
+
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); overflow: hidden">
+      <button class="vs-b sh-press" onClick="{{det.toggleDocs}}" aria-expanded="{{det.docsOpenStr}}" style="width: 100%; min-height: var(--size-52); padding: 0 var(--size-14); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)">
+        <span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.fileText}}"></path></svg></span>
+        <span style="flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">AI documentation</span>
+        <span style="display: inline-flex; color: var(--text-secondary); transform: rotate({{det.docsChevron}})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span>
+      </button>
+      <sc-if value="{{det.docsOpen}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 0 var(--size-14) var(--size-14); display: flex; flex-direction: column; gap: var(--size-12)">
+          <div class="dr-underline dr-underline--fade" role="tablist" >
+            <sc-for list="{{det.docTabs}}" as="t" hint-placeholder-count="2"><button role="tab" class="vs-b" aria-selected="{{t.selStr}}" onClick="{{t.pick}}" >{{t.label}}</button></sc-for>
+          </div>
+          <sc-if value="{{det.tabNotes}}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{det.noNotes}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">No notes yet. Notes written during the visit and AI notes appear here.</p></sc-if>
+            <sc-for list="{{det.noteList}}" as="n" hint-placeholder-count="2">
+              <div style="padding: var(--size-12); border-radius: var(--radius-control-md); background: {{n.bg}}; display: flex; flex-direction: column; gap: var(--size-6)">
+                <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="flex: 1 1 auto; font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{n.label}}</span><button class="vs-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{n.copy}}" aria-label="Copy note" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.copy}}"></path></svg></button></div>
+                <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); white-space: pre-line">{{n.text}}</p>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{det.tabPdf}}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{det.hasSummary}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: var(--size-12); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas)">
+                <span aria-hidden="true" style="width: var(--size-40); height: var(--size-48); border-radius: var(--radius-sm); background: var(--bg-surface); color: var(--text-error); display: inline-flex; align-items: center; justify-content: center; flex: none; font-size: var(--font-size-10); font-weight: 700">PDF</span>
+                <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{det.summaryTitle}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Appointment Documentation</span></span>
+                <button class="vs-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{det.openSummary}}" >Open Summary</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{det.noSummary}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">No saved appointment documentation found.</p></sc-if>
+          </sc-if>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-12)">
+      <button class="vs-b sh-press" onClick="{{det.openResched}}" aria-disabled="{{det.reschedOffStr}}" style="width: 100%; padding: 0; display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+        <span style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--bg-canvas); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.calendar}}"></path></svg></span>
+        <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Date and Time</span><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{det.dateTime}}</span></span>
+        <sc-if value="{{det.canResched}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-14); line-height: var(--line-height-16); font-weight: 700; color: var(--text-brand-strong)">Reschedule</span></sc-if>
+      </button>
+      <div style="height: var(--size-1); background: var(--bg-disabled)"></div>
+      <div style="display: flex; align-items: center; gap: var(--size-12)">
+        <span style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--bg-canvas); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{det.placeIcon}}"></path></svg></span>
+        <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Place</span><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{det.place}}</span></span>
+      </div>
+      <sc-if value="{{det.canAdjust}}" hint-placeholder-val="{{ false }}">
+        <div style="height: var(--size-1); background: var(--bg-disabled)"></div>
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--size-10)">
+          <label style="flex: 1 1 var(--basis-200); display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Adjust duration
+            <select class="sh-select" value="{{det.endSel}}" onChange="{{det.onEnd}}" aria-label="Ends at"><sc-for list="{{det.endOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select>
+          </label>
+          <button class="vs-b sh-btn sh-btn--secondary" onClick="{{det.applyEnd}}" aria-disabled="{{det.applyOffStr}}" style="flex: 1 1 var(--basis-200)"><sc-if value="{{det.applyBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Apply duration change</button>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-8)">
+      <label for="vs-reason" style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Reason for visit</label>
+      <textarea class="sh-input sh-input--area" id="vs-reason" value="{{det.reason}}" onChange="{{det.onReason}}" placeholder="What the patient comes for" rows="2" aria-label="Reason for visit"></textarea>
+      <sc-if value="{{det.reasonDirty}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{det.saveReason}}" style="align-self: flex-end">Save</button></sc-if>
+    </section>
+
+    <sc-if value="{{det.canRemind}}" hint-placeholder-val="{{ false }}">
+      <button class="vs-b sh-btn sh-btn--secondary" onClick="{{det.remind}}" aria-busy="{{det.remindBusyStr}}" ><sc-if value="{{det.remindBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.card}}"></path></svg>Remind to pay</button>
+    </sc-if>
+    <div style="height: var(--size-8)"></div>
+  </div>
+
+  <div class="dr-actionbar"><div class="dr-actionbar__inner"><sc-if value="{{det.hasPrimary}}" hint-placeholder-val="{{ true }}">
+        <button class="vs-b sh-btn sh-btn--primary" onClick="{{det.primary}}" aria-disabled="{{det.primaryOffStr}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{det.primaryIcon}}"></path></svg>{{det.primaryLabel}}</button>
+      </sc-if>
+      <sc-if value="{{det.hasHint}}" hint-placeholder-val="{{ false }}"><p style="margin: calc(-1 * var(--size-2)) 0 0; text-align: center; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{det.hint}}</p></sc-if>
+      <sc-if value="{{det.hasJump}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-btn sh-btn--tertiary sh-btn--compact" onClick="{{det.jump}}" style="align-self: center">{{det.jumpLabel}}</button></sc-if>
+      <div style="display: flex; gap: var(--size-10)">
+        <sc-if value="{{det.canCancel}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-btn sh-btn--secondary is-destructive" onClick="{{det.askCancel}}">Cancel Appointment</button></sc-if>
+        <button class="vs-b sh-btn sh-btn--secondary" onClick="{{det.close}}">{{det.closeLabel}}</button>
+      </div></div></div>
+  </div>
+</sc-if>
+
+<!-- ======================= VIDEO PRE-JOIN ======================= -->
+<sc-if value="{{isPre}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; max-width: var(--layout-form-wide); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14); padding-bottom: var(--size-32)">
+    <header style="display: flex; align-items: center; gap: var(--size-10)">
+      <button class="vs-b sh-icon-btn sh-icon-btn--surface" onClick="{{pre.cancel}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <div style="display: flex; flex-direction: column; gap: var(--size-2); min-width: 0"><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Video Call</h1><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{pre.pName}}</span></div>
+    </header>
+    <div style="position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-control-lg); overflow: hidden; background: {{pre.previewBg}}; display: flex; align-items: center; justify-content: center">
+      <sc-if value="{{pre.checking}}" hint-placeholder-val="{{ false }}"><span class="dr-shimmer" style="position: absolute; inset: 0; border-radius: 0; opacity: .25"></span></sc-if>
+      <sc-if value="{{pre.camOn}}" hint-placeholder-val="{{ true }}">
+        <div aria-label="Your camera preview" role="img" style="display: flex; flex-direction: column; align-items: center; gap: var(--size-10); color: var(--text-inverse)">
+          <span style="width: var(--size-96); height: var(--size-96); border-radius: var(--radius-full); background: var(--alpha-white-15); font-size: var(--font-size-32); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">{{pre.meIni}}</span>
+          <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; opacity: .8">{{pre.camLabel}}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{pre.camOff}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: var(--size-8); color: var(--text-inverse)"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.videoOff}}"></path></svg><span style="font-size: var(--font-size-14); font-weight: 700">{{pre.camOffText}}</span></div>
+      </sc-if>
+      <button class="vs-b sh-icon-btn sh-icon-btn--on-dark" onClick="{{pre.flip}}" aria-label="Flip camera" style="position: absolute; right: var(--size-12); top: var(--size-12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></button>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: var(--size-10)">
+      <sc-for list="{{pre.toggles}}" as="t" hint-placeholder-count="2">
+        <button class="vs-b dr-choice" role="switch" aria-checked="{{t.onStr}}" onClick="{{t.toggle}}" style="flex: 1 1 var(--size-160); display: flex; align-items: center; gap: var(--size-10); padding: 0 var(--size-14); min-height: var(--size-52)">
+          <span style="display: inline-flex; color: {{t.ink}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg></span>
+          <span style="flex: 1 1 auto; text-align: left">{{t.label}}</span>
+          <sc-if value="{{t.isMic}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: inline-flex; gap: var(--size-2); align-items: flex-end; height: var(--size-16)"><sc-for list="{{pre.level}}" as="l" hint-placeholder-count="5"><span style="width: var(--size-3); height: var(--size-16); border-radius: var(--radius-xs); background: {{l.bg}}; transform-origin: bottom; animation: vs-wave {{l.dur}} ease-in-out infinite"></span></sc-for></span></sc-if>
+          <span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{t.state}}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div role="status" style="display: flex; gap: var(--size-10); align-items: flex-start; padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: {{pre.statusBg}}; box-shadow: inset 0 0 0 var(--size-1) {{pre.statusBorder}}">
+      <sc-if value="{{pre.checking}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>
+      <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 700">{{pre.status}}</span><sc-if value="{{pre.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{pre.sub}}</span></sc-if></span>
+    </div>
+    <sc-if value="{{pre.micDenied}}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display: flex; flex-wrap: wrap; gap: var(--size-8) var(--size-12); align-items: center; padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: var(--bg-error-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-error)">
+        <span style="flex: 1 1 var(--size-220); font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">Microphone permission denied. The patient cannot hear you without it.</span>
+        <button class="vs-b sh-btn sh-btn--primary is-destructive sh-btn--compact" onClick="{{pre.openSettings}}" >Open settings</button>
+      </div>
+    </sc-if>
+    <div style="display: flex; align-items: center; gap: var(--size-12); padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-lg); background: var(--bg-surface)">
+      <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{pre.pIni}}</span>
+      <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2); min-width: 0"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{pre.pName}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{pre.sched}}</span></span>
+      <span class="{{pre.pay.cls}}" style="flex: none">{{pre.pay.label}}</span>
+    </div>
+    <sc-if value="{{pre.canRemind}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-btn sh-btn--secondary" onClick="{{pre.remind}}" >Remind to pay</button></sc-if>
+    <sc-for list="{{pre.proto}}" as="p" hint-placeholder-count="1"><button class="vs-b sh-btn sh-btn--tertiary sh-btn--compact" onClick="{{p.go}}" style="align-self: center">{{p.label}}</button></sc-for>
+    <button class="vs-b sh-btn sh-btn--primary" onClick="{{pre.join}}" aria-disabled="{{pre.joinOffStr}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.video}}"></path></svg>Join call</button>
+    <button class="vs-b sh-link" onClick="{{pre.cancel}}" style="align-self: center; height: var(--size-40); font: 700 var(--font-size-14)/var(--size-18) var(--font-sans)">Cancel</button>
+  </div>
+</sc-if>
+
+<!-- ======================= VISIT WORKSPACE (in person and video) ======================= -->
+<sc-if value="{{isWs}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; max-width: var(--layout-page); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14)">
+    <header style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-12)">
+      <button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{ws.back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-16); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{ws.pIni}}</span>
+      <div style="flex: 1 1 var(--size-220); min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-6) var(--size-10)"><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; letter-spacing: var(--letter-spacing-snug); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0">{{ws.pName}}</h1><span class="{{ws.st.cls}}" style="flex: none">{{ws.st.label}}</span></div>
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{ws.meta}}</span>
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{ws.sched}}</span>
+      </div>
+      <div style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: var(--size-2)"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{ws.timerLabel}}</span><span style="font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; font-variant-numeric: tabular-nums">{{ws.timer}}</span></div>
+    </header>
+
+    <div role="list" aria-label="Patient summary" style="display: flex; flex-wrap: wrap; gap: var(--size-8)">
+      <sc-for list="{{ws.chips}}" as="c" hint-placeholder-count="3"><button role="listitem" class="vs-b {{c.cls}}" onClick="{{ws.openPatient}}" style="flex: none"><span style="display: inline-flex; color: {{c.ink}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.d}}"></path></svg></span>{{c.label}}</button></sc-for>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: var(--size-14); align-items: flex-start">
+      <!-- left column: video pane + facts (video), documents -->
+      <sc-if value="{{ws.hasLeft}}" hint-placeholder-val="{{ true }}">
+      <div style="flex: 1 1 {{ws.leftBasis}}; min-width: 0; display: flex; flex-direction: column; gap: var(--size-14)">
+        <sc-if value="{{ws.isRoom}}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Video" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-8)">
+            <div style="position: relative; height: {{rm.paneH}}; border-radius: var(--radius-control-md); overflow: hidden; background: var(--bg-media); display: flex; align-items: center; justify-content: center; color: var(--text-inverse)">
+              <sc-if value="{{rm.connecting}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; align-items: center; gap: var(--size-12)"><span class="sh-spinner sh-spinner--lg" aria-hidden="true"></span><span style="font-size: var(--font-size-14); font-weight: 700">Connecting to video call...</span></div></sc-if>
+              <sc-if value="{{rm.alone}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; align-items: center; gap: var(--size-10); padding: 0 var(--size-16); text-align: center"><span style="width: var(--size-88); height: var(--size-88); border-radius: var(--radius-full); background: var(--alpha-white-15); font-size: var(--font-size-24); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">{{rm.meIni}}</span><span style="font-size: var(--font-size-14); font-weight: 700">{{rm.waitText}}</span><span style="font-size: var(--font-size-12); opacity: .75">{{rm.waitFor}}</span><sc-if value="{{rm.offerNoShow}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-action sh-action--surface" onClick="{{rm.noShow}}" style="margin-top: var(--size-4)">Mark as no-show</button></sc-if></div></sc-if>
+              <sc-if value="{{rm.joined}}" hint-placeholder-val="{{ false }}">
+                <div style="position: absolute; inset: 0; background: var(--bg-media); display: flex; align-items: center; justify-content: center"><span role="img" aria-label="{{rm.remoteAria}}" style="width: var(--size-120); height: var(--size-120); border-radius: var(--radius-full); background: var(--alpha-white-15); font-size: var(--font-size-40); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">{{rm.pIni}}</span></div>
+                <span style="position: absolute; left: var(--size-12); top: var(--size-12); height: var(--size-26); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--alpha-black-50); font-size: var(--font-size-12); line-height: var(--line-height-26); font-weight: 700">{{rm.pName}}</span>
+                <span style="position: absolute; right: var(--size-12); top: var(--size-12); height: var(--size-26); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--alpha-black-50); font-size: var(--font-size-12); line-height: var(--line-height-26); font-weight: 700; display: inline-flex; align-items: center; gap: var(--size-6)"><span aria-hidden="true" style="width: var(--size-8); height: var(--size-8); border-radius: var(--radius-full); background: var(--interactive-primary)"></span>{{rm.elapsed}}</span>
+                <div role="img" aria-label="Your camera" style="position: absolute; right: var(--size-12); bottom: var(--size-76); width: {{rm.pipW}}; height: {{rm.pipH}}; border-radius: var(--radius-control-md); border: var(--size-2) solid var(--white); background: {{rm.pipBg}}; display: flex; align-items: center; justify-content: center; font-size: var(--font-size-18); font-weight: 700">{{rm.pipLabel}}</div>
+              </sc-if>
+              <sc-if value="{{rm.left}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; align-items: center; gap: var(--size-10)"><span style="font-size: var(--font-size-16); font-weight: 700">You left the call</span><span style="font-size: var(--font-size-12); opacity: .75">The visit stays open until you end it.</span><button class="vs-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{rm.rejoin}}" >Rejoin</button></div></sc-if>
+              <sc-if value="{{rm.hasControls}}" hint-placeholder-val="{{ true }}">
+                <div role="toolbar" aria-label="Call controls" style="position: absolute; left: 50%; bottom: var(--size-12); transform: translateX(-50%); display: flex; gap: var(--size-10); padding: var(--size-8); border-radius: var(--radius-full); background: var(--bg-overlay)">
+                  <sc-for list="{{rm.ctrls}}" as="c" hint-placeholder-count="4"><button class="vs-b {{c.cls}}" onClick="{{c.go}}" aria-label="{{c.aria}}" aria-pressed="{{c.pressed}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.d}}"></path></svg></button></sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+          <section aria-label="Visit facts from the call" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+            <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg></span><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Visit facts from the call</h2></div>
+            <sc-if value="{{rm.factsLocked}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Visit facts need the Pro plan.</p></sc-if>
+            <sc-if value="{{rm.factsWaiting}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{rm.factsWaitText}}</p></sc-if>
+            <sc-if value="{{rm.factsReady}}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Only what was spoken. Review, then document everything.</p>
+              <sc-for list="{{rm.facts}}" as="f" hint-placeholder-count="3">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-8); padding: var(--size-10); border-radius: var(--radius-control-md); background: {{f.bg}}; opacity: {{f.op}}">
+                  <span style="flex: none; height: var(--size-22); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-surface); font-size: var(--font-size-12); line-height: var(--line-height-22); font-weight: 700; color: var(--text-secondary)">{{f.kind}}</span>
+                  <span style="flex: 1 1 var(--size-180); font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 600; text-decoration: {{f.strike}}">{{f.text}}</span>
+                  <sc-if value="{{f.editable}}" hint-placeholder-val="{{ true }}"><span style="display: flex; gap: var(--size-6)"><button class="vs-b sh-chip" onClick="{{f.keep}}" aria-pressed="{{f.keptStr}}">Keep</button><button class="vs-b sh-chip" onClick="{{f.reject}}" aria-pressed="{{f.rejStr}}">Reject</button></span></sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{rm.factsDone}}" hint-placeholder-val="{{ false }}"><p role="status" style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; color: var(--text-primary)">These visit facts are already in the patient timeline.</p></sc-if>
+              <sc-if value="{{rm.factsOpen}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-btn sh-btn--primary" onClick="{{rm.documentAll}}" aria-busy="{{rm.docBusyStr}}" ><sc-if value="{{rm.docBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{rm.docLabel}}</button></sc-if>
+            </sc-if>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ws.showDocs}}" hint-placeholder-val="{{ true }}">
+          <section aria-label="Documents" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-12)">
+            <h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Documents</h2>
+            <sc-if value="{{ws.noDocs}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">No documents yet</p></sc-if>
+            <sc-for list="{{ws.docGroups}}" as="g" hint-placeholder-count="2">
+              <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+                <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{g.label}}</span>
+                <sc-for list="{{g.docs}}" as="d" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-8); border-radius: var(--radius-control-md); background: var(--bg-canvas)">
+                    <span aria-hidden="true" style="width: var(--size-32); height: var(--size-36); border-radius: var(--radius-sm); background: var(--bg-surface); color: {{d.ink}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{d.icon}}"></path></svg></span>
+                    <button class="vs-b sh-press" onClick="{{d.open}}" style="flex: 1 1 auto; min-width: 0; padding: 0; color: var(--text-primary); display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{d.title}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{d.meta}}</span></button>
+                    <sc-if value="{{d.locked}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-action sh-action--surface" onClick="{{d.request}}" style="flex: none">{{d.reqLabel}}</button></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <button class="vs-b sh-press sh-press--tint" onClick="{{ws.upload}}" aria-busy="{{ws.uplBusyStr}}" style="padding: var(--size-14); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)">
+              <span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.upload}}"></path></svg></span>
+              <span style="flex: 1 1 auto; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{ws.uplLabel}}</span>
+            </button>
+            <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Final notes and PDFs are saved when you end the appointment. New uploads appear here immediately.</p>
+          </section>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- right column: notes card + footer -->
+      <div style="flex: 999 1 var(--basis-460); min-width: 0; display: flex; flex-direction: column; gap: var(--size-14)">
+        <section aria-label="{{ws.notesTitle}}" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-14)">
+          <div style="display: flex; align-items: center; gap: var(--size-8)">
+            <h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{ws.notesTitle}}</h2>
+            <sc-if value="{{ws.isGeneral}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{ws.openFocus}}" aria-label="Focus mode" title="Focus mode" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></button></sc-if>
+            <button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{ws.openMenu}}" aria-label="Notes options" aria-haspopup="menu" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.moreV}}"></path></svg></button>
+          </div>
+
+          <div class="dr-tabs dr-tabs--block" role="tablist" aria-label="Documentation mode">
+            <sc-for list="{{ws.modes}}" as="m" hint-placeholder-count="3"><button role="tab" class="vs-b dr-tab" aria-selected="{{m.selStr}}" onClick="{{m.pick}}">{{m.label}}</button></sc-for>
+          </div>
+
+          <!-- treatment plan panel -->
+          <sc-if value="{{ws.hasPlans}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: var(--size-8); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas)">
+              <sc-if value="{{ws.planLinked}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-primary)">{{ws.planBanner}}</span></sc-if>
+              <span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">Treatment plan for this visit</span>
+              <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Active comprehensive plan
+                <select class="sh-select" value="{{ws.planSel}}" onChange="{{ws.onPlan}}" aria-label="Active comprehensive plan"><sc-for list="{{ws.planOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.label}}</option></sc-for></select>
+              </label>
+              <sc-if value="{{ws.planOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{ws.planProgress}}</span><sc-if value="{{ws.planHintDental}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Tick planned items on the teeth chart below.</span></sc-if><sc-if value="{{ws.planNeedsDental}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-action" onClick="{{ws.toDental}}" style="align-self: flex-start">Open the dental record to tick items</button></sc-if></sc-if>
+            </div>
+          </sc-if>
+
+          <!-- helper region -->
+          <sc-if value="{{ws.helperAi}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: var(--size-10); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--alpha-teal-15); box-shadow: inset 0 0 0 var(--size-1) var(--alpha-teal-25)">
+              <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg></span><span style="flex: 1 1 auto; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">From Shifa AI</span><button class="vs-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{ws.closeHelper}}" aria-label="Close" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+              <sc-for list="{{ws.drafts}}" as="d" hint-placeholder-count="1">
+                <div style="display: flex; flex-direction: column; gap: var(--size-8); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-warning)">
+                  <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700">Draft</span>
+                  <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); white-space: pre-line">{{d.text}}</p>
+                  <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Suggested diagnoses (AI)</span>
+                  <sc-for list="{{d.icd}}" as="c" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: var(--size-8)"><span style="flex: 1 1 auto; font-size: var(--font-size-12); line-height: var(--line-height-18)"><b>{{c.code}}</b> {{c.name}} <sc-if value="{{c.rec}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-20); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-success-subtle); font-size: var(--font-size-12); font-weight: 700">Recommended</span></sc-if></span><button class="vs-b sh-action sh-action--surface" onClick="{{c.apply}}">Apply</button></div></sc-for>
+                  <div style="display: flex; gap: var(--size-8); justify-content: flex-end"><button class="vs-b sh-press sh-press--row" onClick="{{d.discard}}" style="height: var(--size-36); padding: 0 var(--size-14); color: var(--text-error); font: 700 var(--font-size-14)/var(--size-16) var(--font-sans)">Discard</button><button class="vs-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{d.save}}" >Save as note</button></div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ws.hasSaved}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: var(--size-8); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-surface)">
+                  <div style="display: flex; align-items: center; gap: var(--size-6)"><span style="flex: 1 1 auto; font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">AI note</span><button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{ws.prevSaved}}" aria-label="Previous" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevL}}"></path></svg></button><span style="font-size: var(--font-size-12); font-weight: 700">{{ws.savedPos}}</span><button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{ws.nextSaved}}" aria-label="Next" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></button><button class="vs-b sh-icon-btn sh-icon-btn--sm no-shadow" onClick="{{ws.addSaved}}" aria-label="Add to notes" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></button></div>
+                  <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); white-space: pre-line">{{ws.savedText}}</p>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ws.helperForm}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: var(--size-8); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas)">
+              <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="flex: 1 1 auto; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{ws.formTitle}}</span><button class="vs-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{ws.closeHelper}}" aria-label="Close" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+              <sc-for list="{{ws.formRows}}" as="r" hint-placeholder-count="3"><div style="display: flex; gap: var(--size-8); align-items: flex-start; padding: var(--size-8); border-radius: var(--radius-control-md); background: var(--bg-surface)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{r.label}}</span><span style="font-size: var(--font-size-14); line-height: var(--line-height-20)">{{r.text}}</span></span><button class="vs-b sh-icon-btn sh-icon-btn--sm no-shadow" onClick="{{r.add}}" aria-label="Add to notes" style="flex: none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></button></div></sc-for>
+            </div>
+          </sc-if>
+
+          <!-- general mode -->
+          <sc-if value="{{ws.isGeneral}}" hint-placeholder-val="{{ true }}">
+            <div style="border-radius: var(--radius-control-md); box-shadow: inset 0 0 0 var(--size-1) var(--border-default); overflow: hidden">
+              <button class="vs-b sh-press" onClick="{{ws.toggleSoap}}" aria-expanded="{{ws.soapOpenStr}}" style="width: 100%; padding: var(--size-12); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">Structured notes (SOAP)</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Optional sections — included in the saved consultation PDF.</span></span><span style="display: inline-flex; transform: rotate({{ws.soapChevron}})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span></button>
+              <sc-if value="{{ws.soapOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 0 var(--size-12) var(--size-12); display: flex; flex-direction: column; gap: var(--size-10)">
+                  <sc-for list="{{ws.soap}}" as="f" hint-placeholder-count="4">
+                    <div style="display: flex; flex-direction: column; gap: var(--size-4)">
+                      <label style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{f.label}}</label>
+                      <div style="position: relative">
+                        <textarea class="sh-input sh-input--area" value="{{f.val}}" onChange="{{f.on}}" rows="2" aria-label="{{f.label}}" style="width: 100%; border-color: {{f.border}}; padding: var(--size-10) var(--size-touch) {{f.padB}} var(--size-12)"></textarea>
+                        <sc-if value="{{ws.canSpeech}}" hint-placeholder-val="{{ true }}"><button class="vs-b {{f.micCls}}" onClick="{{f.mic}}" aria-label="Speak to type" style="position: absolute; right: var(--size-6); top: var(--size-6)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.mic}}"></path></svg></button></sc-if>
+                        <sc-if value="{{f.recording}}" hint-placeholder-val="{{ false }}">
+                          <div style="position: absolute; left: var(--size-6); right: var(--size-6); bottom: var(--size-8); height: var(--size-40); border-radius: var(--radius-full); background: var(--charcoal); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-6); color: var(--text-inverse)">
+                            <button class="vs-b sh-icon-btn sh-icon-btn--on-dark sh-icon-btn--sm" onClick="{{ws.recCancel}}" aria-label="Cancel recording" style="flex: none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+                            <span aria-hidden="true" style="flex: 1 1 auto; height: var(--size-22); display: flex; align-items: center; gap: var(--size-2); overflow: hidden"><sc-for list="{{ws.wave}}" as="b" hint-placeholder-count="20"><span style="flex: 1 1 0; height: var(--size-22); border-radius: var(--radius-xs); background: var(--interactive-primary); animation: vs-wave {{b.dur}} ease-in-out infinite"></span></sc-for></span>
+                            <span style="font-size: var(--font-size-12); font-weight: 700; font-variant-numeric: tabular-nums">{{ws.recTime}}</span>
+                            <button class="vs-b sh-icon-btn sh-icon-btn--sm no-shadow" onClick="{{ws.recDone}}" aria-label="Process" style="flex: none"><sc-if value="{{ws.recBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{ws.recIdle}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></sc-if></button>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: var(--size-4)">
+              <label style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Notes</label>
+              <div style="position: relative">
+                <textarea class="sh-input sh-input--area" value="{{ws.free.val}}" onChange="{{ws.free.on}}" rows="7" placeholder="Enter appointment notes..." aria-label="Appointment notes" style="width: 100%; border-color: {{ws.free.border}}; padding: var(--size-12) var(--size-48) {{ws.free.padB}} var(--size-14); font-size: var(--font-size-16); line-height: var(--line-height-24)"></textarea>
+                <sc-if value="{{ws.canSpeech}}" hint-placeholder-val="{{ true }}"><button class="vs-b {{ws.free.micCls}}" onClick="{{ws.free.mic}}" aria-label="Speak to type" style="position: absolute; right: var(--size-8); top: var(--size-8)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.mic}}"></path></svg></button></sc-if>
+                <sc-if value="{{ws.free.recording}}" hint-placeholder-val="{{ false }}">
+                  <div style="position: absolute; left: var(--size-8); right: var(--size-8); bottom: var(--size-10); height: var(--size-touch); border-radius: var(--radius-full); background: var(--charcoal); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-6); color: var(--text-inverse)">
+                    <button class="vs-b sh-icon-btn sh-icon-btn--on-dark sh-icon-btn--sm" onClick="{{ws.recCancel}}" aria-label="Cancel recording" style="flex: none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+                    <span aria-hidden="true" style="flex: 1 1 auto; height: var(--size-24); display: flex; align-items: center; gap: var(--size-2); overflow: hidden"><sc-for list="{{ws.wave}}" as="b" hint-placeholder-count="20"><span style="flex: 1 1 0; height: var(--size-24); border-radius: var(--radius-xs); background: var(--interactive-primary); animation: vs-wave {{b.dur}} ease-in-out infinite"></span></sc-for></span>
+                    <span style="font-size: var(--font-size-12); font-weight: 700; font-variant-numeric: tabular-nums">{{ws.recTime}}</span>
+                    <button class="vs-b sh-icon-btn sh-icon-btn--sm no-shadow" onClick="{{ws.recDone}}" aria-label="Process" style="flex: none"><sc-if value="{{ws.recBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{ws.recIdle}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></sc-if></button>
+                  </div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ws.dictLocked}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-link" onClick="{{ws.learnPro}}" style="align-self: flex-start; font: 600 var(--font-size-12)/var(--size-16) var(--font-sans)">Dictation needs PRO · <u>Learn more</u></button></sc-if>
+            </div>
+            <!-- AI scribe -->
+            <sc-if value="{{ws.scribeIdle}}" hint-placeholder-val="{{ true }}">
+              <button class="vs-b sh-btn sh-btn--ai" onClick="{{ws.startScribe}}" aria-disabled="{{ws.scribeOffStr}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ws.scribeIcon}}"></path></svg>{{ws.scribeLabel}}</button>
+            </sc-if>
+            <sc-if value="{{ws.scribeRec}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: var(--size-8)">
+                <span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; display: inline-flex; align-items: center; gap: var(--size-8)"><span aria-hidden="true" style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: var(--interactive-destructive); animation: vs-pulse 1s ease-in-out infinite"></span>Recording for AI Notes · {{ws.scribeTime}}</span>
+                <div style="height: var(--size-52); border-radius: var(--radius-full); background: var(--charcoal); display: flex; align-items: center; gap: var(--size-10); padding: 0 var(--size-8); color: var(--text-inverse)">
+                  <button class="vs-b sh-icon-btn sh-icon-btn--on-dark sh-icon-btn--sm" onClick="{{ws.scribeCancel}}" aria-label="Cancel recording" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+                  <span aria-hidden="true" style="flex: 1 1 auto; height: var(--size-28); display: flex; align-items: center; gap: var(--size-2); overflow: hidden"><sc-for list="{{ws.wave}}" as="b" hint-placeholder-count="20"><span style="flex: 1 1 0; height: var(--size-28); border-radius: var(--radius-xs); background: var(--interactive-primary); animation: vs-wave {{b.dur}} ease-in-out infinite"></span></sc-for></span>
+                  <button class="vs-b sh-action" onClick="{{ws.scribeDone}}" style="flex: none">Process</button>
+                </div>
+                <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Stop when you are done — pauses and filler words are fine.</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ws.scribeProc}}" hint-placeholder-val="{{ false }}">
+              <div role="status" style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-info-subtle)"><span class="sh-spinner" aria-hidden="true"></span><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{ws.scribeProcText}}</span></div>
+            </sc-if>
+          </sc-if>
+
+          <!-- dental mode -->
+          <sc-if value="{{ws.isDental}}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{dn.intro}}</p>
+            <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+              <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="flex: 1 1 auto; font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary); letter-spacing: var(--letter-spacing-caps)">TOOTH MAP</span></div>
+              <div style="container-type: inline-size; min-width: 0; display: flex; flex-direction: column; gap: var(--size-10)"><div class="{{dn.chart.cls}}" role="group" aria-label="Tooth map, FDI numbering"><sc-for list="{{dn.chart.jaws}}" as="j" hint-placeholder-count="2"><div class="{{j.cls}}"><sc-for list="{{j.teeth}}" as="t" hint-placeholder-count="17"><sc-if value="{{t.isGap}}" hint-placeholder-val="{{ false }}"><span class="gap" aria-hidden="true"></span></sc-if><sc-if value="{{t.isTooth}}" hint-placeholder-val="{{ true }}"><sc-if value="{{dn.chart.interactive}}" hint-placeholder-val="{{ true }}"><button class="{{t.cls}}" onClick="{{t.tap}}" aria-label="{{t.aria}}">{{t.n}}<sc-if value="{{t.hasCount}}" hint-placeholder-val="{{ false }}"><span class="dr-tooth__count" aria-hidden="true">{{t.count}}</span></sc-if></button></sc-if><sc-if value="{{dn.chart.readOnly}}" hint-placeholder-val="{{ false }}"><span class="{{t.cls}}" role="img" aria-label="{{t.aria}}">{{t.n}}</span></sc-if></sc-if></sc-for></div></sc-for></div><sc-if value="{{dn.planMode}}" hint-placeholder-val="{{ false }}"><div class="dr-teeth-legend" aria-hidden="true"><span><i></i>No work</span><span><i class="is-planned"></i>Planned</span><span><i class="is-partial"></i>Partly done</span><span><i class="is-done"></i>Completed</span></div></sc-if><sc-if value="{{dn.freeMode}}" hint-placeholder-val="{{ true }}"><div class="dr-teeth-legend" aria-hidden="true"><span><i></i>No services</span><span><i class="is-done"></i>Services added (count)</span></div></sc-if></div>
+            </div>
+            <button class="vs-b sh-press sh-press--tile" onClick="{{dn.openGeneral}}" style="padding: var(--size-12); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{dn.generalLabel}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Procedures not tied to a specific tooth (e.g. lip frenectomy, consultation).</span></span><span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span></button>
+            <sc-if value="{{dn.freeMode}}" hint-placeholder-val="{{ true }}">
+              <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Discount (%)<input class="sh-input" value="{{dn.discount}}" onChange="{{dn.onDiscount}}" inputmode="decimal" placeholder="0" aria-label="Discount percent" style="border-color: {{dn.discBorder}}; max-width: var(--size-160)"></label>
+              <sc-if value="{{dn.discErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="margin-top: calc(-1 * var(--size-8)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Enter a discount between 0 and 100.</span></sc-if>
+            </sc-if>
+            <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Clinical notes<textarea class="sh-input sh-input--area" value="{{dn.notes}}" onChange="{{dn.onNotes}}" rows="3" placeholder="Anaesthesia, materials, how the patient tolerated it" aria-label="Clinical notes"></textarea></label>
+            <sc-if value="{{dn.freeMode}}" hint-placeholder-val="{{ true }}">
+              <div style="padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas); display: flex; flex-direction: column; gap: var(--size-4); font-size: var(--font-size-14); line-height: var(--line-height-20)">
+                <span>Subtotal: <b>{{dn.subtotal}}</b> · {{dn.lines}}</span>
+                <span>Discount: <b>{{dn.discLine}}</b></span>
+                <span style="font-size: var(--font-size-16)">Total due: <b>{{dn.total}}</b></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{dn.planMode}}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas); display: flex; flex-direction: column; gap: var(--size-10)">
+                <span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">Plan finances</span>
+                <div style="display: flex; flex-direction: column; gap: var(--size-2); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span>Plan total: <b>{{dn.planTotal}}</b></span><span>Paid: <b>{{dn.planPaid}}</b></span><span>Outstanding: <b>{{dn.planOut}}</b></span></div>
+                <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Payment this visit</span>
+                <sc-if value="{{dn.payRecorded}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-14); font-weight: 700; color: var(--text-primary)">{{dn.payRecText}}</span></sc-if>
+                <sc-if value="{{dn.payOpen}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: var(--size-8)">
+                    <label style="flex: 1 1 var(--size-160); display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Amount (UZS)<input class="sh-input" value="{{dn.payAmt}}" onChange="{{dn.onPayAmt}}" inputmode="decimal" placeholder="0" aria-label="Amount" style="border-color: {{dn.payBorder}}"></label>
+                    <label style="flex: 1 1 var(--size-160); display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Method<select class="sh-select" value="{{dn.payMethod}}" onChange="{{dn.onPayMethod}}" aria-label="Method"><option value="Cash">Cash</option><option value="Card (terminal)">Card (terminal)</option><option value="Transfer">Transfer</option></select></label>
+                  </div>
+                  <sc-if value="{{dn.payMsg}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); font-weight: 700; color: {{dn.payMsgInk}}">{{dn.payMsgText}}</span></sc-if>
+                  <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Recorded when you end the appointment.</span>
+                </sc-if>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <!-- 025-2 mode -->
+          <sc-if value="{{ws.isForm}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: var(--size-10)">
+              <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">The official dental outpatient card (form 025-2) for this visit: complaints, diagnosis with ICD-10, dental chart, treatment and the patient's signature.</p>
+              <sc-for list="{{ws.forms}}" as="f" hint-placeholder-count="1"><div style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-canvas)"><span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clipboard}}"></path></svg></span><span style="flex: 1 1 auto; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{f.label}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{f.state}}</span></div></sc-for>
+              <button class="vs-b sh-btn sh-btn--primary" onClick="{{ws.openForm}}" >Open Form 025-2</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ws.hasPhotos}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{ws.photos}}" as="p" hint-placeholder-count="1"><span style="flex: none; box-sizing: border-box; height: var(--size-30); display: inline-flex; align-items: center; gap: var(--size-6); padding: 0 var(--size-6) 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-canvas); font-size: var(--font-size-12); font-weight: 700; white-space: nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.camera}}"></path></svg>{{p.label}}<button class="vs-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{p.remove}}" aria-label="Remove photo" ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></span></sc-for></div>
+          </sc-if>
+        </section>
+
+        <div style="height: var(--size-16)"></div>
+      </div>
+    </div>
+  </div>
+    <div class="dr-actionbar dr-actionbar--wide"><div class="dr-actionbar__inner">
+      <sc-if value="{{ws.hasSig}}" hint-placeholder-val="{{ false }}"><span class="dr-footer__state" role="status" style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; color: {{ws.sigInk}}">{{ws.sigText}}</span></sc-if>
+      <sc-if value="{{ws.canRequestSig}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-btn sh-btn--secondary" onClick="{{ws.requestSig}}">Request Signature</button></sc-if>
+      <button class="vs-b sh-btn sh-btn--primary" onClick="{{ws.openEnd}}">End Appointment</button>
+    </div></div>
+</sc-if>
+
+<!-- ======================= SUMMARY PDF ======================= -->
+<sc-if value="{{isSum}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; background: var(--bg-disabled); display: flex; flex-direction: column">
+    <header style="position: sticky; top: 0; z-index: 4; background: var(--bg-surface); padding: {{barPad}}; display: flex; align-items: center; gap: var(--size-10); box-shadow: 0 var(--size-1) 0 var(--border-default)">
+      <button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <h1 style="flex: 1 1 auto; min-width: 0; margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-22); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{sum.title}}</h1>
+      <sc-if value="{{sum.ready}}" hint-placeholder-val="{{ true }}"><sc-for list="{{sum.actions}}" as="x" hint-placeholder-count="3"><button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{x.go}}" aria-label="{{x.label}}" title="{{x.label}}" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{x.d}}"></path></svg></button></sc-for></sc-if>
+    </header>
+    <sc-if value="{{sum.pending}}" hint-placeholder-val="{{ false }}">
+      <div style="margin: var(--size-24) auto; max-width: var(--layout-dialog-max); width: calc(100% - var(--size-32)); background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center">
+        <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-warning-subtle); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.clock}}"></path></svg></span>
+        <h2 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">Summary pending</h2>
+        <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">The visit is completed but its summary document was not saved yet.</p>
+        <button class="vs-b sh-btn sh-btn--primary" onClick="{{sum.regen}}" aria-busy="{{sum.busyStr}}" ><sc-if value="{{sum.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Regenerate summary</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{sum.ready}}" hint-placeholder-val="{{ true }}">
+      <div style="padding: var(--size-20) var(--size-12) var(--size-48); display: flex; justify-content: center">
+        <article aria-label="Appointment summary" style="width: 100%; max-width: var(--layout-form); background: var(--bg-surface); box-shadow: var(--shadow-default); padding: {{sum.pagePad}}; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-16); font-size: var(--font-size-12); line-height: var(--line-height-20)">
+          <div style="display: flex; align-items: flex-start; gap: var(--size-12)">
+            <span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-control-md); background: var(--interactive-primary); color: var(--text-inverse); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">S</span>
+            <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><b style="font-size: var(--font-size-14); letter-spacing: var(--letter-spacing-caps)">SHIFA</b><sc-if value="{{sum.hasClinic}}" hint-placeholder-val="{{ true }}"><span style="color: var(--text-secondary)">{{sum.clinic}}</span></sc-if></div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: var(--size-2); color: var(--text-secondary); text-align: right"><span>{{sum.dateLine}}</span><span>Appointment ID {{sum.id}}</span></div>
+          </div>
+          <div style="padding: var(--size-10) var(--size-12); border-radius: var(--radius-sm); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-16); font-weight: 700">Appointment Summary</div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-10); padding: var(--size-12); border-radius: var(--radius-sm); background: var(--bg-canvas)">
+            <div style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="color: var(--text-secondary); font-size: var(--font-size-12); font-weight: 700">PATIENT</span><b>{{sum.patient}}</b><span>ID {{sum.pid}}</span></div>
+            <div style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="color: var(--text-secondary); font-size: var(--font-size-12); font-weight: 700">DOCTOR</span><b>{{sum.doctor}}</b><span>{{sum.spec}}</span></div>
+            <div style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="color: var(--text-secondary); font-size: var(--font-size-12); font-weight: 700">TYPE</span><b>{{sum.type}}</b></div>
+            <div style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="color: var(--text-secondary); font-size: var(--font-size-12); font-weight: 700">DURATION</span><b>{{sum.duration}}</b></div>
+          </div>
+          <section style="display: flex; flex-direction: column; gap: var(--size-8)"><h2 style="margin: 0; font-size: var(--font-size-14); border-bottom: var(--size-2) solid var(--border-brand); padding-bottom: var(--size-4)">Clinical Notes</h2>
+            <sc-if value="{{sum.hasAi}}" hint-placeholder-val="{{ false }}"><b>From Shifa AI</b><p style="margin: 0; white-space: pre-line">{{sum.ai}}</p></sc-if>
+            <b>Doctor notes</b><p style="margin: 0; white-space: pre-line">{{sum.notes}}</p>
+          </section>
+          <sc-if value="{{sum.hasServices}}" hint-placeholder-val="{{ false }}">
+            <section style="display: flex; flex-direction: column; gap: var(--size-8)"><h2 style="margin: 0; font-size: var(--font-size-14); border-bottom: var(--size-2) solid var(--border-brand); padding-bottom: var(--size-4)">Services provided</h2>
+              <div style="display: grid; grid-template-columns: var(--size-60) 1fr auto; gap: var(--size-6) var(--size-10)"><b>Tooth</b><b>Service</b><b style="text-align: right">Amount</b><sc-for list="{{sum.services}}" as="r" hint-placeholder-count="2"><span>{{r.tooth}}</span><span>{{r.name}}</span><span style="text-align: right">{{r.price}}</span></sc-for></div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: var(--size-2)"><span>Subtotal: {{sum.subtotal}}</span><span>Discount: {{sum.discount}}</span><b>Total: {{sum.total}}</b></div>
+            </section>
+          </sc-if>
+          <sc-if value="{{sum.hasPlan}}" hint-placeholder-val="{{ false }}">
+            <section style="display: flex; flex-direction: column; gap: var(--size-6)"><h2 style="margin: 0; font-size: var(--font-size-14); border-bottom: var(--size-2) solid var(--border-brand); padding-bottom: var(--size-4)">Treatment plan</h2><span>{{sum.planLine}}</span><span>{{sum.planMoney}}</span><sc-for list="{{sum.planDone}}" as="l" hint-placeholder-count="1"><span>✓ {{l}}</span></sc-for><sc-if value="{{sum.hasPay}}" hint-placeholder-val="{{ false }}"><span>{{sum.payLine}}</span></sc-if></section>
+          </sc-if>
+          <sc-if value="{{sum.dental}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-10); border-radius: var(--radius-sm); background: var(--bg-canvas); font-size: var(--font-size-12)">All instruments used were sterilised according to the clinic's sterilisation protocol. [Uzbek original in the PDF.]</p></sc-if>
+          <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-16); padding-top: var(--size-12)">
+            <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="height: var(--size-36); border-bottom: var(--size-1) solid var(--charcoal); font-family: cursive; font-size: var(--font-size-18); display: flex; align-items: flex-end">{{sum.doctorSig}}</span><span style="color: var(--text-secondary)">Doctor</span></div>
+            <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="height: var(--size-36); border-bottom: var(--size-1) solid var(--charcoal); font-family: cursive; font-size: var(--font-size-18); display: flex; align-items: flex-end">{{sum.patientSig}}</span><span style="color: var(--text-secondary)">{{sum.sigLine}}</span></div>
+          </section>
+          <footer style="display: flex; justify-content: space-between; gap: var(--size-12); padding-top: var(--size-12); border-top: var(--size-1) solid var(--border-default); color: var(--text-tertiary); font-size: var(--font-size-12)"><span>Generated by Shifa · Confidential</span><span>Page 1 / 1</span></footer>
+        </article>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<!-- ======================= FOCUS MODE ======================= -->
+<sc-if value="{{focusOpen}}" hint-placeholder-val="{{ false }}">
+  <div role="dialog" aria-modal="true" aria-label="Consultation notes" style="position: fixed; inset: 0; z-index: 55; background: var(--bg-surface); display: flex; flex-direction: column; animation: vs-up .2s ease-out">
+    <div style="padding: {{barPad}}; display: flex; align-items: center; gap: var(--size-10); box-shadow: 0 var(--size-1) 0 var(--border-default)">
+      <button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{closeFocus}}" aria-label="Back" ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <h2 style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">Consultation notes</h2>
+    </div>
+    <textarea value="{{focusVal}}" onChange="{{focusOn}}" placeholder="Enter appointment notes..." aria-label="Consultation notes" style="flex: 1 1 auto; border: 0; outline: 0; resize: none; padding: var(--size-20); font: 500 var(--font-size-18)/var(--size-28) var(--font-sans); color: var(--text-primary)"></textarea>
+  </div>
+</sc-if>
+
+<!-- ======================= OVERLAYS ======================= -->
+<sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+    <button class="sh-scrim--fill" aria-label="Close" onClick="{{sheet.scrim}}"></button>
+    <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="vs-sh-t" data-pop="{{sheet.pop}}" style="--pop-top: {{sheet.popTop}}; --pop-left: {{sheet.popLeft}}; max-width: {{sheet.max}}; border-radius: {{dlgR}}; padding-bottom: {{sheetPadB}}">
+      <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: var(--size-36); height: var(--size-4); border-radius: var(--radius-full); background: var(--bg-disabled); margin: calc(-1 * var(--size-8)) auto 0"></span></sc-if>
+      <sc-if value="{{sheet.hasIcon}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="align-self: center; width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: {{sheet.iconBg}}; color: {{sheet.iconInk}}; display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{sheet.icon}}"></path></svg></span></sc-if>
+      <div style="display: flex; align-items: flex-start; gap: var(--size-8)"><div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-4); text-align: {{sheet.align}}"><h2 id="vs-sh-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{sheet.title}}</h2><sc-if value="{{sheet.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{sheet.sub}}</span></sc-if></div><sc-if value="{{sheet.hasX}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{sheet.close}}" aria-label="Close" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if></div>
+
+      <sc-if value="{{sheet.isText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); text-align: {{sheet.align}}">{{sheet.body}}</p></sc-if>
+
+      <!-- briefing -->
+      <sc-if value="{{sheet.isBrief}}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{br.pending}}" hint-placeholder-val="{{ false }}"><div role="status" style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas)"><span class="sh-spinner" aria-hidden="true"></span><span style="font-size: var(--font-size-14); line-height: var(--line-height-20)">Generating briefing from attached documents…</span></div></sc-if>
+        <sc-if value="{{br.ready}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: var(--size-8)"><sc-for list="{{br.lines}}" as="l" hint-placeholder-count="3"><div style="display: flex; gap: var(--size-8); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span aria-hidden="true" style="width: var(--size-6); height: var(--size-6); margin-top: var(--size-8); border-radius: var(--radius-full); background: var(--interactive-primary); flex: none"></span><span>{{l}}</span></div></sc-for><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{br.meta}}</span></div></sc-if>
+        <sc-if value="{{br.empty}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">No pre-appointment documents or briefing yet.</p></sc-if>
+        <sc-if value="{{br.failed}}" hint-placeholder-val="{{ false }}"><p role="alert" style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-error); font-weight: 600">The briefing could not be generated. Try again.</p></sc-if>
+        <sc-if value="{{br.hasDocs}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Attached documents</span><sc-for list="{{br.docs}}" as="d" hint-placeholder-count="2"><button class="vs-b vs-row sh-press sh-press--tile" onClick="{{d.open}}" style="padding: var(--size-8) var(--size-10); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.file}}"></path></svg><span style="flex: 1 1 auto; font-size: var(--font-size-14); font-weight: 700">{{d.title}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{d.meta}}</span></button></sc-for></div></sc-if>
+        <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-tertiary)">AI summary — verify against the originals.</p>
+        <div style="display: flex; gap: var(--size-10); flex-wrap: wrap; justify-content: flex-end">
+          <sc-if value="{{br.canCopy}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-btn sh-btn--secondary" onClick="{{br.copy}}" >Copy</button></sc-if>
+          <sc-if value="{{br.canRetry}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-btn sh-btn--secondary" onClick="{{br.retry}}" >Retry briefing</button></sc-if>
+        </div>
+      </sc-if>
+
+      <!-- cancel -->
+      <sc-if value="{{sheet.isCancel}}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas); font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 700">{{cx.summary}}</p>
+        <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Reason (optional)</span><div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{cx.reasons}}" as="r" hint-placeholder-count="4"><button class="vs-b sh-chip" onClick="{{r.pick}}" aria-pressed="{{r.selStr}}" >{{r.label}}</button></sc-for></div>
+          <sc-if value="{{cx.isOther}}" hint-placeholder-val="{{ false }}"><input class="sh-input" value="{{cx.other}}" onChange="{{cx.onOther}}" placeholder="Reason" maxlength="120" aria-label="Other reason"></sc-if>
+        </div>
+        <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">The patient will be notified.</p>
+        <sc-if value="{{cx.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-14); font-weight: 700; color: var(--text-error)">{{cx.err}}</span></sc-if>
+      </sc-if>
+
+      <!-- no-show -->
+      <sc-if value="{{sheet.isNoShow}}" hint-placeholder-val="{{ false }}">
+        <button class="vs-b sh-press" role="switch" aria-checked="{{ns.notifyStr}}" onClick="{{ns.toggle}}" style="padding: 0; display: flex; align-items: center; gap: var(--size-12); font: 700 var(--font-size-16)/var(--size-20) var(--font-sans); color: var(--text-primary)"><span class="sh-switch" aria-hidden="true"></span>Notify patient</button>
+      </sc-if>
+
+      <!-- reschedule -->
+      <sc-if value="{{sheet.isResched}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; gap: var(--size-6)">
+          <button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{rs.prevWeek}}" aria-label="Previous days" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevL}}"></path></svg></button>
+          <div style="flex: 1 1 auto; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--size-4)"><sc-for list="{{rs.days}}" as="d" hint-placeholder-count="7"><button class="vs-b sh-press sh-press--tile" onClick="{{d.pick}}" aria-pressed="{{d.selStr}}" aria-label="{{d.aria}}" style="height: var(--size-56); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 600">{{d.dow}}</span><span style="font-size: var(--font-size-16); font-weight: 700">{{d.num}}</span><span aria-hidden="true" style="width: var(--size-4); height: var(--size-4); border-radius: var(--radius-full); background: {{d.dot}}"></span></button></sc-for></div>
+          <button class="vs-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{rs.nextWeek}}" aria-label="Next days" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></button>
+        </div>
+        <span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{rs.dayLabel}}</span>
+        <sc-if value="{{rs.none}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); color: var(--text-secondary)">No slots available</p></sc-if>
+        <div style="display: grid; grid-template-columns: repeat({{rs.cols}}, minmax(0, 1fr)); gap: var(--size-6)"><sc-for list="{{rs.slots}}" as="s" hint-placeholder-count="8"><button class="vs-b sh-chip" onClick="{{s.pick}}" aria-pressed="{{s.selStr}}" aria-disabled="{{s.offStr}}" style="flex-direction: column">{{s.label}}<sc-if value="{{s.isCur}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-10); font-weight: 700; margin-top: var(--size-2)">current</span></sc-if></button></sc-for></div>
+        <sc-if value="{{rs.hasNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-8) var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600">{{rs.note}}</p></sc-if>
+      </sc-if>
+
+      <!-- notes menu -->
+      <sc-if value="{{sheet.isMenu}}" hint-placeholder-val="{{ false }}">
+        <div role="menu" style="display: flex; flex-direction: column"><sc-for list="{{mn.items}}" as="m" hint-placeholder-count="6"><sc-if value="{{m.isDiv}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="height: var(--size-1); background: var(--bg-disabled); margin: var(--size-6) 0"></span></sc-if><sc-if value="{{m.isItem}}" hint-placeholder-val="{{ true }}"><button role="menuitem" class="vs-b vs-row sh-option" onClick="{{m.go}}" style="display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span style="display: inline-flex; color: {{m.ink}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg></span><span style="flex: 1 1 auto">{{m.label}}</span><sc-if value="{{m.sel}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span></sc-if></button></sc-if></sc-for></div>
+      </sc-if>
+
+      <!-- photo source -->
+      <sc-if value="{{sheet.isPhoto}}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-10)"><sc-for list="{{ph.opts}}" as="o" hint-placeholder-count="2"><button class="vs-b sh-press sh-press--tile" onClick="{{o.go}}" style="height: var(--size-88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-8); font: 700 var(--font-size-14)/var(--size-18) var(--font-sans); color: var(--text-primary)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.d}}"></path></svg>{{o.label}}</button></sc-for></div>
+      </sc-if>
+
+      <!-- dental services picker -->
+      <sc-if value="{{sheet.isSvc}}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{sv.hasLines}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Selected services</span><sc-for list="{{sv.lines}}" as="l" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: var(--size-8); padding: var(--size-8) var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-success-subtle)"><span style="flex: 1 1 auto; font-size: var(--font-size-14); font-weight: 700">{{l.name}}</span><span style="font-size: var(--font-size-12)">{{l.price}}</span><button class="vs-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{l.remove}}" aria-label="Remove service" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div></sc-for></div></sc-if>
+        <div style="display: flex; gap: var(--size-6); overflow-x: auto"><sc-for list="{{sv.groups}}" as="g" hint-placeholder-count="4"><button class="vs-b sh-chip" onClick="{{g.pick}}" aria-pressed="{{g.selStr}}" style="flex: none">{{g.label}}</button></sc-for></div>
+        <div style="display: flex; flex-direction: column; gap: var(--size-4)"><sc-for list="{{sv.items}}" as="i" hint-placeholder-count="4"><button class="vs-b vs-row sh-press sh-press--row" onClick="{{i.add}}" style="min-height: var(--size-48); padding: 0 var(--size-10); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); font-weight: 700">{{i.name}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{i.meta}}</span></span><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></span></button></sc-for></div>
+      </sc-if>
+
+      <!-- plan fulfil -->
+      <sc-if value="{{sheet.isFulfil}}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Select the planned lines completed during this visit.</p>
+        <sc-for list="{{ff.lines}}" as="l" hint-placeholder-count="2"><button class="vs-b sh-press sh-press--tile" role="checkbox" aria-checked="{{l.onStr}}" aria-disabled="{{l.offStr}}" onClick="{{l.toggle}}" style="padding: var(--size-10); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary); opacity: {{l.op}}"><span aria-hidden="true" style="width: var(--size-22); height: var(--size-22); box-sizing: border-box; border-radius: var(--radius-sm); border: var(--size-2) solid {{l.border}}; background: {{l.bg}}; color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); font-weight: 700">{{l.name}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{l.meta}}</span></span></button></sc-for>
+      </sc-if>
+
+      <!-- end visit -->
+      <sc-if value="{{sheet.isEnd}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: var(--size-2)"><sc-for list="{{en.rows}}" as="r" hint-placeholder-count="7"><div style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-8) 0; border-bottom: var(--size-1) solid var(--grey-100)"><span style="display: inline-flex; color: {{r.ink}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"></path></svg></span><span style="flex: 1 1 auto; font-size: var(--font-size-14); font-weight: 700">{{r.label}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary); text-align: right">{{r.value}}</span></div></sc-for></div>
+        <sc-if value="{{en.nothing}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600">Nothing to save. The visit will be marked as completed without a summary.</p></sc-if>
+        <sc-if value="{{en.sigWait}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-info-subtle); font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600">The patient has not signed yet. The summary will show an empty signature line.</p></sc-if>
+        <sc-if value="{{en.hasErr}}" hint-placeholder-val="{{ false }}"><p role="alert" style="margin: 0; font-size: var(--font-size-14); font-weight: 700; color: var(--text-error)">{{en.err}}</p></sc-if>
+      </sc-if>
+
+      <!-- end progress -->
+      <sc-if value="{{sheet.isProg}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: var(--size-10)"><sc-for list="{{pg.steps}}" as="s" hint-placeholder-count="4"><div style="display: flex; align-items: center; gap: var(--size-10)"><sc-if value="{{s.running}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{s.done}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: var(--size-18); height: var(--size-18); border-radius: var(--radius-full); background: var(--interactive-primary); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span></sc-if><sc-if value="{{s.waiting}}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="width: var(--size-18); height: var(--size-18); box-sizing: border-box; border-radius: var(--radius-full); border: var(--size-2) solid var(--border-default); flex: none"></span></sc-if><span style="flex: 1 1 auto; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: {{s.weight}}; color: {{s.ink}}">{{s.label}}</span><sc-if value="{{s.canSkip}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-action sh-action--secondary" onClick="{{pg.skip}}">Continue without waiting</button></sc-if></div></sc-for></div>
+        <sc-if value="{{pg.isDone}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-success-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-brand); font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 700">{{pg.doneText}}</div></sc-if>
+      </sc-if>
+
+      <!-- follow-up -->
+      <sc-if value="{{sheet.isFu}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{fu.picks}}" as="q" hint-placeholder-count="5"><button class="vs-b sh-chip" onClick="{{q.pick}}" aria-pressed="{{q.selStr}}" >{{q.label}}</button></sc-for></div>
+        <sc-if value="{{fu.showDate}}" hint-placeholder-val="{{ false }}"><input class="sh-input" type="date" value="{{fu.day}}" min="{{fu.min}}" onChange="{{fu.onDate}}" aria-label="Pick a date"></sc-if>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--size-4)"><sc-for list="{{fu.days}}" as="d" hint-placeholder-count="7"><button class="vs-b sh-press sh-press--tile" onClick="{{d.pick}}" aria-pressed="{{d.selStr}}" aria-label="{{d.aria}}" style="height: var(--size-56); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 600">{{d.dow}}</span><span style="font-size: var(--font-size-16); font-weight: 700">{{d.num}}</span><span aria-hidden="true" style="width: var(--size-4); height: var(--size-4); border-radius: var(--radius-full); background: {{d.dot}}"></span></button></sc-for></div>
+        <sc-if value="{{fu.none}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-6) var(--size-10); align-items: center; font-size: var(--font-size-14); color: var(--text-secondary)"><span>No free slots on this day</span><sc-if value="{{fu.hasNext}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-link" onClick="{{fu.goNext}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">{{fu.nextLabel}}</button></sc-if></div></sc-if>
+        <div style="display: grid; grid-template-columns: repeat({{fu.cols}}, minmax(0, 1fr)); gap: var(--size-6)"><sc-for list="{{fu.slots}}" as="s" hint-placeholder-count="8"><button class="vs-b sh-chip sh-chip--slot" onClick="{{s.pick}}" aria-pressed="{{s.selStr}}">{{s.label}}</button></sc-for></div>
+        <div class="dr-tabs dr-tabs--block" role="radiogroup" aria-label="Kind"><sc-for list="{{fu.kinds}}" as="k" hint-placeholder-count="2"><button class="vs-b dr-tab" role="radio" aria-checked="{{k.selStr}}" onClick="{{k.pick}}">{{k.label}}</button></sc-for></div>
+        <sc-if value="{{fu.isVideo}}" hint-placeholder-val="{{ false }}"><p style="margin: calc(-1 * var(--size-6)) 0 0; font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Patient pays before joining.</p></sc-if>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Reason<input class="sh-input" value="{{fu.reason}}" onChange="{{fu.onReason}}" aria-label="Reason"></label>
+        <button class="vs-b sh-link" onClick="{{fu.flag}}" style="align-self: flex-start; font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">Just flag for follow-up</button>
+      </sc-if>
+
+      <!-- permission prompt -->
+      <sc-if value="{{sheet.isPerm}}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-tertiary); text-align: center">[Prototype: this stands in for the system permission dialog.]</p>
+      </sc-if>
+
+      <sc-if value="{{sheet.hasActions}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: var(--size-10); justify-content: flex-end; flex-direction: {{dlgActDir}}; flex-wrap: wrap; padding-top: var(--size-4)">
+          <sc-if value="{{sheet.hasTertiary}}" hint-placeholder-val="{{ false }}"><button class="vs-b sh-press sh-press--row" onClick="{{sheet.tertiary}}" style="height: var(--size-48); padding: 0 var(--size-16); color: {{sheet.tertiaryInk}}; font: 700 var(--font-size-16)/var(--size-20) var(--font-sans)">{{sheet.tertiaryLabel}}</button></sc-if>
+          <sc-if value="{{sheet.hasSecondary}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-btn sh-btn--secondary" onClick="{{sheet.secondary}}" >{{sheet.secondaryLabel}}</button></sc-if>
+          <sc-if value="{{sheet.hasPrimary}}" hint-placeholder-val="{{ true }}"><button class="vs-b sh-btn sh-btn--primary" onClick="{{sheet.primary}}" aria-busy="{{sheet.busyStr}}" aria-disabled="{{sheet.primaryOffStr}}" style="background: {{sheet.primaryBg}}; color: {{sheet.primaryInk}}"><sc-if value="{{sheet.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{sheet.primaryLabel}}</button></sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sheet: null, w: {}, det: {}, pj: {}, rm: {}, perm: { asked: false, mic: true, cam: true }, tick: 0, focus: null, sumBusy: false };
+    this.warned = {};
+    this.t = {};
+  }
+  componentDidMount() {
+    this.iv = setInterval(() => { const r = this.props.route || {}; if (r.s === 'visit' || r.s === 'videoRoom' || r.s === 'videoCall') this.setState({ tick: this.state.tick + 1 }); }, 1000);
+    this.handleRoute();
+  }
+  componentDidUpdate(prev) {
+    const a = prev.route || {}, b = this.props.route || {};
+    if (a !== b && (a.s !== b.s || JSON.stringify(a.p) !== JSON.stringify(b.p))) { if (this.state.sheet && !(this.state.sheet.keep)) this.setState({ sheet: null }); this.handleRoute(); }
+  }
+  componentWillUnmount() { clearInterval(this.iv); Object.keys(this.t).forEach((k) => clearTimeout(this.t[k])); }
+  later(key, ms, fn) { clearTimeout(this.t[key]); this.t[key] = setTimeout(fn, ms); }
+  // ---------- data helpers ----------
+  A() { const r = this.props.route || {}; return this.props.lib.appt(this.props.store, (r.p || {}).id); }
+  patch(id, p) { this.props.act('set', (s) => ({ appointments: s.appointments.map((x) => (x.id === id ? Object.assign({}, x, typeof p === 'function' ? p(x) : p) : x)) })); }
+  dur(m) { const h = Math.floor(m / 60), r = m % 60; return h ? (h + 'h' + (r ? ' ' + r + 'm' : '')) : r + 'm'; }
+  mins(a) { const L = this.props.lib; return L.toMin(a.end) - L.toMin(a.start); }
+  handleRoute() {
+    const r = this.props.route || {}; const st = this.props.store; const act = this.props.act; const lib = this.props.lib;
+    if (!st || !act || !lib) return;
+    const a = this.A(); if (!a) return;
+    if (r.s === 'apptBriefing') this.setState({ sheet: { kind: 'brief' } });
+    if (r.s === 'visit' || r.s === 'videoRoom') {
+      if (st.role === 'staff') return;
+      if (a.status === 'CONFIRMED' || a.status === 'REQUESTED') this.patch(a.id, { status: 'IN_PROGRESS' });
+      const p = lib.patient(st, a.patientId);
+      if (p.chronic && !this.warned[a.id]) { this.warned[a.id] = true; this.setState({ sheet: { kind: 'chronic', info: true } }); }
+      if (r.s === 'videoRoom') this.connect(a);
+    }
+    if (r.s === 'videoCall') {
+      this.setPj(a.id, { checking: true });
+      this.later('pj', 900, () => { this.setPj(a.id, { checking: false }); if (!this.state.perm.asked) this.setState({ sheet: { kind: 'perm' } }); });
+    }
+  }
+  // ---------- per-appointment working state ----------
+  getW(a) {
+    const W = this.state.w[a.id]; if (W) return W;
+    const d = a.draft || {};
+    return { mode: d.mode || 'general', soapOpen: !!(a.soap && (a.soap.s || a.soap.o || a.soap.a || a.soap.p)), soap: Object.assign({ s: '', o: '', a: '', p: '' }, a.soap || {}), free: a.notes || '', rec: null, recBusy: false, recT0: 0, scribe: a.scribe || 'idle', scribeT0: 0, drafts: [], saved: a.aiNote ? [a.aiNote] : [], savedIx: 0, helper: null, photos: d.photos || [], dental: JSON.parse(JSON.stringify(a.dental || { teeth: {}, general: [], discount: '', notes: '' })), planId: a.planId || '', ticks: {}, payAmt: '', payMethod: 'Cash', sig: a.sig || 'none', dirty: false, upl: false, reqs: {}, t0: this.state.tick };
+  }
+  setW(a, patch, dirty) { const cur = this.getW(a); const nx = Object.assign({}, cur, patch); if (dirty !== false) nx.dirty = true; this.setState({ w: Object.assign({}, this.state.w, { [a.id]: nx }) }); }
+  getDet(a) { return this.state.det[a.id] || { reason: a.reason || '', end: a.end, docsOpen: false, tab: 'notes', remind: false, apply: false }; }
+  setDet(a, p) { this.setState({ det: Object.assign({}, this.state.det, { [a.id]: Object.assign({}, this.getDet(a), p) }) }); }
+  setPj(id, p) { this.setState({ pj: Object.assign({}, this.state.pj, { [id]: Object.assign({ checking: true, cam: true, mic: true, front: true, reminded: false }, this.state.pj[id] || {}, p) }) }); }
+  setRm(id, p) { this.setState({ rm: Object.assign({}, this.state.rm, { [id]: Object.assign({ phase: 'connecting', cam: true, mic: true, front: true, t0: this.state.tick, joinT: 0, facts: null, factsState: 'listening', docBusy: false }, this.state.rm[id] || {}, p) }) }); }
+  connect(a) {
+    this.setRm(a.id, { phase: 'connecting', t0: this.state.tick });
+    this.later('rm1', 1500, () => {
+      if (this.props.store.online === false) { this.setRm(a.id, { phase: 'error' }); return; }
+      this.setRm(a.id, { phase: 'alone', t0: this.state.tick });
+      this.later('rm2', 4000, () => {
+        if ((this.state.rm[a.id] || {}).phase !== 'alone') return;
+        this.setRm(a.id, { phase: 'joined', joinT: this.state.tick });
+        this.later('rm3', 5000, () => {
+          const facts = [['Symptom', 'Mild swelling on the lower left jaw, less than yesterday'], ['Medication', 'Chlorhexidine 0.12 % rinse, twice a day'], ['Therapy', 'Soft food for 3 more days'], ['Diagnosis', 'Normal healing after extraction of 48']].map(([k, t], i) => ({ id: 'F' + i, kind: k, text: t, keep: true }));
+          this.setRm(a.id, { facts, factsState: 'ready' });
+        });
+      });
+    });
+  }
+  transcriptFor(field) {
+    return { s: 'Pain in the upper left molar for five days, worse at night and with cold drinks.', o: 'Deep carious lesion on 26, tender to percussion, gum around it slightly swollen.', a: 'Irreversible pulpitis of 26 suspected.', p: 'Start root canal treatment of 26 today, review in one week.', free: 'Patient asks whether diabetes affects healing. Explained that well-controlled blood glucose is important before and after treatment.' }[field] || 'Dictated text.';
+  }
+  docGroup(c) {
+    if (['BLOOD_TEST', 'URINE_TEST', 'STOOL_TEST', 'LAB_RESULT', 'BIOPSY', 'PATHOLOGY'].indexOf(c) >= 0) return 'Laboratory';
+    if (['XRAY', 'MRI', 'CT_SCAN', 'ULTRASOUND', 'MAMMOGRAPHY', 'IMAGING_OTHER', 'ECG', 'EEG', 'ENDOSCOPY'].indexOf(c) >= 0) return 'Imaging';
+    if (['REFERRAL', 'DISCHARGE_SUMMARY', 'HOSPITAL_REPORT', 'PRESCRIPTION', 'APPOINTMENT_NOTE', 'VACCINATION_RECORD', 'ALLERGY_REPORT'].indexOf(c) >= 0) return 'Clinical';
+    if (c === 'FORM_025_2') return 'Forms';
+    if (['INTERNAL_NOTE', 'OTHER_PRIVATE', 'REMOTE_TASK_DOCUMENT'].indexOf(c) >= 0) return 'Private';
+    return 'Other';
+  }
+  svcGroup(name) { if (/clean/i.test(name)) return 'Hygiene'; if (/extract/i.test(name)) return 'Surgery'; if (/crown|bridge|veneer/i.test(name)) return 'Prosthetics'; return 'Therapy'; }
+  dentalTotals(dental, st) {
+    const svc = (id) => st.clinic.services.find((x) => x.id === id) || { name: 'Service', price: 0 };
+    let n = 0, sum = 0;
+    Object.keys(dental.teeth || {}).forEach((k) => (dental.teeth[k] || []).forEach((id) => { n++; sum += svc(id).price; }));
+    (dental.general || []).forEach((id) => { n++; sum += svc(id).price; });
+    const disc = parseFloat(String(dental.discount || '').replace(',', '.')) || 0;
+    return { n, sum, disc, total: Math.max(0, sum * (1 - Math.min(100, Math.max(0, disc)) / 100)) };
+  }
+  // ---------- view ----------
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const route = this.props.route || { s: 'apptDetails', p: {} }; const rs = route.s;
+    const S = this.state; const sh = S.sheet;
+    const staff = st.role === 'staff';
+    const out = {
+      ready: true, notReady: false, ic, phone, back: () => act('back'),
+      pagePad: phone ? 'var(--size-48) var(--size-12) 0' : 'var(--size-24) var(--size-24) 0', sidePad: phone ? 'var(--size-12)' : 'var(--size-24)', footPadB: phone ? 'var(--size-24)' : 'var(--size-14)', barPad: phone ? 'var(--size-48) var(--size-12) var(--size-10)' : 'var(--size-14) var(--size-24)', h1Size: phone ? 'var(--font-size-24)' : 'var(--font-size-28)',
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row', actDir: phone ? 'column-reverse' : 'row', sheetPadB: phone ? 'var(--size-28)' : 'var(--size-20)',
+      isGone: false, isDenied: false, isDet: false, isPre: false, isWs: false, isSum: false, focusOpen: false,
+      hasSheet: false, sheet: {}, det: {}, pre: {}, ws: {}, rm: {}, dn: {}, sum: {}, br: {}, cx: {}, ns: {}, rs: {}, mn: {}, ph: {}, sv: {}, ff: {}, en: {}, pg: {}, fu: {}
+    };
+    const a = this.A();
+    if (!a) { out.isGone = true; return out; }
+    const p = lib.patient(st, a.patientId);
+    const startMin = lib.toMin(a.start), endMin = lib.toMin(a.end);
+    const isToday = a.day === st.today, isPast = a.day < st.today, isFuture = a.day > st.today;
+    const video = a.kind === 'video';
+    const stat = lib.status[a.status] || lib.tone('muted', a.status);
+    const banner = (kind, text, extra) => act('banner', Object.assign({ kind, text }, extra || {}));
+    const offline = st.online === false;
+    const ageTxt = p.dob ? lib.age(p.dob, st.today) + ' years' : '';
+
+    // ---- shared start logic ----
+    const go = () => {
+      if (video) act('push', { s: 'videoCall', p: { id: a.id } });
+      else { if (a.status !== 'IN_PROGRESS' && a.status !== 'COMPLETED') this.patch(a.id, { status: 'IN_PROGRESS' }); act('push', { s: 'visit', p: { id: a.id } }); }
+    };
+    const startVisit = () => {
+      if (p.chronic && !this.warned[a.id]) { this.warned[a.id] = true; this.setState({ sheet: { kind: 'chronic', go } }); return; }
+      go();
+    };
+
+    // ======================= DETAILS =======================
+    if (rs === 'apptDetails' || rs === 'apptBriefing') {
+      out.isDet = true;
+      const D = this.getDet(a);
+      const dirty = D.reason !== (a.reason || '') || D.end !== a.end;
+      const close = () => { if (dirty) this.setState({ sheet: { kind: 'discard' } }); else act('back'); };
+      const active = a.status === 'CONFIRMED' || a.status === 'REQUESTED';
+      const nowM = st.nowMin;
+      let primary = null, hint = '', jump = null;
+      if (staff) { hint = 'Visits are started by the doctor.'; }
+      else if (a.status === 'COMPLETED') primary = { label: 'Open Summary', icon: ic.fileText, on: true, go: () => { if (a.summary) act('push', { s: 'summary', p: { id: a.id } }); else if (!a.patientId) banner('error', 'Patient ID not available'); else banner('info', 'No saved appointment documentation found.'); } };
+      else if (a.status === 'IN_PROGRESS') primary = { label: 'Continue Appointment', icon: video ? ic.video : ic.arrowR, on: true, go: () => (video ? act('push', { s: 'videoCall', p: { id: a.id } }) : act('push', { s: 'visit', p: { id: a.id } })) };
+      else if (a.status === 'CANCELLED' || a.status === 'NO_SHOW') { hint = a.status === 'CANCELLED' ? 'This appointment was cancelled.' : 'This visit was recorded as missed.'; }
+      else if (isPast) { primary = { label: 'Appointment Ended', icon: ic.clock, on: false }; hint = 'Past appointments cannot be changed or cancelled.'; }
+      else if (isFuture) { primary = { label: 'Start Appointment', icon: video ? ic.video : ic.arrowR, on: false }; hint = 'You can start this visit on ' + lib.fmtDay(a.day) + '.'; }
+      else if (video && nowM < startMin - 5) { primary = { label: 'Start Appointment', icon: ic.video, on: false }; hint = 'Video call is available 5 minutes before the start.'; jump = { label: '[Prototype] Jump to ' + lib.hm(startMin - 3), go: () => act('set', { nowMin: startMin - 3 }) }; }
+      else if (video && nowM > endMin + 60) { primary = { label: 'Appointment Ended', icon: ic.clock, on: false }; hint = 'It is too late to join this video call (more than one hour after the end).'; }
+      else primary = { label: 'Start Appointment', icon: video ? ic.video : ic.arrowR, on: true, go: startVisit };
+      const late = !staff && active && isToday && nowM > startMin + (video ? 5 : 0);
+      // ends for duration adjust
+      const free = lib.agenda(st, a.day, a.doctorId).rows.filter((r) => r.type === 'free');
+      const ends = []; for (let m = startMin + 15; m < endMin; m += 15) ends.push(m);
+      ends.push(endMin); let cur = a.end; for (;;) { const f = free.find((r) => r.start === cur); if (!f) break; ends.push(lib.toMin(f.end)); cur = f.end; }
+      const canAdjust = !staff && active && !isPast;
+      const canResched = active && !isPast;
+      const remindOk = video && !isPast && active && (a.payment === 'PENDING' || a.payment === 'FAILED');
+      const notes = [];
+      if (a.notes) notes.push({ label: 'Doctor notes', text: a.notes, bg: 'var(--bg-canvas)' });
+      if (a.aiNote) notes.push({ label: 'From Shifa AI', text: a.aiNote, bg: 'var(--alpha-teal-15)' });
+      const pay = lib.pay[a.payment] || null;
+      Object.assign(out.det, {
+        forColleague: (a.doctorId || 'me') !== 'me', doctorName: ((st.clinic.doctors || []).find((d) => d.id === a.doctorId) || {}).name || '',
+        st: stat, hasPay: video && !!pay, pay: pay || {},
+        when: lib.fmtLong(a.day) + ' · ' + a.start + '–' + a.end, dur: 'Duration: ' + this.dur(endMin - startMin),
+        pIni: lib.initials(p.name), pName: p.name || 'Unknown patient', pSub: [ageTxt, p.phones && p.phones[0]].filter(Boolean).join(' · ') || 'Patient record',
+        openPatient: () => { if (!a.patientId) { banner('error', 'Patient ID not available'); return; } act('push', { s: 'patDetail', p: { id: a.patientId } }); },
+        late, lateText: 'Started ' + (nowM - startMin) + ' min ago — patient not arrived', start: startVisit,
+        askNoShow: () => this.setState({ sheet: { kind: 'noshow', notify: true } }),
+        hasBriefing: !staff && (a.briefing !== 'none' || a.docsAttached > 0), briefSub: a.briefing === 'pending' ? 'Generating from attached documents…' : (a.briefing === 'failed' ? 'Could not be generated · Retry' : 'AI summary of ' + (a.docsAttached || 0) + ' attached document' + (a.docsAttached === 1 ? '' : 's')),
+        openBrief: () => this.setState({ sheet: { kind: 'brief' } }),
+        docsOpen: D.docsOpen, docsOpenStr: D.docsOpen ? 'true' : 'false', docsChevron: D.docsOpen ? '180deg' : '0deg', toggleDocs: () => this.setDet(a, { docsOpen: !D.docsOpen }),
+        docTabs: [['notes', 'Appointment Notes'], ['pdf', 'Summary PDF']].map(([k, l]) => ({ label: l, selStr: D.tab === k ? 'true' : 'false', line: D.tab === k ? 'var(--border-brand)' : 'transparent', ink: D.tab === k ? 'var(--text-primary)' : 'var(--text-secondary)', weight: D.tab === k ? 700 : 500, pick: () => this.setDet(a, { tab: k }) })),
+        tabNotes: D.tab === 'notes', tabPdf: D.tab === 'pdf', noNotes: !notes.length,
+        noteList: notes.map((n) => Object.assign({}, n, { copy: () => banner('success', 'Copied') })),
+        hasSummary: !!a.summary, noSummary: !a.summary, summaryTitle: 'Appointment summary, ' + lib.fmtDay(a.day), openSummary: () => act('push', { s: 'summary', p: { id: a.id } }),
+        dateTime: lib.fmtDate(a.day) + ', ' + a.start + ' – ' + a.end, canResched, reschedOffStr: canResched ? 'false' : 'true', reschedCursor: canResched ? 'pointer' : 'default',
+        openResched: () => { if (!canResched) return; this.setState({ sheet: { kind: 'resched', base: a.day < st.today ? st.today : (a.day > st.today ? a.day : st.today), day: a.day, sel: null } }); },
+        place: video ? 'Video Call' : (a.location || 'Clinic Address'), placeIcon: video ? ic.video : ic.pin,
+        canAdjust, endSel: D.end, endOpts: Array.from(new Set(ends)).sort((x, y) => x - y).map((m) => ({ v: lib.hm(m), label: 'Ends at ' + lib.hm(m) + ' (' + this.dur(m - startMin) + ')' })),
+        onEnd: (e) => this.setDet(a, { end: e.target.value }),
+        applyOffStr: D.end === a.end ? 'true' : 'false', applyBg: '', applyInk: D.end === a.end ? 'var(--text-tertiary)' : 'var(--text-inverse)', applyBusy: !!D.apply,
+        applyEnd: () => {
+          if (D.end === a.end || D.apply) return;
+          if (offline) { banner('error', 'You are offline. Try again when connected.'); return; }
+          this.setDet(a, { apply: true });
+          this.later('apply', 700, () => { this.patch(a.id, { end: this.getDet(a).end }); this.setDet(a, { apply: false }); banner('success', 'Slot changed successfully'); });
+        },
+        reason: D.reason, onReason: (e) => { if (!staff) this.setDet(a, { reason: e.target.value }); }, reasonDirty: D.reason !== (a.reason || ''),
+        saveReason: () => { this.patch(a.id, { reason: D.reason.trim() }); banner('success', 'Reason saved'); },
+        canRemind: remindOk, remindBusy: !!D.remind, remindBusyStr: D.remind ? 'true' : 'false',
+        remind: () => {
+          if (D.remind) return;
+          if (offline) { banner('error', 'Could not send reminder: you are offline.'); return; }
+          this.setDet(a, { remind: true }); this.later('remind', 800, () => { this.setDet(a, { remind: false }); banner('success', 'Payment reminder sent'); });
+        },
+        hasPrimary: !!primary, primaryLabel: primary ? primary.label : '', primaryIcon: primary ? primary.icon : '', primaryOffStr: primary && primary.on ? 'false' : 'true',
+        primaryBg: primary && primary.on ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: primary && primary.on ? 'var(--text-inverse)' : 'var(--text-tertiary)', primaryShadow: primary && primary.on ? 'var(--shadow-dropdown)' : 'none',
+        primary: () => { if (primary && primary.on && primary.go) { if (offline && a.status === 'COMPLETED') { banner('error', 'You are offline. Try again when connected.'); return; } primary.go(); } },
+        hasHint: !!hint, hint, hasJump: !!jump, jumpLabel: jump ? jump.label : '', jump: jump ? jump.go : () => {},
+        canCancel: active && !isPast, askCancel: () => { if (offline) { banner('error', 'You are offline. Try again when connected.'); return; } this.setState({ sheet: { kind: 'cancel', reason: '', other: '', busy: false, err: '' } }); },
+        close, closeLabel: dirty ? 'Discard' : 'Close'
+      });
+    }
+
+    // ======================= PRE-JOIN =======================
+    if (rs === 'videoCall') {
+      if (staff) { out.isDenied = true; return this.sheets(out, a, p); }
+      out.isPre = true;
+      const J = Object.assign({ checking: true, cam: true, mic: true, front: true }, S.pj[a.id] || {});
+      const perm = S.perm;
+      const micOk = perm.mic, camOk = perm.cam;
+      const nowM = st.nowMin;
+      let status = 'Ready to join', sub = '', bg = 'var(--bg-success-subtle)', border = 'var(--border-brand)', ok = true; const proto = [];
+      if (J.checking) { status = 'Checking…'; bg = 'var(--bg-canvas)'; border = 'var(--border-default)'; ok = false; }
+      else if (offline) { status = 'You are offline'; sub = 'Connect to the internet to join the call.'; bg = 'var(--bg-warning-subtle)'; border = 'var(--border-warning)'; ok = false; }
+      else if (!isToday || nowM < startMin - 5) { const n = isToday ? (startMin - 5 - nowM) : null; status = 'You can join 5 minutes before the appointment.'; sub = n !== null ? 'Available in ' + n + ' min' : 'Scheduled for ' + lib.fmtDay(a.day) + '.'; bg = 'var(--bg-info-subtle)'; border = 'var(--icon-info)'; ok = false; if (isToday) proto.push({ label: '[Prototype] Jump to ' + lib.hm(startMin - 3), go: () => act('set', { nowMin: startMin - 3 }) }); }
+      else if (nowM > endMin + 15) { status = 'Video call has ended.'; sub = 'The join window closes 15 minutes after the appointment end.'; bg = 'var(--bg-canvas)'; border = 'var(--border-default)'; ok = false; }
+      else if (a.payment === 'PENDING' || a.payment === 'FAILED') { status = 'Payment is required before joining this video consultation.'; sub = J.reminded ? 'Reminder sent. The call unlocks as soon as the patient pays.' : ''; bg = 'var(--bg-warning-subtle)'; border = 'var(--border-warning)'; ok = false; proto.push({ label: '[Prototype] Patient paid', go: () => { this.patch(a.id, { payment: 'PAID' }); banner('success', 'Payment received from ' + p.name + '.'); } }); }
+      if (!micOk) ok = false;
+      const camOn = J.cam && camOk;
+      out.pre = {
+        pName: p.name, pIni: lib.initials(p.name), meIni: lib.initials(st.me.name), sched: 'Scheduled ' + a.start + ' – ' + a.end + (isToday ? '' : ' · ' + lib.fmtDay(a.day)),
+        pay: lib.pay[a.payment] || lib.pay.NOT_REQUIRED, checking: J.checking,
+        previewBg: camOn ? 'linear-gradient(160deg, var(--raw-video-preview) 0%, var(--bg-media) 100%)' : 'var(--bg-media)', camOn, camOff: !camOn, camOffText: camOk ? 'Camera off' : 'Camera permission denied', camLabel: J.front ? 'Front camera' : 'Back camera',
+        flip: () => this.setPj(a.id, { front: !J.front }),
+        toggles: [
+          { label: 'Camera', d: J.cam && camOk ? ic.video : ic.videoOff, onStr: J.cam ? 'true' : 'false', state: !camOk ? 'Blocked' : (J.cam ? 'On' : 'Off'), border: J.cam && camOk ? 'var(--border-brand)' : 'var(--border-default)', ink: J.cam && camOk ? 'var(--text-brand-strong)' : 'var(--text-secondary)', isMic: false, toggle: () => this.setPj(a.id, { cam: !J.cam }) },
+          { label: 'Microphone', d: J.mic && micOk ? ic.mic : ic.micOff, onStr: J.mic ? 'true' : 'false', state: !micOk ? 'Blocked' : (J.mic ? 'On' : 'Muted'), border: J.mic && micOk ? 'var(--border-brand)' : 'var(--border-default)', ink: J.mic && micOk ? 'var(--text-brand-strong)' : 'var(--text-secondary)', isMic: J.mic && micOk, toggle: () => this.setPj(a.id, { mic: !J.mic }) }
+        ],
+        level: ['.7s', '.5s', '.9s', '.6s', '.8s'].map((d) => ({ dur: d, bg: 'var(--interactive-primary)' })),
+        status, hasSub: !!sub, sub, statusBg: bg, statusBorder: border,
+        micDenied: !micOk, openSettings: () => { this.setState({ perm: { asked: true, mic: true, cam: true } }); banner('success', 'Camera and microphone allowed.'); },
+        canRemind: !J.checking && !offline && (a.payment === 'PENDING' || a.payment === 'FAILED') && nowM <= endMin + 15,
+        remind: () => { this.setPj(a.id, { reminded: true }); banner('success', 'Payment reminder sent'); },
+        proto,
+        joinOffStr: ok ? 'false' : 'true', joinBg: ok ? 'var(--interactive-primary)' : 'var(--bg-disabled)', joinInk: ok ? 'var(--text-inverse)' : 'var(--text-tertiary)', joinShadow: ok ? 'var(--shadow-dropdown)' : 'none',
+        join: () => { if (!ok) { if (!micOk) banner('error', 'Microphone permission denied'); return; } this.setRm(a.id, { cam: J.cam && camOk, mic: J.mic, front: J.front }); if (a.status !== 'IN_PROGRESS') this.patch(a.id, { status: 'IN_PROGRESS' }); act('replace', { s: 'videoRoom', p: { id: a.id } }); },
+        cancel: () => act('back')
+      };
+    }
+
+    // ======================= WORKSPACE =======================
+    if (rs === 'visit' || rs === 'videoRoom') {
+      if (staff) { out.isDenied = true; return this.sheets(out, a, p); }
+      out.isWs = true;
+      const W = this.getW(a); const room = rs === 'videoRoom';
+      const R = room ? Object.assign({ phase: 'connecting', cam: true, mic: true, front: true, t0: 0, joinT: 0, facts: null, factsState: 'listening' }, S.rm[a.id] || {}) : null;
+      const canSpeech = lib.can(st, 'speech'), canAi = lib.can(st, 'aiNotes');
+      const secOpen = S.tick - W.t0;
+      const elapsed = (isToday ? (st.nowMin - startMin) * 60 : 0) + secOpen;
+      const mmss = (sec) => { const neg = sec < 0; sec = Math.abs(sec); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; return (neg ? '−' : '') + (h ? h + ':' + lib.pad(m) : m) + ':' + lib.pad(s); };
+      const tasksOpen = st.tasks.filter((t) => t.patientId === a.patientId && t.status === 'ACTIVE').length;
+      const lastVisit = st.appointments.filter((x) => x.patientId === a.patientId && x.status === 'COMPLETED' && x.id !== a.id).sort((x, y) => (y.day + y.start).localeCompare(x.day + x.start))[0];
+      const chips = [];
+      if (p.allergies) chips.push({ label: 'Allergy: ' + p.allergies, d: ic.alert, cls: 'vs-b dr-alert' });
+      if (p.chronic) chips.push({ label: p.chronic, d: ic.activity, cls: 'vs-b dr-alert dr-alert--warn' });
+      chips.push({ label: lastVisit ? 'Last visit: ' + lib.fmtDate(lastVisit.day) : 'First visit', d: ic.history, cls: 'vs-b dr-alert dr-alert--neutral' });
+      if (tasksOpen) chips.push({ label: tasksOpen + ' open task' + (tasksOpen > 1 ? 's' : ''), d: ic.tasks, cls: 'vs-b dr-alert dr-alert--neutral' });
+      const docs = st.docs.filter((d) => d.patientId === a.patientId);
+      const groups = ['Laboratory', 'Imaging', 'Clinical', 'Forms', 'Private', 'Other'].map((g) => ({ label: g, docs: docs.filter((d) => this.docGroup(d.cat) === g).map((d) => ({ title: d.title, meta: lib.catLabel(d.cat) + ' · ' + lib.fmtDate(d.day), icon: d.kind === 'image' ? ic.image : ic.file, ink: d.locked ? 'var(--text-tertiary)' : 'var(--text-brand-strong)', locked: d.locked, reqLabel: W.reqs[d.id] ? 'Requested' : 'Request access', request: () => { if (W.reqs[d.id]) return; this.setW(a, { reqs: Object.assign({}, W.reqs, { [d.id]: true }) }, false); banner('success', 'Access requested from the document owner.'); }, open: () => { if (d.locked) { banner('info', 'This document is private. Request access first.'); return; } act('push', { s: 'docView', p: { id: d.id } }); } })) })).filter((g) => g.docs.length);
+      const mode = W.mode;
+      const plans = (st.clinic.plans || []).filter((x) => x.patientId === a.patientId && (x.status === 'ACTIVE' || x.status === 'IN_PROGRESS'));
+      const plan = plans.find((x) => x.id === W.planId) || null;
+      const planDone = plan ? plan.items.filter((i) => i.done || W.ticks[i.id]).length : 0;
+      const recField = W.rec;
+      const recSec = recField ? (S.tick - W.recT0) : 0;
+      const fieldMic = (key) => () => {
+        if (!canSpeech) return;
+        if (offline) { banner('error', 'You are offline — dictation needs a connection'); return; }
+        if (W.rec && W.rec !== key) return;
+        if (W.rec === key) return;
+        this.setW(a, { rec: key, recT0: S.tick, recBusy: false }, false);
+      };
+      const soapDefs = [['s', 'Subjective'], ['o', 'Objective'], ['a', 'Assessment'], ['p', 'Plan']];
+      const scribeState = W.scribe;
+      const switchMode = (to) => { if (to === mode) return; if (W.dirty) { this.setState({ sheet: { kind: 'modeSwitch', to } }); return; } this.setW(a, { mode: to }, false); };
+      const leave = () => {
+        if (room) { this.setState({ sheet: { kind: 'leaveCall', thenBack: true } }); return; }
+        if (W.scribe === 'recording') { this.setState({ sheet: { kind: 'leaveRec' } }); return; }
+        this.saveDraft(a); act('back'); if (W.dirty) banner('success', 'Draft saved');
+      };
+      const dent = W.dental;
+      const totals = this.dentalTotals(dent, st);
+      Object.assign(out.ws, {
+        back: leave, pIni: lib.initials(p.name), pName: p.name, st: lib.status[(this.A() || a).status] || stat,
+        meta: [ageTxt, 'ID #' + (p.id || '').replace('P-', '')].filter(Boolean).join(' · '),
+        sched: a.start + ' – ' + a.end + ' · ' + (a.reason || 'Consultation') + ' · ' + (video ? 'Video call' : (a.location || 'Clinic')),
+        timerLabel: elapsed < 0 ? 'Starts in' : 'Visit time', timer: mmss(Math.abs(elapsed)),
+        chips, openPatient: () => { this.saveDraft(a); act('push', { s: 'patDetail', p: { id: a.patientId } }); },
+        hasLeft: !phone || room || true, isRoom: room, leftBasis: room ? '420px' : '300px', showDocs: !(room && phone),
+        noDocs: !groups.length, docGroups: groups,
+        uplBusyStr: W.upl ? 'true' : 'false', uplLabel: W.upl ? 'Uploading…' : (phone ? 'Tap to upload (saved as a medical document)' : 'Drop files here or tap to upload (saved as a medical document)'),
+        upload: () => {
+          if (W.upl) return;
+          if (offline) { banner('error', 'You are offline. Try again when connected.'); return; }
+          this.setW(a, { upl: true }, false);
+          this.later('upl', 1000, () => { const n = st.docs.filter((d) => d.patientId === a.patientId).length + 1; act('set', (s) => ({ docs: s.docs.concat([{ id: lib.uid('D'), patientId: a.patientId, title: 'Scan ' + n + '.pdf', cat: 'OTHER_MEDICAL', day: st.today, by: st.me.name, locked: false, kind: 'pdf' }]) })); this.setW(a, { upl: false }, false); banner('success', 'Uploaded 1 file.'); });
+        },
+        notesTitle: mode === 'dental' ? 'Dental visit record' : (mode === 'f0252' ? 'Form 025-2' : 'Notes'),
+        isGeneral: mode === 'general', isDental: mode === 'dental', isForm: mode === 'f0252',
+        openFocus: () => this.setState({ focus: a.id }), openMenu: () => this.setState({ sheet: { kind: 'menu' } }),
+        modes: [['general', 'General Form']].concat(st.me.dental ? [['dental', 'Dental visit record']] : []).concat([['f0252', 'Form 025-2']]).map(([k, l]) => ({ label: l, selStr: mode === k ? 'true' : 'false', bg: mode === k ? 'var(--bg-surface)' : 'transparent', shadow: mode === k ? 'var(--shadow-dropdown)' : 'none', weight: mode === k ? 700 : 500, pick: () => switchMode(k) })),
+        hasPlans: plans.length > 0 && a.status !== 'COMPLETED', planLinked: !!a.planId && !!plan, planBanner: plan ? 'Part of plan #' + plan.id.replace('TP-', '') + ' — ' + plan.title : '',
+        planSel: W.planId || '', planOpts: [{ v: '', label: 'None / bill separately' }].concat(plans.map((x) => ({ v: x.id, label: x.title || '(untitled plan) #' + x.id }))),
+        onPlan: (e) => this.setW(a, { planId: e.target.value, ticks: {} }, false), planOn: !!plan,
+        planProgress: plan ? planDone + '/' + plan.items.length + ' planned items completed' : '', planHintDental: !!plan && mode === 'dental', planNeedsDental: !!plan && mode !== 'dental' && st.me.dental, toDental: () => switchMode('dental'),
+        helperAi: W.helper === 'ai', helperForm: W.helper === 'form', closeHelper: () => this.setW(a, { helper: null }, false),
+        drafts: W.drafts.map((d, i) => ({ text: d.text, icd: d.icd.map((c) => ({ code: c.code, name: c.name, rec: !!c.rec, apply: () => { this.setW(a, { mode: 'f0252', helper: null }, false); banner('success', 'Applied: ' + c.code + '. Open Form 025-2 to finish the diagnosis.'); } })), discard: () => { this.setW(a, { drafts: W.drafts.filter((_, j) => j !== i) }); banner('info', 'Draft discarded'); }, save: () => { this.setW(a, { drafts: W.drafts.filter((_, j) => j !== i), saved: W.saved.concat([d.text]), savedIx: W.saved.length }); banner('success', 'Draft saved as consultation note'); } })),
+        hasSaved: W.saved.length > 0, savedPos: (W.savedIx + 1) + '/' + W.saved.length, savedText: W.saved[W.savedIx] || '',
+        prevSaved: () => this.setW(a, { savedIx: (W.savedIx - 1 + W.saved.length) % W.saved.length }, false), nextSaved: () => this.setW(a, { savedIx: (W.savedIx + 1) % W.saved.length }, false),
+        addSaved: () => { this.setW(a, { free: (W.free ? W.free + '\n\n' : '') + W.saved[W.savedIx], mode: 'general' }); banner('success', 'Added to notes'); },
+        formTitle: 'Last form 025-2', formRows: [['Complaints', 'Pain in 26 when chewing, sensitivity to cold.'], ['Diagnosis', 'K02.1 Caries of dentine, tooth 26'], ['Treatment', 'Examination, X-ray, plan: composite filling of 26 and cleaning.']].map(([l, t]) => ({ label: l, text: t, add: () => { this.setW(a, { free: (W.free ? W.free + '\n\n' : '') + l + ': ' + t, mode: 'general' }); banner('success', 'Added to notes'); } })),
+        soapOpen: W.soapOpen, soapOpenStr: W.soapOpen ? 'true' : 'false', soapChevron: W.soapOpen ? '180deg' : '0deg', toggleSoap: () => this.setW(a, { soapOpen: !W.soapOpen }, false),
+        canSpeech, dictLocked: !canSpeech, learnPro: () => act('go', { tab: 'profile', s: 'subscription' }),
+        soap: soapDefs.map(([k, l]) => ({ label: l, val: W.soap[k], on: (e) => this.setW(a, { soap: Object.assign({}, W.soap, { [k]: e.target.value }) }), mic: fieldMic(k), recording: recField === k, border: recField === k ? 'var(--border-brand)' : 'var(--border-default)', padB: recField === k ? 'var(--size-48)' : 'var(--size-10)', micCls: 'vs-b sh-icon-btn sh-icon-btn--sm no-shadow' + (recField === k ? '' : ' sh-icon-btn--secondary'), micBg: recField === k ? 'var(--interactive-primary)' : 'var(--bg-canvas)', micInk: recField === k ? 'var(--text-inverse)' : 'var(--text-primary)' })),
+        free: { val: W.free, on: (e) => this.setW(a, { free: e.target.value }), mic: fieldMic('free'), recording: recField === 'free', border: recField === 'free' ? 'var(--border-brand)' : 'var(--border-default)', padB: recField === 'free' ? 'var(--size-64)' : 'var(--size-12)', micCls: 'vs-b sh-icon-btn sh-icon-btn--sm no-shadow' + (recField === 'free' ? '' : ' sh-icon-btn--secondary'), micBg: recField === 'free' ? 'var(--interactive-primary)' : 'var(--bg-canvas)', micInk: recField === 'free' ? 'var(--text-inverse)' : 'var(--text-primary)' },
+        wave: Array.from({ length: 28 }, (_, i) => ({ dur: (0.45 + ((i * 37) % 50) / 100).toFixed(2) + 's' })),
+        recTime: lib.pad(Math.floor(recSec / 60)) + ':' + lib.pad(recSec % 60), recBusy: W.recBusy, recIdle: !W.recBusy,
+        recCancel: () => this.setW(a, { rec: null, recBusy: false }, false),
+        recDone: () => {
+          if (W.recBusy || !W.rec) return;
+          const key = W.rec; this.setW(a, { recBusy: true }, false);
+          this.later('tx', 1200, () => {
+            const cur = this.getW(a); const text = this.transcriptFor(key);
+            if (recSec < 1 && false) { banner('info', 'No speech detected'); return; }
+            if (key === 'free') this.setW(a, { free: (cur.free ? cur.free + ' ' : '') + text, rec: null, recBusy: false });
+            else this.setW(a, { soap: Object.assign({}, cur.soap, { [key]: (cur.soap[key] ? cur.soap[key] + ' ' : '') + text }), rec: null, recBusy: false });
+            banner('success', 'Transcription added.', { action: () => banner('success', 'Thank you — saved for QA.'), actionLabel: 'Report' });
+          });
+        },
+        scribeIdle: scribeState === 'idle' || scribeState === 'ready', scribeRec: scribeState === 'recording', scribeProc: scribeState === 'uploading' || scribeState === 'processing',
+        scribeOffStr: canAi ? 'false' : 'true', scribeBg: canAi ? 'var(--charcoal)' : 'var(--bg-disabled)', scribeInk: canAi ? 'var(--text-inverse)' : 'var(--text-tertiary)', scribeShadow: canAi ? 'var(--shadow-dropdown)' : 'none', scribeIcon: canAi ? ic.mic : ic.lock,
+        scribeLabel: !canAi ? 'AI notes need PRO' : (scribeState === 'ready' ? 'Start AI Notes again' : 'Start AI Notes'),
+        startScribe: () => {
+          if (!canAi) { banner('info', 'AI notes need the Pro plan.', { action: () => act('go', { tab: 'profile', s: 'subscription' }), actionLabel: 'See plans' }); return; }
+          if (offline) { banner('error', 'You are offline. Try again when connected.'); return; }
+          this.setW(a, { scribe: 'recording', scribeT0: S.tick }, false);
+        },
+        scribeTime: mmss(S.tick - W.scribeT0), scribeCancel: () => this.setW(a, { scribe: 'idle' }, false),
+        scribeDone: () => this.processScribe(a),
+        scribeProcText: scribeState === 'uploading' ? 'Uploading file...' : 'Recording uploaded. Notes will be ready in a few minutes.',
+        forms: (st.forms || []).filter((f) => f.patientId === a.patientId).map((f) => ({ label: f.title + ', ' + lib.fmtDate(f.day), state: f.signed ? 'Signed' : 'Not signed' })),
+        openForm: () => { this.saveDraft(a); act('push', { s: 'formEdit', p: { patientId: a.patientId, apptId: a.id } }); },
+        hasPhotos: W.photos.length > 0, photos: W.photos.map((ph, i) => ({ label: ph, remove: () => this.setW(a, { photos: W.photos.filter((_, j) => j !== i) }) })),
+        hasSig: W.sig !== 'none', sigText: W.sig === 'signed' ? 'Patient Signed ✓' : 'Waiting for patient signature...', sigInk: W.sig === 'signed' ? 'var(--text-brand-strong)' : 'var(--text-secondary)',
+        canRequestSig: W.sig === 'none',
+        requestSig: () => {
+          if (offline) { banner('error', 'You are offline. Try again when connected.'); return; }
+          this.setW(a, { sig: 'requested' }, false); banner('success', 'Signature request sent to the patient app.');
+          this.later('sig', 7000, () => { if (this.getW(a).sig === 'requested') { this.setW(a, { sig: 'signed' }, false); } });
+        },
+        openEnd: () => { if (offline) { banner('error', 'You are offline. End the visit when connected.'); return; } this.setState({ sheet: { kind: 'end', err: '' } }); }
+      });
+      // dental
+      const chart = lib.teeth((n) => {
+        const key = String(n); const cnt = (dent.teeth[key] || []).length;
+        const tap = () => this.setState({ sheet: plan ? { kind: 'fulfil', tooth: key } : { kind: 'svc', tooth: key, group: 'All' } });
+        if (plan) {
+          const items = plan.items.filter((i) => i.tooth === key);
+          if (!items.length) return { tap, aria: 'Tooth ' + n + ', nothing planned' };
+          const done = items.filter((i) => i.done || W.ticks[i.id]).length;
+          return { tap, state: done === items.length ? 'done' : (done ? 'partial' : 'planned'), aria: 'Tooth ' + n + ', ' + done + ' of ' + items.length + ' planned items done' };
+        }
+        return { tap, state: cnt ? 'done' : 'none', count: cnt, aria: 'Tooth ' + n + ', ' + cnt + (cnt === 1 ? ' service' : ' services') };
+      }, { interactive: true, scroll: phone });
+      out.dn = {
+        intro: plan ? 'Tap a tooth to mark planned procedures as completed.' : 'Tap a tooth (FDI-style quadrants), add your catalog services, then set discount if needed.',
+        planMode: !!plan, freeMode: !plan,
+        chart,
+        generalLabel: plan ? 'General / non-tooth services' : 'General / non-tooth services (' + (dent.general || []).length + ')',
+        openGeneral: () => this.setState({ sheet: plan ? { kind: 'fulfil', tooth: '' } : { kind: 'svc', tooth: '__general__', group: 'All' } }),
+        discount: dent.discount, onDiscount: (e) => this.setW(a, { dental: Object.assign({}, dent, { discount: e.target.value.replace(/[^\d.,]/g, '') }) }),
+        discErr: totals.disc > 100, discBorder: totals.disc > 100 ? 'var(--border-error)' : 'var(--border-default)',
+        notes: dent.notes, onNotes: (e) => this.setW(a, { dental: Object.assign({}, dent, { notes: e.target.value }) }),
+        subtotal: lib.money(totals.sum), lines: totals.n + ' line item' + (totals.n === 1 ? '' : 's'), discLine: (totals.disc || 0).toFixed(1) + '%', total: lib.money(totals.total),
+        planTotal: plan ? lib.money(plan.items.reduce((s2, i) => s2 + i.price, 0)) : '', planPaid: plan ? lib.money(plan.paid) : '', planOut: plan ? lib.money(plan.items.reduce((s2, i) => s2 + i.price, 0) - plan.paid) : '',
+        payRecorded: false, payRecText: '', payOpen: true, payAmt: W.payAmt, payMethod: W.payMethod,
+        onPayAmt: (e) => this.setW(a, { payAmt: e.target.value.replace(/[^\d]/g, '') }), onPayMethod: (e) => this.setW(a, { payMethod: e.target.value }),
+        payMsg: false, payMsgText: '', payMsgInk: 'var(--text-error)', payBorder: 'var(--border-default)'
+      };
+      if (plan) {
+        const outst = plan.items.reduce((s2, i) => s2 + i.price, 0) - plan.paid; const amt = Number(W.payAmt || 0);
+        if (W.payAmt !== '' && amt <= 0) Object.assign(out.dn, { payMsg: true, payMsgText: 'Enter an amount greater than 0', payMsgInk: 'var(--text-error)', payBorder: 'var(--border-error)' });
+        else if (amt > outst) Object.assign(out.dn, { payMsg: true, payMsgText: 'More than the outstanding balance', payMsgInk: 'var(--text-primary)', payBorder: 'var(--border-warning)' });
+      }
+      // video room
+      if (room) {
+        const phase = R.phase; const sinceAlone = S.tick - R.t0; const sinceJoin = S.tick - R.joinT;
+        const pip = R.cam;
+        out.rm = {
+          paneH: phone ? '280px' : '360px',
+          connecting: phase === 'connecting', alone: phase === 'alone', joined: phase === 'joined', left: phase === 'left' || phase === 'error',
+          meIni: lib.initials(st.me.name), pIni: lib.initials(p.name), pName: p.name, remoteAria: p.name + ', video',
+          waitText: 'Waiting for ' + p.name + ' to join…', waitFor: 'Waiting ' + mmss(Math.max(0, sinceAlone)), offerNoShow: phase === 'alone' && sinceAlone >= 3,
+          noShow: () => this.setState({ sheet: { kind: 'noshow', notify: true, fromCall: true } }),
+          elapsed: mmss(Math.max(0, sinceJoin)), pipW: phone ? '84px' : '120px', pipH: phone ? '112px' : '160px', pipBg: pip ? 'linear-gradient(160deg, var(--raw-video-preview) 0%, var(--bg-media) 100%)' : 'var(--charcoal)', pipLabel: pip ? lib.initials(st.me.name) : 'Off',
+          rejoin: () => this.connect(a),
+          hasControls: phase === 'joined' || phase === 'alone',
+          ctrls: [
+            { aria: R.cam ? 'Turn camera off' : 'Turn camera on', pressed: R.cam ? 'true' : 'false', d: R.cam ? ic.video : ic.videoOff, cls: 'vs-b dr-cbtn ' + (R.cam ? 'dr-cbtn--dark' : 'is-off'), go: () => this.setRm(a.id, { cam: !R.cam }) },
+            { aria: R.mic ? 'Mute microphone' : 'Unmute microphone', pressed: R.mic ? 'false' : 'true', d: R.mic ? ic.mic : ic.micOff, cls: 'vs-b dr-cbtn ' + (R.mic ? 'dr-cbtn--dark' : 'is-off'), go: () => this.setRm(a.id, { mic: !R.mic }) },
+            { aria: 'Flip camera', pressed: 'false', d: ic.refresh, cls: 'vs-b dr-cbtn dr-cbtn--dark', go: () => this.setRm(a.id, { front: !R.front }) },
+            { aria: 'Leave call', pressed: 'false', d: ic.phoneOff, cls: 'vs-b dr-cbtn dr-cbtn--end', go: () => this.setState({ sheet: { kind: 'leaveCall' } }) }
+          ],
+          factsLocked: !canAi, factsWaiting: canAi && R.factsState === 'listening', factsWaitText: phase === 'joined' ? 'Listening to the conversation. Facts appear here as they are said.' : 'Facts appear once the patient joins.',
+          factsReady: canAi && R.factsState !== 'listening', factsDone: R.factsState === 'documented', factsOpen: R.factsState === 'ready',
+          facts: (R.facts || []).map((f) => ({ kind: f.kind, text: f.text, editable: R.factsState === 'ready', bg: f.keep ? 'var(--bg-canvas)' : 'var(--bg-surface)', op: f.keep ? 1 : 0.55, strike: f.keep ? 'none' : 'line-through', keptStr: f.keep ? 'true' : 'false', rejStr: f.keep ? 'false' : 'true', keepBg: f.keep ? 'var(--interactive-primary)' : 'var(--bg-surface)', keepInk: f.keep ? 'var(--text-inverse)' : 'var(--text-primary)', rejBg: f.keep ? 'var(--bg-surface)' : 'var(--charcoal)', rejInk: f.keep ? 'var(--text-primary)' : 'var(--text-inverse)', keep: () => this.setRm(a.id, { facts: R.facts.map((x) => (x.id === f.id ? Object.assign({}, x, { keep: true }) : x)) }), reject: () => this.setRm(a.id, { facts: R.facts.map((x) => (x.id === f.id ? Object.assign({}, x, { keep: false }) : x)) }) })),
+          docBusy: !!R.docBusy, docBusyStr: R.docBusy ? 'true' : 'false', docLabel: R.docBusy ? 'Documenting…' : 'Document everything',
+          documentAll: () => { if (R.docBusy) return; const kept = (R.facts || []).filter((f) => f.keep).length; if (!kept) { banner('info', 'Keep at least one fact to document.'); return; } this.setRm(a.id, { docBusy: true }); this.later('facts', 900, () => { this.setRm(a.id, { docBusy: false, factsState: 'documented' }); banner('success', kept + ' visit facts added to the patient timeline.'); }); }
+        };
+      }
+    }
+
+    // ======================= SUMMARY =======================
+    if (rs === 'summary') {
+      out.isSum = true;
+      const totals = a.dental ? this.dentalTotals(a.dental, st) : null;
+      const svcName = (id) => (st.clinic.services.find((x) => x.id === id) || { name: 'Service', price: 0 });
+      const services = [];
+      if (a.dental) { Object.keys(a.dental.teeth || {}).forEach((k) => (a.dental.teeth[k] || []).forEach((id) => services.push({ tooth: k, name: svcName(id).name, price: lib.money(svcName(id).price) }))); (a.dental.general || []).forEach((id) => services.push({ tooth: '—', name: svcName(id).name, price: lib.money(svcName(id).price) })); }
+      const plan = a.planId ? (st.clinic.plans || []).find((x) => x.id === a.planId) : null;
+      const soapTxt = a.soap ? [['Subjective', a.soap.s], ['Objective', a.soap.o], ['Assessment', a.soap.a], ['Plan', a.soap.p]].filter((x) => x[1]).map((x) => x[0] + ': ' + x[1]).join('\n') : '';
+      out.sum = {
+        title: 'Appointment summary · ' + lib.fmtDay(a.day), ready: !!a.summary, pending: !a.summary, busy: S.sumBusy, busyStr: S.sumBusy ? 'true' : 'false',
+        regen: () => { if (S.sumBusy) return; if (offline) { banner('error', 'You are offline. Try again when connected.'); return; } this.setState({ sumBusy: true }); this.later('sum', 1000, () => { this.setState({ sumBusy: false }); this.patch(a.id, { summary: true }); banner('success', 'Summary saved.'); }); },
+        actions: [{ label: 'Share', d: ic.share, go: () => banner('info', '[Prototype: opens the system share sheet with the PDF.]') }, { label: 'Print', d: ic.printer, go: () => banner('info', '[Prototype: opens the system print dialog.]') }, { label: 'Download', d: ic.download, go: () => banner('success', 'Saved to Downloads') }],
+        pagePad: phone ? 'var(--size-18)' : 'var(--size-36)', hasClinic: !video, clinic: st.clinic.name,
+        dateLine: lib.fmtLong(a.day) + ' · ' + a.start, id: a.id, patient: p.name, pid: p.id, doctor: st.me.name, spec: st.me.spec, type: video ? 'Video consultation' : 'Face-to-face', duration: (endMin - startMin) + ' min',
+        hasAi: !!a.aiNote, ai: a.aiNote || '', notes: [a.notes, soapTxt].filter(Boolean).join('\n\n') || 'No notes were written for this visit.',
+        hasServices: services.length > 0, services, subtotal: totals ? lib.money(totals.sum) : '', discount: totals ? (totals.disc || 0).toFixed(1) + '%' : '', total: totals ? lib.money(totals.total) : '',
+        hasPlan: !!plan, planLine: plan ? 'Plan #' + plan.id.replace('TP-', '') + ' — ' + plan.title : '', planMoney: plan ? 'Total ' + lib.money(plan.items.reduce((x, i) => x + i.price, 0)) + ' · Paid ' + lib.money(plan.paid) : '',
+        planDone: plan ? (a.fulfilled || []).map((id) => (plan.items.find((i) => i.id === id) || {}).service + ' (' + ((plan.items.find((i) => i.id === id) || {}).tooth || 'general') + ')') : [],
+        hasPay: !!a.paidThisVisit, payLine: a.paidThisVisit ? 'Payment this visit (' + a.paidThisVisit.method + '): ' + lib.money(a.paidThisVisit.amount) : '',
+        dental: !!a.dental, doctorSig: st.me.last, patientSig: a.sig === 'signed' ? p.name.split(' ')[1] || p.name : '', sigLine: a.sig === 'signed' ? 'Signed electronically on ' + lib.fmtDate(a.day) + ' via SHIFA Patient App' : 'Patient signature'
+      };
+    }
+    if (S.focus === a.id && (rs === 'visit' || rs === 'videoRoom')) {
+      const W = this.getW(a);
+      Object.assign(out, { focusOpen: true, focusVal: W.free, focusOn: (e) => this.setW(a, { free: e.target.value }), closeFocus: () => this.setState({ focus: null }) });
+    }
+    return this.sheets(out, a, p);
+  }
+  saveDraft(a) {
+    const W = this.state.w[a.id]; if (!W) return;
+    this.patch(a.id, { notes: W.free, soap: W.soap, dental: W.dental, draft: { mode: W.mode, photos: W.photos }, sig: W.sig, scribe: W.scribe === 'recording' ? 'idle' : W.scribe });
+  }
+  processScribe(a) {
+    const banner = (k, t) => this.props.act('banner', { kind: k, text: t });
+    this.setW(a, { scribe: 'uploading' }, false); banner('info', 'Uploading file...');
+    this.later('scr1', 1200, () => {
+      this.setW(a, { scribe: 'processing' }, false); banner('success', 'Recording uploaded. Notes will be ready in a few minutes.');
+      this.later('scr2', 6000, () => {
+        const cur = this.getW(a);
+        this.setW(a, { scribe: 'ready', drafts: cur.drafts.concat([{ text: 'Patient reports pain in the upper left molar for five days, worse at night and with cold drinks. Deep caries on 26, tender to percussion. Root canal treatment of 26 discussed and started. Patient has type 2 diabetes; glucose this morning 7.8 mmol/L.', icd: [{ code: 'K04.0', name: 'Pulpitis', rec: true }, { code: 'K02.1', name: 'Caries of dentine' }] }]) }, false);
+      });
+    });
+  }
+  endVisit(a, skipAi) {
+    const st = this.props.store, lib = this.props.lib, act = this.props.act;
+    const W = this.getW(a);
+    const plan = W.planId ? (st.clinic.plans || []).find((x) => x.id === W.planId) : null;
+    const ticks = Object.keys(W.ticks).filter((k) => W.ticks[k]);
+    const amt = Number(W.payAmt || 0);
+    const steps = [];
+    if (plan && ticks.length) steps.push({ k: 'plan', label: 'Applying treatment plan…' });
+    if (plan && amt > 0) steps.push({ k: 'pay', label: 'Recording payment…' });
+    steps.push({ k: 'complete', label: 'Completing visit…' });
+    if (W.scribe === 'processing' || W.scribe === 'uploading') steps.push({ k: 'ai', label: 'Waiting for AI notes…' });
+    steps.push({ k: 'summary', label: 'Saving summary…' });
+    this.setState({ sheet: { kind: 'prog', steps, i: 0, done: false, keep: true } });
+    const run = (i) => {
+      const sh = this.state.sheet; if (!sh || sh.kind !== 'prog') return;
+      if (i >= steps.length) {
+        const w2 = this.getW(a);
+        const aiNote = w2.saved.length ? w2.saved.join('\n\n') : (a.aiNote || '');
+        this.patch(a.id, { status: 'COMPLETED', summary: true, notes: w2.free, soap: w2.soap, dental: (w2.mode === 'dental' || this.dentalTotals(w2.dental, st).n) ? w2.dental : a.dental, sig: w2.sig, aiNote, planId: plan ? plan.id : a.planId, fulfilled: ticks, paidThisVisit: plan && amt > 0 ? { amount: amt, method: w2.payMethod } : null, scribe: 'idle' });
+        act('set', (s) => ({ docs: s.docs.concat([{ id: lib.uid('D'), patientId: a.patientId, title: 'Appointment summary, ' + lib.fmtDay(a.day), cat: 'APPOINTMENT_NOTE', day: a.day, by: s.me.name, locked: false, kind: 'pdf', apptId: a.id }]) }));
+        this.setState({ sheet: Object.assign({}, this.state.sheet, { i, done: true }) });
+        return;
+      }
+      this.setState({ sheet: Object.assign({}, this.state.sheet, { i }) });
+      const k = steps[i].k;
+      if (k === 'plan') this.later('end', 800, () => { act('set', (s) => ({ clinic: Object.assign({}, s.clinic, { plans: s.clinic.plans.map((x) => (x.id === plan.id ? Object.assign({}, x, { items: x.items.map((it) => (ticks.indexOf(it.id) >= 0 ? Object.assign({}, it, { done: true }) : it)) }) : x)) }) })); run(i + 1); });
+      else if (k === 'pay') this.later('end', 700, () => { act('set', (s) => ({ clinic: Object.assign({}, s.clinic, { payments: [{ id: lib.uid('PY'), day: s.today, patientId: a.patientId, amount: amt, method: W.payMethod, note: plan.title, doctorId: 'me', planId: plan.id }].concat(s.clinic.payments), plans: s.clinic.plans.map((x) => (x.id === plan.id ? Object.assign({}, x, { paid: x.paid + amt }) : x)) }) })); run(i + 1); });
+      else if (k === 'ai') { this.aiNext = () => run(i + 1); this.later('end', 4000, () => { this.aiNext = null; this.processedAi(a); run(i + 1); }); }
+      else this.later('end', 700, () => run(i + 1));
+    };
+    run(0);
+  }
+  processedAi(a) { const cur = this.getW(a); this.setW(a, { scribe: 'ready', saved: cur.saved.concat(['AI note: pain in 26 for five days, root canal treatment started. Patient has type 2 diabetes; review glucose before the next session.']) }, false); }
+  // ---------- sheets ----------
+  sheets(out, a, p) {
+    const S = this.state; const sh = S.sheet; if (!sh) return out;
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const banner = (kind, text, extra) => act('banner', Object.assign({ kind, text }, extra || {}));
+    const close = () => this.setState({ sheet: null });
+    const base = { title: '', hasSub: false, sub: '', max: '480px', align: 'left', hasX: true, close, scrim: close, isText: false, body: '', hasIcon: false, icon: '', iconBg: '', iconInk: '', hasActions: true, hasPrimary: true, primaryLabel: 'OK', primary: close, primaryBg: 'var(--interactive-primary)', primaryInk: 'var(--text-inverse)', primaryOffStr: 'false', busy: false, busyStr: 'false', hasSecondary: false, secondaryLabel: '', secondary: close, hasTertiary: false, tertiaryLabel: '', tertiary: close, tertiaryInk: 'var(--text-primary)' }; this.props.lib.popify(base, !!this.props.phone);
+    const flags = ['isBrief', 'isCancel', 'isNoShow', 'isResched', 'isMenu', 'isPhoto', 'isSvc', 'isFulfil', 'isEnd', 'isProg', 'isFu', 'isPerm'];
+    flags.forEach((f) => { base[f] = false; });
+    out.hasSheet = true; out.sheet = base;
+    const W = this.getW(a);
+    const k = sh.kind;
+    if (k === 'chronic') Object.assign(base, { title: 'Patient with Chronic Disease', isText: true, body: p.name + ' has a chronic disease: ' + p.chronic + '. Please take extra care during this visit.', hasIcon: true, icon: ic.alert, iconBg: 'var(--bg-warning-subtle)', iconInk: 'var(--text-primary)', align: 'center', hasX: false, primaryLabel: 'OK', primary: () => { this.setState({ sheet: null }); if (sh.go) sh.go(); } });
+    if (k === 'discard') Object.assign(base, { title: 'Discard changes?', isText: true, body: 'You have unsaved changes. Discard them?', hasSecondary: true, secondaryLabel: 'Cancel', primaryLabel: 'Discard', primaryBg: 'var(--interactive-destructive)', primary: () => { const d = Object.assign({}, S.det); delete d[a.id]; this.setState({ sheet: null, det: d }); act('back'); } });
+    if (k === 'brief') {
+      const status = a.briefing || 'none';
+      const docs = st.docs.filter((d) => d.patientId === a.patientId && !d.locked).slice(0, Math.max(1, a.docsAttached || 0));
+      const lines = [];
+      if (p.allergies) lines.push('Allergy recorded: ' + p.allergies + '. Avoid it in prescriptions and anaesthesia.');
+      if (p.chronic) lines.push('Chronic condition: ' + p.chronic + '. The latest attached result should be checked before invasive treatment.');
+      docs.forEach((d) => lines.push(lib.catLabel(d.cat) + ' from ' + lib.fmtDate(d.day) + ' (' + d.title + ') attached by the patient.'));
+      lines.push('Reason for the visit: ' + (a.reason || 'Consultation') + '.');
+      const close2 = () => { this.setState({ sheet: null }); if ((this.props.route || {}).s === 'apptBriefing') act('back'); };
+      Object.assign(base, { title: 'Visit briefing', hasSub: true, sub: 'AI summary of documents the patient attached before this appointment.', isBrief: true, close: close2, scrim: close2, hasActions: false, max: '560px' });
+      out.br = {
+        pending: status === 'pending', ready: status === 'ready', empty: status === 'none', failed: status === 'failed',
+        lines, meta: docs.length + ' document' + (docs.length === 1 ? '' : 's') + ' · generated ' + lib.fmtDay(a.day === st.today ? lib.addDays(st.today, -1) : lib.addDays(a.day, -1)) + ', 18:40',
+        hasDocs: docs.length > 0 && status !== 'none', docs: docs.map((d) => ({ title: d.title, meta: lib.fmtDate(d.day), open: () => { this.setState({ sheet: null }); act('push', { s: 'docView', p: { id: d.id } }); } })),
+        canCopy: status === 'ready', copy: () => banner('success', 'Copied'),
+        canRetry: (status === 'failed' || status === 'pending') && a.status !== 'COMPLETED',
+        retry: () => { if (st.online === false) { banner('error', 'You are offline. Try again when connected.'); return; } this.patch(a.id, { briefing: 'pending' }); this.later('brief', 2500, () => this.patch(a.id, { briefing: 'ready' })); }
+      };
+    }
+    if (k === 'cancel') {
+      const reasons = ['Doctor unavailable', 'Patient request', 'Rescheduled elsewhere', 'Other'];
+      const set = (pp) => this.setState({ sheet: Object.assign({}, sh, pp) });
+      Object.assign(base, { title: 'Cancel appointment?', isCancel: true, hasSecondary: true, secondaryLabel: 'Keep appointment', primaryLabel: 'Cancel appointment', primaryBg: 'var(--interactive-destructive)', busy: sh.busy, busyStr: sh.busy ? 'true' : 'false',
+        primary: () => {
+          if (sh.busy) return;
+          set({ busy: true, err: '' });
+          this.later('cancel', 800, () => {
+            if (this.props.store.online === false) { set({ busy: false, err: 'You are offline. Try again when connected.' }); return; }
+            this.patch(a.id, { status: 'CANCELLED', cancelReason: sh.reason === 'Other' ? sh.other : sh.reason });
+            this.setState({ sheet: null }); act('back'); banner('success', 'Appointment cancelled successfully');
+          });
+        } });
+      out.cx = { summary: p.name + ' · ' + lib.fmtDay(a.day) + ' · ' + a.start + '–' + a.end, reasons: reasons.map((r) => ({ label: r, selStr: sh.reason === r ? 'true' : 'false', bg: sh.reason === r ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)', ring: sh.reason === r ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => set({ reason: sh.reason === r ? '' : r }) })), isOther: sh.reason === 'Other', other: sh.other, onOther: (e) => set({ other: e.target.value }), hasErr: !!sh.err, err: sh.err };
+    }
+    if (k === 'noshow') {
+      const set = (pp) => this.setState({ sheet: Object.assign({}, sh, pp) });
+      Object.assign(base, { title: 'Mark as no-show', isText: true, body: 'The visit will be recorded as missed. The patient is notified and the slot stays booked for your records.', isNoShow: true, hasSecondary: true, secondaryLabel: 'Cancel', primaryLabel: 'Mark as no-show', primaryBg: 'var(--interactive-destructive)',
+        primary: () => {
+          if (st.online === false) { banner('error', 'You are offline. Try again when connected.'); return; }
+          const prevStatus = a.status;
+          this.patch(a.id, { status: 'NO_SHOW' }); this.setState({ sheet: null });
+          if (sh.fromCall) { act('back'); }
+          banner('success', 'Marked as no-show', { action: () => this.patch(a.id, { status: prevStatus }), actionLabel: 'Undo' });
+        } });
+      out.ns = { notifyStr: sh.notify ? 'true' : 'false', track: sh.notify ? 'var(--interactive-primary)' : 'var(--grey-400)', knob: sh.notify ? '21px' : '3px', toggle: () => set({ notify: !sh.notify }) };
+    }
+    if (k === 'resched') {
+      const set = (pp) => this.setState({ sheet: Object.assign({}, sh, pp) });
+      const days = Array.from({ length: 7 }, (_, i) => lib.addDays(sh.base, i));
+      const freeOf = (day) => lib.agenda(st, day, a.doctorId).rows.filter((r) => r.type === 'free' && (day > st.today || r.min >= st.nowMin) && (a.kind === 'video' || !a.location || r.location === a.location || true));
+      const slots = freeOf(sh.day);
+      const curOnDay = sh.day === a.day;
+      const list = slots.map((r) => ({ label: r.start, start: r.start, end: r.end, loc: r.location })).concat(curOnDay ? [{ label: a.start, start: a.start, end: a.end, cur: true }] : []).sort((x, y) => x.start.localeCompare(y.start));
+      const len = this.mins(a);
+      const pick = sh.sel ? list.find((x) => x.start === sh.sel) : null;
+      let note = '', newEnd = '';
+      if (pick) {
+        const chain = []; let c = pick.start; const fr = slots.concat(curOnDay ? [{ start: a.start, end: a.end }] : []);
+        for (;;) { const f = fr.find((x) => x.start === c); if (!f) break; chain.push(f.end); c = f.end; if (lib.toMin(f.end) - lib.toMin(pick.start) >= len) break; }
+        const reach = chain.length ? lib.toMin(chain[chain.length - 1]) - lib.toMin(pick.start) : 0;
+        if (reach >= len) newEnd = lib.hm(lib.toMin(pick.start) + len); else { newEnd = chain.length ? chain[chain.length - 1] : pick.end; note = 'This slot is ' + reach + ' min; the visit will be shortened.'; }
+        if (pick.loc && a.kind !== 'video' && pick.loc !== a.location) note = (note ? note + ' ' : '') + 'This slot is at ' + pick.loc + '.';
+      }
+      Object.assign(base, { title: 'Reschedule', hasSub: true, sub: 'Now: ' + lib.fmtDay(a.day) + ' · ' + a.start + '–' + a.end, isResched: true, max: '560px', hasSecondary: true, secondaryLabel: 'Cancel',
+        primaryLabel: pick ? 'Move to ' + lib.fmtDay(sh.day) + ' ' + pick.start : 'Choose a time', primaryBg: pick && !pick.cur ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: pick && !pick.cur ? 'var(--text-inverse)' : 'var(--text-tertiary)', primaryOffStr: pick && !pick.cur ? 'false' : 'true', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false',
+        primary: () => {
+          if (!pick || pick.cur || sh.busy) return;
+          if (st.online === false) { banner('error', 'You are offline. Try again when connected.'); return; }
+          set({ busy: true });
+          this.later('resched', 800, () => {
+            const loc = pick.loc && a.kind !== 'video' ? pick.loc : a.location;
+            this.patch(a.id, { day: sh.day, start: pick.start, end: newEnd, location: loc });
+            const d2 = Object.assign({}, this.state.det); delete d2[a.id];
+            this.setState({ sheet: null, det: d2 }); banner('success', 'Slot changed successfully: ' + lib.fmtDay(sh.day) + ', ' + pick.start + '.');
+          });
+        } });
+      out.rs = {
+        prevWeek: () => { const nb = lib.addDays(sh.base, -7); set({ base: nb < st.today ? st.today : nb }); }, nextWeek: () => set({ base: lib.addDays(sh.base, 7) }),
+        days: days.map((d) => { const sel = d === sh.day; const has = freeOf(d).length > 0 || d === a.day; return { dow: lib.DN[lib.dow(d)], num: String(Number(d.slice(8))), aria: lib.fmtLong(d), selStr: sel ? 'true' : 'false', bg: sel ? 'var(--interactive-primary)' : 'var(--bg-canvas)', ink: sel ? 'var(--text-inverse)' : 'var(--text-primary)', dot: has ? (sel ? 'var(--icon-inverse)' : 'var(--icon-brand)') : 'transparent', pick: () => set({ day: d, sel: null }) }; }),
+        dayLabel: lib.fmtLong(sh.day), none: !list.length, cols: phone ? 4 : 6,
+        slots: list.map((s) => ({ label: s.label, isCur: !!s.cur, selStr: sh.sel === s.start ? 'true' : 'false', offStr: s.cur ? 'true' : 'false', bg: s.cur ? 'var(--bg-canvas)' : (sh.sel === s.start ? 'var(--interactive-primary)' : 'var(--bg-surface)'), ink: s.cur ? 'var(--text-tertiary)' : (sh.sel === s.start ? 'var(--text-inverse)' : 'var(--text-primary)'), ring: s.cur || sh.sel === s.start ? 'none' : 'inset 0 0 0 1px var(--border-default)', pick: () => { if (!s.cur) set({ sel: s.start }); } })),
+        hasNote: !!note, note
+      };
+    }
+    if (k === 'menu') {
+      const mode = W.mode; const canAi = lib.can(st, 'aiNotes');
+      const it = (label, d, go, extra) => Object.assign({ isItem: true, isDiv: false, label, d, go, bg: 'transparent', ink: 'var(--text-primary)', weight: 600, sel: false }, extra || {});
+      const lastForm = (st.forms || []).find((f) => f.patientId === a.patientId);
+      const items = [
+        it('From Shifa AI', ic.sparkles, () => { this.setState({ sheet: null }); if (!canAi) { banner('info', 'AI notes need the Pro plan.'); return; } const cur = this.getW(a); if (!cur.drafts.length && !cur.saved.length) { banner('info', 'AI notes are not ready yet. Please try again in 30 seconds.'); return; } this.setW(a, { helper: 'ai' }, false); }, { ink: 'var(--text-brand-strong)' }),
+        it('From last 025-2 form', ic.clipboard, () => { this.setState({ sheet: null }); if (!lastForm) { banner('info', 'This patient has no 025-2 form yet.'); return; } this.setW(a, { helper: 'form' }, false); }),
+        it('Before Treatment', ic.camera, () => this.setState({ sheet: { kind: 'photo', which: 'Before Treatment' } })),
+        it('After Treatment', ic.camera, () => this.setState({ sheet: { kind: 'photo', which: 'After Treatment' } })),
+        { isDiv: true, isItem: false }
+      ].concat([['general', 'General Form', ic.fileText], ['dental', 'Dental visit record', ic.tooth], ['f0252', 'Form 025-2', ic.clipboard]].filter((m) => m[0] !== 'dental' || st.me.dental).map(([m, l, d]) => it(l, d, () => { if (m === mode) { this.setState({ sheet: null }); return; } if (W.dirty) this.setState({ sheet: { kind: 'modeSwitch', to: m } }); else { this.setW(a, { mode: m }, false); this.setState({ sheet: null }); } }, { sel: m === mode, weight: m === mode ? 700 : 600, bg: m === mode ? 'var(--bg-success-subtle)' : 'transparent' })));
+      Object.assign(base, { title: 'Notes', isMenu: true, hasActions: false, max: '420px' });
+      out.mn = { items };
+    }
+    if (k === 'modeSwitch') {
+      const toLabel = { general: 'General Form', dental: 'Dental visit record', f0252: 'Form 025-2' }[sh.to];
+      Object.assign(base, { title: 'Switch to ' + toLabel + '?', isText: true, body: 'You have unsaved changes. Save before switching?', hasTertiary: true, tertiaryLabel: 'Cancel', tertiary: close, hasSecondary: true, secondaryLabel: 'Discard and switch',
+        secondary: () => { this.setW(a, { mode: sh.to, soap: { s: '', o: '', a: '', p: '' }, free: '', photos: [], dirty: false }, false); this.setState({ sheet: null }); },
+        primaryLabel: 'Save and switch', primary: () => { this.saveDraft(a); this.setW(a, { mode: sh.to, dirty: false }, false); this.setState({ sheet: null }); banner('success', W.mode === 'dental' ? 'Dental visit documentation saved' : 'Notes saved'); } });
+    }
+    if (k === 'photo') {
+      const add = (src) => () => { const n = 12 + W.photos.length; this.setW(a, { photos: W.photos.concat([sh.which + ' · IMG_00' + n + '.jpg']) }); this.setState({ sheet: null }); banner('success', sh.which + ' photo added' + (src === 'camera' ? ' from the camera.' : ' from the gallery.')); };
+      Object.assign(base, { title: sh.which, hasSub: true, sub: 'Added to the visit summary as a separate page.', isPhoto: true, hasActions: false, max: '420px' });
+      out.ph = { opts: [{ label: 'Camera', d: ic.camera, go: add('camera') }, { label: 'Gallery', d: ic.image, go: add('gallery') }] };
+    }
+    if (k === 'svc') {
+      const dent = W.dental; const key = sh.tooth; const isGen = key === '__general__';
+      const lines = isGen ? (dent.general || []) : (dent.teeth[key] || []);
+      const svc = (id) => st.clinic.services.find((x) => x.id === id) || { id, name: 'Service', price: 0, minutes: 30 };
+      const setLines = (nl) => { const d2 = JSON.parse(JSON.stringify(dent)); if (isGen) d2.general = nl; else { if (nl.length) d2.teeth[key] = nl; else delete d2.teeth[key]; } this.setW(a, { dental: d2 }); };
+      const groups = ['All'].concat(Array.from(new Set(st.clinic.services.map((x) => this.svcGroup(x.name)))));
+      const set = (pp) => this.setState({ sheet: Object.assign({}, sh, pp) });
+      Object.assign(base, { title: isGen ? 'General / non-tooth services' : 'Services for tooth ' + key, isSvc: true, max: '560px', hasSecondary: false, primaryLabel: 'Save', primary: close });
+      out.sv = {
+        hasLines: lines.length > 0, lines: lines.map((id, i) => ({ name: svc(id).name, price: lib.money(svc(id).price), remove: () => setLines(lines.filter((_, j) => j !== i)) })),
+        groups: groups.map((g) => ({ label: g, selStr: sh.group === g ? 'true' : 'false', bg: sh.group === g ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)', ring: sh.group === g ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => set({ group: g }) })),
+        items: st.clinic.services.filter((x) => sh.group === 'All' || this.svcGroup(x.name) === sh.group).map((x) => ({ name: x.name, meta: lib.money(x.price) + ' · ' + x.minutes + ' min', add: () => setLines(lines.concat([x.id])) }))
+      };
+      if (!st.clinic.services.length) Object.assign(base, { isSvc: false, isText: true, body: 'Define services under Services & Pricing first.', primaryLabel: 'Add service', primary: () => { this.setState({ sheet: null }); act('go', { tab: 'profile', s: 'setServices' }); } });
+    }
+    if (k === 'fulfil') {
+      const plan = (st.clinic.plans || []).find((x) => x.id === W.planId);
+      const items = plan ? plan.items.filter((i) => (sh.tooth ? i.tooth === sh.tooth : !i.tooth)) : [];
+      if (!items.length) { this.setState({ sheet: null }); banner('info', sh.tooth ? 'No open planned lines for this tooth.' : 'No general planned lines on this plan.'); return out; }
+      Object.assign(base, { title: sh.tooth ? 'Services for tooth ' + sh.tooth : 'General / non-tooth services', isFulfil: true, primaryLabel: 'Save', primary: close });
+      out.ff = { lines: items.map((i) => { const on = i.done || !!W.ticks[i.id]; return { name: i.service, meta: '1 × ' + lib.money(i.price) + ' · ' + (i.done ? 'Completed' : 'Planned'), onStr: on ? 'true' : 'false', offStr: i.done ? 'true' : 'false', op: i.done ? 0.6 : 1, border: on ? 'var(--border-brand)' : 'var(--border-disabled)', bg: on ? 'var(--interactive-primary)' : 'var(--bg-surface)', toggle: () => { if (i.done) return; this.setW(a, { ticks: Object.assign({}, W.ticks, { [i.id]: !W.ticks[i.id] }) }); } }; }) };
+    }
+    if (k === 'end') {
+      const totals = this.dentalTotals(W.dental, st);
+      const plan = W.planId ? (st.clinic.plans || []).find((x) => x.id === W.planId) : null;
+      const ticks = Object.keys(W.ticks).filter((x) => W.ticks[x]).length;
+      const chars = (W.free + W.soap.s + W.soap.o + W.soap.a + W.soap.p).trim().length;
+      const amt = Number(W.payAmt || 0);
+      const okI = ic.checkCircle, noI = ic.minus;
+      const rows = [
+        { label: 'Notes', value: chars ? chars + ' characters' : 'None', d: chars ? okI : noI, ink: chars ? 'var(--text-brand-strong)' : 'var(--text-tertiary)' },
+        { label: 'Dental services', value: totals.n ? totals.n + ' lines · ' + lib.money(totals.total) : 'None', d: totals.n ? okI : noI, ink: totals.n ? 'var(--text-brand-strong)' : 'var(--text-tertiary)' },
+        { label: 'Treatment plan items', value: plan ? (ticks ? ticks + ' to mark completed' : 'None ticked') : 'No plan linked', d: ticks ? okI : noI, ink: ticks ? 'var(--text-brand-strong)' : 'var(--text-tertiary)' },
+        { label: 'Payment', value: plan && amt > 0 ? lib.money(amt) + ' · ' + W.payMethod : 'None', d: amt > 0 ? okI : noI, ink: amt > 0 ? 'var(--text-brand-strong)' : 'var(--text-tertiary)' },
+        { label: 'Photos', value: W.photos.length ? String(W.photos.length) : 'None', d: W.photos.length ? okI : noI, ink: W.photos.length ? 'var(--text-brand-strong)' : 'var(--text-tertiary)' },
+        { label: 'AI notes', value: W.scribe === 'processing' || W.scribe === 'uploading' ? 'Still processing — up to 2 min' : (W.saved.length ? 'Ready' : 'None'), d: W.saved.length || W.scribe === 'processing' ? okI : noI, ink: W.saved.length ? 'var(--text-brand-strong)' : (W.scribe === 'processing' ? 'var(--text-info)' : 'var(--text-tertiary)') },
+        { label: 'Signature', value: W.sig === 'signed' ? 'Signed' : (W.sig === 'requested' ? 'Requested, not signed' : 'Not requested'), d: W.sig === 'signed' ? okI : noI, ink: W.sig === 'signed' ? 'var(--text-brand-strong)' : 'var(--text-tertiary)' }
+      ];
+      const nothing = !chars && !totals.n && !ticks && !(amt > 0) && !W.photos.length && !W.saved.length && W.scribe !== 'processing';
+      const badPay = W.payAmt !== '' && amt <= 0;
+      const sigWait = W.sig === 'requested';
+      const go = () => { if (badPay) { this.setState({ sheet: Object.assign({}, sh, { err: 'Enter an amount greater than 0 for the payment, or clear it.' }) }); return; } if (W.rec) this.setW(a, { rec: null }, false); this.saveDraft(a); this.endVisit(a); };
+      Object.assign(base, { title: 'End appointment', hasSub: true, sub: p.name + ' · ' + a.start + '–' + a.end + ' · visit time ' + Math.max(0, Math.round(((a.day === st.today ? (st.nowMin - lib.toMin(a.start)) * 60 : 0) + (S.tick - W.t0)) / 60)) + ' min', isEnd: true, max: '520px',
+        hasSecondary: true, secondaryLabel: sigWait ? 'Wait for signature' : 'Back to notes', primaryLabel: sigWait ? 'End anyway' : 'End appointment', primaryBg: 'var(--interactive-destructive)', primary: go });
+      out.en = { rows, nothing, sigWait, hasErr: !!sh.err, err: sh.err || '' };
+    }
+    if (k === 'prog') {
+      const i = sh.i; const room = (this.props.route || {}).s === 'videoRoom';
+      Object.assign(base, { title: sh.done ? 'Appointment ended' : 'Ending appointment…', isProg: true, hasX: false, scrim: () => {}, close: () => {}, max: '480px', hasActions: sh.done, hasPrimary: true, primaryLabel: 'Done',
+        primary: () => { this.setState({ sheet: null }); if (room) this.setRm(a.id, { phase: 'left' }); act('back'); banner('success', 'Appointment ended. Documentation saved.'); },
+        hasSecondary: sh.done, secondaryLabel: 'Book follow-up', secondary: () => this.setState({ sheet: { kind: 'fu', pick: '2w', day: lib.addDays(st.today, 14), sel: null, kind2: a.kind, reason: 'Follow-up', showDate: false, keep: true } }),
+        hasTertiary: sh.done, tertiaryLabel: 'Open summary', tertiary: () => { this.setState({ sheet: null }); if (room) this.setRm(a.id, { phase: 'left' }); act('replace', { s: 'summary', p: { id: a.id } }); } });
+      out.pg = { steps: sh.steps.map((s2, j) => ({ label: s2.k === 'ai' && j === i && !sh.done ? s2.label + ' (0:0' + Math.min(9, (S.tick % 10)) + ')' : s2.label, running: j === i && !sh.done, done: j < i || sh.done, waiting: j > i && !sh.done, weight: j === i && !sh.done ? 700 : 500, ink: j > i && !sh.done ? 'var(--text-tertiary)' : 'var(--text-primary)', canSkip: s2.k === 'ai' && j === i && !sh.done })), skip: () => { clearTimeout(this.t.end); const nx = this.aiNext; this.aiNext = null; if (nx) nx(); }, isDone: sh.done, doneText: 'Visit completed. The summary is in ' + p.name + '’s documents.' };
+    }
+    if (k === 'fu') {
+      const set = (pp) => this.setState({ sheet: Object.assign({}, sh, pp) });
+      const today = st.today;
+      const picks = [['1w', 'In 1 week', 7], ['2w', 'In 2 weeks', 14], ['1m', 'In 1 month', 30], ['3m', 'In 3 months', 91], ['pick', 'Pick a date', null]];
+      const freeOf = (d) => lib.agenda(st, d).rows.filter((r) => r.type === 'free');
+      const weekStart = sh.day;
+      const days = Array.from({ length: 7 }, (_, i) => lib.addDays(weekStart, i));
+      const sel = sh.selDay || sh.day;
+      const slots = freeOf(sel);
+      let next = null; if (!slots.length) { for (let i = 1; i < 45; i++) { const d = lib.addDays(sel, i); if (freeOf(d).length) { next = d; break; } } }
+      const book = () => {
+        if (!sh.sel) return;
+        if (st.online === false) { banner('error', 'You are offline. Try again when connected.'); return; }
+        const s0 = slots.find((x) => x.start === sh.sel); if (!s0) { banner('error', 'That slot was just booked. Pick another.'); return; }
+        const na = { id: lib.uid('A'), day: sel, start: s0.start, end: s0.end, patientId: a.patientId, kind: sh.kind2 === 'video' ? 'video' : 'clinic', status: 'CONFIRMED', reason: sh.reason.trim() || 'Follow-up', location: sh.kind2 === 'video' ? 'Video Call' : s0.location, payment: sh.kind2 === 'video' ? 'PENDING' : null, doctorId: 'me', notes: '', soap: { s: '', o: '', a: '', p: '' }, briefing: 'none', docsAttached: 0 };
+        act('set', (s) => ({ appointments: s.appointments.concat([na]) }));
+        this.setState({ sheet: null }); banner('success', 'Appointment booked for ' + lib.fmtDay(sel) + ' ' + s0.start + '.');
+        if ((this.props.route || {}).s !== 'apptDetails') act('back');
+      };
+      Object.assign(base, { title: 'Book follow-up', hasSub: true, sub: p.name + ' · after today’s visit', isFu: true, max: '560px', hasSecondary: true, secondaryLabel: 'Not now', secondary: () => { this.setState({ sheet: null }); if ((this.props.route || {}).s !== 'apptDetails') act('back'); },
+        primaryLabel: 'Book', primaryBg: sh.sel ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: sh.sel ? 'var(--text-inverse)' : 'var(--text-tertiary)', primaryOffStr: sh.sel ? 'false' : 'true', primary: book });
+      out.fu = {
+        picks: picks.map(([kk, l, n]) => ({ label: l, selStr: sh.pick === kk ? 'true' : 'false', bg: sh.pick === kk ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)', ring: sh.pick === kk ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => (n === null ? set({ pick: kk, showDate: true }) : set({ pick: kk, day: lib.addDays(today, n), selDay: null, sel: null, showDate: false })) })),
+        showDate: !!sh.showDate, day: sh.day, min: lib.addDays(today, 1), onDate: (e) => { const v = e.target.value; if (v && v > today) set({ day: v, selDay: null, sel: null }); },
+        days: days.map((d) => { const s2 = d === sel; const has = freeOf(d).length > 0; return { dow: lib.DN[lib.dow(d)], num: String(Number(d.slice(8))), aria: lib.fmtLong(d), selStr: s2 ? 'true' : 'false', bg: s2 ? 'var(--interactive-primary)' : 'var(--bg-canvas)', ink: s2 ? 'var(--text-inverse)' : 'var(--text-primary)', dot: has ? (s2 ? 'var(--icon-inverse)' : 'var(--icon-brand)') : 'transparent', pick: () => set({ selDay: d, sel: null }) }; }),
+        none: !slots.length, hasNext: !!next, nextLabel: next ? 'Next available: ' + lib.fmtDay(next) : '', goNext: () => set({ day: next, selDay: next, sel: null }),
+        cols: phone ? 4 : 6, slots: slots.map((s2) => ({ label: s2.start, selStr: sh.sel === s2.start ? 'true' : 'false', bg: sh.sel === s2.start ? 'var(--interactive-primary)' : 'var(--bg-canvas)', ink: sh.sel === s2.start ? 'var(--text-inverse)' : 'var(--text-primary)', pick: () => set({ sel: s2.start }) })),
+        kinds: [['clinic', 'In clinic'], ['video', 'Video']].map(([kk, l]) => ({ label: l, selStr: sh.kind2 === kk ? 'true' : 'false', bg: sh.kind2 === kk ? 'var(--bg-surface)' : 'transparent', shadow: sh.kind2 === kk ? 'var(--shadow-dropdown)' : 'none', pick: () => set({ kind2: kk }) })),
+        isVideo: sh.kind2 === 'video', reason: sh.reason, onReason: (e) => set({ reason: e.target.value }),
+        flag: () => { act('set', (s) => ({ patients: s.patients.map((x) => (x.id === a.patientId ? Object.assign({}, x, { status: 'FOLLOW_UP' }) : x)) })); this.setState({ sheet: null }); banner('success', 'Marked for follow-up'); if ((this.props.route || {}).s !== 'apptDetails') act('back'); }
+      };
+    }
+    if (k === 'leaveRec') Object.assign(base, { title: 'Stop recording and leave?', isText: true, body: 'The recording will be processed.', hasTertiary: true, tertiaryLabel: 'Discard', tertiaryInk: 'var(--text-error)', tertiary: () => { this.setW(a, { scribe: 'idle' }, false); this.setState({ sheet: null }); this.saveDraft(a); act('back'); }, hasSecondary: true, secondaryLabel: 'Keep recording', primaryLabel: 'Process and leave', primary: () => { this.setState({ sheet: null }); this.processScribe(a); this.saveDraft(a); act('back'); } });
+    if (k === 'leaveCall') Object.assign(base, { title: 'Leave the call?', isText: true, body: 'The visit stays open until you end it.', hasTertiary: true, tertiaryLabel: 'Cancel', tertiary: close, hasSecondary: true, secondaryLabel: 'Leave and end visit', secondary: () => { this.setRm(a.id, { phase: 'left' }); this.setState({ sheet: { kind: 'end', err: '' } }); }, primaryLabel: 'Leave call', primaryBg: 'var(--interactive-destructive)', primary: () => { this.setRm(a.id, { phase: 'left' }); this.setState({ sheet: null }); if (sh.thenBack) { this.saveDraft(a); act('back'); } else banner('info', 'Video call ended'); } });
+    if (k === 'perm') Object.assign(base, { title: 'Allow Shifa Doctor to use the camera and microphone?', isText: true, body: 'The patient sees and hears you during video consultations. You can change this later in the phone settings.', isPerm: true, hasIcon: true, icon: ic.video, iconBg: 'var(--bg-success-subtle)', iconInk: 'var(--text-brand-strong)', align: 'center', hasX: false, scrim: () => {}, hasSecondary: true, secondaryLabel: 'Don’t allow', secondary: () => this.setState({ sheet: null, perm: { asked: true, mic: false, cam: false } }), primaryLabel: 'Allow', primary: () => this.setState({ sheet: null, perm: { asked: true, mic: true, cam: true } }) });
+    return out;
+  }
+}
+</script>
+</body>
+</html>

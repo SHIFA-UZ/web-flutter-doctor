@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone NavBar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nb-tab:focus-visible{outline:2px solid #00bbb0;outline-offset:-4px}
+</style>
+</helmet>
+<div style="width: 100%; box-sizing: border-box; padding: 16px 16px 24px; font-family: Manrope, system-ui, sans-serif">
+  <nav aria-label="Main" style="position: relative; height: 64px; box-sizing: border-box; border-radius: 999px; background: linear-gradient(135deg, #ffffffa6 0%, #ffffff59 55%, #ffffff8c 100%); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid #ffffffb3; box-shadow: inset 0 1px 0 #ffffffe6, inset 0 -1px 1px #ffffff40, inset 0 0 12px #ffffff33, 2px 2px 41.4px #0000003b; display: flex; align-items: center; justify-content: space-around; padding: 0 6px; overflow: hidden">
+    <span aria-hidden="true" style="position: absolute; left: 16px; right: 16px; top: 0; height: 50%; border-radius: 999px 999px 40% 40%; background: linear-gradient(180deg, #ffffff66 0%, #ffffff00 100%); pointer-events: none"></span>
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+      <button class="nb-tab" onClick="{{t.pick}}" aria-current="{{t.current}}" aria-label="{{t.aria}}" style="position: relative; flex: 1 1 0; min-width: 0; height: 54px; border: 0; border-radius: 999px; background: transparent; color: {{t.ink}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+        <span style="font-size: 10px; line-height: 12px; font-weight: {{t.weight}}">{{t.label}}</span>
+        <sc-if value="{{t.hasCount}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; top: 4px; left: 50%; margin-left: 6px; min-width: 16px; height: 16px; border-radius: 999px; background: #00bbb0; color: #ffffff; font-size: 10px; line-height: 16px; font-weight: 700; text-align: center; padding: 0 4px; box-sizing: border-box">{{t.count}}</span></sc-if>
+      </button>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","calendar","patients","chat","more"],"default":"home"},"onMore":{"editor":null},"$preview":{"width":390,"height":112}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { picked: null }; }
+  renderVals() {
+    const active = this.state.picked ?? this.props.active ?? 'home';
+    const defs = [
+      ['home', 'Home', 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10', 0],
+      ['calendar', 'Calendar', 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18', 0],
+      ['patients', 'Patients', 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 1 0 8a4 4 0 1 1 0-8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75', 0],
+      ['chat', 'Chat', 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', 3],
+      ['more', 'More', 'M3 12h18M3 6h18M3 18h18', 0]
+    ];
+    return {
+      tabs: defs.map(([id, label, d, count]) => {
+        const sel = id === active;
+        return {
+          label, d, count, hasCount: count > 0,
+          aria: count ? label + ', ' + count + ' unread' : label,
+          current: sel ? 'page' : undefined,
+          ink: sel ? '#00bbb0' : '#272727', weight: sel ? 700 : 500, stroke: sel ? 2.5 : 2,
+          pick: () => {
+            if (id === 'more' && this.props.onMore) { this.props.onMore(); return; }
+            this.setState({ picked: id });
+          }
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

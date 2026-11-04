@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DataTable states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1760px; height: 1000px; box-sizing: border-box; padding: 40px; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif; display: flex; gap: 24px; align-items: flex-start">
+  <div style="width: 880px; display: flex; flex-direction: column; gap: 32px">
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · loading: skeleton rows in the row shape</figcaption>
+      <dc-import name="Table" layout="web" state="loading" hint-size="100%,480px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · filtered empty: Clear Filters resets search and chips</figcaption>
+      <dc-import name="Table" layout="web" state="empty" hint-size="100%,320px"></dc-import>
+    </figure>
+  </div>
+  <figure style="margin: 0; width: 358px; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Phone · loading</figcaption>
+    <dc-import name="Table" layout="phone" state="loading" hint-size="100%,560px"></dc-import>
+  </figure>
+  <figure style="margin: 0; width: 358px; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Phone · filtered empty</figcaption>
+    <dc-import name="Table" layout="phone" state="empty" hint-size="100%,400px"></dc-import>
+  </figure>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

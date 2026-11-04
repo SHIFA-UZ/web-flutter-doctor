@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Calendar and schedule</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+.cal-carousel::-webkit-scrollbar{display:none}
+.cal-carousel>*{scroll-snap-align:start;flex:none}
+@keyframes cl-bar{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+@keyframes cl-spin{to{transform:rotate(360deg)}}
+@keyframes cl-up{from{transform:translateY(var(--size-30));opacity:0}to{transform:none;opacity:1}}
+.cl-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.cl-row:hover{box-shadow:0 0 0 var(--size-2) var(--alpha-teal-25),var(--shadow-dropdown) !important}
+.cl-day:hover{outline:var(--size-1) solid var(--border-focus)}
+.cl-in input,.cl-in select,.cl-in textarea{font: 600 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.cl-in input::placeholder{color:var(--text-tertiary);font-weight:500}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div class="cl-in" style="position: relative; width: 100%; min-height: 100%; box-sizing: border-box; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans)">
+
+<!-- ======================= CALENDAR ROOT / CLINIC DOCTOR SCHEDULE ======================= -->
+<sc-if value="{{isCal}}" hint-placeholder-val="{{ true }}">
+  <sc-if value="{{refreshing}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="position: sticky; top: 0; z-index: 3; height: var(--size-3); overflow: hidden; background: var(--alpha-teal-15)"><div style="width: 33%; height: 100%; background: var(--interactive-primary); animation: cl-bar 1s ease-in-out infinite"></div></div></sc-if>
+  <div style="padding: {{pagePad}}; display: flex; flex-direction: column; gap: var(--size-16); width: 100%; max-width: var(--layout-page); margin: 0 auto; box-sizing: border-box">
+
+    <sc-if value="{{tzBanner}}" hint-placeholder-val="{{ false }}">
+      <div role="note" style="display: flex; gap: var(--size-10); align-items: flex-start; padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-warning); font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 500">
+        <span style="display: inline-flex; flex: none; padding-top: var(--size-1)"><svg style="stroke: var(--icon-brand)" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clock}}"></path></svg></span>
+        <span style="flex: 1 1 auto">{{tzText}}</span>
+        <span style="display: flex; flex-direction: column; gap: var(--size-2); align-items: flex-end; flex: none">
+          <button class="cl-b sh-link" onClick="{{tzDismiss}}" style="font: 700 var(--font-size-14)/var(--size-18) var(--font-sans)">Dismiss</button>
+          <sc-if value="{{isOwnCal}}" hint-placeholder-val="{{ true }}"><button class="cl-b sh-link" onClick="{{tzFix}}" style="font: 700 var(--font-size-14)/var(--size-18) var(--font-sans); white-space: nowrap">Set timezone</button></sc-if>
+        </span>
+      </div>
+    </sc-if>
+
+    <header style="display: flex; align-items: center; gap: var(--size-8); flex-wrap: wrap">
+      <sc-if value="{{isDoctorSched}}" hint-placeholder-val="{{ false }}"><button class="cl-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button></sc-if>
+      <div style="flex: 1 1 {{titleBasis}}; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)">
+        <h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{calTitle}}</h1>
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600; color: var(--text-secondary)">{{dayLong}}</span>
+      </div>
+      <div class="cal-acts" style="display: {{actsDisplay}}; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--size-8); align-items: center; flex: {{actsFlex}}">
+        <sc-if value="{{notToday}}" hint-placeholder-val="{{ false }}"><button class="cl-b sh-btn sh-btn--primary {{todayCls}}" onClick="{{goToday}}">Today</button></sc-if>
+        <button class="cl-b {{actCls}}" onClick="{{refresh}}" aria-label="Refresh" title="Refresh"><span style="display: inline-flex; animation: {{refreshSpin}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></span><sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span style="font: 700 var(--font-size-12)/var(--size-14) var(--font-sans)">Refresh</span></sc-if></button>
+        <sc-if value="{{isOwnCal}}" hint-placeholder-val="{{ true }}">
+          <button class="cl-b {{actCls}}" onClick="{{openHours}}" aria-label="Working hours" title="Working hours"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clock}}"></path></svg><sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span style="font: 700 var(--font-size-12)/var(--size-14) var(--font-sans)">Hours</span></sc-if></button>
+          <button class="cl-b {{actCls}}" onClick="{{openBlock}}" aria-label="Block time" title="Block time"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.block}}"></path></svg><sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span style="font: 700 var(--font-size-12)/var(--size-14) var(--font-sans)">Block</span></sc-if></button>
+        </sc-if>
+        <button class="cl-b {{actCls}}" onClick="{{openFilter}}" aria-label="{{filterAria}}" title="Filter" style="position: relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.filter}}"></path></svg><sc-if value="{{filterOn}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; top: var(--size-8); right: var(--size-8); width: var(--size-8); height: var(--size-8); border-radius: var(--radius-full); background: var(--interactive-primary); box-shadow: 0 0 0 var(--size-2) var(--white)"></span></sc-if><sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span style="font: 700 var(--font-size-12)/var(--size-14) var(--font-sans)">Filter</span></sc-if></button>
+      </div>
+    </header>
+
+    <sc-if value="{{isDoctorSched}}" hint-placeholder-val="{{ false }}"><p style="margin: calc(-1 * var(--size-6)) 0 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Book and manage this doctor's appointments. Times use this clinic's timezone (Asia/Tashkent).</p></sc-if>
+
+    <sc-if value="{{showStaff}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Staff calendars</span>
+        <div role="group" aria-label="Staff calendars" class="cal-carousel sh-carousel" style="flex-wrap: {{chipWrap}}; gap: var(--size-8); margin: {{chipMargin}}; padding: {{chipPad}}; scroll-padding-inline: var(--size-12)">
+          <sc-for list="{{staffChips}}" as="c" hint-placeholder-count="3">
+            <button class="cl-b sh-chip" onClick="{{c.pick}}" aria-pressed="{{c.selStr}}" style="padding: 0 var(--size-12) 0 var(--size-6); display: inline-flex; align-items: center; gap: var(--size-8); white-space: nowrap; padding: 0 var(--size-12) 0 var(--size-4)"><span aria-hidden="true" style="width: var(--size-20); height: var(--size-20); border-radius: var(--radius-full); background: {{c.color}}; color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center"><sc-if value="{{c.sel}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></sc-if></span>{{c.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; flex-wrap: wrap; gap: var(--size-16); align-items: flex-start">
+      <div style="flex: 1 1 var(--size-320); max-width: {{monthMax}}; min-width: 0; display: flex; flex-direction: column; gap: var(--size-12); position: {{monthPos}}; top: var(--size-16)">
+        <section aria-label="Month" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: var(--size-12) var(--size-12) var(--size-14)">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 var(--size-2) var(--size-8)">
+            <button class="cl-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{prevMonth}}" aria-label="Previous month" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevL}}"></path></svg></button>
+            <span aria-live="polite" style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{monthLabel}}</span>
+            <button class="cl-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{nextMonth}}" aria-label="Next month" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></button>
+          </div>
+          <div role="grid" aria-label="{{monthLabel}}" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: var(--size-4); text-align: center">
+            <sc-for list="{{weekLetters}}" as="w" hint-placeholder-count="7"><span style="font-size: var(--font-size-12); line-height: var(--line-height-20); font-weight: 700; color: var(--text-tertiary)">{{w}}</span></sc-for>
+            <sc-for list="{{cells}}" as="c" hint-placeholder-count="35">
+              <span style="display: flex; justify-content: center; height: var(--size-40); align-items: center">
+                <sc-if value="{{c.real}}" hint-placeholder-val="{{ true }}">
+                  <button class="cl-day cl-b {{c.cls}}" onClick="{{c.pick}}" aria-label="{{c.aria}}" aria-selected="{{c.selStr}}" style="position: relative">{{c.n}}<sc-if value="{{c.dot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; left: 50%; bottom: var(--size-3); margin-left: calc(-1 * var(--size-2)); width: var(--size-4); height: var(--size-4); border-radius: var(--radius-full); background: {{c.dotBg}}"></span></sc-if></button>
+                </sc-if>
+              </span>
+            </sc-for>
+          </div>
+          <div aria-hidden="true" style="display: flex; gap: var(--size-10); align-items: center; justify-content: center; padding-top: var(--size-10); font-size: var(--font-size-12); color: var(--text-secondary)"><span style="display: inline-flex; gap: var(--size-4); align-items: center"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: var(--alpha-teal-15)"></span>Light</span><span style="display: inline-flex; gap: var(--size-4); align-items: center"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: var(--alpha-teal-25)"></span>Busy</span><span style="display: inline-flex; gap: var(--size-4); align-items: center"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: var(--bg-error-subtle)"></span>Blocked</span></div>
+        </section>
+
+        <sc-if value="{{showEmptyCard}}" hint-placeholder-val="{{ false }}">
+          <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-10); align-items: flex-start">
+            <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--bg-warning-subtle); color: var(--icon-warning); display: inline-flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.calendar}}"></path></svg></span>
+            <h2 style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{empty.title}}</h2>
+            <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{empty.body}}</p>
+            <button class="cl-b {{empty.cls}}" onClick="{{empty.go}}" style="width: 100%">{{empty.cta}}</button>
+          </section>
+        </sc-if>
+      </div>
+
+      <div style="flex: 999 1 var(--layout-dialog-md); min-width: 0; display: flex; flex-direction: column; gap: var(--size-16)">
+        <sc-if value="{{hasViews}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: var(--size-8); flex-wrap: wrap">
+            <div class="dr-tabs" role="tablist" aria-label="Calendar view"><sc-for list="{{views}}" as="v" hint-placeholder-count="2"><button role="tab" class="cl-b dr-tab" aria-selected="{{v.selStr}}" onClick="{{v.pick}}">{{v.label}}</button></sc-for></div>
+            <span style="flex: 1 1 auto"></span>
+            <sc-if value="{{wk.on}}" hint-placeholder-val="{{ false }}">
+              <button class="cl-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{wk.prev}}" aria-label="Previous week"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
+              <span aria-live="polite" style="font-size: var(--font-size-14); line-height: var(--line-height-16); font-weight: 700; white-space: nowrap">{{wk.label}}</span>
+              <button class="cl-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{wk.next}}" aria-label="Next week"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{wk.on}}" hint-placeholder-val="{{ false }}">
+          <div class="dr-week" role="grid" aria-label="{{wk.label}}" style="grid-template-columns: var(--size-48) repeat({{wk.n}}, minmax(0, 1fr)); box-shadow: var(--shadow-card)">
+            <div class="dr-week__head"></div>
+            <sc-for list="{{wk.days}}" as="d" hint-placeholder-count="7"><button class="{{d.headCls}}" onClick="{{d.pick}}" aria-label="{{d.aria}}" aria-current="{{d.cur}}">{{d.dow}}<b>{{d.n}}</b></button></sc-for>
+            <div class="dr-week__gutter"><sc-for list="{{wk.hours}}" as="h" hint-placeholder-count="10"><div>{{h}}</div></sc-for></div>
+            <sc-for list="{{wk.days}}" as="d" hint-placeholder-count="7"><div class="{{d.colCls}}" style="height: {{wk.h}}"><sc-if value="{{d.nowOn}}" hint-placeholder-val="{{ false }}"><i class="dr-week__now" aria-hidden="true" style="top: {{d.nowTop}}"></i></sc-if><sc-for list="{{d.evs}}" as="e" hint-placeholder-count="3"><button class="{{e.cls}}" onClick="{{e.open}}" aria-label="{{e.aria}}" title="{{e.aria}}" style="top: {{e.top}}; height: {{e.ht}}; left: {{e.l}}; width: {{e.w}}; opacity: {{e.op}}; text-decoration: {{e.strike}}">{{e.title}}<small>{{e.sub}}</small></button></sc-for></div></sc-for>
+          </div>
+          <div class="dr-legend" aria-hidden="true" style="display: flex; flex-wrap: wrap; gap: var(--size-12); font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)"><span style="display: inline-flex; align-items: center; gap: var(--size-6)"><span style="flex: none; width: var(--size-12); height: var(--size-12); border-radius: var(--radius-xs); background: var(--bg-success-subtle); box-shadow: inset var(--size-3) 0 0 var(--interactive-primary)"></span>Clinic visit</span><span style="display: inline-flex; align-items: center; gap: var(--size-6)"><span style="flex: none; width: var(--size-12); height: var(--size-12); border-radius: var(--radius-xs); background: var(--bg-info-subtle); box-shadow: inset var(--size-3) 0 0 var(--icon-info)"></span>Video visit</span><span style="display: inline-flex; align-items: center; gap: var(--size-6)"><span style="flex: none; width: var(--size-12); height: var(--size-12); border-radius: var(--radius-xs); background: var(--alpha-teal-15)"></span>Free time (click to book)</span><span style="display: inline-flex; align-items: center; gap: var(--size-6)"><span style="flex: none; width: var(--size-12); height: var(--size-12); border-radius: var(--radius-xs); background: repeating-linear-gradient(135deg, var(--bg-canvas) 0 var(--size-3), var(--bg-disabled) var(--size-3) var(--size-4))"></span>Blocked</span><span style="display: inline-flex; align-items: center; gap: var(--size-6)"><span style="flex: none; width: var(--size-12); height: var(--size-12); border-radius: var(--radius-xs); background: var(--interactive-primary)"></span>Now</span></div>
+        </sc-if>
+        <sc-if value="{{dayOn}}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{detailsBar}}" hint-placeholder-val="{{ false }}"><div style="display: flex; justify-content: flex-end; margin-bottom: calc(-1 * var(--size-4))"><button class="cl-b sh-link sh-link--plain" onClick="{{toggleDetails}}" aria-pressed="{{detailsStr}}">{{detailsLabel}}</button></div></sc-if>
+        <sc-for list="{{sections}}" as="sec" hint-placeholder-count="1">
+          <section aria-label="{{sec.name}}" style="display: flex; flex-direction: column; gap: var(--size-10)">
+            <sc-if value="{{sec.hasHead}}" hint-placeholder-val="{{ false }}"><h2 style="margin: var(--size-4) 0 0; display: flex; align-items: center; gap: var(--size-8); font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; color: {{sec.color}}"><span aria-hidden="true" style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: {{sec.color}}"></span>{{sec.name}}</h2></sc-if>
+            <sc-for list="{{sec.rows}}" as="r" hint-placeholder-count="5">
+              <button class="cl-row cl-b sh-press sh-press--card" onClick="{{r.open}}" style="position: relative; width: 100%; min-height: {{r.minH}}; box-sizing: border-box; box-shadow: var(--shadow-dropdown); padding: var(--size-10) var(--size-14); display: flex; align-items: center; gap: var(--size-12); opacity: {{r.opacity}}; overflow: hidden">
+                <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: {{r.avBg}}; border: {{r.avBorder}}; box-sizing: border-box; color: {{r.avInk}}; font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">
+                  <sc-if value="{{r.avIcon}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.avD}}"></path></svg></sc-if>
+                  <sc-if value="{{r.avText}}" hint-placeholder-val="{{ false }}">{{r.ini}}</sc-if>
+                </span>
+                <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)">
+                  <span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; color: {{r.titleInk}}; text-decoration: {{r.strike}}; display: -webkit-box; -webkit-line-clamp: {{r.clamp}}; -webkit-box-orient: vertical; overflow: hidden">{{r.title}}</span>
+                  <sc-if value="{{r.showSummary}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.summary}}</span></sc-if>
+                  <sc-if value="{{r.tags}}" hint-placeholder-val="{{ true }}"><span style="display: flex; flex-wrap: wrap; gap: var(--size-6); align-items: center">
+                    <sc-if value="{{r.hasLoc}}" hint-placeholder-val="{{ true }}"><span style="height: var(--size-22); max-width: 100%; display: inline-flex; align-items: center; gap: var(--size-4); padding: 0 var(--size-8); border-radius: var(--radius-full); background: {{r.locBg}}; color: {{r.locInk}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap; overflow: hidden"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="{{r.locD}}"></path></svg><span style="overflow: hidden; text-overflow: ellipsis">{{r.loc}}</span></span></sc-if>
+                    <sc-if value="{{r.hasChip}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-22); display: inline-flex; align-items: center; gap: var(--size-4); padding: 0 var(--size-8); border-radius: var(--radius-full); background: {{r.chipBg}}; color: {{r.chipInk}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap"><span aria-hidden="true" style="width: var(--size-6); height: var(--size-6); border-radius: var(--radius-full); background: {{r.chipDot}}"></span>{{r.chip}}</span></sc-if>
+                    <sc-if value="{{r.hasPay}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-22); display: inline-flex; align-items: center; gap: var(--size-4); padding: 0 var(--size-8); border-radius: var(--radius-full); background: {{r.payBg}}; color: {{r.payInk}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap"><span aria-hidden="true" style="width: var(--size-6); height: var(--size-6); border-radius: var(--radius-full); background: {{r.payDot}}"></span>{{r.pay}}</span></sc-if>
+                  </span></sc-if>
+                </span>
+                <span style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: var(--size-4); max-width: 42%">
+                  <span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; text-decoration: {{r.strike}}">{{r.time}}</span>
+                  <sc-if value="{{r.hasDur}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-18); padding: 0 var(--size-6); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-10); line-height: var(--line-height-18); font-weight: 700; white-space: nowrap">{{r.dur}}</span></sc-if>
+                  <sc-if value="{{r.showNote}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: {{r.noteInk}}; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{r.note}}</span></sc-if>
+                </span>
+                <sc-if value="{{r.isDone}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; left: var(--size-10); right: var(--size-10); top: 50%; height: var(--size-3); background: var(--bg-error-subtle); pointer-events: none"></span></sc-if>
+              </button>
+            </sc-for>
+            <sc-if value="{{sec.empty}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-28) var(--size-16); text-align: center; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); background: var(--bg-surface); border-radius: var(--radius-control-md)">{{sec.emptyText}}<sc-if value="{{sec.hidden}}" hint-placeholder-val="{{ false }}"> · <button class="cl-b sh-link" onClick="{{resetFilter}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">Reset</button></sc-if></div></sc-if>
+          </section>
+        </sc-for>
+        </sc-if>
+      </div>
+    </div>
+    <div aria-hidden="true" style="height: {{bottomClear}}"></div>
+  </div>
+</sc-if>
+
+<!-- ======================= BOOK A SLOT ======================= -->
+<sc-if value="{{isBook}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--bg-canvas)">
+    <div style="position: sticky; top: 0; z-index: 2; background: var(--bg-surface); border-bottom: var(--size-1) solid var(--border-default); padding: {{barPad}}; display: flex; align-items: center; gap: var(--size-10)">
+      <button class="cl-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{bookBack}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column"><h1 style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">Slot Details</h1><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{bk.headLine}}</span></div>
+    </div>
+    <div style="flex: 1 1 auto; padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-12); max-width: var(--layout-form); width: 100%; box-sizing: border-box; margin: 0 auto">
+      <sc-if value="{{bk.forColleague}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-info-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--icon-info); font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600">Booking in {{bk.doctorName}}'s calendar.</div></sc-if>
+      <sc-if value="{{bk.past}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-warning); display: flex; gap: var(--size-10); font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--icon-brand); flex: none"><path d="{{ic.info}}"></path></svg>This slot is in the past. You cannot assign a patient.</div></sc-if>
+      <sc-if value="{{bk.open}}" hint-placeholder-val="{{ true }}">
+        <button class="cl-b sh-press sh-press--card" onClick="{{openPicker}}" style="box-shadow: var(--shadow-dropdown); padding: var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+          <span aria-hidden="true" style="width: var(--size-touch); height: var(--size-touch); border-radius: var(--radius-full); background: var(--alpha-teal-15); color: var(--text-primary); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none"><sc-if value="{{bk.hasPatient}}" hint-placeholder-val="{{ false }}">{{bk.patIni}}</sc-if><sc-if value="{{bk.noPatient}}" hint-placeholder-val="{{ true }}"><svg style="stroke: var(--icon-brand)" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.userPlus}}"></path></svg></sc-if></span>
+          <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Assign Patient</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{bk.patLine}}</span></span>
+          <span style="display: inline-flex; color: var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+        </button>
+        <sc-if value="{{bk.patErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="margin-top: calc(-1 * var(--size-6)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Please select a patient</span></sc-if>
+        <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-dropdown); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+          <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Place</span>
+          <div role="radiogroup" aria-label="Place" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-8)">
+            <sc-for list="{{bk.places}}" as="pl" hint-placeholder-count="2"><button class="cl-b dr-choice" role="radio" aria-checked="{{pl.selStr}}" onClick="{{pl.pick}}" style="display: inline-flex; align-items: center; justify-content: center; gap: var(--size-8); justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{pl.d}}"></path></svg>{{pl.label}}</button></sc-for>
+          </div>
+          <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{bk.placeHint}}</span>
+        </div>
+        <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-dropdown); padding: var(--size-14); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-12)">
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Start time
+            <select class="sh-select" value="{{bk.start}}" onChange="{{bk.onStart}}"><sc-for list="{{bk.starts}}" as="o" hint-placeholder-count="4"><option value="{{o}}">{{o}}</option></sc-for></select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">End time
+            <select class="sh-select" value="{{bk.end}}" onChange="{{bk.onEnd}}"><sc-for list="{{bk.ends}}" as="o" hint-placeholder-count="3"><option value="{{o}}">{{o}}</option></sc-for></select>
+          </label>
+          <span style="grid-column: 1 / -1; font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Duration: {{bk.dur}} · Free slots in a row can be joined.</span>
+        </div>
+        <label style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-dropdown); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Reason for visit
+          <input class="sh-input" value="{{bk.reason}}" onChange="{{bk.onReason}}" placeholder="e.g. Check-up" maxlength="120">
+        </label>
+      </sc-if>
+    </div>
+    <div class="dr-actionbar"><div class="dr-actionbar__inner"><button class="cl-b sh-btn sh-btn--secondary" onClick="{{bookBack}}" >Cancel</button>
+      <button class="cl-b sh-btn sh-btn--primary" onClick="{{saveBook}}" aria-disabled="{{bk.offStr}}" style="display: inline-flex; align-items: center; justify-content: center; gap: var(--size-8)"><sc-if value="{{bk.saving}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Save</button></div></div>
+  </div>
+</sc-if>
+
+<!-- ======================= WORKING HOURS ======================= -->
+<sc-if value="{{isAvail}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column">
+    <div style="position: sticky; top: 0; z-index: 2; background: var(--bg-surface); border-bottom: var(--size-1) solid var(--border-default); padding: {{barPad}}; display: flex; align-items: center; gap: var(--size-10)">
+      <button class="cl-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{avBack}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <h1 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">Working hours</h1>
+      <button class="cl-b sh-action sh-action--secondary" onClick="{{openLocations}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.pin}}"></path></svg>Locations</button>
+    </div>
+    <div style="flex: 1 1 auto; padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-14); max-width: var(--layout-reading); width: 100%; box-sizing: border-box; margin: 0 auto">
+      <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Choose working days and the times patients can book. Each location has its own hours.</p>
+      <sc-if value="{{av.noLoc}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-warning); display: flex; flex-wrap: wrap; gap: var(--size-8); align-items: center; font-size: var(--font-size-14); font-weight: 600"><span style="flex: 1 1 var(--basis-200)">Add at least one practice location to organize your schedule.</span><button class="cl-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{openLocations}}" >Add location</button></div></sc-if>
+      <div role="radiogroup" aria-label="Location" style="display: flex; flex-wrap: wrap; gap: var(--size-8)">
+        <sc-for list="{{av.locChips}}" as="l" hint-placeholder-count="2"><button class="cl-b sh-chip" role="radio" aria-checked="{{l.selStr}}" onClick="{{l.pick}}" style="display: inline-flex; align-items: center; gap: var(--size-6); white-space: nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.pin}}"></path></svg>{{l.label}}</button></sc-for>
+      </div>
+      <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-dropdown); padding: var(--size-14); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-12)">
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Schedule valid from<input class="sh-input" type="date" value="{{av.from}}" min="{{av.minFrom}}" max="{{av.to}}" onChange="{{av.onFrom}}"></label>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Valid until<input class="sh-input" type="date" value="{{av.to}}" min="{{av.from}}" max="{{av.maxTo}}" onChange="{{av.onTo}}" style="border-color: {{av.toBorder}}"></label>
+        <span style="grid-column: 1 / -1; font-size: var(--font-size-12); line-height: var(--line-height-16); color: {{av.validInk}}; font-weight: {{av.validWeight}}">{{av.validNote}}</span>
+      </div>
+      <section aria-label="Week" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-dropdown); padding: var(--size-6) var(--size-14)">
+        <sc-for list="{{av.days}}" as="d" hint-placeholder-count="7">
+          <div style="display: flex; align-items: center; gap: var(--size-12); min-height: var(--size-60); border-top: {{d.divider}}">
+            <button class="cl-b sh-press" role="switch" aria-checked="{{d.onStr}}" aria-label="{{d.toggleLabel}}" onClick="{{d.toggle}}" style="flex: none; display: inline-flex; padding: var(--size-8) 0"><span class="sh-switch" aria-hidden="true"></span></button>
+            <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{d.name}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: {{d.sumInk}}">{{d.summary}}</span><sc-if value="{{d.hasOther}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-info); font-weight: 600">{{d.other}}</span></sc-if></span>
+            <sc-if value="{{d.on}}" hint-placeholder-val="{{ true }}"><button class="cl-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{d.edit}}" style="flex: none">Edit</button></sc-if>
+          </div>
+        </sc-for>
+      </section>
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-dropdown); overflow: hidden">
+        <button class="cl-b sh-press" onClick="{{av.toggleDs}}" aria-expanded="{{av.dsOpenStr}}" style="width: 100%; padding: var(--size-14); display: flex; align-items: center; gap: var(--size-10)"><svg style="stroke: var(--icon-brand)" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.calPlus}}"></path></svg><span style="flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Extra hours on specific dates</span><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{av.dsCount}}</span><span style="display: inline-flex; transform: rotate({{av.dsChev}})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span></button>
+        <sc-if value="{{av.dsOpen}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 0 var(--size-14) var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+            <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Add hours on particular dates without changing your week, for example an evening on 3 Nov. You cannot overlap hours that already exist.</p>
+            <sc-for list="{{av.ds}}" as="x" hint-placeholder-count="1">
+              <div style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas); opacity: {{x.opacity}}"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{x.date}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{x.line}}</span></span><button class="cl-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{x.del}}" aria-label="{{x.delLabel}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.trash}}"></path></svg></button></div>
+            </sc-for>
+            <sc-if value="{{av.dsEmpty}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-12); color: var(--text-tertiary)">No extra hours yet.</p></sc-if>
+            <button class="cl-b sh-btn sh-btn--secondary" onClick="{{av.addDs}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add extra hours</button>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+    <div class="dr-actionbar"><div class="dr-actionbar__inner"><span style="flex: 1 1 auto; align-self: center; font-size: var(--font-size-12); color: var(--text-secondary)">{{av.dirtyNote}}</span>
+      <button class="cl-b sh-btn sh-btn--primary" onClick="{{av.save}}" ><sc-if value="{{av.saving}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Save</button></div></div>
+  </div>
+</sc-if>
+
+<!-- ======================= LOCATIONS ======================= -->
+<sc-if value="{{isLoc}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column">
+    <div style="position: sticky; top: 0; z-index: 2; background: var(--bg-surface); border-bottom: var(--size-1) solid var(--border-default); padding: {{barPad}}; display: flex; align-items: center; gap: var(--size-10)">
+      <button class="cl-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <h1 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">Manage locations</h1>
+      <button class="cl-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{addLoc}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add location</button>
+    </div>
+    <div style="padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-12); max-width: var(--layout-reading); width: 100%; box-sizing: border-box; margin: 0 auto">
+      <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Places where you see patients. Video calls are not a location.</p>
+      <sc-for list="{{locs}}" as="l" hint-placeholder-count="2">
+        <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-dropdown); padding: var(--size-14); display: flex; gap: var(--size-12); align-items: flex-start">
+          <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.pin}}"></path></svg></span>
+          <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)"><span style="display: flex; gap: var(--size-8); align-items: center; flex-wrap: wrap"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{l.label}}</span><sc-if value="{{l.primary}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-22); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-warning-subtle); font-size: var(--font-size-12); line-height: var(--line-height-22); font-weight: 700">Primary</span></sc-if></span><sc-if value="{{l.hasClinic}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{l.clinic}}</span></sc-if><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{l.address}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-tertiary)">{{l.usage}}</span></span>
+          <button class="cl-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{l.edit}}" aria-label="{{l.editLabel}}" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.edit}}"></path></svg></button>
+          <button class="cl-b sh-icon-btn sh-icon-btn--danger sh-icon-btn--sm" onClick="{{l.del}}" aria-label="{{l.delLabel}}" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.trash}}"></path></svg></button>
+        </div>
+      </sc-for>
+      <sc-if value="{{noLocs}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-32) var(--size-16); text-align: center; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">No locations yet. Tap “Add location” to create your first one.</p></sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ======================= OVERLAYS ======================= -->
+<sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+    <button class="sh-scrim--fill" aria-label="Close" onClick="{{sheet.close}}"></button>
+    <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="cl-sh-t" style="max-width: {{sheet.max}}; border-radius: {{dlgR}}">
+      <div style="display: flex; align-items: flex-start; gap: var(--size-8)"><div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><h2 id="cl-sh-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{sheet.title}}</h2><sc-if value="{{sheet.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{sheet.sub}}</span></sc-if></div><button class="cl-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{sheet.close}}" aria-label="Close" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+
+      <!-- filter -->
+      <sc-if value="{{sheet.isFilter}}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{fOpts}}" as="o" hint-placeholder-count="3"><button class="cl-b sh-press sh-press--row" role="checkbox" aria-checked="{{o.onStr}}" onClick="{{o.toggle}}" style="padding: var(--size-8) var(--size-8); display: flex; align-items: center; gap: var(--size-12); font: 600 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-22); height: var(--size-22); box-sizing: border-box; border-radius: var(--radius-sm); border: var(--size-2) solid {{o.border}}; background: {{o.bg}}; color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span>{{o.label}}</button></sc-for>
+      </sc-if>
+
+      <!-- block time -->
+      <sc-if value="{{sheet.isBlock}}" hint-placeholder-val="{{ false }}">
+        <div class="dr-tabs dr-tabs--block" role="radiogroup" aria-label="What to block">
+          <sc-for list="{{blk.modes}}" as="m" hint-placeholder-count="3"><button class="cl-b dr-tab" role="radio" aria-checked="{{m.selStr}}" onClick="{{m.pick}}">{{m.label}}</button></sc-for>
+        </div>
+        <sc-if value="{{blk.isDay}}" hint-placeholder-val="{{ true }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Day<input class="sh-input" type="date" value="{{blk.from}}" min="{{blk.min}}" onChange="{{blk.onFrom}}"></label></sc-if>
+        <sc-if value="{{blk.isRange}}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--size-8)">
+            <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Day<input class="sh-input" type="date" value="{{blk.from}}" min="{{blk.min}}" onChange="{{blk.onFrom}}" style="padding: 0 var(--size-6); min-width: 0"></label>
+            <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Start<input class="sh-input" type="time" step="300" value="{{blk.s}}" onChange="{{blk.onS}}" style="padding: 0 var(--size-6); min-width: 0"></label>
+            <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">End<input class="sh-input" type="time" step="300" value="{{blk.e}}" onChange="{{blk.onE}}" style="border-color: {{blk.timeBorder}}; padding: 0 var(--size-6); min-width: 0"></label>
+          </div>
+        </sc-if>
+        <sc-if value="{{blk.isMulti}}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-8)">
+            <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">From date<input class="sh-input" type="date" value="{{blk.from}}" min="{{blk.min}}" onChange="{{blk.onFrom}}" style="padding: 0 var(--size-8)"></label>
+            <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">To date<input class="sh-input" type="date" value="{{blk.to}}" min="{{blk.from}}" onChange="{{blk.onTo}}" style="border-color: {{blk.dateBorder}}; padding: 0 var(--size-8)"></label>
+          </div>
+        </sc-if>
+        <sc-if value="{{blk.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">{{blk.err}}</span></sc-if>
+        <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Reason (optional)</span>
+          <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{blk.reasons}}" as="r" hint-placeholder-count="5"><button class="cl-b sh-chip" onClick="{{r.pick}}" aria-pressed="{{r.selStr}}" >{{r.label}}</button></sc-for></div>
+          <input class="sh-input" value="{{blk.reason}}" onChange="{{blk.onReason}}" placeholder="Emergency, personal, etc." maxlength="80" aria-label="Reason">
+        </div>
+        <button class="cl-b sh-press" role="switch" aria-checked="{{blk.cancelStr}}" onClick="{{blk.toggleCancel}}" style="padding: 0; display: flex; align-items: flex-start; gap: var(--size-12); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-22); height: var(--size-22); box-sizing: border-box; border-radius: var(--radius-sm); border: var(--size-2) solid {{blk.cbBorder}}; background: {{blk.cbBg}}; color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none; margin-top: var(--size-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span><span style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Cancel overlapping appointments</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Patients will be notified automatically.</span></span></button>
+        <sc-if value="{{blk.hasOverlap}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: {{blk.ovBg}}; box-shadow: inset 0 0 0 var(--size-1) {{blk.ovBorder}}; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{blk.ovText}}</div></sc-if>
+      </sc-if>
+
+      <!-- block details -->
+      <sc-if value="{{sheet.isBlockDetail}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: var(--size-14); border-radius: var(--radius-control-md); background: var(--bg-error-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-error); display: flex; gap: var(--size-12); align-items: flex-start"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--bg-surface); color: var(--text-error); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.block}}"></path></svg></span><span style="display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{bd.reason}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Patients cannot book new appointments during this blocked period.</span></span></div>
+      </sc-if>
+
+      <!-- day editor -->
+      <sc-if value="{{sheet.isDayEdit}}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{de.ranges}}" as="r" hint-placeholder-count="2">
+          <div style="border: var(--size-1) solid var(--border-default); border-radius: var(--radius-control-md); padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-10)">
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: var(--size-8); align-items: end">
+              <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">From<input class="sh-input" type="time" step="300" value="{{r.s}}" onChange="{{r.onS}}" style="padding: 0 var(--size-8); min-width: 0"></label>
+              <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">To<input class="sh-input" type="time" step="300" value="{{r.e}}" onChange="{{r.onE}}" style="border-color: {{r.border}}; padding: 0 var(--size-8); min-width: 0"></label>
+              <button class="cl-b sh-icon-btn sh-icon-btn--danger" onClick="{{r.remove}}" aria-label="Remove these hours"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.trash}}"></path></svg></button>
+            </div>
+            <div role="radiogroup" aria-label="Slot length" style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{r.slots}}" as="sl" hint-placeholder-count="6"><button class="cl-b sh-chip" role="radio" aria-checked="{{sl.selStr}}" onClick="{{sl.pick}}">{{sl.label}}</button></sc-for></div>
+            <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: {{r.noteInk}}; font-weight: {{r.noteWeight}}">{{r.note}}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{de.empty}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); color: var(--text-secondary)">No hours yet on this day at this location.</p></sc-if>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-8)">
+          <button class="cl-b sh-btn sh-btn--secondary" onClick="{{de.add}}" style="flex: 1 1 var(--size-140)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add hours</button>
+          <label style="flex: 1 1 var(--size-160); position: relative; height: var(--size-touch); box-sizing: border-box; border: var(--size-2) solid var(--border-default); border-radius: var(--radius-control-md); display: flex; align-items: center; padding: 0 var(--size-10); gap: var(--size-6); font-size: var(--font-size-14); font-weight: 700; color: var(--text-secondary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.copy}}"></path></svg><select value="" onChange="{{de.copy}}" aria-label="Copy hours from another day" style="flex: 1 1 auto; border: 0; outline: 0; background: transparent; font-size: var(--font-size-14)"><option value="">Copy from…</option><sc-for list="{{de.copyOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></label>
+        </div>
+      </sc-if>
+
+      <!-- extra hours add -->
+      <sc-if value="{{sheet.isDsAdd}}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--size-8)">
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Date<input class="sh-input" type="date" value="{{dsa.day}}" min="{{dsa.min}}" onChange="{{dsa.onDay}}" style="padding: 0 var(--size-6); min-width: 0"></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">From<input class="sh-input" type="time" step="300" value="{{dsa.s}}" onChange="{{dsa.onS}}" style="padding: 0 var(--size-6); min-width: 0"></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">To<input class="sh-input" type="time" step="300" value="{{dsa.e}}" onChange="{{dsa.onE}}" style="padding: 0 var(--size-6); min-width: 0"></label>
+        </div>
+        <div role="radiogroup" aria-label="Slot length" style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{dsa.slots}}" as="sl" hint-placeholder-count="6"><button class="cl-b sh-chip" role="radio" aria-checked="{{sl.selStr}}" onClick="{{sl.pick}}">{{sl.label}}</button></sc-for></div>
+        <span style="font-size: var(--font-size-12); color: {{dsa.noteInk}}; font-weight: 700">{{dsa.note}}</span>
+      </sc-if>
+
+      <!-- location form -->
+      <sc-if value="{{sheet.isLocEdit}}" hint-placeholder-val="{{ false }}">
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Label<input class="sh-input" value="{{le.label}}" onChange="{{le.onLabel}}" placeholder="e.g. Main Clinic" style="border-color: {{le.labelBorder}}"></label>
+        <sc-if value="{{le.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="margin-top: calc(-1 * var(--size-8)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Enter a label</span></sc-if>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Clinic (optional)<input class="sh-input" value="{{le.clinic}}" onChange="{{le.onClinic}}" placeholder="Clinic name"></label>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Address<input class="sh-input" value="{{le.address}}" onChange="{{le.onAddress}}" placeholder="Street, district, city"></label>
+        <div aria-hidden="true" style="height: var(--size-120); border-radius: var(--radius-control-md); background: repeating-linear-gradient(45deg, var(--bg-success-subtle) 0 var(--size-12), var(--bg-canvas) var(--size-12) var(--size-24)); display: flex; align-items: center; justify-content: center; color: var(--text-brand-strong)"><svg style="fill: var(--icon-brand); stroke: var(--white)" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5"><path d="{{ic.pin}}"></path></svg></div>
+        <button class="cl-b sh-press" role="switch" aria-checked="{{le.primaryStr}}" onClick="{{le.togglePrimary}}" style="padding: 0; display: flex; align-items: center; gap: var(--size-12); font: 700 var(--font-size-16)/var(--size-20) var(--font-sans); color: var(--text-primary)"><span class="sh-switch" aria-hidden="true"></span>Primary location</button>
+      </sc-if>
+
+      <!-- patient picker -->
+      <sc-if value="{{sheet.isPicker}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; gap: var(--size-8)">
+          <div style="flex: 1 1 auto; height: var(--size-touch); box-sizing: border-box; border: var(--size-2) solid var(--border-default); border-radius: var(--radius-full); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-14)"><svg style="stroke: var(--icon-secondary)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg><input value="{{pk.q}}" onChange="{{pk.onQ}}" placeholder="Search by name or ID" aria-label="Search patients" style="flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent"></div>
+          <button class="cl-b sh-icon-btn no-shadow" onClick="{{pk.newPat}}" aria-label="New patient" title="New patient" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></button>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--size-2); min-height: var(--size-240)">
+          <sc-for list="{{pk.list}}" as="p" hint-placeholder-count="6"><li><button aria-selected="{{p.selStr}}" class="cl-b sh-option" onClick="{{p.pick}}" style="display: flex; align-items: center"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{p.ini}}</span><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{p.name}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">ID: {{p.id}}</span></span><sc-if value="{{p.chronic}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-22); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-warning-subtle); font-size: var(--font-size-12); line-height: var(--line-height-22); font-weight: 700; white-space: nowrap">Chronic</span></sc-if></button></li></sc-for>
+          <sc-if value="{{pk.empty}}" hint-placeholder-val="{{ false }}"><li style="padding: var(--size-32) var(--size-8); text-align: center; font-size: var(--font-size-14); color: var(--text-secondary)">No patients found</li></sc-if>
+        </ul>
+      </sc-if>
+
+      <!-- new patient -->
+      <sc-if value="{{sheet.isNewPat}}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-10)">
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">First name<input class="sh-input" value="{{np.first}}" onChange="{{np.onFirst}}" style="border-color: {{np.firstBorder}}; min-width: 0"></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Last name<input class="sh-input" value="{{np.last}}" onChange="{{np.onLast}}" style="border-color: {{np.lastBorder}}; min-width: 0"></label>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Phone<input class="sh-input" type="tel" value="{{np.phone}}" onChange="{{np.onPhone}}" placeholder="+998 90 000 00 00" style="border-color: {{np.phoneBorder}}"></label>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Date of birth (optional)<input class="sh-input" type="date" value="{{np.dob}}" max="{{np.max}}" onChange="{{np.onDob}}"></label>
+        <sc-if value="{{np.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">{{np.err}}</span></sc-if>
+      </sc-if>
+
+      <!-- confirm text -->
+      <sc-if value="{{sheet.isConfirm}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{sheet.body}}</p></sc-if>
+
+      <sc-if value="{{sheet.hasActions}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: var(--size-10); justify-content: flex-end; flex-direction: {{dlgActDir}}; padding-top: var(--size-4)">
+          <sc-if value="{{sheet.hasSecondary}}" hint-placeholder-val="{{ true }}"><button class="cl-b sh-btn sh-btn--secondary" onClick="{{sheet.secondary}}" >{{sheet.secondaryLabel}}</button></sc-if>
+          <button class="cl-b sh-btn sh-btn--primary" onClick="{{sheet.primary}}" aria-busy="{{sheet.busyStr}}" style="background: {{sheet.primaryBg}}"><sc-if value="{{sheet.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{sheet.primaryLabel}}</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const p = (props.route && props.route.p) || {}; const st = props.store || {};
+    const day = p.day || st.today || '2026-10-26';
+    this.state = { day, month: day.slice(0, 7), filter: { appt: true, free: true, block: true }, staffSel: ['me'], refreshing: false, sheet: null, bk: null, av: null, avLoc: null };
+  }
+  componentDidMount() { this.handleRoute(); }
+  componentDidUpdate(prev) { const a = prev.route || {}, b = this.props.route || {}; if (a !== b && (a.s !== b.s || JSON.stringify(a.p) !== JSON.stringify(b.p))) { if (this.state.sheet) this.setState({ sheet: null }); this.handleRoute(); } }
+  componentWillUnmount() { clearTimeout(this.tr); clearTimeout(this.ts); }
+  handleRoute() {
+    const r = this.props.route || {}; const p = r.p || {}; const st = this.props.store; const lib = this.props.lib; const act = this.props.act;
+    if (!st || !lib || !act) return;
+    if ((r.s === 'calendar' || r.s === 'calDoctor') && p.day && p.day !== this.lastDayParam) { this.lastDayParam = p.day; this.setState({ day: p.day, month: p.day.slice(0, 7) }); }
+    if (r.s === 'calendar' && p.quickVideo) {
+      act('replace', { s: 'calendar', p: { day: p.day || st.today } });
+      for (let i = 0; i < 30; i++) {
+        const d = lib.addDays(st.today, i);
+        const f = lib.agenda(st, d).rows.find((x) => x.type === 'free' && (d > st.today || x.min >= st.nowMin));
+        if (f) { this.setState({ day: d, month: d.slice(0, 7) }); act('push', { s: 'calBook', p: { day: d, start: f.start, end: f.end, loc: f.loc, video: true } }); return; }
+      }
+      act('banner', { kind: 'info', text: 'No slots available in the next 30 days.' });
+    }
+  }
+  // ---------- helpers ----------
+  doctorMeta(id) { const st = this.props.store; const d = (st.clinic && st.clinic.doctors || []).find((x) => x.id === id); return d || { id: 'me', name: st.me.name, color: 'var(--chart-1)' }; }
+  dur(m) { const h = Math.floor(m / 60), r = m % 60; return h ? (h + 'h' + (r ? ' ' + r + ' min' : '')) : r + ' min'; }
+  setSheet(sh) { this.setState({ sheet: sh }); }
+  closeSheet() { this.setState({ sheet: null }); }
+  chain(day, start, loc, doctorId) {
+    // reachable ends by chaining consecutive free slots at the same location
+    const lib = this.props.lib; const rows = lib.agenda(this.props.store, day, doctorId).rows.filter((r) => r.type === 'free' && r.loc === loc);
+    const ends = []; let cur = start;
+    for (;;) { const f = rows.find((r) => r.start === cur); if (!f) break; ends.push(f.end); cur = f.end; }
+    return ends;
+  }
+  // ---------- view ----------
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const route = this.props.route || { s: 'calendar', p: {} }; const rp = route.p || {};
+    const S = this.state;
+    const isCal = route.s === 'calendar' || route.s === 'calDoctor';
+    const out = {
+      ready: true, notReady: false, ic, phone, isCal, isBook: route.s === 'calBook', isAvail: route.s === 'availability', isLoc: route.s === 'locations',
+      back: () => act('back'), pagePad: phone ? 'var(--size-48) var(--size-12) 0' : 'var(--size-24) var(--size-24) 0', bottomClear: phone ? '120px' : '32px', barPad: phone ? 'var(--size-48) var(--size-12) var(--size-10)' : 'var(--size-14) var(--size-24)', footPadB: phone ? 'var(--size-28)' : 'var(--size-12)', footDir: phone ? 'column-reverse' : 'row',
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row',
+      hasSheet: false, sheet: {}, fOpts: [], blk: {}, bd: {}, de: {}, dsa: {}, le: {}, pk: {}, np: {}, bk: {}, av: {}, locs: [], noLocs: false
+    };
+    const sh = S.sheet;
+    // ================= CALENDAR =================
+    if (isCal) {
+      const staffView = route.s === 'calDoctor'; const docId = staffView ? rp.doctorId : null;
+      const day = S.day; const today = st.today;
+      const doctors = (st.clinic && st.clinic.doctors) || [];
+      const member = !staffView && st.role === 'doctor' && doctors.length >= 2 && !!st.clinic;
+      const visible = staffView ? [docId] : (member ? S.staffSel : ['me']);
+      const F = S.filter;
+      const filterOn = !F.appt || !F.free || (!staffView && !F.block);
+      // month grid
+      const [y, m] = S.month.split('-').map(Number);
+      const first = S.month + '-01'; const lead = (lib.dow(first) + 6) % 7;
+      const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const cells = [];
+      for (let i = 0; i < lead; i++) cells.push({ real: false });
+      for (let d = 1; d <= dim; d++) {
+        const ds = S.month + '-' + lib.pad(d);
+        const ag = lib.agenda(st, ds, staffView ? docId : 'me');
+        const ap = ag.rows.filter((r) => r.type === 'appt' && r.appt.status !== 'CANCELLED').length; const fr = ag.rows.filter((r) => r.type === 'free').length;
+        const fullBlock = ag.rows.some((r) => r.type === 'block' && r.start === '00:00');
+        const occ = ap + fr ? ap / (ap + fr) : (ap ? 1 : 0);
+        const sel = ds === day, isToday = ds === today;
+        const shade = fullBlock ? 'var(--bg-error-subtle)' : (occ === 0 ? 'transparent' : occ < 0.34 ? 'var(--alpha-teal-15)' : occ < 0.67 ? 'var(--alpha-teal-25)' : 'var(--alpha-teal-25)');
+        cells.push({ real: true, n: String(d), cls: 'dr-day' + (sel ? ' is-selected' : '') + (isToday ? ' is-today' : '') + (!sel && ds < today ? ' is-past' : '') + (!sel && fullBlock ? ' is-blocked' : (!sel && occ > 0 ? (occ < 0.67 ? ' is-light' : ' is-busy') : '')), bg: sel ? 'var(--interactive-primary)' : shade, ink: sel ? 'var(--text-inverse)' : (isToday ? 'var(--text-brand-strong)' : (ds < today ? 'var(--text-tertiary)' : 'var(--text-primary)')), weight: sel || isToday ? 700 : 600, ring: !sel && isToday ? 'inset 0 0 0 2px var(--border-focus)' : 'none', deco: 'none', dot: ap > 0 && !sel && ds >= today, dotBg: 'var(--charcoal)', selStr: sel ? 'true' : 'false', aria: lib.fmtLong(ds) + (ap ? ', ' + ap + (ap === 1 ? ' appointment' : ' appointments') : '') + (fullBlock ? ', blocked' : ''), pick: () => this.setState({ day: ds }) });
+      }
+      while (cells.length % 7) cells.push({ real: false });
+      const mv = (n) => { let yy = y, mm = m + n; if (mm < 1) { mm = 12; yy--; } if (mm > 12) { mm = 1; yy++; } if (yy < 2020 || yy > 2030) return; this.setState({ month: yy + '-' + lib.pad(mm) }); };
+      // empty / no-availability card (own calendar only)
+      const own = lib.agenda(st, day, staffView ? docId : 'me');
+      const ownAppts = own.rows.filter((r) => r.type === 'appt').length, ownFree = own.rows.filter((r) => r.type === 'free').length, ownBlocks = own.rows.filter((r) => r.type === 'block').length;
+      let empty = null;
+      const anyRules = Object.keys(st.schedule.week).some((k) => st.schedule.week[k].length) || st.schedule.dateSpecific.length;
+      if (!staffView && day >= today && !ownAppts && !ownFree && !ownBlocks) {
+        if (!anyRules || (st.firstDay && !(st.onboard || {}).avail)) empty = { title: 'Set up your working hours', body: 'Patients can book you once you choose your days and times.', cta: 'Set up schedule', go: () => act('push', { s: 'availability' }), primary: true };
+        else if (day > st.schedule.validTo) empty = { title: 'Your schedule ends on ' + lib.fmtDate(st.schedule.validTo), body: 'Extend it so patients can keep booking after that date.', cta: 'Extend schedule', go: () => act('push', { s: 'availability', p: { focus: 'until' } }), primary: true };
+        else empty = { title: 'Day off', body: 'You have no working hours on ' + lib.fmtLong(day) + '.', cta: 'Add hours for this date', go: () => act('push', { s: 'availability', p: { addDate: day } }), primary: false };
+      }
+      // agenda sections (phone: compact cards; tags behind 'Show details')
+      const compact = phone && !S.details;
+      const sections = visible.map((did) => {
+        const meta = did === 'me' ? { name: 'My schedule', color: 'var(--chart-1)' } : this.doctorMeta(did);
+        const color = visible.length > 1 || staffView ? meta.color : 'var(--chart-1)';
+        const ag = lib.agenda(st, day, did);
+        const all = ag.rows;
+        const rows = all.filter((r) => (r.type === 'appt' && F.appt) || (r.type === 'free' && F.free) || (r.type === 'block' && (F.block || staffView)));
+        return {
+          name: staffView ? meta.name : meta.name, color, hasHead: visible.length > 1, empty: rows.length === 0, hidden: rows.length === 0 && all.length > 0, emptyText: rows.length === 0 && all.length > 0 ? 'Hidden by filters' : 'No items for this day',
+          rows: rows.map((r) => {
+            if (r.type === 'free') return { minH: '64px', border: '0', bg: 'var(--bg-surface)', opacity: '1', avBg: 'var(--bg-surface)', avBorder: '2px solid ' + color, avInk: color, avIcon: true, avText: false, avD: ic.plus, ini: '', title: 'Free Slot', titleInk: 'var(--text-primary)', strike: 'none', hasLoc: true, loc: r.location, locBg: 'var(--bg-success-subtle)', locInk: 'var(--text-primary)', locD: ic.pin, hasChip: false, hasPay: false, time: r.start + ' – ' + r.end, hasDur: false, dur: '', note: this.dur(r.slot), noteInk: 'var(--text-tertiary)', isDone: false, tags: !compact, showSummary: compact, summary: r.location, showNote: !compact, clamp: compact ? '1' : '2', open: () => act('push', { s: 'calBook', p: { day, start: r.start, end: r.end, loc: r.loc, doctorId: did } }) };
+            if (r.type === 'block') return { minH: '64px', border: '1px solid var(--border-error)', bg: 'var(--bg-error-subtle)', opacity: '1', avBg: 'var(--bg-surface)', avBorder: '0', avInk: 'var(--text-error)', avIcon: true, avText: false, avD: ic.block, ini: '', title: r.block.reason || 'Blocked', titleInk: 'var(--text-error)', strike: 'none', hasLoc: false, hasChip: false, hasPay: false, time: r.start === '00:00' && r.end === '24:00' ? 'All day' : r.start + ' – ' + r.end, hasDur: false, dur: '', note: 'Blocked', noteInk: 'var(--text-error)', isDone: false, tags: false, showSummary: false, summary: '', showNote: true, clamp: compact ? '1' : '2', open: () => this.setSheet({ kind: 'blockDetail', id: r.block.id }) };
+            const a = r.appt; const p = lib.patient(st, a.patientId); const sm = lib.status[a.status] || lib.status.CONFIRMED; const mins = lib.toMin(a.end) - lib.toMin(a.start);
+            const pm = a.kind === 'video' && a.payment ? lib.pay[a.payment] : null;
+            return { minH: compact ? '64px' : Math.min(154, 68 + mins * 0.45) + 'px', border: '0', bg: 'var(--bg-surface)', opacity: a.status === 'CANCELLED' ? '0.55' : '1', avBg: lib.tint(color, 15), avBorder: '0', avInk: 'var(--text-primary)', avIcon: false, avText: true, avD: '', ini: lib.initials(p.name), title: p.name, titleInk: 'var(--text-primary)', strike: a.status === 'CANCELLED' ? 'line-through' : 'none', hasLoc: true, loc: a.kind === 'video' ? 'Video Call' : a.location, locBg: a.kind === 'video' ? 'var(--bg-info-subtle)' : 'var(--bg-success-subtle)', locInk: 'var(--text-primary)', locD: a.kind === 'video' ? ic.video : ic.pin, hasChip: true, chip: sm.label, chipBg: sm.bg, chipInk: sm.ink, chipDot: sm.dot, hasPay: !!pm, pay: pm ? pm.label : '', payBg: pm ? pm.bg : '', payInk: pm ? pm.ink : '', payDot: pm ? pm.dot : '', time: a.start + ' – ' + a.end, hasDur: mins > 5, dur: this.dur(mins), note: a.reason, noteInk: 'var(--text-secondary)', isDone: false, tags: !compact, showSummary: compact, summary: [a.kind === 'video' ? 'Video Call' : 'In clinic', sm.label].concat(pm ? [pm.label] : []).join(' · '), showNote: !compact, clamp: compact ? '1' : '2', open: () => act('push', { s: 'apptDetails', p: { id: a.id } }) };
+          })
+        };
+      });
+      // CalendarWeek (web, wide panes): time grid for the week of the selected day
+      const wide = !phone && !st.compact;
+      const view = wide ? (S.view || 'week') : 'day';
+      const wk = { on: view === 'week' };
+      if (wk.on) {
+        const DN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const mon = lib.addDays(day, -((lib.dow(day) + 6) % 7));
+        const dates = [0, 1, 2, 3, 4, 5, 6].map((i) => lib.addDays(mon, i));
+        const per = dates.map((d) => visible.map((did) => ({ did, rows: lib.agenda(st, d, did).rows })));
+        let lo = 8 * 60, hi = 18 * 60;
+        per.forEach((ds) => ds.forEach((x) => x.rows.forEach((r) => { if (r.type === 'block' && r.start === '00:00') return; lo = Math.min(lo, Math.floor(lib.toMin(r.start) / 60) * 60); hi = Math.max(hi, Math.ceil(lib.toMin(r.end === '24:00' ? '23:59' : r.end) / 60) * 60); })));
+        lo = Math.max(0, lo); hi = Math.min(24 * 60, Math.max(hi, lo + 4 * 60));
+        const px = 64 / 60; const lanes = visible.length;
+        const hours = []; for (let m = lo; m < hi; m += 60) hours.push(lib.pad(m / 60) + ':00');
+        const fmtD = (d) => lib.fmtDate ? lib.fmtDate(d) : d;
+        wk.n = 7; wk.h = ((hi - lo) * px) + 'px'; wk.hours = hours;
+        wk.label = fmtD(dates[0]) + ' – ' + fmtD(dates[6]);
+        wk.prev = () => { const d = lib.addDays(day, -7); this.setState({ day: d, month: d.slice(0, 7) }); };
+        wk.next = () => { const d = lib.addDays(day, 7); this.setState({ day: d, month: d.slice(0, 7) }); };
+        wk.days = dates.map((d, i) => {
+          const isToday = d === today, sel = d === day;
+          const evs = [];
+          per[i].forEach((x, li) => x.rows.forEach((r) => {
+            if (r.type === 'appt' && !F.appt) return; if (r.type === 'free' && !F.free) return; if (r.type === 'block' && !F.block && !staffView) return;
+            const s0 = r.start === '00:00' && r.type === 'block' ? lo : Math.max(lo, lib.toMin(r.start)); const e0 = r.type === 'block' && r.end === '24:00' ? hi : Math.min(hi, lib.toMin(r.end));
+            if (e0 <= s0) return;
+            const geo = { top: ((s0 - lo) * px + 1) + 'px', ht: Math.max(18, (e0 - s0) * px - 2) + 'px', l: 'calc(' + (li * 100 / lanes) + '% + 3px)', w: 'calc(' + (100 / lanes) + '% - 6px)', op: '1', strike: 'none' };
+            if (r.type === 'free') { if (d === today && r.min < st.nowMin) return; evs.push(Object.assign(geo, { cls: 'cl-b dr-ev dr-ev--free', title: '+ ' + r.start, sub: '', l: '0', w: '100%', top: ((s0 - lo) * px) + 'px', ht: ((e0 - s0) * px - 1) + 'px', aria: 'Free slot ' + r.start + '–' + r.end + ', ' + lib.fmtLong(d), open: () => act('push', { s: 'calBook', p: { day: d, start: r.start, end: r.end, loc: r.loc, doctorId: x.did } }) })); return; }
+            if (r.type === 'block') { evs.push(Object.assign(geo, { cls: 'cl-b dr-ev dr-ev--blocked', title: r.block.reason || 'Blocked', sub: r.start === '00:00' ? 'All day' : r.start + '–' + r.end, aria: 'Blocked: ' + (r.block.reason || '') + ', ' + lib.fmtLong(d), open: () => this.setSheet({ kind: 'blockDetail', id: r.block.id }) })); return; }
+            const a = r.appt; const pt = lib.patient(st, a.patientId); const nm = pt.name.split(' '); const short = nm.length > 1 ? nm[0][0] + '. ' + nm.slice(1).join(' ') : pt.name;
+            const now = d === today && lib.toMin(a.start) <= st.nowMin && lib.toMin(a.end) > st.nowMin && a.status !== 'CANCELLED';
+            const shortSlot = (e0 - s0) <= 30; evs.push(Object.assign(geo, { cls: 'cl-b dr-ev' + (now ? ' dr-ev--now' : (a.kind === 'video' ? ' dr-ev--video' : '')), title: short, sub: shortSlot ? '' : a.start + ' · ' + (a.kind === 'video' ? 'Video' : 'Clinic'), aria: pt.name + ', ' + a.start + '–' + a.end + ', ' + (lib.status[a.status] || {}).label + ', ' + lib.fmtLong(d), op: a.status === 'CANCELLED' ? '0.55' : '1', strike: a.status === 'CANCELLED' ? 'line-through' : 'none', open: () => act('push', { s: 'apptDetails', p: { id: a.id } }) }));
+          }));
+          const nowOn = isToday && st.nowMin >= lo && st.nowMin <= hi; return { nowOn, nowTop: ((st.nowMin - lo) * px) + 'px', dow: DN[i], n: String(Number(d.slice(8))), headCls: 'cl-b dr-week__head' + (isToday ? ' is-today' : '') + (sel ? ' is-selected' : ''), colCls: 'dr-week__col' + (isToday ? ' is-today' : ''), cur: isToday ? 'date' : 'false', aria: lib.fmtLong(d) + ' — open day', pick: () => this.setState({ day: d, month: d.slice(0, 7), view: 'day' }), evs };
+        });
+      }
+      const views = wide ? [['day', 'Day'], ['week', 'Week']].map(([k, l]) => ({ label: l, selStr: view === k ? 'true' : 'false', pick: () => this.setState({ view: k }) })) : [];
+      const tzMis = !staffView ? (st.phoneTz && st.phoneTz !== st.tz) : (st.phoneTz && st.phoneTz !== 'Asia/Tashkent');
+      const docName = staffView ? this.doctorMeta(docId).name : '';
+      Object.assign(out, {
+        wk, views, hasViews: wide, dayOn: !wk.on, isOwnCal: !staffView, isDoctorSched: staffView, calTitle: staffView ? docName : 'Calendar', h1Size: lib.h1(phone, st), titleBasis: phone ? '100%' : '200px', actsDisplay: phone ? 'grid' : 'flex', actsFlex: phone ? '1 1 100%' : 'none', actCls: phone ? 'cl-b dr-toolbtn' : 'cl-b sh-icon-btn sh-icon-btn--surface', todayCls: phone ? '' : 'sh-btn--compact',  chipWrap: phone ? 'nowrap' : 'wrap', chipMargin: phone ? '0 calc(-1 * var(--size-12))' : '0', chipPad: phone ? 'var(--size-2) var(--size-12)' : '0',
+        tzBanner: tzMis && !st.tzNoticeHidden, tzText: staffView ? 'Times are shown in the clinic’s timezone (Asia/Tashkent, UTC+5). Your phone is set to Europe/Berlin (UTC+1).' : 'Times are shown in your practice timezone (Asia/Tashkent, UTC+5). Your phone is set to Europe/Berlin (UTC+1).',
+        tzDismiss: () => act('set', { tzNoticeHidden: true }), tzFix: () => act('go', { tab: 'profile', s: 'setTimezone' }),
+        dayLong: lib.fmtLong(day) + (day === today ? ' · Today' : ''), notToday: day !== today, goToday: () => this.setState({ day: today, month: today.slice(0, 7) }),
+        refreshing: S.refreshing, refreshSpin: S.refreshing ? 'cl-spin .8s linear infinite' : 'none',
+        refresh: () => { if (S.refreshing) return; this.setState({ refreshing: true }); this.tr = setTimeout(() => { this.setState({ refreshing: false }); if (st.online === false) act('banner', { kind: 'warn', text: 'You’re offline. Showing saved data.' }); }, 900); },
+        openHours: () => act('push', { s: 'availability' }),
+        openBlock: () => this.setSheet({ kind: 'block', mode: 'day', from: day < today ? today : day, to: day < today ? today : day, s: '09:00', e: '17:00', reason: 'Emergency', cancelOv: true, err: '', busy: false }),
+        openFilter: () => this.setSheet({ kind: 'filter', draft: Object.assign({}, F) }), filterOn, filterAria: filterOn ? 'Filter, some items hidden' : 'Filter',
+        resetFilter: () => this.setState({ filter: { appt: true, free: true, block: true } }),
+        showStaff: member, staffChips: [{ id: 'me', name: 'My schedule', color: 'var(--chart-1)' }].concat(doctors.filter((d) => d.id !== 'me')).map((d) => { const sel = S.staffSel.indexOf(d.id) >= 0; return { label: d.id === 'me' ? 'My schedule' : d.name, color: sel ? d.color : 'var(--border-default)', sel, selStr: sel ? 'true' : 'false', border: sel ? d.color : 'var(--border-default)', bg: sel ? lib.tint(d.color, 12) : 'var(--bg-surface)', pick: () => { if (sel && S.staffSel.length === 1) { act('banner', { kind: 'info', text: 'At least one calendar stays visible.' }); return; } this.setState({ staffSel: sel ? S.staffSel.filter((x) => x !== d.id) : S.staffSel.concat([d.id]) }); } }; }),
+        monthLabel: lib.ML[m - 1] + ' ' + y, prevMonth: () => mv(-1), nextMonth: () => mv(1), weekLetters: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], cells,
+        monthMax: phone ? 'none' : '380px', monthPos: phone ? 'static' : 'sticky',
+        showEmptyCard: !!empty, empty: empty ? Object.assign(empty, { cls: 'sh-btn ' + (empty.primary ? 'sh-btn--primary' : 'sh-btn--secondary') }) : {},
+        sections, detailsBar: phone && !!sections.some((x) => x.rows.length), detailsLabel: S.details ? 'Hide details' : 'Show details', detailsStr: S.details ? 'true' : 'false', toggleDetails: () => this.setState({ details: !S.details })
+      });
+      // sheets used on the calendar
+      if (sh && sh.kind === 'filter') {
+        const D = sh.draft; const keys = staffView ? [['appt', 'Show appointments'], ['free', 'Show free slots']] : [['appt', 'Show appointments'], ['free', 'Show free slots'], ['block', 'Show blocked time']];
+        out.fOpts = keys.map(([k, l]) => ({ label: l, onStr: D[k] ? 'true' : 'false', border: D[k] ? 'var(--border-brand)' : 'var(--border-disabled)', bg: D[k] ? 'var(--interactive-primary)' : 'var(--bg-surface)', toggle: () => { const d = Object.assign({}, D); d[k] = !d[k]; this.setSheet(Object.assign({}, sh, { draft: d })); } }));
+        out.sheet = { isFilter: true, title: 'Filter', hasSub: false, max: '420px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.closeSheet(), primaryLabel: 'Apply', primaryBg: 'var(--interactive-primary)', primary: () => this.setState({ filter: D, sheet: null }), busy: false, busyStr: 'false' };
+      }
+      if (sh && sh.kind === 'block') {
+        const B = sh; const set = (patch) => this.setSheet(Object.assign({}, B, patch, { err: '' }));
+        let fromM = 0, toM = 1440, days = [B.from];
+        if (B.mode === 'range') { fromM = lib.toMin(B.s); toM = lib.toMin(B.e); }
+        if (B.mode === 'multi') { days = []; for (let d = B.from; d <= B.to && days.length < 400; d = lib.addDays(d, 1)) days.push(d); }
+        const ov = st.appointments.filter((a) => (a.doctorId || 'me') === 'me' && days.indexOf(a.day) >= 0 && ['CONFIRMED', 'REQUESTED', 'IN_PROGRESS'].indexOf(a.status) >= 0 && lib.toMin(a.start) < toM && lib.toMin(a.end) > fromM);
+        const reasons = ['Break', 'Vacation', 'Sick', 'Emergency', 'Personal'];
+        out.blk = {
+          modes: [['day', 'Day'], ['range', 'Hours'], ['multi', 'Several days']].map(([k, l]) => ({ label: l, selStr: B.mode === k ? 'true' : 'false', bg: B.mode === k ? 'var(--bg-surface)' : 'transparent', shadow: B.mode === k ? 'var(--shadow-dropdown)' : 'none', pick: () => set({ mode: k, to: k === 'multi' && B.to <= B.from ? lib.addDays(B.from, 4) : B.to }) })),
+          isDay: B.mode === 'day', isRange: B.mode === 'range', isMulti: B.mode === 'multi', from: B.from, to: B.to, s: B.s, e: B.e, min: today,
+          onFrom: (e) => { const v = e.target.value; set({ from: v, to: B.to < v ? v : B.to }); }, onTo: (e) => set({ to: e.target.value }), onS: (e) => set({ s: e.target.value }), onE: (e) => set({ e: e.target.value }),
+          timeBorder: B.err && B.mode === 'range' ? 'var(--border-error)' : 'var(--border-default)', dateBorder: B.err && B.mode === 'multi' ? 'var(--border-error)' : 'var(--border-default)', hasErr: !!B.err, err: B.err,
+          reasons: reasons.map((r) => ({ label: r, selStr: B.reason === r ? 'true' : 'false', bg: B.reason === r ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)', ring: B.reason === r ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => set({ reason: r }) })),
+          reason: B.reason, onReason: (e) => set({ reason: e.target.value }),
+          cancelStr: B.cancelOv ? 'true' : 'false', cbBorder: B.cancelOv ? 'var(--border-brand)' : 'var(--border-disabled)', cbBg: B.cancelOv ? 'var(--interactive-primary)' : 'var(--bg-surface)', toggleCancel: () => set({ cancelOv: !B.cancelOv }),
+          hasOverlap: ov.length > 0, ovBg: B.cancelOv ? 'var(--bg-error-subtle)' : 'var(--bg-warning-subtle)', ovBorder: B.cancelOv ? 'var(--border-error)' : 'var(--border-warning)', ovText: B.cancelOv ? ov.length + (ov.length === 1 ? ' appointment will be cancelled.' : ' appointments will be cancelled.') : 'Some existing appointments fall within this period.'
+        };
+        const doBlock = () => {
+          if (B.busy) return;
+          if (B.mode === 'range' && toM <= fromM) { this.setSheet(Object.assign({}, B, { err: 'End time must be after start time.' })); return; }
+          if (B.mode === 'multi' && B.to < B.from) { this.setSheet(Object.assign({}, B, { err: 'End date must be on or after start date.' })); return; }
+          this.setSheet(Object.assign({}, B, { busy: true }));
+          this.ts = setTimeout(() => {
+            if (st.online === false) { this.setSheet(Object.assign({}, B, { busy: false })); act('banner', { kind: 'error', text: 'Couldn’t block this time. Check your connection and try again.' }); return; }
+            const nb = days.map((d) => ({ id: lib.uid('B'), day: d, start: B.mode === 'range' ? B.s : '00:00', end: B.mode === 'range' ? B.e : '24:00', reason: (B.reason || '').trim() || 'Blocked' }));
+            const ids = ov.map((a) => a.id);
+            act('set', (s) => ({ blocks: s.blocks.concat(nb), appointments: B.cancelOv ? s.appointments.map((a) => ids.indexOf(a.id) >= 0 ? Object.assign({}, a, { status: 'CANCELLED' }) : a) : s.appointments }));
+            this.setState({ sheet: null });
+            act('banner', { kind: 'success', text: B.cancelOv && ids.length ? 'Time blocked. ' + ids.length + (ids.length === 1 ? ' appointment' : ' appointments') + ' cancelled.' : 'Time blocked successfully' });
+          }, 700);
+        };
+        out.sheet = { isBlock: true, title: 'Block time', hasSub: true, sub: 'Patients cannot book during blocked time.', max: '480px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.closeSheet(), primaryLabel: B.cancelOv && ov.length ? 'Block and cancel ' + ov.length : 'Block', primaryBg: B.cancelOv && ov.length ? 'var(--interactive-destructive)' : 'var(--interactive-primary)', primary: doBlock, busy: !!B.busy, busyStr: B.busy ? 'true' : 'false' };
+      }
+      if (sh && (sh.kind === 'blockDetail' || sh.kind === 'removeBlock')) {
+        const b = st.blocks.find((x) => x.id === sh.id);
+        if (!b) out.sheet = {};
+        else if (sh.kind === 'blockDetail') {
+          out.bd = { reason: b.reason || 'Blocked' };
+          out.sheet = { isBlockDetail: true, title: 'Blocked time', hasSub: true, sub: lib.fmtLong(b.day) + ' · ' + (b.start === '00:00' && b.end === '24:00' ? 'All day' : b.start + '–' + b.end) + ' · ' + this.dur(lib.toMin(b.end) - lib.toMin(b.start)), max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Close', secondary: () => this.closeSheet(), primaryLabel: 'Remove block', primaryBg: 'var(--interactive-destructive)', primary: () => this.setSheet({ kind: 'removeBlock', id: b.id }), busy: false, busyStr: 'false' };
+        } else {
+          out.sheet = { isConfirm: true, title: 'Remove block?', hasSub: false, body: 'Free slots will become available again on ' + lib.fmtDay(b.day) + '.', max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.setSheet({ kind: 'blockDetail', id: b.id }), primaryLabel: 'Remove block', primaryBg: 'var(--interactive-destructive)', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false',
+            primary: () => { if (sh.busy) return; this.setSheet(Object.assign({}, sh, { busy: true })); this.ts = setTimeout(() => { act('set', (s) => ({ blocks: s.blocks.filter((x) => x.id !== b.id) })); this.setState({ sheet: null }); act('banner', { kind: 'success', text: 'Block removed' }); }, 600); } };
+        }
+      }
+    }
+    // ================= BOOK =================
+    if (route.s === 'calBook') {
+      const key = JSON.stringify(rp);
+      const bk = S.bk && S.bk.key === key ? S.bk : { key, patientId: rp.patientId || '', place: rp.video ? 'video' : 'clinic', start: rp.start, end: rp.end, reason: '', dirty: false, patErr: false, saving: false };
+      const upd = (patch) => this.setState({ bk: Object.assign({}, bk, patch, { dirty: true }) });
+      const did = rp.doctorId || 'me';
+      const past = rp.day < st.today;
+      const freeRows = lib.agenda(st, rp.day, did).rows.filter((r) => r.type === 'free' && r.loc === rp.loc);
+      const starts = Array.from(new Set([rp.start].concat(freeRows.map((r) => r.start)))).sort();
+      const ends = this.chain(rp.day, bk.start, rp.loc, did); if (!ends.length) ends.push(bk.end);
+      const p = bk.patientId ? lib.patient(st, bk.patientId) : null;
+      const mins = lib.toMin(bk.end) - lib.toMin(bk.start);
+      const loc = st.locations.find((l) => l.id === rp.loc);
+      const leave = () => { if (bk.dirty) this.setSheet({ kind: 'discardBook' }); else act('back'); };
+      const create = () => {
+        const a = { id: lib.uid('A'), day: rp.day, start: bk.start, end: bk.end, patientId: bk.patientId, kind: bk.place === 'video' ? 'video' : 'clinic', status: 'CONFIRMED', reason: bk.reason.trim() || 'Consultation', location: bk.place === 'video' ? 'Video Call' : (loc ? loc.label : 'Clinic Address'), payment: bk.place === 'video' ? 'PENDING' : null, doctorId: did, notes: '', soap: { s: '', o: '', a: '', p: '' }, briefing: 'none', docsAttached: 0 };
+        this.setState({ bk: Object.assign({}, bk, { saving: true }), sheet: null });
+        this.ts = setTimeout(() => {
+          if (st.online === false) { this.setState({ bk: Object.assign({}, this.state.bk, { saving: false }) }); act('banner', { kind: 'error', text: 'Couldn’t book. Check your connection and try again.' }); return; }
+          const clash = st.appointments.some((x) => x.day === a.day && (x.doctorId || 'me') === did && x.status !== 'CANCELLED' && lib.toMin(x.start) < lib.toMin(a.end) && lib.toMin(x.end) > lib.toMin(a.start));
+          if (clash) { this.setState({ bk: Object.assign({}, this.state.bk, { saving: false }) }); act('banner', { kind: 'error', text: 'Selected time range is no longer fully available — calendar refreshed.' }); return; }
+          act('set', (s) => ({ appointments: s.appointments.concat([a]) }));
+          this.setState({ bk: null, day: rp.day, month: rp.day.slice(0, 7) });
+          act('back');
+          act('banner', { kind: 'success', text: 'Patient assigned: ' + lib.patient(st, a.patientId).name + ', ' + lib.fmtDay(a.day) + ' ' + a.start + '.' });
+        }, 800);
+      };
+      const save = () => {
+        if (past || bk.saving) return;
+        if (!bk.patientId) { this.setState({ bk: Object.assign({}, bk, { patErr: true }) }); return; }
+        if (mins <= 0) { act('banner', { kind: 'error', text: 'Selected end must be after the slot start.' }); return; }
+        if (p && p.chronic) { this.setSheet({ kind: 'chronicBook', name: p.name, disease: p.chronic, go: create }); return; }
+        create();
+      };
+      const docName = did === 'me' ? '' : this.doctorMeta(did).name;
+      Object.assign(out, {
+        bk: {
+          headLine: lib.fmtLong(rp.day) + ' · ' + bk.start + '–' + bk.end, forColleague: did !== 'me', doctorName: docName, past, open: !past,
+          hasPatient: !!p, noPatient: !p, patIni: p ? lib.initials(p.name) : '', patLine: p ? 'Selected: ' + p.name : 'Choose who this visit is for', patErr: bk.patErr && !p, patBorder: bk.patErr && !p ? '2px solid var(--border-error)' : '0',
+          places: [['clinic', 'In clinic', ic.pin], ['video', 'Video Call', ic.video]].map(([k, l, d]) => ({ label: l, d, selStr: bk.place === k ? 'true' : 'false', border: bk.place === k ? 'var(--border-brand)' : 'var(--border-default)', bg: bk.place === k ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', pick: () => upd({ place: k }) })),
+          placeHint: bk.place === 'video' ? 'Will be booked as a video call. The patient pays online before joining.' : 'Will be booked at ' + (loc ? loc.label : 'the clinic') + '.',
+          start: bk.start, end: bk.end, starts, ends, onStart: (e) => { const v = e.target.value; const row = freeRows.find((r) => r.start === v); upd({ start: v, end: row ? row.end : lib.hm(lib.toMin(v) + 30) }); }, onEnd: (e) => upd({ end: e.target.value }),
+          dur: this.dur(Math.max(0, mins)), reason: bk.reason, onReason: (e) => upd({ reason: e.target.value }),
+          saving: bk.saving, offStr: past ? 'true' : 'false', saveBg: past ? 'var(--bg-disabled)' : 'var(--interactive-primary)', saveInk: past ? 'var(--text-tertiary)' : 'var(--text-inverse)', saveShadow: past ? 'none' : 'var(--shadow-dropdown)'
+        },
+        bookBack: leave, saveBook: save,
+        openPicker: () => { if (!past) this.setSheet({ kind: 'picker', q: '' }); }
+      });
+      if (sh && sh.kind === 'picker') {
+        const q = sh.q.trim().toLowerCase();
+        const list = st.patients.filter((x) => !q || x.name.toLowerCase().indexOf(q) >= 0 || x.id.toLowerCase().indexOf(q) >= 0).sort((a, b) => a.name.localeCompare(b.name));
+        out.pk = { q: sh.q, onQ: (e) => this.setSheet(Object.assign({}, sh, { q: e.target.value })), list: list.map((x) => ({ id: x.id, name: x.name, ini: lib.initials(x.name), chronic: !!x.chronic, selStr: x.id === bk.patientId ? 'true' : 'false', pick: () => this.setState({ sheet: null, bk: Object.assign({}, bk, { patientId: x.id, patErr: false, dirty: true }) }) })), empty: !list.length, newPat: () => this.setSheet({ kind: 'newPat', first: '', last: '', phone: '', dob: '', err: '' }) };
+        out.sheet = { isPicker: true, title: 'Assign Patient', hasSub: false, max: '520px', close: () => this.closeSheet(), hasActions: false };
+      }
+      if (sh && sh.kind === 'newPat') {
+        const N = sh; const set = (k) => (e) => { const o = Object.assign({}, N, { err: '' }); o[k] = e.target.value; this.setSheet(o); };
+        out.np = { first: N.first, last: N.last, phone: N.phone, dob: N.dob, max: st.today, onFirst: set('first'), onLast: set('last'), onPhone: set('phone'), onDob: set('dob'), hasErr: !!N.err, err: N.err, firstBorder: N.err && !N.first.trim() ? 'var(--border-error)' : 'var(--border-default)', lastBorder: N.err && !N.last.trim() ? 'var(--border-error)' : 'var(--border-default)', phoneBorder: N.err && N.phone.replace(/\D/g, '').length < 9 ? 'var(--border-error)' : 'var(--border-default)' };
+        const createP = () => {
+          if (!N.first.trim() || !N.last.trim()) { this.setSheet(Object.assign({}, N, { err: 'Enter first and last name.' })); return; }
+          if (N.phone.replace(/\D/g, '').length < 9) { this.setSheet(Object.assign({}, N, { err: 'Enter a valid phone number.' })); return; }
+          const np = { id: 'P-' + (100 + st.patients.length + 13), name: N.first.trim() + ' ' + N.last.trim(), gender: '', dob: N.dob, phones: [N.phone.trim()], blood: '', allergies: '', chronic: '', status: 'ACTIVE', lang: '', email: '', address: '', createdBy: 'me', portal: false, createdOn: st.today };
+          act('set', (s) => ({ patients: s.patients.concat([np]) }));
+          this.setState({ sheet: null, bk: Object.assign({}, bk, { patientId: np.id, patErr: false, dirty: true }) });
+          act('banner', { kind: 'success', text: 'Patient created: ' + np.name });
+        };
+        out.sheet = { isNewPat: true, title: 'New patient', hasSub: true, sub: 'You can add the rest of the details later in Patients.', max: '480px', close: () => this.setSheet({ kind: 'picker', q: '' }), hasActions: true, hasSecondary: true, secondaryLabel: 'Back', secondary: () => this.setSheet({ kind: 'picker', q: '' }), primaryLabel: 'Create patient', primaryBg: 'var(--interactive-primary)', primary: createP, busy: false, busyStr: 'false' };
+      }
+      if (sh && sh.kind === 'chronicBook') out.sheet = { isConfirm: true, title: 'Patient with Chronic Disease', hasSub: false, body: sh.name + ' has a chronic disease: ' + sh.disease + '. Please take extra care when planning this appointment.', max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: false, primaryLabel: 'OK, book it', primaryBg: 'var(--interactive-primary)', primary: sh.go, busy: false, busyStr: 'false' };
+      if (sh && sh.kind === 'discardBook') out.sheet = { isConfirm: true, title: 'Discard changes?', hasSub: false, body: 'You have unsaved changes. Discard them?', max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Keep editing', secondary: () => this.closeSheet(), primaryLabel: 'Discard', primaryBg: 'var(--interactive-destructive)', primary: () => { this.setState({ sheet: null, bk: null }); act('back'); }, busy: false, busyStr: 'false' };
+    }
+    // ================= WORKING HOURS =================
+    if (route.s === 'availability') {
+      const locs = st.locations;
+      const avLoc = S.avLoc && locs.find((l) => l.id === S.avLoc) ? S.avLoc : ((locs.find((l) => l.primary) || locs[0] || {}).id || '');
+      const draft = S.av || { schedule: JSON.parse(JSON.stringify(st.schedule)), dirty: false, dsOpen: !!rp.addDate, saving: false };
+      const sch = draft.schedule;
+      const setD = (fn) => { const d = JSON.parse(JSON.stringify(sch)); fn(d); this.setState({ av: Object.assign({}, draft, { schedule: d, dirty: true }) }); };
+      const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const sum = (rs) => rs.map((r) => r.s + '–' + r.e).join(', ') + (rs.length ? ' · ' + Array.from(new Set(rs.map((r) => r.slot))).map((x) => x + ' min').join(', ') : '');
+      const locName = (id) => (locs.find((l) => l.id === id) || {}).label || 'another location';
+      const days = [1, 2, 3, 4, 5, 6, 0].map((d, i) => {
+        const here = (sch.week[d] || []).filter((r) => r.loc === avLoc); const other = (sch.week[d] || []).filter((r) => r.loc !== avLoc);
+        const on = here.length > 0;
+        return { name: names[d], on, onStr: on ? 'true' : 'false', toggleLabel: names[d] + (on ? ', working' : ', day off'), trackBg: on ? 'var(--interactive-primary)' : 'var(--bg-disabled)', knobLeft: on ? '21px' : '3px', summary: on ? sum(here) : 'Off', sumInk: on ? 'var(--text-primary)' : 'var(--text-tertiary)', hasOther: other.length > 0, other: 'Also ' + other.map((r) => r.s + '–' + r.e).join(', ') + ' at ' + locName(other[0] && other[0].loc), divider: i ? '1px solid var(--border-default)' : '0',
+          toggle: () => { if (!avLoc) { act('banner', { kind: 'warn', text: 'Add a location first.' }); return; } if (on) this.setSheet({ kind: 'dayOff', d }); else setD((x) => { x.week[d] = (x.week[d] || []).concat([{ s: '09:00', e: '13:00', loc: avLoc, slot: 30 }, { s: '14:00', e: '18:00', loc: avLoc, slot: 30 }]); }); },
+          edit: () => this.setSheet({ kind: 'dayEdit', d }) };
+      });
+      const maxTo = lib.addDays(st.today, 365);
+      const validErr = sch.validTo < sch.validFrom ? 'The end date is before the start date.' : (sch.validTo > maxTo ? 'A schedule can run at most one year ahead.' : '');
+      const dsList = sch.dateSpecific.filter((x) => x.loc === avLoc).sort((a, b) => a.day.localeCompare(b.day));
+      const save = () => {
+        if (draft.saving) return;
+        if (validErr) { act('banner', { kind: 'error', text: validErr }); return; }
+        this.setState({ av: Object.assign({}, draft, { saving: true }) });
+        this.ts = setTimeout(() => {
+          if (st.online === false) { this.setState({ av: Object.assign({}, this.state.av, { saving: false }) }); act('banner', { kind: 'error', text: 'Couldn’t save your hours. Check your connection and try again.' }); return; }
+          act('set', (s) => ({ schedule: sch, onboard: Object.assign({}, s.onboard, { avail: true }) }));
+          this.setState({ av: null }); act('back'); act('banner', { kind: 'success', text: 'Working hours saved. Patients can book the new slots now.' });
+        }, 800);
+      };
+      Object.assign(out, {
+        avBack: () => { if (draft.dirty) this.setSheet({ kind: 'discardAv' }); else { this.setState({ av: null }); act('back'); } },
+        openLocations: () => act('push', { s: 'locations' }),
+        av: {
+          noLoc: !locs.length,
+          locChips: locs.map((l) => ({ label: l.label + (l.primary ? ' ★' : ''), selStr: l.id === avLoc ? 'true' : 'false', border: l.id === avLoc ? 'var(--border-brand)' : 'var(--border-default)', bg: l.id === avLoc ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', pick: () => this.setState({ avLoc: l.id, av: draft }) })),
+          from: sch.validFrom, to: sch.validTo, minFrom: lib.addDays(st.today, -365), maxTo, toBorder: validErr || rp.focus === 'until' ? (validErr ? 'var(--border-error)' : 'var(--border-brand)') : 'var(--border-default)',
+          onFrom: (e) => setD((x) => { x.validFrom = e.target.value; }), onTo: (e) => setD((x) => { x.validTo = e.target.value; }),
+          validNote: validErr || ('Patients can book up to ' + lib.fmtDate(sch.validTo) + '.'), validInk: validErr ? 'var(--text-error)' : 'var(--text-secondary)', validWeight: validErr ? 700 : 500,
+          days,
+          dsOpen: draft.dsOpen, dsOpenStr: draft.dsOpen ? 'true' : 'false', dsChev: draft.dsOpen ? '180deg' : '0deg', dsCount: dsList.length ? String(dsList.length) : '', toggleDs: () => this.setState({ av: Object.assign({}, draft, { dsOpen: !draft.dsOpen }) }),
+          ds: dsList.map((x) => ({ date: lib.fmtLong(x.day), line: x.s + '–' + x.e + ' · ' + x.slot + ' min slots', opacity: x.day < st.today ? '0.5' : '1', delLabel: 'Remove extra hours on ' + lib.fmtDay(x.day), del: () => this.setSheet({ kind: 'dsDel', id: x.id }) })), dsEmpty: !dsList.length,
+          addDs: () => this.setSheet({ kind: 'dsAdd', day: rp.addDate || lib.addDays(st.today, 1), s: '17:00', e: '20:00', slot: 30, err: '' }),
+          save, saving: draft.saving, dirtyNote: draft.dirty ? 'Unsaved changes' : ''
+        }
+      });
+      if (rp.addDate && !S.dsAutoOpened) { this.state.dsAutoOpened = true; setTimeout(() => this.setSheet({ kind: 'dsAdd', day: rp.addDate, s: '10:00', e: '14:00', slot: 30, err: '' }), 50); }
+      const slotChips = (cur, pick) => [10, 15, 20, 30, 45, 60].map((n) => ({ label: n + ' min', selStr: cur === n ? 'true' : 'false', bg: cur === n ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)', ring: cur === n ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => pick(n) }));
+      if (sh && sh.kind === 'dayEdit') {
+        const d = sh.d; const all = sch.week[d] || []; const idx = all.map((r, i) => (r.loc === avLoc ? i : -1)).filter((i) => i >= 0);
+        const here = idx.map((i) => all[i]);
+        const errs = here.map((r, k) => { if (lib.toMin(r.e) <= lib.toMin(r.s)) return 'End must be after start.'; const clash = here.some((o, j) => j !== k && lib.toMin(o.s) < lib.toMin(r.e) && lib.toMin(o.e) > lib.toMin(r.s)) || (sch.week[d] || []).some((o) => o.loc !== avLoc && lib.toMin(o.s) < lib.toMin(r.e) && lib.toMin(o.e) > lib.toMin(r.s)); return clash ? 'These hours overlap other hours on this day.' : ''; });
+        out.de = {
+          ranges: here.map((r, k) => { const i = idx[k]; const n = Math.max(0, Math.floor((lib.toMin(r.e) - lib.toMin(r.s)) / r.slot)); return { s: r.s, e: r.e, border: errs[k] ? 'var(--border-error)' : 'var(--border-default)', onS: (e) => setD((x) => { x.week[d][i].s = e.target.value; }), onE: (e) => setD((x) => { x.week[d][i].e = e.target.value; }), remove: () => setD((x) => { x.week[d].splice(i, 1); }), slots: slotChips(r.slot, (v) => setD((x) => { x.week[d][i].slot = v; })), note: errs[k] || (r.s + '–' + r.e + ' → ' + n + (n === 1 ? ' slot' : ' slots') + ' of ' + r.slot + ' min'), noteInk: errs[k] ? 'var(--text-error)' : 'var(--text-secondary)', noteWeight: errs[k] ? 700 : 500 }; }),
+          empty: !here.length,
+          add: () => setD((x) => { const last = here[here.length - 1]; const s0 = last ? last.e : '09:00'; const e0 = lib.hm(Math.min(1440, lib.toMin(s0) + 240)); x.week[d] = (x.week[d] || []).concat([{ s: s0, e: e0, loc: avLoc, slot: last ? last.slot : 30 }]); }),
+          copyOpts: [1, 2, 3, 4, 5, 6, 0].filter((o) => o !== d && (sch.week[o] || []).some((r) => r.loc === avLoc)).map((o) => ({ v: String(o), l: names[o] })),
+          copy: (e) => { const o = +e.target.value; if (e.target.value === '') return; setD((x) => { x.week[d] = (x.week[d] || []).filter((r) => r.loc !== avLoc).concat((x.week[o] || []).filter((r) => r.loc === avLoc).map((r) => Object.assign({}, r))); }); act('banner', { kind: 'success', text: 'Copied ' + names[o] + '’s hours to ' + names[d] + '.' }); }
+        };
+        const bad = errs.some(Boolean);
+        out.sheet = { isDayEdit: true, title: names[d], hasSub: true, sub: 'Hours at ' + locName(avLoc), max: '520px', close: () => (bad ? act('banner', { kind: 'error', text: 'Fix the highlighted hours first.' }) : this.closeSheet()), hasActions: true, hasSecondary: false, primaryLabel: 'Done', primaryBg: 'var(--interactive-primary)', primary: () => (bad ? act('banner', { kind: 'error', text: 'Fix the highlighted hours first.' }) : this.closeSheet()), busy: false, busyStr: 'false' };
+      }
+      if (sh && sh.kind === 'dayOff') out.sheet = { isConfirm: true, title: 'Make ' + names[sh.d] + ' a day off?', hasSub: false, body: 'Its hours at ' + locName(avLoc) + ' will be removed when you save. Booked appointments stay.', max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.closeSheet(), primaryLabel: 'Day off', primaryBg: 'var(--interactive-destructive)', primary: () => { setD((x) => { x.week[sh.d] = (x.week[sh.d] || []).filter((r) => r.loc !== avLoc); }); this.setState({ sheet: null }); }, busy: false, busyStr: 'false' };
+      if (sh && sh.kind === 'dsAdd') {
+        const A = sh; const set = (patch) => this.setSheet(Object.assign({}, A, patch, { err: '' }));
+        out.dsa = { day: A.day, s: A.s, e: A.e, min: st.today, onDay: (e) => set({ day: e.target.value }), onS: (e) => set({ s: e.target.value }), onE: (e) => set({ e: e.target.value }), slots: slotChips(A.slot, (v) => set({ slot: v })), note: A.err || (A.s + '–' + A.e + ' → ' + Math.max(0, Math.floor((lib.toMin(A.e) - lib.toMin(A.s)) / A.slot)) + ' slots'), noteInk: A.err ? 'var(--text-error)' : 'var(--text-secondary)' };
+        const add = () => {
+          if (!A.day || A.day < st.today) { this.setSheet(Object.assign({}, A, { err: 'Choose today or a later date.' })); return; }
+          if (lib.toMin(A.e) <= lib.toMin(A.s)) { this.setSheet(Object.assign({}, A, { err: 'End must be after start.' })); return; }
+          const inValid = A.day >= sch.validFrom && A.day <= sch.validTo; const wk = inValid ? (sch.week[lib.dow(A.day)] || []) : [];
+          const clash = wk.concat(sch.dateSpecific.filter((x) => x.day === A.day)).some((r) => lib.toMin(r.s) < lib.toMin(A.e) && lib.toMin(r.e) > lib.toMin(A.s));
+          if (clash) { this.setSheet(Object.assign({}, A, { err: 'These hours overlap hours that already exist on that day.' })); return; }
+          const item = { id: lib.uid('DS'), day: A.day, s: A.s, e: A.e, loc: avLoc, slot: A.slot };
+          act('set', (s) => ({ schedule: Object.assign({}, s.schedule, { dateSpecific: s.schedule.dateSpecific.concat([item]) }) }));
+          const d2 = JSON.parse(JSON.stringify(sch)); d2.dateSpecific.push(item); this.setState({ sheet: null, av: Object.assign({}, draft, { schedule: d2, dsOpen: true }) });
+          act('banner', { kind: 'success', text: 'Extra hours added for ' + lib.fmtDay(A.day) + '.' });
+        };
+        out.sheet = { isDsAdd: true, title: 'Extra hours', hasSub: true, sub: 'At ' + locName(avLoc), max: '480px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.closeSheet(), primaryLabel: 'Add', primaryBg: 'var(--interactive-primary)', primary: add, busy: false, busyStr: 'false' };
+      }
+      if (sh && sh.kind === 'dsDel') {
+        const x = sch.dateSpecific.find((q) => q.id === sh.id) || {};
+        out.sheet = { isConfirm: true, title: 'Remove extra hours?', hasSub: false, body: 'Remove extra hours on ' + (x.day ? lib.fmtLong(x.day) : '') + ' (' + x.s + '–' + x.e + ')? Booked appointments stay.', max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.closeSheet(), primaryLabel: 'Remove', primaryBg: 'var(--interactive-destructive)', busy: false, busyStr: 'false',
+          primary: () => { act('set', (s) => ({ schedule: Object.assign({}, s.schedule, { dateSpecific: s.schedule.dateSpecific.filter((q) => q.id !== sh.id) }) })); const d2 = JSON.parse(JSON.stringify(sch)); d2.dateSpecific = d2.dateSpecific.filter((q) => q.id !== sh.id); this.setState({ sheet: null, av: Object.assign({}, draft, { schedule: d2 }) }); act('banner', { kind: 'success', text: 'Extra hours removed.' }); } };
+      }
+      if (sh && sh.kind === 'discardAv') out.sheet = { isConfirm: true, title: 'Discard changes?', hasSub: false, body: 'Your changes to working hours have not been saved.', max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Keep editing', secondary: () => this.closeSheet(), primaryLabel: 'Discard', primaryBg: 'var(--interactive-destructive)', primary: () => { this.setState({ sheet: null, av: null }); act('back'); }, busy: false, busyStr: 'false' };
+    }
+    // ================= LOCATIONS =================
+    if (route.s === 'locations') {
+      const used = (id) => Object.keys(st.schedule.week).some((k) => st.schedule.week[k].some((r) => r.loc === id)) || st.schedule.dateSpecific.some((x) => x.loc === id);
+      Object.assign(out, {
+        locs: st.locations.map((l) => ({ label: l.label, primary: !!l.primary, clinic: l.clinic, hasClinic: !!l.clinic, address: l.address || 'No address', usage: used(l.id) ? 'Has working hours' : 'No working hours yet', editLabel: 'Edit ' + l.label, delLabel: 'Delete ' + l.label, edit: () => this.setSheet({ kind: 'locEdit', id: l.id, label: l.label, clinic: l.clinic, address: l.address, primary: !!l.primary, err: false }), del: () => this.setSheet({ kind: 'locDel', id: l.id }) })),
+        noLocs: !st.locations.length, addLoc: () => this.setSheet({ kind: 'locEdit', id: null, label: '', clinic: '', address: '', primary: !st.locations.length, err: false })
+      });
+      if (sh && sh.kind === 'locEdit') {
+        const L = sh; const set = (k) => (e) => { const o = Object.assign({}, L, { err: false }); o[k] = e.target.value; this.setSheet(o); };
+        out.le = { label: L.label, clinic: L.clinic, address: L.address, onLabel: set('label'), onClinic: set('clinic'), onAddress: set('address'), labelBorder: L.err ? 'var(--border-error)' : 'var(--border-default)', hasErr: L.err, primaryStr: L.primary ? 'true' : 'false', track: L.primary ? 'var(--interactive-primary)' : 'var(--bg-disabled)', knob: L.primary ? '21px' : '3px', togglePrimary: () => this.setSheet(Object.assign({}, L, { primary: !L.primary })) };
+        const saveL = () => {
+          if (!L.label.trim()) { this.setSheet(Object.assign({}, L, { err: true })); return; }
+          const item = { id: L.id || lib.uid('L'), label: L.label.trim(), clinic: L.clinic.trim(), address: L.address.trim(), primary: L.primary };
+          act('set', (s) => { let ls = L.id ? s.locations.map((x) => (x.id === L.id ? item : x)) : s.locations.concat([item]); if (item.primary) ls = ls.map((x) => Object.assign({}, x, { primary: x.id === item.id })); if (!ls.some((x) => x.primary) && ls.length) ls[0] = Object.assign({}, ls[0], { primary: true }); return { locations: ls }; });
+          this.setState({ sheet: null }); act('banner', { kind: 'success', text: L.id ? 'Location updated.' : 'Location added.' });
+        };
+        out.sheet = { isLocEdit: true, title: L.id ? 'Edit location' : 'Add location', hasSub: false, max: '520px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.closeSheet(), primaryLabel: 'Save', primaryBg: 'var(--interactive-primary)', primary: saveL, busy: false, busyStr: 'false' };
+      }
+      if (sh && sh.kind === 'locDel') {
+        const l = st.locations.find((x) => x.id === sh.id) || {};
+        out.sheet = { isConfirm: true, title: 'Delete location?', hasSub: false, body: 'Delete “' + l.label + '”? Working hours and appointments at this location must be removed first.', max: '440px', close: () => this.closeSheet(), hasActions: true, hasSecondary: true, secondaryLabel: 'Cancel', secondary: () => this.closeSheet(), primaryLabel: 'Delete', primaryBg: 'var(--interactive-destructive)', busy: false, busyStr: 'false',
+          primary: () => { if (used(l.id)) { this.setState({ sheet: null }); act('banner', { kind: 'error', text: 'Remove the working hours at “' + l.label + '” first.' }); return; } act('set', (s) => { let ls = s.locations.filter((x) => x.id !== l.id); if (l.primary && ls.length) ls = ls.map((x, i) => Object.assign({}, x, { primary: i === 0 })); return { locations: ls }; }); this.setState({ sheet: null }); act('banner', { kind: 'success', text: 'Location deleted.' }); } };
+      }
+    }
+    out.hasSheet = !!(sh && out.sheet && out.sheet.title);
+    if (out.hasSheet) out.sheet = Object.assign({ isFilter: false, isBlock: false, isBlockDetail: false, isDayEdit: false, isDsAdd: false, isLocEdit: false, isPicker: false, isNewPat: false, isConfirm: false, hasActions: true, hasSecondary: false, body: '', sub: '', hasSub: false, busy: false, busyStr: 'false' }, out.sheet);
+    return out;
+  }
+}
+</script>
+</body>
+</html>

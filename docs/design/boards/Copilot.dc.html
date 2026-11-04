@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AiCopilot</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes cp-dot{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.cp-bar:focus-within{border-color:#00bbb0 !important}
+.cp-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+.cp-pill:hover{background:#e5f8f7 !important}
+.cp-input::placeholder{color:#7d8282}
+</style>
+</helmet>
+<div style="width: 100%; height: {{rootH}}; box-sizing: border-box; color: #272727; font-family: Manrope, system-ui, sans-serif">
+  <sc-if value="{{minimised}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; justify-content: flex-end; padding: 16px">
+      <button class="cp-btn" onClick="{{expand}}" aria-label="Open Shifa AI" style="width: 56px; height: 56px; border: 0; border-radius: 999px; background: #00bbb0; box-shadow: 0 0 0 6px #00bbb040, 0 0 16px #00000026; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>
+      </button>
+    </div>
+  </sc-if>
+  <sc-if value="{{open}}" hint-placeholder-val="{{ true }}">
+    <section aria-label="{{title}}" style="height: 100%; min-height: {{minH}}; box-sizing: border-box; display: flex; flex-direction: column; background: #ffffff; border-radius: {{radius}}; box-shadow: {{shadow}}; overflow: hidden">
+      <sc-if value="{{tray}}" hint-placeholder-val="{{ false }}">
+        <span aria-hidden="true" style="display: block; width: 36px; height: 4px; border-radius: 999px; background: #e8e8e8; margin: 8px auto 0"></span>
+      </sc-if>
+      <header style="display: flex; align-items: center; gap: 10px; padding: 16px">
+        <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 999px; background: #00bbb0; box-shadow: 0 0 0 4px #00bbb040; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; flex: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg>
+        </span>
+        <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <h2 style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: -1px">{{title}}</h2>
+          <span style="font-size: 12px; line-height: 14px; font-weight: 500; color: #494d4c">{{subtitle}}</span>
+        </div>
+        <span style="background: #f2f3f2; font-size: 12px; line-height: 16px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis">{{scope}}</span>
+        <button class="cp-btn" onClick="{{collapse}}" aria-label="{{collapseLabel}}" style="width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f2f3f2; color: #494d4c; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none">
+          <sc-if value="{{tray}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></sc-if>
+          <sc-if value="{{docked}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></sc-if>
+        </button>
+      </header>
+      <div aria-live="polite" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px">
+        <sc-if value="{{noMsgs}}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; color: #494d4c">{{intro}}</p>
+        </sc-if>
+        <sc-for list="{{msgs}}" as="m" hint-placeholder-count="0">
+          <sc-if value="{{m.isUser}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 0; align-self: flex-end; max-width: 85%; background: #0000000d; border-radius: 16px; padding: 10px 14px; font-size: 14px; line-height: 20px; font-weight: 500">{{m.text}}</p>
+          </sc-if>
+          <sc-if value="{{m.isAi}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 6px; max-width: 92%">
+              <div style="background: #00bbb040; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+                <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 700">{{m.heading}}</p>
+                <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 20px; font-weight: 400">
+                  <sc-for list="{{m.bullets}}" as="b" hint-placeholder-count="3"><li>{{b}}</li></sc-for>
+                </ul>
+              </div>
+              <p style="margin: 0; font-size: 10px; line-height: 14px; color: #494d4c">Shifa AI provides general information only. It is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+            </div>
+          </sc-if>
+        </sc-for>
+        <sc-if value="{{streaming}}" hint-placeholder-val="{{ false }}">
+          <div style="align-self: flex-start; background: #00bbb040; border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 500; color: #494d4c">
+            AI will respond here…
+            <span aria-hidden="true" style="display: inline-flex; gap: 3px">
+              <span style="width: 5px; height: 5px; border-radius: 999px; background: #272727; animation: cp-dot 1.2s infinite"></span>
+              <span style="width: 5px; height: 5px; border-radius: 999px; background: #272727; animation: cp-dot 1.2s .2s infinite"></span>
+              <span style="width: 5px; height: 5px; border-radius: 999px; background: #272727; animation: cp-dot 1.2s .4s infinite"></span>
+            </span>
+          </div>
+        </sc-if>
+        <sc-if value="{{showSuggestions}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{suggestions}}" as="s" hint-placeholder-count="3">
+              <button class="cp-pill cp-btn" onClick="{{s.ask}}" style="border: 1px solid #00bbb0; background: #ffffff; color: #00bbb0; border-radius: 999px; padding: 8px 12px; font: 700 12px/16px Manrope, system-ui, sans-serif; cursor: pointer">{{s.label}}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <form onSubmit="{{submit}}" style="display: flex; gap: 8px; align-items: center; padding: 12px 16px {{composerBottom}}; border-top: 1px solid #e8e8e8; margin: 0">
+        <label class="cp-bar" style="flex: 1 1 auto; min-width: 0; height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 16px; border: 2px solid #e8e8e8; border-radius: 999px; background: #ffffff">
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Ask Shifa AI</span>
+          <input class="cp-input" value="{{draft}}" onChange="{{onDraft}}" placeholder="{{placeholder}}" style="flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; font: 600 14px/16px Manrope, system-ui, sans-serif; color: #272727">
+          <button type="button" class="cp-btn" aria-label="Ask by voice" style="width: 32px; height: 32px; border: 0; border-radius: 999px; background: transparent; color: #494d4c; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"></path></svg>
+          </button>
+        </label>
+        <button type="submit" class="cp-btn" aria-label="Send" style="width: 44px; height: 44px; border: 0; border-radius: 999px; background: {{sendBg}}; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"></path></svg>
+        </button>
+      </form>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;docked&quot;,&quot;tray&quot;],&quot;default&quot;:&quot;docked&quot;},&quot;scope&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;All patients&quot;,&quot;Jasur Tursunov&quot;],&quot;default&quot;:&quot;All patients&quot;},&quot;preset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;empty&quot;,&quot;streaming&quot;,&quot;answered&quot;,&quot;minimised&quot;],&quot;default&quot;:&quot;empty&quot;},&quot;onCollapse&quot;:{&quot;editor&quot;:null},&quot;$preview&quot;:{&quot;width&quot;:400,&quot;height&quot;:760}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const scope = props.scope ?? 'All patients';
+    const first = scope === 'All patients' ? 'Summarise today' : 'Treatment options';
+    const preset = props.preset ?? 'empty';
+    let msgs = [];
+    if (preset === 'streaming') msgs = [{ role: 'user', text: first }];
+    if (preset === 'answered') msgs = [{ role: 'user', text: first }, { role: 'ai', key: first }];
+    this.state = { msgs, streaming: preset === 'streaming', draft: '', min: preset === 'minimised' };
+  }
+  componentWillUnmount() { clearTimeout(this.t); }
+  answers() {
+    return {
+      'Summarise today': { heading: 'Today at a glance', bullets: ['5 appointments: 3 video calls, 2 in clinic. 2 are done.', 'Dilnoza Yusupova (10:30) has a penicillin allergy on file.', 'Jasur Tursunov (11:00): possible clarithromycin and simvastatin interaction.', 'Nodira Xasanova (14:00) has not paid yet.'] },
+      'Who needs follow-up': { heading: 'Follow-up suggested', bullets: ['Bekzod Rahimov: HbA1c higher than last result. Within two weeks.', 'Malika Ergasheva: asked for a call back about her ECG.'] },
+      'Overdue results': { heading: 'Results still pending', bullets: ['Nodira Xasanova: lipid panel ordered 12 days ago.', 'Jasur Tursunov: kidney function test due before his visit.'] },
+      'Refine diagnosis': { heading: 'From his last 3 documents', bullets: ['Cough for 10 days with low-grade fever.', 'Chest X-ray on 18 October reported no consolidation.', 'Worth checking whether an antibiotic is still needed.'] },
+      'Treatment options': { heading: 'Points to review', bullets: ['Clarithromycin raises simvastatin levels and the risk of muscle damage.', 'Common options: pause the statin during the course, or choose an antibiotic without this interaction.', 'Confirm against current guidelines and his kidney function.'] },
+      'When to worry': { heading: 'Signs to act on', bullets: ['Muscle pain, weakness or dark urine.', 'Shortness of breath at rest or chest pain.', 'Fever above 38.5 °C for more than 3 days.'] }
+    };
+  }
+  ask(text) {
+    if (!text || this.state.streaming) return;
+    this.setState({ msgs: this.state.msgs.concat([{ role: 'user', text }]), streaming: true, draft: '' });
+    clearTimeout(this.t);
+    this.t = setTimeout(() => this.setState({ streaming: false, msgs: this.state.msgs.concat([{ role: 'ai', key: text }]) }), 1100);
+  }
+  renderVals() {
+    const tray = (this.props.layout ?? 'docked') === 'tray';
+    const scope = this.props.scope ?? 'All patients';
+    const all = scope === 'All patients';
+    const A = this.answers();
+    const msgs = this.state.msgs.map((m) => {
+      if (m.role === 'user') return { isUser: true, isAi: false, text: m.text, heading: '', bullets: [] };
+      const a = A[m.key] || { heading: 'Answer', bullets: ['[Shifa AI answer to “' + m.key + '”]'] };
+      return { isUser: false, isAi: true, text: '', heading: a.heading, bullets: a.bullets };
+    });
+    const labels = all ? ['Summarise today', 'Who needs follow-up', 'Overdue results'] : ['Refine diagnosis', 'Treatment options', 'When to worry'];
+    const asked = this.state.msgs.filter((m) => m.role === 'user').map((m) => m.text);
+    const sug = labels.filter((l) => asked.indexOf(l) < 0).map((l) => ({ label: l, ask: () => this.ask(l) }));
+    return {
+      tray, docked: !tray,
+      minimised: this.state.min, open: !this.state.min,
+      rootH: tray ? (this.props.trayHeight ?? '100%') : 'auto',
+      minH: tray ? '0' : '520px',
+      radius: tray ? '24px 24px 0 0' : '16px',
+      shadow: tray ? '0 0 26px #00000066' : '0 0 14px #00000026',
+      composerBottom: tray ? '24px' : '16px',
+      title: all ? 'Ask Shifa AI' : 'AI Patient Copilot',
+      subtitle: all ? 'Across today’s patients' : 'Answers from this patient’s record',
+      scope,
+      intro: all ? 'Ask about today’s patients, results or follow-ups. Answers cite the records they come from.' : 'Ask about Jasur Tursunov’s history, medications or next steps.',
+      placeholder: 'Ask Shifa AI',
+      collapseLabel: tray ? 'Close Shifa AI' : 'Minimise Shifa AI',
+      msgs, noMsgs: msgs.length === 0 && !this.state.streaming,
+      streaming: this.state.streaming,
+      suggestions: sug, showSuggestions: sug.length > 0 && !this.state.streaming,
+      draft: this.state.draft,
+      sendBg: this.state.draft ? '#00bbb0' : '#00bbb0',
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      submit: (e) => { e.preventDefault(); this.ask(this.state.draft.trim()); },
+      collapse: () => { if (this.props.onCollapse) this.props.onCollapse(); else this.setState({ min: true }); },
+      expand: () => this.setState({ min: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

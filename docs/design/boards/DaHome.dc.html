@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes hm-spin{to{transform:rotate(360deg)}}
+@keyframes hm-bar{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+.hm-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.hm-tile:hover{background:var(--bg-hover) !important}
+.hm-row:hover{background:var(--bg-canvas) !important}
+.hm-chips{scrollbar-width:none}.hm-chips::-webkit-scrollbar{display:none}
+.hm-in input{font: 600 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; width: 100%; min-height: 100%; box-sizing: border-box; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans)">
+
+<sc-if value="{{isSearch}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; background: var(--bg-surface); display: flex; flex-direction: column">
+    <div class="hm-in" style="position: sticky; top: 0; z-index: 2; background: var(--bg-surface); border-bottom: var(--size-1) solid var(--border-default); padding: {{searchPad}}; display: flex; align-items: center; gap: var(--size-8)">
+      <button class="hm-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <div style="flex: 1 1 auto; height: var(--size-touch); box-sizing: border-box; border: var(--size-2) solid var(--border-brand); border-radius: var(--radius-full); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-6) 0 var(--size-14)">
+        <span style="display: inline-flex; color: var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span>
+        <input value="{{q}}" onChange="{{onQ}}" onKeyDown="{{onQKey}}" placeholder="Search patients by name or phone" aria-label="Search patients" autofocus style="flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent">
+        <sc-if value="{{hasQ}}" hint-placeholder-val="{{ false }}"><button class="hm-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{clearQ}}" aria-label="Clear search" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if>
+      </div>
+    </div>
+    <div style="padding: {{searchBodyPad}}; display: flex; flex-direction: column; gap: var(--size-8); max-width: var(--layout-reading); width: 100%; box-sizing: border-box; margin: 0 auto">
+      <p style="margin: var(--size-8) 0 var(--size-4); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{searchHead}}</p>
+      <sc-for list="{{results}}" as="p" hint-placeholder-count="6">
+        <button class="hm-row hm-b sh-press sh-press--row" onClick="{{p.open}}" style="padding: var(--size-8); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+          <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{p.ini}}</span>
+          <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{p.name}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{p.sub}}</span></span>
+          <span style="display: inline-flex; color: var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+        </button>
+      </sc-for>
+      <sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: var(--size-40) var(--size-16); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center">
+          <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-canvas); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.search}}"></path></svg></span>
+          <p style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">No patients found</p>
+          <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Check the spelling or search by phone number.</p>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+  <sc-if value="{{refreshing}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="position: sticky; top: 0; z-index: 3; height: var(--size-3); overflow: hidden; background: var(--alpha-teal-15)"><div style="width: 33%; height: 100%; background: var(--interactive-primary); animation: hm-bar 1s ease-in-out infinite"></div></div></sc-if>
+  <div style="padding: {{pagePad}}; display: flex; flex-direction: column; gap: {{gap}}; width: 100%; max-width: var(--layout-page); margin: 0 auto; box-sizing: border-box">
+
+    <header style="display: flex; align-items: center; gap: var(--size-12)">
+      <button class="hm-b sh-press sh-avatar" onClick="{{openProfile}}" aria-label="Profile" style="width: var(--size-touch); height: var(--size-touch); flex: none; display: {{avatarDisplay}}; align-items: center; justify-content: center; background: var(--alpha-teal-15); border-radius: var(--radius-full); font: 700 var(--font-size-16)/1 var(--font-sans)">{{meIni}}</button>
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)">
+        <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}">
+          <h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Home</h1>
+          <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 500; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{meName}}</span>
+        </sc-if>
+        <sc-if value="{{web}}" hint-placeholder-val="{{ true }}">
+          <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 500; color: var(--text-secondary)">{{dateLine}}</span>
+          <h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{greeting}}</h1>
+        </sc-if>
+      </div>
+      <button class="hm-b sh-icon-btn sh-icon-btn--surface" onClick="{{refresh}}" aria-label="Refresh" style="flex: none"><span style="display: inline-flex; animation: {{refreshSpin}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></span></button>
+      <button class="hm-b sh-icon-btn sh-icon-btn--surface" onClick="{{openSearch}}" aria-label="Search patients" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></button>
+      <button class="hm-b sh-icon-btn sh-icon-btn--surface" onClick="{{openNotifs}}" aria-label="{{bellLabel}}" style="position: relative; flex: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.bell}}"></path></svg>
+        <sc-if value="{{hasUnread}}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="position: absolute; top: var(--size-10); right: var(--size-12); width: var(--size-8); height: var(--size-8); border-radius: var(--radius-full); background: var(--interactive-destructive); box-shadow: 0 0 0 var(--size-2) var(--white)"></span></sc-if>
+      </button>
+    </header>
+
+    <sc-if value="{{tzMismatch}}" hint-placeholder-val="{{ false }}">
+      <div role="note" style="display: flex; gap: var(--size-10); align-items: flex-start; padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: var(--bg-info-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--icon-info); font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 500">
+        <span style="display: inline-flex; color: var(--text-info); flex: none; padding-top: var(--size-1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.globe}}"></path></svg></span>
+        <span>Times are in practice time (Tashkent, UTC+5). Your phone is set to Berlin (UTC+1).</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showChecklist}}" hint-placeholder-val="{{ false }}">
+      <section aria-labelledby="hm-ck" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-12); border: var(--size-2) solid var(--border-brand)">
+        <div style="display: flex; align-items: flex-start; gap: var(--size-8)">
+          <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><h2 id="hm-ck" style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Get ready for your first patients</h2><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{checkDone}} of 3 done</span></div>
+          <button class="hm-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{dismissChecklist}}" aria-label="Hide checklist" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+        </div>
+        <sc-for list="{{checklist}}" as="c" hint-placeholder-count="3">
+          <button class="hm-row hm-b sh-press sh-press--row" onClick="{{c.go}}" style="padding: var(--size-8); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+            <span aria-hidden="true" style="width: var(--size-24); height: var(--size-24); box-sizing: border-box; border-radius: var(--radius-full); border: var(--size-2) solid {{c.ring}}; background: {{c.fill}}; color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span>
+            <span style="flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; text-decoration: {{c.deco}}; color: {{c.ink}}">{{c.label}}</span>
+            <span style="display: inline-flex; color: var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+          </button>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <div style="display: flex; flex-wrap: wrap; gap: {{gap}}; align-items: flex-start">
+      <div style="flex: 999 1 var(--basis-520); min-width: 0; display: flex; flex-direction: column; gap: {{gap}}">
+
+        <div role="group" aria-label="Today at a glance" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--size-10)">
+          <sc-for list="{{metrics}}" as="m" hint-placeholder-count="3">
+            <button class="hm-b sh-press sh-press--card" onClick="{{m.go}}" style="box-shadow: var(--shadow-card); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-8); color: var(--text-primary); min-width: 0">
+              <span style="display: flex; align-items: center; gap: var(--size-8); min-width: 0"><span aria-hidden="true" style="width: var(--size-28); height: var(--size-28); border-radius: var(--radius-sm); background: {{m.tint}}; color: {{m.ink}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{m.d}}"></path></svg></span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></span>
+              <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}"><span class="dr-shimmer" style="display: block; width: var(--size-40); height: var(--size-24)"></span></sc-if>
+              <sc-if value="{{loaded}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{m.value}}</span></sc-if>
+              <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 500; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.sub}}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" aria-label="Loading next patient" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-14); height: var(--size-180); box-sizing: border-box">
+            <span class="dr-shimmer" style="display: block; width: var(--size-120); height: var(--size-20)"></span>
+            <div style="display: flex; gap: var(--size-12); align-items: center"><span class="dr-shimmer" style="display: block; width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full)"></span><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-8)"><span class="dr-shimmer" style="display: block; width: 70%; height: var(--size-18)"></span><span class="dr-shimmer" style="display: block; width: 45%; height: var(--size-14)"></span></span></div>
+            <span class="dr-shimmer" style="display: block; width: 100%; height: var(--size-touch)"></span>
+          </div>
+        </sc-if>
+        <sc-if value="{{showHero}}" hint-placeholder-val="{{ true }}">
+          <section aria-label="Next patient" style="background: var(--bg-surface); border: var(--size-2) solid var(--border-brand); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: {{heroPad}}; display: flex; flex-direction: column; gap: var(--size-14)">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--size-8)">
+              <span style="height: var(--size-28); display: inline-flex; align-items: center; white-space: nowrap; background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-12); font-weight: 700; padding: 0 var(--size-12); border-radius: var(--radius-full)">{{hero.kicker}}</span>
+              <span style="height: var(--size-28); display: inline-flex; align-items: center; gap: var(--size-6); white-space: nowrap; background: {{hero.pillBg}}; color: var(--text-primary); font-size: var(--font-size-12); font-weight: 700; padding: 0 var(--size-12); border-radius: var(--radius-full)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{hero.pillD}}"></path></svg>{{hero.pill}}</span>
+            </div>
+            <div style="display: flex; gap: var(--size-14); align-items: center">
+              <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-18); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{hero.ini}}</span>
+              <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-6)">
+                <h2 style="margin: 0; font-size: {{heroName}}; line-height: 1.2; font-weight: 700; letter-spacing: var(--letter-spacing-snug); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{hero.name}}</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: var(--size-6) var(--size-14); font-size: var(--font-size-12); line-height: var(--line-height-14); font-weight: 500; color: var(--text-secondary)">
+                  <span style="display: inline-flex; align-items: center; gap: var(--size-4); white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clock}}"></path></svg>{{hero.when}}</span>
+                  <span style="display: inline-flex; align-items: center; gap: var(--size-4); white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{hero.kindD}}"></path></svg>{{hero.kind}}</span>
+                  <sc-if value="{{hero.hasPlace}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; align-items: center; gap: var(--size-4); min-width: 0; max-width: 100%"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="{{ic.pin}}"></path></svg><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{hero.place}}</span></span></sc-if>
+                  <sc-if value="{{hero.hasAge}}" hint-placeholder-val="{{ true }}"><span style="white-space: nowrap">Age {{hero.age}}</span></sc-if>
+                </div>
+                <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-primary); font-weight: 500">{{hero.reason}}</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: var(--size-10); border-top: var(--size-1) solid var(--border-default); padding-top: var(--size-10)">
+              <button class="hm-b sh-press" onClick="{{toggleRecord}}" aria-expanded="{{recordStr}}" style="width: 100%; min-height: var(--size-touch); color: var(--text-primary); padding: 0; display: flex; align-items: center; gap: var(--size-8)">
+                <span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clipboard}}"></path></svg></span>
+                <span style="font-size: var(--font-size-14); line-height: var(--line-height-16); font-weight: 700; white-space: nowrap">Medical record</span>
+                <sc-if value="{{hero.hasFlags}}" hint-placeholder-val="{{ true }}"><span style="height: var(--size-20); display: inline-flex; align-items: center; gap: var(--size-4); white-space: nowrap; background: var(--bg-error-subtle); font-size: var(--font-size-10); font-weight: 700; padding: 0 var(--size-8); border-radius: var(--radius-full)"><span aria-hidden="true" style="width: var(--size-6); height: var(--size-6); border-radius: var(--radius-full); background: var(--interactive-destructive)"></span>{{hero.flagCount}}</span></sc-if>
+                <span style="flex: 1 1 auto"></span>
+                <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{recordLabel}}</span>
+                <span style="display: inline-flex; color: var(--text-secondary); transform: rotate({{recordChev}}); transition: transform .2s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span>
+              </button>
+              <sc-if value="{{recordOpen}}" hint-placeholder-val="{{ true }}">
+                <ul aria-label="Medical record" style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--size-8)">
+                  <sc-for list="{{hero.flags}}" as="fl" hint-placeholder-count="3">
+                    <li><sc-if value="{{fl.act}}" hint-placeholder-val="{{ false }}"><button class="hm-b sh-press {{fl.cls}}" onClick="{{fl.go}}"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{fl.d}}"></path></svg>{{fl.label}}</button></sc-if><sc-if value="{{fl.still}}" hint-placeholder-val="{{ true }}"><span class="{{fl.cls}}"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{fl.d}}"></path></svg>{{fl.label}}</span></sc-if></li>
+                  </sc-for>
+                </ul>
+              </sc-if>
+            </div>
+            <div style="display: flex; flex-direction: {{heroActDir}}; gap: var(--size-10)">
+              <button class="hm-b sh-btn sh-btn--primary" onClick="{{startHero}}" aria-disabled="{{hero.startOffStr}}" style="flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: var(--size-8)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{hero.startD}}"></path></svg>{{hero.startLabel}}</button>
+              <button class="hm-b sh-btn sh-btn--secondary" onClick="{{openChart}}" style="flex: 1 1 0">Open chart</button>
+            </div>
+            <sc-if value="{{hero.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="margin-top: calc(-1 * var(--size-6)); font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); text-align: center">Opens 15 minutes before the visit ({{hero.opensAt}}).</span></sc-if>
+          </section>
+        </sc-if>
+        <sc-if value="{{showEmptyHero}}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Next patient" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: var(--size-24) var(--size-16); display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--size-12)">
+            <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-canvas); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{emptyIcon}}"></path></svg></span>
+            <h2 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">{{emptyTitle}}</h2>
+            <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); max-width: var(--layout-dialog-sm)">{{emptyBody}}</p>
+            <button class="hm-b sh-btn sh-btn--primary" onClick="{{newAppt}}" >New appointment</button>
+          </section>
+        </sc-if>
+
+        <section aria-labelledby="hm-qa" style="display: flex; flex-direction: column; gap: var(--size-10)">
+          <h2 id="hm-qa" style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Quick Actions</h2>
+          <div class="hm-chips" style="display: flex; gap: var(--size-8); overflow-x: auto; margin: 0 {{chipBleed}}; padding: var(--size-4) {{chipBleedPad}} var(--size-8)">
+            <sc-for list="{{chips}}" as="c" hint-placeholder-count="3">
+              <button class="hm-b sh-action sh-action--surface" onClick="{{c.go}}" style="flex: none; display: inline-flex; align-items: center; gap: var(--size-8); white-space: nowrap"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.d}}"></path></svg></span>{{c.label}}<sc-if value="{{c.locked}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-20); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-canvas); font-size: var(--font-size-10); line-height: var(--line-height-20); font-weight: 700">Premium</span></sc-if></button>
+            </sc-for>
+          </div>
+        </section>
+
+        <sc-if value="{{showTimeline}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="hm-ts" style="display: flex; flex-direction: column; gap: var(--size-12)">
+            <div style="display: flex; align-items: flex-end; gap: var(--size-8); justify-content: space-between">
+              <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><h2 id="hm-ts" style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Today's schedule</h2><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Your schedule — current and upcoming visits</span></div>
+              <button class="hm-b sh-link" onClick="{{openCalendar}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans); white-space: nowrap">See all in Calendar</button>
+            </div>
+            <sc-if value="{{hasEarlier}}" hint-placeholder-val="{{ false }}">
+              <button class="hm-b sh-action sh-action--surface" onClick="{{toggleEarlier}}" aria-expanded="{{earlierStr}}" style="align-self: flex-start">{{earlierLabel}}<span style="display: inline-flex; transform: rotate({{earlierChev}})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span></button>
+            </sc-if>
+            <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+              <sc-for list="{{timeline}}" as="t" hint-placeholder-count="4">
+                <li style="display: flex; gap: var(--size-10); align-items: stretch">
+                  <span style="width: var(--size-48); flex: none; padding-top: var(--size-18); font-size: var(--font-size-14); line-height: var(--line-height-16); font-weight: 700; font-variant-numeric: tabular-nums; color: {{t.timeInk}}">{{t.time}}</span>
+                  <span aria-hidden="true" style="width: var(--size-10); flex: none; display: flex; flex-direction: column; align-items: center"><span style="width: var(--size-2); height: var(--size-18); background: {{t.lineTop}}"></span><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: {{t.dot}}; box-shadow: {{t.dotRing}}; flex: none"></span><span style="width: var(--size-2); flex: 1 1 auto; background: {{t.lineBottom}}"></span></span>
+                  <button class="hm-b sh-press sh-press--card" onClick="{{t.open}}" style="flex: 1 1 auto; min-width: 0; margin: var(--size-4) 0; min-height: var(--size-56); box-shadow: {{t.shadow}}; padding: var(--size-10) var(--size-12); display: flex; align-items: center; gap: var(--size-10); opacity: {{t.opacity}}; border: {{t.border}}">
+                    <sc-if value="{{t.isAppt}}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-12); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{t.ini}}</span></sc-if>
+                    <sc-if value="{{t.isBlock}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--bg-disabled); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.block}}"></path></svg></span></sc-if>
+                    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-18); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{t.title}}</span><span style="display: inline-flex; align-items: center; gap: var(--size-4); font-size: var(--font-size-12); line-height: var(--line-height-14); color: var(--text-secondary); white-space: nowrap; overflow: hidden"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="{{t.subD}}"></path></svg><span style="overflow: hidden; text-overflow: ellipsis">{{t.sub}}</span></span></span>
+                    <sc-if value="{{t.hasChip}}" hint-placeholder-val="{{ true }}"><span style="flex: none; height: var(--size-24); display: inline-flex; align-items: center; gap: var(--size-6); padding: 0 var(--size-10); border-radius: var(--radius-full); background: {{t.chipBg}}; color: {{t.chipInk}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap"><span aria-hidden="true" style="width: var(--size-6); height: var(--size-6); border-radius: var(--radius-full); background: {{t.chipDot}}"></span>{{t.chip}}</span></sc-if>
+                  </button>
+                </li>
+              </sc-for>
+            </ol>
+          </section>
+        </sc-if>
+      </div>
+
+      <div style="flex: 1 1 var(--layout-dialog-sm); min-width: 0; display: flex; flex-direction: column; gap: {{gap}}">
+        <section aria-labelledby="hm-att" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-12)">
+          <div style="display: flex; flex-direction: column; gap: var(--size-2)"><h2 id="hm-att" style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Attention required</h2><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Documents, messages, and items needing action</span></div>
+          <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}"><div aria-busy="true" style="display: flex; flex-direction: column; gap: var(--size-10); height: var(--size-160)"><span class="dr-shimmer" style="display: block; height: var(--size-touch)"></span><span class="dr-shimmer" style="display: block; height: var(--size-touch)"></span><span class="dr-shimmer" style="display: block; height: var(--size-touch)"></span></div></sc-if>
+          <sc-if value="{{showAttention}}" hint-placeholder-val="{{ true }}">
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--size-8)">
+              <sc-for list="{{attention}}" as="a" hint-placeholder-count="4">
+                <li style="display: flex; align-items: center; gap: var(--size-8)">
+                  <button class="hm-tile hm-b sh-press sh-press--tile" onClick="{{a.open}}" style="flex: 1 1 auto; min-width: 0; padding: var(--size-12); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+                    <span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-control-md); background: {{a.tint}}; color: {{a.ink}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{a.d}}"></path></svg></span>
+                    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{a.title}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{a.sub}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-14); color: var(--text-tertiary); font-weight: 600">{{a.time}}</span></span>
+                    <span style="display: inline-flex; color: var(--text-tertiary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+                  </button>
+                  <sc-if value="{{a.canRead}}" hint-placeholder-val="{{ false }}"><button class="hm-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm" onClick="{{a.markRead}}" aria-label="Mark as read" title="Mark as read"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></button></sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+          <sc-if value="{{attEmpty}}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--size-24) 0; display: flex; flex-direction: column; align-items: center; gap: var(--size-8)"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">All caught up!</span></div>
+          </sc-if>
+          <button class="hm-b sh-link" onClick="{{openNotifs}}" style="align-self: flex-start; font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">All notifications</button>
+        </section>
+
+        <section aria-labelledby="hm-act" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-8)">
+          <div style="display: flex; align-items: flex-end; gap: var(--size-8)"><div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><h2 id="hm-act" style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Patient activity</h2><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Live updates from your clinic</span></div><button class="hm-b sh-link" onClick="{{openNotifs}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">See all</button></div>
+          <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}"><div aria-busy="true" style="display: flex; flex-direction: column; gap: var(--size-12); height: var(--size-180); padding-top: var(--size-8)"><span class="dr-shimmer" style="display: block; height: var(--size-32)"></span><span class="dr-shimmer" style="display: block; height: var(--size-32)"></span><span class="dr-shimmer" style="display: block; height: var(--size-32)"></span><span class="dr-shimmer" style="display: block; height: var(--size-32)"></span></div></sc-if>
+          <sc-if value="{{showActivity}}" hint-placeholder-val="{{ true }}">
+            <ul style="list-style: none; margin: 0; padding: 0">
+              <sc-for list="{{activity}}" as="r" hint-placeholder-count="5">
+                <li style="border-top: {{r.divider}}">
+                  <button class="hm-row hm-b sh-press sh-press--row" onClick="{{r.open}}" style="width: 100%; padding: var(--size-12) var(--size-4); display: flex; gap: var(--size-10); align-items: flex-start; color: var(--text-primary)">
+                    <span style="width: var(--size-64); flex: none; text-align: right; font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600; color: var(--text-tertiary); font-variant-numeric: tabular-nums">{{r.time}}</span>
+                    <span aria-hidden="true" style="width: var(--size-8); height: var(--size-8); border-radius: var(--radius-full); background: {{r.dot}}; flex: none; margin-top: var(--size-4)"></span>
+                    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 600">{{r.title}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{r.body}}</span></span>
+                  </button>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+          <sc-if value="{{actEmpty}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-24) 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">No recent activity</p></sc-if>
+        </section>
+      </div>
+    </div>
+
+    <section aria-labelledby="hm-an" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: var(--shadow-card); padding: {{anPad}}; display: flex; flex-direction: column; gap: var(--size-16)">
+      <div style="display: flex; flex-wrap: wrap; gap: var(--size-12); align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: var(--size-2)"><h2 id="hm-an" style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Clinic performance</h2><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Analytics overview</span></div>
+        <div style="display: flex; flex-direction: {{toolDir}}; gap: var(--size-8); width: {{toolW}}">
+          <button class="hm-b sh-btn sh-btn--secondary" onClick="{{openRange}}" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.calendar}}"></path></svg>{{rangeLabel}}</button>
+          <button class="hm-b sh-btn sh-btn--primary" onClick="{{exportCsv}}" aria-busy="{{exportingStr}}" style="opacity: {{exportOpacity}}">
+            <sc-if value="{{exporting}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>
+            <sc-if value="{{notExporting}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.download}}"></path></svg></sc-if>Export
+          </button>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: {{kpiCols}}; gap: var(--size-12)">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+          <button class="hm-b sh-press sh-press--card" onClick="{{k.go}}" style="padding: var(--size-12); display: flex; align-items: center; gap: var(--size-12); min-width: 0; box-shadow: inset 0 0 0 var(--size-1) var(--border-default)">
+            <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-control-md); background: {{k.tint}}; color: {{k.ink}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{k.d}}"></path></svg></span>
+            <span style="min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><sc-if value="{{loading}}" hint-placeholder-val="{{ false }}"><span class="dr-shimmer" style="display: block; width: var(--size-36); height: var(--size-24)"></span></sc-if><sc-if value="{{loaded}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700">{{k.value}}</span></sc-if><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 600; color: var(--text-secondary)">{{k.label}}</span></span>
+          </button>
+        </sc-for>
+      </div>
+      <sc-if value="{{premiumCharts}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-16)">
+          <div style="flex: 2 1 var(--size-320); min-width: 0; border: var(--size-1) solid var(--border-default); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-10)">
+            <h3 style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{trendTitle}}</h3>
+            <sc-if value="{{trendEmpty}}" hint-placeholder-val="{{ false }}"><div style="height: var(--size-160); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-14); color: var(--text-secondary)">No data yet</div></sc-if>
+            <sc-if value="{{trendHas}}" hint-placeholder-val="{{ true }}">
+              <div style="position: relative">
+                <svg viewBox="0 0 400 180" width="100%" height="180" role="img" aria-label="{{trendAria}}" style="display: block; overflow: visible">
+                  <sc-for list="{{grid}}" as="g" hint-placeholder-count="5"><line style="stroke: var(--border-default)" x1="36" x2="396" y1="{{g.y}}" y2="{{g.y}}" stroke-width="1"></line><text style="fill: var(--text-tertiary)" x="28" y="{{g.ty}}" text-anchor="end" font-size="10" font-family="Manrope, sans-serif">{{g.label}}</text></sc-for>
+                  <path style="stroke: var(--icon-brand)" d="{{trendPath}}" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <sc-for list="{{trendPts}}" as="p" hint-placeholder-count="7">
+                    <circle cx="{{p.x}}" cy="{{p.y}}" r="{{p.r}}" stroke-width="2" onClick="{{p.pick}}" style="stroke: var(--white); fill: {{p.fill}}; cursor: pointer"></circle>
+                    <sc-if value="{{p.showLabel}}" hint-placeholder-val="{{ true }}"><text style="fill: var(--text-tertiary)" x="{{p.x}}" y="176" text-anchor="middle" font-size="10" font-family="Manrope, sans-serif">{{p.label}}</text></sc-if>
+                  </sc-for>
+                </svg>
+                <sc-if value="{{hasTip}}" hint-placeholder-val="{{ false }}"><span role="status" style="position: absolute; left: {{tip.left}}; top: {{tip.top}}; transform: translate(-50%, -130%); background: var(--charcoal); color: var(--text-inverse); padding: var(--size-6) var(--size-10); border-radius: var(--radius-sm); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; white-space: nowrap; pointer-events: none">{{tip.text}}</span></sc-if>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex: 1 1 var(--size-240); min-width: 0; border: var(--size-1) solid var(--border-default); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-10)">
+            <h3 style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">Visit Type Distribution</h3>
+            <sc-if value="{{donutEmpty}}" hint-placeholder-val="{{ false }}"><div style="height: var(--size-160); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-14); color: var(--text-secondary)">No data yet</div></sc-if>
+            <sc-if value="{{donutHas}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: var(--size-16)">
+                <div style="position: relative; width: var(--size-160); height: var(--size-160); flex: none">
+                  <svg viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="{{donut.aria}}"><circle style="stroke: var(--alpha-teal-25)" cx="80" cy="80" r="60" fill="none" stroke-width="28"></circle><circle style="stroke: var(--icon-brand)" cx="80" cy="80" r="60" fill="none" stroke-width="28" stroke-dasharray="{{donut.dash}}" transform="rotate(-90 80 80)"></circle></svg>
+                  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-1)"><span style="font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; color: var(--text-brand-strong)">{{donut.pct}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-14); font-weight: 600">In-person</span><span style="font-size: var(--font-size-10); line-height: var(--line-height-14); color: var(--text-secondary)">{{donut.videoPct}} Video Call</span></div>
+                </div>
+                <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--size-8); font-size: var(--font-size-12); line-height: var(--line-height-16)"><li style="display: flex; gap: var(--size-8); align-items: center"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-xs); background: var(--interactive-primary)"></span>In-person · <b>{{donut.inPerson}}</b></li><li style="display: flex; gap: var(--size-8); align-items: center"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-xs); background: var(--alpha-teal-25)"></span>Video Call · <b>{{donut.video}}</b></li><li style="color: var(--text-tertiary); font-size: var(--font-size-12)">Last 30 days</li></ul>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex: 1 1 var(--size-240); min-width: 0; border: var(--size-1) solid var(--border-default); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-12)">
+            <h3 style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">Patient Engagement</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-12)">
+              <button class="hm-b sh-press sh-press--tile" onClick="{{openPatients}}" style="padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-6); color: var(--text-primary)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.users}}"></path></svg></span><span style="font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">{{eng.active}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-14); color: var(--text-secondary)">Active Patients (30d)</span></button>
+              <div style="background: var(--bg-canvas); border-radius: var(--radius-control-md); padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-6)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.fileText}}"></path></svg></span><span style="font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">{{eng.docs}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-14); color: var(--text-secondary)">Documents Received (30d)</span></div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{teaser}}" hint-placeholder-val="{{ false }}">
+        <div style="border: var(--size-1) dashed var(--border-brand); background: var(--bg-success-subtle); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; flex-wrap: wrap; gap: var(--size-12); align-items: center">
+          <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-control-md); background: var(--bg-surface); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.trend}}"></path></svg></span>
+          <span style="flex: 1 1 var(--basis-200); display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">See trends, visit types and engagement</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Charts are part of the Premium plan.</span></span>
+          <button class="hm-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{seePlans}}" >See plans</button>
+        </div>
+      </sc-if>
+    </section>
+    <div aria-hidden="true" style="height: {{bottomClear}}"></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{chronicOpen}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 50; background: var(--bg-overlay); display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+    <div role="alertdialog" aria-modal="true" aria-labelledby="hm-cd" style="width: 100%; max-width: {{dlgMax}}; background: var(--bg-surface); border-radius: {{dlgR}}; box-shadow: var(--shadow-tray); padding: var(--size-24); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14); align-items: center; text-align: center">
+      <span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: var(--bg-error-subtle); color: var(--text-error); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.alert}}"></path></svg></span>
+      <h2 id="hm-cd" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight); color: var(--text-error)">Patient with Chronic Disease</h2>
+      <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">You are dealing with a patient who has a chronic disease:</p>
+      <div style="width: 100%; box-sizing: border-box; padding: var(--size-12) var(--size-14); border-radius: var(--radius-control-md); background: var(--bg-error-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-error); text-align: left; font-size: var(--font-size-14); line-height: var(--line-height-20)"><div><b>Patient:</b> {{chronic.name}}</div><div><b>Chronic Disease:</b> {{chronic.disease}}</div><sc-if value="{{chronic.hasAllergy}}" hint-placeholder-val="{{ false }}"><div><b>Allergy:</b> {{chronic.allergy}}</div></sc-if></div>
+      <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Please take extra care during the appointment.</p>
+      <button class="hm-b sh-btn sh-btn--primary is-destructive" onClick="{{understand}}" style="width: 100%">I Understand</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{rangeOpen}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 50; background: var(--bg-overlay); display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+    <div role="dialog" aria-modal="true" aria-labelledby="hm-rg" class="hm-in sh-sheet" style="max-width: {{dlgMax}}; border-radius: {{dlgR}}">
+      <h2 id="hm-rg" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight); text-align: center">Select date range</h2>
+      <div role="group" aria-label="Presets" style="display: flex; flex-wrap: wrap; gap: var(--size-6); justify-content: center">
+        <sc-for list="{{presets}}" as="p" hint-placeholder-count="4"><button aria-pressed="{{p.selStr}}" class="hm-b sh-chip" onClick="{{p.pick}}">{{p.label}}</button></sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-12)">
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Start<input class="sh-input" type="date" value="{{draft.from}}" min="{{draft.min}}" max="{{draft.max}}" onChange="{{draft.onFrom}}" style="height: var(--size-48)"></label>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">End<input class="sh-input" type="date" value="{{draft.to}}" min="{{draft.min}}" max="{{draft.max}}" onChange="{{draft.onTo}}" style="height: var(--size-48)"></label>
+      </div>
+      <sc-if value="{{draft.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-error)">{{draft.err}}</span></sc-if>
+      <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">From a year ago up to 30 days ahead. The trend chart shows at most 90 days.</span>
+      <div style="display: flex; gap: var(--size-12); justify-content: flex-end; flex-direction: {{dlgActDir}}">
+        <button class="hm-b sh-btn sh-btn--secondary" onClick="{{closeRange}}" >Cancel</button>
+        <button class="hm-b sh-btn sh-btn--primary" onClick="{{saveRange}}" >Save</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const st = props.store || {};
+    this.state = { recordOpen: null, earlier: false, chronic: null, range: { from: '2026-10-20', to: '2026-10-26' }, rangeOpen: false, draft: null, exporting: false, refreshing: false, tip: null, q: '', loading: !(st.homeLoaded) };
+  }
+  componentDidMount() { if (this.state.loading) this.tl = setTimeout(() => { this.setState({ loading: false }); this.props.act && this.props.act('set', { homeLoaded: true }); }, 1100); }
+  componentWillUnmount() { clearTimeout(this.tl); clearTimeout(this.tr); clearTimeout(this.te); }
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const route = this.props.route || { s: 'home', p: {} };
+    const S = this.state;
+    const base = { ready: true, notReady: false, ic, phone, web: !phone, isSearch: route.s === 'search', isHome: route.s !== 'search', back: () => act('back'),
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgMax: phone ? 'none' : '440px', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row' };
+    const openPatient = (id) => act('go', { tab: 'patients', s: 'patDetail', p: { id } });
+    // ---------- search page ----------
+    if (route.s === 'search') {
+      const q = S.q.trim().toLowerCase(); const digits = q.replace(/\D/g, '');
+      const all = st.patients.slice().sort((a, b) => a.name.localeCompare(b.name));
+      const hits = q ? all.filter((p) => p.name.toLowerCase().indexOf(q) >= 0 || (digits.length >= 3 && (p.phones[0] || '').replace(/\D/g, '').indexOf(digits) >= 0)) : all.slice(0, 8);
+      return Object.assign(base, {
+        q: S.q, hasQ: !!S.q, onQ: (e) => this.setState({ q: e.target.value }), clearQ: () => this.setState({ q: '' }),
+        onQKey: (e) => { if (e.key === 'Enter' && hits.length === 1) openPatient(hits[0].id); if (e.key === 'Escape') act('back'); },
+        searchHead: q ? (hits.length + (hits.length === 1 ? ' patient' : ' patients')) : 'Patients',
+        results: hits.map((p) => ({ name: p.name, ini: lib.initials(p.name), sub: [p.phones[0], p.dob ? 'Age ' + lib.age(p.dob, st.today) : ''].filter(Boolean).join(' · '), open: () => openPatient(p.id) })),
+        noResults: !!q && !hits.length, searchPad: phone ? 'var(--size-48) var(--size-16) var(--size-12)' : 'var(--size-16) var(--size-24)', searchBodyPad: phone ? 'var(--size-8) var(--size-16) var(--size-120)' : 'var(--size-8) var(--size-24) var(--size-48)'
+      });
+    }
+    // ---------- home ----------
+    const loading = S.loading;
+    const nowMin = st.nowMin, today = st.today;
+    const mine = st.appointments.filter((a) => (a.doctorId || 'me') === 'me');
+    const todays = mine.filter((a) => a.day === today).sort((a, b) => lib.toMin(a.start) - lib.toMin(b.start));
+    const live = (a) => ['CANCELLED', 'NO_SHOW', 'COMPLETED'].indexOf(a.status) < 0;
+    // next patient: in-progress first, else the next live visit today, else look ahead 14 days
+    let next = todays.find((a) => a.status === 'IN_PROGRESS') || todays.find((a) => live(a) && lib.toMin(a.end) > nowMin);
+    if (!next) { const ahead = mine.filter((a) => a.day > today && a.day <= lib.addDays(today, 14) && live(a)).sort((a, b) => (a.day + a.start).localeCompare(b.day + b.start)); next = ahead[0]; }
+    const unread = st.notifs.filter((n) => !n.read);
+    const canTasks = lib.can(st, 'tasks');
+    const follow = st.tasks.filter((t) => t.status === 'ACTIVE' || t.status === 'DRAFT').length;
+    const seePlans = () => act('go', { tab: 'profile', s: 'subscription' });
+    const gate = (text) => act('banner', { kind: 'info', text, action: seePlans, actionLabel: 'See plans' });
+    const goTasks = () => (canTasks ? act('tab', 'tasks') : gate('Remote-care tasks need a Premium subscription.'));
+    const metrics = [
+      { label: 'Today', value: String(todays.filter((a) => a.status !== 'CANCELLED').length), sub: todays.length === 1 ? 'visit' : 'visits', d: ic.calendar, tint: 'var(--bg-success-subtle)', ink: 'var(--text-brand-strong)', go: () => act('tab', 'calendar') },
+      { label: 'Unread', value: String(unread.length), sub: unread.length === 1 ? 'notification' : 'notifications', d: ic.bell, tint: 'var(--bg-info-subtle)', ink: 'var(--text-info)', go: () => act('tab', 'notifications') },
+      { label: 'Follow-up', value: canTasks ? String(follow) : '—', sub: canTasks ? (follow === 1 ? 'follow-up task' : 'follow-up tasks') : 'Premium', d: ic.tasks, tint: 'var(--bg-warning-subtle)', ink: 'var(--text-warning)', go: goTasks }
+    ];
+    let hero = {};
+    if (next) {
+      const p = lib.patient(st, next.patientId); const isToday = next.day === today;
+      const startMin = lib.toMin(next.start); const inProg = next.status === 'IN_PROGRESS' || (isToday && startMin <= nowMin && lib.toMin(next.end) > nowMin);
+      const canStart = isToday && (next.status === 'IN_PROGRESS' || startMin <= nowMin + 15) && next.status !== 'REQUESTED';
+      const mins = startMin - nowMin;
+      const flags = [];
+      if (p.allergies) flags.push({ label: p.allergies + ' allergy', cls: 'dr-alert', act: false, still: true, d: ic.alert, go: () => {} });
+      if (p.chronic) flags.push({ label: p.chronic, cls: 'dr-alert dr-alert--warn', act: false, still: true, d: ic.heart, go: () => {} });
+      if (next.docsAttached) flags.push({ label: next.docsAttached + (next.docsAttached === 1 ? ' document' : ' documents'), cls: 'dr-alert dr-alert--info', act: true, still: false, d: ic.fileText, go: () => act('go', { tab: 'patients', s: 'patDetail', p: { id: p.id, tab: 'documents' } }), cursor: 'pointer' });
+      if (lib.can(st, 'briefing') && next.briefing !== 'none') flags.push({ label: 'AI briefing ready', cls: 'dr-alert dr-alert--ai', act: true, still: false, d: ic.sparkles, go: () => act('push', { s: 'apptBriefing', p: { id: next.id } }), cursor: 'pointer' });
+      const statusPill = inProg ? 'Now' : (next.status === 'REQUESTED' ? 'Waiting' : (isToday ? (mins <= 60 ? 'In ' + mins + ' min' : 'Confirmed') : 'Confirmed'));
+      hero = {
+        kicker: isToday ? 'Next patient' : 'Next appointment', pill: statusPill, pillBg: inProg ? 'var(--bg-success-subtle)' : 'var(--bg-warning-subtle)', pillD: inProg ? ic.play : ic.clock,
+        ini: lib.initials(p.name), name: p.name, when: (isToday ? '' : lib.fmtDay(next.day) + ' · ') + next.start + '–' + next.end,
+        kind: next.kind === 'video' ? 'Online' : 'In Clinic', kindD: next.kind === 'video' ? ic.video : ic.clinic, hasPlace: next.kind !== 'video', place: next.location,
+        hasAge: !!p.dob, age: p.dob ? lib.age(p.dob, today) : '', reason: next.reason,
+        flags, hasFlags: flags.length > 0, flagCount: flags.length + (flags.length === 1 ? ' item' : ' items'),
+        startLabel: next.status === 'IN_PROGRESS' ? 'Continue Appointment' : (next.kind === 'video' ? 'Start Video Call' : 'Start Appointment'), startD: next.kind === 'video' ? ic.video : ic.play,
+        startOffStr: canStart ? 'false' : 'true', startBg: canStart ? 'var(--interactive-primary)' : 'var(--bg-disabled)', startInk: canStart ? 'var(--text-inverse)' : 'var(--text-tertiary)', startShadow: canStart ? 'var(--shadow-dropdown)' : 'none', startCursor: canStart ? 'pointer' : 'not-allowed',
+        hasHelp: !canStart, opensAt: isToday ? lib.hm(Math.max(0, startMin - 15)) : lib.fmtDay(next.day) + ', ' + lib.hm(Math.max(0, startMin - 15))
+      };
+      this.next = next; this.nextP = p; this.canStart = canStart;
+    } else { this.next = null; }
+    const recordOpen = S.recordOpen === null ? !phone : S.recordOpen;
+    const begin = () => {
+      const a = this.next; if (!a) return;
+      const ap = st.appointments.map((x) => x.id === a.id ? Object.assign({}, x, { status: 'IN_PROGRESS' }) : x);
+      act('set', { appointments: ap });
+      act('push', { s: a.kind === 'video' ? 'videoCall' : 'visit', p: { id: a.id } });
+    };
+    // timeline (today)
+    const rows = lib.agenda(st, today).rows.filter((r) => r.type !== 'free');
+    const isPast = (r) => r.type === 'appt' ? ['COMPLETED', 'NO_SHOW'].indexOf(r.appt.status) >= 0 || (lib.toMin(r.end) <= nowMin && r.appt.status !== 'IN_PROGRESS') : lib.toMin(r.end) <= nowMin;
+    const earlierRows = rows.filter(isPast); const upcoming = rows.filter((r) => !isPast(r));
+    const shown = (S.earlier ? earlierRows : []).concat(upcoming);
+    const timeline = shown.map((r, i) => {
+      const past = isPast(r); const cur = r.type === 'appt' && this.next && r.appt.id === this.next.id && r.appt.day === today;
+      const lineTop = i === 0 ? 'transparent' : 'var(--border-default)', lineBottom = i === shown.length - 1 ? 'transparent' : 'var(--border-default)';
+      if (r.type === 'block') return { time: r.start, timeInk: past ? 'var(--text-tertiary)' : 'var(--text-primary)', lineTop, lineBottom, dot: 'var(--icon-disabled)', dotRing: 'none', isAppt: false, isBlock: true, title: r.block.reason, sub: r.start + '–' + r.end + ' · Blocked', subD: ic.block, hasChip: false, chip: '', chipBg: '', chipInk: '', chipDot: '', bg: 'var(--bg-disabled)', border: '0', shadow: 'none', cursor: 'pointer', opacity: past ? '0.6' : '1', open: () => act('go', { tab: 'calendar', rootP: { day: today } }) };
+      const a = r.appt; const p = lib.patient(st, a.patientId); const m = lib.status[a.status] || lib.status.CONFIRMED;
+      const label = a.status === 'CONFIRMED' && cur && lib.toMin(a.start) <= nowMin ? 'Now' : (a.status === 'REQUESTED' ? 'Waiting' : m.label);
+      return { time: a.start, timeInk: past ? 'var(--text-tertiary)' : 'var(--text-primary)', lineTop, lineBottom, dot: cur ? 'var(--icon-brand)' : m.dot, dotRing: cur ? '0 0 0 4px var(--alpha-teal-25)' : 'none', isAppt: true, isBlock: false, ini: lib.initials(p.name), title: p.name, sub: (a.kind === 'video' ? 'Video Call' : 'In Clinic') + ' · ' + a.reason, subD: a.kind === 'video' ? ic.video : ic.clinic, hasChip: true, chip: label, chipBg: m.bg, chipInk: m.ink, chipDot: m.dot, bg: cur ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', border: cur ? '2px solid var(--border-focus)' : '0', shadow: cur ? 'none' : 'var(--shadow-dropdown)', cursor: 'pointer', opacity: past ? '0.7' : '1', open: () => act('push', { s: 'apptDetails', p: { id: a.id } }) };
+    });
+    // attention (max 4 unread + 3 active tasks, cap 6)
+    const tInfo = { booked: [ic.calPlus, 'var(--bg-success-subtle)', 'var(--icon-brand)'], cancelled: [ic.calendar, 'var(--bg-error-subtle)', 'var(--text-error)'], chat: [ic.chat, 'var(--bg-info-subtle)', 'var(--text-info)'], docAccess: [ic.lock, 'var(--bg-warning-subtle)', 'var(--icon-warning)'], partnership: [ic.handshake, 'var(--bg-success-subtle)', 'var(--icon-brand)'], task: [ic.tasks, 'var(--bg-warning-subtle)', 'var(--icon-warning)'], payment: [ic.card, 'var(--bg-success-subtle)', 'var(--icon-brand)'], reminder: [ic.clock, 'var(--bg-info-subtle)', 'var(--text-info)'] };
+    const dotOf = { booked: 'var(--icon-brand)', cancelled: 'var(--text-error)', chat: 'var(--text-info)', docAccess: 'var(--icon-warning)', partnership: 'var(--icon-brand)', task: 'var(--icon-warning)', payment: 'var(--icon-brand)', reminder: 'var(--text-info)' };
+    const markRead = (id) => act('set', (s) => ({ notifs: s.notifs.map((n) => n.id === id ? Object.assign({}, n, { read: true }) : n) }));
+    const att = unread.slice(0, 4).map((n) => { const t = tInfo[n.type] || [ic.bell, 'var(--bg-canvas)', 'var(--text-secondary)']; return { title: n.title, sub: n.body, time: lib.relTime(n.at, st), d: t[0], tint: t[1], ink: t[2], canRead: true, padR: 'var(--size-touch)', markRead: () => markRead(n.id), open: () => act('route', { link: n.link, nid: n.id }) }; });
+    if (canTasks) st.tasks.filter((t) => t.status === 'ACTIVE').slice(0, 3).forEach((t) => { if (att.length < 6) att.push({ title: t.name, sub: lib.patient(st, t.patientId).name + ' · Follow-up task', time: t.done + ' of ' + t.total + ' check-ins', d: ic.tasks, tint: 'var(--bg-warning-subtle)', ink: 'var(--text-warning)', canRead: false, padR: 'var(--size-12)', markRead: () => {}, open: () => act('push', { s: 'taskDetails', p: { id: t.id } }) }); });
+    const activity = st.notifs.slice().sort((a, b) => b.at.localeCompare(a.at)).slice(0, 8).map((n, i) => ({ time: lib.relTime(n.at, st).replace('Yesterday, ', 'Yest. '), dot: dotOf[n.type] || 'var(--icon-disabled)', title: n.title, body: n.body, divider: i ? '1px solid var(--border-default)' : '0', open: () => act('route', { link: n.link }) }));
+    // analytics
+    const r = S.range; const days = Math.min(90, Math.round((Date.UTC(...r.to.split('-').map((x, i) => i === 1 ? x - 1 : +x)) - Date.UTC(...r.from.split('-').map((x, i) => i === 1 ? x - 1 : +x))) / 864e5) + 1);
+    const empty = !!st.firstDay;
+    const series = []; for (let i = days - 1; i >= 0; i--) { const d = lib.addDays(r.to, -i); const real = mine.filter((a) => a.day === d && a.status !== 'CANCELLED').length; const dw = lib.dow(d); const filler = empty || d > today ? 0 : (dw === 0 ? 0 : ((d.charCodeAt(9) * 7 + dw * 3) % 5) + 3); series.push({ d, v: real + filler }); }
+    const max = Math.max(...series.map((x) => x.v), 0); const yMax = max ? Math.ceil(max * 1.2) : 10; const step = yMax <= 5 ? 1 : Math.ceil(yMax / 5);
+    const X = (i) => 40 + (series.length === 1 ? 178 : i * (352 / (series.length - 1))); const Y = (v) => 150 - (v / yMax) * 140;
+    const grid = []; for (let v = 0; v <= yMax; v += step) grid.push({ y: Y(v), ty: Y(v) + 3, label: String(v) });
+    const labelEvery = Math.ceil(series.length / 7);
+    const trendPts = series.map((x, i) => ({ x: X(i), y: Y(x.v), r: S.tip && S.tip.i === i ? 6 : 4, fill: 'var(--interactive-primary)', label: x.d.slice(5, 7) + '/' + x.d.slice(8), showLabel: i % labelEvery === 0 || i === series.length - 1, pick: () => this.setState({ tip: S.tip && S.tip.i === i ? null : { i, left: (X(i) / 400 * 100) + '%', top: (Y(x.v) / 180 * 100) + '%', text: lib.fmtDay(x.d).replace(/^\w+, /, '') + ' · ' + x.v + (x.v === 1 ? ' visit' : ' visits') } }) }));
+    let path = ''; trendPts.forEach((p, i) => { if (!i) { path = 'M' + p.x + ' ' + p.y; return; } const q = trendPts[i - 1]; const cx = (q.x + p.x) / 2; path += ' C' + cx + ' ' + q.y + ' ' + cx + ' ' + p.y + ' ' + p.x + ' ' + p.y; });
+    const inPerson = empty ? 0 : 17 + mine.filter((a) => a.kind === 'clinic' && a.status === 'COMPLETED').length, video = empty ? 0 : 8 + mine.filter((a) => a.kind === 'video' && a.status === 'COMPLETED').length;
+    const tot = inPerson + video; const circ = 2 * Math.PI * 60;
+    const fmtRange = (a, b) => { const A = a.split('-'), B = b.split('-'); return +A[2] + ' ' + lib.MN[+A[1] - 1] + ' – ' + +B[2] + ' ' + lib.MN[+B[1] - 1] + ', ' + B[0]; };
+    const premium = lib.can(st, 'analyticsAdv');
+    const kpis = [
+      { label: 'Appointments Today', value: String(todays.filter((a) => a.status !== 'CANCELLED').length), d: ic.calendar, tint: 'var(--bg-success-subtle)', ink: 'var(--text-brand-strong)', cursor: 'pointer', go: () => act('tab', 'calendar') },
+      { label: 'Completed Today', value: String(todays.filter((a) => a.status === 'COMPLETED').length), d: ic.checkCircle, tint: 'var(--bg-success-subtle)', ink: 'var(--text-brand-strong)', cursor: 'default', go: () => {} },
+      { label: 'Cancelled / No-show', value: String(todays.filter((a) => a.status === 'CANCELLED' || a.status === 'NO_SHOW').length), d: ic.block, tint: 'var(--bg-warning-subtle)', ink: 'var(--text-warning)', cursor: 'default', go: () => {} },
+      { label: 'New Patients Today', value: String(st.patients.filter((p) => p.createdOn === today).length), d: ic.userPlus, tint: 'var(--bg-info-subtle)', ink: 'var(--text-info)', cursor: 'pointer', go: () => act('go', { tab: 'patients', rootP: { sort: 'created' } }) }
+    ];
+    // first-day checklist
+    const ob = st.onboard || {};
+    const ckItems = [
+      { label: 'Set your practice timezone', done: !!st.tz, go: () => act('go', { tab: 'profile', s: 'setTimezone' }) },
+      { label: 'Add your first patient', done: st.patients.length > 0, go: () => act('go', { tab: 'patients', rootP: { create: true } }) },
+      { label: 'Set your availability', done: !!ob.avail, go: () => act('go', { tab: 'calendar', s: 'availability' }) }
+    ];
+    const doneCount = ckItems.filter((c) => c.done).length;
+    const dr = S.draft;
+    const presetsDef = [['Last 7 days', 6], ['Last 30 days', 29], ['Last 90 days', 89]];
+    return Object.assign(base, {
+      loading, loaded: !loading, refreshing: S.refreshing, refreshSpin: S.refreshing ? 'hm-spin .8s linear infinite' : 'none',
+      pagePad: phone ? 'var(--size-48) var(--size-12) 0' : 'var(--size-24) var(--size-24) 0', gap: phone ? 'var(--size-20)' : 'var(--size-24)', heroPad: phone ? 'var(--size-16)' : 'var(--size-20)', heroName: phone ? 'var(--font-size-16)' : 'var(--font-size-24)', heroActDir: phone ? 'column' : 'row', anPad: phone ? 'var(--size-16)' : 'var(--size-20)',
+      chipBleed: phone ? '-12px' : '0', chipBleedPad: phone ? 'var(--size-12)' : 'var(--size-2)',
+      toolDir: phone ? 'column' : 'row', toolW: phone ? '100%' : 'auto', kpiCols: phone ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
+      bottomClear: phone ? '120px' : '32px', avatarDisplay: phone ? 'inline-flex' : 'none',
+      h1Size: lib.h1(phone, st), meIni: lib.initials(st.me.name), meName: st.me.name, greeting: (nowMin < 720 ? 'Good morning, ' : nowMin < 1080 ? 'Good afternoon, ' : 'Good evening, ') + 'Dr. ' + st.me.last,
+      dateLine: lib.fmtLong(today) + ' · ' + lib.hm(nowMin),
+      hasUnread: unread.length > 0, bellLabel: unread.length ? 'Notifications, ' + unread.length + ' unread' : 'Notifications',
+      openNotifs: () => act('tab', 'notifications'), openProfile: () => act('tab', 'profile'), openSearch: () => act('push', { s: 'search' }), openCalendar: () => act('tab', 'calendar'), openPatients: () => act('tab', 'patients'),
+      refresh: () => { if (S.refreshing) return; this.setState({ refreshing: true }); this.tr = setTimeout(() => { this.setState({ refreshing: false }); if (st.online === false) act('banner', { kind: 'warn', text: 'You’re offline. Showing saved data.' }); }, 1000); },
+      tzMismatch: st.phoneTz && st.phoneTz !== st.tz,
+      showChecklist: !!st.firstDay && !ob.dismissed && doneCount < 3, checkDone: doneCount, dismissChecklist: () => act('set', (s) => ({ onboard: Object.assign({}, s.onboard, { dismissed: true }) })),
+      checklist: ckItems.map((c) => ({ label: c.label, go: c.go, ring: c.done ? 'var(--border-brand)' : 'var(--border-disabled)', fill: c.done ? 'var(--interactive-primary)' : 'var(--bg-surface)', deco: c.done ? 'line-through' : 'none', ink: c.done ? 'var(--text-tertiary)' : 'var(--text-primary)' })),
+      metrics,
+      showHero: !loading && !!next, showEmptyHero: !loading && !next, hero,
+      emptyIcon: ic.calendar, emptyTitle: todays.length && !next ? 'Done for today' : 'No upcoming appointments', emptyBody: todays.length && !next ? 'All of today’s visits are finished. Nothing is booked for the next 14 days.' : 'New bookings will show here as soon as patients make them.',
+      newAppt: () => act('tab', 'calendar'),
+      recordOpen, recordStr: recordOpen ? 'true' : 'false', recordLabel: recordOpen ? 'Hide' : 'Show', recordChev: recordOpen ? '180deg' : '0deg', toggleRecord: () => this.setState({ recordOpen: !recordOpen }),
+      startHero: () => { if (!this.canStart) { act('banner', { kind: 'info', text: 'Start opens 15 minutes before the visit.' }); return; } if (this.nextP && this.nextP.chronic) { this.setState({ chronic: { name: this.nextP.name, disease: this.nextP.chronic, allergy: this.nextP.allergies } }); return; } begin(); },
+      openChart: () => this.next && openPatient(this.next.patientId),
+      chronicOpen: !!S.chronic, chronic: Object.assign({ hasAllergy: !!(S.chronic && S.chronic.allergy) }, S.chronic || {}), understand: () => { this.setState({ chronic: null }); begin(); },
+      chips: [
+        { label: 'New appointment', d: ic.calPlus, locked: false, go: () => act('tab', 'calendar') },
+        { label: 'Video Call', d: ic.video, locked: false, go: () => act('go', { tab: 'calendar', rootP: { day: today, quickVideo: true } }) },
+        { label: 'Prescription', d: ic.pill, locked: !canTasks, go: () => (canTasks ? act('go', { tab: 'tasks', s: 'taskCreate', p: { category: 'MEDICATION' } }) : gate('Remote-care tasks need a Premium subscription.')) }
+      ],
+      showTimeline: !loading && rows.length > 0, timeline, hasEarlier: earlierRows.length > 0, earlierStr: S.earlier ? 'true' : 'false', earlierChev: S.earlier ? '180deg' : '0deg',
+      earlierLabel: S.earlier ? 'Hide earlier' : 'Show ' + earlierRows.length + ' earlier', toggleEarlier: () => this.setState({ earlier: !S.earlier }),
+      attention: att, showAttention: !loading && att.length > 0, attEmpty: !loading && !att.length,
+      activity, showActivity: !loading && activity.length > 0, actEmpty: !loading && !activity.length,
+      rangeLabel: fmtRange(r.from, r.to), openRange: () => this.setState({ rangeOpen: true, draft: { from: r.from, to: r.to, err: '' } }), closeRange: () => this.setState({ rangeOpen: false }),
+      rangeOpen: S.rangeOpen, draft: dr ? { from: dr.from, to: dr.to, min: lib.addDays(today, -365), max: lib.addDays(today, 30), hasErr: !!dr.err, err: dr.err, onFrom: (e) => this.setState({ draft: Object.assign({}, this.state.draft, { from: e.target.value, err: '' }) }), onTo: (e) => this.setState({ draft: Object.assign({}, this.state.draft, { to: e.target.value, err: '' }) }) } : {},
+      presets: presetsDef.map(([l, n]) => { const sel = dr && dr.to === today && dr.from === lib.addDays(today, -n); return { label: l, selStr: sel ? 'true' : 'false', pick: () => this.setState({ draft: { from: lib.addDays(today, -n), to: today, err: '' } }) }; }),
+      saveRange: () => { const d = this.state.draft; if (!d.from || !d.to) { this.setState({ draft: Object.assign({}, d, { err: 'Choose a start and an end date.' }) }); return; } if (d.to < d.from) { this.setState({ draft: Object.assign({}, d, { err: 'The end date is before the start date.' }) }); return; } this.setState({ range: { from: d.from, to: d.to }, rangeOpen: false, tip: null }); },
+      exporting: S.exporting, notExporting: !S.exporting, exportingStr: S.exporting ? 'true' : 'false', exportOpacity: S.exporting ? '0.7' : '1',
+      exportCsv: () => {
+        if (S.exporting) return; this.setState({ exporting: true });
+        this.te = setTimeout(() => {
+          this.setState({ exporting: false });
+          const name = 'shifa_dashboard_' + r.from + '_' + r.to + '.csv';
+          const csv = 'date,appointments\n' + series.map((x) => x.d + ',' + x.v).join('\n') + '\n\nmetric,value\n' + kpis.map((k) => k.label + ',' + k.value).join('\n');
+          try { const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); } catch (e) { /* the share sheet stands in on phones */ }
+          act('banner', { kind: 'success', text: phone ? 'Share sheet opened with ' + name + '.' : name + ' downloaded.' });
+        }, 900);
+      },
+      kpis, premiumCharts: premium, teaser: !premium, seePlans,
+      trendTitle: 'Appointments (' + (days === 7 ? 'Last 7 Days' : fmtRange(series[0].d, r.to)) + ')', trendEmpty: max === 0, trendHas: max > 0, trendAria: 'Appointments per day, ' + fmtRange(series[0].d, r.to) + '. Highest ' + max + '.',
+      grid, trendPts, trendPath: path, hasTip: !!S.tip, tip: S.tip || {},
+      donutEmpty: tot === 0, donutHas: tot > 0, donut: { pct: tot ? Math.round(inPerson / tot * 100) + ' %' : '0 %', videoPct: tot ? Math.round(video / tot * 100) + ' %' : '0 %', inPerson, video, dash: tot ? (circ * inPerson / tot) + ' ' + circ : '0 ' + circ, aria: 'In-person ' + inPerson + ', video ' + video },
+      eng: { active: empty ? 0 : st.patients.length, docs: empty ? 0 : st.docs.length + 35 }
+    });
+  }
+}
+</script>
+</body>
+</html>

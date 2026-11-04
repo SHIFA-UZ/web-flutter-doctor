@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Profile, settings and reports</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes pf-spin{to{transform:rotate(360deg)}}
+@keyframes pf-up{from{transform:translateY(var(--size-30));opacity:0}to{transform:none;opacity:1}}
+@keyframes pf-drop{0%{transform:translate(-50%,-140%)}100%{transform:translate(-50%,-100%)}}
+.pf-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.pf-row:hover{background:var(--bg-hover) !important}
+.pf-in input,.pf-in select,.pf-in textarea{font: 600 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.pf-in input::placeholder,.pf-in textarea::placeholder{color:var(--text-tertiary);font-weight:500}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div class="pf-in" style="position: relative; width: 100%; min-height: 100%; box-sizing: border-box; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans)">
+<div style="padding: {{pagePad}}; padding-bottom: {{bottomClear}}; width: 100%; max-width: {{maxW}}; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14)">
+
+  <!-- page header (all but root) -->
+  <sc-if value="{{hasHeader}}" hint-placeholder-val="{{ true }}">
+    <header style="display: flex; align-items: center; gap: var(--size-10)">
+      <button class="pf-b sh-icon-btn sh-icon-btn--surface" onClick="{{leave}}" aria-label="{{backAria}}" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{backIcon}}"></path></svg></button>
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column"><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{title}}</h1><sc-if value="{{hasSubtitle}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{subtitle}}</span></sc-if></div>
+
+      <sc-if value="{{hasHeadIcon}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{headIcon.go}}" aria-label="{{headIcon.label}}" title="{{headIcon.label}}" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{headIcon.d}}"></path></svg></button></sc-if>
+    </header>
+  </sc-if>
+
+  <!-- ===== PROFILE ROOT ===== -->
+  <sc-if value="{{isRoot}}" hint-placeholder-val="{{ true }}">
+    <h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Profile</h1>
+    <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; align-items: center; gap: var(--size-14)">
+      <button class="pf-b sh-press sh-avatar--edit" onClick="{{rt.photo}}" aria-label="Change photo" style="position: relative; width: var(--size-72); height: var(--size-72); flex: none; background: {{rt.avBg}}; font: 700 var(--font-size-24)/1 var(--font-sans); color: var(--text-primary)">{{rt.ini}}<span aria-hidden="true" style="position: absolute; right: calc(-1 * var(--size-2)); bottom: calc(-1 * var(--size-2)); width: var(--size-26); height: var(--size-26); border-radius: var(--radius-full); background: var(--charcoal); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 var(--size-2) var(--white)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.camera}}"></path></svg></span></button>
+      <button class="pf-b sh-press" onClick="{{rt.edit}}" style="flex: 1 1 auto; min-width: 0; padding: 0; display: flex; flex-direction: column; gap: var(--size-4); color: var(--text-primary)">
+        <span style="font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">{{rt.name}}</span>
+        <span style="font-size: var(--font-size-14); color: var(--text-secondary)">{{rt.spec}}</span>
+        <span style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><span style="height: var(--size-22); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-canvas); font-size: var(--font-size-12); line-height: var(--line-height-22); font-weight: 700">{{rt.tz}}</span><span style="height: var(--size-22); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--charcoal); color: var(--text-inverse); font-size: var(--font-size-12); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-caps)">{{rt.tier}}</span></span>
+      </button>
+    </div>
+    <sc-if value="{{rt.incomplete}}" hint-placeholder-val="{{ false }}">
+      <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-8); box-shadow: inset 0 0 0 var(--size-1) var(--alpha-teal-25)">
+        <div style="display: flex; justify-content: space-between; font-size: var(--font-size-14); font-weight: 700"><span>{{rt.pctLabel}}</span></div>
+        <span aria-hidden="true" style="height: var(--size-6); border-radius: var(--radius-sm); background: var(--bg-disabled); overflow: hidden"><span style="display: block; height: var(--size-6); width: {{rt.pct}}; background: var(--interactive-primary)"></span></span>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{rt.missing}}" as="m" hint-placeholder-count="2"><button class="pf-b sh-action sh-action--tint" onClick="{{m.go}}">{{m.label}}</button></sc-for></div>
+      </div>
+    </sc-if>
+    <nav aria-label="Profile sections" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); overflow: hidden">
+      <sc-for list="{{rt.rows}}" as="r" hint-placeholder-count="8"><button class="pf-b pf-row sh-press sh-press--listrow" onClick="{{r.go}}" style="padding: var(--size-12) var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: {{r.ink}}"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-control-md); background: {{r.tint}}; color: {{r.iconInk}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.d}}"></path></svg></span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{r.title}}</span><sc-if value="{{r.hasPrev}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.prev}}</span></sc-if></span><sc-if value="{{r.chev}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span></sc-if></button></sc-for>
+    </nav>
+    <button class="pf-b sh-link sh-link--plain sh-link--quiet" onClick="{{rt.version}}" style="align-self: center; font: 600 var(--font-size-12)/var(--size-16) var(--font-sans)">Shifa Doctor · Version 1.0.0 (3)</button>
+  </sc-if>
+
+  <!-- ===== GENERIC FORM SECTIONS ===== -->
+  <sc-for list="{{sections}}" as="sec" hint-placeholder-count="0">
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-12); box-shadow: {{sec.ring}}">
+      <sc-if value="{{sec.hasTitle}}" hint-placeholder-val="{{ true }}"><h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; color: {{sec.titleInk}}">{{sec.title}}</h2></sc-if>
+      <sc-if value="{{sec.hasHelp}}" hint-placeholder-val="{{ false }}"><p style="margin: calc(-1 * var(--size-6)) 0 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{sec.help}}</p></sc-if>
+      <sc-for list="{{sec.fields}}" as="f" hint-placeholder-count="3">
+        <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<span style="display: flex; gap: var(--size-6); align-items: center"><sc-if value="{{f.hasPrefix}}" hint-placeholder-val="{{ false }}"><span style="flex: none; height: var(--size-touch); padding: 0 var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-canvas); font-size: var(--font-size-14); line-height: var(--line-height-44); color: var(--text-primary)">{{f.prefix}}</span></sc-if><input class="sh-input" type="{{f.type}}" value="{{f.v}}" onChange="{{f.on}}" placeholder="{{f.ph}}" aria-label="{{f.label}}" min="{{f.min}}" max="{{f.max}}" style="flex: 1 1 auto; min-width: 0; border-color: {{f.border}}"><sc-if value="{{f.hasEye}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-press sh-press--tile" onClick="{{f.eye}}" aria-label="{{f.eyeAria}}" style="flex: none; width: var(--size-touch); height: var(--size-touch); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.eyeD}}"></path></svg></button></sc-if></span><sc-if value="{{f.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); color: var(--text-error)">{{f.err}}</span></sc-if><sc-if value="{{f.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); font-weight: 500; color: var(--text-secondary)">{{f.help}}</span></sc-if></label></sc-if>
+        <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<textarea class="sh-input sh-input--area" value="{{f.v}}" onChange="{{f.on}}" rows="{{f.rows}}" placeholder="{{f.ph}}" aria-label="{{f.label}}" style="border-color: {{f.border}}"></textarea><sc-if value="{{f.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); font-weight: 500; color: var(--text-secondary)">{{f.help}}</span></sc-if></label></sc-if>
+        <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<select class="sh-select" value="{{f.v}}" onChange="{{f.on}}" aria-label="{{f.label}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select><sc-if value="{{f.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); font-weight: 500; color: var(--text-secondary)">{{f.help}}</span></sc-if></label></sc-if>
+        <sc-if value="{{f.isSwitch}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-press" role="switch" aria-checked="{{f.onStr}}" onClick="{{f.toggle}}" style="padding: 0; display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary); opacity: {{f.op}}"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{f.label}}</span><sc-if value="{{f.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{f.help}}</span></sc-if></span><span class="sh-switch" aria-hidden="true"></span></button></sc-if>
+        <sc-if value="{{f.isSeg}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}</span><div class="dr-tabs dr-tabs--block" role="radiogroup" aria-label="{{f.label}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><button class="pf-b dr-tab" role="radio" aria-checked="{{o.selStr}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div></div></sc-if>
+        <sc-if value="{{f.isLink}}" hint-placeholder-val="{{ false }}"><button class="pf-b pf-row sh-press sh-press--tile" onClick="{{f.go}}" style="padding: var(--size-10) var(--size-12); display: flex; align-items: center; gap: var(--size-12); color: {{f.ink}}"><sc-if value="{{f.hasIcon}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.d}}"></path></svg></span></sc-if><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}</span><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{f.v}}</span></span><span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span></button></sc-if>
+        <sc-if value="{{f.isInfo}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: var(--size-12); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span style="flex: 0 0 var(--basis-130); color: var(--text-secondary); font-weight: 600">{{f.label}}</span><span style="flex: 1 1 auto; font-weight: 700; overflow-wrap: anywhere">{{f.v}}</span></div></sc-if>
+        <sc-if value="{{f.isText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: {{f.ink}}">{{f.v}}</p></sc-if>
+        <sc-if value="{{f.isBtn}}" hint-placeholder-val="{{ false }}"><button class="pf-b {{f.cls}}" onClick="{{f.go}}" aria-busy="{{f.busyStr}}" aria-disabled="{{f.offStr}}" style="align-self: {{f.align}}"><sc-if value="{{f.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{f.label}}</button></sc-if>
+        <sc-if value="{{f.isChips}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{f.chips}}" as="c" hint-placeholder-count="3"><span style="box-sizing: border-box; height: var(--size-32); display: inline-flex; align-items: center; gap: var(--size-6); padding: 0 var(--size-6) 0 var(--size-12); border-radius: var(--radius-full); background: var(--bg-success-subtle); font-size: var(--font-size-14); font-weight: 700; white-space: nowrap">{{c.label}}<button class="pf-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{c.remove}}" aria-label="{{c.aria}}" ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></span></sc-for></div></sc-if>
+        <sc-if value="{{f.isRules}}" hint-placeholder-val="{{ false }}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-4) var(--size-10)"><sc-for list="{{f.rules}}" as="r" hint-placeholder-count="5"><span style="display: inline-flex; align-items: center; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 600; color: {{r.ink}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"></path></svg>{{r.label}}</span></sc-for></div></sc-if>
+        <sc-if value="{{f.isList}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: var(--size-6)"><sc-for list="{{f.items}}" as="it" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-8) var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-canvas); opacity: {{it.op}}"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-sm); background: var(--bg-surface); display: inline-flex; align-items: center; justify-content: center; color: var(--text-secondary); flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"></path></svg></span><button class="pf-b sh-press" onClick="{{it.open}}" style="flex: 1 1 auto; min-width: 0; padding: 0; display: flex; flex-direction: column; gap: var(--size-2); color: var(--text-primary)"><span style="font-size: var(--font-size-14); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{it.title}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{it.sub}}</span></button><sc-if value="{{it.hasAct}}" hint-placeholder-val="{{ true }}"><button class="pf-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{it.act}}" aria-label="{{it.actAria}}" style="color: {{it.actInk}}; flex: none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{it.actD}}"></path></svg></button></sc-if></div></sc-for></div></sc-if>
+        <sc-if value="{{f.isSuggest}}" hint-placeholder-val="{{ false }}"><div role="listbox" aria-label="Address suggestions" style="border-radius: var(--radius-control-md); box-shadow: var(--shadow-default); overflow: hidden; margin-top: calc(-1 * var(--size-8))"><sc-for list="{{f.items}}" as="it" hint-placeholder-count="3"><button role="option" class="pf-b pf-row sh-press sh-press--listrow" onClick="{{it.pick}}" style="padding: var(--size-10) var(--size-12); display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); font-weight: 700">{{it.title}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{it.sub}}</span></button></sc-for></div></sc-if>
+      </sc-for>
+    </section>
+  </sc-for>
+
+  <!-- ===== MAP PICKER ===== -->
+  <sc-if value="{{isMap}}" hint-placeholder-val="{{ false }}">
+    <div class="dr-map" style="height: {{mapH}}; min-height: 0">
+      <button class="pf-b sh-press" onClick="{{mp.tap}}" aria-label="Map. Tap to place the pin." style="position: absolute; inset: 0; background-color: var(--raw-map-land); background-image: linear-gradient(var(--bg-surface) var(--size-3), transparent var(--size-3)), linear-gradient(90deg, var(--white) var(--size-3), transparent var(--size-3)), linear-gradient(var(--raw-map-street) var(--size-1), transparent var(--size-1)), linear-gradient(90deg, var(--raw-map-street) var(--size-1), transparent var(--size-1)); background-size: var(--size-160) var(--size-160), var(--size-160) var(--size-160), var(--size-40) var(--size-40), var(--size-40) var(--size-40); background-position: {{mp.bgPos}}; cursor: crosshair"></button>
+      <span aria-hidden="true" style="position: absolute; left: 12%; top: 18%; width: 30%; height: 18%; border-radius: var(--radius-control-md); background: var(--raw-map-park)"></span>
+      <span aria-hidden="true" style="position: absolute; left: 58%; top: 52%; width: 26%; height: 22%; border-radius: 50%; background: var(--raw-map-water)"></span>
+      <span role="img" aria-label="Pin" style="position: absolute; left: {{mp.x}}; top: {{mp.y}}; transform: translate(-50%, -100%); animation: pf-drop .25s ease-out; color: var(--interactive-primary); pointer-events: none"><svg style="stroke: var(--white)" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"></path><circle style="fill: var(--text-inverse)" cx="12" cy="10" r="2.6"></circle></svg></span>
+      <div style="position: absolute; left: var(--size-12); top: var(--size-12); display: flex; gap: var(--size-8); flex-wrap: wrap"><sc-for list="{{mp.spots}}" as="s" hint-placeholder-count="3"><button class="pf-b sh-chip" onClick="{{s.go}}" style="box-shadow: var(--shadow-dropdown)">{{s.label}}</button></sc-for></div>
+      <button class="pf-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{mp.locate}}" aria-label="My location" aria-busy="{{mp.busyStr}}" style="position: absolute; right: var(--size-12); bottom: var(--size-12)"><sc-if value="{{mp.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{mp.idle}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg></sc-if></button>
+    </div>
+    <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-6)">
+      <b style="font-size: var(--font-size-14)">Selected Location</b>
+      <span style="font-size: var(--font-size-14); line-height: var(--line-height-20)">{{mp.addr}}</span>
+      <span style="font-size: var(--font-size-12); color: var(--text-secondary)">Drag the pin or tap the map to adjust</span>
+      <button class="pf-b sh-btn sh-btn--primary" onClick="{{mp.confirm}}" style="margin-top: var(--size-6)">Confirm</button>
+    </div>
+  </sc-if>
+
+  <!-- ===== TIMEZONE PICKER ===== -->
+  <sc-if value="{{isTz}}" hint-placeholder-val="{{ false }}">
+    <label style="position: relative; display: block"><span style="position: absolute; left: var(--size-12); top: var(--size-12); color: var(--text-secondary); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span><input class="sh-input" value="{{tz.q}}" onChange="{{tz.onQ}}" placeholder="Search timezone" aria-label="Search timezone" style="width: 100%; padding: 0 var(--size-12) 0 var(--size-40)"></label>
+    <sc-if value="{{tz.none}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-20); text-align: center; display: flex; flex-direction: column; gap: var(--size-4)"><b>No timezone found</b><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Try the city name in English</span></div></sc-if>
+    <sc-for list="{{tz.groups}}" as="g" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary); letter-spacing: var(--letter-spacing-caps)">{{g.label}}</span>
+        <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); overflow: hidden"><sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3"><button class="pf-b pf-row sh-press sh-press--listrow" onClick="{{r.pick}}" aria-pressed="{{r.selStr}}" style="padding: var(--size-10) var(--size-14); display: flex; align-items: center; gap: var(--size-10)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); font-weight: 700">{{r.city}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{r.sub}}</span></span><sc-if value="{{r.sel}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span></sc-if></button></sc-for></div>
+      </div>
+    </sc-for>
+  </sc-if>
+
+  <!-- ===== SERVICES ===== -->
+  <sc-if value="{{isServices}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; align-items: center; gap: var(--size-12); flex-wrap: wrap"><span style="flex: 1 1 auto; font-size: var(--font-size-14); font-weight: 700; color: var(--text-secondary)">{{sv.summary}}</span><sc-if value="{{notPhone}}" hint-placeholder-val="{{ true }}"><button class="pf-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{sv.add}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add service</button></sc-if></div>
+    <sc-if value="{{sv.hasChips}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: var(--size-6); overflow-x: auto"><sc-for list="{{sv.chips}}" as="c" hint-placeholder-count="3"><button class="pf-b sh-chip" onClick="{{c.pick}}" aria-pressed="{{c.selStr}}" style="flex: none">{{c.label}}</button></sc-for></div></sc-if>
+    <sc-for list="{{sv.groups}}" as="g" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary); letter-spacing: var(--letter-spacing-caps)">{{g.label}}</span>
+        <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); overflow: hidden"><sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2"><button class="pf-b pf-row sh-press sh-press--listrow" onClick="{{r.open}}" style="padding: var(--size-12) var(--size-14); display: flex; flex-direction: column; gap: var(--size-4); opacity: {{r.op}}"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-6)"><span style="font-size: var(--font-size-16); font-weight: 700">{{r.title}}</span><sc-for list="{{r.tags}}" as="t" hint-placeholder-count="1"><span style="height: var(--size-20); padding: 0 var(--size-8); border-radius: var(--radius-full); background: {{t.bg}}; font-size: var(--font-size-12); line-height: var(--line-height-20); font-weight: 700">{{t.label}}</span></sc-for></span><sc-if value="{{r.hasDesc}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">{{r.desc}}</span></sc-if><span style="font-size: var(--font-size-14); font-weight: 700">{{r.prices}}</span></button></sc-for></div>
+      </div>
+    </sc-for>
+    <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-fab sh-fab--docked" onClick="{{sv.add}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add service</button></sc-if>
+  </sc-if>
+
+  <!-- ===== SUBSCRIPTION PLANS ===== -->
+  <sc-if value="{{isSub}}" hint-placeholder-val="{{ false }}">
+    <div style="container-type: inline-size"><div class="dr-tiers" style="grid-template-columns: repeat({{planCols}}, minmax(0, 1fr))">
+      <sc-for list="{{sb.plans}}" as="p" hint-placeholder-count="3">
+        <section class="{{p.cls}}" aria-label="{{p.label}}" style="box-shadow: {{p.ring}}">
+          <div class="dr-tier__name">{{p.label}}<sc-if value="{{p.isCur}}" hint-placeholder-val="{{ false }}"><span class="dr-status dr-status--brand">Current</span></sc-if><sc-if value="{{p.isNeed}}" hint-placeholder-val="{{ false }}"><span class="dr-status dr-status--warn">Includes {{p.need}}</span></sc-if></div>
+          <span style="font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{p.pitch}}</span>
+          <div class="dr-tier__price">{{p.amount}}<small> / month</small></div>
+          <ul><sc-for list="{{p.feats}}" as="f" hint-placeholder-count="3"><li>{{f}}</li></sc-for></ul>
+          <sc-if value="{{p.hasBtn}}" hint-placeholder-val="{{ true }}"><button class="{{p.btnCls}}" onClick="{{p.go}}" aria-disabled="{{p.offStr}}" aria-busy="{{p.busyStr}}"><sc-if value="{{p.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{p.btn}}</button></sc-if>
+        </section>
+      </sc-for>
+    </div></div>
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); overflow: hidden">
+      <button class="pf-b sh-press" onClick="{{sb.toggleMatrix}}" aria-expanded="{{sb.openStr}}" style="width: 100%; padding: var(--size-14); display: flex; align-items: center; gap: var(--size-8); font: 700 var(--font-size-16)/var(--size-20) var(--font-sans); color: var(--text-primary)"><span style="flex: 1 1 auto">Compare all features</span><span style="display: inline-flex; transform: rotate({{sb.chev}})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></span></button>
+      <sc-if value="{{sb.open}}" hint-placeholder-val="{{ false }}"><div role="table" aria-label="Feature comparison" style="padding: 0 var(--size-14) var(--size-14); display: flex; flex-direction: column"><div role="row" style="display: grid; grid-template-columns: 1fr var(--size-60) var(--size-60) var(--size-72); gap: var(--size-4); padding: var(--size-6) 0; font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary); border-bottom: var(--size-1) solid var(--border-default)"><span role="columnheader">Feature</span><span role="columnheader" style="text-align: center">Basic</span><span role="columnheader" style="text-align: center">Pro</span><span role="columnheader" style="text-align: center">Premium</span></div><sc-for list="{{sb.matrix}}" as="m" hint-placeholder-count="5"><div role="row" style="display: grid; grid-template-columns: 1fr var(--size-60) var(--size-60) var(--size-72); gap: var(--size-4); padding: var(--size-8) 0; font-size: var(--font-size-12); border-bottom: var(--size-1) solid var(--grey-100)"><span role="cell">{{m.label}}</span><sc-for list="{{m.cells}}" as="c" hint-placeholder-count="3"><span role="cell" aria-label="{{c.aria}}" style="text-align: center; color: {{c.ink}}; font-weight: 700">{{c.mark}}</span></sc-for></div></sc-for></div></sc-if>
+    </section>
+  </sc-if>
+
+  <!-- ===== REPORTS ===== -->
+  <sc-if value="{{isReports}}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{rp.isRoot}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: var(--size-4)"><h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Reports</h1><span style="font-size: var(--font-size-14); color: var(--text-secondary)">Clinic analytics, trends, and performance reports</span></div></sc-if>
+    <div style="display: flex; gap: var(--size-8)">
+      <button class="pf-b dr-select" onClick="{{rp.range}}" aria-haspopup="dialog" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.calendar}}"></path></svg>{{rp.rangeLabel}}</button>
+      <button class="pf-b sh-btn sh-btn--primary" onClick="{{rp.export}}" aria-label="Export" aria-busy="{{rp.busyStr}}" style="flex: none"><sc-if value="{{rp.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{rp.idle}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.download}}"></path></svg></sc-if>{{rp.exportLabel}}</button>
+    </div>
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-12)">
+      <h2 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">Clinic performance</h2>
+      <div style="display: grid; grid-template-columns: repeat({{rp.kpiCols}}, minmax(0, 1fr)); gap: var(--size-8)"><sc-for list="{{rp.kpis}}" as="k" hint-placeholder-count="4"><button class="pf-b sh-press sh-press--tile" onClick="{{k.go}}" style="padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-4); color: var(--text-primary)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{k.label}}</span><span style="font-size: var(--font-size-24); line-height: var(--line-height-32); font-weight: 700">{{k.n}}</span></button></sc-for></div>
+      <div style="border-radius: var(--radius-control-md); background: var(--bg-canvas); padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-4)"><b style="font-size: var(--font-size-14)">SMS reminders</b><span style="font-size: var(--font-size-14)">{{rp.sms1}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{rp.sms2}}</span></div>
+      <sc-if value="{{rp.premium}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: var(--size-8)"><b style="font-size: var(--font-size-14)">Appointments trend</b>
+          <div role="img" aria-label="{{rp.trendAria}}" style="height: var(--size-140); display: flex; align-items: flex-end; gap: var(--size-6); padding: var(--size-8) var(--size-4) 0; border-bottom: var(--size-1) solid var(--border-default)"><sc-for list="{{rp.bars}}" as="b" hint-placeholder-count="7"><span style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: var(--size-4); height: 100%; justify-content: flex-end"><span style="font-size: var(--font-size-10); font-weight: 700">{{b.n}}</span><span style="width: 100%; max-width: var(--size-32); height: {{b.h}}; border-radius: var(--radius-xs) var(--radius-xs) 0 0; background: var(--interactive-primary)"></span></span></sc-for></div>
+          <div style="display: flex; gap: var(--size-6); padding: 0 var(--size-4)"><sc-for list="{{rp.bars}}" as="b" hint-placeholder-count="7"><span style="flex: 1 1 0; text-align: center; font-size: var(--font-size-10); color: var(--text-secondary)">{{b.label}}</span></sc-for></div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-16); align-items: center"><span role="img" aria-label="{{rp.donutAria}}" style="width: var(--size-112); height: var(--size-112); border-radius: var(--radius-full); background: conic-gradient(var(--blue) 0 {{rp.videoDeg}}, var(--interactive-primary) {{rp.videoDeg}} 360deg); display: inline-flex; align-items: center; justify-content: center; flex: none"><span style="width: var(--size-64); height: var(--size-64); border-radius: var(--radius-full); background: var(--bg-surface); display: inline-flex; align-items: center; justify-content: center; font-size: var(--font-size-14); font-weight: 700">{{rp.total}}</span></span><div style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12)"><b>Visit Type Distribution</b><span style="display: inline-flex; align-items: center; gap: var(--size-6)"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-xs); background: var(--blue)"></span>Video Call · {{rp.video}}</span><span style="display: inline-flex; align-items: center; gap: var(--size-6)"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-xs); background: var(--interactive-primary)"></span>In-person · {{rp.clinic}}</span></div></div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-8)"><div style="border-radius: var(--radius-control-md); background: var(--bg-canvas); padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Active Patients (30d)</span><b style="font-size: var(--font-size-20)">{{rp.active}}</b></div><div style="border-radius: var(--radius-control-md); background: var(--bg-canvas); padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Documents Received (30d)</span><b style="font-size: var(--font-size-20)">{{rp.docs}}</b></div></div>
+      </sc-if>
+      <sc-if value="{{rp.teaser}}" hint-placeholder-val="{{ false }}"><div style="border-radius: var(--radius-control-md); background: var(--bg-canvas); padding: var(--size-14); display: flex; flex-wrap: wrap; gap: var(--size-10); align-items: center"><span style="display: inline-flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.lock}}"></path></svg></span><span style="flex: 1 1 var(--basis-200); font-size: var(--font-size-12); line-height: var(--line-height-18); font-weight: 600">Trends, visit types and patient engagement need the Premium plan.</span><button class="pf-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{rp.plans}}" >See plans</button></div></sc-if>
+    </section>
+  </sc-if>
+
+  <!-- ===== LEGAL DOC / DELETED ===== -->
+  <sc-if value="{{isDoc}}" hint-placeholder-val="{{ false }}"><article style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-20); display: flex; flex-direction: column; gap: var(--size-12); font-size: var(--font-size-14); line-height: var(--line-height-22)"><sc-for list="{{docParas}}" as="p" hint-placeholder-count="3"><p style="margin: 0; font-weight: {{p.w}}; font-size: {{p.s}}">{{p.t}}</p></sc-for></article></sc-if>
+  <sc-if value="{{isAbout}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-press" onClick="{{tapVersion}}" style="align-self: center; display: flex; flex-direction: column; align-items: center; gap: var(--size-6); padding: var(--size-8); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-64); height: var(--size-64); border-radius: var(--radius-control-lg); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-24); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">S</span><b style="font-size: var(--font-size-18)">Shifa Doctor</b><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Version 1.0.0 (3)</span></button></sc-if>
+</div>
+<sc-if value="{{hasSave}}" hint-placeholder-val="{{ false }}"><div class="dr-actionbar"><div class="dr-actionbar__inner"><span class="dr-footer__state">{{saveHint}}</span><button class="pf-b sh-btn sh-btn--primary" onClick="{{save}}" aria-disabled="{{saveOffStr}}" aria-busy="{{savingStr}}"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{saveLabel}}</button></div></div></sc-if>
+
+<sc-if value="{{isDeleted}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 65; background: var(--bg-surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-12); padding: var(--size-24); text-align: center">
+    <span aria-hidden="true" style="width: var(--size-64); height: var(--size-64); border-radius: var(--radius-full); background: var(--bg-canvas); display: inline-flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.check}}"></path></svg></span>
+    <h1 style="margin: 0; font-size: var(--font-size-20); font-weight: 700">Your account was deleted</h1>
+    <p style="margin: 0; max-width: var(--layout-dialog-sm); font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Patient medical records are kept as the law requires and are no longer linked to you. Thank you for using Shifa.</p>
+    <button class="pf-b sh-btn sh-btn--primary" onClick="{{deletedDone}}" >Done</button>
+  </div>
+</sc-if>
+
+<!-- ===== SHEETS ===== -->
+<sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+    <button class="sh-scrim--fill" aria-label="Close" onClick="{{sheet.scrim}}"></button>
+    <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="pf-sh-t" data-pop="{{sheet.pop}}" style="--pop-top: {{sheet.popTop}}; --pop-left: {{sheet.popLeft}}; max-width: {{sheet.max}}; border-radius: {{dlgR}}; padding-bottom: {{sheetPadB}}">
+      <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: var(--size-36); height: var(--size-4); border-radius: var(--radius-full); background: var(--bg-disabled); margin: calc(-1 * var(--size-8)) auto 0"></span></sc-if>
+      <div style="display: flex; align-items: flex-start; gap: var(--size-8)"><h2 id="pf-sh-t" style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; color: {{sheet.titleInk}}">{{sheet.title}}</h2><sc-if value="{{sheet.hasX}}" hint-placeholder-val="{{ true }}"><button class="pf-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{sheet.close}}" aria-label="Close" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if></div>
+      <sc-if value="{{sheet.isText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); white-space: pre-line">{{sheet.body}}</p></sc-if>
+      <sc-if value="{{sheet.isMenu}}" hint-placeholder-val="{{ false }}"><div role="menu" style="display: flex; flex-direction: column"><sc-for list="{{sheet.items}}" as="m" hint-placeholder-count="3"><button role="menuitem" class="pf-b pf-row sh-option" onClick="{{m.go}}" style="display: flex; align-items: center; gap: var(--size-12); color: {{m.ink}}; color: {{m.ink}}"><sc-if value="{{m.hasIcon}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg></sc-if><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); font-weight: {{m.weight}}">{{m.label}}</span><sc-if value="{{m.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{m.sub}}</span></sc-if></span><sc-if value="{{m.sel}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span></sc-if></button></sc-for></div></sc-if>
+      <sc-if value="{{sheet.isSearch}}" hint-placeholder-val="{{ false }}"><input class="sh-input" value="{{sheet.q}}" onChange="{{sheet.onQ}}" placeholder="{{sheet.ph}}" aria-label="{{sheet.ph}}"></sc-if>
+      <sc-for list="{{sheet.sections}}" as="sec" hint-placeholder-count="0">
+        <div style="display: flex; flex-direction: column; gap: var(--size-10)">
+          <sc-if value="{{sec.hasTitle}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary); letter-spacing: var(--letter-spacing-caps)">{{sec.title}}</span></sc-if>
+          <sc-for list="{{sec.fields}}" as="f" hint-placeholder-count="2">
+            <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<span style="display: flex; gap: var(--size-6); align-items: center"><input class="sh-input" type="{{f.type}}" value="{{f.v}}" onChange="{{f.on}}" placeholder="{{f.ph}}" aria-label="{{f.label}}" inputmode="{{f.mode}}" style="flex: 1 1 auto; min-width: 0; border-color: {{f.border}}"><sc-if value="{{f.hasRemove}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-press sh-press--tile" onClick="{{f.remove}}" aria-label="Remove" style="flex: none; width: var(--size-touch); height: var(--size-touch); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if></span><sc-if value="{{f.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); color: var(--text-error)">{{f.err}}</span></sc-if></label></sc-if>
+            <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<textarea class="sh-input sh-input--area" value="{{f.v}}" onChange="{{f.on}}" rows="{{f.rows}}" placeholder="{{f.ph}}" aria-label="{{f.label}}" style="border-color: {{f.border}}"></textarea></label></sc-if>
+            <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<select class="sh-select" value="{{f.v}}" onChange="{{f.on}}" aria-label="{{f.label}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select></label></sc-if>
+            <sc-if value="{{f.isSwitch}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-press" role="switch" aria-checked="{{f.onStr}}" onClick="{{f.toggle}}" style="padding: 0; display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); font-weight: 700">{{f.label}}</span><sc-if value="{{f.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{f.help}}</span></sc-if></span><span class="sh-switch" aria-hidden="true"></span></button></sc-if>
+            <sc-if value="{{f.isBtn}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-link" onClick="{{f.go}}" style="align-self: flex-start; height: var(--size-36); font: 700 var(--font-size-14)/var(--size-16) var(--font-sans); display: inline-flex; align-items: center; gap: var(--size-6)">{{f.label}}</button></sc-if>
+            <sc-if value="{{f.isText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: {{f.ink}}">{{f.v}}</p></sc-if>
+          </sc-for>
+        </div>
+      </sc-for>
+      <sc-if value="{{sheet.hasErr}}" hint-placeholder-val="{{ false }}"><p role="alert" style="margin: 0; font-size: var(--font-size-14); font-weight: 700; color: var(--text-error)">{{sheet.err}}</p></sc-if>
+      <sc-if value="{{sheet.hasActions}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: var(--size-10); justify-content: flex-end; flex-wrap: wrap; flex-direction: {{dlgActDir}}; padding-top: var(--size-4)">
+          <sc-if value="{{sheet.hasTertiary}}" hint-placeholder-val="{{ false }}"><button class="pf-b sh-press sh-press--row" onClick="{{sheet.tertiary}}" style="height: var(--size-48); padding: 0 var(--size-14); color: var(--text-error); font: 700 var(--font-size-16)/var(--size-20) var(--font-sans)">{{sheet.tertiaryLabel}}</button></sc-if>
+          <sc-if value="{{sheet.hasSecondary}}" hint-placeholder-val="{{ true }}"><button class="pf-b sh-btn sh-btn--secondary" onClick="{{sheet.secondary}}" >{{sheet.secondaryLabel}}</button></sc-if>
+          <button class="pf-b sh-btn sh-btn--primary" onClick="{{sheet.primary}}" aria-busy="{{sheet.busyStr}}" aria-disabled="{{sheet.offStr}}" style="background: {{sheet.primaryBg}}; color: {{sheet.primaryInk}}"><sc-if value="{{sheet.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{sheet.primaryLabel}}</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { d: {}, sheet: null, busy: {}, eyes: {}, vtaps: 0, deleted: false, svGroup: 'All', matrix: false, range: null, tzq: '', addrQ: '' }; this.t = {}; }
+  componentWillUnmount() { Object.keys(this.t).forEach((k) => clearTimeout(this.t[k])); }
+  componentDidUpdate(prev) { const a = prev.route || {}, b = this.props.route || {}; if (a.s !== b.s) this.setState({ sheet: null }); }
+  later(k, ms, fn) { clearTimeout(this.t[k]); this.t[k] = setTimeout(fn, ms); }
+  banner(kind, text, extra) { this.props.act('banner', Object.assign({ kind, text }, extra || {})); }
+  setMe(p) { this.props.act('set', (s) => ({ me: Object.assign({}, s.me, p) })); }
+  draft(key, init) { return this.state.d[key] || init; }
+  setDraft(key, init, p) { this.setState({ d: Object.assign({}, this.state.d, { [key]: Object.assign({}, this.state.d[key] || init, p, { dirty: true }) }) }); }
+  dropDraft(key) { const d = Object.assign({}, this.state.d); delete d[key]; this.setState({ d }); }
+  busy(k, v) { this.setState({ busy: Object.assign({}, this.state.busy, { [k]: v }) }); }
+  F(o) { return Object.assign({ cls: 'pf-b sh-btn sh-btn--tertiary', isInput: false, isArea: false, isSelect: false, isSwitch: false, isSeg: false, isLink: false, isInfo: false, isText: false, isBtn: false, isChips: false, isRules: false, isList: false, isSuggest: false, type: 'text', v: '', ph: '', label: '', border: 'var(--border-default)', hasErr: false, err: '', hasHelp: false, help: '', hasPrefix: false, prefix: '', hasEye: false, rows: '3', opts: [], min: '', max: '', mode: 'text', hasRemove: false, ink: 'var(--text-primary)', hasIcon: false, op: 1 }, o, { hasHelp: !!o.help, hasErr: !!o.err }); }
+  input(label, v, on, extra) { return this.F(Object.assign({ isInput: true, label, v, on }, extra || {})); }
+  area(label, v, on, extra) { return this.F(Object.assign({ isArea: true, label, v, on }, extra || {})); }
+  select(label, v, on, opts, extra) { return this.F(Object.assign({ isSelect: true, label, v, on, opts: opts.map((o) => (typeof o === 'string' ? { v: o, label: o } : o)) }, extra || {})); }
+  sw(label, on, toggle, extra) { return this.F(Object.assign({ isSwitch: true, label, onStr: on ? 'true' : 'false', track: on ? 'var(--interactive-primary)' : 'var(--grey-400)', knob: on ? '21px' : '3px', toggle }, extra || {})); }
+  seg(label, cur, opts, pick) { return this.F({ isSeg: true, label, opts: opts.map(([v, l]) => ({ label: l, selStr: cur === v ? 'true' : 'false', bg: cur === v ? 'var(--bg-surface)' : 'transparent', shadow: cur === v ? 'var(--shadow-dropdown)' : 'none', pick: () => pick(v) })) }); }
+  link(label, v, go, extra) { return this.F(Object.assign({ isLink: true, label, v, go }, extra || {})); }
+  info(label, v) { return this.F({ isInfo: true, label, v }); }
+  text(v, ink) { return this.F({ isText: true, v, ink: ink || 'var(--text-secondary)' }); }
+  btn(label, go, kind, busy, extra) { const k = kind || 'fill'; return this.F(Object.assign({ isBtn: true, label, go, busy: !!busy, busyStr: busy ? 'true' : 'false', offStr: 'false', cls: 'pf-b sh-btn ' + ({ fill: 'sh-btn--primary', red: 'sh-btn--primary is-destructive', outline: 'sh-btn--secondary', redOutline: 'sh-btn--secondary is-destructive' }[k] || 'sh-btn--tertiary'), bg: k === 'fill' ? 'var(--interactive-primary)' : (k === 'red' ? 'var(--interactive-destructive)' : 'var(--bg-surface)'), ink: k === 'fill' || k === 'red' ? 'var(--text-inverse)' : (k === 'redOutline' ? 'var(--text-error)' : 'var(--text-brand-strong)'), border: k === 'outline' ? '2px solid var(--border-focus)' : (k === 'redOutline' ? '2px solid var(--border-error)' : '0'), spin: k === 'fill' || k === 'red' ? 'var(--icon-inverse)' : 'var(--icon-brand)', align: 'stretch' }, extra || {})); }
+  sec(title, fields, extra) { return Object.assign({ hasTitle: !!title, title: title || '', titleInk: 'var(--text-primary)', hasHelp: false, help: '', fields, ring: 'none' }, extra || {}, { hasHelp: !!(extra && extra.help) }); }
+  displayName(me) { return 'Dr. ' + me.first + ' ' + me.last; }
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const route = this.props.route || { s: 'profile', p: {} }; const rs = route.s; const rp = route.p || {}; const S = this.state; const offline = st.online === false;
+    const me = st.me; const staff = st.role === 'staff';
+    const out = {
+      ready: true, notReady: false, ic, phone, notPhone: !phone,
+      pagePad: phone ? 'var(--size-48) var(--size-12) 0' : 'var(--size-24) var(--size-24) 0', bottomClear: phone ? '120px' : '48px', h1Size: lib.h1(phone, st), maxW: (rs === 'profile' || rs === 'reports' || rs === 'settings') && !phone ? '1280px' : '760px', stickyB: phone ? '100px' : '16px', mapH: phone ? '420px' : '480px', planCols: phone ? 1 : 3,
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row', sheetPadB: phone ? 'var(--size-28)' : 'var(--size-18)',
+      hasHeader: true, title: '', hasSubtitle: false, subtitle: '', backIcon: ic.arrowL, backAria: 'Back', leave: () => act('back'), hasSave: false, saveHint: '', saveLabel: 'Save', hasHeadIcon: false, headIcon: {},
+      isRoot: false, isMap: false, isTz: false, isServices: false, isSub: false, isReports: false, isDoc: false, isAbout: false, isDeleted: S.deleted, deletedDone: () => { this.setState({ deleted: false }); act('signout', 'deleted'); },
+      sections: [], rt: {}, mp: {}, tz: {}, sv: {}, sb: {}, rp: {}, docParas: [], hasSheet: false, sheet: {}
+    };
+    const saveBtn = (dirtyOk, busyKey, fn) => Object.assign(out, { hasSave: true, saveHint: dirtyOk ? 'Unsaved changes' : 'No changes yet', saveOffStr: dirtyOk ? 'false' : 'true', saveBg: dirtyOk ? 'var(--interactive-primary)' : 'var(--bg-disabled)', saveInk: dirtyOk ? 'var(--text-inverse)' : 'var(--text-tertiary)', saving: !!S.busy[busyKey], savingStr: S.busy[busyKey] ? 'true' : 'false', save: () => { if (!dirtyOk || S.busy[busyKey]) return; if (offline) { this.banner('error', 'You’re offline. Your changes are kept; save when connected.'); return; } fn(); } });
+    const guardLeave = (dirty, key) => { out.leave = () => { if (dirty) this.setState({ sheet: { kind: 'unsaved', key } }); else act('back'); }; };
+    const photoSheet = () => this.setState({ sheet: { kind: 'photo' } });
+    const tzOff = (z) => ({ 'Asia/Tashkent': 5, 'Europe/Berlin': 1, 'Europe/London': 0, 'Europe/Moscow': 3, 'Asia/Dubai': 4, 'Asia/Almaty': 5, 'Asia/Bishkek': 6, 'Asia/Dushanbe': 5, 'Asia/Ashgabat': 5, 'Asia/Baku': 4, 'Asia/Tbilisi': 4, 'Asia/Istanbul': 3, 'Europe/Istanbul': 3, 'Asia/Seoul': 9, 'Asia/Tokyo': 9, 'Asia/Shanghai': 8, 'Asia/Kolkata': 5.5, 'Asia/Singapore': 8, 'America/New_York': -4, 'America/Chicago': -5, 'America/Los_Angeles': -7, 'America/Sao_Paulo': -3, 'Africa/Cairo': 3, 'Africa/Lagos': 1, 'Australia/Sydney': 11, 'Europe/Paris': 1, 'Europe/Madrid': 1, 'Europe/Rome': 1, 'Europe/Warsaw': 1, 'Europe/Kyiv': 2, 'Pacific/Auckland': 13, 'UTC': 0 }[z]);
+    const utc = (z) => { const o = tzOff(z); if (o === undefined) return 'UTC'; const h = Math.floor(Math.abs(o)), m = Math.round((Math.abs(o) - h) * 60); return 'UTC' + (o < 0 ? '−' : '+') + h + (m ? ':' + lib.pad(m) : ''); };
+    const fields = { first: !!me.first, photo: !!me.photo, tz: !!st.tz, address: !!(me.street || st.clinic.address), services: true };
+    const done = Object.values(fields).filter(Boolean).length; const total = Object.keys(fields).length;
+
+    // ===== ROOT =====
+    if (rs === 'profile') {
+      out.hasHeader = false; out.isRoot = true;
+      const missing = [[!fields.photo, 'Add photo', photoSheet], [!fields.tz, 'Add practice timezone', () => act('push', { s: 'setTimezone' })], [!fields.address, 'Add clinic address', () => act('push', { s: 'profContact' })]].filter((x) => x[0]);
+      const rows = staff ? [
+        ['Personal information', me.name, ic.user, () => this.banner('info', 'Staff profiles are managed by the clinic owner.')],
+        ['Settings', 'Language · Security', ic.sliders, () => act('push', { s: 'settings' })],
+        ['About', 'Version 1.0.0 (3)', ic.info, () => act('push', { s: 'legalAbout' })]
+      ] : [
+        ['Personal information', me.first + ' ' + me.last + (me.dob ? ' · ' + me.dob.split('-').reverse().join('.') : '') + ' · ' + me.spec, ic.user, () => act('push', { s: 'profEdit' })],
+        ['Contact & clinic address', [me.phone, me.email, me.street || st.clinic.address].filter(Boolean).join(' · '), ic.pin, () => act('push', { s: 'profContact' })],
+        ['Practice timezone', st.tz + ' (' + utc(st.tz) + ')' + (st.phoneTz && st.phoneTz !== st.tz ? ' · phone differs' : ''), ic.globe, () => act('push', { s: 'setTimezone' })],
+        ['Extended profile', (me.tags || ['Root canal', 'Fillings']).length + ' services · ' + ((me.certs || [1, 2]).length) + ' certificates', ic.award, () => act('push', { s: 'profExtended' })],
+        ['Services & pricing', (st.myServices || []).length ? st.myServices.length + ' services' : '8 services', ic.wallet, () => act('push', { s: 'setServices' })],
+        ['Schedule', 'Working hours and locations', ic.calendar, () => act('go', { tab: 'calendar', s: 'availability' })],
+        ['Subscription & billing', st.tier + (st.sub.renews ? ' · renews ' + lib.fmtDate(st.sub.renews) : ''), ic.card, () => act('push', { s: 'subscription' })],
+        ['Reports', 'Clinic analytics and exports', ic.reports, () => act('push', { s: 'reports', p: { pushed: true } })],
+        ['Settings', 'Language · Security · Notifications', ic.sliders, () => act('push', { s: 'settings' })],
+        ['About', 'Legal and support', ic.info, () => act('push', { s: 'legalAbout' })]
+      ];
+      out.rt = {
+        photo: staff ? () => {} : photoSheet, edit: () => (staff ? null : act('push', { s: 'profEdit' })), avBg: me.photo ? 'var(--bg-media)' : 'var(--alpha-teal-15)', ini: me.photo ? '' : lib.initials(staff ? st.staffMe.name : me.name),
+        name: staff ? st.staffMe.name : this.displayName(me), spec: staff ? st.staffMe.role + ' · ' + st.clinic.name : me.spec, tz: st.tz, tier: st.tier,
+        incomplete: !staff && missing.length > 0, pct: Math.round(100 * done / total) + '%', pctLabel: 'Profile ' + Math.round(100 * done / total) + ' % complete', missing: missing.slice(0, 3).map((m) => ({ label: m[1], go: m[2] })),
+        rows: rows.map(([t, p, d, go]) => ({ title: t, prev: p, hasPrev: !!p, d, go, tint: 'var(--bg-canvas)', iconInk: 'var(--text-primary)', ink: 'var(--text-primary)', chev: true })).concat([{ title: 'Sign Out', prev: '', hasPrev: false, d: ic.logout, go: () => act('askSignOut'), tint: 'var(--bg-error-subtle)', iconInk: 'var(--text-error)', ink: 'var(--text-error)', chev: false }]),
+        version: () => act('push', { s: 'legalAbout' })
+      };
+    }
+
+    // ===== EDIT PROFILE =====
+    if (rs === 'profEdit') {
+      const init = { first: me.first, last: me.last, dob: me.dob || '1984-03-12', gender: me.gender || 'Female', spec: me.spec, headline: me.headline || '', exp: String(me.experience || ''), langs: (me.languages || []).join(', ') };
+      const D = this.draft('edit', init); const set = (p) => this.setDraft('edit', init, p);
+      const valid = D.first.trim() && D.last.trim() && /^\d*$/.test(D.exp);
+      out.title = 'Personal information'; guardLeave(D.dirty, 'edit');
+      saveBtn(D.dirty && valid, 'edit', () => { this.busy('edit', true); this.later('edit', 800, () => { this.setMe({ first: D.first.trim(), last: D.last.trim(), name: 'Dr. ' + D.first.trim() + ' ' + D.last.trim(), dob: D.dob, gender: D.gender, spec: D.spec, headline: D.headline.trim(), experience: Number(D.exp || 0), languages: D.langs.split(',').map((x) => x.trim()).filter(Boolean) }); this.busy('edit', false); this.dropDraft('edit'); this.banner('success', 'Profile saved'); act('back'); }); });
+      out.sections = [
+        this.sec('', [this.btn(me.photo ? 'Change photo' : 'Add photo', photoSheet, 'outline', false, { align: 'flex-start' })]),
+        this.sec('Personal information', [
+          this.input('First name *', D.first, (e) => set({ first: e.target.value }), { err: D.first.trim() ? '' : 'First name is required', border: D.first.trim() ? 'var(--border-default)' : 'var(--border-error)' }),
+          this.input('Last name *', D.last, (e) => set({ last: e.target.value }), { err: D.last.trim() ? '' : 'Last name is required', border: D.last.trim() ? 'var(--border-default)' : 'var(--border-error)' }),
+          this.input('Date of birth', D.dob, (e) => set({ dob: e.target.value }), { type: 'date', min: '1900-01-01', max: st.today }),
+          this.seg('Gender', D.gender, [['Male', 'Male'], ['Female', 'Female'], ['None', 'Prefer not to say']], (v) => set({ gender: v }))
+        ]),
+        this.sec('Professional', [
+          this.link('Profession', D.spec, () => this.setState({ sheet: { kind: 'profession', q: '' } })),
+          this.input('Short headline', D.headline, (e) => set({ headline: e.target.value.slice(0, 120) }), { ph: 'e.g. Painless root canals', help: D.headline.length + ' / 120' }),
+          this.input('Years of experience', D.exp, (e) => set({ exp: e.target.value.replace(/[^\d]/g, '') }), { mode: 'numeric' }),
+          this.input('Languages spoken', D.langs, (e) => set({ langs: e.target.value }), { help: 'Separate with commas' })
+        ]),
+        this.sec('Account', [this.info('Email', me.email), this.text('Email changes go through support so your sign-in stays secure.')])
+      ];
+    }
+
+    // ===== CONTACT =====
+    if (rs === 'profContact') {
+      const init = { phone: me.phone, email: me.email, country: 'Uzbekistan', region: 'Tashkent', district: 'Chilonzor', city: 'Tashkent', postal: '100115', street: me.street || 'Bunyodkor Ave 12', lat: me.lat || 41.2856, lng: me.lng || 69.2034 };
+      const D = this.draft('contact', init); const set = (p) => this.setDraft('contact', init, p);
+      const emailOk = !D.email || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(D.email);
+      const phoneOk = D.phone.replace(/[^\d]/g, '').length >= 9;
+      out.title = 'Contact & clinic address'; guardLeave(D.dirty, 'contact');
+      saveBtn(D.dirty && emailOk && phoneOk, 'contact', () => { this.busy('contact', true); this.later('contact', 800, () => { this.setMe({ phone: D.phone, email: D.email, street: D.street, lat: D.lat, lng: D.lng, city: D.city }); this.busy('contact', false); this.dropDraft('contact'); this.banner('success', 'Contact details saved'); act('back'); }); });
+      const q = S.addrQ.trim(); const sugg = q.length >= 3 ? [['Amir Temur ko’chasi 12', 'Yunusobod, Tashkent', 41.3111, 69.2797, 'Yunusobod'], ['Bunyodkor Ave 12', 'Chilonzor, Tashkent', 41.2856, 69.2034, 'Chilonzor'], ['Mustaqillik maydoni 5', 'Mirobod, Tashkent', 41.3123, 69.2706, 'Mirobod'], ['Navoi St 30', 'Shayxontohur, Tashkent', 41.3200, 69.2400, 'Shayxontohur']].filter((x) => (x[0] + ' ' + x[1]).toLowerCase().indexOf(q.toLowerCase()) >= 0 || q.length >= 3 && /tash|str|ave|ko/i.test(q)).slice(0, 6) : [];
+      out.sections = [
+        this.sec('Contact', [
+          this.input('Phone', D.phone, (e) => { let v = e.target.value; const dg = v.replace(/[^\d]/g, ''); if (dg.length === 12 && dg.indexOf('998') === 0) v = '+998 ' + dg.slice(3, 5) + ' ' + dg.slice(5, 8) + ' ' + dg.slice(8, 10) + ' ' + dg.slice(10, 12); set({ phone: v }); }, { type: 'tel', err: phoneOk ? '' : 'Enter a valid phone number', border: phoneOk ? 'var(--border-default)' : 'var(--border-error)' }),
+          this.input('Email', D.email, (e) => set({ email: e.target.value }), { type: 'email', err: emailOk ? '' : 'Enter a valid email', border: emailOk ? 'var(--border-default)' : 'var(--border-error)' }),
+          this.text('Patients see your phone number on confirmed appointments.')
+        ]),
+        this.sec('Clinic address', [
+          this.input('Search address or place', S.addrQ, (e) => this.setState({ addrQ: e.target.value }), { ph: 'Type at least 3 characters' })
+        ].concat(sugg.length ? [this.F({ isSuggest: true, items: sugg.map((x) => ({ title: x[0], sub: x[1], pick: () => { set({ street: x[0], district: x[4], city: 'Tashkent', region: 'Tashkent', lat: x[2], lng: x[3] }); this.setState({ addrQ: '' }); } })) })] : []).concat([
+          this.btn('Pick on map', () => act('push', { s: 'profMap', p: { lat: D.lat, lng: D.lng } }), 'outline'),
+          this.input('Country', D.country, (e) => set({ country: e.target.value })),
+          this.input('Region (Viloyat)', D.region, (e) => set({ region: e.target.value })),
+          this.input('District (Tuman)', D.district, (e) => set({ district: e.target.value })),
+          this.input('City', D.city, (e) => set({ city: e.target.value })),
+          this.input('Postal code', D.postal, (e) => set({ postal: e.target.value })),
+          this.area('Street address', D.street, (e) => set({ street: e.target.value }), { rows: '2', help: 'You can edit this field if the map address is not exact.' }),
+          this.text('Coordinates: ' + D.lat.toFixed(4) + ', ' + D.lng.toFixed(4)),
+          this.link('Practice timezone', st.tz + ' (' + utc(st.tz) + ')', () => act('push', { s: 'setTimezone' }))
+        ]))
+      ];
+    }
+
+    // ===== MAP =====
+    if (rs === 'profMap') {
+      out.title = 'Select Location on Map'; out.backIcon = ic.x; out.backAria = 'Close';
+      const init = { x: 0.5, y: 0.5, label: rp.lat ? 'Bunyodkor Ave 12, Chilonzor, Tashkent' : '', moved: false };
+      const M = this.state.map || init;
+      const setM = (p) => this.setState({ map: Object.assign({}, M, p, { moved: true }) });
+      out.leave = () => { if (M.moved) this.setState({ sheet: { kind: 'confirm', title: 'Discard the new pin position?', body: 'The pin goes back to where it was.', label: 'Discard', red: true, keepLabel: 'Keep', go: () => { this.setState({ map: null }); act('back'); } } }); else act('back'); };
+      const confirm = () => { const lat = 41.2995 + (0.5 - M.y) * 0.08, lng = 69.2401 + (M.x - 0.5) * 0.12; const cinit = { phone: me.phone, email: me.email, country: 'Uzbekistan', region: 'Tashkent', district: 'Chilonzor', city: 'Tashkent', postal: '100115', street: me.street || 'Bunyodkor Ave 12', lat: me.lat || 41.2856, lng: me.lng || 69.2034 }; this.setDraft('contact', cinit, { lat, lng, street: M.label ? M.label.split(',')[0] : (this.state.d.contact || cinit).street }); this.setState({ map: null }); act('back'); if (!M.label) this.banner('warn', 'Couldn’t find the street for this point. Coordinates were saved; check the address.'); };
+      out.hasHeadIcon = true; out.headIcon = { label: 'Done', d: ic.check, go: confirm };
+      out.isMap = true;
+      out.mp = {
+        x: Math.round(M.x * 100) + '%', y: Math.round(M.y * 100) + '%', bgPos: Math.round(M.x * 40) + 'px ' + Math.round(M.y * 40) + 'px',
+        tap: (e) => { let x = 0.35 + Math.random() * 0.3, y = 0.35 + Math.random() * 0.3; try { const r = e.currentTarget.getBoundingClientRect(); if (r.width) { x = (e.clientX - r.left) / r.width; y = (e.clientY - r.top) / r.height; } } catch (err) {} setM({ x, y, label: '' }); this.later('rg', 700, () => this.setState({ map: Object.assign({}, this.state.map, { label: 'Near ' + ['Chilonzor', 'Yunusobod', 'Mirobod', 'Yakkasaroy'][Math.floor(x * 4) % 4] + ' metro, Tashkent' }) })); },
+        spots: [['Clinic', 0.42, 0.58, 'Bunyodkor Ave 12, Chilonzor, Tashkent'], ['Amir Temur Sq.', 0.62, 0.36, 'Amir Temur ko’chasi 12, Tashkent']].map(([l, x, y, a]) => ({ label: l, go: () => setM({ x, y, label: a }) })),
+        addr: M.label || 'Latitude ' + (41.2995 + (0.5 - M.y) * 0.08).toFixed(6) + ' · Longitude ' + (69.2401 + (M.x - 0.5) * 0.12).toFixed(6),
+        busy: !!S.busy.locate, idle: !S.busy.locate, busyStr: S.busy.locate ? 'true' : 'false',
+        locate: () => { if (S.busy.locate) return; this.busy('locate', true); this.later('loc', 1000, () => { this.busy('locate', false); this.setState({ map: Object.assign({}, this.state.map || init, { x: 0.47, y: 0.52, label: 'Your location · Chilonzor, Tashkent', moved: true }) }); }); },
+        confirm
+      };
+    }
+
+    // ===== TIMEZONE =====
+    if (rs === 'setTimezone') {
+      out.title = 'Practice timezone'; out.backIcon = ic.x; out.backAria = 'Close';
+      out.hasSubtitle = true; out.subtitle = 'Your calendar and reminders use this timezone.';
+      const zones = ['Africa/Cairo', 'Africa/Lagos', 'America/Chicago', 'America/Los_Angeles', 'America/New_York', 'America/Sao_Paulo', 'Asia/Almaty', 'Asia/Ashgabat', 'Asia/Baku', 'Asia/Bishkek', 'Asia/Dubai', 'Asia/Dushanbe', 'Asia/Kolkata', 'Asia/Seoul', 'Asia/Shanghai', 'Asia/Singapore', 'Asia/Tashkent', 'Asia/Tbilisi', 'Asia/Tokyo', 'Australia/Sydney', 'Europe/Berlin', 'Europe/Istanbul', 'Europe/Kyiv', 'Europe/London', 'Europe/Madrid', 'Europe/Moscow', 'Europe/Paris', 'Europe/Rome', 'Europe/Warsaw', 'Pacific/Auckland', 'UTC'];
+      const q = S.tzq.trim().toLowerCase().replace(/\s/g, '_');
+      const match = zones.filter((z) => !q || z.toLowerCase().indexOf(q) >= 0 || utc(z).toLowerCase().indexOf(q) >= 0);
+      const pick = (z) => { if (z === st.tz) { act('back'); return; } this.setState({ sheet: { kind: 'tzWarn', to: z } }); };
+      const row = (z, prefix) => ({ city: (prefix || '') + (z.split('/').pop() || z).replace(/_/g, ' '), sub: z + ' · ' + utc(z) + ' now', sel: z === st.tz, selStr: z === st.tz ? 'true' : 'false', pick: () => pick(z) });
+      const groups = [];
+      if (!q) groups.push({ label: 'SUGGESTED', rows: [row(st.phoneTz || 'Asia/Tashkent', 'Device timezone · ')].concat(st.phoneTz && st.phoneTz !== st.tz ? [row(st.tz, 'Current · ')] : []) });
+      ['Africa', 'America', 'Asia', 'Australia', 'Europe', 'Pacific', 'UTC'].forEach((rg) => { const rows = match.filter((z) => z.split('/')[0] === rg).map((z) => row(z)); if (rows.length) groups.push({ label: rg.toUpperCase(), rows }); });
+      out.isTz = true; out.tz = { q: S.tzq, onQ: (e) => this.setState({ tzq: e.target.value }), none: !match.length, groups };
+    }
+
+    // ===== EXTENDED PROFILE =====
+    if (rs === 'profExtended') {
+      const init = { bio: me.bio || '', tg: me.telegram || 'dr_karimova', ig: me.instagram || '' };
+      const D = this.draft('ext', init); const set = (p) => this.setDraft('ext', init, p);
+      const tags = me.tags || ['Root canal', 'Fillings', 'Painless treatment'];
+      const certs = me.certs || [{ name: 'Endodontics_certificate_2022.pdf', kind: 'pdf', date: '2022-05-14' }, { name: 'Dental_licence.jpg', kind: 'image', date: '2014-07-01' }];
+      const tagIn = S.tagIn || '';
+      out.title = 'Extended Profile'; guardLeave(D.dirty, 'ext');
+      saveBtn(D.dirty && D.bio.length <= 2000, 'ext', () => { this.busy('ext', true); this.later('ext', 700, () => { this.setMe({ bio: D.bio, telegram: D.tg.replace(/^.*(t\.me\/|@)/, ''), instagram: D.ig.replace(/^.*(instagram\.com\/|@)/, '') }); this.busy('ext', false); this.dropDraft('ext'); this.banner('success', 'Extended profile saved'); }); });
+      const addTag = () => { const v = tagIn.trim(); if (!v) return; if (tags.map((x) => x.toLowerCase()).indexOf(v.toLowerCase()) >= 0) { this.banner('info', 'That service tag is already added.'); return; } if (v.length > 40) { this.banner('error', 'Keep tags under 40 characters.'); return; } this.setMe({ tags: tags.concat([v]) }); this.setState({ tagIn: '' }); };
+      out.sections = [
+        this.sec('Biography', [this.area('Biography', D.bio, (e) => set({ bio: e.target.value }), { rows: '5', help: 'Shown to patients on your profile' + (D.bio.length >= 1800 ? ' · ' + D.bio.length + ' / 2000' : '') })]),
+        this.sec('Services', [this.input('Add Service', tagIn, (e) => this.setState({ tagIn: e.target.value }), { ph: 'e.g. Braces' }), this.btn('Add', addTag, 'outline', false, { align: 'flex-start' }), this.F({ isChips: true, chips: tags.map((t, i) => ({ label: t, aria: 'Remove ' + t, remove: () => this.setMe({ tags: tags.filter((_, j) => j !== i) }) })) })], { help: 'Short keywords patients search for, e.g. “Braces”, “Root canal”. Prices live in Services & pricing.' }),
+        this.sec('Certificates', [this.btn(S.busy.cert ? 'Uploading…' : 'Upload certificate', () => this.setState({ sheet: { kind: 'certSrc' } }), 'outline', !!S.busy.cert), this.F({ isList: true, items: certs.map((c, i) => ({ title: c.name, sub: c.date ? 'Uploaded ' + lib.fmtDate(c.date) : 'Uploaded today', d: c.kind === 'image' ? ic.image : ic.file, op: 1, open: () => this.banner('info', '[Prototype: opens ' + c.name + ' in the document viewer.]'), hasAct: true, actAria: 'Delete certificate', actInk: 'var(--text-error)', actD: ic.trash, act: () => this.setState({ sheet: { kind: 'confirm', title: 'Delete certificate?', body: c.name + ' will be removed from your public profile.', label: 'Delete', red: true, go: () => this.setMe({ certs: certs.filter((_, j) => j !== i) }) } }) })) })]),
+        this.sec('Social media', [this.input('Telegram', D.tg, (e) => set({ tg: e.target.value }), { hasPrefix: true, prefix: '@', ph: '@username or URL' }), this.input('Instagram', D.ig, (e) => set({ ig: e.target.value }), { hasPrefix: true, prefix: '@', ph: '@username or URL' }), this.text('Patients can open these from your profile.')])
+      ];
+    }
+
+    // ===== SERVICES & PRICING =====
+    if (rs === 'setServices') {
+      out.title = 'Services & Pricing';
+      const groups = st.svcGroups || ['Consultations', 'Therapy', 'Surgery', 'Prosthetics'];
+      const list = st.myServices || st.clinic.services.map((s, i) => ({ id: s.id, title: s.name, desc: '', group: ['Consultations', 'Therapy', 'Therapy', 'Surgery', 'Therapy', 'Prosthetics'][i] || '', prices: [{ amount: s.price, cur: 'UZS', loc: 'All locations' }], free: false, active: true, clinic: true })).concat([{ id: 'MS-1', title: 'Video consultation', desc: 'Short online consultation before or after treatment.', group: 'Consultations', prices: [], free: true, active: true, clinic: false }, { id: 'MS-2', title: 'Second opinion on X-ray', desc: 'Written opinion on an X-ray you upload.', group: '', prices: [{ amount: 150000, cur: 'UZS', loc: 'All locations' }, { amount: 15, cur: 'EUR', loc: 'Berlin clinic' }], free: false, active: false, clinic: false }]);
+      const setList = (fn) => act('set', (s) => ({ myServices: fn(s.myServices || list) }));
+      out.hasHeadIcon = true; out.headIcon = { label: 'Groups', d: ic.layers, go: () => this.setState({ sheet: { kind: 'groups', newName: '' } }) };
+      const flt = S.svGroup;
+      const shown = list.filter((s) => flt === 'All' || (s.group || 'No group') === flt);
+      const gnames = ['No group'].concat(groups);
+      out.isServices = true;
+      out.sv = {
+        summary: list.length + ' services · ' + groups.length + ' groups', hasChips: groups.length > 1,
+        chips: ['All'].concat(gnames).map((g) => ({ label: g, selStr: flt === g ? 'true' : 'false', bg: flt === g ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', ring: flt === g ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => this.setState({ svGroup: g }) })),
+        groups: gnames.map((g) => ({ label: g.toUpperCase(), rows: shown.filter((s) => (s.group || 'No group') === g).map((s) => ({ title: s.title, desc: s.desc, hasDesc: !!s.desc, op: s.active ? 1 : 0.55, prices: s.free ? 'Free consultation (video)' : s.prices.map((p) => lib.money(p.amount).replace(' UZS', '') + ' ' + p.cur + ' · ' + p.loc).join('  ·  '), tags: (s.clinic ? [{ label: 'Clinic-managed', bg: 'var(--bg-info-subtle)' }] : []).concat(s.active ? [] : [{ label: 'Inactive', bg: 'var(--bg-canvas)' }]).concat(s.free ? [{ label: 'Free', bg: 'var(--bg-success-subtle)' }] : []), open: () => { if (s.clinic) { this.banner('info', 'This service is managed under Clinic → Services. Edit it there.', { action: () => act('go', { tab: 'clinic', rootP: { tab: 'services' } }), actionLabel: 'Open' }); return; } this.setState({ sheet: { kind: 'svc', id: s.id, f: JSON.parse(JSON.stringify(s)) } }); } })) })).filter((g) => g.rows.length),
+        add: () => this.setState({ sheet: { kind: 'svc', id: null, f: { id: lib.uid('MS'), title: '', desc: '', group: '', prices: [{ amount: '', cur: 'UZS', loc: 'All locations' }], free: false, active: true, clinic: false } } })
+      };
+      this.svcCtx = { setList, groups, list };
+    }
+
+    // ===== SUBSCRIPTION =====
+    if (rs === 'subscription') {
+      out.title = 'Subscription & billing'; out.isSub = true;
+      const order = ['BASIC', 'PRO', 'PREMIUM'];
+      const cur = st.tier; const ci = order.indexOf(cur);
+      const plans = { BASIC: ['Everything to run your practice.', '0 UZS / month', ['Calendar', 'Documents', 'Chat', 'Patient management', 'Basic analytics']], PRO: ['AI and video for busy doctors.', '190 000 UZS / month', ['Everything in Basic', 'Video consultation', 'AI notes and speech-to-text', 'Patient briefing', 'Shifa Intelligence']], PREMIUM: ['Remote care and advanced analytics.', '290 000 UZS / month', ['Everything in Pro', 'Remote-care tasks', 'Advanced analytics', 'Differential diagnosis']] };
+      const need = rp.need || '';
+      out.sb = {
+        plans: order.map((t, i) => ({ name: t, label: t[0] + t.slice(1).toLowerCase(), pitch: plans[t][0], price: plans[t][1], amount: plans[t][1].replace(' / month', ''), feats: plans[t][2], isCur: t === cur, cls: 'dr-tier' + (t === cur ? ' is-current' : ''), isNeed: !!need && i > ci && t === 'PREMIUM', need, ring: need && i > ci && t === 'PREMIUM' ? 'inset 0 0 0 2px var(--border-warning)' : '',
+          hasBtn: i >= ci, btn: t === cur ? 'Current plan' : 'Upgrade to ' + t[0] + t.slice(1).toLowerCase(), offStr: t === cur ? 'true' : 'false', btnCls: 'pf-b sh-btn ' + (t === cur ? 'sh-btn--secondary' : 'sh-btn--primary'), busy: !!S.busy['up' + t], busyStr: S.busy['up' + t] ? 'true' : 'false',
+          go: () => { if (t === cur || S.busy['up' + t]) return; if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } this.setState({ sheet: { kind: 'checkout', tier: t, price: plans[t][1] } }); } })),
+        open: S.matrix, openStr: S.matrix ? 'true' : 'false', chev: S.matrix ? '180deg' : '0deg', toggleMatrix: () => this.setState({ matrix: !S.matrix }),
+        matrix: [['Calendar', 0], ['Documents', 0], ['Chat', 0], ['Patient management', 0], ['Basic analytics', 0], ['Video consultation', 1], ['AI notes', 1], ['Speech-to-text', 1], ['Patient briefing', 1], ['Ask Shifa AI', 1], ['Remote-care tasks', 2], ['Advanced analytics', 2], ['Differential diagnosis', 2]].map(([l, min]) => ({ label: l, cells: [0, 1, 2].map((i) => ({ mark: i >= min ? '✓' : '—', ink: i >= min ? 'var(--text-brand-strong)' : 'var(--text-tertiary)', aria: (i >= min ? 'Included in ' : 'Not in ') + order[i] })) }))
+      };
+      const inv = this.draft('inv', { company: me.company || '', tax: me.tax || '', iban: me.iban || '' }); const setInv = (p) => this.setDraft('inv', { company: me.company || '', tax: me.tax || '', iban: me.iban || '' }, p);
+      const stripe = me.stripe || 'none';
+      out.sections = [
+        this.sec('Current plan', [this.info('Plan', cur), this.info('Renews', st.sub.renews ? lib.fmtDate(st.sub.renews) : '—'), this.info('SMS this month', st.sub.sms.used + ' of ' + st.sub.sms.limit)], { ring: 'inset 0 0 0 1px var(--alpha-teal-25)' }),
+        this.sec('Payouts (Stripe Connect)', [this.text(stripe === 'connected' ? 'Connected. Video consultation payments are paid out to your account weekly.' : (stripe === 'pending' ? 'Onboarding started. Finish the remaining steps to receive payouts.' : 'Connect Stripe to receive payments for video consultations.'), stripe === 'connected' ? 'var(--text-brand-strong)' : 'var(--text-secondary)'), this.btn(stripe === 'connected' ? 'Open Stripe dashboard' : (stripe === 'pending' ? 'Resume onboarding' : 'Connect Stripe'), () => { if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } if (stripe === 'connected') { this.banner('info', '[Prototype: opens the Stripe dashboard in a browser tab.]'); return; } this.busy('stripe', true); this.later('stripe', 1200, () => { this.busy('stripe', false); this.setMe({ stripe: stripe === 'none' ? 'pending' : 'connected' }); this.banner('success', stripe === 'none' ? 'Stripe onboarding opened. Come back when you finish.' : 'Stripe connected'); }); }, stripe === 'connected' ? 'outline' : 'fill', !!S.busy.stripe)]),
+        this.sec('Invoicing', [this.input('Company or full name', inv.company, (e) => setInv({ company: e.target.value })), this.input('Tax ID (INN)', inv.tax, (e) => setInv({ tax: e.target.value.replace(/[^\d]/g, '').slice(0, 9) }), { mode: 'numeric', err: inv.tax && inv.tax.length !== 9 ? 'The tax ID has 9 digits' : '' }), this.input('Bank account', inv.iban, (e) => setInv({ iban: e.target.value })), this.btn('Save invoicing details', () => { if (!inv.dirty) return; if (inv.tax && inv.tax.length !== 9) return; this.setMe({ company: inv.company, tax: inv.tax, iban: inv.iban }); this.dropDraft('inv'); this.banner('success', 'Payment and invoicing saved'); }, 'outline')])
+      ];
+      guardLeave(inv.dirty, 'inv');
+    }
+
+    // ===== SETTINGS =====
+    if (rs === 'settings') {
+      out.title = 'Settings';
+      const set = st.settings || {};
+      const langName = { EN: 'English', UZ: 'Uzbek (UZ)', UZC: 'Uzbek (Cyrillic)', RU: 'Russian' }[st.lang || set.lang || 'EN'];
+      const startNames = { home: 'Home', calendar: 'Calendar', patients: 'Patients', chat: 'Chat', clinic: 'Clinic', tasks: 'Tasks', reports: 'Reports', notifications: 'Notifications', profile: 'Profile' };
+      const toggle = (k, msg) => () => { if (offline) { this.banner('error', 'Couldn’t save. You’re offline.'); return; } act('set', (s) => ({ settings: Object.assign({}, s.settings, { [k]: !(s.settings || {})[k] }) })); if (msg) this.banner('success', msg); };
+      out.sections = [
+        this.sec('General', [
+          this.link('Country', me.country || 'Uzbekistan', () => this.setState({ sheet: { kind: 'country' } })),
+          this.link('Language', langName, () => act('push', { s: 'langSettings' })),
+          this.link('Starting screen', startNames[me.startTab || 'home'], () => this.setState({ sheet: { kind: 'start' } })),
+          this.text('Main tab when you open the app. Notifications still open the relevant screen.')
+        ]),
+        this.sec('Security', [
+          this.link('Security', st.lockOn ? 'App lock on' + (st.lockBio ? ' · Face ID' : '') : 'App lock off', () => act('push', { s: 'setSecurity' })),
+          this.sw('Two-factor authentication', !!set.twoFA, toggle('twoFA', set.twoFA ? 'Two-factor authentication off' : 'Two-factor authentication on'), { help: 'Ask for a code when signing in on a new device' }),
+          this.sw('Encrypted documents', set.encryptedDocs !== false, () => { act('set', (s) => ({ settings: Object.assign({}, s.settings, { encryptedDocs: (s.settings || {}).encryptedDocs === false }) })); }, { help: 'Store uploaded documents encrypted at rest' })
+        ]),
+        this.sec('Notifications', [this.link('Push notifications', set.notifications === false ? 'Off' : 'On', () => { act('set', (s) => ({ settings: Object.assign({}, s.settings, { notifications: (s.settings || {}).notifications === false }) })); this.banner('info', '[Prototype: opens the phone’s notification settings. Toggled for the demo.]'); }), this.sw('SMS reminders to patients', set.reminders !== false, () => act('set', (s) => ({ settings: Object.assign({}, s.settings, { reminders: (s.settings || {}).reminders === false }) })), { help: '24 hours before each visit, unless turned off per patient' })]),
+        this.sec('Data', [this.link('Privacy & data', 'Export, permissions, delete account', () => act('push', { s: 'setPrivacy' })), this.link('About', 'Version 1.0.0 (3)', () => act('push', { s: 'legalAbout' }))]),
+        this.sec('', [this.btn('Sign Out', () => act('askSignOut'), 'redOutline')])
+      ];
+    }
+
+    // ===== SECURITY =====
+    if (rs === 'setSecurity') {
+      out.title = 'Security';
+      const init = { cur: '', nw: '', conf: '' }; const P = this.draft('pw', init); const set = (p) => this.setDraft('pw', init, p);
+      const rules = [['8+ characters', P.nw.length >= 8 && P.nw.length <= 128], ['Uppercase letter', /[A-Z]/.test(P.nw)], ['Lowercase letter', /[a-z]/.test(P.nw)], ['Number', /\d/.test(P.nw)], ['Special character', /[^A-Za-z0-9]/.test(P.nw)]];
+      const ok = rules.every((r) => r[1]) && P.nw === P.conf && P.cur.length > 0;
+      const eye = (k, label) => ({ hasEye: true, type: S.eyes[k] ? 'text' : 'password', eyeAria: (S.eyes[k] ? 'Hide ' : 'Show ') + label, eyeD: S.eyes[k] ? ic.eyeOff : ic.eye, eye: () => this.setState({ eyes: Object.assign({}, S.eyes, { [k]: !S.eyes[k] }) }) });
+      guardLeave(P.dirty && (P.cur || P.nw || P.conf), 'pw');
+      out.sections = [
+        this.sec('App lock', [this.sw('App lock', st.lockOn, () => this.setState({ sheet: { kind: 'pin', mode: st.lockOn ? 'off' : 'set', val: '', err: '' } }), { help: 'Require PIN when reopening the app' })].concat(st.lockOn ? [this.sw('Face ID', st.lockBio, () => { if (st.lockBio) { act('lock', { bio: false }); return; } this.setState({ sheet: { kind: 'bio' } }); }), this.btn('Change PIN', () => this.setState({ sheet: { kind: 'pin', mode: 'verify', val: '', err: '', next: 'set' } }), 'outline', false, { align: 'flex-start' }), this.text('Locks after 5 seconds in the background and on every cold start.')] : [])),
+        this.sec('Password', [
+          this.input('Current password', P.cur, (e) => set({ cur: e.target.value }), eye('cur', 'current password')),
+          this.input('New password', P.nw, (e) => set({ nw: e.target.value }), eye('nw', 'new password')),
+          this.F({ isRules: true, rules: rules.map(([l, v]) => ({ label: l, ink: v ? 'var(--text-brand-strong)' : 'var(--text-tertiary)', d: v ? ic.check : ic.minus })) }),
+          this.input('Confirm new password', P.conf, (e) => set({ conf: e.target.value }), Object.assign(eye('conf', 'confirmation'), { err: P.conf && P.conf !== P.nw ? 'Passwords don’t match' : '' })),
+          this.btn('Change password', () => { if (!ok || S.busy.pw) return; if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } this.busy('pw', true); this.later('pw', 900, () => { this.busy('pw', false); if (P.cur === 'wrong') { this.banner('error', 'Current password is incorrect'); return; } this.dropDraft('pw'); this.banner('success', 'Password changed'); }); }, ok ? 'fill' : 'outline', !!S.busy.pw, { cls: 'pf-b sh-btn sh-btn--primary', offStr: ok ? 'false' : 'true' })
+        ]),
+        this.sec('Sessions', [this.text('You stay signed in for 30 days without activity on this device.'), this.info('This device', (phone ? 'iPhone 15 · Shifa Doctor 1.0.0' : 'Chrome on macOS · Shifa Doctor web') + ' · active now'), this.btn('Sign out of this device', () => act('askSignOut'), 'redOutline')])
+      ];
+    }
+
+    // ===== PRIVACY =====
+    if (rs === 'setPrivacy') {
+      out.title = 'Privacy & data';
+      out.sections = [
+        this.sec('Your data', [this.text('Shifa stores your profile, schedule, appointments, chat messages and the documents you and your patients upload. Patient records belong to the patients and are kept according to medical record-keeping rules.'), this.btn('Privacy policy', () => act('push', { s: 'legalDoc', p: { doc: 'privacy' } }), 'outline', false, { align: 'flex-start' })]),
+        this.sec('', [this.link('Request a copy of my data', me.exportOn ? 'Requested on ' + lib.fmtDate(me.exportOn) : 'We’ll email you a download link', () => { if (me.exportOn) { this.banner('info', 'Your export is being prepared. We’ll email you.'); return; } this.setState({ sheet: { kind: 'confirm', title: 'Request a copy of your data?', body: 'We’ll email a download link to ' + me.email + ' within 30 days.', label: 'Request copy', go: () => { if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } this.setMe({ exportOn: st.today }); this.banner('success', 'Export requested — we’ll email you'); } } }); }), this.link('Permissions', 'Camera · Photos · Microphone · Location · Notifications', () => this.banner('info', '[Prototype: opens the phone’s app settings.] Camera scans documents, microphone records notes, location sets your clinic pin.'))]),
+        this.sec('Delete account', [this.text('Deleting your account removes your profile, schedule and messages. Patient medical records are retained as required by law and detached from your account. Upcoming appointments are cancelled and patients are notified.', 'var(--text-primary)'), this.btn('Delete account', () => this.setState({ sheet: { kind: 'del1' } }), 'redOutline')], { titleInk: 'var(--text-error)', ring: 'inset 0 0 0 1px var(--border-error)' })
+      ];
+    }
+
+    // ===== ABOUT =====
+    if (rs === 'legalAbout') {
+      out.title = 'About'; out.isAbout = true;
+      out.tapVersion = () => { const n = S.vtaps + 1; this.setState({ vtaps: n >= 7 ? 0 : n }); if (n >= 7) this.banner('success', 'Diagnostics copied'); };
+      out.sections = [
+        this.sec('Legal', [this.link('Terms of service', 'Version 2026-06', () => act('push', { s: 'legalDoc', p: { doc: 'terms' } })), this.link('Privacy policy', 'Version 2026-06', () => act('push', { s: 'legalDoc', p: { doc: 'privacy' } })), this.link('Open-source licences', '42 packages', () => act('push', { s: 'legalDoc', p: { doc: 'licences' } }))]),
+        this.sec('My partnership contract', [this.link('SHIFA-0461', 'from 01.06.2026', () => act('push', { s: 'legalDoc', p: { doc: 'contract' } }))]),
+        this.sec('Support', [this.link('Contact support', 'Telegram · Email · Phone', () => this.setState({ sheet: { kind: 'support' } })), this.link('Report a problem', 'Send us details and diagnostics', () => this.setState({ sheet: { kind: 'report', text: '' } })), this.link('Rate the app', 'App Store / Google Play', () => this.banner('info', '[Prototype: shows the in-app review prompt.]'))])
+      ];
+    }
+    if (rs === 'legalDoc') {
+      const docs = { terms: ['Terms of service', ['Terms of service', 'These terms govern your use of Shifa Doctor as a licensed medical professional in Uzbekistan.', '1. Your account. You are responsible for keeping your credentials and app lock PIN private.', '2. Patient data. You process patient data as a data controller together with your clinic. Shifa processes it on your behalf.', '3. Payments. Video consultation fees are collected by Shifa and paid out through Stripe Connect.', '[Prototype text — the hosted document is shown here.]']], privacy: ['Privacy policy', ['Privacy policy', 'We collect only what we need to run your practice: profile, schedule, appointments, messages and documents.', 'Data is stored in Uzbekistan and encrypted at rest. Access is logged.', 'You can request a copy of your data or delete your account in Settings › Privacy & data.', '[Prototype text — the hosted document is shown here.]']], licences: ['Open-source licences', ['Open-source licences', 'Kotlin Multiplatform — Apache 2.0', 'Compose Multiplatform — Apache 2.0', 'Ktor — Apache 2.0', 'pdf.js — Apache 2.0', '…and 38 more']], contract: ['Partnership contract', ['SHIFA-0461 · Early partner agreement', 'Effective from 01.06.2026 between Shifa LLC and Dr. Nilufar Karimova.', 'Commission on video consultations: 10 % for the first 12 months.', '[Prototype: the PDF opens in the document viewer.]']] }[rp.doc] || ['Document', ['Document not found']];
+      out.title = docs[0]; out.isDoc = true; out.hasHeadIcon = true; out.headIcon = { label: 'Share', d: ic.share, go: () => this.banner('info', '[Prototype: opens the share sheet.]') };
+      out.docParas = docs[1].map((t, i) => ({ t, w: i === 0 ? 700 : 500, s: i === 0 ? '18px' : '14px' }));
+    }
+
+    // ===== LANGUAGE =====
+    if (rs === 'langSettings') {
+      out.title = 'Language';
+      const cur = st.lang || 'EN';
+      out.sections = [this.sec('', [['EN', 'English'], ['UZ', 'O‘zbekcha (Lotin)'], ['UZC', 'Ўзбекча (Кирилл)'], ['RU', 'Русский']].map(([k, l]) => this.link(k === cur ? 'Selected' : 'Language', l, () => { if (k !== cur) act('lang', k); act('back'); }, { ink: k === cur ? 'var(--text-brand-strong)' : 'var(--text-primary)' })))];
+    }
+
+    // ===== REPORTS =====
+    if (rs === 'reports') {
+      const isRootTab = (this.props.route || {}).s === 'reports' && !rp.pushed;
+      out.hasHeader = false;
+      const premium = lib.can(st, 'analyticsAdv');
+      const R = S.range || { from: lib.addDays(st.today, -6), to: st.today };
+      const days = []; for (let d = R.from; d <= R.to && days.length < 31; d = lib.addDays(d, 1)) days.push(d);
+      const ap = (d) => st.appointments.filter((a) => a.day === d && (a.doctorId || 'me') === 'me');
+      const counts = days.map((d) => ap(d).length); const max = Math.max(1, Math.max.apply(null, counts));
+      const inRange = st.appointments.filter((a) => a.day >= R.from && a.day <= R.to && (a.doctorId || 'me') === 'me');
+      const video = inRange.filter((a) => a.kind === 'video').length; const clinic = inRange.length - video;
+      const today = ap(st.today);
+      const smsN = Math.round(st.sub.sms.used * days.length / 30);
+      out.isReports = true;
+      out.rp = {
+        isRoot: true, rangeLabel: lib.fmtDate(R.from).replace(/ \d{4}$/, '') + ' – ' + lib.fmtDate(R.to), range: () => this.setState({ sheet: { kind: 'range', from: R.from, to: R.to } }),
+        busy: !!S.busy.export, idle: !S.busy.export, busyStr: S.busy.export ? 'true' : 'false', exportLabel: phone ? '' : 'Export',
+        export: () => { if (S.busy.export) return; if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } this.busy('export', true); this.later('exp', 1200, () => { this.busy('export', false); this.banner('success', 'Report exported: shifa-report-' + R.from + '-' + R.to + '.pdf', { action: () => this.banner('info', '[Prototype: opens the share sheet.]'), actionLabel: 'Share' }); }); },
+        kpiCols: phone ? 2 : 4,
+        kpis: [['Appointments Today', today.length], ['Completed Today', today.filter((a) => a.status === 'COMPLETED').length], ['Cancelled / No-show', today.filter((a) => a.status === 'CANCELLED' || a.status === 'NO_SHOW').length], ['New Patients Today', st.patients.filter((p) => p.createdOn === st.today).length]].map(([l, n]) => ({ label: l, n: String(n), go: () => (l === 'Appointments Today' ? act('go', { tab: 'calendar' }) : null) })),
+        sms1: st.sub.sms ? 'SMS sent ' + smsN + ' · Total SMS cost ' + lib.money(smsN * 150) : '', sms2: '150 UZS per SMS',
+        premium, teaser: !premium, plans: () => act('push', { s: 'subscription', p: { need: 'Advanced analytics' } }),
+        bars: days.slice(-14).map((d, i) => ({ n: String(counts[days.length - Math.min(14, days.length) + i]), h: Math.round(100 * counts[days.length - Math.min(14, days.length) + i] / max) + 'px', label: String(Number(d.slice(8))) })), trendAria: 'Appointments per day: ' + counts.join(', '),
+        videoDeg: Math.round(360 * video / Math.max(1, inRange.length)) + 'deg', total: String(inRange.length), video: String(video), clinic: String(clinic), donutAria: video + ' video calls and ' + clinic + ' in-person visits',
+        active: String(new Set(st.appointments.filter((a) => a.day >= lib.addDays(st.today, -30)).map((a) => a.patientId)).size), docs: String(st.docs.filter((d) => d.day >= lib.addDays(st.today, -30)).length)
+      };
+      if (rp.pushed || (this.props.route && this.props.route.p && this.props.route.p.fromProfile)) { out.hasHeader = true; out.title = 'Reports'; out.rp.isRoot = false; }
+    }
+    return this.sheets(out);
+  }
+  sheets(out) {
+    const S = this.state; const sh = S.sheet; if (!sh) return out;
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act; const me = st.me; const offline = st.online === false;
+    const close = () => this.setState({ sheet: null });
+    const set = (p) => this.setState({ sheet: Object.assign({}, sh, p) });
+    const base = { title: '', titleInk: 'var(--text-primary)', max: '480px', hasX: true, close, scrim: close, isText: false, body: '', isMenu: false, items: [], isSearch: false, sections: [], hasErr: false, err: '', hasActions: true, hasTertiary: false, tertiaryLabel: '', tertiary: close, hasSecondary: true, secondaryLabel: 'Cancel', secondary: close, primaryLabel: 'OK', primary: close, primaryBg: 'var(--interactive-primary)', primaryInk: 'var(--text-inverse)', busy: false, busyStr: 'false', offStr: 'false' }; this.props.lib.popify(base, !!this.props.phone);
+    out.hasSheet = true; out.sheet = base;
+    const item = (label, go, extra) => Object.assign({ label, go, bg: 'transparent', ink: 'var(--text-primary)', weight: 600, hasIcon: false, d: '', sel: false, hasSub: false, sub: '' }, extra || {});
+    const menu = (title, items) => Object.assign(base, { title, isMenu: true, items, hasActions: false, max: '420px' });
+    const k = sh.kind;
+    if (k === 'photo') menu('Profile photo', [item('Take photo', () => { close(); this.busy('photo', true); this.later('ph', 900, () => { this.busy('photo', false); this.setMe({ photo: 'camera' }); this.banner('success', 'Photo updated'); }); }, { hasIcon: true, d: ic.camera }), item('Choose from gallery', () => { close(); this.later('ph', 900, () => { this.setMe({ photo: 'gallery' }); this.banner('success', 'Photo updated'); }); }, { hasIcon: true, d: ic.image })].concat(me.photo ? [item('Remove photo', () => this.setState({ sheet: { kind: 'confirm', title: 'Remove photo?', body: 'Patients will see your initials instead.', label: 'Remove', red: true, go: () => { this.setMe({ photo: '' }); this.banner('success', 'Photo removed'); } } }), { hasIcon: true, d: ic.trash, ink: 'var(--text-error)' })] : []));
+    if (k === 'unsaved') Object.assign(base, { title: 'Discard changes?', isText: true, body: 'You have unsaved changes.', secondaryLabel: 'Keep editing', primaryLabel: 'Discard', primaryBg: 'var(--interactive-destructive)', primary: () => { this.dropDraft(sh.key); this.setState({ sheet: null }); act('back'); } });
+    if (k === 'confirm') Object.assign(base, { title: sh.title, isText: true, body: sh.body, secondaryLabel: sh.keepLabel || 'Cancel', secondary: () => this.setState({ sheet: sh.prev || null }), close: () => this.setState({ sheet: sh.prev || null }), scrim: () => this.setState({ sheet: sh.prev || null }), primaryLabel: sh.label, primaryBg: sh.red ? 'var(--interactive-destructive)' : 'var(--interactive-primary)', primary: () => { this.setState({ sheet: null }); sh.go(); } });
+    if (k === 'profession') {
+      const cat = [['Dentistry', ['Therapeutic dentist', 'Orthodontist', 'Oral surgeon', 'Periodontist', 'Prosthodontist', 'Pediatric dentist']], ['Internal medicine', ['General practitioner', 'Cardiologist', 'Endocrinologist', 'Gastroenterologist']], ['Surgery', ['General surgeon', 'Orthopedic surgeon']], ['Mental health', ['Psychiatrist', 'Psychologist']]];
+      const q = sh.q.trim().toLowerCase();
+      const items = []; cat.forEach(([g, list]) => { const m = list.filter((x) => !q || x.toLowerCase().indexOf(q) >= 0); if (m.length) { items.push(item(g.toUpperCase(), () => {}, { weight: 700, ink: 'var(--text-secondary)' })); m.forEach((x) => items.push(item(x, () => { const D = this.state.d.edit; this.setState({ sheet: null, d: Object.assign({}, this.state.d, { edit: Object.assign({}, D || { first: me.first, last: me.last, dob: me.dob || '1984-03-12', gender: me.gender || 'Female', spec: me.spec, headline: me.headline || '', exp: String(me.experience || ''), langs: (me.languages || []).join(', ') }, { spec: x, dirty: true }) }) }); }, { sel: (this.state.d.edit || { spec: me.spec }).spec === x }))); } });
+      Object.assign(base, { title: 'Profession', isSearch: true, q: sh.q, ph: 'Search profession...', onQ: (e) => set({ q: e.target.value }), isMenu: true, items: items.length ? items : [item('No professions found', () => {}, { ink: 'var(--text-secondary)' })], hasActions: false, max: '520px' });
+    }
+    if (k === 'tzWarn') {
+      const o = { 'Asia/Tashkent': 5, 'Europe/Berlin': 1, 'Europe/London': 0, 'Europe/Moscow': 3, 'Asia/Dubai': 4 }; const from = st.tz, to = sh.to;
+      const diff = (o[to] !== undefined && o[from] !== undefined) ? o[to] - o[from] : -4;
+      const upcoming = st.appointments.filter((a) => a.day >= st.today && (a.status === 'CONFIRMED' || a.status === 'REQUESTED')).length;
+      Object.assign(base, { title: 'Change practice timezone?', isText: true, body: 'From ' + from + ' to ' + to + '.\nYour existing availability and ' + upcoming + ' upcoming appointments keep their real time. They will be shown in the new timezone — for example 09:00 becomes ' + lib.hm(((9 + diff) * 60 + 1440) % 1440) + '.' + (st.phoneTz && st.phoneTz !== to ? '\nYour phone is set to ' + st.phoneTz + '. The calendar will show a notice while they differ.' : ''), primaryLabel: 'Change timezone', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false',
+        secondary: close, primary: () => { if (sh.busy) return; if (offline) { set({ err: 'Couldn’t save. You’re offline.' }); return; } set({ busy: true }); this.later('tz', 800, () => { act('set', { tz: to }); this.setState({ sheet: null, tzq: '' }); act('back'); this.banner('success', 'Practice timezone changed to ' + to); }); } });
+      base.hasErr = !!sh.err; base.err = sh.err || '';
+    }
+    if (k === 'country') menu('Country', ['Uzbekistan', 'Germany', 'USA', 'Other'].map((c) => item(c, () => { this.setMe({ country: c }); close(); this.banner('success', 'Country saved'); }, { sel: (me.country || 'Uzbekistan') === c })));
+    if (k === 'start') menu('Starting screen', [['home', 'Home'], ['calendar', 'Calendar'], ['patients', 'Patients'], ['chat', 'Chat'], ['clinic', 'Clinic']].concat(lib.can(st, 'tasks') ? [['tasks', 'Tasks']] : []).concat([['reports', 'Reports'], ['notifications', 'Notifications'], ['profile', 'Profile']]).map(([v, l]) => item(l, () => { this.setMe({ startTab: v }); close(); this.banner('success', 'Starting screen saved. Applies next time you open the app.'); }, { sel: (me.startTab || 'home') === v })));
+    if (k === 'pin') {
+      const mode = sh.mode;
+      const title = mode === 'set' ? (sh.first ? 'Repeat your PIN' : 'Set a 6-digit PIN') : 'Enter your PIN';
+      Object.assign(base, { title, sections: [{ hasTitle: false, title: '', fields: [this.input('PIN', sh.val, (e) => set({ val: e.target.value.replace(/[^\d]/g, '').slice(0, 6), err: '' }), { type: 'password', mode: 'numeric', ph: '••••••', err: sh.err })] }], primaryLabel: mode === 'set' ? (sh.first ? 'Turn on' : 'Next') : 'Continue', offStr: sh.val.length === 6 ? 'false' : 'true', primaryBg: sh.val.length === 6 ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: sh.val.length === 6 ? 'var(--text-inverse)' : 'var(--text-tertiary)',
+        primary: () => {
+          if (sh.val.length !== 6) return;
+          if (mode === 'set') { if (!sh.first) { set({ first: sh.val, val: '' }); return; } if (sh.first !== sh.val) { set({ val: '', first: null, err: 'PINs don’t match. Start again.' }); return; } act('lock', { enabled: true, pin: sh.val }); close(); this.banner('success', st.lockOn ? 'PIN changed' : 'App lock on'); return; }
+          if (sh.val !== st.lockPin) { set({ val: '', err: 'Incorrect PIN' }); return; }
+          if (mode === 'off') { act('lock', { enabled: false, bio: false }); close(); this.banner('success', 'App lock off'); return; }
+          if (mode === 'verify') this.setState({ sheet: { kind: 'pin', mode: 'set', val: '', err: '' } });
+        } });
+    }
+    if (k === 'bio') Object.assign(base, { title: 'Use Face ID for Shifa Doctor?', isText: true, body: '[Prototype: this stands in for the system Face ID prompt.]', secondaryLabel: 'Don’t allow', primaryLabel: 'Allow', primary: () => { act('lock', { bio: true }); close(); this.banner('success', 'Face ID unlock on'); } });
+    if (k === 'del1') Object.assign(base, { title: 'Delete your account?', titleInk: 'var(--text-error)', isText: true, body: 'This removes your profile, schedule and messages and cancels upcoming appointments. Patient records stay with the patients. This cannot be undone.', primaryLabel: 'Continue', primaryBg: 'var(--interactive-destructive)', primary: () => this.setState({ sheet: { kind: 'del2', pw: '', err: '' } }) });
+    if (k === 'del2') Object.assign(base, { title: 'Confirm with your password', sections: [{ hasTitle: false, title: '', fields: [this.input('Password', sh.pw, (e) => set({ pw: e.target.value, err: '' }), { type: 'password', err: sh.err }), this.F({ isBtn: true, label: 'Forgot password?', go: () => { close(); this.banner('info', 'Deletion cancelled. Reset your password from the sign-in screen.'); }, ink: 'var(--text-primary)' })] }], primaryLabel: 'Delete account', primaryBg: 'var(--interactive-destructive)', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false',
+      primary: () => { if (sh.busy) return; if (!sh.pw) { set({ err: 'Enter your password' }); return; } if (offline) { set({ err: 'You’re offline. Try again when connected.' }); return; } set({ busy: true }); this.later('del', 1200, () => { if (sh.pw === 'wrong') { this.setState({ sheet: Object.assign({}, this.state.sheet, { busy: false, err: 'Incorrect password' }) }); return; } this.setState({ sheet: null, deleted: true }); }); } });
+    if (k === 'support') menu('Contact support', [item('Telegram · @shifa_support', () => this.banner('info', '[Prototype: opens Telegram.]'), { hasIcon: true, d: ic.send }), item('Email · support@shifa.uz', () => this.banner('info', '[Prototype: opens the mail app.]'), { hasIcon: true, d: ic.mail }), item('Phone · +998 71 200 00 00', () => this.banner('info', '[Prototype: starts a call.]'), { hasIcon: true, d: ic.phone })]);
+    if (k === 'report') Object.assign(base, { title: 'Report a problem', sections: [{ hasTitle: false, title: '', fields: [this.area('What happened?', sh.text, (e) => set({ text: e.target.value }), { rows: '4' }), this.text('Diagnostics: Shifa Doctor 1.0.0 (3) · ' + (this.props.phone ? 'iOS 19.1' : 'Web · Chrome') + ' · tier ' + st.tier + ' · tz ' + st.tz)] }], primaryLabel: 'Send', offStr: sh.text.trim() ? 'false' : 'true', primaryBg: sh.text.trim() ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: sh.text.trim() ? 'var(--text-inverse)' : 'var(--text-tertiary)', primary: () => { if (!sh.text.trim()) return; close(); this.banner('success', 'Thanks — your report was sent.'); } });
+    if (k === 'certSrc') menu('Upload certificate', [['Take photo', ic.camera, 'Certificate photo.jpg', 'image'], ['Choose from gallery', ic.image, 'IMG_3302.jpg', 'image'], ['Choose file (PDF)', ic.file, 'Implantology_course_2025.pdf', 'pdf']].map(([l, d, n, kind]) => item(l, () => { close(); this.busy('cert', true); this.later('cert', 1200, () => { this.busy('cert', false); this.setMe({ certs: (me.certs || [{ name: 'Endodontics_certificate_2022.pdf', kind: 'pdf', date: '2022-05-14' }, { name: 'Dental_licence.jpg', kind: 'image', date: '2014-07-01' }]).concat([{ name: n, kind, date: st.today }]) }); this.banner('success', 'Certificate uploaded'); }); }, { hasIcon: true, d })));
+    if (k === 'checkout') Object.assign(base, { title: 'Upgrade to ' + sh.tier, isText: true, body: sh.price + ', billed monthly. [Prototype: this stands in for Stripe Checkout.]', primaryLabel: 'Pay with card', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false', primary: () => { if (sh.busy) return; set({ busy: true }); this.later('co', 1400, () => { this.setState({ sheet: null }); act('tier', sh.tier); this.banner('success', 'You’re on ' + sh.tier + ' now.'); }); } });
+    if (k === 'range') Object.assign(base, { title: 'Date range', sections: [{ hasTitle: false, title: '', fields: [this.input('From', sh.from, (e) => set({ from: e.target.value }), { type: 'date', max: sh.to }), this.input('To', sh.to, (e) => set({ to: e.target.value }), { type: 'date', min: sh.from, max: lib.addDays(st.today, 60) })] }], primaryLabel: 'Apply', primary: () => { if (sh.to < sh.from) return; this.setState({ sheet: null, range: { from: sh.from, to: sh.to } }); } });
+    if (k === 'groups') {
+      const groups = st.svcGroups || ['Consultations', 'Therapy', 'Surgery', 'Prosthetics'];
+      const setG = (g) => act('set', { svcGroups: g });
+      Object.assign(base, { title: 'Service groups', sections: [{ hasTitle: false, title: '', fields: groups.map((g, i) => this.input('Group ' + (i + 1), g, (e) => { const n = groups.slice(); n[i] = e.target.value; setG(n); }, { hasRemove: true, remove: () => this.setState({ sheet: { kind: 'confirm', title: 'Delete group?', body: 'Its services stay and become ungrouped.', label: 'Delete', red: true, go: () => { setG(groups.filter((_, j) => j !== i)); act('set', (s) => ({ myServices: (s.myServices || []).map((x) => (x.group === g ? Object.assign({}, x, { group: '' }) : x)) })); } } }) })).concat([this.input('New group', sh.newName, (e) => set({ newName: e.target.value }), { ph: 'e.g. Hygiene' })]) }], secondaryLabel: 'Close', primaryLabel: 'Add group', primary: () => { const n = sh.newName.trim(); if (!n) return; if (groups.indexOf(n) >= 0) { set({ err: 'A group with this name exists.' }); return; } setG(groups.concat([n])); set({ newName: '' }); } });
+      base.hasErr = !!sh.err; base.err = sh.err || '';
+    }
+    if (k === 'svc') {
+      const f = sh.f; const ctx = this.svcCtx || { groups: [], setList: () => {}, list: [] };
+      const setF = (p) => set({ f: Object.assign({}, f, p), dirty: true });
+      const valid = f.title.trim() && (f.free || f.prices.every((p) => Number(String(p.amount).replace(',', '.')) > 0));
+      const isNew = !sh.id;
+      const tryClose = () => { if (sh.dirty) this.setState({ sheet: { kind: 'confirm', title: 'Discard changes?', body: 'Your changes to this service will be lost.', label: 'Discard', red: true, keepLabel: 'Keep editing', prev: sh, go: () => {} } }); else close(); };
+      Object.assign(base, { title: isNew ? 'New Service' : 'Edit Service', max: '560px', close: tryClose, scrim: tryClose, secondary: tryClose,
+        sections: [{ hasTitle: false, title: '', fields: [
+          this.input('Title *', f.title, (e) => setF({ title: e.target.value }), { err: sh.tried && !f.title.trim() ? 'Title is required' : '' }),
+          this.area('Description', f.desc, (e) => setF({ desc: e.target.value }), { rows: '2' }),
+          this.select('Group', f.group, (e) => setF({ group: e.target.value }), [{ v: '', label: 'No group' }].concat(ctx.groups.map((g) => ({ v: g, label: g })))),
+          this.sw('Free consultation (video)', f.free, () => setF({ free: !f.free }), { help: 'Patients can book a short video call at no cost.' }),
+          this.sw('Active', f.active, () => setF({ active: !f.active }), { help: 'Inactive services are hidden from patients.' })
+        ] }].concat(f.free ? [] : [{ hasTitle: true, title: 'PRICES', fields: f.prices.map((p, i) => this.input('Price ' + (i + 1) + ' · ' + p.cur + ' · ' + p.loc, String(p.amount), (e) => { const pr = f.prices.slice(); pr[i] = Object.assign({}, pr[i], { amount: e.target.value.replace(/[^\d.,]/g, '') }); setF({ prices: pr }); }, { mode: 'decimal', hasRemove: f.prices.length > 1, remove: () => setF({ prices: f.prices.filter((_, j) => j !== i) }), err: sh.tried && !(Number(String(p.amount).replace(',', '.')) > 0) ? 'Enter a price' : '' })).concat([this.F({ isBtn: true, label: '+ Add price row (EUR · Berlin clinic)', ink: 'var(--text-primary)', go: () => setF({ prices: f.prices.concat([{ amount: '', cur: 'EUR', loc: 'Berlin clinic' }]) }) }), this.text('Prices: add a default row for all locations, or separate rows per location.')]) }]),
+        hasTertiary: !isNew, tertiaryLabel: 'Delete', tertiary: () => this.setState({ sheet: { kind: 'confirm', title: 'Delete service?', body: f.title + ' will be removed. Appointments already booked keep their price.', label: 'Delete', red: true, go: () => { ctx.setList((l) => l.filter((x) => x.id !== f.id)); this.banner('success', 'Service deleted'); } } }),
+        primaryLabel: 'Save', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false',
+        primary: () => { if (sh.busy) return; if (!valid) { set({ tried: true }); return; } if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } set({ busy: true }); this.later('svc', 700, () => { const clean = Object.assign({}, f, { title: f.title.trim(), prices: f.free ? [] : f.prices.map((p) => Object.assign({}, p, { amount: Number(String(p.amount).replace(',', '.')) })) }); ctx.setList((l) => (isNew ? l.concat([clean]) : l.map((x) => (x.id === f.id ? clean : x)))); this.setState({ sheet: null }); this.banner('success', isNew ? 'Service added' : 'Service saved'); }); } });
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

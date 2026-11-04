@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Notifications and tasks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes ib-spin{to{transform:rotate(360deg)}}
+@keyframes ib-up{from{transform:translateY(var(--size-30));opacity:0}to{transform:none;opacity:1}}
+@keyframes ib-bar{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+.ib-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.ib-row:hover{background:var(--bg-hover) !important}
+.ib-in input,.ib-in select,.ib-in textarea{font: 600 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.ib-in input::placeholder,.ib-in textarea::placeholder{color:var(--text-tertiary);font-weight:500}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div class="ib-in" style="position: relative; width: 100%; min-height: 100%; box-sizing: border-box; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans)">
+
+<!-- ======================= NOTIFICATIONS ======================= -->
+<sc-if value="{{isNotif}}" hint-placeholder-val="{{ true }}">
+  <div style="padding: {{pagePad}}; padding-bottom: {{bottomClear}}; width: 100%; max-width: var(--layout-page); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12)">
+    <div style="display: flex; flex-direction: column; gap: var(--size-8)">
+      <h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight)">{{nt.title}}</h1>
+      <div style="display: flex; align-items: center; gap: var(--size-8)">
+        <button class="ib-b sh-btn sh-btn--tertiary sh-btn--compact" onClick="{{nt.markAll}}" aria-disabled="{{nt.markOffStr}}" style="display: inline-flex; align-items: center; gap: var(--size-6)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12l5 5L18 6M12 17l1 1L22 9"></path></svg>Mark all as read</button>
+        <span style="flex: 1 1 auto"></span>
+        <button class="ib-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{nt.refresh}}" aria-label="Refresh" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></button>
+        <button class="ib-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{nt.settings}}" aria-label="Notification settings" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sliders}}"></path></svg></button>
+      </div>
+    </div>
+    <sc-if value="{{nt.refreshing}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: var(--bg-success-subtle); overflow: hidden"><div style="width: 30%; height: var(--size-3); background: var(--interactive-primary); animation: ib-bar 1s linear infinite"></div></div></sc-if>
+    <sc-if value="{{nt.offBanner}}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-8) var(--size-12); padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-warning)">
+        <span style="display: inline-flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.alert}}"></path></svg></span>
+        <span style="flex: 1 1 var(--size-220); font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">Notifications are off. You won't hear about new bookings or messages.</span>
+        <button class="ib-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{nt.turnOn}}">Turn on</button>
+        <button class="ib-b sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" onClick="{{nt.hideOff}}" aria-label="Hide" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+      </div>
+    </sc-if>
+    <div role="group" aria-label="Filter notifications" style="display: flex; gap: var(--size-8); overflow-x: auto"><sc-for list="{{nt.chips}}" as="c" hint-placeholder-count="4"><button class="ib-b sh-chip" onClick="{{c.pick}}" aria-pressed="{{c.selStr}}" style="flex: none">{{c.label}}</button></sc-for></div>
+    <sc-if value="{{nt.empty}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-32) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-8); text-align: center"><span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.bell}}"></path></svg></span><b style="font-size: var(--font-size-16)">{{nt.emptyTitle}}</b><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{nt.emptyBody}}</span></div></sc-if>
+    <sc-for list="{{nt.groups}}" as="g" hint-placeholder-count="2">
+      <section style="display: flex; flex-direction: column; gap: var(--size-10); margin-top: var(--size-4)">
+        <h2 style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{g.label}}</h2>
+        <sc-for list="{{g.items}}" as="n" hint-placeholder-count="3">
+          <div style="position: relative; border-radius: var(--radius-control-md); background: {{n.bg}}; box-shadow: 0 0 0 var(--size-1) var(--border-default), var(--shadow-dropdown)">
+            <button class="ib-b sh-press" onClick="{{n.open}}" style="width: 100%; padding: var(--size-14) var(--size-14) var(--size-12) var(--size-22); display: flex; flex-direction: column; gap: var(--size-6); color: var(--text-primary)">
+              <sc-if value="{{n.unread}}" hint-placeholder-val="{{ true }}"><span aria-label="Unread" role="img" style="position: absolute; left: var(--size-8); top: var(--size-18); width: var(--size-8); height: var(--size-8); border-radius: var(--radius-full); background: var(--blue)"></span></sc-if>
+              <span style="display: flex; align-items: center; gap: var(--size-8)"><span style="display: inline-flex; color: {{n.ink}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d}}"></path></svg></span><span style="flex: 1 1 auto; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; color: {{n.labelInk}}">{{n.label}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary); white-space: nowrap">{{n.time}}</span></span>
+              <span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: {{n.weight}}; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical">{{n.body}}</span>
+            </button>
+            <sc-if value="{{n.hasActions}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-8); padding: 0 var(--size-14) var(--size-12) var(--size-22)"><sc-for list="{{n.actions}}" as="a" hint-placeholder-count="2"><button class="ib-b {{a.cls}}" onClick="{{a.go}}">{{a.label}}</button></sc-for></div></sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </sc-for>
+  </div>
+</sc-if>
+
+<!-- ======================= TIER GATE ======================= -->
+<sc-if value="{{isGate}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; max-width: var(--layout-form-narrow); margin: 0 auto; display: flex; flex-direction: column; gap: var(--size-16)">
+    <sc-if value="{{gateBack}}" hint-placeholder-val="{{ false }}"><button class="ib-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button></sc-if>
+    <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center">
+      <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-canvas); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.lock}}"></path></svg></span>
+      <h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">Remote care tasks are a Premium feature</h1>
+      <div style="display: flex; flex-direction: column; gap: var(--size-6); text-align: left; font-size: var(--font-size-14); line-height: var(--line-height-20)"><sc-for list="{{gateBullets}}" as="b" hint-placeholder-count="3"><span style="display: flex; gap: var(--size-8)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span>{{b}}</span></sc-for></div>
+      <button class="ib-b sh-btn sh-btn--primary" onClick="{{seePlans}}" style="margin-top: var(--size-6)">See Premium plans</button>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ======================= TASKS LIST ======================= -->
+<sc-if value="{{isTasks}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; padding-bottom: {{bottomClear}}; width: 100%; max-width: var(--layout-page); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12)">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--size-12)">
+      <div style="flex: 1 1 var(--basis-260); display: flex; flex-direction: column; gap: var(--size-4)"><h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Remote Care Tasks</h1><span style="font-size: var(--font-size-14); color: var(--text-secondary)">Monitor and manage patient follow-ups</span></div>
+      <div style="display: flex; gap: var(--size-8); flex: {{tkBtnFlex}}"><button class="ib-b sh-icon-btn sh-icon-btn--surface" onClick="{{tk.refresh}}" aria-label="Refresh tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></button><button class="ib-b sh-btn sh-btn--secondary" onClick="{{tk.templates}}" style="flex: 1 1 0">Use Templates</button><sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><button class="ib-b sh-fab sh-fab--docked" onClick="{{tk.create}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Create Task</button></sc-if><sc-if value="{{notPhone}}" hint-placeholder-val="{{ true }}"><button class="ib-b sh-btn sh-btn--primary" onClick="{{tk.create}}" style="flex: 1 1 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Create Task</button></sc-if></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--size-8)"><sc-for list="{{tk.stats}}" as="s" hint-placeholder-count="3"><button class="ib-b sh-press sh-press--card" onClick="{{s.go}}" aria-pressed="{{s.selStr}}" style="box-shadow: {{s.ring}}; padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-4); color: var(--text-primary)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{s.label}}</span><span style="font-size: var(--font-size-24); line-height: var(--line-height-32); font-weight: 700; color: {{s.ink}}">{{s.n}}</span></button></sc-for></div>
+    <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-12); display: flex; flex-wrap: wrap; gap: var(--size-8); align-items: center">
+      <label style="flex: 2 1 var(--size-220); position: relative; display: block"><span style="position: absolute; left: var(--size-12); top: var(--size-12); color: var(--text-secondary); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span><input class="sh-input" value="{{tk.q}}" onChange="{{tk.onQ}}" placeholder="Search tasks or patients" aria-label="Search tasks or patients" style="width: 100%; padding: 0 var(--size-12) 0 var(--size-40)"></label>
+      <select class="sh-select" value="{{tk.status}}" onChange="{{tk.onStatus}}" aria-label="Status" style="flex: 1 1 var(--size-140)"><option value="">All statuses</option><option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="EXPIRED">Expired</option><option value="CANCELLED">Cancelled</option><option value="DRAFT">Draft</option></select>
+      <select class="sh-select" value="{{tk.cat}}" onChange="{{tk.onCat}}" aria-label="Category" style="flex: 1 1 var(--size-140)"><option value="">All categories</option><option value="VITAL">Vital</option><option value="EXERCISE">Exercise</option><option value="MEDICATION">Medication</option><option value="OTHER">Other</option></select>
+    </div>
+    <sc-if value="{{tk.refreshing}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: var(--bg-success-subtle); overflow: hidden"><div style="width: 30%; height: var(--size-3); background: var(--interactive-primary); animation: ib-bar 1s linear infinite"></div></div></sc-if>
+    <sc-if value="{{tk.emptyAll}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28); text-align: center; display: flex; flex-direction: column; gap: var(--size-8); align-items: center"><b style="font-size: var(--font-size-16)">No tasks found</b><span style="font-size: var(--font-size-14); color: var(--text-secondary)">Create your first remote care task</span><button class="ib-b sh-btn sh-btn--primary" onClick="{{tk.create}}" >Create Task</button></div></sc-if>
+    <sc-if value="{{tk.emptyFilter}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-24); text-align: center; display: flex; flex-direction: column; gap: var(--size-6); align-items: center"><b>No tasks match your filters</b><button class="ib-b sh-link" onClick="{{tk.clear}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">Clear filters</button></div></sc-if>
+    <div style="display: grid; grid-template-columns: repeat({{tkCols}}, minmax(0, 1fr)); gap: var(--size-10)">
+      <sc-for list="{{tk.rows}}" as="t" hint-placeholder-count="4">
+        <button class="ib-b ib-row sh-press sh-press--card" onClick="{{t.open}}" style="padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10); color: var(--text-primary)">
+          <span style="display: flex; align-items: flex-start; gap: var(--size-10); width: 100%">
+            <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-control-md); background: var(--alpha-teal-15); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"></path></svg></span>
+            <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{t.name}}</span><span style="display: flex; align-items: center; gap: var(--size-6); font-size: var(--font-size-12); color: var(--text-secondary)"><span aria-hidden="true" style="width: var(--size-20); height: var(--size-20); border-radius: var(--radius-full); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-10); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">{{t.ini}}</span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{t.patient}}</span></span></span>
+            <span style="flex: none; box-sizing: border-box; height: var(--size-24); display: inline-flex; align-items: center; padding: 0 var(--size-10); border-radius: var(--radius-full); background: {{t.stBg}}; color: {{t.stInk}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap">{{t.stLabel}}</span>
+          </span>
+          <span style="display: flex; flex-direction: column; gap: var(--size-4); width: 100%"><span style="display: flex; justify-content: space-between; font-size: var(--font-size-12); color: var(--text-secondary)"><span>Task progress</span><span style="font-weight: 700; color: var(--text-primary)">{{t.prog}}</span></span><span aria-hidden="true" style="height: var(--size-6); border-radius: var(--radius-sm); background: var(--bg-disabled); overflow: hidden"><span style="display: block; height: var(--size-6); width: {{t.pct}}; background: var(--interactive-primary)"></span></span></span>
+          <span style="display: flex; flex-wrap: wrap; gap: var(--size-6) var(--size-12); font-size: var(--font-size-12); color: var(--text-secondary)"><span>{{t.perDay}}</span><span>{{t.range}}</span><span>{{t.days}}</span></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ======================= TASK DETAILS ======================= -->
+<sc-if value="{{isDetail}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; padding-bottom: var(--size-40); max-width: var(--layout-form-wide); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12)">
+    <header style="display: flex; align-items: center; gap: var(--size-10)"><button class="ib-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button><span style="font-size: var(--font-size-16); font-weight: 700">Task Details</span></header>
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-12)">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--size-8)"><h1 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-24); line-height: var(--line-height-28); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{td.name}}</h1><span style="flex: none; box-sizing: border-box; height: var(--size-26); display: inline-flex; align-items: center; padding: 0 var(--size-12); border-radius: var(--radius-full); background: {{td.stBg}}; color: {{td.stInk}}; font-size: var(--font-size-12); font-weight: 700">{{td.stLabel}}</span></div>
+      <sc-for list="{{td.rows}}" as="r" hint-placeholder-count="5"><div style="display: flex; gap: var(--size-12); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span style="flex: 0 0 var(--size-100); color: var(--text-secondary); font-weight: 600">{{r.label}}</span><sc-if value="{{r.isLink}}" hint-placeholder-val="{{ false }}"><button class="ib-b sh-link" onClick="{{r.go}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">{{r.value}}</button></sc-if><sc-if value="{{r.isText}}" hint-placeholder-val="{{ true }}"><span style="flex: 1 1 auto; font-weight: 700">{{r.value}}</span></sc-if></div></sc-for>
+      <div style="display: flex; flex-direction: column; gap: var(--size-8); padding-top: var(--size-4)">
+        <div style="display: flex; justify-content: space-between; font-size: var(--font-size-14); font-weight: 700"><span>Progress</span><span>{{td.prog}}</span></div>
+        <span aria-hidden="true" style="height: var(--size-8); border-radius: var(--radius-sm); background: var(--bg-disabled); overflow: hidden"><span style="display: block; height: var(--size-8); width: {{td.pct}}; background: var(--interactive-primary)"></span></span>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--size-8); text-align: center"><sc-for list="{{td.stats}}" as="s" hint-placeholder-count="3"><div style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-20); font-weight: 700; color: {{s.ink}}">{{s.n}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{s.label}}</span></div></sc-for></div>
+      </div>
+    </section>
+    <h2 style="margin: var(--size-4) 0 0; font-size: var(--font-size-18); font-weight: 700">Check-ins</h2>
+    <sc-if value="{{td.noChecks}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-16); background: var(--bg-surface); border-radius: var(--radius-control-lg); font-size: var(--font-size-14); color: var(--text-secondary)">No check-ins scheduled yet</p></sc-if>
+    <sc-for list="{{td.checks}}" as="c" hint-placeholder-count="4"><button class="ib-b ib-row sh-press sh-press--card" onClick="{{c.open}}" style="padding: var(--size-12) var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); font-weight: 700">{{c.date}} <span style="font-weight: 500; color: var(--text-secondary)">· {{c.time}}</span></span><sc-if value="{{c.hasValue}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{c.value}}</span></sc-if></span><span style="flex: none; box-sizing: border-box; height: var(--size-24); display: inline-flex; align-items: center; padding: 0 var(--size-10); border-radius: var(--radius-full); background: {{c.bg}}; color: {{c.ink}}; font-size: var(--font-size-12); font-weight: 700">{{c.label}}</span></button></sc-for>
+    <sc-if value="{{td.canCancel}}" hint-placeholder-val="{{ false }}"><button class="ib-b sh-btn sh-btn--secondary is-destructive" onClick="{{td.cancel}}" style="margin-top: var(--size-8)">Cancel Task</button></sc-if>
+  </div>
+</sc-if>
+
+<!-- ======================= CREATE TASK ======================= -->
+<sc-if value="{{isCreate}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column">
+  <div style="flex: 1 1 auto; padding: {{pagePad}}; padding-bottom: var(--size-24); max-width: var(--layout-form-wide); width: 100%; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12)">
+    <header style="display: flex; align-items: center; gap: var(--size-10)"><button class="ib-b sh-icon-btn sh-icon-btn--surface" onClick="{{cr.back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">Create Remote Care Task</h1></header>
+    <sc-if value="{{cr.fromTemplate}}" hint-placeholder-val="{{ false }}"><span style="align-self: flex-start; height: var(--size-26); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-success-subtle); font-size: var(--font-size-12); line-height: var(--line-height-26); font-weight: 700">From template: {{cr.templateName}}</span></sc-if>
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-12)">
+      <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Patient *</span><button class="ib-b sh-press sh-input" onClick="{{cr.pickPatient}}" style="padding: 0 var(--size-12); display: flex; align-items: center; gap: var(--size-10); min-height: var(--size-48); border-color: {{cr.patBorder}}; color: {{cr.patInk}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg><span style="flex: 1 1 auto">{{cr.patLabel}}</span></button><sc-if value="{{cr.patErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Select a patient</span></sc-if></div>
+      <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Task Name *<input class="sh-input" value="{{cr.name}}" onChange="{{cr.onName}}" aria-label="Task Name" style="border-color: {{cr.nameBorder}}"></label>
+      <sc-if value="{{cr.nameErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="margin-top: calc(-1 * var(--size-8)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Task name is required</span></sc-if>
+      <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Description<textarea class="sh-input sh-input--area" value="{{cr.desc}}" onChange="{{cr.onDesc}}" rows="3" placeholder="Task description shown to patient" aria-label="Description"></textarea></label>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-10)">
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Category *<select class="sh-select" value="{{cr.cat}}" onChange="{{cr.onCat}}" aria-label="Category"><option value="VITAL">Vital</option><option value="EXERCISE">Exercise</option><option value="MEDICATION">Medication</option><option value="OTHER">Other</option></select></label>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Input Type *<select class="sh-select" value="{{cr.input}}" onChange="{{cr.onInput}}" aria-label="Input Type"><option value="NUMERIC">Numeric</option><option value="TEXT">Text</option><option value="BOOLEAN">Yes/No</option></select></label>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Input Label<input class="sh-input" value="{{cr.label}}" onChange="{{cr.onLabel}}" placeholder="e.g., Blood Pressure, Weight (kg)" aria-label="Input Label"></label>
+    </section>
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-12)">
+      <h2 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">Schedule</h2>
+      <div class="dr-tabs dr-tabs--block" role="radiogroup" aria-label="Schedule mode"><sc-for list="{{cr.modes}}" as="m" hint-placeholder-count="2"><button class="ib-b dr-tab" role="radio" aria-checked="{{m.selStr}}" onClick="{{m.pick}}">{{m.label}}</button></sc-for></div>
+      <sc-if value="{{cr.even}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat({{cr.evenCols}}, minmax(0, 1fr)); gap: var(--size-10)">
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Times per day<select class="sh-select" value="{{cr.times}}" onChange="{{cr.onTimes}}" aria-label="Times per day"><sc-for list="{{cr.timesOpts}}" as="o" hint-placeholder-count="3"><option value="{{o}}">{{o}}</option></sc-for></select></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Start Time<input class="sh-input" type="time" value="{{cr.startTime}}" onChange="{{cr.onStartTime}}" aria-label="Start Time"></label>
+          <sc-if value="{{cr.showInterval}}" hint-placeholder-val="{{ false }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Interval between tasks<select class="sh-select" value="{{cr.interval}}" onChange="{{cr.onInterval}}" aria-label="Interval between tasks"><sc-for list="{{cr.intOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select></label></sc-if>
+        </div>
+        <div role="status" style="padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: {{cr.prevBg}}; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{cr.preview}}</div>
+      </sc-if>
+      <sc-if value="{{cr.custom}}" hint-placeholder-val="{{ false }}">
+        <div style="border: var(--size-2) solid var(--border-default); border-radius: var(--radius-control-md); padding: var(--size-10); display: flex; flex-direction: column; gap: var(--size-6)">
+          <span style="font-size: var(--font-size-14); font-weight: 700">Daily slot times</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Define each slot explicitly to support non-uniform schedules.</span>
+          <sc-for list="{{cr.slots}}" as="s" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: var(--size-8)"><input class="sh-input" type="time" value="{{s.v}}" onChange="{{s.on}}" aria-label="{{s.aria}}" style="flex: 1 1 auto; height: var(--size-40)"><button class="ib-b sh-press sh-press--tile" onClick="{{s.remove}}" aria-label="Delete slot" aria-disabled="{{s.offStr}}" style="width: var(--size-40); height: var(--size-40); color: {{s.ink}}; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.trash}}"></path></svg></button></div></sc-for>
+          <span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{cr.slotCount}}</span>
+          <button class="ib-b sh-press" onClick="{{cr.addSlot}}" style="align-self: flex-start; height: var(--size-36); padding: 0 var(--size-10); color: var(--text-primary); font: 700 var(--font-size-14)/var(--size-16) var(--font-sans); display: inline-flex; align-items: center; gap: var(--size-6)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add time slot</button>
+        </div>
+      </sc-if>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-10)">
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Start Date<input class="sh-input" type="date" value="{{cr.start}}" min="{{cr.today}}" onChange="{{cr.onStart}}" aria-label="Start Date"></label>
+        <sc-if value="{{cr.useEnd}}" hint-placeholder-val="{{ false }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">End Date<input class="sh-input" type="date" value="{{cr.end}}" min="{{cr.start}}" onChange="{{cr.onEnd}}" aria-label="End Date" style="border-color: {{cr.endBorder}}"></label></sc-if>
+        <sc-if value="{{cr.useDur}}" hint-placeholder-val="{{ true }}"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Duration (days)<input class="sh-input" value="{{cr.days}}" onChange="{{cr.onDays}}" inputmode="numeric" aria-label="Duration (days)" style="border-color: {{cr.daysBorder}}"></label></sc-if>
+      </div>
+      <sc-if value="{{cr.dateErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="margin-top: calc(-1 * var(--size-6)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">{{cr.dateErrText}}</span></sc-if>
+      <button class="ib-b sh-press" role="switch" aria-checked="{{cr.useEndStr}}" onClick="{{cr.toggleEnd}}" style="padding: 0; display: flex; align-items: center; gap: var(--size-12); font: 700 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-primary)"><span class="sh-switch" aria-hidden="true"></span>Use end date</button>
+      <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Notes Label<input class="sh-input" value="{{cr.notes}}" onChange="{{cr.onNotes}}" placeholder="e.g. Send a photo of the meter reading" aria-label="Notes Label"></label>
+    </section>
+  </div>
+  <div class="dr-actionbar"><div class="dr-actionbar__inner"><button class="ib-b sh-btn sh-btn--primary" onClick="{{cr.save}}" aria-busy="{{cr.busyStr}}"><sc-if value="{{cr.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Create Task</button></div></div>
+  </div>
+</sc-if>
+
+<!-- ======================= TEMPLATES ======================= -->
+<sc-if value="{{isTemplates}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; padding-bottom: var(--size-40); max-width: var(--layout-form-wide); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12)">
+    <header style="display: flex; align-items: center; gap: var(--size-10)"><button class="ib-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700">Use Templates</h1></header>
+    <sc-if value="{{tp.empty}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28); text-align: center; display: flex; flex-direction: column; gap: var(--size-8); align-items: center"><b>No templates yet</b><span style="font-size: var(--font-size-14); color: var(--text-secondary)">Create a task first, then it will appear here.</span><button class="ib-b sh-btn sh-btn--primary" onClick="{{tp.create}}" >Create a task</button></div></sc-if>
+    <sc-for list="{{tp.rows}}" as="t" hint-placeholder-count="3"><button class="ib-b ib-row sh-press sh-press--card" onClick="{{t.open}}" style="padding: var(--size-12) var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-control-md); background: var(--alpha-teal-15); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"></path></svg></span><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); font-weight: 700">{{t.name}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{t.sub}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{t.sched}}</span></span><span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span></button></sc-for>
+  </div>
+</sc-if>
+
+<!-- ======================= SHEETS ======================= -->
+<sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+    <button class="sh-scrim--fill" aria-label="Close" onClick="{{sheet.close}}"></button>
+    <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="ib-sh-t" style="max-width: var(--layout-dialog-max); border-radius: {{dlgR}}; padding-bottom: {{sheetPadB}}">
+      <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: var(--size-36); height: var(--size-4); border-radius: var(--radius-full); background: var(--bg-disabled); margin: calc(-1 * var(--size-8)) auto 0"></span></sc-if>
+      <div style="display: flex; align-items: center; gap: var(--size-8)"><h2 id="ib-sh-t" style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">{{sheet.title}}</h2><button class="ib-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{sheet.close}}" aria-label="Close" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></div>
+      <sc-if value="{{sheet.isText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{sheet.body}}</p></sc-if>
+      <sc-if value="{{sheet.isRows}}" hint-placeholder-val="{{ false }}"><sc-for list="{{sheet.rows}}" as="r" hint-placeholder-count="3"><div style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); color: var(--text-secondary); font-weight: 600">{{r.label}}</span><span style="font-size: var(--font-size-16); line-height: var(--line-height-22); font-weight: 700">{{r.value}}</span></div></sc-for></sc-if>
+      <sc-if value="{{sheet.isPick}}" hint-placeholder-val="{{ false }}">
+        <input class="sh-input" value="{{sheet.q}}" onChange="{{sheet.onQ}}" placeholder="Search by name or ID" aria-label="Search by name or ID">
+        <sc-if value="{{sheet.none}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-12); text-align: center; color: var(--text-secondary); font-size: var(--font-size-14)">No patients found</p></sc-if>
+        <div style="display: flex; flex-direction: column; gap: var(--size-4); max-height: var(--layout-dialog-sm); overflow-y: auto"><sc-for list="{{sheet.pats}}" as="p" hint-placeholder-count="4"><button aria-selected="{{p.selStr}}" class="ib-b ib-row sh-option" onClick="{{p.pick}}" style="display: flex; align-items: center"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); font-weight: 700">{{p.name}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">ID: {{p.id}}</span></span><sc-if value="{{p.sel}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span></sc-if></button></sc-for></div>
+      </sc-if>
+      <sc-if value="{{sheet.hasActions}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: var(--size-10); justify-content: flex-end; flex-direction: {{dlgActDir}}; padding-top: var(--size-4)">
+          <sc-if value="{{sheet.hasSecondary}}" hint-placeholder-val="{{ true }}"><button class="ib-b sh-btn sh-btn--secondary" onClick="{{sheet.secondary}}" >{{sheet.secondaryLabel}}</button></sc-if>
+          <button class="ib-b sh-btn sh-btn--primary" onClick="{{sheet.primary}}" aria-busy="{{sheet.busyStr}}" style="background: {{sheet.primaryBg}}"><sc-if value="{{sheet.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{sheet.primaryLabel}}</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { nf: 'All', refreshing: false, hideOff: false, tq: '', ts: '', tc: '', forms: {}, sheet: null }; this.t = {}; }
+  componentWillUnmount() { Object.keys(this.t).forEach((k) => clearTimeout(this.t[k])); }
+  componentDidUpdate(prev) { const a = prev.route || {}, b = this.props.route || {}; if (a.s !== b.s || JSON.stringify(a.p) !== JSON.stringify(b.p)) this.setState({ sheet: null }); }
+  later(k, ms, fn) { clearTimeout(this.t[k]); this.t[k] = setTimeout(fn, ms); }
+  banner(kind, text, extra) { this.props.act('banner', Object.assign({ kind, text }, extra || {})); }
+  catIcon(ic, c) { return { VITAL: ic.heart, EXERCISE: ic.activity, MEDICATION: ic.pill, OTHER: ic.clipboard }[c] || ic.clipboard; }
+  stOf(s) { return { ACTIVE: ['Active', 'var(--bg-success-subtle)', 'var(--text-brand-strong)'], COMPLETED: ['Completed', 'var(--bg-info-subtle)', 'var(--text-info)'], EXPIRED: ['Expired', 'var(--bg-warning-subtle)', 'var(--text-warning-strong)'], CANCELLED: ['Cancelled', 'var(--bg-error-subtle)', 'var(--text-error)'], DRAFT: ['Draft', 'var(--bg-canvas)', 'var(--text-secondary)'] }[s] || ['Unknown', 'var(--bg-canvas)', 'var(--text-secondary)']; }
+  checkIns(t, st, lib) {
+    const slots = t.slots || Array.from({ length: t.timesPerDay || 1 }, (_, i) => lib.hm(8 * 60 + i * Math.floor(12 * 60 / Math.max(1, (t.timesPerDay || 1) - 1 || 1))));
+    const out = []; const end = t.end && t.end < st.today ? t.end : st.today;
+    for (let i = 0; i < 3; i++) {
+      const d = lib.addDays(end, -i); if (d < t.start) break;
+      slots.slice().reverse().forEach((s, j) => {
+        if (t.createdAt !== undefined && d === t.start && lib.toMin(s) < t.createdAt) return;
+        const due = d < st.today || lib.toMin(s) <= st.nowMin;
+        const done = due && ((i + j) % 4 !== 1 || t.status === 'COMPLETED');
+        out.push({ day: d, time: s, status: !due ? 'PENDING' : (done ? 'COMPLETED' : 'MISSED'), value: done ? ({ VITAL: t.name.indexOf('pressure') >= 0 ? '128/84' : (6.2 + ((i + j) % 5) / 2).toFixed(1) + ' mmol/L', MEDICATION: 'Yes', EXERCISE: 'Yes', OTHER: 'Done' }[t.category]) : '', notes: done && j === 0 ? 'Felt fine.' : '' });
+      });
+    }
+    return out;
+  }
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const route = this.props.route || { s: 'notifications', p: {} }; const rs = route.s; const rp = route.p || {}; const S = this.state; const offline = st.online === false;
+    const out = {
+      ready: true, notReady: false, ic, phone, back: () => act('back'),
+      pagePad: phone ? 'var(--size-48) var(--size-12) 0' : 'var(--size-24) var(--size-24) 0', bottomClear: phone ? '120px' : '40px', sidePad: phone ? 'var(--size-12)' : 'var(--size-24)', footPadB: phone ? 'var(--size-24)' : 'var(--size-14)', h1Size: lib.h1(phone, st), notPhone: !phone,
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row', sheetPadB: phone ? 'var(--size-28)' : 'var(--size-20)',
+      tkCols: phone ? 1 : 2, tkBtnFlex: phone ? '1 1 100%' : '0 0 auto',
+      isNotif: false, isGate: false, isTasks: false, isDetail: false, isCreate: false, isTemplates: false, gateBack: false,
+      gateBullets: ['Assign medication, vitals and exercise programmes', 'Patients check in from their app', 'You get notified on every submission'], seePlans: () => act('go', { tab: 'profile', s: 'subscription' }),
+      hasSheet: false, sheet: {}, nt: {}, tk: {}, td: {}, cr: {}, tp: {}
+    };
+    // ===== notifications =====
+    if (rs === 'notifications') {
+      out.isNotif = true;
+      const typeOf = (n) => ({ booked: ['Appointment booked', ic.calPlus, 'var(--icon-brand)', 'Appointments'], cancelled: ['Appointment cancelled', ic.calendar, 'var(--text-error)', 'Appointments'], rescheduled: ['Appointment rescheduled', ic.calendar, 'var(--text-info)', 'Appointments'], payment: ['Payment received', ic.wallet, 'var(--icon-brand)', 'Appointments'], reminder: ['Appointment reminder', ic.clock, 'var(--text-info)', 'Appointments'], chat: ['New message', ic.chat, 'var(--text-info)', 'Messages'], docAccess: ['Document access request', ic.lock, 'var(--text-info)', 'Messages'], partnership: ['Care partnership', ic.handshake, 'var(--text-info)', 'Messages'], task: ['Task update', ic.tasks, 'var(--icon-warning)', 'Tasks'], aiScribe: ['AI notes ready', ic.sparkles, 'var(--icon-brand)', 'All'] }[n.type] || ['Notification', ic.bell, 'var(--text-secondary)', 'All']);
+      const all = st.notifs.slice().sort((a, b) => b.at.localeCompare(a.at));
+      const list = all.filter((n) => S.nf === 'All' || typeOf(n)[3] === S.nf);
+      const unread = all.filter((n) => !n.read).length;
+      const groups = [];
+      list.forEach((n) => {
+        const d = n.at.slice(0, 10); const label = d === st.today ? 'Today' : (d === lib.addDays(st.today, -1) ? 'Yesterday' : lib.fmtDate(d));
+        let g = groups.find((x) => x.label === label); if (!g) { g = { label, items: [] }; groups.push(g); }
+        const ty = typeOf(n);
+        const open = () => act('route', { link: n.link, nid: n.id });
+        const actions = [];
+        if (n.type === 'booked') { actions.push({ label: 'View Appointment', cls: 'sh-btn sh-btn--secondary sh-btn--compact', go: open }); actions.push({ label: 'Reschedule', cls: 'sh-btn sh-btn--tertiary sh-btn--compact', go: open }); }
+        if (n.type === 'task') actions.push({ label: 'View Result', cls: 'sh-btn sh-btn--secondary sh-btn--compact', go: open });
+        if (n.type === 'cancelled') actions.push({ label: 'Open Calendar', cls: 'sh-btn sh-btn--tertiary sh-btn--compact', go: () => { act('set', (s) => ({ notifs: s.notifs.map((x) => (x.id === n.id ? Object.assign({}, x, { read: true }) : x)) })); act('go', { tab: 'calendar', rootP: { day: st.today } }); } });
+        if (n.type === 'docAccess') { actions.push({ label: 'Approve', cls: 'sh-btn sh-btn--secondary sh-btn--compact', go: () => { if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } act('set', (s) => ({ notifs: s.notifs.map((x) => (x.id === n.id ? Object.assign({}, x, { read: true, done: 'approved' }) : x)) })); this.banner('success', 'Access approved'); } }); actions.push({ label: 'Decline', cls: 'sh-btn sh-btn--tertiary sh-btn--compact', go: () => { act('set', (s) => ({ notifs: s.notifs.map((x) => (x.id === n.id ? Object.assign({}, x, { read: true, done: 'declined' }) : x)) })); this.banner('info', 'Access declined'); } }); }
+        g.items.push({ unread: !n.read, bg: n.read ? 'var(--bg-surface)' : lib.tint(ty[2], 6), d: ty[1], ink: ty[2], label: n.done ? ty[0] + ' · ' + (n.done === 'approved' ? 'Approved' : 'Declined') : ty[0], labelInk: { 'var(--icon-warning)': 'var(--text-warning-strong)', 'var(--icon-brand)': 'var(--text-brand-strong)', 'var(--icon-info)': 'var(--text-info)', 'var(--icon-error)': 'var(--text-error)' }[ty[2]] || ty[2], time: lib.relTime(n.at, st), body: n.body, weight: n.read ? 500 : 700, open, hasActions: actions.length > 0 && !n.done, actions });
+      });
+      const notifOff = st.settings && st.settings.notifications === false;
+      out.nt = {
+        title: unread ? 'Notifications (' + unread + ')' : 'Notifications',
+        markAll: () => { if (!unread) return; if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; } act('set', (s) => ({ notifs: s.notifs.map((x) => Object.assign({}, x, { read: true })) })); this.banner('success', 'All notifications marked as read'); },
+        markOffStr: unread ? 'false' : 'true', markInk: unread ? 'var(--text-primary)' : 'var(--text-tertiary)',
+        refresh: () => { if (offline) { this.banner('error', 'You’re offline. Showing saved notifications.'); return; } this.setState({ refreshing: true }); this.later('ref', 800, () => this.setState({ refreshing: false })); }, refreshing: S.refreshing,
+        settings: () => act('go', { tab: 'profile', s: 'settings' }),
+        offBanner: notifOff && !S.hideOff, turnOn: () => { act('set', (s) => ({ settings: Object.assign({}, s.settings, { notifications: true }) })); this.banner('success', 'Notifications are on.'); }, hideOff: () => this.setState({ hideOff: true }),
+        chips: ['All', 'Appointments', 'Tasks', 'Messages'].map((c) => ({ label: c, selStr: S.nf === c ? 'true' : 'false', bg: S.nf === c ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', ring: S.nf === c ? 'inset 0 0 0 1px var(--border-focus)' : 'inset 0 0 0 1px var(--border-default)', weight: S.nf === c ? 700 : 600, pick: () => this.setState({ nf: c }) })),
+        empty: !list.length, emptyTitle: all.length ? 'No notifications in this category' : 'No notifications', emptyBody: all.length ? 'Try another filter or check back later.' : 'You’ll see appointment updates, messages and patient activity here.',
+        groups
+      };
+      return this.sheets(out);
+    }
+    // ===== tasks gate =====
+    if (!lib.can(st, 'tasks') || st.role === 'staff') { out.isGate = true; out.gateBack = rs !== 'tasks'; return out; }
+    if (rs === 'tasks') {
+      out.isTasks = true;
+      const mine = st.tasks.filter((t) => !t.template);
+      const q = S.tq.trim().toLowerCase();
+      const rows = mine.filter((t) => (!q || t.name.toLowerCase().indexOf(q) >= 0 || (lib.patient(st, t.patientId).name || '').toLowerCase().indexOf(q) >= 0) && (!S.ts || t.status === S.ts) && (!S.tc || t.category === S.tc));
+      const cnt = (s) => mine.filter((t) => t.status === s).length;
+      out.tk = {
+        create: () => act('push', { s: 'taskCreate', p: {} }), templates: () => act('push', { s: 'taskTemplates', p: {} }),
+        stats: [['ACTIVE', 'Active tasks', 'var(--text-info)'], ['COMPLETED', 'Completed tasks', 'var(--text-brand-strong)'], ['EXPIRED', 'Overdue tasks', 'var(--text-error)']].map(([k, l, ink]) => ({ label: l, n: String(cnt(k)), ink, selStr: S.ts === k ? 'true' : 'false', ring: S.ts === k ? 'inset 0 0 0 2px var(--border-focus)' : 'none', go: () => this.setState({ ts: S.ts === k ? '' : k }) })),
+        q: S.tq, onQ: (e) => this.setState({ tq: e.target.value }), status: S.ts, onStatus: (e) => this.setState({ ts: e.target.value }), cat: S.tc, onCat: (e) => this.setState({ tc: e.target.value }),
+        refresh: () => { if (offline) { this.banner('error', 'You’re offline. Showing saved tasks.'); return; } this.setState({ refreshing: true }); this.later('tref', 800, () => this.setState({ refreshing: false })); }, refreshing: S.refreshing,
+        emptyAll: !mine.length, emptyFilter: mine.length > 0 && !rows.length, clear: () => this.setState({ tq: '', ts: '', tc: '' }),
+        rows: rows.map((t) => { const p = lib.patient(st, t.patientId); const [l, bg, ink] = this.stOf(t.status); const days = t.end ? Math.round((new Date(t.end) - new Date(t.start)) / 864e5) + 1 : t.days; return { name: t.name, patient: p.name, ini: lib.initials(p.name), d: this.catIcon(ic, t.category), stLabel: l, stBg: bg, stInk: ink, prog: t.done + '/' + t.total, pct: Math.round(100 * t.done / Math.max(1, t.total)) + '%', perDay: t.timesPerDay + ' per day', range: lib.fmtDate(t.start) + (t.end ? ' – ' + lib.fmtDate(t.end) : ''), days: days ? days + ' days' : '', open: () => act('push', { s: 'taskDetails', p: { id: t.id } }) }; })
+      };
+    }
+    if (rs === 'taskDetails') {
+      const t = st.tasks.find((x) => x.id === rp.id);
+      out.isDetail = true;
+      if (!t) { out.isDetail = false; out.isGate = false; out.isNotif = false; out.isTasks = false; out.isCreate = false; Object.assign(out, { isTemplates: false }); out.isDetail = true; out.td = { name: 'Task not found', stLabel: '', stBg: 'transparent', stInk: 'var(--text-primary)', rows: [], prog: '', pct: '0%', stats: [], noChecks: true, checks: [], canCancel: false, cancel: () => {} }; return out; }
+      const p = lib.patient(st, t.patientId); const [l, bg, ink] = this.stOf(t.status);
+      const checks = this.checkIns(t, st, lib);
+      const cnt = (s) => checks.filter((c) => c.status === s).length;
+      const lbl = t.inputLabel || ({ VITAL: 'Reading', MEDICATION: 'Taken', EXERCISE: 'Done', OTHER: 'Value' }[t.category]);
+      out.td = {
+        name: t.name, stLabel: l, stBg: bg, stInk: ink,
+        rows: [['Patient', p.name, () => act('go', { tab: 'patients', s: 'patDetail', p: { id: p.id } })], ['Category', { VITAL: 'Vital', EXERCISE: 'Exercise', MEDICATION: 'Medication', OTHER: 'Other' }[t.category]], ['Input Type', { NUMERIC: 'Numeric', TEXT: 'Text', BOOLEAN: 'Yes/No' }[t.input || (t.category === 'VITAL' ? 'NUMERIC' : 'BOOLEAN')]], ['Input Label', lbl], ['Description', t.notes], ['Start Date', lib.fmtDate(t.start)], ['End Date', t.end ? lib.fmtDate(t.end) : ''], ['Duration', t.end ? (Math.round((new Date(t.end) - new Date(t.start)) / 864e5) + 1) + ' days' : (t.days ? t.days + ' days' : '')]].filter((r) => r[1]).map(([lab, v, go]) => ({ label: lab, value: v, isLink: !!go, isText: !go, go: go || (() => {}) })),
+        prog: t.done + '/' + t.total, pct: Math.round(100 * t.done / Math.max(1, t.total)) + '%',
+        stats: [['Completed', t.done, 'var(--text-brand-strong)'], ['Pending', Math.max(0, t.total - t.done - cnt('MISSED') - (t.missed !== undefined ? t.missed : 2)), 'var(--text-warning-strong)'], ['Missed', (t.missed !== undefined ? t.missed : 2) + cnt('MISSED'), 'var(--text-error)']].map(([lab, n, c]) => ({ label: lab, n: String(n), ink: c })),
+        noChecks: !checks.length,
+        checks: checks.map((c) => { const m = { COMPLETED: ['Completed', 'var(--bg-success-subtle)', 'var(--text-brand-strong)'], PENDING: ['Pending', 'var(--bg-warning-subtle)', 'var(--text-warning-strong)'], MISSED: ['Missed', 'var(--bg-error-subtle)', 'var(--text-error)'] }[c.status]; return { date: lib.fmtDate(c.day), time: c.time, label: m[0], bg: m[1], ink: m[2], hasValue: !!c.value, value: lbl + ': ' + c.value + (c.notes ? ' · Notes: ' + c.notes : ''), open: () => this.setState({ sheet: { kind: 'check', c, lbl } }) }; }),
+        canCancel: t.status === 'ACTIVE', cancel: () => this.setState({ sheet: { kind: 'cancel', id: t.id } })
+      };
+    }
+    if (rs === 'taskCreate') {
+      out.isCreate = true;
+      const key = JSON.stringify(rp);
+      const tpl = rp.template ? st.templates.find((x) => x.id === rp.template) : null;
+      const F = S.forms[key] || { patientId: rp.patientId || '', name: tpl ? tpl.name : '', desc: '', cat: tpl ? tpl.category : (rp.category || 'VITAL'), input: tpl && tpl.category !== 'VITAL' ? 'BOOLEAN' : 'NUMERIC', label: '', mode: 'even', times: String(tpl ? tpl.timesPerDay : 1), startTime: '08:00', interval: '4', slots: ['08:00'], start: st.today, useEnd: false, end: lib.addDays(st.today, 13), days: String(tpl ? tpl.days : 14), notes: '', tried: false, busy: false, dirty: false };
+      const setF = (p) => this.setState({ forms: Object.assign({}, this.state.forms, { [key]: Object.assign({}, F, p, { dirty: true }) }) });
+      const n = Number(F.times), iv = Number(F.interval), s0 = lib.toMin(F.startTime || '08:00');
+      const slots = Array.from({ length: n }, (_, i) => s0 + i * iv * 60);
+      const fit = slots.filter((m) => m < 24 * 60), clipped = n - fit.length;
+      const daysN = Number(F.days);
+      const dateErr = F.useEnd ? (F.end < F.start ? 'End date must be after the start date' : '') : (!daysN || daysN < 1 || daysN > 365 ? 'Enter a duration between 1 and 365 days' : '');
+      const p = F.patientId ? lib.patient(st, F.patientId) : null;
+      const leave = () => { if (F.dirty) this.setState({ sheet: { kind: 'discard', key } }); else act('back'); };
+      out.cr = {
+        back: leave, fromTemplate: !!tpl, templateName: tpl ? tpl.name : '',
+        pickPatient: () => this.setState({ sheet: { kind: 'pick', key, q: '' } }), patLabel: p ? p.name + ' (ID: ' + p.id + ')' : 'Tap to search and select patient', patInk: p ? 'var(--text-primary)' : 'var(--text-tertiary)', patErr: F.tried && !p, patBorder: F.tried && !p ? 'var(--border-error)' : 'var(--border-default)',
+        name: F.name, onName: (e) => setF({ name: e.target.value }), nameErr: F.tried && !F.name.trim(), nameBorder: F.tried && !F.name.trim() ? 'var(--border-error)' : 'var(--border-default)',
+        desc: F.desc, onDesc: (e) => setF({ desc: e.target.value }), cat: F.cat, onCat: (e) => setF({ cat: e.target.value }), input: F.input, onInput: (e) => setF({ input: e.target.value }), label: F.label, onLabel: (e) => setF({ label: e.target.value }),
+        modes: [['even', 'Even spacing'], ['custom', 'Custom times']].map(([k, l]) => ({ label: l, selStr: F.mode === k ? 'true' : 'false', bg: F.mode === k ? 'var(--bg-surface)' : 'transparent', shadow: F.mode === k ? 'var(--shadow-dropdown)' : 'none', pick: () => setF({ mode: k, slots: k === 'custom' && !F.slots.length ? [F.startTime] : F.slots }) })),
+        even: F.mode === 'even', custom: F.mode === 'custom', evenCols: phone ? 1 : 3,
+        times: F.times, timesOpts: Array.from({ length: 15 }, (_, i) => String(i + 1)), onTimes: (e) => setF({ times: e.target.value }),
+        startTime: F.startTime, onStartTime: (e) => setF({ startTime: e.target.value }), showInterval: n >= 2,
+        interval: F.interval, intOpts: [1, 2, 3, 4, 6, 8, 12, 24].map((h) => ({ v: String(h), label: h === 1 ? 'Every 1 hour' : 'Every ' + h + ' hours' })), onInterval: (e) => setF({ interval: e.target.value }),
+        preview: clipped > 0 ? clipped + ' slot(s) won’t fit before midnight. Pick a smaller interval or earlier start time.' : 'Daily slots: ' + fit.map((m) => lib.hm(m)).join(' · '), prevBg: clipped > 0 ? 'var(--bg-warning-subtle)' : 'var(--bg-success-subtle)',
+        slots: F.slots.map((v, i) => ({ v, aria: 'Slot ' + (i + 1), offStr: F.slots.length <= 1 ? 'true' : 'false', ink: F.slots.length <= 1 ? 'var(--text-tertiary)' : 'var(--text-error)', on: (e) => { const sl = F.slots.slice(); sl[i] = e.target.value; setF({ slots: Array.from(new Set(sl)).sort() }); }, remove: () => { if (F.slots.length <= 1) return; setF({ slots: F.slots.filter((_, j) => j !== i) }); } })),
+        slotCount: F.slots.length + ' slot(s) per day',
+        addSlot: () => { const last = F.slots[F.slots.length - 1] || '08:00'; const nx = lib.hm(Math.min(23 * 60 + 30, lib.toMin(last) + 120)); if (F.slots.indexOf(nx) >= 0) { this.banner('info', 'That time is already in the list.'); return; } setF({ slots: F.slots.concat([nx]).sort() }); },
+        today: st.today, start: F.start, onStart: (e) => setF({ start: e.target.value }), useEnd: F.useEnd, useDur: !F.useEnd, end: F.end, onEnd: (e) => setF({ end: e.target.value }), days: F.days, onDays: (e) => setF({ days: e.target.value.replace(/[^\d]/g, '') }),
+        endBorder: F.tried && dateErr && F.useEnd ? 'var(--border-error)' : 'var(--border-default)', daysBorder: F.tried && dateErr && !F.useEnd ? 'var(--border-error)' : 'var(--border-default)', dateErr: F.tried && !!dateErr, dateErrText: dateErr,
+        useEndStr: F.useEnd ? 'true' : 'false', track: F.useEnd ? 'var(--interactive-primary)' : 'var(--grey-400)', knob: F.useEnd ? '21px' : '3px', toggleEnd: () => setF({ useEnd: !F.useEnd }),
+        notes: F.notes, onNotes: (e) => setF({ notes: e.target.value }), busy: F.busy, busyStr: F.busy ? 'true' : 'false',
+        save: () => {
+          if (F.busy) return;
+          if (!p || !F.name.trim() || dateErr || (F.mode === 'even' && clipped > 0)) { this.setState({ forms: Object.assign({}, this.state.forms, { [key]: Object.assign({}, F, { tried: true }) }) }); if (F.mode === 'even' && clipped > 0) this.banner('error', 'Some slots don’t fit before midnight.'); return; }
+          if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; }
+          this.setState({ forms: Object.assign({}, this.state.forms, { [key]: Object.assign({}, F, { busy: true }) }) });
+          this.later('save', 900, () => {
+            const per = F.mode === 'even' ? fit.length : F.slots.length; const st2 = st; const days = F.useEnd ? Math.round((new Date(F.end) - new Date(F.start)) / 864e5) + 1 : daysN;
+            const task = { id: lib.uid('T'), name: F.name.trim(), patientId: p.id, category: F.cat, input: F.input, inputLabel: F.label.trim(), status: 'ACTIVE', timesPerDay: per, slots: F.mode === 'even' ? fit.map((m) => lib.hm(m)) : F.slots, start: F.start, end: F.useEnd ? F.end : lib.addDays(F.start, days - 1), done: 0, total: per * days, missed: 0, template: false, notes: F.desc.trim(), createdAt: F.start === st.today ? st.nowMin : undefined };
+            act('set', (s) => ({ tasks: [task].concat(s.tasks) }));
+            const f2 = Object.assign({}, this.state.forms); delete f2[key]; this.setState({ forms: f2 });
+            act('go', { tab: 'tasks', s: 'taskDetails', p: { id: task.id } }); this.banner('success', 'Task created and sent to ' + p.name);
+          });
+        }
+      };
+    }
+    if (rs === 'taskTemplates') {
+      out.isTemplates = true;
+      const rows = st.templates || [];
+      out.tp = { empty: !rows.length, create: () => act('replace', { s: 'taskCreate', p: {} }), rows: rows.map((t) => ({ name: t.name, d: this.catIcon(ic, t.category), sub: 'Category: ' + ({ VITAL: 'Vital', EXERCISE: 'Exercise', MEDICATION: 'Medication', OTHER: 'Other' }[t.category]) + ' · Times per day: ' + t.timesPerDay, sched: t.days + ' days', open: () => act('push', { s: 'taskCreate', p: { template: t.id } }) })) };
+    }
+    return this.sheets(out);
+  }
+  sheets(out) {
+    const S = this.state; const sh = S.sheet; if (!sh) return out;
+    const lib = this.props.lib, st = this.props.store, act = this.props.act;
+    const close = () => this.setState({ sheet: null });
+    const base = { title: '', close, isText: false, body: '', isRows: false, rows: [], isPick: false, hasActions: true, hasSecondary: false, secondaryLabel: 'Cancel', secondary: close, primaryLabel: 'Close', primary: close, primaryBg: 'var(--interactive-primary)', busy: false, busyStr: 'false' };
+    out.hasSheet = true; out.sheet = base;
+    if (sh.kind === 'check') { const c = sh.c; Object.assign(base, { title: 'Check-in Details', isRows: true, rows: [['Scheduled', lib.fmtDate(c.day) + ' ' + c.time], ['Status', { COMPLETED: 'Completed', PENDING: 'Pending', MISSED: 'Missed' }[c.status]]].concat(c.status === 'COMPLETED' ? [['Submitted at', lib.fmtDate(c.day) + ' ' + lib.hm(lib.toMin(c.time) + 7) + ' (patient time)'], [sh.lbl, c.value]].concat(c.notes ? [['Notes', c.notes]] : []) : [[c.status === 'MISSED' ? 'Submission' : 'Submission', c.status === 'MISSED' ? 'No submission received' : 'Awaiting submission']]).map(([l, v]) => ({ label: l, value: v })) }); }
+    if (sh.kind === 'cancel') Object.assign(base, { title: 'Cancel Task', isText: true, body: 'Are you sure you want to cancel this task?', hasSecondary: true, secondaryLabel: 'No', primaryLabel: 'Yes, Cancel', primaryBg: 'var(--interactive-destructive)', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false',
+      primary: () => { if (sh.busy) return; if (st.online === false) { close(); this.banner('error', 'Failed to cancel. You’re offline.'); return; } this.setState({ sheet: Object.assign({}, sh, { busy: true }) }); this.later('cx', 800, () => { act('set', (s) => ({ tasks: s.tasks.map((t) => (t.id === sh.id ? Object.assign({}, t, { status: 'CANCELLED' }) : t)) })); this.setState({ sheet: null }); act('back'); this.banner('success', 'Task cancelled successfully'); }); } });
+    if (sh.kind === 'discard') Object.assign(base, { title: 'Discard this task?', isText: true, body: 'What you entered will be lost.', hasSecondary: true, secondaryLabel: 'Keep editing', primaryLabel: 'Discard', primaryBg: 'var(--interactive-destructive)', primary: () => { const f2 = Object.assign({}, S.forms); delete f2[sh.key]; this.setState({ sheet: null, forms: f2 }); act('back'); } });
+    if (sh.kind === 'pick') {
+      const F = S.forms[sh.key] || {}; const q = sh.q.trim().toLowerCase();
+      const pats = st.patients.filter((p) => !q || p.name.toLowerCase().indexOf(q) >= 0 || p.id.toLowerCase().indexOf(q) >= 0);
+      Object.assign(base, { title: 'Select patient', isPick: true, hasActions: false, q: sh.q, onQ: (e) => this.setState({ sheet: Object.assign({}, sh, { q: e.target.value }) }), none: !pats.length,
+        pats: pats.map((p) => ({ name: p.name, id: p.id, sel: F.patientId === p.id, selStr: F.patientId === p.id ? 'true' : 'false', pick: () => { const rp = (this.props.route || {}).p || {}; const base2 = S.forms[sh.key] || null; const cur = base2 || this.renderDefaults(rp); this.setState({ sheet: null, forms: Object.assign({}, S.forms, { [sh.key]: Object.assign({}, cur, { patientId: p.id, dirty: true }) }) }); } })) });
+    }
+    return out;
+  }
+  renderDefaults(rp) {
+    const st = this.props.store, lib = this.props.lib; const tpl = rp.template ? st.templates.find((x) => x.id === rp.template) : null;
+    return { patientId: rp.patientId || '', name: tpl ? tpl.name : '', desc: '', cat: tpl ? tpl.category : (rp.category || 'VITAL'), input: tpl && tpl.category !== 'VITAL' ? 'BOOLEAN' : 'NUMERIC', label: '', mode: 'even', times: String(tpl ? tpl.timesPerDay : 1), startTime: '08:00', interval: '4', slots: ['08:00'], start: st.today, useEnd: false, end: lib.addDays(st.today, 13), days: String(tpl ? tpl.days : 14), notes: '', tried: false, busy: false, dirty: false };
+  }
+}
+</script>
+</body>
+</html>

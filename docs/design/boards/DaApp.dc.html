@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shifa Doctor App — prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="./shifa-ds.css" rel="stylesheet">
+<style>
+body{margin:0}
+.da-rail .da-rail-hide{display:none !important}
+.da-rail .da-nav,.da-rail .da-search,.da-rail .da-ai{justify-content:center;padding:0 !important}
+.da-rail .da-search{width:var(--size-touch);align-self:center}
+.da-rail .da-ai{width:var(--size-touch);height:var(--size-touch);align-self:center}
+.da-rail .da-count{position:absolute;top:var(--size-8);right:var(--size-12);min-width:var(--size-8) !important;width:var(--size-8);height:var(--size-8) !important;padding:0 !important;font-size:0 !important}
+.da-rail > div{padding-left:var(--size-8) !important;padding-right:var(--size-8) !important}
+.da-btn:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.da-nav[data-sel="false"]:hover{background:var(--bg-hover) !important}
+.da-row:hover{background:var(--bg-hover) !important}
+.da-scroll{scrollbar-width:thin}
+/* Pages fill the screen (Nov 2026): the content area passes its height down to each module and page, so a page's ActionBar can sit at the bottom of the screen even when the content is short. */
+.da-main{display:flex;flex-direction:column}
+.da-main>.sc-host{flex:1 0 auto;display:flex;flex-direction:column}
+.da-main>.sc-host>*{flex:1 0 auto}
+.da-main>.sc-host>*:has(.dr-actionbar){display:flex;flex-direction:column}
+.da-main>.sc-host>*:has(.dr-actionbar)>*{flex-shrink:0}
+.da-main div:has(>.dr-actionbar){flex:1 0 auto}
+@keyframes da-in{from{transform:translateY(calc(-1 * var(--size-12)));opacity:0}to{transform:none;opacity:1}}
+@keyframes da-up{from{transform:translateY(var(--size-40));opacity:0}to{transform:none;opacity:1}}
+@keyframes da-fade{from{opacity:0}to{opacity:1}}
+@keyframes da-blob{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--size-30),calc(-1 * var(--size-20))) rotate(40deg)}}
+@keyframes da-shake{0%,100%{transform:none}25%{transform:translateX(calc(-1 * var(--size-8)))}75%{transform:translateX(var(--size-8))}}
+</style>
+</helmet>
+<div ref="{{rootRef}}" style="width: 100%; height: {{rootH}}; box-sizing: border-box; display: flex; gap: {{outerGap}}; padding: {{outerPad}}; background: {{outerBg}}; align-items: flex-start; justify-content: center; color: var(--text-primary); font-family: var(--font-sans); overflow: hidden">
+
+  <div style="position: relative; flex: {{devFlex}}; width: {{devW}}; height: {{devH}}; border-radius: {{devR}}; box-shadow: {{devShadow}}; overflow: hidden; background: var(--bg-canvas); border: {{devBorder}}; box-sizing: border-box; transform: translateZ(0)">
+
+    <sc-if value="{{showSplash}}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; background: var(--interactive-primary); display: flex; align-items: center; justify-content: center; overflow: hidden; animation: da-fade .3s">
+        <span aria-hidden="true" style="position: absolute; width: var(--size-320); height: var(--size-320); border-radius: var(--radius-full); background: var(--raw-splash-blob); left: calc(-1 * var(--size-120)); bottom: calc(-1 * var(--size-80)); filter: blur(var(--blur-glow)); animation: da-blob 2s ease-in-out infinite alternate"></span>
+        <span aria-hidden="true" style="position: absolute; width: var(--size-280); height: var(--size-280); border-radius: var(--radius-full); background: var(--raw-splash-blob); right: calc(-1 * var(--size-100)); top: calc(-1 * var(--size-60)); filter: blur(var(--blur-glow)); animation: da-blob 2.4s ease-in-out infinite alternate-reverse"></span>
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--size-16)">
+          <span style="width: var(--size-96); height: var(--size-96); border-radius: var(--radius-xl); background: var(--raw-glass-tile); border: var(--size-1) solid var(--white); display: inline-flex; align-items: center; justify-content: center; font-size: var(--font-size-40); font-weight: 700; color: var(--text-inverse)">S</span>
+          <span style="font-size: var(--font-size-24); line-height: var(--line-height-28); font-weight: 700; color: var(--text-inverse); letter-spacing: var(--letter-spacing-tight)">Shifa Doctor</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showBoot}}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; background: var(--bg-surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-16); padding: var(--size-32); box-sizing: border-box; text-align: center; animation: da-fade .3s">
+        <span aria-hidden="true" style="width: var(--size-96); height: var(--size-96); border-radius: var(--radius-xl); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-40); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">S</span>
+        <h2 style="margin: var(--size-8) 0 0; font-size: var(--font-size-24); line-height: var(--line-height-28); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">{{boot.title}}</h2>
+        <p style="margin: 0; max-width: var(--layout-dialog-sm); font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{boot.body}}</p>
+        <button class="da-btn sh-btn sh-btn--primary" onClick="{{boot.go}}" aria-busy="{{boot.busyStr}}" style="width: 100%; max-width: var(--layout-dialog-sm)">{{boot.label}}</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showAuth}}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; overflow: auto; background: var(--bg-canvas)">
+        <dc-import name="DaAuth" phone="{{phone}}" store="{{store}}" route="{{authRoute}}" act="{{act}}" lib="{{lib}}" banner="{{banner}}" hint-size="100%,100%"></dc-import>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showShell}}" hint-placeholder-val="{{ true }}">
+      <div style="position: absolute; inset: 0; display: flex; flex-direction: {{shellDir}}">
+
+        <sc-if value="{{webNav}}" hint-placeholder-val="{{ true }}">
+          <nav aria-label="Main" class="da-side {{railCls}}" style="flex: none; width: {{navW}}; height: 100%; box-sizing: border-box; background: var(--bg-surface); border-right: var(--size-1) solid var(--border-default); display: flex; flex-direction: column">
+            <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--size-20) var(--size-14) var(--size-12); display: flex; flex-direction: column; gap: var(--size-14)" class="da-scroll">
+              <div style="display: flex; align-items: center; gap: var(--size-10); padding: 0 var(--size-6)">
+                <span aria-hidden="true" style="width: var(--size-32); height: var(--size-32); border-radius: var(--radius-control-md); background: var(--interactive-primary); color: var(--text-inverse); font-weight: 700; font-size: var(--font-size-18); display: inline-flex; align-items: center; justify-content: center">S</span>
+                <span class="da-rail-hide" style="font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Shifa</span>
+                <span class="da-rail-hide" style="margin-left: auto; height: var(--size-22); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-canvas); font-size: var(--font-size-10); line-height: var(--line-height-22); font-weight: 700; color: var(--text-secondary)">{{tierLabel}}</span>
+              </div>
+              <sc-if value="{{isDoctor}}" hint-placeholder-val="{{ true }}">
+                <button class="da-btn da-search sh-search" onClick="{{openSearch}}" aria-label="Search patients" title="Search patients" style="display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-12)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg>
+                  <span class="da-rail-hide" style="flex: 1 1 auto">Search patients</span>
+                </button>
+              </sc-if>
+              <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--size-2)">
+                <sc-for list="{{webTabs}}" as="t" hint-placeholder-count="6">
+                  <li>
+                    <sc-if value="{{t.isGroup}}" hint-placeholder-val="{{ false }}"><p class="da-rail-hide" style="margin: var(--size-10) 0 var(--size-4); padding: 0 var(--size-12); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{t.label}}</p></sc-if>
+                    <sc-if value="{{t.isItem}}" hint-placeholder-val="{{ true }}">
+                      <button class="da-nav da-btn dr-nav-item" data-sel="{{t.selStr}}" aria-current="{{t.current}}" title="{{t.label}}" onClick="{{t.pick}}" style="position: relative">
+                        <span style="display: inline-flex; color: {{t.iconInk}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg></span>
+                        <span class="da-rail-hide" style="flex: 1 1 auto">{{t.label}}</span>
+                        <sc-if value="{{t.locked}}" hint-placeholder-val="{{ false }}"><span class="da-rail-hide" style="display: inline-flex; color: var(--text-tertiary)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.lock}}"></path></svg></span></sc-if>
+                        <sc-if value="{{t.hasCount}}" hint-placeholder-val="{{ false }}"><span class="da-count" style="min-width: var(--size-20); height: var(--size-20); border-radius: var(--radius-full); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-10); line-height: var(--line-height-20); font-weight: 700; text-align: center; padding: 0 var(--size-6); box-sizing: border-box">{{t.count}}</span></sc-if>
+                      </button>
+                    </sc-if>
+                  </li>
+                </sc-for>
+              </ul>
+            </div>
+            <div style="flex: none; padding: var(--size-12) var(--size-14) var(--size-16); border-top: var(--size-1) solid var(--border-default); display: flex; flex-direction: column; gap: var(--size-12)">
+              <sc-if value="{{isDoctor}}" hint-placeholder-val="{{ true }}">
+                <button class="da-btn da-ai sh-press sh-press--tint" onClick="{{openIntel}}" title="Shifa Intelligence" style="padding: var(--size-10) var(--size-12); display: flex; gap: var(--size-10); align-items: center; color: var(--text-primary)">
+                  <span aria-hidden="true" style="width: var(--size-30); height: var(--size-30); border-radius: var(--radius-full); background: var(--interactive-primary); box-shadow: 0 0 0 var(--size-4) var(--alpha-teal-25); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.sparkles}}"></path></svg></span>
+                  <span class="da-rail-hide" style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-16); font-weight: 700">Shifa Intelligence</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-14); font-weight: 500; color: var(--text-secondary)">{{intelSub}}</span></span>
+                </button>
+              </sc-if>
+              <div style="display: flex; align-items: center; gap: var(--size-10)">
+                <button class="da-btn sh-press" onClick="{{openProfile}}" style="flex: 1 1 auto; min-width: 0; padding: 0; display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)">
+                  <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{me.initials}}</span>
+                  <span class="da-rail-hide" style="min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-16); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{me.name}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-14); font-weight: 500; color: var(--text-secondary)">{{me.sub}}</span></span>
+                </button>
+                <button class="da-btn sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm da-rail-hide" onClick="{{askSignOut}}" aria-label="Sign Out" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.logout}}"></path></svg></button>
+              </div>
+            </div>
+          </nav>
+        </sc-if>
+
+        <div style="position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; container-type: inline-size; container-name: app">
+          <sc-if value="{{offline}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="flex: none; display: flex; align-items: center; gap: var(--size-8); padding: {{offlinePad}}; background: var(--bg-warning-subtle); border-bottom: var(--size-1) solid var(--border-warning); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700">
+              <span style="display: inline-flex; color: var(--text-primary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.cloudOff}}"></path></svg></span>
+              You're offline. Showing saved data.
+            </div>
+          </sc-if>
+          <div class="da-scroll da-main" style="position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden">
+            <sc-if value="{{mod.home}}" hint-placeholder-val="{{ false }}"><dc-import name="DaHome" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.calendar}}" hint-placeholder-val="{{ false }}"><dc-import name="DaCalendar" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.visit}}" hint-placeholder-val="{{ false }}"><dc-import name="DaVisit" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.patients}}" hint-placeholder-val="{{ false }}"><dc-import name="DaPatients" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.chat}}" hint-placeholder-val="{{ false }}"><dc-import name="DaChat" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.inbox}}" hint-placeholder-val="{{ false }}"><dc-import name="DaInbox" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.intel}}" hint-placeholder-val="{{ false }}"><dc-import name="DaIntel" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.profile}}" hint-placeholder-val="{{ false }}"><dc-import name="DaProfile" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <sc-if value="{{mod.clinic}}" hint-placeholder-val="{{ false }}"><dc-import name="DaClinic" phone="{{phone}}" store="{{store}}" route="{{route}}" act="{{act}}" lib="{{lib}}" hint-size="100%,100%"></dc-import></sc-if>
+            <!--MODS-->
+            <sc-if value="{{mod.pending}}" hint-placeholder-val="{{ false }}">
+              <div style="min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-12); padding: var(--size-48) var(--size-24); text-align: center; box-sizing: border-box">
+                <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.clock}}"></path></svg></span>
+                <p style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">{{pendingTitle}}</p>
+                <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); max-width: var(--layout-list-pane)">[This area is being built next in the prototype.]</p>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{hasBanner}}" hint-placeholder-val="{{ false }}">
+            <div class="dr-toasts" style="position: absolute; z-index: 40; top: {{bannerTop}}; left: var(--size-12); right: var(--size-12); animation: da-in .2s ease-out">
+              <div class="dr-toast" role="status" aria-live="polite">
+                <svg class="sh-icon {{banner.iconCls}}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{banner.d}}"></path></svg>
+                <span class="dr-grow">{{banner.text}}</span>
+                <sc-if value="{{banner.hasAction}}" hint-placeholder-val="{{ false }}"><button class="da-btn dr-toast__action" onClick="{{bannerAction}}">{{banner.actionLabel}}</button></sc-if>
+                <button class="da-btn sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm dr-toast__close" onClick="{{closeBanner}}" aria-label="Dismiss"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{showBottomBar}}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; z-index: 30; left: 0; right: 0; bottom: 0; padding: 0 var(--size-14) var(--size-18); pointer-events: none">
+              <nav aria-label="Main" style="pointer-events: auto; position: relative; height: var(--size-64); box-sizing: border-box; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--alpha-white-65) 0%, var(--alpha-white-35) 55%, var(--alpha-white-55) 100%); backdrop-filter: blur(var(--blur-glass)) saturate(180%); -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(180%); border: var(--size-1) solid var(--alpha-white-70); box-shadow: inset 0 var(--size-1) 0 var(--alpha-white-90), inset 0 calc(-1 * var(--size-1)) var(--size-1) var(--alpha-white-25), inset 0 0 var(--size-12) var(--alpha-white-20), var(--size-2) var(--size-2) var(--size-40) var(--alpha-black-25); display: flex; align-items: center; justify-content: space-around; padding: 0 var(--size-6); overflow: hidden">
+                <span aria-hidden="true" style="position: absolute; left: var(--size-16); right: var(--size-16); top: 0; height: 50%; border-radius: var(--radius-full) var(--radius-full) 40% 40%; background: linear-gradient(180deg, var(--alpha-white-40) 0%, transparent 100%); pointer-events: none"></span>
+                <sc-for list="{{phoneTabs}}" as="t" hint-placeholder-count="5">
+                  <button class="da-btn sh-nav__tab" onClick="{{t.pick}}" aria-current="{{t.current}}" aria-label="{{t.aria}}" style="position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-4); width: auto">
+                    <sc-if value="{{t.isAvatar}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: var(--size-24); height: var(--size-24); border-radius: var(--radius-full); background: var(--alpha-teal-15); box-shadow: {{t.ring}}; font-size: var(--font-size-10); font-weight: 700; color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center">{{me.initials}}</span></sc-if>
+                    <sc-if value="{{t.isIcon}}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{t.stroke}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg></sc-if>
+                    <span style="font-size: var(--font-size-10); line-height: var(--line-height-12); font-weight: {{t.weight}}; white-space: nowrap">{{t.label}}</span>
+                    <sc-if value="{{t.hasCount}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; top: var(--size-3); left: 50%; margin-left: var(--size-6); min-width: var(--size-16); height: var(--size-16); border-radius: var(--radius-full); background: var(--interactive-destructive); color: var(--text-inverse); font-size: var(--font-size-10); line-height: var(--line-height-16); font-weight: 700; text-align: center; padding: 0 var(--size-4); box-sizing: border-box">{{t.count}}</span></sc-if>
+                  </button>
+                </sc-for>
+              </nav>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{moreOpen}}" hint-placeholder-val="{{ false }}">
+      <button class="sh-scrim--fill" aria-label="Close" onClick="{{closeMore}}" style="z-index: 60; animation: da-fade .2s"></button>
+      <section aria-label="More" style="position: absolute; z-index: 61; left: 0; right: 0; bottom: 0; max-height: 92%; overflow-y: auto; background: var(--bg-surface); border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: var(--shadow-tray); padding: var(--size-8) var(--size-16) var(--size-28); box-sizing: border-box; animation: da-up .22s ease-out">
+        <span aria-hidden="true" style="display: block; width: var(--size-36); height: var(--size-4); border-radius: var(--radius-full); background: var(--bg-disabled); margin: 0 auto var(--size-12)"></span>
+        <sc-if value="{{isDoctor}}" hint-placeholder-val="{{ true }}">
+          <button class="da-row da-btn sh-press sh-press--row" onClick="{{openIntel}}" style="width: 100%; min-height: var(--size-60); display: flex; align-items: center; gap: var(--size-12); padding: var(--size-8); color: var(--text-primary)">
+            <span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--interactive-primary); box-shadow: 0 0 0 var(--size-4) var(--alpha-teal-25); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.sparkles}}"></path></svg></span>
+            <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Shifa Intelligence</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{intelSub}}</span></span>
+            <sc-if value="{{intelLocked}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-24); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-canvas); font-size: var(--font-size-12); line-height: var(--line-height-24); font-weight: 700; white-space: nowrap">Pro</span></sc-if>
+          </button>
+          <div style="display: flex; align-items: center; gap: var(--size-12); padding: var(--size-8); border-top: var(--size-1) solid var(--border-default); border-bottom: var(--size-1) solid var(--border-default); margin: var(--size-6) 0">
+            <span style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--bg-canvas); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{locIcon}}"></path></svg></span>
+            <span style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{locLabel}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Current Location</span></span>
+          </div>
+        </sc-if>
+        <sc-for list="{{moreRows}}" as="r" hint-placeholder-count="5">
+          <button class="da-row da-btn sh-press sh-press--row" onClick="{{r.pick}}" style="width: 100%; min-height: var(--size-52); display: flex; align-items: center; gap: var(--size-12); padding: var(--size-8); color: {{r.ink}}">
+            <span style="width: var(--size-36); height: var(--size-36); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"></path></svg></span>
+            <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">{{r.label}}</span><sc-if value="{{r.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); font-weight: 500">{{r.sub}}</span></sc-if></span>
+            <sc-if value="{{r.hasCount}}" hint-placeholder-val="{{ false }}"><span style="min-width: var(--size-22); height: var(--size-22); border-radius: var(--radius-full); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-12); line-height: var(--line-height-22); font-weight: 700; text-align: center; padding: 0 var(--size-6); box-sizing: border-box">{{r.count}}</span></sc-if>
+            <sc-if value="{{r.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-24); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-canvas); color: var(--text-primary); font-size: var(--font-size-12); line-height: var(--line-height-24); font-weight: 700; white-space: nowrap">{{r.badge}}</span></sc-if>
+          </button>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{notifPrompt}}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 70; background: var(--bg-overlay); display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box; animation: da-fade .2s">
+        <div class="sh-sheet sh-sheet--alert" role="dialog" aria-modal="true" aria-labelledby="np-t" style="max-width: {{dlgMax}}; border-radius: {{dlgRadius}}; align-items: center">
+          <span aria-hidden="true" style="width: var(--size-56); height: var(--size-56); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.bell}}"></path></svg></span>
+          <h2 id="np-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Turn on notifications?</h2>
+          <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Get told when patients book, cancel or message you. Previews never show patient names.</p>
+          <div style="display: flex; flex-direction: {{dlgActDir}}; gap: var(--size-12); width: 100%; justify-content: center">
+            <button class="da-btn sh-btn sh-btn--secondary" onClick="{{notifLater}}" style="flex: 1 1 0">Not now</button>
+            <button class="da-btn sh-btn sh-btn--primary" onClick="{{notifAllow}}" style="flex: 1 1 0">Allow</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{signOutOpen}}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 80; background: var(--bg-overlay); display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box; animation: da-fade .2s">
+        <div class="sh-sheet sh-sheet--alert" role="dialog" aria-modal="true" aria-labelledby="so-t" style="max-width: {{dlgMax}}; border-radius: {{dlgRadius}}; align-items: center">
+          <span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: var(--bg-error-subtle); color: var(--text-error); display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.logout}}"></path></svg></span>
+          <h2 id="so-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-22); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Sign out?</h2>
+          <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Are you sure you want to sign out? Unsent drafts on this device stay saved.</p>
+          <div style="display: flex; flex-direction: {{dlgActDir}}; gap: var(--size-12); width: 100%; justify-content: flex-end">
+            <button class="da-btn sh-btn sh-btn--secondary" onClick="{{cancelSignOut}}" style="flex: {{dlgBtnFlex}}">Cancel</button>
+            <button class="da-btn sh-btn sh-btn--primary is-destructive" onClick="{{confirmSignOut}}" style="flex: {{dlgBtnFlex}}">Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showPush}}" hint-placeholder-val="{{ false }}">
+      <button class="da-btn sh-press sh-press--card" onClick="{{openPush}}" style="position: absolute; z-index: 90; top: var(--size-10); left: var(--size-10); right: var(--size-10); margin: 0 auto; max-width: var(--layout-dialog-md); backdrop-filter: blur(var(--blur-soft)); -webkit-backdrop-filter: blur(var(--blur-soft)); box-shadow: var(--shadow-tray); padding: var(--size-12) var(--size-14); display: flex; gap: var(--size-12); align-items: flex-start; color: var(--text-primary); animation: da-in .25s ease-out">
+        <span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-control-md); background: var(--interactive-primary); color: var(--text-inverse); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">S</span>
+        <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)">
+          <span style="display: flex; justify-content: space-between; font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)"><span>SHIFA DOCTOR</span><span style="font-weight: 500">now</span></span>
+          <span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{push.title}}</span>
+          <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{push.body}}</span>
+        </span>
+      </button>
+    </sc-if>
+
+    <sc-if value="{{showLock}}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" aria-modal="true" aria-label="App locked" style="position: absolute; inset: 0; z-index: 100; background: var(--bg-canvas); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-20); padding: var(--size-24); box-sizing: border-box">
+        <span style="width: var(--size-64); height: var(--size-64); border-radius: var(--radius-control-lg); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-32); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">S</span>
+        <h2 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-28); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Enter PIN</h2>
+        <div class="dr-pindots" role="img" aria-label="{{lockDotsAria}}" style="animation: {{lockShake}}">
+          <sc-for list="{{lockDots}}" as="d" hint-placeholder-count="6"><i class="{{d.cls}}"></i></sc-for>
+        </div>
+        <p aria-live="polite" style="margin: 0; min-height: var(--size-20); font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 700; color: {{lockMsgInk}}">{{lockMsg}}</p>
+        <div class="dr-pinpad">
+          <sc-for list="{{pad}}" as="k" hint-placeholder-count="12">
+            <button class="da-btn {{k.cls}}" onClick="{{k.press}}" aria-label="{{k.aria}}">
+              <sc-if value="{{k.isIcon}}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"></path></svg></sc-if>
+              <sc-if value="{{k.isText}}" hint-placeholder-val="{{ true }}">{{k.label}}</sc-if>
+            </button>
+          </sc-for>
+        </div>
+        <button class="da-btn sh-link" onClick="{{lockSignOut}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">Sign out instead</button>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{showCtlPanel}}" hint-placeholder-val="{{ true }}">
+  <aside aria-label="Prototype controls" style="position: {{ctlPos}}; z-index: 200; left: {{ctlLeft}}; bottom: {{ctlBottom}}; width: {{ctlW}}; flex: none; max-height: {{ctlMaxH}}; overflow-y: auto; box-sizing: border-box; background: var(--bg-surface); border-radius: var(--radius-control-lg); box-shadow: {{ctlShadow}}; padding: {{ctlPad}}; display: flex; flex-direction: column; gap: var(--size-14); font-family: var(--font-sans)" class="da-scroll">
+    <button class="da-btn sh-press" onClick="{{toggleCtl}}" aria-expanded="{{ctlOpenStr}}" style="padding: 0; display: flex; align-items: center; gap: var(--size-8); font: 700 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-primary)">
+      <span style="width: var(--size-28); height: var(--size-28); border-radius: var(--radius-sm); background: var(--charcoal); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sliders}}"></path></svg></span>
+      <span style="flex: 1 1 auto">Prototype controls</span>
+      <sc-if value="{{ctlCollapsible}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; transform: rotate({{ctlChevron}})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevU}}"></path></svg></span></sc-if>
+    </button>
+    <sc-if value="{{ctlOpen}}" hint-placeholder-val="{{ true }}">
+      <p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Not part of the app. Switch who is signed in and simulate events. Today in the prototype: Mon 26 Oct 2026, 10:27 (Asia/Tashkent).</p>
+      <sc-for list="{{ctlGroups}}" as="g" hint-placeholder-count="4">
+        <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+          <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{g.label}}</span>
+          <div role="group" aria-label="{{g.label}}" style="display: flex; flex-wrap: wrap; gap: var(--size-6)">
+            <sc-for list="{{g.opts}}" as="o" hint-placeholder-count="3">
+              <button class="da-btn sh-chip" onClick="{{o.pick}}" aria-pressed="{{o.selStr}}" style="flex: none">{{o.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">Simulate</span>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)">
+          <sc-for list="{{simButtons}}" as="b" hint-placeholder-count="6">
+            <button class="da-btn sh-btn sh-btn--secondary sh-btn--compact" onClick="{{b.go}}" style="flex: none; white-space: nowrap">{{b.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </aside>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"height":{"editor":null},"still":{"editor":null},"startTab":{"editor":null},"startRoute":{"editor":null},"startRootP":{"editor":null},"chrome":{"editor":"enum","options":["web","phone"],"default":"web"},"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      phase: 'splash', bootMode: 'ok', bootBusy: false, authStack: [{ s: 'login', p: {} }],
+      role: 'doctor', tier: 'PREMIUM', online: true, phoneTz: 'Asia/Tashkent', lang: 'EN',
+      tab: 'home', stacks: {}, moreOpen: false, signOut: false, notifPrompt: false, notifAsked: false,
+      banner: null, push: null, ctlOpen: true, narrow: false, width: 1440,
+      lock: { enabled: false, pin: '123456', bio: true, locked: false, entry: '', fails: 0, shake: false },
+      store: this.seed()
+    };
+    this.rootRef = (el) => this.attach(el);
+  }
+  attach(el) {
+    if (el === this.el) return;
+    if (this.ro) this.ro.disconnect();
+    this.el = el;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    this.ro = new ResizeObserver((e) => { const w = Math.round(e[0].contentRect.width); const n = w < 768; if (n !== this.state.narrow || Math.abs(w - this.state.width) > 8) this.setState({ narrow: n, width: w }); });
+    this.ro.observe(el);
+  }
+  componentDidMount() {
+    this.ts = setTimeout(() => this.finishSplash(), this.props.still ? 10 : 1300);
+    this.onPd = (e) => { const b = e.target && e.target.closest ? e.target.closest('button,[role="button"]') : null; if (b && !b.closest('[role="dialog"]') && typeof window !== 'undefined') window.__daAnchor = b.getBoundingClientRect(); };
+    if (typeof document !== 'undefined') document.addEventListener('pointerdown', this.onPd, true);
+  }
+  componentWillUnmount() { if (typeof document !== 'undefined' && this.onPd) document.removeEventListener('pointerdown', this.onPd, true); clearTimeout(this.ts); clearTimeout(this.tb); clearTimeout(this.tp); if (this.ro) this.ro.disconnect(); }
+  finishSplash() {
+    if (this.state.bootMode === 'maintenance' || this.state.bootMode === 'update') { this.setState({ phase: 'boot' }); return; }
+    if (this.state.bootMode === 'noSession') { this.setState({ phase: 'auth', authStack: [{ s: 'login', p: {} }], bootMode: 'ok' }); return; }
+    const st = this.freshStacks(); const tab0 = this.props.startTab || (this.state.role === 'staff' ? 'clinic' : 'home');
+    if (this.props.startRoute && this.props.startRoute.s) st[tab0] = st[tab0].concat([{ s: this.props.startRoute.s, p: this.props.startRoute.p || {} }]);
+    if (this.props.startRootP) st[tab0] = [{ s: st[tab0][0].s, p: this.props.startRootP }].concat(st[tab0].slice(1));
+    this.setState({ phase: 'shell', tab: tab0, stacks: st });
+    if (this.props.still) return;
+    if (!this.state.notifAsked) setTimeout(() => this.setState({ notifPrompt: true, notifAsked: true }), 900);
+  }
+  freshStacks() {
+    const tabs = ['home', 'calendar', 'patients', 'chat', 'clinic', 'tasks', 'reports', 'notifications', 'profile', 'intel'];
+    const root = { home: 'home', calendar: 'calendar', patients: 'patients', chat: 'chats', clinic: 'clinic', tasks: 'tasks', reports: 'reports', notifications: 'notifications', profile: 'profile', intel: 'aiWelcome' };
+    const s = {}; tabs.forEach((t) => { s[t] = [{ s: root[t], p: {} }]; });
+    return s;
+  }
+  // ---------- seed data (practice timezone Asia/Tashkent; prototype "now" = Mon 26 Oct 2026 10:27) ----------
+  seed() {
+    const P = (id, name, g, dob, phone, blood, allergies, chronic, status, lang, extra) => Object.assign({ id, name, gender: g, dob, phones: [phone], blood, allergies, chronic, status, lang, email: '', address: 'Tashkent', createdBy: 'me', portal: true }, extra || {});
+    const patients = [
+      P('P-00101', 'Dilnoza Yusupova', 'Female', '1979-03-14', '+998 93 410 22 18', 'A (II) Rh+', 'Penicillin', 'Type 2 diabetes', 'AT_RISK', 'Uzbek', { email: 'dilnoza.y@mail.uz' }),
+      P('P-00102', 'Jasur Tursunov', 'Male', '1972-06-02', '+998 90 123 45 67', 'B (III) Rh+', '', 'Hypertension', 'FOLLOW_UP', 'Uzbek, Russian'),
+      P('P-00103', 'Nodira Xasanova', 'Female', '1987-11-20', '+998 97 552 08 41', 'O (I) Rh+', 'Lidocaine', '', 'ACTIVE', 'Russian'),
+      P('P-00104', 'Bekzod Rahimov', 'Male', '1965-01-09', '+998 91 778 63 05', 'A (II) Rh−', '', '', 'ACTIVE', 'Uzbek'),
+      P('P-00105', 'Malika Ergasheva', 'Female', '1993-08-30', '+998 99 304 71 26', 'O (I) Rh−', '', '', 'ACTIVE', 'Uzbek'),
+      P('P-00106', 'Sardor Aliyev', 'Male', '1998-04-12', '+998 90 667 19 83', '', '', '', 'ACTIVE', 'Uzbek', { portal: false }),
+      P('P-00107', 'Gulnora Abdullayeva', 'Female', '1960-02-25', '+998 94 215 90 37', 'AB (IV) Rh+', 'Latex', 'Heart disease', 'AT_RISK', 'Russian'),
+      P('P-00108', 'Timur Saidov', 'Male', '1984-09-05', '+998 93 802 44 60', 'B (III) Rh−', '', '', 'FOLLOW_UP', 'Russian'),
+      P('P-00109', 'Shahlo Mirzayeva', 'Female', '2001-12-01', '+998 97 139 58 12', '', '', '', 'ACTIVE', 'Uzbek'),
+      P('P-00110', 'Rustam Nazarov', 'Male', '1968-07-17', '+998 91 450 36 77', 'A (II) Rh+', '', 'Asthma', 'ACTIVE', 'Uzbek', { portal: false }),
+      P('P-00111', 'Otabek Qodirov', 'Male', '1990-05-23', '+998 99 921 05 48', 'O (I) Rh+', '', '', 'ACTIVE', 'Uzbek'),
+      P('P-00112', 'Feruza Karimova', 'Female', '1976-10-08', '+998 90 384 67 29', '', 'Ibuprofen', '', 'ACTIVE', 'Uzbek')
+    ];
+    const A = (id, day, start, end, pid, kind, status, reason, extra) => Object.assign({ id, day, start, end, patientId: pid, kind, status, reason, location: kind === 'video' ? 'Video Call' : 'Shifa Dental Clinic, Chilonzor', payment: kind === 'video' ? 'PENDING' : null, doctorId: 'me', notes: '', soap: { s: '', o: '', a: '', p: '' }, briefing: 'ready', docsAttached: 0 }, extra || {});
+    const appointments = [
+      A('A-2001', '2026-10-26', '09:00', '09:30', 'P-00105', 'video', 'COMPLETED', 'Follow-up consultation', { payment: 'PAID', summary: true, sig: 'signed', notes: 'Gum at 37 healing well after scaling. No bleeding on probing. Continue soft brushing and chlorhexidine rinse for 3 more days.', aiNote: 'Patient reports less bleeding when brushing. Gum margin at 37 looks pink and firm on camera. Plan: continue rinse 3 days, review in 2 weeks if bleeding returns.' }),
+      A('A-2002', '2026-10-26', '09:30', '10:00', 'P-00104', 'clinic', 'COMPLETED', 'Filling, tooth 36', { summary: true, sig: 'signed', notes: 'Deep caries on 36 (occlusal-distal). Local anaesthesia, cavity prepared, composite filling placed and polished. Bite checked.', dental: { teeth: { '36': ['SV-2'] }, general: ['SV-1'], discount: '', notes: 'Patient tolerated well.' } }),
+      A('A-2003', '2026-10-26', '10:30', '11:00', 'P-00101', 'clinic', 'CONFIRMED', 'Pain in the upper left molar', { docsAttached: 3 }),
+      A('A-2004', '2026-10-26', '11:00', '11:30', 'P-00102', 'video', 'CONFIRMED', 'Check after extraction', { payment: 'PENDING', docsAttached: 1 }),
+      A('A-2005', '2026-10-26', '12:00', '12:30', 'P-00109', 'clinic', 'REQUESTED', 'Cleaning', { briefing: 'none' }),
+      A('A-2006', '2026-10-26', '14:30', '15:30', 'P-00107', 'clinic', 'CONFIRMED', 'Crown fitting, tooth 46'),
+      A('A-2007', '2026-10-26', '17:00', '17:30', 'P-00111', 'clinic', 'CONFIRMED', 'Consultation', { briefing: 'none' }),
+      A('A-2008', '2026-10-27', '09:00', '09:30', 'P-00103', 'clinic', 'CONFIRMED', 'Root canal, second visit'),
+      A('A-2009', '2026-10-27', '10:00', '10:30', 'P-00108', 'video', 'CONFIRMED', 'Orthodontic consultation', { payment: 'PAID' }),
+      A('A-2010', '2026-10-27', '15:00', '15:30', 'P-00112', 'clinic', 'CONFIRMED', 'Whitening'),
+      A('A-2011', '2026-10-22', '11:00', '11:30', 'P-00101', 'clinic', 'COMPLETED', 'Examination', { summary: true, sig: 'signed', notes: 'Examination. Caries on 26, plaque on lower incisors. Plan: filling of 26 and professional cleaning. Blood glucose to be checked before treatment (type 2 diabetes).' }),
+      A('A-2012', '2026-10-19', '10:00', '10:30', 'P-00102', 'clinic', 'COMPLETED', 'Extraction, tooth 48', { summary: true, sig: 'signed', notes: 'Extraction of 48 under local anaesthesia. Socket irrigated, gauze placed. Instructions given: no rinsing for 24 h, soft food, amoxicillin for 5 days.', dental: { teeth: { '48': ['SV-4'] }, general: [], discount: '', notes: '' } }),
+      A('A-2013', '2026-10-23', '11:00', '11:30', 'P-00106', 'clinic', 'CANCELLED', 'Consultation'),
+      A('A-2014', '2026-10-21', '15:00', '15:30', 'P-00110', 'clinic', 'NO_SHOW', 'Check-up'),
+      A('A-2015', '2026-10-29', '11:00', '12:00', 'P-00104', 'clinic', 'CONFIRMED', 'Crown preparation'),
+      A('A-2016', '2026-11-02', '09:30', '10:00', 'P-00101', 'clinic', 'CONFIRMED', 'Follow-up'),
+      A('A-2017', '2026-10-28', '14:00', '14:30', 'P-00105', 'video', 'REQUESTED', 'Consultation'),
+      A('A-2018', '2026-10-30', '10:00', '10:30', 'P-00107', 'clinic', 'CONFIRMED', 'Crown check'),
+      A('A-2101', '2026-10-26', '09:00', '10:00', 'P-00103', 'clinic', 'COMPLETED', 'Braces adjustment', { doctorId: 'D-2' }),
+      A('A-2102', '2026-10-26', '11:00', '11:30', 'P-00110', 'clinic', 'CONFIRMED', 'Orthodontic check', { doctorId: 'D-2' }),
+      A('A-2103', '2026-10-26', '15:00', '16:00', 'P-00112', 'clinic', 'CONFIRMED', 'Aligner fitting', { doctorId: 'D-2' }),
+      A('A-2104', '2026-10-26', '10:00', '11:00', 'P-00106', 'clinic', 'CONFIRMED', 'Wisdom tooth extraction', { doctorId: 'D-3' }),
+      A('A-2105', '2026-10-26', '14:00', '14:30', 'P-00108', 'clinic', 'REQUESTED', 'Consultation', { doctorId: 'D-3' })
+    ];
+    const blocks = [{ id: 'B-1', day: '2026-10-26', start: '16:00', end: '17:00', reason: 'Staff meeting' }, { id: 'B-2', day: '2026-10-31', start: '00:00', end: '24:00', reason: 'Day off' }];
+    const R = (st, en, loc, slot) => ({ s: st, e: en, loc: loc || 'L1', slot: slot || 30 });
+    const schedule = {
+      validFrom: '2026-09-01', validTo: '2026-12-25',
+      week: { 1: [R('09:00', '13:00'), R('14:00', '18:00')], 2: [R('09:00', '13:00'), R('14:00', '18:00')], 3: [R('09:00', '13:00', 'L2'), R('14:00', '18:00', 'L2')], 4: [R('09:00', '13:00'), R('14:00', '18:00')], 5: [R('09:00', '13:00'), R('14:00', '17:00')], 6: [R('09:00', '14:00')], 0: [] },
+      dateSpecific: [{ id: 'DS-1', day: '2026-11-01', s: '10:00', e: '13:00', loc: 'L1', slot: 30 }]
+    };
+    const locations = [
+      { id: 'L1', label: 'Shifa Dental Clinic, Chilonzor', clinic: 'Shifa Dental Clinic', address: 'Bunyodkor Ave 12, Chilonzor, Tashkent', primary: true },
+      { id: 'L2', label: 'Private office, Yunusobod', clinic: '', address: 'Amir Temur St 108, Yunusobod, Tashkent', primary: false }
+    ];
+    const T = (h, m) => '2026-10-26T' + h + ':' + m;
+    const notifs = [
+      { id: 'N-1', type: 'booked', title: 'New appointment', body: 'Shahlo Mirzayeva requested Mon 26 Oct, 12:00.', at: T('09', '58'), read: false, link: { kind: 'appt', id: 'A-2005' } },
+      { id: 'N-2', type: 'chat', title: 'New message', body: 'Jasur Tursunov: Can I eat normally after the extraction?', at: T('09', '41'), read: false, link: { kind: 'chat', id: 'C-2' } },
+      { id: 'N-3', type: 'docAccess', title: 'Document access request', body: 'Dr. Bobur Aliyev asked to see "Internal note" for Dilnoza Yusupova.', at: T('08', '15'), read: false, link: { kind: 'patientDocs', id: 'P-00101' } },
+      { id: 'N-4', type: 'partnership', title: 'Care partnership invite', body: 'Dr. Madina Rasulova invited you to co-treat Gulnora Abdullayeva.', at: '2026-10-25T18:20', read: false, link: { kind: 'partnership', id: 'CP-2' } },
+      { id: 'N-5', type: 'task', title: 'Task needs attention', body: 'Bekzod Rahimov missed 2 check-ins for "Mouth rinse twice a day".', at: T('07', '30'), read: false, link: { kind: 'task', id: 'T-2' } },
+      { id: 'N-6', type: 'payment', title: 'Payment received', body: 'Malika Ergasheva paid 150 000 UZS for today’s video visit.', at: T('09', '31'), read: true, link: { kind: 'appt', id: 'A-2001' } },
+      { id: 'N-7', type: 'cancelled', title: 'Appointment cancelled', body: 'Sardor Aliyev cancelled Fri 23 Oct, 11:00.', at: '2026-10-22T20:05', read: true, link: { kind: 'calDay', day: '2026-10-23' } },
+      { id: 'N-8', type: 'reminder', title: 'Visit soon', body: 'Dilnoza Yusupova at 10:30, in clinic.', at: T('10', '15'), read: true, link: { kind: 'appt', id: 'A-2003' } }
+    ];
+    const tasks = [
+      { id: 'T-1', name: 'Blood glucose before meals', patientId: 'P-00101', category: 'VITAL', status: 'ACTIVE', timesPerDay: 3, start: '2026-10-20', end: '2026-11-19', done: 17, total: 90, template: false, notes: 'Send a photo of the meter reading.' },
+      { id: 'T-2', name: 'Mouth rinse twice a day', patientId: 'P-00104', category: 'MEDICATION', status: 'ACTIVE', timesPerDay: 2, start: '2026-10-21', end: '2026-11-04', done: 6, total: 28, template: false, notes: 'Chlorhexidine 0.12 %, 30 seconds.' },
+      { id: 'T-3', name: 'Jaw exercises', patientId: 'P-00108', category: 'EXERCISE', status: 'COMPLETED', timesPerDay: 1, start: '2026-09-20', end: '2026-10-19', done: 30, total: 30, template: false, notes: '' },
+      { id: 'T-4', name: 'Blood pressure morning and evening', patientId: 'P-00102', category: 'VITAL', status: 'EXPIRED', timesPerDay: 2, start: '2026-09-01', end: '2026-09-30', done: 41, total: 60, template: false, notes: '' },
+      { id: 'T-5', name: 'Pain diary after crown fitting', patientId: 'P-00107', category: 'OTHER', status: 'DRAFT', timesPerDay: 1, start: '2026-10-27', end: '2026-11-02', done: 0, total: 7, template: false, notes: '' }
+    ];
+    const templates = [
+      { id: 'TT-1', name: 'Mouth rinse after extraction', category: 'MEDICATION', timesPerDay: 2, days: 7 },
+      { id: 'TT-2', name: 'Blood pressure check', category: 'VITAL', timesPerDay: 2, days: 30 },
+      { id: 'TT-3', name: 'Jaw opening exercises', category: 'EXERCISE', timesPerDay: 3, days: 14 }
+    ];
+    const M = (from, text, at, extra) => Object.assign({ id: 'M' + Math.random().toString(36).slice(2, 8), from, text, at, kind: 'text', status: 'read' }, extra || {});
+    const chats = [
+      { id: 'C-1', patientId: 'P-00101', unread: 0, messages: [M('them', 'Good morning, doctor. The pain is worse at night.', '2026-10-25T21:10'), M('me', 'Thank you, Dilnoza. We will look at it tomorrow at 10:30. Avoid very cold drinks until then.', '2026-10-25T21:24'), M('them', 'Okay, thank you.', '2026-10-25T21:30')] },
+      { id: 'C-2', patientId: 'P-00102', unread: 2, messages: [M('me', 'How are you feeling after the extraction?', '2026-10-25T12:00'), M('them', 'Much better, a little swelling.', '2026-10-26T09:39'), M('them', 'Can I eat normally after the extraction?', '2026-10-26T09:41')] },
+      { id: 'C-3', patientId: 'P-00105', unread: 0, messages: [M('them', '', '2026-10-24T16:02', { kind: 'image', caption: 'Photo of the gum' }), M('me', 'Thanks, it is healing well.', '2026-10-24T16:30'), M('them', '', '2026-10-24T16:41', { kind: 'voice', dur: '0:14' })] },
+      { id: 'C-4', patientId: 'P-00107', unread: 1, messages: [M('them', '', '2026-10-23T11:15', { kind: 'doc', caption: 'Cardiologist letter.pdf' }), M('them', 'Here is the letter from my cardiologist.', '2026-10-23T11:16')] }
+    ];
+    const D = (id, pid, title, cat, day, by, extra) => Object.assign({ id, patientId: pid, title, cat, day, by, locked: false, kind: 'pdf' }, extra || {});
+    const docs = [
+      D('D-1', 'P-00101', 'Blood test results', 'BLOOD_TEST', '2026-10-18', 'Uploaded by the patient'),
+      D('D-2', 'P-00101', 'Panoramic X-ray', 'XRAY', '2026-10-22', 'Dr. Nilufar Karimova', { kind: 'image' }),
+      D('D-3', 'P-00101', 'Internal note', 'INTERNAL_NOTE', '2026-10-22', 'Dr. Bobur Aliyev', { locked: true }),
+      D('D-4', 'P-00101', 'Endocrinologist letter', 'REFERRAL', '2026-10-10', 'Uploaded by the patient'),
+      D('D-5', 'P-00102', 'Extraction summary', 'APPOINTMENT_NOTE', '2026-10-19', 'Dr. Nilufar Karimova'),
+      D('D-6', 'P-00102', 'Prescription: amoxicillin', 'PRESCRIPTION', '2026-10-19', 'Dr. Nilufar Karimova'),
+      D('D-7', 'P-00107', 'Cardiologist letter', 'REFERRAL', '2026-10-23', 'Uploaded by the patient'),
+      D('D-8', 'P-00104', '025-2 form, 26 Oct', 'FORM_025_2', '2026-10-26', 'Dr. Nilufar Karimova')
+    ];
+    const forms = [{ id: 'F-1', patientId: 'P-00104', day: '2026-10-26', title: 'Dental outpatient card 025-2', signed: true, pdf: true }, { id: 'F-2', patientId: 'P-00101', day: '2026-10-22', title: 'Dental outpatient card 025-2', signed: false, pdf: false }];
+    const partnerships = [
+      { id: 'CP-1', patientId: 'P-00101', partner: 'Dr. Aziz Umarov', partnerSpec: 'Endocrinologist', role: 'OWNER', status: 'ACTIVE', since: '2026-10-11', reason: 'Diabetes control before implant', updates: [{ at: '2026-10-20', by: 'Dr. Aziz Umarov', text: 'HbA1c 7.4 %. Safe for routine treatment.' }] },
+      { id: 'CP-2', patientId: 'P-00107', partner: 'Dr. Madina Rasulova', partnerSpec: 'Cardiologist', role: 'PARTNER', status: 'PENDING', since: '2026-10-25', reason: 'Crown work while on anticoagulants', updates: [] }
+    ];
+    const clinic = {
+      id: 'CL-1', name: 'Shifa Dental Clinic', myRole: 'OWNER', tz: 'Asia/Tashkent', address: 'Bunyodkor Ave 12, Chilonzor, Tashkent',
+      doctors: [
+        { id: 'me', name: 'Dr. Nilufar Karimova', spec: 'Therapeutic dentist', role: 'OWNER', share: 60, color: 'var(--chart-1)' },
+        { id: 'D-2', name: 'Dr. Bobur Aliyev', spec: 'Orthodontist', role: 'DOCTOR', share: 50, color: 'var(--chart-4)' },
+        { id: 'D-3', name: 'Dr. Madina Rasulova', spec: 'Oral surgeon', role: 'DOCTOR', share: 55, color: 'var(--chart-3)' }
+      ],
+      staff: [{ id: 'S-1', name: 'Dilfuza Saidova', role: 'RECEPTIONIST', email: 'dilfuza@shifadental.uz' }],
+      services: [
+        { id: 'SV-1', name: 'Consultation', price: 100000, minutes: 30 }, { id: 'SV-2', name: 'Composite filling', price: 450000, minutes: 60 },
+        { id: 'SV-3', name: 'Root canal (one canal)', price: 600000, minutes: 60 }, { id: 'SV-4', name: 'Extraction', price: 300000, minutes: 30 },
+        { id: 'SV-5', name: 'Professional cleaning', price: 350000, minutes: 45 }, { id: 'SV-6', name: 'Zirconia crown', price: 2500000, minutes: 60 }
+      ],
+      payments: [
+        { id: 'PY-1', day: '2026-10-26', patientId: 'P-00105', amount: 150000, method: 'Card', note: 'Video visit', doctorId: 'me' },
+        { id: 'PY-2', day: '2026-10-26', patientId: 'P-00104', amount: 450000, method: 'Cash', note: 'Filling, tooth 36', doctorId: 'me' },
+        { id: 'PY-3', day: '2026-10-24', patientId: 'P-00107', amount: 1000000, method: 'Transfer', note: 'Crown, first instalment', doctorId: 'me', planId: 'TP-1' },
+        { id: 'PY-4', day: '2026-10-23', patientId: 'P-00103', amount: 600000, method: 'Card', note: 'Root canal', doctorId: 'D-2' }
+      ],
+      records: [
+        { id: 'FR-1', day: '2026-10-25', kind: 'EXPENSE', category: 'Materials', amount: 820000, note: 'Composite set' },
+        { id: 'FR-2', day: '2026-10-20', kind: 'EXPENSE', category: 'Rent', amount: 6000000, note: 'October rent' },
+        { id: 'FR-3', day: '2026-10-18', kind: 'INCOME', category: 'Other', amount: 250000, note: 'X-ray for walk-in' }
+      ],
+      plans: [
+        { id: 'TP-1', patientId: 'P-00107', title: 'Crown on tooth 46', status: 'ACTIVE', created: '2026-10-10', doctorId: 'me', items: [{ id: 'I1', service: 'Root canal (one canal)', tooth: '46', price: 600000, done: true }, { id: 'I2', service: 'Zirconia crown', tooth: '46', price: 2500000, done: false }], paid: 1000000, installments: [{ due: '2026-11-10', amount: 1000000, paid: false }, { due: '2026-12-10', amount: 1100000, paid: false }] },
+        { id: 'TP-2', patientId: 'P-00101', title: 'Treatment of 26 and cleaning', status: 'ACTIVE', created: '2026-10-22', doctorId: 'me', items: [{ id: 'I1', service: 'Composite filling', tooth: '26', price: 450000, done: false }, { id: 'I2', service: 'Professional cleaning', tooth: '', price: 350000, done: false }], paid: 0, installments: [] }
+      ],
+      invitations: [{ id: 'IV-1', email: 'new.doctor@mail.uz', role: 'DOCTOR', status: 'PENDING', sent: '2026-10-24' }],
+      settings: { workdays: 'Mon–Sat', currency: 'UZS', reminders: true }
+    };
+    return {
+      today: '2026-10-26', nowMin: 627, tz: 'Asia/Tashkent', online: true,
+      me: { id: 'me', first: 'Nilufar', last: 'Karimova', name: 'Dr. Nilufar Karimova', spec: 'Therapeutic dentist', professions: ['Therapeutic dentistry'], email: 'nilufar.karimova@shifa.uz', phone: '+998 90 555 12 34', dental: true, startTab: 'home', bio: 'Therapeutic dentist with 12 years of practice. Painless treatment of caries and root canals.', languages: ['Uzbek', 'Russian', 'English'], education: 'Tashkent State Dental Institute, 2014', experience: 12, photo: '' },
+      staffMe: { name: 'Dilfuza Saidova', role: 'Receptionist', email: 'dilfuza@shifadental.uz' },
+      patients, appointments, blocks, schedule, locations, notifs, tasks, templates, chats, docs, forms, partnerships, clinic,
+      ai: { sessions: [{ id: 'AI-1', title: 'Free slots on Thursday', at: '2026-10-25T18:02', turns: [] }, { id: 'AI-2', title: 'Dilnoza Yusupova briefing', at: '2026-10-24T09:12', turns: [] }] },
+      settings: { lang: 'EN', notifications: true, appLock: false, biometric: true },
+      sub: { tier: 'PREMIUM', renews: '2026-11-20', price: '290 000 UZS / month', sms: { used: 184, limit: 500 } },
+      firstDay: false
+    };
+  }
+  // ---------- helpers shared with every area (passed as `lib`) ----------
+  makeLib() {
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const hm = (m) => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+    const dObj = (day) => { const [y, mo, d] = day.split('-').map(Number); return new Date(Date.UTC(y, mo - 1, d)); };
+    const iso = (dt) => dt.getUTCFullYear() + '-' + pad(dt.getUTCMonth() + 1) + '-' + pad(dt.getUTCDate());
+    const addDays = (day, n) => { const d = dObj(day); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+    const dow = (day) => dObj(day).getUTCDay();
+    const DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], DL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], ML = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const fmtDay = (day) => { const d = dObj(day); return DN[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MN[d.getUTCMonth()]; };
+    const fmtLong = (day) => { const d = dObj(day); return DL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + ML[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
+    const fmtDate = (day) => { if (!day) return '—'; const d = dObj(day); return d.getUTCDate() + ' ' + MN[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
+    const initials = (n) => { const w = String(n || '').replace(/^Dr\.\s*/, '').trim().split(/\s+/).filter(Boolean); if (!w.length) return '?'; return (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase(); };
+    const age = (dob, today) => { if (!dob) return null; const [y, m, d] = dob.split('-').map(Number); const [ty, tm, td] = today.split('-').map(Number); let a = ty - y; if (tm < m || (tm === m && td < d)) a--; return a; };
+    const money = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' UZS';
+    const relTime = (at, store) => { const [day, t] = at.split('T'); if (day === store.today) { const diff = store.nowMin - toMin(t); if (diff < 1) return 'Just now'; if (diff < 60) return diff + ' min ago'; return t; } if (day === addDays(store.today, -1)) return 'Yesterday, ' + t; return fmtDay(day) + ', ' + t; };
+    // StatusBadge tones (Shifa DS): every status maps to one of these, centrally.
+    const tones = {
+      brand: { bg: 'var(--bg-success-subtle)', ink: 'var(--text-brand-strong)', dot: 'var(--icon-brand)' }, info: { bg: 'var(--bg-info-subtle)', ink: 'var(--text-info)', dot: 'var(--icon-info)' },
+      warning: { bg: 'var(--bg-warning-subtle)', ink: 'var(--text-warning-strong)', dot: 'var(--icon-warning)' }, error: { bg: 'var(--bg-error-subtle)', ink: 'var(--text-error)', dot: 'var(--icon-error)' },
+      muted: { bg: 'var(--bg-canvas)', ink: 'var(--text-secondary)', dot: 'var(--icon-disabled)' }, solid: { bg: 'var(--interactive-primary)', ink: 'var(--text-inverse)', dot: 'var(--icon-inverse)' }
+    };
+    const tone = (t, label) => Object.assign({ label: label || '', tone: t, cls: 'dr-status dr-status--' + ({ brand: 'brand', info: 'info', warning: 'warn', error: 'err', muted: 'muted', solid: 'solid' }[t] || 'muted') }, tones[t] || tones.muted);
+    const status = { REQUESTED: tone('info', 'Requested'), CONFIRMED: tone('brand', 'Confirmed'), IN_PROGRESS: tone('solid', 'In progress'), COMPLETED: tone('muted', 'Completed'), CANCELLED: tone('error', 'Cancelled'), NO_SHOW: tone('warning', 'No-show') };
+    const pay = { PAID: tone('brand', 'Paid'), PENDING: tone('info', 'Payment pending'), FAILED: tone('error', 'Payment failed'), NOT_REQUIRED: tone('muted', 'No payment needed') };
+    const pstatus = { ACTIVE: tone('brand', 'Active'), AT_RISK: tone('error', 'At risk'), FOLLOW_UP: tone('warning', 'Follow-up') };
+    const patient = (store, id) => store.patients.find((p) => p.id === id) || { id, name: 'Patient', phones: [], dob: '' };
+    const appt = (store, id) => store.appointments.find((a) => a.id === id);
+    // day agenda in the practice timezone: free slots from the weekly template (or date-specific hours), appointments, blocks
+    const agenda = (store, day, doctorId) => {
+      const sch = store.schedule; const rows = []; const did = doctorId || 'me'; const own = did === 'me';
+      const inValid = day >= sch.validFrom && day <= sch.validTo;
+      const ds = own ? sch.dateSpecific.filter((x) => x.day === day) : [];
+      let ranges = inValid ? (sch.week[dow(day)] || []).slice() : [];
+      if (!own) ranges = ranges.map((r) => Object.assign({}, r, { loc: 'L1' }));
+      ds.forEach((x) => { ranges = ranges.concat([{ s: x.s, e: x.e, loc: x.loc, slot: x.slot, extra: true }]); });
+      const appts = store.appointments.filter((a) => a.day === day && (a.doctorId || 'me') === did);
+      const blocks = store.blocks.filter((b) => b.day === day && (b.doctorId || 'me') === did);
+      const busy = (st, en) => appts.some((a) => a.status !== 'CANCELLED' && toMin(a.start) < en && toMin(a.end) > st) || blocks.some((b) => toMin(b.start) < en && toMin(b.end) > st);
+      const locOf = (id) => store.locations.find((l) => l.id === id) || store.locations[0] || { id: '', label: 'Clinic Address' };
+      const isPast = day < store.today;
+      if (!isPast) ranges.forEach((r) => { const L = locOf(r.loc); for (let m = toMin(r.s); m + r.slot <= toMin(r.e); m += r.slot) { if (!busy(m, m + r.slot)) rows.push({ type: 'free', start: hm(m), end: hm(m + r.slot), min: m, slot: r.slot, loc: L.id, location: L.label }); } });
+      appts.forEach((a) => rows.push({ type: 'appt', start: a.start, end: a.end, min: toMin(a.start), appt: a }));
+      blocks.forEach((b) => rows.push({ type: 'block', start: b.start, end: b.end, min: toMin(b.start), block: b }));
+      rows.sort((x, y) => x.min - y.min || (x.type === 'appt' ? -1 : 1));
+      return { rows, working: ranges.length > 0, inValid, ranges, location: ranges.length ? locOf(ranges[0].loc) : locOf('') };
+    };
+    // DentalChart data (one implementation for visits, forms and plans). of(n) -> { state: none|planned|partial|done, selected, aria, tap, count }
+    const teeth = (of, opts) => {
+      const o = opts || {}; const tooth = (n) => { const x = of(n) || {}; const st = x.state || 'none'; const label = { none: '', planned: ', planned', partial: ', partly done', done: ', completed' }[st] || ''; return { isTooth: true, isGap: false, n: String(n), cls: (x.tap ? 'cl-b ' : '') + 'dr-tooth' + (st !== 'none' ? ' is-' + st : '') + (x.selected ? ' is-selected' : ''), aria: x.aria || ('Tooth ' + n + label), tap: x.tap || (() => {}), hasCount: !!x.count, count: String(x.count || '') }; };
+      const row = (a, b, low) => ({ cls: 'dr-teeth__row' + (low ? ' dr-teeth__row--low' : ''), teeth: a.map(tooth).concat([{ isTooth: false, isGap: true }]).concat(b.map(tooth)) });
+      return { cls: 'dr-teeth' + (o.scroll ? ' dr-teeth--scroll' : ''), jaws: [row([18, 17, 16, 15, 14, 13, 12, 11], [21, 22, 23, 24, 25, 26, 27, 28]), row([48, 47, 46, 45, 44, 43, 42, 41], [31, 32, 33, 34, 35, 36, 37, 38], true)], interactive: !!o.interactive, readOnly: !o.interactive };
+    };
+    // PageToolbar title size: 32 on wide panes, 24 on compact web panes, 28 in the phone app
+    // Tint of any colour token (doctor colours, status inks) for soft fills: no hex alpha suffixes.
+    const tint = (c, pct) => 'color-mix(in srgb, ' + c + ' ' + pct + '%, transparent)';
+    const h1 = (phone, store) => (phone ? '28px' : (store && store.compact ? '24px' : '32px'));
+    const tierRank = { BASIC: 0, PRO: 1, PREMIUM: 2 };
+    const can = (store, f) => { const need = { tasks: 'PREMIUM', analyticsAdv: 'PREMIUM', prescription: 'PREMIUM', intel: 'PRO', speech: 'PRO', aiNotes: 'PRO', briefing: 'PRO', video: 'PRO', timeline: 'PRO' }[f]; return !need || tierRank[store.tier] >= tierRank[need]; };
+    const need = (f) => ({ tasks: 'Premium', analyticsAdv: 'Premium', prescription: 'Premium', intel: 'Pro', speech: 'Pro', aiNotes: 'Pro', briefing: 'Pro', video: 'Pro', timeline: 'Pro' }[f] || '');
+    const catLabel = (c) => ({ BLOOD_TEST: 'Blood test', URINE_TEST: 'Urine test', STOOL_TEST: 'Stool test', LAB_RESULT: 'Lab result', MRI: 'MRI', CT_SCAN: 'CT scan', XRAY: 'X-ray', ULTRASOUND: 'Ultrasound', MAMMOGRAPHY: 'Mammography', ECG: 'ECG', EEG: 'EEG', ENDOSCOPY: 'Endoscopy', BIOPSY: 'Biopsy', PATHOLOGY: 'Pathology', IMAGING_OTHER: 'Other imaging', PRESCRIPTION: 'Prescription', VACCINATION_RECORD: 'Vaccination record', DISCHARGE_SUMMARY: 'Discharge summary', REFERRAL: 'Referral', HOSPITAL_REPORT: 'Hospital report', ALLERGY_REPORT: 'Allergy report', OTHER_MEDICAL: 'Other medical result', APPOINTMENT_NOTE: 'Appointment note', REMOTE_TASK_DOCUMENT: 'Remote task document', INTERNAL_NOTE: 'Internal note', OTHER_PRIVATE: 'Other private document', FORM_025_2: '025-2 form' }[c] || String(c).toLowerCase().replace(/_/g, ' '));
+    const catGroup = (c) => (['APPOINTMENT_NOTE', 'REMOTE_TASK_DOCUMENT', 'INTERNAL_NOTE', 'OTHER_PRIVATE'].indexOf(c) >= 0 ? 'private' : (c === 'FORM_025_2' ? 'form' : 'medical'));
+    const uid = (p) => p + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+    const C = (cx, cy, r) => 'M' + (cx - r) + ' ' + cy + 'a' + r + ' ' + r + ' 0 1 0 ' + (2 * r) + ' 0a' + r + ' ' + r + ' 0 1 0 ' + (-2 * r) + ' 0';
+    const ic = {
+      home: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10',
+      calendar: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18',
+      calPlus: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18M12 13v6M9 16h6',
+      users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' + C(9, 7, 4) + 'M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+      user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' + C(12, 7, 4),
+      userPlus: 'M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' + C(8.5, 7, 4) + 'M20 8v6M23 11h-6',
+      chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+      more: C(5, 12, 1) + C(12, 12, 1) + C(19, 12, 1),
+      moreV: C(12, 5, 1) + C(12, 12, 1) + C(12, 19, 1),
+      menu: 'M3 12h18M3 6h18M3 18h18',
+      tasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+      bell: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
+      clinic: 'M3 21h18M5 21V7l7-4 7 4v14M10 9h4M12 7v4M9 21v-5h6v5',
+      reports: 'M12 20V10M18 20V4M6 20v-4',
+      sparkles: 'M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z',
+      globe: C(12, 12, 10) + 'M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
+      logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+      search: C(11, 11, 8) + 'M21 21l-4.35-4.35',
+      plus: 'M12 5v14M5 12h14', minus: 'M5 12h14',
+      x: 'M18 6L6 18M6 6l12 12',
+      chevL: 'M15 18l-6-6 6-6', chevR: 'M9 18l6-6-6-6', chevD: 'M6 9l6 6 6-6', chevU: 'M18 15l-6-6-6 6',
+      arrowL: 'M19 12H5M12 19l-7-7 7-7', arrowR: 'M5 12h14M12 5l7 7-7 7',
+      check: 'M20 6L9 17l-5-5', checkCircle: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3',
+      video: 'M23 7l-7 5 7 5zM3 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
+      videoOff: 'M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10M1 1l22 22',
+      pin: 'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z' + C(12, 10, 3),
+      clock: C(12, 12, 10) + 'M12 6v6l4 2',
+      file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6',
+      fileText: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+      filePlus: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M12 18v-6M9 15h6',
+      upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+      download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+      camera: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z' + C(12, 13, 4),
+      mic: 'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8',
+      micOff: 'M1 1l22 22M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23M12 19v4M8 23h8',
+      send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
+      clip: 'M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48',
+      image: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z' + C(8.5, 8.5, 1.5) + 'M21 15l-5-5L5 21',
+      phone: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z',
+      phoneOff: 'M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7a2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91M23 1L1 23',
+      mail: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6',
+      lock: 'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM7 11V7a5 5 0 0 1 10 0v4',
+      unlock: 'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM7 11V7a5 5 0 0 1 9.9-1',
+      eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z' + C(12, 12, 3),
+      eyeOff: 'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22',
+      trash: 'M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2',
+      edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z',
+      filter: 'M22 3H2l8 9.46V19l4 2v-8.54z',
+      share: C(18, 5, 3) + C(6, 12, 3) + C(18, 19, 3) + 'M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98',
+      printer: 'M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z',
+      refresh: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
+      cloudOff: 'M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3M1 1l22 22',
+      alert: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01',
+      info: C(12, 12, 10) + 'M12 16v-4M12 8h.01',
+      alertCircle: C(12, 12, 10) + 'M12 8v4M12 16h.01',
+      star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z',
+      gear: 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+      sliders: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+      card: 'M3 4h18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM1 10h22',
+      dollar: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+      tooth: 'M7 3c-2.5 0-4 2-4 4.5 0 3 1.5 4.5 2 7 .5 3 1 6.5 2.5 6.5 2 0 1.5-5 4.5-5s2.5 5 4.5 5c1.5 0 2-3.5 2.5-6.5.5-2.5 2-4 2-7C21 5 19.5 3 17 3c-2 0-3 1-5 1S9 3 7 3z',
+      clipboard: 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM9 12h6M9 16h4',
+      history: 'M1 4v6h6M3.51 15a9 9 0 1 0 2.13-9.36L1 10M12 7v5l4 2',
+      play: 'M5 3l14 9-14 9z', pause: 'M6 4h4v16H6zM14 4h4v16h-4z', stop: 'M6 6h12v12H6z',
+      volume: 'M11 5L6 9H2v6h4l5 4zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07',
+      copy: 'M9 9h11a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
+      link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+      shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+      key: 'M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4',
+      fingerprint: 'M12 11v4M8 7a6 6 0 0 1 10 4.5V13M6 11a6 6 0 0 1 .5-2.5M8 21c1-2 1.5-4 1.5-7a2.5 2.5 0 0 1 5 0c0 1.5 0 3-.5 4.5M17 21c.5-1.5.8-3 .9-4.5',
+      block: C(12, 12, 10) + 'M4.93 4.93l14.14 14.14',
+      list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+      grid: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+      award: C(12, 8, 7) + 'M8.21 13.89L7 23l5-3 5 3-1.21-9.12',
+      help: C(12, 12, 10) + 'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01',
+      external: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3',
+      trend: 'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6',
+      heart: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+      activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
+      pill: 'M10.5 20.5a7 7 0 0 1-9.9-9.9l9.9-9.9a7 7 0 0 1 9.9 9.9zM8.5 8.5l7 7',
+      handshake: 'M11 17l2 2a1 1 0 1 0 3-3M14 14l2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4M21 3l1 11h-2M3 3L2 14l6.5 6.5a1 1 0 1 0 3-3M3 4h8',
+      layers: 'M12 2L2 7l10 5 10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+      briefcase: 'M4 7h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zM16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16',
+      wallet: 'M20 12V8H6a2 2 0 0 1 0-4h12v4M4 6v12a2 2 0 0 0 2 2h14v-4M18 12a2 2 0 0 0 0 4h4v-4z',
+      backspace: 'M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6',
+      grip: C(9, 6, 1) + C(15, 6, 1) + C(9, 12, 1) + C(15, 12, 1) + C(9, 18, 1) + C(15, 18, 1)
+    };
+    // DS Menu: on web a menu opens next to the control that opened it (anchor recorded on pointerdown); phones keep the Tray.
+    const popify = (base, phone) => {
+      const anchor = () => (typeof window !== 'undefined' ? window.__daAnchor : null);
+      const est = (b) => Math.min(440, 64 + 44 * ((b.items && b.items.length) || 5));
+      Object.defineProperties(base, {
+        pop: { enumerable: true, configurable: true, get() { return this.isMenu && !phone && !this.isSearch && anchor() ? 'true' : 'false'; } },
+        popLeft: { enumerable: true, configurable: true, get() { const a = anchor(); if (!a) return '0px'; const W = 280; return Math.round(Math.max(8, Math.min(window.innerWidth - W - 8, a.right - W))) + 'px'; } },
+        popTop: { enumerable: true, configurable: true, get() { const a = anchor(); if (!a) return '0px'; const h = est(this); const below = a.bottom + 4; return Math.round(below + h > window.innerHeight - 8 ? Math.max(8, a.top - 4 - h) : below) + 'px'; } }
+      });
+      return base;
+    };
+    return { tint, h1, teeth, tone, tones, popify, pad, toMin, hm, addDays, dow, fmtDay, fmtLong, fmtDate, initials, age, money, relTime, status, pay, pstatus, patient, appt, agenda, can, need, catLabel, catGroup, uid, ic, MN, ML, DN, DL };
+  }
+  // ---------- navigation and actions ----------
+  ownerOf(s) {
+    const map = [['home', 'home'], ['search', 'home'], ['cal', 'calendar'], ['avail', 'calendar'], ['loc', 'calendar'], ['appt', 'visit'], ['visit', 'visit'], ['video', 'visit'], ['summary', 'visit'], ['pat', 'patients'], ['doc', 'patients'], ['form', 'patients'], ['partner', 'patients'], ['chat', 'chat'], ['notif', 'inbox'], ['task', 'inbox'], ['ai', 'intel'], ['prof', 'profile'], ['set', 'profile'], ['report', 'profile'], ['lang', 'profile'], ['legal', 'profile'], ['sub', 'profile'], ['clinic', 'clinic'], ['fin', 'clinic'], ['plan', 'clinic'], ['staff', 'clinic']];
+    const hit = map.find(([p]) => s.indexOf(p) === 0);
+    return hit ? hit[1] : 'pending';
+  }
+  built() { return { home: true, calendar: true, visit: true, patients: true, chat: true, inbox: true, intel: true, profile: true, clinic: true, auth: true }; }
+  showBanner(b) {
+    clearTimeout(this.tb);
+    const k = b.kind || 'info';
+    // DS Toast: one charcoal bar at the top; the icon carries the tone. Errors stay until dismissed.
+    const meta = { error: ['dr-toast__err', 'alertCircle'], success: ['dr-toast__ok', 'checkCircle'], warn: ['dr-toast__warn', 'alert'], info: ['dr-toast__ok', 'info'] }[k];
+    this.setState({ banner: { text: b.text, iconCls: meta[0], d: this.lib.ic[meta[1]], hasAction: !!b.action, actionLabel: b.actionLabel || '', action: b.action || null } });
+    if (!b.sticky && k !== 'error') this.tb = setTimeout(() => this.setState({ banner: null }), b.action ? 8000 : 4000);
+  }
+  act(type, p) {
+    const s = this.state;
+    const stacks = Object.assign({}, s.stacks);
+    const cur = (stacks[s.tab] || []).slice();
+    switch (type) {
+      case 'push': {
+        const tab = p.tab || s.tab;
+        const st = (stacks[tab] || []).slice(); st.push({ s: p.s, p: p.p || {} }); stacks[tab] = st;
+        this.setState({ stacks, tab, moreOpen: false }); break;
+      }
+      case 'replace': { cur[cur.length - 1] = { s: p.s, p: p.p || {} }; stacks[s.tab] = cur; this.setState({ stacks }); break; }
+      case 'back': { if (cur.length > 1) { cur.pop(); stacks[s.tab] = cur; this.setState({ stacks }); } else if (s.tab !== 'home' && s.role === 'doctor') { this.setState({ tab: 'home' }); } break; }
+      case 'tab': { if (p === s.tab) { stacks[p] = [stacks[p][0]]; this.setState({ stacks }); } else this.setState({ tab: p, moreOpen: false }); break; }
+      case 'go': { // jump to a tab and replace its stack (deep links, cross-area jumps)
+        const fresh = this.freshStacks();
+        stacks[p.tab] = [fresh[p.tab][0]].concat(p.s ? [{ s: p.s, p: p.p || {} }] : []);
+        if (p.rootP) stacks[p.tab][0] = { s: fresh[p.tab][0].s, p: p.rootP };
+        this.setState({ stacks, tab: p.tab, moreOpen: false }); break;
+      }
+      case 'banner': this.showBanner(p); break;
+      case 'set': { const patch = typeof p === 'function' ? p(s.store) : p; this.setState({ store: Object.assign({}, this.state.store, patch) }); break; }
+      case 'authGo': { const st = s.authStack.slice(); st.push({ s: p.s, p: p.p || {} }); this.setState({ authStack: st, banner: null }); break; }
+      case 'authBack': { const st = s.authStack.slice(); if (st.length > 1) st.pop(); this.setState({ authStack: st }); break; }
+      case 'authReplace': { const st = s.authStack.slice(); st[st.length - 1] = { s: p.s, p: p.p || {} }; this.setState({ authStack: st }); break; }
+      case 'route': this.route(p.link, p.nid); break;
+      case 'clearBanner': clearTimeout(this.tb); this.setState({ banner: null }); break;
+      case 'bannerAction': { const a = s.banner && s.banner.action; this.setState({ banner: null }); if (a) a(); break; }
+      case 'authReset': this.setState({ authStack: [{ s: p.s || 'login', p: p.p || {} }] }); break;
+      case 'signin': {
+        const role = p.role || 'doctor';
+        this.setState({ role, phase: 'shell', tab: role === 'staff' ? 'clinic' : 'home', stacks: this.freshStacks(), banner: null, authStack: [{ s: 'login', p: {} }], lock: Object.assign({}, s.lock, { locked: s.lock.enabled, entry: '', fails: 0 }) });
+        if (p.banner) setTimeout(() => this.showBanner(p.banner), 60);
+        if (!s.notifAsked) setTimeout(() => this.setState({ notifPrompt: true, notifAsked: true }), 700);
+        break;
+      }
+      case 'signout': {
+        const reasons = { expired: 'Your session has expired. Please sign in again.', pin: 'Too many incorrect PIN attempts. Please sign in again.', disabled: 'This account has been disabled. Contact your clinic administrator.', inactive: 'You were signed out after a long period of inactivity.' };
+        this.setState({ phase: 'auth', authStack: [{ s: 'login', p: {} }], signOut: false, moreOpen: false, lock: Object.assign({}, s.lock, { locked: false, entry: '', fails: 0 }) });
+        if (p && reasons[p]) setTimeout(() => this.showBanner({ kind: 'warn', text: reasons[p], sticky: true }), 50); else this.setState({ banner: null });
+        break;
+      }
+      case 'askSignOut': this.setState({ signOut: true, moreOpen: false }); break;
+      case 'lock': this.setState({ lock: Object.assign({}, s.lock, p) }); break;
+      case 'lockNow': this.setState({ lock: Object.assign({}, s.lock, { enabled: true, locked: true, entry: '', fails: 0 }) }); break;
+      case 'lang': this.setState({ lang: p, store: Object.assign({}, s.store, { settings: Object.assign({}, s.store.settings, { lang: p }) }) }); this.showBanner({ kind: 'success', text: 'Language changed to ' + ({ EN: 'English', UZ: 'O‘zbekcha', UZC: 'Ўзбекча', RU: 'Русский' }[p]) + '. [The prototype keeps English copy.]' }); break;
+      case 'tier': this.setTier(p); break;
+      default: break;
+    }
+  }
+  setTier(t) {
+    const s = this.state; const patch = { tier: t, store: Object.assign({}, s.store, { sub: Object.assign({}, s.store.sub, { tier: t }) }) };
+    if (t !== 'PREMIUM' && s.tab === 'tasks') { patch.tab = 'home'; setTimeout(() => this.showBanner({ kind: 'info', text: 'Tasks are no longer available on your plan.' }), 30); }
+    if (t === 'BASIC' && s.tab === 'intel') { patch.tab = 'home'; }
+    this.setState(patch);
+  }
+  restart(mode) { clearTimeout(this.ts); this.setState({ phase: 'splash', bootMode: mode, moreOpen: false, signOut: false, push: null, banner: null }); this.ts = setTimeout(() => this.finishSplash(), 1300); }
+  simulatePush(kind) {
+    const s = this.state;
+    const defs = {
+      chat: { title: 'New message', body: 'You have a new message from a patient.', n: { type: 'chat', title: 'New message', body: 'Dilnoza Yusupova: Should I take my insulin before the visit?', link: { kind: 'chat', id: 'C-1' } }, chat: { id: 'C-1', text: 'Should I take my insulin before the visit?' } },
+      booked: { title: 'New appointment', body: 'A patient booked a visit for tomorrow.', n: { type: 'booked', title: 'New appointment', body: 'Otabek Qodirov booked Tue 27 Oct, 11:30.', link: { kind: 'calDay', day: '2026-10-27' } }, appt: true },
+      task: { title: 'Task needs attention', body: 'A remote care task missed a check-in.', n: { type: 'task', title: 'Task needs attention', body: 'Dilnoza Yusupova missed the 08:00 glucose check-in.', link: { kind: 'task', id: 'T-1' } } },
+      doc: { title: 'Document access request', body: 'A colleague asked to see a private document.', n: { type: 'docAccess', title: 'Document access request', body: 'Dr. Bobur Aliyev asked to see "Internal note" for Dilnoza Yusupova.', link: { kind: 'patientDocs', id: 'P-00101' } } }
+    }[kind];
+    const st = s.store;
+    const n = Object.assign({ id: this.lib.uid('N'), at: st.today + 'T' + this.lib.hm(st.nowMin), read: false }, defs.n);
+    const patch = { notifs: [n].concat(st.notifs) };
+    if (defs.chat) patch.chats = st.chats.map((c) => c.id === defs.chat.id ? Object.assign({}, c, { unread: c.unread + 1, messages: c.messages.concat([{ id: this.lib.uid('M'), from: 'them', text: defs.chat.text, at: n.at, kind: 'text', status: 'read' }]) }) : c);
+    if (defs.appt) patch.appointments = st.appointments.concat([{ id: this.lib.uid('A'), day: '2026-10-27', start: '11:30', end: '12:00', patientId: 'P-00111', kind: 'clinic', status: 'REQUESTED', reason: 'Check-up', location: 'Shifa Dental Clinic, Chilonzor', payment: null, doctorId: 'me', notes: '', soap: { s: '', o: '', a: '', p: '' }, briefing: 'none', docsAttached: 0 }]);
+    clearTimeout(this.tp);
+    this.setState({ store: Object.assign({}, st, patch), push: { title: defs.title, body: defs.body, link: n.link, nid: n.id } });
+    this.tp = setTimeout(() => this.setState({ push: null }), 7000);
+  }
+  route(link, nid) {
+    const s = this.state; const staff = s.role === 'staff';
+    if (nid) this.setState({ store: Object.assign({}, s.store, { notifs: s.store.notifs.map((x) => x.id === nid ? Object.assign({}, x, { read: true }) : x) }) });
+    const go = (tab, scr, p, rootP) => this.act('go', { tab, s: scr, p, rootP });
+    switch (link.kind) {
+      case 'chat': go('chat', 'chatThread', { id: link.id }); break;
+      case 'appt': staff ? go('clinic', 'apptDetails', { id: link.id }) : go('calendar', 'apptDetails', { id: link.id }, { day: (this.lib.appt(s.store, link.id) || {}).day }); break;
+      case 'calDay': staff ? go('clinic', null) : go('calendar', null, null, { day: link.day }); break;
+      case 'task': if (staff || !this.lib.can(s.store, 'tasks')) { go('notifications', null); this.showBanner({ kind: 'info', text: 'Tasks need the Premium plan. Showing your notifications instead.' }); } else go('tasks', 'taskDetails', { id: link.id }); break;
+      case 'patientDocs': go(staff ? 'clinic' : 'patients', 'patDetail', { id: link.id, tab: 'documents' }); break;
+      case 'partnership': go('patients', 'partnerDetail', { id: link.id }); break;
+      default: go('notifications', null);
+    }
+  }
+  pressKey(k) {
+    const L = this.state.lock;
+    if (k === 'bio') { this.setState({ lock: Object.assign({}, L, { locked: false, entry: '', fails: 0 }) }); this.showBanner({ kind: 'success', text: 'Unlocked with Face ID.' }); return; }
+    if (k === 'del') { this.setState({ lock: Object.assign({}, L, { entry: L.entry.slice(0, -1), msg: '' }) }); return; }
+    const entry = (L.entry + k).slice(0, 6);
+    if (entry.length < 6) { this.setState({ lock: Object.assign({}, L, { entry, msg: '' }) }); return; }
+    if (entry === L.pin) { this.setState({ lock: Object.assign({}, L, { locked: false, entry: '', fails: 0, msg: '' }) }); return; }
+    const fails = L.fails + 1;
+    if (fails >= 5) { this.act('signout', 'pin'); return; }
+    this.setState({ lock: Object.assign({}, L, { entry: '', fails, shake: true, msg: 'Incorrect PIN. ' + (5 - fails) + (5 - fails === 1 ? ' attempt' : ' attempts') + ' left.' }) });
+    setTimeout(() => this.setState({ lock: Object.assign({}, this.state.lock, { shake: false }) }), 400);
+  }
+  renderVals() {
+    if (!this.lib) this.lib = this.makeLib();
+    const lib = this.lib; const ic = lib.ic;
+    const s = this.state;
+    const chrome = this.props.chrome ?? 'web';
+    const phoneChrome = chrome === 'phone';
+    const phone = phoneChrome || s.narrow;
+    const rail = !phone && s.width < 1100;
+    const compact = phone || (s.width - (rail ? 72 : 248)) < 720;
+    const store = Object.assign({}, s.store, { compact: compact, tier: s.tier, role: s.role, online: s.online, phoneTz: s.phoneTz, lang: s.lang, built: this.built(), lockOn: s.lock.enabled, lockBio: s.lock.bio, lockPin: s.lock.pin });
+    if (!this.actFn) this.actFn = (t, p) => this.act(t, p);
+    const act = this.actFn;
+    const isDoctor = s.role === 'doctor';
+    const stack = s.stacks[s.tab] || [{ s: 'home', p: {} }];
+    const route = stack[stack.length - 1];
+    const owner = this.ownerOf(route.s);
+    const built = this.built();
+    const mod = { home: false, calendar: false, visit: false, patients: false, chat: false, inbox: false, intel: false, profile: false, clinic: false, pending: false };
+    if (built[owner]) mod[owner] = true; else mod.pending = true;
+    const unreadChat = store.chats.reduce((n, c) => n + c.unread, 0);
+    const unreadNotif = store.notifs.filter((n) => !n.read).length;
+    const activeTasks = store.tasks.filter((t) => t.status === 'ACTIVE').length;
+    const canTasks = lib.can(store, 'tasks'), canIntel = lib.can(store, 'intel');
+    const goTab = (t) => () => { if (t === 'tasks' && !canTasks) { this.showBanner({ kind: 'info', text: 'Remote care tasks need the Premium plan.', action: () => this.act('go', { tab: 'profile', s: 'subscription' }), actionLabel: 'See plans' }); return; } this.act('tab', t); };
+    const openIntel = () => { this.setState({ moreOpen: false }); if (!canIntel) { this.showBanner({ kind: 'info', text: 'Shifa Intelligence needs the Pro plan.', action: () => this.act('go', { tab: 'profile', s: 'subscription' }), actionLabel: 'See plans' }); return; } this.act('tab', 'intel'); };
+    const cap = (n) => (n > 99 ? '99+' : String(n));
+    const mkNav = (id, label, d, count, locked) => { const sel = s.tab === id; return { isItem: true, isGroup: false, id, label, d, count: cap(count || 0), hasCount: !!count && !locked, locked: !!locked, selStr: sel ? 'true' : 'false', current: sel ? 'page' : 'false', bg: sel ? 'var(--bg-success-subtle)' : 'transparent', weight: sel ? 700 : 500, iconInk: sel ? 'var(--text-brand-strong)' : 'var(--text-primary)', stroke: sel ? 2.5 : 2, pick: goTab(id) }; };
+    const group = (label) => ({ isGroup: true, isItem: false, label });
+    const webTabs = isDoctor
+      ? [mkNav('home', 'Home', ic.home), mkNav('calendar', 'Calendar', ic.calendar), mkNav('patients', 'Patients', ic.users), mkNav('chat', 'Chat', ic.chat, unreadChat), mkNav('notifications', 'Notifications', ic.bell, unreadNotif), mkNav('tasks', 'Tasks', ic.tasks, activeTasks, !canTasks), group('Practice'), mkNav('clinic', 'Clinic', ic.clinic), mkNav('reports', 'Reports', ic.reports), mkNav('profile', 'Profile', ic.user)]
+      : [mkNav('chat', 'Chat', ic.chat, unreadChat), mkNav('clinic', 'Clinic', ic.clinic), mkNav('notifications', 'Notifications', ic.bell, unreadNotif), mkNav('profile', 'Profile', ic.user)];
+    const moreTabs = ['clinic', 'tasks', 'reports', 'notifications', 'profile', 'intel'];
+    const mkPh = (id, label, d, count, isAvatar) => { const sel = id === 'more' ? moreTabs.indexOf(s.tab) >= 0 : s.tab === id; return { label, d, count: cap(count || 0), hasCount: !!count, isAvatar: !!isAvatar, isIcon: !isAvatar, aria: count ? label + ', ' + count + ' unread' : label, current: sel ? 'page' : 'false', ink: sel ? 'var(--text-brand-strong)' : 'var(--text-primary)', weight: sel ? 700 : 500, stroke: sel ? 2.5 : 2, ring: sel ? '0 0 0 2px var(--border-focus)' : 'none', pick: id === 'more' ? () => this.setState({ moreOpen: true }) : goTab(id) }; };
+    const phoneTabs = isDoctor
+      ? [mkPh('home', 'Home', ic.home), mkPh('calendar', 'Calendar', ic.calendar), mkPh('patients', 'Patients', ic.users), mkPh('chat', 'Chat', ic.chat, unreadChat), mkPh('more', 'More', ic.more)]
+      : [mkPh('chat', 'Chat', ic.chat, unreadChat), mkPh('clinic', 'Clinic', ic.clinic), mkPh('notifications', 'Notifications', ic.bell, unreadNotif), mkPh('profile', 'Profile', null, 0, true)];
+    const mkMore = (id, label, d, extra) => Object.assign({ label, d, bg: s.tab === id ? 'var(--bg-success-subtle)' : 'transparent', ink: 'var(--text-primary)', hasSub: false, sub: '', hasCount: false, count: '', hasBadge: false, badge: '', pick: goTab(id) }, extra || {});
+    const moreRows = [
+      mkMore('clinic', 'Clinic', ic.clinic),
+      mkMore('tasks', 'Tasks', ic.tasks, canTasks ? { hasCount: activeTasks > 0, count: String(activeTasks) } : { hasBadge: true, badge: 'Premium' }),
+      mkMore('reports', 'Reports', ic.reports),
+      mkMore('notifications', 'Notifications', ic.bell, { hasCount: unreadNotif > 0, count: cap(unreadNotif) }),
+      mkMore('profile', 'Profile', ic.user),
+      { label: 'Language', d: ic.globe, bg: 'transparent', ink: 'var(--text-primary)', hasSub: true, sub: s.lang === 'UZC' ? 'ЎЗ' : s.lang, hasCount: false, count: '', hasBadge: false, badge: '', pick: () => { this.setState({ moreOpen: false }); this.act('push', { tab: 'profile', s: 'langSettings' }); } },
+      { label: 'Sign Out', d: ic.logout, bg: 'transparent', ink: 'var(--text-error)', hasSub: false, sub: '', hasCount: false, count: '', hasBadge: false, badge: '', pick: () => this.act('askSignOut') }
+    ];
+    const todayRows = lib.agenda(store, store.today).rows;
+    const curSlot = todayRows.find((r) => r.min <= store.nowMin && lib.toMin(r.end) > store.nowMin);
+    const locLabel = curSlot && curSlot.appt && curSlot.appt.kind === 'video' ? 'Video Call' : 'Shifa Dental Clinic, Chilonzor';
+    // controls
+    const opt = (cur, val, label, fn) => ({ label, selStr: cur === val ? 'true' : 'false', bg: cur === val ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)', ring: cur === val ? 'inset 0 0 0 1px var(--border-focus)' : 'none', weight: cur === val ? 700 : 500, pick: fn });
+    const ctlGroups = [
+      { label: 'Signed in as', opts: [opt(s.phase === 'auth' ? 'none' : s.role, 'doctor', 'Doctor', () => this.act('signin', { role: 'doctor' })), opt(s.phase === 'auth' ? 'none' : s.role, 'staff', 'Clinic staff', () => this.act('signin', { role: 'staff' })), opt(s.phase === 'auth' ? 'out' : 'in', 'out', 'Signed out', () => this.act('signout'))] },
+      { label: 'Plan', opts: ['BASIC', 'PRO', 'PREMIUM'].map((t) => opt(s.tier, t, t[0] + t.slice(1).toLowerCase(), () => this.setTier(t))) },
+      { label: 'Network', opts: [opt(s.online ? 'on' : 'off', 'on', 'Online', () => this.setState({ online: true })), opt(s.online ? 'on' : 'off', 'off', 'Offline', () => this.setState({ online: false }))] },
+      { label: 'Phone time zone', opts: [opt(s.phoneTz, 'Asia/Tashkent', 'Tashkent (same)', () => this.setState({ phoneTz: 'Asia/Tashkent' })), opt(s.phoneTz, 'Europe/Berlin', 'Berlin (mismatch)', () => this.setState({ phoneTz: 'Europe/Berlin' }))] },
+      { label: 'Prototype time', opts: [627, 642, 670, 1110].map((m) => opt(s.store.nowMin, m, lib.hm(m), () => this.setState({ store: Object.assign({}, s.store, { nowMin: m }) }))) },
+      { label: 'Data', opts: [opt(s.store.firstDay ? 'empty' : 'full', 'full', 'Busy practice', () => this.setState({ store: this.seed() })), opt(s.store.firstDay ? 'empty' : 'full', 'empty', 'First day (empty)', () => { const sd = this.seed(); this.setState({ store: Object.assign(sd, { firstDay: true, appointments: [], blocks: [], notifs: [], tasks: [], chats: [], docs: [], forms: [], partnerships: [], patients: [] }) }); })] }
+    ];
+    const simButtons = [
+      { label: 'Push: message', go: () => this.simulatePush('chat') },
+      { label: 'Push: new booking', go: () => this.simulatePush('booked') },
+      { label: 'Push: task', go: () => this.simulatePush('task') },
+      { label: 'Push: document access', go: () => this.simulatePush('doc') },
+      { label: 'Lock app (PIN 123456)', go: () => { if (s.phase === 'shell') this.act('lockNow'); } },
+      { label: 'Session expired', go: () => { if (s.phase === 'shell') this.act('signout', 'expired'); } },
+      { label: 'Account disabled', go: () => { if (s.phase === 'shell') this.act('signout', 'disabled'); } },
+      { label: 'Restart app', go: () => this.restart('ok') },
+      { label: 'Restart: no session', go: () => this.restart('noSession') },
+      { label: 'Restart: maintenance', go: () => this.restart('maintenance') },
+      { label: 'Restart: update required', go: () => this.restart('update') }
+    ];
+    const L = s.lock;
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'bio', '0', 'del'];
+    const padKeys = keys.map((k) => ({ isIcon: k === 'bio' || k === 'del', isText: !(k === 'bio' || k === 'del'), d: k === 'bio' ? ic.fingerprint : ic.backspace, label: k, aria: k === 'bio' ? 'Use Face ID' : (k === 'del' ? 'Delete' : k), cls: k === 'bio' || k === 'del' ? 'is-ghost' : '', press: () => this.pressKey(k) }));
+    const showShell = s.phase === 'shell';
+    const nested = stack.length > 1 || s.tab === 'intel';
+    const me = isDoctor ? { name: store.me.name, initials: lib.initials(store.me.name), sub: store.me.spec } : { name: store.staffMe.name, initials: lib.initials(store.staffMe.name), sub: store.staffMe.role + ' · ' + store.clinic.name };
+    return {
+      rootRef: this.rootRef, ic, lib, store, act, route, phone, mod, me, isDoctor,
+      authRoute: s.authStack[s.authStack.length - 1], authBuilt: built.auth, banner: s.banner,
+      showSplash: s.phase === 'splash', showBoot: s.phase === 'boot',
+      boot: s.bootMode === 'update'
+        ? { title: 'Update required', body: 'This version of Shifa Doctor is no longer supported. Update the app to keep using it.', label: 'Update', busyStr: 'false', go: () => { this.showBanner({ kind: 'info', text: '[Prototype: opens the App Store or Play Store. Pretending the update finished.]' }); this.restart('ok'); } }
+        : { title: 'We\u2019ll be right back', body: 'Shifa is being updated. This usually takes a few minutes. Your data is safe.', label: s.bootBusy ? 'Checking…' : 'Try again', busyStr: s.bootBusy ? 'true' : 'false', go: () => { if (s.bootBusy) return; this.setState({ bootBusy: true }); setTimeout(() => { this.setState({ bootBusy: false }); this.restart('ok'); }, 900); } }, showAuth: s.phase === 'auth', showShell,
+      rootH: this.props.height ?? (phoneChrome ? '100%' : '100vh'),
+      outerGap: phoneChrome ? 'var(--size-40)' : '0', outerPad: phoneChrome ? 'var(--size-32)' : '0', outerBg: phoneChrome ? 'var(--bg-disabled)' : 'var(--bg-canvas)',
+      devFlex: phoneChrome ? 'none' : '1 1 auto', devW: phoneChrome ? '390px' : '100%', devH: phoneChrome ? '844px' : '100%', devR: phoneChrome ? '48px' : '0', devShadow: phoneChrome ? '0 20px 60px var(--alpha-black-25)' : 'none', devBorder: phoneChrome ? '8px solid var(--charcoal)' : '0',
+      shellDir: phone ? 'column' : 'row', webNav: !phone, railCls: rail ? 'da-rail' : '', navW: rail ? '72px' : '248px',
+      tierLabel: s.tier[0] + s.tier.slice(1).toLowerCase(), intelSub: canIntel ? 'Talk with AI' : 'Needs the Pro plan', intelLocked: !canIntel,
+      webTabs, phoneTabs, moreRows, moreOpen: s.moreOpen && showShell, closeMore: () => this.setState({ moreOpen: false }),
+      locLabel, locIcon: locLabel === 'Video Call' ? ic.video : ic.pin,
+      showBottomBar: phone && showShell && !nested,
+      offline: !s.online && showShell, offlinePad: phone ? 'var(--size-8) var(--size-16)' : 'var(--size-8) var(--size-24)',
+      pendingTitle: { home: 'Home', calendar: 'Calendar', visit: 'Appointments & visits', patients: 'Patients', chat: 'Chat', inbox: 'Notifications & tasks', intel: 'Shifa Intelligence', profile: 'Profile & settings', clinic: 'Clinic workspace' }[owner] || 'Coming next',
+      hasBanner: !!s.banner && (showShell || s.phase === 'auth'), bannerTop: phone ? '64px' : '20px',
+      bannerAction: () => { const a = s.banner && s.banner.action; this.setState({ banner: null }); if (a) a(); }, closeBanner: () => this.setState({ banner: null }),
+      openSearch: () => this.act('push', { tab: 'home', s: 'search' }), openIntel, openProfile: () => this.act('tab', 'profile'), askSignOut: () => this.act('askSignOut'),
+      notifPrompt: s.notifPrompt && showShell && !L.locked, notifLater: () => { this.setState({ notifPrompt: false, store: Object.assign({}, this.state.store, { settings: Object.assign({}, this.state.store.settings, { notifications: false }) }) }); this.showBanner({ kind: 'info', text: 'Notifications are off. You can turn them on in Profile › Settings.' }); }, notifAllow: () => { this.setState({ notifPrompt: false, store: Object.assign({}, this.state.store, { settings: Object.assign({}, this.state.store.settings, { notifications: true }) }) }); this.showBanner({ kind: 'success', text: 'Notifications are on.' }); },
+      signOutOpen: s.signOut, cancelSignOut: () => this.setState({ signOut: false }), confirmSignOut: () => this.act('signout'),
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgMax: phone ? 'none' : '440px', dlgRadius: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : '24px', dlgActDir: phone ? 'column-reverse' : 'row', dlgBtnFlex: phone ? '1 1 auto' : '0 0 auto',
+      showPush: !!s.push && s.phase !== 'splash', push: s.push || {}, openPush: () => { const p = s.push; this.setState({ push: null }); if (!p) return; if (s.phase !== 'shell') { this.showBanner({ kind: 'info', text: 'Sign in to open this notification.' }); return; } this.route(p.link, p.nid); },
+      showLock: L.locked && showShell, lockDots: [0, 1, 2, 3, 4, 5].map((i) => ({ cls: i < L.entry.length ? 'on' : '' })), lockDotsAria: L.entry.length + ' of 6 digits entered', lockMsg: L.msg || (L.fails ? '' : 'Or use Face ID'), lockMsgInk: L.msg ? 'var(--text-error)' : 'var(--text-secondary)', lockShake: L.shake ? 'da-shake .4s' : 'none', pad: padKeys,
+      lockSignOut: () => this.act('signout'),
+      ctlPos: phoneChrome ? 'relative' : 'absolute', ctlLeft: phoneChrome ? 'auto' : '16px', ctlBottom: phoneChrome ? 'auto' : '16px', ctlW: phoneChrome ? '340px' : (s.ctlOpen ? '320px' : 'auto'), ctlMaxH: phoneChrome ? '844px' : 'calc(100% - 32px)', ctlShadow: phoneChrome ? 'none' : '0 6px 30px var(--alpha-black-25)', ctlPad: phoneChrome ? 'var(--size-20)' : (s.ctlOpen ? 'var(--size-16)' : 'var(--size-8) var(--size-12)'),
+      showCtlPanel: !this.props.still, ctlOpen: phoneChrome || s.ctlOpen, ctlOpenStr: (phoneChrome || s.ctlOpen) ? 'true' : 'false', ctlCollapsible: !phoneChrome, ctlChevron: s.ctlOpen ? '180deg' : '0deg', toggleCtl: () => { if (!phoneChrome) this.setState({ ctlOpen: !s.ctlOpen }); },
+      ctlGroups, simButtons
+    };
+  }
+}
+</script>
+</body>
+</html>

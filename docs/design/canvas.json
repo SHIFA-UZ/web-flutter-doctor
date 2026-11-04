@@ -1,0 +1,583 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AuBugs.dc.html": {
+      "h": 3890,
+      "is_interactive": true,
+      "page": "page-brb11j",
+      "title": "Audit · 5 · Bugs and usability",
+      "w": 1600,
+      "x": 8800,
+      "y": 0
+    },
+    "AuCodebase.dc.html": {
+      "h": 2080,
+      "is_interactive": true,
+      "page": "page-brb11j",
+      "title": "Audit · 2 · Built from the codebase",
+      "w": 1600,
+      "x": 3520,
+      "y": 0
+    },
+    "AuCoverage.dc.html": {
+      "h": 3380,
+      "page": "page-brb11j",
+      "title": "Audit · 1 · DS coverage (65 components)",
+      "w": 1600,
+      "x": 1760,
+      "y": 0
+    },
+    "AuImprove.dc.html": {
+      "h": 1100,
+      "page": "page-brb11j",
+      "title": "Audit · 6 · Improvement plan",
+      "w": 1600,
+      "x": 10560,
+      "y": 0
+    },
+    "AuRecommend.dc.html": {
+      "h": 2600,
+      "is_interactive": true,
+      "page": "page-brb11j",
+      "title": "Audit · 7 · Recommended changes",
+      "w": 1600,
+      "x": 12320,
+      "y": 0
+    },
+    "AuSummary.dc.html": {
+      "h": 1840,
+      "page": "page-brb11j",
+      "title": "Audit · Summary (updated 30 Oct)",
+      "w": 1600,
+      "x": 0,
+      "y": 0
+    },
+    "AuTokens.dc.html": {
+      "h": 1900,
+      "page": "page-brb11j",
+      "title": "Audit · 4 · Tokens",
+      "w": 1600,
+      "x": 7040,
+      "y": 0
+    },
+    "AuUnify.dc.html": {
+      "h": 2700,
+      "page": "page-brb11j",
+      "title": "Audit · 3 · Unify: before and after",
+      "w": 1600,
+      "x": 5280,
+      "y": 0
+    },
+    "Copilot.dc.html": {
+      "h": 760,
+      "is_interactive": true,
+      "title": "AiCopilot",
+      "w": 400,
+      "x": 2160,
+      "y": 6040
+    },
+    "CopilotStates.dc.html": {
+      "h": 960,
+      "is_interactive": true,
+      "title": "AiCopilot — States",
+      "w": 2000,
+      "x": 0,
+      "y": 8740
+    },
+    "DaApp.dc.html": {
+      "expand": "fill",
+      "h": 960,
+      "is_interactive": true,
+      "page": "page-35xtan",
+      "title": "Doctor App — Web (full prototype)",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "DaAuth.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaAuth",
+      "w": 390,
+      "x": 2600,
+      "y": 0
+    },
+    "DaCalendar.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaCalendar",
+      "w": 390,
+      "x": 2600,
+      "y": 320
+    },
+    "DaChat.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaChat",
+      "w": 390,
+      "x": 2600,
+      "y": 800
+    },
+    "DaClinic.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaClinic (clinic workspace, plans, finance)",
+      "w": 390,
+      "x": 2600,
+      "y": 1440
+    },
+    "DaHome.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaHome",
+      "w": 390,
+      "x": 2600,
+      "y": 160
+    },
+    "DaInbox.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaInbox (notifications and tasks)",
+      "w": 390,
+      "x": 2600,
+      "y": 960
+    },
+    "DaIntel.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaIntel (Shifa Intelligence)",
+      "w": 390,
+      "x": 2600,
+      "y": 1120
+    },
+    "DaPatients.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaPatients (patients, documents, forms)",
+      "w": 390,
+      "x": 2600,
+      "y": 640
+    },
+    "DaPhone.dc.html": {
+      "h": 908,
+      "is_interactive": true,
+      "page": "page-35xtan",
+      "title": "Doctor App — Phone (full prototype)",
+      "w": 834,
+      "x": 1540,
+      "y": 0
+    },
+    "DaProfile.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaProfile (profile, settings, reports, legal)",
+      "w": 390,
+      "x": 2600,
+      "y": 1280
+    },
+    "DaVisit.dc.html": {
+      "h": 120,
+      "page": "page-35xtan",
+      "title": "Module · DaVisit (appointments and visits)",
+      "w": 390,
+      "x": 2600,
+      "y": 480
+    },
+    "Dialog.dc.html": {
+      "h": 440,
+      "is_interactive": true,
+      "title": "ResponsiveDialog",
+      "w": 554,
+      "x": 2640,
+      "y": 6040
+    },
+    "DialogStates.dc.html": {
+      "h": 1000,
+      "title": "ResponsiveDialog — States",
+      "w": 2000,
+      "x": 2080,
+      "y": 8740
+    },
+    "Flow01.dc.html": {
+      "h": 1536,
+      "page": "page-35xtan",
+      "title": "UX flow · 01 · Launch, auth & shell",
+      "w": 4088,
+      "x": 0,
+      "y": 1840
+    },
+    "Flow02.dc.html": {
+      "h": 1864,
+      "page": "page-35xtan",
+      "title": "UX flow · 02 · Home & analytics",
+      "w": 4728,
+      "x": 0,
+      "y": 3576
+    },
+    "Flow03.dc.html": {
+      "h": 1528,
+      "page": "page-35xtan",
+      "title": "UX flow · 03 · Shifa Intelligence",
+      "w": 5408,
+      "x": 0,
+      "y": 5640
+    },
+    "Flow04.dc.html": {
+      "h": 1512,
+      "page": "page-35xtan",
+      "title": "UX flow · 04 · Calendar & schedule",
+      "w": 3632,
+      "x": 0,
+      "y": 7368
+    },
+    "Flow05.dc.html": {
+      "h": 1184,
+      "page": "page-35xtan",
+      "title": "UX flow · 05 · Appointments & visit",
+      "w": 2456,
+      "x": 0,
+      "y": 9080
+    },
+    "Flow06.dc.html": {
+      "h": 1552,
+      "page": "page-35xtan",
+      "title": "UX flow · 06 · Patients, documents & forms",
+      "w": 5984,
+      "x": 0,
+      "y": 10464
+    },
+    "Flow07.dc.html": {
+      "h": 1384,
+      "page": "page-35xtan",
+      "title": "UX flow · 07 · Chat, Notifications, Remote-care Tasks",
+      "w": 3296,
+      "x": 0,
+      "y": 12216
+    },
+    "Flow08.dc.html": {
+      "h": 952,
+      "page": "page-35xtan",
+      "title": "UX flow · 08 · Profile, settings, reports & legal",
+      "w": 4072,
+      "x": 0,
+      "y": 13800
+    },
+    "Flow09.dc.html": {
+      "h": 1560,
+      "page": "page-35xtan",
+      "title": "UX flow · 09 · Clinic workspace",
+      "w": 4144,
+      "x": 0,
+      "y": 14952
+    },
+    "Hero.dc.html": {
+      "h": 400,
+      "is_interactive": true,
+      "title": "NextPatientHero",
+      "w": 728,
+      "x": 9,
+      "y": 6040
+    },
+    "HeroStates.dc.html": {
+      "h": 1040,
+      "is_interactive": true,
+      "title": "NextPatientHero — States",
+      "w": 1600,
+      "x": 0,
+      "y": 7300
+    },
+    "HomeMobile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Home — Phone",
+      "w": 390,
+      "x": 1520,
+      "y": 0
+    },
+    "Insight.dc.html": {
+      "h": 340,
+      "is_interactive": true,
+      "title": "AiInsightCard",
+      "w": 522,
+      "x": 1600,
+      "y": 6040
+    },
+    "InsightStates.dc.html": {
+      "h": 1040,
+      "is_interactive": true,
+      "title": "AiInsightCard — States",
+      "w": 1600,
+      "x": 3400,
+      "y": 7300
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1180,
+      "is_interactive": true,
+      "title": "Home — Web",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "NavBar.dc.html": {
+      "h": 112,
+      "is_interactive": true,
+      "title": "AppShell · Phone NavBar",
+      "w": 390,
+      "x": 1444,
+      "y": 4640
+    },
+    "PatientHeader.dc.html": {
+      "h": 494,
+      "is_interactive": true,
+      "title": "PatientHeader",
+      "w": 900,
+      "x": 3240,
+      "y": 6040
+    },
+    "PatientMobile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Patient Record — Phone",
+      "w": 390,
+      "x": 1520,
+      "y": 1600
+    },
+    "PatientWeb.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Patient Record — Web",
+      "w": 1440,
+      "x": 0,
+      "y": 1600
+    },
+    "PatientsMobile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Patients — Phone",
+      "w": 390,
+      "x": 1520,
+      "y": 3240
+    },
+    "PatientsWeb.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "title": "Patients — Web",
+      "w": 1440,
+      "x": 0,
+      "y": 3240
+    },
+    "ShellTablet.dc.html": {
+      "h": 768,
+      "is_interactive": true,
+      "title": "AppShell — Tablet rail (768–1100)",
+      "w": 1024,
+      "x": 0,
+      "y": 4640
+    },
+    "Sidebar.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "AppShell · Sidebar",
+      "w": 260,
+      "x": 1104,
+      "y": 4640
+    },
+    "Table.dc.html": {
+      "h": 780,
+      "is_interactive": true,
+      "title": "DataTable",
+      "w": 414,
+      "x": 4360,
+      "y": 6040
+    },
+    "TableStates.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "DataTable — States",
+      "w": 1760,
+      "x": 4160,
+      "y": 8740
+    },
+    "Timeline.dc.html": {
+      "h": 860,
+      "is_interactive": true,
+      "title": "AppointmentTimeline",
+      "w": 737,
+      "x": 800,
+      "y": 6040
+    },
+    "TimelineStates.dc.html": {
+      "h": 1040,
+      "is_interactive": true,
+      "title": "AppointmentTimeline — States",
+      "w": 1640,
+      "x": 1680,
+      "y": 7300
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-25T08:55:00Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/code/artifact/54ec9705-a29e-4002-b470-ce01fe72abf0",
+      "copiedAt": "2026-10-25T08:55:00Z",
+      "namespace": "shifa",
+      "title": "Shifa",
+      "version": "1792853741-ab7d"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "auTitle": {
+      "kind": "title1",
+      "maxW": 4000,
+      "page": "page-brb11j",
+      "text": "UI audit of the Doctor App and the Shifa Design System (updated 30 Oct 2026): read left to right, summary first, recommended changes last",
+      "w": 240,
+      "x": 0,
+      "y": -160
+    },
+    "daFlows": {
+      "kind": "title1",
+      "maxW": 2400,
+      "page": "page-35xtan",
+      "text": "UX flows: one map per area, from the flow files (every screen, how you reach it, where it leads)",
+      "w": 240,
+      "x": 0,
+      "y": 1700
+    },
+    "daProto": {
+      "kind": "title1",
+      "maxW": 2400,
+      "page": "page-35xtan",
+      "text": "Shifa Doctor App: working prototype (web and phone). Use Prototype controls to switch role, plan, network and simulate pushes.",
+      "w": 240,
+      "x": 0,
+      "y": -200
+    },
+    "rowComponents": {
+      "kind": "title1",
+      "maxW": 5400,
+      "text": "Components on their own (Tweaks switch web and phone)",
+      "w": 240,
+      "x": 0,
+      "y": 5780
+    },
+    "rowHome": {
+      "kind": "title1",
+      "maxW": 1910,
+      "text": "Home: AppShell, NextPatientHero, AppointmentTimeline, AiInsightCard, AiCopilot",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "rowPatient": {
+      "kind": "title1",
+      "maxW": 1910,
+      "text": "Patient Record: PatientHeader, ResponsiveDialog, AiCopilot (patient scope)",
+      "w": 240,
+      "x": 0,
+      "y": 1340
+    },
+    "rowPatients": {
+      "kind": "title1",
+      "maxW": 1910,
+      "text": "Patients: DataTable, table on web, cards on phone",
+      "w": 240,
+      "x": 0,
+      "y": 2980
+    },
+    "rowShell": {
+      "kind": "title1",
+      "maxW": 1834,
+      "text": "AppShell: rail, sidebar, phone nav bar",
+      "w": 240,
+      "x": 0,
+      "y": 4380
+    },
+    "rowStates": {
+      "kind": "title1",
+      "maxW": 5000,
+      "text": "Interaction states",
+      "w": 240,
+      "x": 0,
+      "y": 7040
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "HomeMobile.dc.html",
+    "PatientWeb.dc.html",
+    "PatientMobile.dc.html",
+    "PatientsWeb.dc.html",
+    "PatientsMobile.dc.html",
+    "ShellTablet.dc.html",
+    "Sidebar.dc.html",
+    "NavBar.dc.html",
+    "Hero.dc.html",
+    "Timeline.dc.html",
+    "Insight.dc.html",
+    "Copilot.dc.html",
+    "Dialog.dc.html",
+    "PatientHeader.dc.html",
+    "Table.dc.html",
+    "HeroStates.dc.html",
+    "TimelineStates.dc.html",
+    "InsightStates.dc.html",
+    "CopilotStates.dc.html",
+    "DialogStates.dc.html",
+    "TableStates.dc.html",
+    "DaApp.dc.html",
+    "DaPhone.dc.html",
+    "DaAuth.dc.html",
+    "DaHome.dc.html",
+    "DaCalendar.dc.html",
+    "DaVisit.dc.html",
+    "DaPatients.dc.html",
+    "DaChat.dc.html",
+    "DaInbox.dc.html",
+    "DaIntel.dc.html",
+    "DaProfile.dc.html",
+    "DaClinic.dc.html",
+    "Flow01.dc.html",
+    "Flow02.dc.html",
+    "Flow03.dc.html",
+    "Flow04.dc.html",
+    "Flow05.dc.html",
+    "Flow06.dc.html",
+    "Flow07.dc.html",
+    "Flow08.dc.html",
+    "Flow09.dc.html",
+    "AuSummary.dc.html",
+    "AuCoverage.dc.html",
+    "AuCodebase.dc.html",
+    "AuUnify.dc.html",
+    "AuTokens.dc.html",
+    "AuBugs.dc.html",
+    "AuImprove.dc.html",
+    "AuRecommend.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Component Review"
+    },
+    {
+      "id": "page-35xtan",
+      "name": "Doctor App"
+    },
+    {
+      "id": "page-brb11j",
+      "name": "UI Audit"
+    }
+  ],
+  "title": "Shifa Doctor Components Review"
+}

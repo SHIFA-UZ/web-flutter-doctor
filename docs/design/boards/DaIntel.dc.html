@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Shifa Intelligence</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+@keyframes ai-up{from{transform:translateY(var(--size-30));opacity:0}to{transform:none;opacity:1}}
+@keyframes ai-wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+@keyframes ai-orb{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes ai-ripple{0%{transform:scale(.8);opacity:.6}100%{transform:scale(1.5);opacity:0}}
+@keyframes ai-blink{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.ai-row:hover{background:var(--bg-hover) !important}
+.ai-in input,.ai-in textarea{font: 500 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.ai-in input::placeholder,.ai-in textarea::placeholder{color:var(--text-tertiary)}
+@media (prefers-reduced-motion: reduce){.ai-orb,.ai-rip{animation:none !important}}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div class="ai-in" style="position: relative; width: 100%; height: 100%; min-height: 100%; box-sizing: border-box; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column">
+  <header style="flex: none; position: sticky; top: 0; z-index: 4; background: var(--bg-surface); padding: {{headPad}}; display: flex; align-items: center; gap: var(--size-8); box-shadow: 0 var(--size-1) 0 var(--border-default)">
+    <button class="ai-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{goBack}}" aria-label="{{backAria}}" title="{{backAria}}" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+    <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column"><h1 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-22); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{headTitle}}</h1><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Your AI assistant for clinical workflows.</span></div>
+    <button class="ai-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{openHistory}}" aria-label="History" title="History" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.history}}"></path></svg></button>
+    <button class="ai-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{newConv}}" aria-label="New conversation" title="New conversation" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></button>
+    <sc-if value="{{inThread}}" hint-placeholder-val="{{ false }}"><button class="ai-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{openMenu}}" aria-label="Conversation options" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.moreV}}"></path></svg></button></sc-if>
+  </header>
+
+  <main style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: {{bodyPad}}">
+    <div style="max-width: var(--layout-form-wide); margin: 0 auto; display: flex; flex-direction: column; gap: var(--size-16)">
+      <!-- WELCOME -->
+      <sc-if value="{{inWelcome}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: var(--size-6); padding-top: var(--size-8)">
+          <span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--teal-50) 50%, var(--white)) 0%, var(--interactive-primary) 55%, var(--teal-70) 100%); color: var(--text-inverse); display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.sparkles}}"></path></svg></span>
+          <h2 style="margin: var(--size-8) 0 0; font-size: var(--font-size-24); line-height: var(--line-height-32); font-weight: 700; letter-spacing: var(--letter-spacing-tight)">{{greeting}}</h2>
+          <p style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-22); color: var(--text-secondary)">What can I help you with today?</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat({{starterCols}}, minmax(0, 1fr)); gap: var(--size-10)"><sc-for list="{{starters}}" as="s" hint-placeholder-count="4"><button class="ai-b ai-row sh-press sh-press--tile" onClick="{{s.go}}" style="padding: var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-control-md); background: var(--bg-surface); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{s.d}}"></path></svg></span><span style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); font-weight: 700">{{s.title}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{s.sub}}</span></span></button></sc-for></div>
+        <sc-if value="{{hasRecent}}" hint-placeholder-val="{{ true }}">
+          <h3 style="margin: var(--size-8) 0 0; font-size: var(--font-size-14); font-weight: 700; color: var(--text-secondary)">Recent conversations</h3>
+          <sc-for list="{{recent}}" as="r" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: var(--size-8); border-radius: var(--radius-control-md); box-shadow: inset 0 0 0 var(--size-1) var(--border-default); padding-right: var(--size-6)"><button class="ai-b ai-row sh-press sh-press--row" onClick="{{r.open}}" style="flex: 1 1 auto; min-width: 0; padding: var(--size-10) var(--size-12); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)"><span style="display: inline-flex; color: var(--text-secondary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"></path></svg></span><span style="flex: 1 1 auto; min-width: 0; font-size: var(--font-size-14); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.title}}</span><span style="font-size: var(--font-size-12); color: var(--text-tertiary); white-space: nowrap">{{r.when}}</span></button><button class="ai-b sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" onClick="{{r.menu}}" aria-label="Conversation options" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.moreV}}"></path></svg></button></div></sc-for>
+        </sc-if>
+      </sc-if>
+
+      <!-- THREAD -->
+      <sc-if value="{{inThread}}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{turns}}" as="t" hint-placeholder-count="2">
+          <sc-if value="{{t.isUser}}" hint-placeholder-val="{{ true }}"><div style="align-self: flex-end; max-width: 78%; display: flex; flex-direction: column; align-items: flex-end; gap: var(--size-4)"><span style="font-size: var(--font-size-12); color: var(--text-tertiary)">{{t.when}}</span><div style="padding: var(--size-10) var(--size-14); border-radius: var(--radius-control-lg); background: var(--alpha-teal-15); font-size: var(--font-size-14); line-height: var(--line-height-22); white-space: pre-wrap">{{t.text}}</div></div></sc-if>
+          <sc-if value="{{t.isAi}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+              <span style="font-size: var(--font-size-12); color: var(--text-tertiary)">{{t.when}}</span>
+              <div style="display: flex; gap: var(--size-10); align-items: flex-start"><span style="display: inline-flex; color: var(--text-brand-strong); margin-top: var(--size-4)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg></span><p style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-14); line-height: var(--line-height-22); white-space: pre-wrap">{{t.text}}<sc-if value="{{t.streaming}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: inline-block; width: var(--size-8); height: var(--size-16); margin-left: var(--size-2); background: var(--interactive-primary); vertical-align: calc(-1 * var(--size-2)); animation: ai-blink .8s infinite"></span></sc-if></p></div>
+              <sc-if value="{{t.hasCard}}" hint-placeholder-val="{{ false }}">
+                <section aria-label="{{t.c.title}}" style="margin-left: var(--size-26); border-radius: var(--radius-control-md); box-shadow: 0 0 0 var(--size-1) var(--border-default), var(--shadow-dropdown); background: var(--bg-surface); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-8)">
+                  <h3 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; color: var(--text-brand-strong)">{{t.c.title}}</h3>
+                  <sc-if value="{{t.c.hasHead}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-14); font-weight: 700">{{t.c.head}}</span></sc-if>
+                  <sc-if value="{{t.c.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{t.c.sub}}</span></sc-if>
+                  <sc-for list="{{t.c.kv}}" as="k" hint-placeholder-count="0"><div style="display: flex; gap: var(--size-10); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span style="flex: 0 0 var(--size-96); color: var(--text-secondary); font-size: var(--font-size-12)">{{k.label}}</span><span style="flex: 1 1 auto; font-weight: 600">{{k.value}}</span></div></sc-for>
+                  <sc-for list="{{t.c.rows}}" as="r" hint-placeholder-count="0"><button class="ai-b ai-row {{r.cls}}" onClick="{{r.go}}" aria-disabled="{{r.offStr}}" style="padding: var(--size-6) var(--size-4); display: flex; align-items: center; gap: var(--size-10)"><sc-if value="{{r.hasLead}}" hint-placeholder-val="{{ true }}"><span style="flex: 0 0 {{r.leadW}}; font-size: var(--font-size-14); font-weight: 700">{{r.lead}}</span></sc-if><span style="flex: 1 1 auto; min-width: 0; font-size: var(--font-size-14); line-height: var(--line-height-18)">{{r.text}}</span><sc-if value="{{r.hasBar}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex: 0 0 var(--basis-90); height: var(--size-6); border-radius: var(--radius-sm); background: var(--bg-disabled); overflow: hidden"><span style="display: block; height: var(--size-6); width: {{r.bar}}; background: var(--interactive-primary)"></span></span></sc-if><sc-if value="{{r.hasTrail}}" hint-placeholder-val="{{ false }}"><span style="flex: none; font-size: var(--font-size-12); color: var(--text-secondary)">{{r.trail}}</span></sc-if></button></sc-for>
+                  <sc-if value="{{t.c.hasChips}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{t.c.chips}}" as="ch" hint-placeholder-count="4"><button class="ai-b sh-action sh-action--surface" onClick="{{ch.go}}">{{ch.label}}</button></sc-for></div></sc-if>
+                  <sc-if value="{{t.c.hasBody}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-22); white-space: pre-line">{{t.c.body}}</p></sc-if>
+                  <sc-if value="{{t.c.hasViewer}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: var(--size-6)"><div style="display: flex; align-items: center; gap: var(--size-8)"><b style="flex: 1 1 auto; font-size: var(--font-size-14)">{{t.c.viewerTitle}}</b><button class="ai-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{t.c.fullScreen}}" aria-label="Open full screen" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></button></div><div role="img" aria-label="{{t.c.viewerTitle}}" style="height: var(--size-220); border-radius: var(--radius-control-md); background: {{t.c.viewerBg}}; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: var(--font-size-12)">{{t.c.viewerCaption}}</div></div></sc-if>
+                  <sc-if value="{{t.c.hasTeeth}}" hint-placeholder-val="{{ false }}"><div style="container-type: inline-size; min-width: 0"><div class="{{t.c.chart.cls}}" role="group" aria-label="Tooth map, FDI numbering"><sc-for list="{{t.c.chart.jaws}}" as="j" hint-placeholder-count="2"><div class="{{j.cls}}"><sc-for list="{{j.teeth}}" as="th" hint-placeholder-count="17"><sc-if value="{{th.isGap}}" hint-placeholder-val="{{ false }}"><span class="gap" aria-hidden="true"></span></sc-if><sc-if value="{{th.isTooth}}" hint-placeholder-val="{{ true }}"><button class="{{th.cls}}" onClick="{{th.tap}}" aria-label="{{th.aria}}">{{th.n}}</button></sc-if></sc-for></div></sc-for></div></div><sc-if value="{{t.c.hasTooth}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{t.c.toothText}}</span></sc-if></sc-if>
+                  <sc-if value="{{t.c.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-14); font-weight: 700; color: var(--text-error)">{{t.c.err}}</span></sc-if>
+                  <sc-if value="{{t.c.hasOk}}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size: var(--font-size-14); font-weight: 700; color: var(--text-brand-strong)">{{t.c.ok}}</span></sc-if>
+                  <sc-if value="{{t.c.hasBtns}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-8); align-items: center"><sc-for list="{{t.c.btns}}" as="b" hint-placeholder-count="2"><button class="ai-b {{b.cls}}" onClick="{{b.go}}" aria-busy="{{b.busyStr}}"><sc-if value="{{b.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{b.label}}</button></sc-for></div></sc-if>
+                </section>
+              </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{t.isErr}}" hint-placeholder-val="{{ false }}"><div role="alert" style="display: flex; align-items: center; gap: var(--size-10); font-size: var(--font-size-14); font-weight: 700; color: var(--text-error)"><span>{{t.text}}</span><button class="ai-b sh-link" onClick="{{retry}}" style="font: 700 var(--font-size-14)/var(--size-18) var(--font-sans)">Retry</button></div></sc-if>
+        </sc-for>
+        <sc-if value="{{pending}}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size: var(--font-size-14); font-style: italic; color: var(--text-secondary)">{{pendingText}}</span></sc-if>
+      </sc-if>
+
+      <!-- ORB PANEL -->
+      <sc-if value="{{orb.on}}" hint-placeholder-val="{{ false }}">
+        <div role="status" aria-live="polite" style="border-radius: var(--radius-control-lg); background: var(--alpha-teal-15); box-shadow: inset 0 0 0 var(--size-1) var(--alpha-teal-25); padding: var(--size-18); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center">
+          <span style="position: relative; width: var(--size-120); height: var(--size-120); display: inline-flex; align-items: center; justify-content: center">
+            <span class="ai-rip" aria-hidden="true" style="position: absolute; inset: 0; border-radius: var(--radius-full); border: var(--size-2) solid var(--border-brand); animation: ai-ripple {{orb.rip}} ease-out infinite"></span>
+            <span class="ai-orb" aria-hidden="true" style="width: var(--size-112); height: var(--size-112); border-radius: var(--radius-full); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--teal-50) 35%, var(--white)) 0%, var(--interactive-primary) 50%, var(--teal-70) 100%); box-shadow: var(--shadow-default); animation: ai-orb {{orb.pulse}} ease-in-out infinite; display: inline-flex; align-items: center; justify-content: center; color: var(--text-inverse)"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.sparkles}}"></path></svg></span>
+          </span>
+          <span style="display: inline-flex; align-items: center; gap: var(--size-8); color: var(--text-brand-strong); font-size: var(--font-size-16); font-weight: 700"><sc-if value="{{orb.thinking}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{orb.notThinking}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{orb.icon}}"></path></svg></sc-if>{{orb.status}}</span>
+          <span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{orb.sub}}</span>
+          <sc-if value="{{orb.canStop}}" hint-placeholder-val="{{ false }}"><button class="ai-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{orb.stop}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>Stop</button></sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </main>
+
+  <footer style="flex: none; padding: var(--size-8) {{sidePad}} {{footPadB}}; background: var(--bg-surface); box-shadow: 0 calc(-1 * var(--size-1)) 0 var(--border-default)">
+    <div style="max-width: var(--layout-form-wide); margin: 0 auto; display: flex; flex-direction: column; gap: var(--size-6)">
+      <sc-if value="{{hasCtx}}" hint-placeholder-val="{{ false }}"><span style="align-self: flex-start; box-sizing: border-box; height: var(--size-28); display: inline-flex; align-items: center; gap: var(--size-6); padding: 0 var(--size-6) 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-canvas); font-size: var(--font-size-12); font-weight: 700"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.user}}"></path></svg>Patient · {{ctxName}}<button class="ai-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{clearCtx}}" aria-label="Clear patient context" ><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></span></sc-if>
+      <sc-if value="{{dictating}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-brand-strong)">{{dictHint}}</span></sc-if>
+      <div style="display: flex; align-items: flex-end; gap: var(--size-8); padding: var(--size-6); border-radius: var(--radius-control-lg); box-shadow: inset 0 0 0 {{boxBorder}}">
+        <sc-if value="{{showWave}}" hint-placeholder-val="{{ false }}"><span aria-label="Recording" role="img" style="flex: 1 1 auto; height: var(--size-40); display: flex; align-items: center; gap: var(--size-4); padding: 0 var(--size-8)"><sc-for list="{{wave}}" as="w" hint-placeholder-count="22"><span style="flex: 1 1 0; height: var(--size-28); border-radius: var(--radius-xs); background: var(--interactive-primary); animation: ai-wave {{w.dur}} ease-in-out infinite"></span></sc-for></span></sc-if>
+        <sc-if value="{{showField}}" hint-placeholder-val="{{ true }}"><textarea value="{{draft}}" onChange="{{onDraft}}" rows="1" placeholder="{{fieldHint}}" aria-label="Ask Shifa" disabled="{{fieldOff}}" class="sh-chatbar__input"></textarea></sc-if>
+        <button class="ai-b {{recBtn.cls}}" onClick="{{recBtn.go}}" aria-label="{{recBtn.aria}}" title="{{recBtn.aria}}" style="flex: none"><sc-if value="{{recBtn.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{recBtn.idle}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{recBtn.d}}"></path></svg></sc-if></button>
+        <button class="ai-b {{micBtn.cls}}" onClick="{{micBtn.go}}" aria-label="{{micBtn.aria}}" title="{{micBtn.aria}}" style="flex: none"><svg style="fill: {{micBtn.fill}}" width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{micBtn.d}}"></path></svg></button>
+        <button class="ai-b sh-icon-btn no-shadow" onClick="{{send}}" aria-label="Send" aria-disabled="{{sendOffStr}}" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.send}}"></path></svg></button>
+      </div>
+      <sc-if value="{{handsFree}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: var(--size-8); align-items: center; font-size: var(--font-size-12); color: var(--text-secondary)"><span>Hands-free is on — the mic opens after each reply</span><button class="ai-b sh-link" onClick="{{hfOff}}" style="font: 700 var(--font-size-12)/var(--size-16) var(--font-sans)">Turn off</button></div></sc-if>
+      <sc-if value="{{speechLocked}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Speech requires Pro. Upgrade to talk with Shifa.</span></sc-if>
+      <span style="font-size: var(--font-size-12); color: var(--text-tertiary); text-align: center">AI-generated responses may require review.</span>
+    </div>
+  </footer>
+
+  <!-- SHEETS / DIALOGS -->
+  <sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+      <button class="sh-scrim--fill" aria-label="Close" onClick="{{sheet.close}}"></button>
+      <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="ai-sh-t" data-pop="{{sheet.pop}}" style="--pop-top: {{sheet.popTop}}; --pop-left: {{sheet.popLeft}}; max-width: {{sheet.max}}; border-radius: {{dlgR}}; max-height: {{sheet.maxH}}; padding-bottom: {{sheetPadB}}">
+        <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: var(--size-36); height: var(--size-4); border-radius: var(--radius-full); background: var(--bg-disabled); margin: calc(-1 * var(--size-8)) auto 0"></span></sc-if>
+        <h2 id="ai-sh-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">{{sheet.title}}</h2>
+        <sc-if value="{{sheet.isText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{sheet.body}}</p></sc-if>
+        <sc-if value="{{sheet.isRename}}" hint-placeholder-val="{{ false }}"><input class="sh-input" value="{{sheet.val}}" onChange="{{sheet.onVal}}" placeholder="Conversation title" aria-label="Conversation title"></sc-if>
+        <sc-if value="{{sheet.isHistory}}" hint-placeholder-val="{{ false }}">
+          <button class="ai-b sh-btn sh-btn--secondary" onClick="{{newConv}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>New conversation</button>
+          <label style="position: relative; display: block"><span style="position: absolute; left: var(--size-12); top: var(--size-12); color: var(--text-secondary); display: inline-flex"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span><input class="sh-input" value="{{sheet.q}}" onChange="{{sheet.onQ}}" placeholder="Search conversations" aria-label="Search conversations" style="width: 100%; padding: 0 var(--size-12) 0 var(--size-40)"></label>
+          <sc-if value="{{sheet.none}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-12); text-align: center; font-size: var(--font-size-14); color: var(--text-secondary)">{{sheet.noneText}}</p></sc-if>
+          <sc-for list="{{sheet.sessions}}" as="s" hint-placeholder-count="3"><div style="display: flex; align-items: center; gap: var(--size-6); border-radius: var(--radius-control-md); background: {{s.bg}}; box-shadow: inset 0 0 0 var(--size-1) var(--border-default); padding-right: var(--size-6)"><button class="ai-b sh-press" onClick="{{s.open}}" style="flex: 1 1 auto; min-width: 0; padding: var(--size-10) var(--size-12); display: flex; gap: var(--size-10); align-items: flex-start; color: var(--text-primary)"><span style="display: inline-flex; color: var(--text-secondary); margin-top: var(--size-2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.d}}"></path></svg></span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="display: flex; gap: var(--size-8)"><span style="flex: 1 1 auto; min-width: 0; font-size: var(--font-size-14); font-weight: {{s.weight}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.title}}</span><span style="font-size: var(--font-size-12); color: var(--text-tertiary); white-space: nowrap">{{s.when}}</span></span><sc-if value="{{s.hasPrev}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.prev}}</span></sc-if></span></button><button class="ai-b sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" onClick="{{s.menu}}" aria-label="Conversation options" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.moreV}}"></path></svg></button></div></sc-for>
+        </sc-if>
+        <sc-if value="{{sheet.isMenu}}" hint-placeholder-val="{{ false }}"><div role="menu" style="display: flex; flex-direction: column"><sc-for list="{{sheet.items}}" as="m" hint-placeholder-count="3"><button role="menuitem" class="ai-b ai-row sh-press sh-press--row" onClick="{{m.go}}" style="min-height: var(--size-48); padding: 0 var(--size-10); display: flex; align-items: center; gap: var(--size-12); font: 600 var(--font-size-14)/var(--size-20) var(--font-sans); color: {{m.ink}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg>{{m.label}}</button></sc-for></div></sc-if>
+        <sc-if value="{{sheet.hasActions}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: var(--size-10); justify-content: flex-end; flex-direction: {{dlgActDir}}"><button class="ai-b sh-btn sh-btn--secondary" onClick="{{sheet.close}}" >Cancel</button><button class="ai-b sh-btn sh-btn--primary" onClick="{{sheet.primary}}" style="background: {{sheet.primaryBg}}">{{sheet.primaryLabel}}</button></div></sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { active: null, draft: '', busy: null, stream: null, voice: 'idle', handsFree: false, tick: 0, ctx: null, sheet: null, cardState: {} };
+    this.t = {};
+  }
+  componentDidMount() { this.iv = setInterval(() => { if (this.state.voice !== 'idle') this.setState({ tick: this.state.tick + 1 }); }, 1000); }
+  componentWillUnmount() { clearInterval(this.iv); Object.keys(this.t).forEach((k) => clearTimeout(this.t[k])); }
+  later(k, ms, fn) { clearTimeout(this.t[k]); this.t[k] = setTimeout(fn, ms); }
+  stopAll() { Object.keys(this.t).forEach((k) => clearTimeout(this.t[k])); }
+  banner(kind, text, extra) { this.props.act('banner', Object.assign({ kind, text }, extra || {})); }
+  sessions() { return ((this.props.store.ai || {}).sessions) || []; }
+  setSessions(fn) { this.props.act('set', (s) => ({ ai: Object.assign({}, s.ai, { sessions: fn((s.ai || {}).sessions || []) }) })); }
+  now() { const st = this.props.store; return st.today + 'T' + this.props.lib.hm(st.nowMin); }
+  findPatient(text) {
+    const st = this.props.store; const low = text.toLowerCase();
+    let p = st.patients.find((x) => low.indexOf(x.name.toLowerCase()) >= 0);
+    if (!p) p = st.patients.find((x) => x.name.split(' ').some((w) => w.length > 3 && low.indexOf(w.toLowerCase()) >= 0));
+    return p || null;
+  }
+  fuzzy(text) {
+    const st = this.props.store; const words = text.toLowerCase().replace(/[^a-zа-яё' ]/gi, ' ').split(/\s+/).filter((w) => w.length > 3);
+    const score = (a, b) => { let s = 0; for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] === b[i]) s++; return s; };
+    const res = []; st.patients.forEach((p) => { const best = Math.max.apply(null, p.name.toLowerCase().split(' ').map((n) => Math.max.apply(null, words.map((w) => score(w, n)).concat([0])))); if (best >= 3) res.push([best, p]); });
+    return res.sort((a, b) => b[0] - a[0]).slice(0, 4).map((r) => r[1]);
+  }
+  // ---- brain: returns {text, card}
+  answer(text) {
+    const st = this.props.store, lib = this.props.lib; const low = text.toLowerCase();
+    let ctxP = this.state.ctx ? st.patients.find((p) => p.id === this.state.ctx) : null;
+    const named = this.findPatient(text); if (named) ctxP = named;
+    const setCtx = (p) => { if (p) this.setState({ ctx: p.id }); };
+    const nextWork = () => { for (let i = 1; i < 14; i++) { const d = lib.addDays(st.today, i); if (lib.agenda(st, d).rows.some((r) => r.type === 'free')) return d; } return lib.addDays(st.today, 1); };
+    const dayFrom = () => { if (/tomorrow/.test(low)) return lib.addDays(st.today, 1); const dn = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']; for (let i = 1; i <= 7; i++) { const d = lib.addDays(st.today, i); if (low.indexOf(dn[lib.dow(d)]) >= 0) return d; } return /today/.test(low) ? st.today : nextWork(); };
+    const free = (d) => lib.agenda(st, d).rows.filter((r) => r.type === 'free' && (d > st.today || r.min >= st.nowMin));
+    if (/^(yes|yes please|ha|да)\b/.test(low)) {
+      const lastCard = this.lastCard(); if (lastCard && lastCard.type === 'cancel' && !lastCard.done) return { text: 'Cancelling them now.', action: 'confirmCancel' };
+      return { text: 'I don’t have anything waiting for confirmation. Tell me what you’d like to do.' };
+    }
+    if (/^(no|keep them|нет|yo'q)\b/.test(low)) return { text: 'Nothing was cancelled. Say yes if you want me to cancel the visits I just listed.' };
+    if (/thank|that's it|rahmat|спасибо|bo'ldi/.test(low)) return { text: 'You’re welcome. Tap the mic when you need me again.', signOff: true };
+    if (/most visited|frequent|top patients/.test(low)) {
+      const counts = {}; st.appointments.forEach((a) => { counts[a.patientId] = (counts[a.patientId] || 0) + 1; });
+      const rows = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 5).map((pid) => ({ pid, n: counts[pid] }));
+      return { text: 'These patients came most often in the last 90 days.', card: { type: 'most', rows } };
+    }
+    if (/pattern/.test(low)) return { text: 'Here is what comes up most in your documented visit facts.', card: { type: 'patterns' } };
+    if (/cancel/.test(low)) {
+      const d = /tomorrow/.test(low) ? lib.addDays(st.today, 1) : (/next week/.test(low) ? null : dayFrom());
+      const list = st.appointments.filter((a) => (a.doctorId || 'me') === 'me' && (a.status === 'CONFIRMED' || a.status === 'REQUESTED') && (d ? a.day === d : (a.day > lib.addDays(st.today, 6) && a.day <= lib.addDays(st.today, 13))) && (!named || a.patientId === named.id));
+      if (!list.length) return { text: 'No visits in that period can be cancelled. Nothing was changed.' };
+      return { text: 'I can cancel ' + list.length + ' upcoming ' + (list.length === 1 ? 'visit' : 'visits') + ': ' + list.map((a) => lib.patient(st, a.patientId).name).join(', ') + '. Say yes to cancel them. Nothing has been cancelled yet.', card: { type: 'cancel', ids: list.map((a) => a.id) } };
+    }
+    if (/move|reschedul/.test(low)) {
+      const p = ctxP; if (!p) return { text: 'I could not tell which visit to move. Say the patient and the day.' };
+      setCtx(p);
+      const a = st.appointments.filter((x) => x.patientId === p.id && x.day >= st.today && (x.status === 'CONFIRMED' || x.status === 'REQUESTED') && (x.doctorId || 'me') === 'me').sort((x, y) => (x.day + x.start).localeCompare(y.day + y.start))[0];
+      if (!a) return { text: p.name + ' has no upcoming visit with you to move.' };
+      const d = dayFrom(); const sl = free(d);
+      if (!sl.length) return { text: 'No free slots on ' + lib.fmtDay(d) + ' to move ' + p.name + '. Please choose another day.', card: { type: 'move', apptId: a.id, curDay: a.day, curStart: a.start, day: d, slots: [], pref: null } };
+      return { text: 'Moving ' + p.name + ' to ' + lib.fmtDay(d) + '. ' + (sl.length > 1 ? 'Which time?' : ''), card: { type: 'move', apptId: a.id, curDay: a.day, curStart: a.start, day: d, slots: sl.map((r) => r.start), pref: /\d{1,2}[:.]\d{2}/.test(low) ? null : sl[0].start } };
+    }
+    if (/book|schedule .* (for|with)|new appointment/.test(low)) {
+      const p = ctxP; if (!p) return { text: 'Who should I book? Say the patient’s name.', card: { type: 'search', q: '', res: this.fuzzy(text) } };
+      setCtx(p);
+      const d = dayFrom(); const sl = free(d); const m = low.match(/(\d{1,2})[:.](\d{2})/); const want = m ? lib.pad(Number(m[1])) + ':' + m[2] : null;
+      if (!sl.length) return { text: 'No free slots on ' + lib.fmtDay(d) + ' for ' + p.name + '. Please choose another day.', card: { type: 'book', pid: p.id, day: d, slots: [], pref: null } };
+      if (want && !sl.some((r) => r.start === want)) return { text: want + ' is not free on ' + lib.fmtLong(d) + '. Here are other open times.', card: { type: 'book', pid: p.id, day: d, slots: sl.map((r) => r.start), pref: null, err: want + ' is not free on ' + lib.fmtDay(d) + '. Here are other open times.' } };
+      return { text: want ? 'Booking ' + p.name + ' at ' + want + ' on ' + lib.fmtLong(d) + '.' : 'I found ' + sl.length + ' free slots on ' + lib.fmtDay(d) + ' for ' + p.name + '. Which time works?', card: { type: 'book', pid: p.id, day: d, slots: sl.map((r) => r.start), pref: want } };
+    }
+    if (/free|available|open slot/.test(low)) { const d = dayFrom(); const sl = free(d); return { text: sl.length ? 'You have ' + sl.length + ' free slots on ' + lib.fmtDay(d) + '.' : 'No free slots on ' + lib.fmtDay(d) + '.', card: { type: 'free', day: d, slots: sl.map((r) => r.start) } }; }
+    if (/schedule|my day|today|afternoon|morning/.test(low) && !named) {
+      const rows = st.appointments.filter((a) => a.day === st.today && (a.doctorId || 'me') === 'me').sort((a, b) => a.start.localeCompare(b.start));
+      const left = rows.filter((a) => lib.toMin(a.start) >= st.nowMin && a.status !== 'CANCELLED');
+      return { text: 'You have ' + rows.length + ' appointments today. ' + (left.length ? 'Next is ' + lib.patient(st, left[0].patientId).name + ' at ' + left[0].start + '. ' : '') + (rows.some((a) => lib.patient(st, a.patientId).chronic && a.status !== 'COMPLETED') ? 'Two patients have chronic conditions, so check their notes first.' : ''), card: { type: 'schedule', ids: rows.map((a) => a.id) } };
+    }
+    if (/document|x-?ray|file|result/.test(low) && !/visit facts|document everything/.test(low)) {
+      const p = ctxP; if (!p) return { text: 'Which patient’s documents should I open?' };
+      setCtx(p); const docs = st.docs.filter((d) => d.patientId === p.id && !d.locked);
+      if (!docs.length) return { text: p.name + ' has no viewable documents yet.', card: { type: 'docs', pid: p.id, open: null } };
+      const one = docs.find((d) => /x-?ray/.test(low) && d.cat === 'XRAY');
+      return { text: one ? 'Opening ' + one.title + ' for ' + p.name + ' in the chat.' : 'I found ' + docs.length + ' documents for ' + p.name + '. They are listed in the chat.', card: { type: 'docs', pid: p.id, open: one ? one.id : null } };
+    }
+    if (/dental|chart|teeth|tooth/.test(low)) { const p = ctxP; if (!p) return { text: 'Which patient’s dental chart should I show?' }; setCtx(p); return { text: 'Here is the dental diagram for ' + p.name + ' from the last visit.', card: { type: 'dental', pid: p.id, sel: null } }; }
+    if (/visit facts|document everything|facts/.test(low)) { const p = ctxP || st.patients.find((x) => x.id === 'P-00102'); setCtx(p); return { text: 'These are the draft facts from ' + p.name + '’s last call. Review them, then document everything.', card: { type: 'facts', pid: p.id } }; }
+    if (/open (the )?visit|start (the )?visit|open appointment/.test(low)) {
+      const p = ctxP; const a = st.appointments.filter((x) => (!p || x.patientId === p.id) && x.day === st.today && (x.status === 'CONFIRMED' || x.status === 'IN_PROGRESS') && (x.doctorId || 'me') === 'me').sort((x, y) => x.start.localeCompare(y.start))[0];
+      if (!a) return { text: 'I could not find a visit to open today.' }; setCtx(lib.patient(st, a.patientId));
+      return { text: 'Opening ' + lib.patient(st, a.patientId).name + '’s visit at ' + a.start + '.', card: { type: 'open', apptId: a.id, auto: true } };
+    }
+    if (/appointment|visits|when is|when does/.test(low) && ctxP) { setCtx(ctxP); const rows = st.appointments.filter((a) => a.patientId === ctxP.id && a.day >= lib.addDays(st.today, -14)).sort((a, b) => (a.day + a.start).localeCompare(b.day + b.start)); return { text: ctxP.name + ' has ' + rows.length + ' appointments around now.', card: { type: 'pappts', pid: ctxP.id, ids: rows.map((a) => a.id) } }; }
+    if (/brief|tell me about|summar|who is/.test(low) && ctxP) { setCtx(ctxP); return { text: 'Here is a short briefing on ' + ctxP.name + '.', card: { type: 'brief', pid: ctxP.id } }; }
+    if (/find|search|patient/.test(low) && !named) { const res = this.fuzzy(text); return { text: res.length ? 'Who are you looking for? Here are close matches.' : 'Who are you looking for? Say a name, phone number or patient ID.', card: res.length ? { type: 'search', q: text, res: res.map((p) => p.id) } : null }; }
+    if (named) { setCtx(named); return { text: 'Here is a short briefing on ' + named.name + '.', card: { type: 'brief', pid: named.id } }; }
+    if (/note|documentation/.test(low)) return { text: 'Three of today’s completed visits have notes. Bekzod Rahimov’s filling of 36 is signed; Malika Ergasheva’s video follow-up has AI notes waiting for your review. Want me to open one?' };
+    const fz = this.fuzzy(text); if (fz.length) return { text: 'No exact match for “' + text.trim() + '”. Did you mean…?', card: { type: 'search', q: text, res: fz.map((p) => p.id), fuzzy: true } };
+    return { text: 'I can help with your schedule, free slots, bookings, patient briefings and documents. Try “What does tomorrow look like?” or “Book Jasur Tursunov on Thursday”.' };
+  }
+  lastCard() { const s = this.sessions().find((x) => x.id === this.state.active); if (!s) return null; for (let i = s.turns.length - 1; i >= 0; i--) if (s.turns[i].card) return Object.assign({}, s.turns[i].card, this.state.cardState[s.turns[i].id] || {}); return null; }
+  ensureSession() {
+    let id = this.state.active;
+    if (!id || !this.sessions().some((s) => s.id === id)) { id = this.props.lib.uid('AI'); const at = this.now(); this.setSessions((ss) => [{ id, title: 'New chat', at, turns: [] }].concat(ss)); this.setState({ active: id }); }
+    return id;
+  }
+  ask(text, fromVoice) {
+    const t = (text || '').trim(); if (!t) return;
+    const lib = this.props.lib;
+    const sid = this.ensureSession();
+    const at = this.now();
+    const userTurn = { id: lib.uid('U'), role: 'user', text: t, at };
+    this.setSessions((ss) => ss.map((s) => (s.id === sid ? Object.assign({}, s, { at, title: s.titleCustom || s.turns.length ? s.title : (t.length > 40 ? t.slice(0, 40) + '…' : t), turns: s.turns.filter((x) => x.role !== 'error').concat([userTurn]) }) : s)));
+    this.setState({ draft: '', busy: 'reviewing', voice: fromVoice ? 'thinking' : this.state.voice === 'idle' ? 'idle' : 'thinking' });
+    this.later('ans', 1100, () => {
+      if (this.props.store.online === false) { this.setSessions((ss) => ss.map((s) => (s.id === sid ? Object.assign({}, s, { turns: s.turns.concat([{ id: lib.uid('E'), role: 'error', text: 'Couldn’t reach Shifa. Check your connection.' }]) }) : s))); this.setState({ busy: null, voice: 'idle', handsFree: false, retryText: t }); return; }
+      const ans = this.answer(t);
+      const aiId = lib.uid('R');
+      const words = ans.text.split(' ');
+      this.setSessions((ss) => ss.map((s) => (s.id === sid ? Object.assign({}, s, { turns: s.turns.concat([{ id: aiId, role: 'ai', text: '', at: this.now(), card: ans.card || null }]) }) : s)));
+      this.setState({ busy: null, stream: { id: aiId, n: Math.min(3, words.length), full: ans.text } });
+      const step = () => {
+        const sm = this.state.stream; if (!sm || sm.id !== aiId) return;
+        if (sm.n >= words.length) {
+          this.setSessions((ss) => ss.map((s) => (s.id === sid ? Object.assign({}, s, { turns: s.turns.map((x) => (x.id === aiId ? Object.assign({}, x, { text: ans.text }) : x)) }) : s)));
+          this.setState({ stream: null });
+          if (ans.action === 'confirmCancel') this.doCancel();
+          if (ans.card && ans.card.type === 'open' && ans.card.auto) this.later('auto', 600, () => { this.setState({ cardState: Object.assign({}, this.state.cardState, { [aiId]: { ok: 'Opened.' } }), voice: 'idle', handsFree: false }); this.props.act('push', { s: this.props.lib.appt(this.props.store, ans.card.apptId).kind === 'video' ? 'videoCall' : 'visit', p: { id: ans.card.apptId } }); });
+          if (this.state.voice === 'thinking' || fromVoice) { this.setState({ voice: 'speaking' }); this.later('speak', 3500, () => { if (this.state.voice !== 'speaking') return; if (this.state.handsFree && !ans.signOff) this.setState({ voice: 'listening', t0: this.state.tick }); else this.setState({ voice: 'idle', handsFree: false }); }); }
+          return;
+        }
+        this.setState({ stream: Object.assign({}, sm, { n: Math.min(words.length, sm.n + 4) }) });
+        this.later('stream', 120, step);
+      };
+      this.later('stream', 120, step);
+    });
+  }
+  doCancel() {
+    const card = this.lastCard(); if (!card || card.type !== 'cancel') return;
+    const s = this.sessions().find((x) => x.id === this.state.active); const turn = s.turns.slice().reverse().find((x) => x.card && x.card.type === 'cancel');
+    this.props.act('set', (st) => ({ appointments: st.appointments.map((a) => (card.ids.indexOf(a.id) >= 0 ? Object.assign({}, a, { status: 'CANCELLED' }) : a)) }));
+    this.setState({ cardState: Object.assign({}, this.state.cardState, { [turn.id]: { done: true, ok: 'Cancelled ' + card.ids.length + '. The patients were notified in the app.' } }) });
+  }
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const S = this.state; const offline = st.online === false;
+    const sessions = this.sessions().slice().sort((a, b) => b.at.localeCompare(a.at));
+    const sess = sessions.find((s) => s.id === S.active);
+    const inThread = !!(sess && sess.turns.length);
+    const canSpeech = lib.can(st, 'speech');
+    const h = Math.floor(st.nowMin / 60);
+    const rel = (at) => { const d = at.slice(0, 10); return d === st.today ? at.slice(11, 16) : (d === lib.addDays(st.today, -1) ? 'Yesterday' : lib.fmtDate(d)); };
+    const stamp = (at) => { const d = at.slice(0, 10); return (d === st.today ? 'Today' : (d === lib.addDays(st.today, -1) ? 'Yesterday' : lib.fmtDate(d))) + ' · ' + at.slice(11, 16); };
+    const open = (id) => { this.stopAll(); this.setState({ active: id, sheet: null, stream: null, busy: null, voice: 'idle', handsFree: false }); };
+    const newConv = () => { this.stopAll(); const id = lib.uid('AI'); this.setSessions((ss) => [{ id, title: 'New chat', at: this.now(), turns: [] }].concat(ss)); this.setState({ active: id, sheet: null, ctx: null, stream: null, busy: null, voice: 'idle', handsFree: false }); };
+    const sessMenu = (s) => () => this.setState({ sheet: { kind: 'menu', id: s.id } });
+    const out = {
+      ready: true, notReady: false, ic, phone,
+      headPad: phone ? 'var(--size-48) var(--size-12) var(--size-10)' : 'var(--size-14) var(--size-24)', bodyPad: phone ? 'var(--size-16) var(--size-16) var(--size-24)' : 'var(--size-24) var(--size-24) var(--size-24)', sidePad: phone ? 'var(--size-12)' : 'var(--size-24)', footPadB: phone ? 'var(--size-24)' : 'var(--size-12)',
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row', sheetPadB: phone ? 'var(--size-28)' : 'var(--size-18)',
+      headTitle: 'Shifa Intelligence', backAria: inThread ? 'Back' : 'Back to clinic',
+      goBack: () => { if (inThread) { this.stopAll(); this.setState({ active: null, voice: 'idle', handsFree: false, busy: null, stream: null }); } else act('back'); },
+      openHistory: () => this.setState({ sheet: { kind: 'history', q: '' } }), newConv,
+      openMenu: () => this.setState({ sheet: { kind: 'menu', id: S.active } }),
+      inWelcome: !inThread, inThread,
+      greeting: (h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening')) + ', ' + st.me.name.replace('Dr. ', 'Dr ').split(' ').slice(0, 1).concat([st.me.name.split(' ').slice(-1)[0]]).join(' ') + '.',
+      starterCols: phone ? 1 : 2,
+      starters: [['Today’s schedule', 'Ask about your day', 'Summarize my schedule for today.', ic.calendar], ['Find a patient', 'Search records', 'Help me find a patient.', ic.search], ['Manage appointments', 'Reschedule visits', 'Help me manage my appointments.', ic.calPlus], ['Clinical notes', 'Review documentation', 'Help me review my clinical notes.', ic.fileText]].map(([t, s, p, d]) => ({ title: t, sub: s, d, go: () => this.ask(p) })),
+      hasRecent: sessions.some((s) => s.turns.length || s.title !== 'New chat'),
+      recent: sessions.filter((s) => s.turns.length || s.title !== 'New chat').slice(0, 5).map((s) => ({ title: s.title, when: rel(s.at), d: s.patientId ? ic.user : ic.chat, open: () => open(s.id), menu: sessMenu(s) })),
+      pending: !!S.busy, pendingText: S.busy === 'transcribing' ? 'Transcribing…' : 'Reviewing…',
+      retry: () => { const t = S.retryText; if (t) { this.setSessions((ss) => ss.map((s) => (s.id === S.active ? Object.assign({}, s, { turns: s.turns.filter((x) => x.role !== 'error' && !(x.role === 'user' && x === s.turns.filter((y) => y.role === 'user').slice(-1)[0])) }) : s))); this.ask(t); } },
+      hasCtx: !!S.ctx, ctxName: S.ctx ? lib.patient(st, S.ctx).name : '', clearCtx: () => this.setState({ ctx: null }),
+      draft: S.draft, onDraft: (e) => this.setState({ draft: e.target.value }),
+      wave: Array.from({ length: 22 }, (_, i) => ({ dur: (0.5 + ((i * 31) % 50) / 100).toFixed(2) + 's' })),
+      handsFree: S.handsFree && S.voice === 'idle', hfOff: () => this.setState({ handsFree: false }), speechLocked: !canSpeech,
+      hasSheet: false, sheet: {}, orb: { on: false }, turns: []
+    };
+    // composer state
+    const v = S.voice; const busy = !!S.busy || !!S.stream;
+    out.dictating = v === 'dictating' || S.busy === 'transcribing'; out.dictHint = S.busy === 'transcribing' ? 'Transcribing your recording…' : 'Recording… tap the check when you are done. Pauses are fine.';
+    out.showWave = v === 'dictating'; out.showField = v !== 'dictating';
+    out.boxBorder = v === 'dictating' ? '1.6px var(--border-focus)' : '1px var(--border-default)';
+    out.fieldOff = v === 'listening' || v === 'speaking' ? 'true' : undefined;
+    out.fieldHint = v === 'listening' ? 'Listening…' : (v === 'speaking' ? 'Shifa is speaking… tap the mic to interrupt' : 'Ask Shifa…');
+    const sendOk = !!S.draft.trim() && !busy && v !== 'listening' && v !== 'speaking' && v !== 'dictating';
+    out.sendOffStr = sendOk ? 'false' : 'true'; out.sendBg = sendOk ? 'var(--interactive-primary)' : 'var(--interactive-disabled-bg)';
+    out.send = () => { if (!sendOk) return; this.setState({ handsFree: false }); this.ask(S.draft); };
+    const voiceText = ['What does my afternoon look like?', 'Book Jasur Tursunov on Thursday at 11:00', 'Show Dilnoza Yusupova’s documents'][(this.vc = ((this.vc || 0) + 0)) % 3];
+    const finishListen = (dict) => {
+      const text = dict ? 'Patient Dilnoza Yusupova, pain in 26 for five days. Book her for tomorrow morning.' : voiceText; this.vc = (this.vc || 0) + 1;
+      this.setState({ voice: 'thinking', busy: 'transcribing' });
+      this.later('tx', 1100, () => { this.setState({ busy: null }); this.ask(text, true); });
+    };
+    const lock = () => this.banner('info', 'Speech requires Pro. Upgrade to talk with Shifa.', { action: () => act('go', { tab: 'profile', s: 'subscription' }), actionLabel: 'See plans' });
+    out.micBtn = {
+      aria: v === 'listening' ? 'Stop listening' : (v === 'speaking' ? 'Interrupt and speak' : 'Talk with Shifa'),
+      cls: 'ai-b sh-icon-btn no-shadow' + (v === 'listening' ? ' is-destructive' : (v === 'speaking' ? '' : ' sh-icon-btn--secondary')) + (canSpeech ? '' : ' is-locked'), ink: v === 'listening' || v === 'speaking' ? 'var(--text-inverse)' : (canSpeech ? 'var(--text-primary)' : 'var(--text-tertiary)'),
+      d: v === 'listening' ? 'M6 6h12v12H6z' : ic.mic, fill: v === 'listening' ? 'currentColor' : 'none',
+      go: () => {
+        if (!canSpeech) { lock(); return; }
+        if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; }
+        if (v === 'listening') { finishListen(false); return; }
+        if (v === 'speaking') { clearTimeout(this.t.speak); this.setState({ voice: 'listening', t0: S.tick }); return; }
+        if (S.busy || S.stream) { this.stopAll(); this.setState({ busy: null, stream: null }); }
+        this.setState({ voice: 'listening', handsFree: true, t0: S.tick });
+      }
+    };
+    out.recBtn = {
+      aria: v === 'dictating' ? 'Tap to send this recording' : 'Dictate — records until you tap send. Pauses are OK.',
+      cls: 'ai-b sh-icon-btn no-shadow' + (v === 'dictating' ? '' : ' sh-icon-btn--secondary') + (canSpeech ? '' : ' is-locked'), ink: v === 'dictating' ? 'var(--text-inverse)' : (canSpeech ? 'var(--text-primary)' : 'var(--text-tertiary)'), d: v === 'dictating' ? ic.check : 'M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8M3 3l3 3',
+      busy: S.busy === 'transcribing', idle: S.busy !== 'transcribing',
+      go: () => {
+        if (!canSpeech) { lock(); return; }
+        if (S.busy === 'reviewing') { this.stopAll(); this.setState({ busy: null, stream: null }); this.banner('info', 'Stopped.'); return; }
+        if (v === 'dictating') { this.setState({ handsFree: false }); finishListen(true); return; }
+        if (v === 'listening') { this.setState({ handsFree: false }); finishListen(false); return; }
+        if (offline) { this.banner('error', 'You’re offline. Try again when connected.'); return; }
+        clearTimeout(this.t.speak); this.setState({ voice: 'dictating', t0: S.tick });
+      }
+    };
+    if (v === 'listening' || v === 'dictating' || v === 'speaking' || (v === 'thinking' && S.handsFree)) {
+      out.orb = {
+        on: true, thinking: v === 'thinking', notThinking: v !== 'thinking',
+        status: v === 'listening' ? (S.handsFree ? 'Listening… speak now' : 'Listening… pause to send') : (v === 'dictating' ? 'Recording… speak, then tap stop' : (v === 'speaking' ? 'Shifa is speaking…' : (S.busy === 'transcribing' ? 'Transcribing…' : 'Reviewing…'))),
+        sub: v === 'listening' ? (S.handsFree ? 'Hands-free — tap stop when you are done to send' : 'Tap Stop when you finish speaking') : (v === 'dictating' ? 'Tap Stop when you finish speaking' : (v === 'speaking' ? 'Tap the microphone to interrupt' : (S.busy === 'transcribing' ? 'Sending your recording to Shifa' : 'Shifa is reviewing your request'))),
+        icon: v === 'speaking' ? 'M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4' : ic.mic,
+        canStop: v === 'listening' || v === 'dictating', stop: () => { this.setState({ handsFree: v === 'listening' ? S.handsFree : false }); finishListen(v === 'dictating'); },
+        rip: v === 'speaking' ? '1s' : (v === 'listening' ? '1.4s' : '2.2s'), pulse: v === 'speaking' ? '.6s' : (v === 'listening' ? '1.1s' : '1.8s')
+      };
+    }
+    // turns
+    if (sess) {
+      out.turns = sess.turns.map((t) => {
+        if (t.role === 'error') return { isUser: false, isAi: false, isErr: true, text: t.text };
+        if (t.role === 'user') return { isUser: true, isAi: false, isErr: false, text: t.text, when: stamp(t.at) };
+        const streaming = S.stream && S.stream.id === t.id;
+        const text = streaming ? S.stream.full.split(' ').slice(0, S.stream.n).join(' ') : t.text;
+        const c = t.card ? this.card(t, st, lib, ic) : null;
+        return { isUser: false, isAi: true, isErr: false, text, streaming, when: stamp(t.at), hasCard: !!c, c: c || {} };
+      });
+    }
+    // sheets
+    const sh = S.sheet;
+    if (sh) {
+      out.hasSheet = true;
+      const base = { title: '', close: () => this.setState({ sheet: null }), max: '480px', maxH: '92%', isText: false, isRename: false, isHistory: false, isMenu: false, hasActions: false, primaryLabel: '', primaryBg: 'var(--interactive-primary)', primary: () => {} }; this.props.lib.popify(base, !!this.props.phone);
+      out.sheet = base;
+      if (sh.kind === 'history') {
+        const q = sh.q.trim().toLowerCase(); const list = sessions.filter((s) => !q || s.title.toLowerCase().indexOf(q) >= 0 || s.turns.some((t) => (t.text || '').toLowerCase().indexOf(q) >= 0));
+        Object.assign(base, { title: 'History', isHistory: true, maxH: phone ? '72%' : '80%', q: sh.q, onQ: (e) => this.setState({ sheet: Object.assign({}, sh, { q: e.target.value }) }), none: !list.length, noneText: sessions.length ? 'No matching conversations' : 'No conversations yet',
+          sessions: list.map((s) => { const lastT = s.turns.filter((x) => x.role === 'ai').slice(-1)[0]; const prev = lastT ? lastT.text : ''; return { title: s.title, when: rel(s.at), prev, hasPrev: !!prev && prev !== s.title, d: s.patientId ? ic.user : ic.chat, weight: s.id === S.active ? 700 : 600, bg: s.id === S.active ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', open: () => open(s.id), menu: sessMenu(s) }; }) });
+      }
+      if (sh.kind === 'menu') {
+        const s = sessions.find((x) => x.id === sh.id) || { title: '', turns: [] };
+        Object.assign(base, { title: s.title || 'Conversation', isMenu: true, max: '420px', items: [
+          { label: 'Download conversation', d: ic.download, ink: 'var(--text-primary)', go: () => { this.setState({ sheet: null }); if (!s.turns.length) this.banner('info', 'Nothing to download yet — start a conversation first.'); else this.banner('success', 'Export started — check your downloads'); } },
+          { label: 'Rename', d: ic.edit, ink: 'var(--text-primary)', go: () => this.setState({ sheet: { kind: 'rename', id: sh.id, val: s.title } }) },
+          { label: 'Delete', d: ic.trash, ink: 'var(--text-error)', go: () => this.setState({ sheet: { kind: 'delete', id: sh.id } }) }
+        ] });
+      }
+      if (sh.kind === 'rename') Object.assign(base, { title: 'Rename conversation', isRename: true, val: sh.val, onVal: (e) => this.setState({ sheet: Object.assign({}, sh, { val: e.target.value }) }), hasActions: true, primaryLabel: 'Save', primary: () => { const v2 = sh.val.trim(); this.setState({ sheet: null }); if (!v2) return; this.setSessions((ss) => ss.map((s) => (s.id === sh.id ? Object.assign({}, s, { title: v2, titleCustom: true }) : s))); } });
+      if (sh.kind === 'delete') Object.assign(base, { title: 'Delete conversation', isText: true, body: S.busy || S.stream ? 'Stop the current reply and delete this conversation?' : 'Delete this conversation? This cannot be undone.', hasActions: true, primaryLabel: 'Delete', primaryBg: 'var(--interactive-destructive)', primary: () => { this.stopAll(); const rest = sessions.filter((s) => s.id !== sh.id); this.setSessions((ss) => ss.filter((s) => s.id !== sh.id)); this.setState({ sheet: null, busy: null, stream: null, voice: 'idle', handsFree: false, active: S.active === sh.id ? (rest[0] ? rest[0].id : null) : S.active }); this.banner('success', 'Conversation deleted'); } });
+    }
+    return out;
+  }
+  card(t, st, lib, ic) {
+    const c = t.card; const cs = this.state.cardState[t.id] || {}; const act = this.props.act; const offline = st.online === false;
+    const setCs = (p) => this.setState({ cardState: Object.assign({}, this.state.cardState, { [t.id]: Object.assign({}, cs, p) }) });
+    const out = { title: '', hasHead: false, head: '', hasSub: false, sub: '', kv: [], rows: [], hasChips: false, chips: [], hasBody: false, body: '', hasViewer: false, hasTeeth: false, chart: { cls: '', jaws: [] }, hasTooth: false, hasErr: !!cs.err, err: cs.err || '', hasOk: !!cs.ok, ok: cs.ok || '', hasBtns: false, btns: [] };
+    const row = (lead, text, go, extra) => Object.assign({ hasLead: !!lead, lead: lead || '', leadW: '52px', text, go: go || (() => {}), offStr: go ? 'false' : 'true', cls: 'ai-b ai-row sh-press' + (go ? ' sh-press--row' : ''), hasBar: false, bar: '0%', hasTrail: false, trail: '' }, extra || {});
+    const btn = (label, go, kind, busy) => ({ label, go, cls: 'ai-b sh-btn sh-btn--compact ' + (kind === 'fill' ? 'sh-btn--primary' : (kind === 'red' ? 'sh-btn--primary is-destructive' : (kind === 'outline' ? 'sh-btn--secondary' : 'sh-btn--tertiary'))), h: kind === 'text' ? '32px' : '36px', border: kind === 'outline' ? '1px solid var(--alpha-teal-25)' : '0', bg: kind === 'fill' ? 'var(--interactive-primary)' : (kind === 'red' ? 'var(--interactive-destructive)' : (kind === 'outline' ? 'var(--bg-surface)' : 'transparent')), ink: kind === 'fill' || kind === 'red' ? 'var(--text-inverse)' : 'var(--text-primary)', busy: !!busy, busyStr: busy ? 'true' : 'false' });
+    const openCal = btn('Open calendar', () => act('go', { tab: 'calendar' }), 'text');
+    const openAppt = (id) => () => act('push', { s: 'apptDetails', p: { id } });
+    if (c.type === 'schedule') {
+      const rows = c.ids.map((id) => lib.appt(st, id)).filter(Boolean);
+      Object.assign(out, { title: 'Today’s schedule', hasSub: true, sub: 'Appointments: ' + rows.length, rows: rows.slice(0, 8).map((a) => row(a.start, lib.patient(st, a.patientId).name + ' · ' + lib.status[a.status].label, openAppt(a.id))), hasBody: !rows.length, body: 'No appointments today.', hasBtns: true, btns: [openCal] });
+      if (rows.length > 8) out.rows.push(row('', '+' + (rows.length - 8) + ' more'));
+    }
+    if (c.type === 'pappts') {
+      const p = lib.patient(st, c.pid); const rows = c.ids.map((id) => lib.appt(st, id)).filter(Boolean);
+      Object.assign(out, { title: 'Patient appointments', hasHead: true, head: p.name, hasSub: true, sub: 'Upcoming (from ' + lib.fmtDate(lib.addDays(st.today, -14)) + ') · Appointments: ' + rows.length, rows: rows.slice(0, 12).map((a) => row(lib.fmtDate(a.day), a.start + ' · ' + lib.status[a.status].label, openAppt(a.id), { leadW: '100px' })), hasBody: !rows.length, body: 'No appointments in this period.', hasBtns: true, btns: [openCal] });
+    }
+    if (c.type === 'free') Object.assign(out, { title: 'Free slots', hasHead: true, head: lib.fmtLong(c.day), hasChips: c.slots.length > 0, chips: c.slots.slice(0, 24).map((s) => ({ label: s, go: () => this.ask('Book ' + (this.state.ctx ? lib.patient(st, this.state.ctx).name + ' ' : '') + 'on ' + lib.DL[lib.dow(c.day)] + ' at ' + s) })), hasBody: !c.slots.length, body: 'No free slots for this day.', hasBtns: true, btns: [openCal] });
+    if (c.type === 'search') {
+      const res = (c.res || []).map((x) => (typeof x === 'string' ? lib.patient(st, x) : x));
+      Object.assign(out, { title: 'Patient matches', hasHead: !!c.fuzzy, head: 'No exact match for “' + (c.q || '').trim() + '”. Did you mean…?', rows: res.map((p) => row('', p.name + ' · ' + ((p.phones || [])[0] || ''), () => { this.setState({ ctx: p.id }); this.ask(p.name); }, { hasTrail: true, trail: 'Choose' })), hasBody: !res.length, body: 'No patients matched.' });
+    }
+    if (c.type === 'most') { const max = c.rows.length ? c.rows[0].n : 1; Object.assign(out, { title: 'Most visited patients', rows: c.rows.map((r, i) => row((i + 1) + '.', lib.patient(st, r.pid).name, () => act('go', { tab: 'patients', s: 'patDetail', p: { id: r.pid } }), { leadW: '24px', hasBar: true, bar: Math.round(100 * r.n / max) + '%', hasTrail: true, trail: r.n + ' visits' })) }); }
+    if (c.type === 'patterns') Object.assign(out, { title: 'Clinic patterns', rows: [['Caries of dentine', 14], ['Amoxicillin', 9], ['Chlorhexidine rinse', 7], ['Pulpitis', 5]].map(([l, n]) => row('', l, () => this.ask('Tell me more about ' + l), { hasTrail: true, trail: n + '×' })) });
+    if (c.type === 'brief') {
+      const p = lib.patient(st, c.pid); const docs = st.docs.filter((d) => d.patientId === p.id && !d.locked); const ap = st.appointments.filter((a) => a.patientId === p.id);
+      const body = '## ' + p.name + '\n' + [p.chronic ? '• Chronic: ' + p.chronic : '• No chronic conditions recorded', p.allergies ? '• Allergy: ' + p.allergies : '• No known allergies', '• Last documents: ' + (docs.slice(0, 2).map((d) => d.title).join(', ') || 'none'), '• Visits on file: ' + ap.length].join('\n');
+      Object.assign(out, { title: 'Patient briefing', hasSub: true, sub: 'Based on ' + docs.length + ' document(s) and ' + ap.length + ' appointment(s).', hasBody: true, body: body.replace('## ', ''), hasBtns: true, btns: [btn('Copy', () => this.banner('success', 'Briefing copied to clipboard.'), 'outline'), btn('Open chart', () => act('go', { tab: 'patients', s: 'patDetail', p: { id: p.id } }), 'text')] });
+    }
+    if (c.type === 'book') {
+      const p = lib.patient(st, c.pid);
+      const book = (time) => () => {
+        if (cs.busy) return; if (offline) { setCs({ err: 'Booking failed. Check your connection and try again.' }); return; }
+        setCs({ busy: time, err: '' });
+        this.later('bk' + t.id, 800, () => {
+          const fr = lib.agenda(this.props.store, c.day).rows.find((r) => r.type === 'free' && r.start === time);
+          if (!fr) { this.setState({ cardState: Object.assign({}, this.state.cardState, { [t.id]: { err: 'That slot is no longer free. Pick another.' } }) }); return; }
+          act('set', (s) => ({ appointments: s.appointments.concat([{ id: lib.uid('A'), day: c.day, start: fr.start, end: fr.end, patientId: p.id, kind: 'clinic', status: 'CONFIRMED', reason: 'Consultation', location: fr.location, payment: null, doctorId: 'me', notes: '', soap: { s: '', o: '', a: '', p: '' }, briefing: 'none', docsAttached: 0 }]) }));
+          this.setState({ cardState: Object.assign({}, this.state.cardState, { [t.id]: { done: true, ok: 'Appointment booked.' } }) });
+        });
+      };
+      const others = c.slots.filter((s) => s !== c.pref);
+      Object.assign(out, { title: 'Propose appointment', kv: [['Patient', p.name], ['Date', lib.fmtDate(c.day)], ['Time', c.pref || (c.slots.length ? 'Choose a time below' : 'Not selected')]].map(([l, v]) => ({ label: l, value: v })), hasErr: !!(cs.err || c.err) && !cs.done, err: cs.err || c.err || '', hasBody: !c.slots.length, body: 'No free slots for this day.' });
+      if (!cs.done && !cs.hidden) {
+        const b = [];
+        if (c.pref) { b.push(btn('Confirm ' + c.pref, book(c.pref), 'fill', cs.busy === c.pref)); if (others.length) b.push(btn(cs.more ? 'Hide other times' : 'Other times', () => setCs({ more: !cs.more }), 'text')); }
+        b.push(btn('Cancel', () => setCs({ hidden: true }), 'text'));
+        out.hasBtns = true; out.btns = b;
+        if (!c.pref || cs.more) { out.hasChips = (c.pref ? others : c.slots).length > 0; out.chips = (c.pref ? others : c.slots).map((s) => ({ label: s, go: book(s) })); }
+      }
+      if (cs.hidden) { out.hasOk = true; out.ok = 'Proposal dismissed.'; }
+    }
+    if (c.type === 'move') {
+      const a = lib.appt(st, c.apptId); const p = lib.patient(st, a.patientId);
+      const move = (time) => () => {
+        if (cs.busy) return; if (offline) { setCs({ err: 'Reschedule failed. Check your connection and try again.' }); return; }
+        setCs({ busy: time });
+        this.later('mv' + t.id, 800, () => { const fr = lib.agenda(this.props.store, c.day).rows.find((r) => r.type === 'free' && r.start === time); if (!fr) { this.setState({ cardState: Object.assign({}, this.state.cardState, { [t.id]: { err: 'That slot is no longer free. Pick another.' } }) }); return; } act('set', (s) => ({ appointments: s.appointments.map((x) => (x.id === a.id ? Object.assign({}, x, { day: c.day, start: fr.start, end: lib.hm(lib.toMin(fr.start) + lib.toMin(x.end) - lib.toMin(x.start)) }) : x)) })); this.setState({ cardState: Object.assign({}, this.state.cardState, { [t.id]: { done: true, ok: 'Moved ' + p.name + ' to ' + time + ' on ' + lib.fmtLong(c.day) + '.' } }) }); });
+      };
+      Object.assign(out, { title: 'Propose reschedule', kv: [['Patient', p.name], ['Current', lib.fmtDate(c.curDay || a.day) + ' ' + (c.curStart || a.start)], ['New date', lib.fmtDate(c.day)]].concat(c.pref ? [['Time', c.pref]] : []).map(([l, v]) => ({ label: l, value: v })), hasBody: !c.slots.length, body: 'No free slots for this day.' });
+      if (!cs.done && !cs.hidden) { out.hasBtns = true; out.btns = (c.pref ? [btn('Confirm ' + c.pref, move(c.pref), 'fill', cs.busy === c.pref)] : []).concat([btn('Cancel', () => setCs({ hidden: true }), 'text')]); if (!c.pref) { out.hasChips = c.slots.length > 0; out.chips = c.slots.map((s) => ({ label: s, go: move(s) })); } }
+    }
+    if (c.type === 'cancel') {
+      const rows = c.ids.map((id) => lib.appt(st, id)).filter(Boolean);
+      Object.assign(out, { title: 'Cancel visits', rows: rows.map((a) => row('', lib.fmtDay(a.day) + ' · ' + a.start + ' · ' + lib.patient(st, a.patientId).name)), hasSub: !cs.done, sub: 'Say yes to cancel them. Nothing has been cancelled yet.' });
+      if (!cs.done && !cs.kept) { out.hasBtns = true; out.btns = [btn('Yes, cancel ' + rows.length, () => this.ask('yes'), 'red'), btn('Keep them', () => { setCs({ kept: true }); this.ask('no'); }, 'outline')]; }
+    }
+    if (c.type === 'facts') {
+      const p = lib.patient(st, c.pid);
+      const facts = [['Symptom', 'Mild swelling on the lower left jaw'], ['Medication', 'Chlorhexidine 0.12 % rinse, twice a day for 5 days'], ['Therapy', 'Soft food for 3 more days'], ['Diagnosis', 'Normal healing after extraction of 48']];
+      Object.assign(out, { title: 'Draft visit facts', kv: [{ label: 'Patient', value: p.name }], rows: facts.map(([k, v]) => row('', k + ': ' + v)) });
+      if (!cs.done && !cs.hidden) { out.hasBtns = true; out.btns = [btn('Document everything', () => { if (cs.busy) return; if (offline) { setCs({ err: 'Could not document the facts. Check your connection and try again.' }); return; } setCs({ busy: 'doc' }); this.later('fx' + t.id, 900, () => this.setState({ cardState: Object.assign({}, this.state.cardState, { [t.id]: { done: true, ok: 'Documented ' + facts.length + ' facts.' } }) })); }, 'fill', cs.busy === 'doc'), btn('Review on the visit', () => act('push', { s: 'apptDetails', p: { id: 'A-2004' } }), 'text'), btn('Cancel', () => setCs({ hidden: true }), 'text')]; }
+    }
+    if (c.type === 'docs') {
+      const p = lib.patient(st, c.pid); const docs = st.docs.filter((d) => d.patientId === p.id && !d.locked); const sel = cs.open !== undefined ? cs.open : c.open;
+      const d = sel ? st.docs.find((x) => x.id === sel) : null;
+      Object.assign(out, { title: 'Patient documents', rows: docs.slice(0, 12).map((x) => row('', x.title, () => setCs({ open: x.id }), { bg: x.id === sel ? 'var(--bg-success-subtle)' : 'transparent', hasTrail: true, trail: lib.fmtDate(x.day) })), hasBody: !docs.length, body: p.name + ' has no viewable documents yet.' });
+      if (d) Object.assign(out, { hasViewer: true, viewerTitle: d.title, viewerBg: d.kind === 'image' ? 'var(--bg-media)' : 'var(--bg-canvas)', viewerCaption: d.kind === 'image' ? '' : '[PDF preview · ' + lib.catLabel(d.cat) + ']', fullScreen: () => act('go', { tab: 'patients', s: 'docView', p: { id: d.id } }) });
+    }
+    if (c.type === 'dental') {
+      const p = lib.patient(st, c.pid); const rec = st.appointments.filter((a) => a.patientId === p.id && a.dental).slice(-1)[0];
+      const teeth = rec ? rec.dental.teeth : { '26': ['SV-1'] };
+      const sel = cs.tooth;
+      Object.assign(out, { title: 'Dental diagram', hasHead: true, head: p.name + ' · ' + (rec ? lib.fmtDate(rec.day) : lib.fmtDate(lib.addDays(st.today, -4))), hasTeeth: true, chart: lib.teeth((n) => ({ state: teeth[n] ? 'done' : 'none', selected: String(n) === sel, aria: 'Tooth ' + n + (teeth[n] ? ', ' + teeth[n].length + ' services' : ''), tap: () => setCs({ tooth: String(n) }) }), { interactive: true }), hasTooth: !!sel, toothText: sel ? (teeth[sel] ? 'Services for tooth ' + sel + ': ' + teeth[sel].map((id) => (st.clinic.services.find((s) => s.id === id) || {}).name).join(', ') : 'No services recorded for this tooth.') : '' });
+    }
+    if (c.type === 'open') {
+      const a = lib.appt(st, c.apptId); const p = lib.patient(st, a.patientId); const okSt = a.status !== 'CANCELLED' && a.status !== 'NO_SHOW';
+      Object.assign(out, { title: 'Open visit', kv: [['Patient', p.name], ['Date', lib.fmtDate(a.day)], ['Time', a.start + '–' + a.end], ['Status', lib.status[a.status].label], ['Type', a.kind === 'video' ? 'Video call' : 'In clinic']].map(([l, v]) => ({ label: l, value: v })), hasBtns: okSt, btns: [btn('Open visit', () => act('push', { s: a.kind === 'video' ? 'videoCall' : 'visit', p: { id: a.id } }), 'fill')], hasErr: !okSt, err: 'This visit cannot be opened.' });
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

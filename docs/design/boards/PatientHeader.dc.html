@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PatientHeader</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ph-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+.ph-menu-item:hover{background:#0000000d !important}
+.ph-tab:hover{color:#272727 !important}
+</style>
+</helmet>
+<section aria-label="Patient Jasur Tursunov" style="width: 100%; box-sizing: border-box; background: #ffffff; color: #272727; font-family: Manrope, system-ui, sans-serif; border-radius: 16px; padding: {{pad}} {{pad}} 0; display: flex; flex-direction: column; gap: 16px">
+  <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+    <div style="flex: 1 1 280px; min-width: 0; display: flex; gap: 16px; align-items: center">
+      <span style="position: relative; flex: none">
+        <span aria-hidden="true" style="width: {{avatar}}; height: {{avatar}}; border-radius: 999px; background: #00bbb026; font-size: {{avatarFont}}; font-weight: 700; display: inline-flex; align-items: center; justify-content: center">JT</span>
+        <span role="img" aria-label="Linked to the Shifa patient app" style="position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; background: #00bbb0; border: 2px solid #ffffff; color: #ffffff; display: inline-flex; align-items: center; justify-content: center">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+        </span>
+      </span>
+      <div style="min-width: 0; display: flex; flex-direction: column; gap: 8px">
+        <h1 style="margin: 0; font-size: {{nameSize}}; line-height: {{nameLine}}; font-weight: 700; letter-spacing: -1px">Jasur Tursunov</h1>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 12px; line-height: 12px; font-weight: 500; color: #494d4c">
+          <span>54 · Male</span><span>ID P-100482</span><span>+998 90 123 45 67</span>
+          <span style="flex: none; box-sizing: border-box; height: 24px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #e5f8f7; color: #272727; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 10px; border-radius: 999px"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: #00bbb0"></span>Active</span>
+        </div>
+      </div>
+    </div>
+    <div style="flex: {{actFlex}}; display: flex; gap: 8px; align-items: center; position: relative">
+      <button class="ph-btn" style="flex: {{btnFlex}}; min-width: 0; height: 44px; padding: 0 {{btnPad}}; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer; white-space: nowrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: {{iconDisp}}"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        Send Message
+      </button>
+      <button class="ph-btn" style="flex: {{btnFlex}}; min-width: 0; height: 44px; padding: 0 {{btnPad}}; border: 0; border-radius: 10px; background: #00bbb0; color: #ffffff; box-shadow: 0 0 16px #00000026; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer; white-space: nowrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: {{iconDisp}}"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M12 18v-6M9 15h6"></path></svg>
+        Create Document
+      </button>
+      <button class="ph-btn" onClick="{{toggleMenu}}" aria-label="More actions" aria-haspopup="menu" aria-expanded="{{menuOpenStr}}" style="flex: none; width: 44px; height: 44px; border: 0; border-radius: 10px; background: {{moreBg}}; color: #272727; display: inline-flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+      </button>
+      <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+        <ul role="menu" style="position: absolute; right: 0; top: 52px; z-index: 20; list-style: none; margin: 0; padding: 8px; width: 220px; background: #ffffff; border-radius: 10px; box-shadow: 0 0 6px #00000026; display: flex; flex-direction: column; gap: 2px">
+          <li><button role="menuitem" class="ph-menu-item ph-btn" onClick="{{toggleFav}}" style="width: 100%; height: 40px; border: 0; border-radius: 8px; background: transparent; color: #272727; display: flex; align-items: center; gap: 10px; padding: 0 10px; font: 500 14px/20px Manrope, system-ui, sans-serif; cursor: pointer; text-align: left">
+            <span style="display: inline-flex; color: {{favColor}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="{{favFill}}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"></path></svg></span>{{favLabel}}</button></li>
+          <li><button role="menuitem" class="ph-menu-item ph-btn" onClick="{{toggleMenu}}" style="width: 100%; height: 40px; border: 0; border-radius: 8px; background: transparent; color: #272727; display: flex; align-items: center; gap: 10px; padding: 0 10px; font: 500 14px/20px Manrope, system-ui, sans-serif; cursor: pointer; text-align: left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Edit Patient</button></li>
+          <li><button role="menuitem" class="ph-menu-item ph-btn" onClick="{{askDelete}}" style="width: 100%; height: 40px; border: 0; border-radius: 8px; background: transparent; color: #dc2f2f; display: flex; align-items: center; gap: 10px; padding: 0 10px; font: 700 14px/20px Manrope, system-ui, sans-serif; cursor: pointer; text-align: left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>Delete Patient</button></li>
+        </ul>
+      </sc-if>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+  <button class="ph-btn" onClick="{{toggleHistory}}" aria-expanded="{{historyStr}}" aria-controls="ph-history" style="width: 100%; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #272727; padding: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: Manrope, system-ui, sans-serif">
+    <span style="display: inline-flex; flex: none; color: #494d4c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M9 12h6M9 16h4"></path></svg></span>
+    <span style="font-size: 14px; line-height: 16px; font-weight: 700; white-space: nowrap">Medical history</span>
+    <span style="flex: none; box-sizing: border-box; height: 20px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; background: #f9ebeb; color: #272727; font-size: 10px; line-height: 12px; font-weight: 700; padding: 0 8px; border-radius: 999px"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: #dc2f2f"></span>4 flags</span>
+    <span style="flex: 1 1 auto"></span>
+    <span style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c; white-space: nowrap">{{historyLabel}}</span>
+    <span style="display: inline-flex; flex: none; color: #494d4c; transform: rotate({{historyChevron}}); transition: transform .2s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+  </button>
+  <sc-if value="{{historyOpen}}" hint-placeholder-val="{{ true }}">
+  <ul id="ph-history" aria-label="Medical history flags" style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px">
+    <li style="display: inline-flex; align-items: center; gap: 6px; background: #f9ebeb; border: 1px solid #dc2f2f; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700; flex: none; box-sizing: border-box; height: 28px; white-space: nowrap"><span style="display: inline-flex; color: #dc2f2f"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4M12 17h.01"></path></svg></span>Penicillin allergy</li>
+    <li style="display: inline-flex; align-items: center; gap: 6px; background: #ebf2f9; border: 1px solid #1c75cf; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700; flex: none; box-sizing: border-box; height: 28px; white-space: nowrap"><span style="display: inline-flex; color: #1c75cf"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span>Hypertension</li>
+    <li style="display: inline-flex; align-items: center; gap: 6px; background: #ebf2f9; border: 1px solid #1c75cf; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700; flex: none; box-sizing: border-box; height: 28px; white-space: nowrap"><span style="display: inline-flex; color: #1c75cf"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></span>High cholesterol</li>
+    <li style="display: inline-flex; align-items: center; gap: 6px; background: #00bbb026; border: 1px solid #00bbb0; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700; flex: none; box-sizing: border-box; height: 28px; white-space: nowrap"><span style="display: inline-flex; color: #00bbb0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg></span>AI: possible drug interaction</li>
+  </ul>
+  </sc-if>
+  </div>
+  <dl style="margin: 0; display: grid; grid-template-columns: repeat({{factCols}}, minmax(0, 1fr)); gap: 8px">
+    <div style="background: #f2f3f2; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><dt style="font-size: 10px; line-height: 14px; color: #494d4c">Blood group</dt><dd style="margin: 0; font-size: 14px; line-height: 16px; font-weight: 700">A (II) Rh+</dd></div>
+    <div style="background: #f2f3f2; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><dt style="font-size: 10px; line-height: 14px; color: #494d4c">Language</dt><dd style="margin: 0; font-size: 14px; line-height: 16px; font-weight: 700">Uzbek, Russian</dd></div>
+    <div style="background: #f2f3f2; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><dt style="font-size: 10px; line-height: 14px; color: #494d4c">Last visit</dt><dd style="margin: 0; font-size: 14px; line-height: 16px; font-weight: 700">18 Oct 2026</dd></div>
+    <div style="background: #f2f3f2; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px"><dt style="font-size: 10px; line-height: 14px; color: #494d4c">Next visit</dt><dd style="margin: 0; font-size: 14px; line-height: 16px; font-weight: 700">Today, 11:00</dd></div>
+  </dl>
+  <div role="tablist" aria-label="Patient sections" style="display: flex; gap: 4px; overflow-x: auto; margin: 0 -{{pad}}; padding: 0 {{pad}}; border-top: 1px solid #e8e8e8">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+      <button role="tab" class="ph-tab ph-btn" aria-selected="{{t.selStr}}" onClick="{{t.pick}}" style="flex: none; height: 48px; padding: 0 12px; border: 0; border-bottom: 2px solid {{t.line}}; background: transparent; color: {{t.ink}}; font: {{t.weight}} 14px/20px Manrope, system-ui, sans-serif; cursor: pointer; white-space: nowrap">{{t.label}}</button>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;web&quot;},&quot;onDelete&quot;:{&quot;editor&quot;:null},&quot;onTab&quot;:{&quot;editor&quot;:null},&quot;$preview&quot;:{&quot;width&quot;:1040,&quot;height&quot;:460}}">
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { menu: false, fav: false, tab: 'Overview', history: null }; }
+  renderVals() {
+    const phone = (this.props.layout ?? 'web') === 'phone';
+    const s = this.state;
+    const tabs = ['Overview', 'Visits', 'Documents', 'Medications', 'Messages'].map((label) => {
+      const sel = label === s.tab;
+      return {
+        label, selStr: sel ? 'true' : 'false',
+        line: sel ? '#00bbb0' : 'transparent', ink: sel ? '#272727' : '#494d4c', weight: sel ? 700 : 500,
+        pick: () => { this.setState({ tab: label }); if (this.props.onTab) this.props.onTab(label); }
+      };
+    });
+    const historyOpen = s.history ?? !phone;
+    return {
+      historyOpen, historyStr: historyOpen ? 'true' : 'false',
+      historyLabel: historyOpen ? 'Hide' : 'Show',
+      historyChevron: historyOpen ? '180deg' : '0deg',
+      toggleHistory: () => this.setState({ history: !historyOpen }),
+      pad: phone ? '16px' : '24px',
+      avatar: phone ? '56px' : '72px',
+      avatarFont: phone ? '18px' : '22px',
+      nameSize: phone ? '20px' : '24px',
+      nameLine: phone ? '22px' : '28px',
+      actFlex: phone ? '1 1 100%' : '0 0 auto',
+      btnFlex: phone ? '1 1 0' : '0 0 auto',
+      iconDisp: phone ? 'none' : 'block',
+      btnPad: phone ? '8px' : '16px',
+      factCols: phone ? 2 : 4,
+      menuOpen: s.menu, menuOpenStr: s.menu ? 'true' : 'false',
+      moreBg: s.menu ? '#e5f8f7' : '#f2f3f2',
+      favLabel: s.fav ? 'Remove from Favourites' : 'Add to Favourites',
+      favColor: s.fav ? '#eba400' : '#272727',
+      favFill: s.fav ? '#eba400' : 'none',
+      tabs,
+      toggleMenu: () => this.setState({ menu: !s.menu }),
+      toggleFav: () => this.setState({ fav: !s.fav, menu: false }),
+      askDelete: () => { this.setState({ menu: false }); if (this.props.onDelete) this.props.onDelete(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

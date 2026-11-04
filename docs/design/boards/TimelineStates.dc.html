@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AppointmentTimeline states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1640px; height: 1040px; box-sizing: border-box; padding: 40px; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif; display: flex; gap: 24px; align-items: flex-start">
+  <figure style="margin: 0; width: 560px; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · now 10:27: past slots dim, live slot has halo and Start, free slot books on tap</figcaption>
+    <dc-import name="Timeline" layout="web" hint-size="100%,660px"></dc-import>
+  </figure>
+  <div style="width: 560px; display: flex; flex-direction: column; gap: 32px">
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · after Start: live slot shows In progress</figcaption>
+      <dc-import name="Timeline" layout="web" started="{{yes}}" hint-size="100%,660px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Empty day</figcaption>
+      <dc-import name="Timeline" layout="web" empty="{{yes}}" hint-size="100%,250px"></dc-import>
+    </figure>
+  </div>
+  <figure style="margin: 0; width: 358px; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Phone · narrower gutter, badges wrap under the name</figcaption>
+    <dc-import name="Timeline" layout="phone" hint-size="100%,820px"></dc-import>
+  </figure>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1640,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true }; }
+}
+</script>
+</body>
+</html>

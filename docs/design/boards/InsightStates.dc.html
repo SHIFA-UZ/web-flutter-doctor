@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AiInsightCard states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1600px; height: 1040px; box-sizing: border-box; padding: 40px; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; align-content: start">
+  <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Suggestion · press a button or Dismiss to see the outcome row</figcaption>
+    <dc-import name="Insight" kind="suggestion" hint-size="100%,190px"></dc-import>
+  </figure>
+  <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Risk · source named on the right so the doctor can check it</figcaption>
+    <dc-import name="Insight" kind="risk" hint-size="100%,170px"></dc-import>
+  </figure>
+  <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Visit briefing · always ends with the disclaimer</figcaption>
+    <dc-import name="Insight" kind="briefing" hint-size="100%,230px"></dc-import>
+  </figure>
+  <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Loading · skeleton in the card's shape</figcaption>
+    <dc-import name="Insight" kind="loading" hint-size="100%,150px"></dc-import>
+  </figure>
+  <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px; max-width: 390px">
+    <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Voice session · tap the primary button to step Listening → Thinking → Speaking</figcaption>
+    <dc-import name="Insight" kind="voice" hint-size="100%,440px"></dc-import>
+  </figure>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
