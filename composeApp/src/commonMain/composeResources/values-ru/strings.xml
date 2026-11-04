@@ -282,6 +282,14 @@
     <string name="changePin">Изменить PIN-код</string>
     <string name="changeSlot">Изменить слот</string>
     <string name="changeSubscriptionTier">Изменить уровень подписки</string>
+    <string name="changeTimezoneConfirm">Изменить пояс</string>
+    <string name="changeTimezoneDayBefore">%1$s предыдущего дня</string>
+    <string name="changeTimezoneDevice">На телефоне установлен пояс %1$s. Пока они различаются, календарь будет показывать уведомление.</string>
+    <string name="changeTimezoneExample">Ваше расписание и предстоящие приёмы сохраняют реальное время. Они будут показаны в новом поясе: например, 09:00 станет %1$s.</string>
+    <string name="changeTimezoneFromTo">С %1$s на %2$s.</string>
+    <string name="changeTimezoneNextDay">%1$s следующего дня</string>
+    <string name="changeTimezoneSameOffset">Сегодня время будет выглядеть так же, но правила перехода на летнее время могут отличаться.</string>
+    <string name="changeTimezoneTitle">Изменить часовой пояс практики?</string>
     <string name="chat">Чат</string>
     <string name="chatHistory">История чатов</string>
     <string name="checkInCompleted">Выполнено</string>
@@ -1484,6 +1492,7 @@
     <string name="noSummaryYet">Сохранённая документация приёма не найдена.</string>
     <string name="noTasksFound">Задачи не найдены</string>
     <string name="noTemplatesYet">Шаблонов пока нет. Сначала создайте задачу — после этого она появится здесь.</string>
+    <string name="noTimezoneFound">Часовой пояс не найден. Введите название города на английском.</string>
     <string name="noTokensFound">Токены не найдены</string>
     <string name="noUnreadConversations">Нет непрочитанных бесед</string>
     <string name="noUsersFound">Пользователи не найдены</string>
@@ -1714,6 +1723,7 @@
     <string name="postalCode">Почтовый индекс</string>
     <string name="practiceTimezone">Часовой пояс практики</string>
     <string name="practiceTimezonePlaceholder">Часовой пояс практики (например, Europe/Berlin)</string>
+    <string name="practiceTimezoneSaved">Часовой пояс практики сохранён</string>
     <string name="premiumPlanRequired">Нужен тариф PREMIUM</string>
     <string name="preparingAiDocumentation">Готовим документацию AI-секретаря из записи…</string>
     <string name="prescriptions">Рецепты</string>

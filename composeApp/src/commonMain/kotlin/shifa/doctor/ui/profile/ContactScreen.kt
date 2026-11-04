@@ -112,6 +112,16 @@ class ContactViewModel(
     private val _state = MutableStateFlow(ContactUiState())
     val state: StateFlow<ContactUiState> = _state.asStateFlow()
 
+    init {
+        // The zone saves on its own sheet over this form (PROF-06); the row follows it without touching the edits.
+        viewModelScope.launch {
+            profile.me.collect {
+                    me ->
+                _state.update { it.copy(timeZone = me?.profile?.timeZone) }
+            }
+        }
+    }
+
     /** Each time the screen shows (shell-scoped, like Personal information): an edit in progress is kept. */
     fun open() {
         _state.update { s ->

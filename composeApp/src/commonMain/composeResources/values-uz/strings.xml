@@ -282,6 +282,14 @@
     <string name="changePin">PIN kodni o'zgartirish</string>
     <string name="changeSlot">Vaqtni o'zgartirish</string>
     <string name="changeSubscriptionTier">Obuna darajasini o'zgartirish</string>
+    <string name="changeTimezoneConfirm">Mintaqani o'zgartirish</string>
+    <string name="changeTimezoneDayBefore">%1$s (bir kun oldin)</string>
+    <string name="changeTimezoneDevice">Telefoningiz %1$s mintaqasida. Ular farq qilguncha kalendar ogohlantirish ko'rsatadi.</string>
+    <string name="changeTimezoneExample">Ish vaqtingiz va kelgusi qabullar haqiqiy vaqtini saqlaydi. Ular yangi mintaqada ko'rsatiladi: masalan, 09:00 %1$s bo'ladi.</string>
+    <string name="changeTimezoneFromTo">%1$s dan %2$s ga.</string>
+    <string name="changeTimezoneNextDay">%1$s (keyingi kun)</string>
+    <string name="changeTimezoneSameOffset">Bugun vaqtlar bir xil ko'rinadi, lekin yozgi vaqt qoidalari farq qilishi mumkin.</string>
+    <string name="changeTimezoneTitle">Amaliyot vaqt mintaqasini o'zgartirasizmi?</string>
     <string name="chat">Suhbat</string>
     <string name="chatHistory">Chat tarixi</string>
     <string name="checkInCompleted">Bajarildi</string>
@@ -1484,6 +1492,7 @@
     <string name="noSummaryYet">Saqlangan uchrashuv hujjati topilmadi.</string>
     <string name="noTasksFound">Vazifalar topilmadi</string>
     <string name="noTemplatesYet">Hali shablonlar yo'q. Avval vazifa yarating, keyin u shu yerda paydo bo'ladi.</string>
+    <string name="noTimezoneFound">Vaqt mintaqasi topilmadi. Shahar nomini ingliz tilida yozing.</string>
     <string name="noTokensFound">Tokenlar topilmadi</string>
     <string name="noUnreadConversations">O'qilmagan suhbatlar yo'q</string>
     <string name="noUsersFound">Foydalanuvchilar topilmadi</string>
@@ -1714,6 +1723,7 @@
     <string name="postalCode">Pochta indeksi</string>
     <string name="practiceTimezone">Amaliyot vaqt zonasi</string>
     <string name="practiceTimezonePlaceholder">Amaliyot vaqt zonasi (masalan, Europe/Berlin)</string>
+    <string name="practiceTimezoneSaved">Amaliyot vaqt mintaqasi saqlandi</string>
     <string name="premiumPlanRequired">PREMIUM tarif kerak</string>
     <string name="preparingAiDocumentation">Yozuvdan AI bayonnoma tayyorlanmoqda…</string>
     <string name="prescriptions">Retseptlar</string>

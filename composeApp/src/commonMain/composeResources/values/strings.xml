@@ -282,6 +282,14 @@
     <string name="changePin">Change PIN</string>
     <string name="changeSlot">Change Slot</string>
     <string name="changeSubscriptionTier">Change Subscription Tier</string>
+    <string name="changeTimezoneConfirm">Change timezone</string>
+    <string name="changeTimezoneDayBefore">%1$s the day before</string>
+    <string name="changeTimezoneDevice">Your phone is set to %1$s. The calendar will show a notice while they differ.</string>
+    <string name="changeTimezoneExample">Your availability and upcoming appointments keep their real time. They will be shown in the new timezone: for example 09:00 becomes %1$s.</string>
+    <string name="changeTimezoneFromTo">From %1$s to %2$s.</string>
+    <string name="changeTimezoneNextDay">%1$s the next day</string>
+    <string name="changeTimezoneSameOffset">Times will look the same today, but daylight-saving rules may differ.</string>
+    <string name="changeTimezoneTitle">Change practice timezone?</string>
     <string name="chat">Chat</string>
     <string name="chatHistory">Chat history</string>
     <string name="checkInCompleted">Completed</string>
@@ -1484,6 +1492,7 @@
     <string name="noSummaryYet">No saved appointment documentation found.</string>
     <string name="noTasksFound">No tasks found</string>
     <string name="noTemplatesYet">No templates yet. Create a task first, then it will appear here.</string>
+    <string name="noTimezoneFound">No timezone found. Try the city name in English.</string>
     <string name="noTokensFound">No tokens found</string>
     <string name="noUnreadConversations">No unread conversations</string>
     <string name="noUsersFound">No users found</string>
@@ -1714,6 +1723,7 @@
     <string name="postalCode">Postal Code</string>
     <string name="practiceTimezone">Practice timezone</string>
     <string name="practiceTimezonePlaceholder">Practice timezone (e.g. Europe/Berlin)</string>
+    <string name="practiceTimezoneSaved">Practice timezone saved</string>
     <string name="premiumPlanRequired">PREMIUM plan required</string>
     <string name="preparingAiDocumentation">Preparing AI scribe documentation from the recording…</string>
     <string name="prescriptions">Prescriptions</string>

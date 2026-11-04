@@ -2297,5 +2297,15 @@
   "security": "Безопасность",
   "changePassword": "Изменить пароль",
   "currentPasswordIncorrect": "Текущий пароль неверен",
-  "failedToChangePassword": "Не удалось изменить пароль"
+  "failedToChangePassword": "Не удалось изменить пароль",
+  "practiceTimezoneSaved": "Часовой пояс практики сохранён",
+  "changeTimezoneTitle": "Изменить часовой пояс практики?",
+  "changeTimezoneFromTo": "С {from} на {to}.",
+  "changeTimezoneExample": "Ваше расписание и предстоящие приёмы сохраняют реальное время. Они будут показаны в новом поясе: например, 09:00 станет {time}.",
+  "changeTimezoneSameOffset": "Сегодня время будет выглядеть так же, но правила перехода на летнее время могут отличаться.",
+  "changeTimezoneDevice": "На телефоне установлен пояс {zone}. Пока они различаются, календарь будет показывать уведомление.",
+  "changeTimezoneConfirm": "Изменить пояс",
+  "noTimezoneFound": "Часовой пояс не найден. Введите название города на английском.",
+  "changeTimezoneDayBefore": "{time} предыдущего дня",
+  "changeTimezoneNextDay": "{time} следующего дня"
 }

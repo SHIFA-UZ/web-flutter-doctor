@@ -173,3 +173,31 @@ Built 2026-11-04. Spec `08 §4`.
 - **Tests:** `ProfessionCatalogTest` (5): Flutter's pinned catalogue checks (138 entries, Urologist → Urolog, ten
   specialties), every dental entry in English and Uzbek, Russian / Uzbek free text, a multi-profession value, and no
   other catalogue entry flagged.
+
+## PROF-06 · Practice timezone picker
+
+Built 2026-11-04. Flows `08/05-practice-timezone-picker.md`, `08/06-practice-timezone-change-warning.md`; board
+`DaProfile.dc.html` (`setTimezone`).
+
+- **Shared list** (`ui/profile/TimeZonePicker.kt`, `TimeZonePickerSheet`): each row the city ("Buenos Aires"), then
+  "Region/City · UTC+5" (offset now); the device's zone first ("Detected on this device"), then the current one
+  ("Current", ticked), then the board's short list; typing searches every platform zone by id, city with spaces
+  ("buenos aires") or offset ("+5", "utc+5", "+5:30"); "No timezone found. Try the city name in English." when nothing
+  matches. Registration's picker now uses it too.
+- **Practice timezone sheet** (`PracticeTimezoneSheet` + `TimezoneViewModel`): opened in place over the Profile root
+  (row and completeness chip) and over Contact & clinic address (its row follows the saved zone without touching the
+  form's edits). A first zone saves at once; the same zone closes; another zone asks "Change practice timezone?" (from
+  → to with offsets; what 09:00 becomes, or "Times will look the same today…" for an equal offset; the phone's zone
+  when it differs from the new one), then `PATCH /doctors/me/profile {"timeZone"}`. Success: "Practice timezone saved"
+  on the screen beneath. The warning stays up while saving; a failure shows in it with the request id, and Confirm
+  retries. The example uses the offsets now and says "the day before" / "the next day"; an unreadable zone gets no
+  example. Closing during a save and reopening keeps the save; a rotation keeps the search and the warning.
+- **Not built:** region headers and the flow's curated 47 (the board's short list of 19 plus full search instead), the
+  "Unknown timezone" row, the appointment count in the warning (no calendar data yet), and staff's read-only
+  "Set by your clinic" caption (staff never reach the sheet).
+- **Verified on the emulator against dev (2026-11-04):** sheet over the Profile root, the warning for
+  Tashkent → Berlin ("09:00 becomes 05:00"), Cancel (nothing written).
+- **Tests:** `TimezoneViewModelTest` (5: first zone saves, same zone closes, change asks first and confirm saves,
+  failure keeps the old zone, 09:00 shift with day changes and DST, save surviving close/reopen and rotation),
+  `TimeZonesTest` (+2: city / offset search incl. Etc/GMT+5, current zone order),
+  `Register_timeZonePicker` screenshot re-recorded with the new rows.

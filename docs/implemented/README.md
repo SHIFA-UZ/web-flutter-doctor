@@ -72,7 +72,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | PROF-03 Personal information | Done | Names, date of birth, gender, professions (shared picker), changed-keys-only save, discard question; photo from gallery or camera uploads at once. Remove photo waits for BE-30. See profile.md. |
 | PROF-04 Contact, invoicing, password | Done | Contact & clinic address (phone, e-mail, editable address fields, timezone row), Subscription & billing (current plan, invoicing card), Security (app lock + change password). Address search and map are PROF-07; plans and checkout SUB-02. See profile.md. |
 | PROF-05 Profession catalogue | Done | Catalogue, fallback and picker came with AUTH-07 / PROF-03; dental detection (with Implantologist) ported with Flutter's tests. See profile.md. |
-| PROF-06 … SET-03 | Not started | |
+| PROF-06 Timezone picker | Done | Shared timezone list (city, zone, offset; offset search), practice-timezone sheet over Profile and Contact with the change warning. See profile.md. |
+| PROF-07 … SET-03 | Not started | |
 
 ## Log
 
@@ -106,3 +107,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · PROF-03 · Personal information panel, photo upload, shared profession picker; fragment 1.8.9 fixes picker crash.
 - 2026-11-04 · PROF-04 · Contact & clinic address, invoicing details, Security with password change; shared profile form pieces.
 - 2026-11-04 · PROF-05 · Dental documentation detection and the pinned profession catalogue tests.
+- 2026-11-04 · PROF-06 · Practice timezone sheet with change warning; shared timezone list for registration and profile.

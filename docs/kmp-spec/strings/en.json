@@ -2297,5 +2297,15 @@
   "security": "Security",
   "changePassword": "Change password",
   "currentPasswordIncorrect": "Current password is incorrect",
-  "failedToChangePassword": "Failed to change password"
+  "failedToChangePassword": "Failed to change password",
+  "practiceTimezoneSaved": "Practice timezone saved",
+  "changeTimezoneTitle": "Change practice timezone?",
+  "changeTimezoneFromTo": "From {from} to {to}.",
+  "changeTimezoneExample": "Your availability and upcoming appointments keep their real time. They will be shown in the new timezone: for example 09:00 becomes {time}.",
+  "changeTimezoneSameOffset": "Times will look the same today, but daylight-saving rules may differ.",
+  "changeTimezoneDevice": "Your phone is set to {zone}. The calendar will show a notice while they differ.",
+  "changeTimezoneConfirm": "Change timezone",
+  "noTimezoneFound": "No timezone found. Try the city name in English.",
+  "changeTimezoneDayBefore": "{time} the day before",
+  "changeTimezoneNextDay": "{time} the next day"
 }

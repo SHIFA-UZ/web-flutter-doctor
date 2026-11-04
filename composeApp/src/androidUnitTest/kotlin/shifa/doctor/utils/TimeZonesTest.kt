@@ -32,4 +32,39 @@ class TimeZonesTest {
         assertThat(TimeZones.utcLabel("UTC", now)).isEqualTo("UTC")
         assertThat(TimeZones.utcLabel("Nowhere/City", now)).isNull()
     }
+
+    @Test
+    fun `search finds a city with spaces and an offset typed with or without UTC`() {
+        val all = {
+            setOf(
+                "Asia/Tashkent",
+                "Asia/Karachi",
+                "America/Argentina/Buenos_Aires",
+                "Europe/Berlin",
+                "Asia/Kolkata",
+            )
+        }
+        assertThat(TimeZones.options("buenos aires", null, all)).containsExactly("America/Argentina/Buenos_Aires")
+        assertThat(TimeZones.options("+5", null, all)).containsExactly("Asia/Karachi", "Asia/Tashkent")
+        assertThat(TimeZones.options("utc+5", null, all)).containsExactly("Asia/Karachi", "Asia/Tashkent")
+        assertThat(TimeZones.options("+5:30", null, all)).containsExactly("Asia/Kolkata")
+        assertThat(TimeZones.options("+05:00", null, all)).containsExactly("Asia/Karachi", "Asia/Tashkent")
+        assertThat(TimeZones.options("UTC+0", null, all = { setOf("UTC", "Asia/Tashkent") })).containsExactly("UTC")
+        assertThat(TimeZones.options("5", null, all)).isEmpty() // a bare number is not an offset
+        // Etc/GMT+5 is UTC−5: an offset query never matches it by its id.
+        assertThat(
+            TimeZones.options("+5", null, all = { setOf("Etc/GMT+5", "Asia/Tashkent") }),
+        ).containsExactly("Asia/Tashkent")
+        assertThat(
+            TimeZones.options("-5", null, all = { setOf("Etc/GMT+5", "Asia/Tashkent") }),
+        ).containsExactly("Etc/GMT+5")
+        assertThat(TimeZones.city("America/Argentina/Buenos_Aires")).isEqualTo("Buenos Aires")
+    }
+
+    @Test
+    fun `the current zone is offered right after the detected one`() {
+        assertThat(TimeZones.options("", "Asia/Tashkent", current = "Pacific/Auckland").take(2))
+            .containsExactly("Asia/Tashkent", "Pacific/Auckland")
+            .inOrder()
+    }
 }

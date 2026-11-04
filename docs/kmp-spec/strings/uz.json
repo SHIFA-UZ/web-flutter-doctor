@@ -2297,5 +2297,15 @@
   "security": "Xavfsizlik",
   "changePassword": "Parolni o'zgartirish",
   "currentPasswordIncorrect": "Joriy parol noto'g'ri",
-  "failedToChangePassword": "Parolni o'zgartirib bo'lmadi"
+  "failedToChangePassword": "Parolni o'zgartirib bo'lmadi",
+  "practiceTimezoneSaved": "Amaliyot vaqt mintaqasi saqlandi",
+  "changeTimezoneTitle": "Amaliyot vaqt mintaqasini o'zgartirasizmi?",
+  "changeTimezoneFromTo": "{from} dan {to} ga.",
+  "changeTimezoneExample": "Ish vaqtingiz va kelgusi qabullar haqiqiy vaqtini saqlaydi. Ular yangi mintaqada ko'rsatiladi: masalan, 09:00 {time} bo'ladi.",
+  "changeTimezoneSameOffset": "Bugun vaqtlar bir xil ko'rinadi, lekin yozgi vaqt qoidalari farq qilishi mumkin.",
+  "changeTimezoneDevice": "Telefoningiz {zone} mintaqasida. Ular farq qilguncha kalendar ogohlantirish ko'rsatadi.",
+  "changeTimezoneConfirm": "Mintaqani o'zgartirish",
+  "noTimezoneFound": "Vaqt mintaqasi topilmadi. Shahar nomini ingliz tilida yozing.",
+  "changeTimezoneDayBefore": "{time} (bir kun oldin)",
+  "changeTimezoneNextDay": "{time} (keyingi kun)"
 }

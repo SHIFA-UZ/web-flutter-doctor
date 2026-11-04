@@ -30,14 +30,38 @@ object TimeZones {
         return if (seconds == 0) "UTC" else "UTC$sign$h" + if (m > 0) ":" + m.toString().padStart(2, '0') else ""
     }
 
-    /** The detected zone first, then the short list, or every matching zone when [query] isn't blank. */
+    /** "America/Argentina/Buenos_Aires" → "Buenos Aires" (flow 08/05 §3). */
+    fun city(zoneId: String) = zoneId.substringAfterLast('/').replace('_', ' ')
+
+    /**
+     * The detected and the [current] zone first, then the short list, or every matching zone when [query] isn't
+     * blank. A query matches the id, the city with spaces ("buenos aires") or the offset now ("+5", "utc+5").
+     */
     fun options(
         query: String,
         detected: String?,
         all: () -> Set<String> = { TimeZone.availableZoneIds },
+        current: String? = null,
     ): List<String> {
         val q = query.trim()
-        val base = listOfNotNull(detected) + (if (q.isEmpty()) common else all().sorted())
-        return base.distinct().filter { q.isEmpty() || it.contains(q, ignoreCase = true) }
+        val base = listOfNotNull(detected, current) + (if (q.isEmpty()) common else all().sorted())
+        return base.distinct().filter { q.isEmpty() || matches(it, q) }
     }
+
+    private fun matches(
+        zoneId: String,
+        query: String,
+    ): Boolean {
+        // An offset ("+5", "UTC-3:30") matches the offset now only: "Etc/GMT+5" is UTC−5 and must not come up by its id.
+        val typed = query.replace('−', '-').replace(Regex("^utc", RegexOption.IGNORE_CASE), "")
+        OFFSET.matchEntire(typed)?.let { m ->
+            val (sign, hours, minutes) = m.destructured
+            val seconds = (hours.toInt() * 3600 + (minutes.toIntOrNull() ?: 0) * 60) * if (sign == "-") -1 else 1
+            return runCatching { TimeZone.of(zoneId).offsetAt(currentInstant()).totalSeconds }.getOrNull() == seconds
+        }
+        return zoneId.contains(query, ignoreCase = true) || zoneId.replace('_', ' ').contains(query, ignoreCase = true)
+    }
+
+    // "+5", "-3:30", "+05:00", "+0": compared as seconds, so every spelling of an offset finds the same zones.
+    private val OFFSET = Regex("""([+-])(\d{1,2})(?::(\d{2}))?""")
 }

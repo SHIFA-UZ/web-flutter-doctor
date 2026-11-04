@@ -23,7 +23,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -96,6 +99,7 @@ import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.profile.BillingScreen
 import shifa.doctor.ui.profile.ContactScreen
 import shifa.doctor.ui.profile.PersonalInfoScreen
+import shifa.doctor.ui.profile.PracticeTimezoneSheet
 import shifa.doctor.ui.profile.ProfileActions
 import shifa.doctor.ui.profile.ProfileScreen
 import shifa.doctor.ui.profile.ProfileSection
@@ -277,46 +281,59 @@ private fun RouteContent(
     route: ShellRoute,
     actions: ShellActions,
     staff: Boolean,
-) = when (route) {
-    is ShellRoute.Root ->
-        if (route.tab == ShellTab.Profile) {
-            ProfileScreen(
-                staff,
-                ProfileActions(
-                    open = { actions.push(ShellRoute.Profile(it)) },
-                    schedule = { actions.push(ShellRoute.Schedule) },
-                    reports = { actions.push(ShellRoute.Reports) },
-                    signOut = actions.signOut,
-                ),
-            )
-        } else {
-            TabPlaceholder(route.tab.label, route.tab.icon)
-        }
-    is ShellRoute.Profile ->
-        when (route.section) {
-            ProfileSection.PersonalInfo -> PersonalInfoScreen(onClose = actions.back)
-            ProfileSection.Contact ->
-                ContactScreen(
-                    onClose = actions.back,
-                    onTimezone = { actions.push(ShellRoute.Profile(ProfileSection.Timezone)) },
+) {
+    when (route) {
+        is ShellRoute.Root ->
+            if (route.tab == ShellTab.Profile) {
+                var timezone by rememberSaveable { mutableStateOf(false) }
+                ProfileScreen(
+                    staff,
+                    ProfileActions(
+                        // The zone is a sheet over the root (flow 08/05 §2), not a pushed screen.
+                        open = {
+                            if (it == ProfileSection.Timezone) {
+                                timezone = true
+                            } else {
+                                actions.push(
+                                    ShellRoute.Profile(it),
+                                )
+                            }
+                        },
+                        schedule = { actions.push(ShellRoute.Schedule) },
+                        reports = { actions.push(ShellRoute.Reports) },
+                        signOut = actions.signOut,
+                    ),
                 )
-            ProfileSection.Subscription -> BillingScreen(onClose = actions.back)
-            ProfileSection.Security -> SecurityScreen(onClose = actions.back)
-            else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
-        }
-    ShellRoute.Schedule ->
-        Pushed(Res.string.schedule, actions) {
-            TabPlaceholder(Res.string.schedule, Res.drawable.ic_calendar_22)
-        }
-    ShellRoute.Reports ->
-        Pushed(Res.string.navReports, actions) {
-            TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
-        }
-    ShellRoute.Language ->
-        Pushed(Res.string.language, actions) {
-            TabPlaceholder(Res.string.language, Res.drawable.ic_globe_22)
-        }
-    ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
+                if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
+            } else {
+                TabPlaceholder(route.tab.label, route.tab.icon)
+            }
+        is ShellRoute.Profile ->
+            when (route.section) {
+                ProfileSection.PersonalInfo -> PersonalInfoScreen(onClose = actions.back)
+                ProfileSection.Contact -> {
+                    var timezone by rememberSaveable { mutableStateOf(false) }
+                    ContactScreen(onClose = actions.back, onTimezone = { timezone = true })
+                    if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
+                }
+                ProfileSection.Subscription -> BillingScreen(onClose = actions.back)
+                ProfileSection.Security -> SecurityScreen(onClose = actions.back)
+                else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
+            }
+        ShellRoute.Schedule ->
+            Pushed(Res.string.schedule, actions) {
+                TabPlaceholder(Res.string.schedule, Res.drawable.ic_calendar_22)
+            }
+        ShellRoute.Reports ->
+            Pushed(Res.string.navReports, actions) {
+                TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
+            }
+        ShellRoute.Language ->
+            Pushed(Res.string.language, actions) {
+                TabPlaceholder(Res.string.language, Res.drawable.ic_globe_22)
+            }
+        ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
+    }
 }
 
 @Composable

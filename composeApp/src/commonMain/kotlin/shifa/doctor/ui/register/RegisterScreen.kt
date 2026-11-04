@@ -45,7 +45,6 @@ import shifa.doctor.generated.resources.accountInformation
 import shifa.doctor.generated.resources.confirmPassword
 import shifa.doctor.generated.resources.confirmRegistration
 import shifa.doctor.generated.resources.createAccount
-import shifa.doctor.generated.resources.detectedOnThisDevice
 import shifa.doctor.generated.resources.discard
 import shifa.doctor.generated.resources.discardRegistrationBody
 import shifa.doctor.generated.resources.discardRegistrationTitle
@@ -63,25 +62,23 @@ import shifa.doctor.generated.resources.password
 import shifa.doctor.generated.resources.phoneNumber
 import shifa.doctor.generated.resources.practiceTimezone
 import shifa.doctor.generated.resources.practiceTimezonePlaceholder
-import shifa.doctor.generated.resources.searchTimezone
 import shifa.doctor.generated.resources.stepOfTotal
 import shifa.doctor.ui.auth.AuthFrame
 import shifa.doctor.ui.auth.AuthTitle
 import shifa.doctor.ui.auth.PasswordChecklist
 import shifa.doctor.ui.auth.PasswordField
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.profile.TimeZonePickerSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.DialogTone
-import shifa.doctor.ui.widgets.OptionItem
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaPickField
-import shifa.doctor.ui.widgets.ShifaPickerSheet
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaTag
 import shifa.doctor.ui.widgets.ShifaTagType
@@ -225,34 +222,20 @@ fun RegisterScreenContent(
     }
 }
 
-/** The picker's list: the detected zone first (marked), the board's short list, or every match while typing. */
+/** The shared practice-timezone list (PROF-06): the detected zone first, the short list, or every match. */
 @Composable
 internal fun TimeZonePicker(
     state: RegisterUiState,
     actions: RegisterActions,
-) {
-    val zones = state.timeZoneOptions
-    val detected = tr(Res.string.detectedOnThisDevice)
-    ShifaPickerSheet(
-        tr(Res.string.practiceTimezone),
-        state.query,
-        actions.onQuery,
-        tr(Res.string.searchTimezone),
-        zones.map {
-            OptionItem(
-                it,
-                selected = it == state.timeZone,
-                sub =
-                    detected.takeIf {
-                            _ ->
-                        it == state.detectedTimeZone
-                    },
-            )
-        },
-        onPick = { actions.pickTimeZone(zones[it]) },
-        onClose = actions.closePicker,
-    )
-}
+) = TimeZonePickerSheet(
+    state.query,
+    actions.onQuery,
+    state.timeZoneOptions,
+    state.timeZone,
+    state.detectedTimeZone,
+    actions.pickTimeZone,
+    actions.closePicker,
+)
 
 @Composable
 private fun ColumnScope.FormStep(
