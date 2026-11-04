@@ -163,7 +163,13 @@ internal fun BillingPreview() =
         val saved = InvoicingForm("Dr Aziza Karimova", "billing@shifa.dev", "", "")
         BillingContent(
             BillingUiState(
-                tier = shifa.doctor.data.subscription.DoctorTier.Pro,
+                tier = shifa.doctor.data.subscription.DoctorTier.Basic,
+                plans =
+                    listOf(
+                        shifa.doctor.data.subscription.SubscriptionPlan("BASIC", "Basic", 9900, "EUR"),
+                        shifa.doctor.data.subscription.SubscriptionPlan("PRO", "Pro", 19900, "EUR"),
+                    ),
+                billing = shifa.doctor.data.model.DoctorBilling(stripeConnectAccountId = "acct_1Qx9ZzA2b3C41234"),
                 saved = saved,
                 form = saved.copy(iban = "DE89 37"),
                 ibanError = Res.string.invalidIban,

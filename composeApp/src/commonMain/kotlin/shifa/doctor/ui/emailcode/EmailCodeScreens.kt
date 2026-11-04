@@ -54,7 +54,7 @@ internal fun codeBanner(
     banner?.let { b ->
         {
             ShifaBanner(
-                tr(b.text),
+                tr(b.text, *b.args.toTypedArray()),
                 if (b.error) Res.drawable.ic_alert_circle_16 else Res.drawable.ic_check_circle_16,
                 if (b.error) ShifaBannerType.Error else ShifaBannerType.Success,
                 onClose = onDismiss,

@@ -297,6 +297,7 @@
     <string name="checkInDetails">Check-in Details</string>
     <string name="checkIns">Check-ins</string>
     <string name="checkingCall">Checking…</string>
+    <string name="checkoutFailed">Couldn't open the payment page. Try again.</string>
     <string name="chooseAClinic">Choose a clinic</string>
     <string name="chooseFromGallery">Choose from Gallery</string>
     <string name="chooseNewPasswordFor">Choose a new password for %1$s.</string>
@@ -699,6 +700,7 @@
     <string name="confirmRegistration">Confirm registration</string>
     <string name="confirmReset">Confirm Reset</string>
     <string name="confirmed">Confirmed</string>
+    <string name="connectStripe">Connect Stripe</string>
     <string name="consultationDocumentsDropHint">Drop files here or tap to upload (saved as a medical document)</string>
     <string name="consultationDocumentsUploading">Uploading…</string>
     <string name="consultationFocusModeTitle">Consultation notes</string>
@@ -753,6 +755,7 @@
     <string name="currentPassword">Current Password</string>
     <string name="currentPasswordIncorrect">Current password is incorrect</string>
     <string name="currentPasswordIsRequired">Current password is required</string>
+    <string name="currentPlanButton">Current plan</string>
     <string name="customTimesAddAtLeastOne">Add at least one time slot</string>
     <string name="customTimesAddSlot">Add time slot</string>
     <string name="customTimesEmpty">No slots yet — add one below.</string>
@@ -1695,6 +1698,8 @@
     <string name="paymentStateRaw">%1$s</string>
     <string name="paymentUnknown">Unknown</string>
     <string name="paymentsOpsTitle">Payments Ops</string>
+    <string name="payouts">Payouts</string>
+    <string name="payoutsHelper">Patients' card payments are paid out to this account</string>
     <string name="pdfGeneratedPrintingNotImplemented">PDF generated. Printing not yet implemented.</string>
     <string name="pediatrician">Pediatrician</string>
     <string name="pending">Pending</string>
@@ -1720,9 +1725,13 @@
     <string name="pinsDoNotMatch">PINs do not match</string>
     <string name="pinsDontMatch">PINs don't match. Start again.</string>
     <string name="place">Place</string>
+    <string name="planChanged">You're now on %1$s</string>
     <string name="planCurrencyUnknown">Plan currency unknown</string>
+    <string name="planManagedBySupport">Your plan is managed by Shifa. Contact support to change it.</string>
     <string name="planPremium">Premium</string>
     <string name="planPro">Pro</string>
+    <string name="planUnchanged">No change yet. Payments can take a minute.</string>
+    <string name="plans">Plans</string>
     <string name="plansLoadFailed">Could not load treatment plans</string>
     <string name="pleaseChoosePlace">Please choose a place</string>
     <string name="pleaseConfirmNewPasswordError">Please confirm new password</string>
@@ -1742,6 +1751,7 @@
     <string name="preparingAiDocumentation">Preparing AI scribe documentation from the recording…</string>
     <string name="prescriptions">Prescriptions</string>
     <string name="previous">Previous</string>
+    <string name="pricePerMonth">%1$s / month</string>
     <string name="priceScopeAllLocations">All locations (default)</string>
     <string name="priceScopeLabel">Applies to</string>
     <string name="primary">Primary</string>
@@ -1809,6 +1819,7 @@
     <string name="removePriceRow">Remove price</string>
     <string name="removeRow">Remove row</string>
     <string name="removeService">Remove Service</string>
+    <string name="renewsOn">Renews on %1$s</string>
     <string name="repeatPin">Repeat your PIN</string>
     <string name="reportsScreenSubtitle">Clinic analytics, trends, and performance reports</string>
     <string name="reportsSmsNotAllowed">SMS reminders are not enabled for your account. Contact support.</string>
@@ -1831,6 +1842,7 @@
     <string name="resetDoctorCalendar">Reset Doctor Calendar</string>
     <string name="resetPassword">Reset Password</string>
     <string name="resetPasswordFailed">Could not reset the password. Please try again.</string>
+    <string name="resumeStripe">Resume Stripe onboarding</string>
     <string name="retry">Retry</string>
     <string name="retryBriefing">Retry briefing</string>
     <string name="retryMetaLine">retryCount: %1$s · lastRetryAt: %2$s · retriedByAdminUserId: %3$s</string>
@@ -2038,6 +2050,8 @@
     <string name="stepWaitingAi">Waiting for AI notes…</string>
     <string name="streetAddress">Street Address</string>
     <string name="streetAddressHelper">You can edit this field to add building details, floor, room number, etc.</string>
+    <string name="stripeConnected">Connected · %1$s</string>
+    <string name="stripeNotConnected">Not connected</string>
     <string name="submit">Submit</string>
     <string name="submittedAt">Submitted at</string>
     <string name="subscriptionAndBilling">Subscription &amp; billing</string>
@@ -2229,6 +2243,7 @@
     <string name="updateRequiredBody">A newer version of Shifa Doctor is required to continue.</string>
     <string name="updateRequiredTitle">Update required</string>
     <string name="updateScheduleMessage">Update schedule - Your calendar does not provide booking slots this far ahead</string>
+    <string name="upgradeToPlan">Upgrade to %1$s</string>
     <string name="uploadCertificate">Upload Certificate</string>
     <string name="uploadDocument">Upload Document</string>
     <string name="uploadError">Upload error</string>

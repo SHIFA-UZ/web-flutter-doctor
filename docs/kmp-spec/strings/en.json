@@ -2338,5 +2338,20 @@
   "moveUp": "Move {name} up",
   "moveDown": "Move {name} down",
   "deleteGroupTitle": "Delete group?",
-  "deleteGroupBody": "Its services stay and become ungrouped."
+  "deleteGroupBody": "Its services stay and become ungrouped.",
+  "plans": "Plans",
+  "pricePerMonth": "{price} / month",
+  "currentPlanButton": "Current plan",
+  "upgradeToPlan": "Upgrade to {plan}",
+  "planManagedBySupport": "Your plan is managed by Shifa. Contact support to change it.",
+  "payouts": "Payouts",
+  "payoutsHelper": "Patients' card payments are paid out to this account",
+  "stripeNotConnected": "Not connected",
+  "stripeConnected": "Connected · {account}",
+  "connectStripe": "Connect Stripe",
+  "resumeStripe": "Resume Stripe onboarding",
+  "planChanged": "You're now on {plan}",
+  "planUnchanged": "No change yet. Payments can take a minute.",
+  "checkoutFailed": "Couldn't open the payment page. Try again.",
+  "renewsOn": "Renews on {date}"
 }

@@ -302,3 +302,30 @@ Built 2026-11-04. Flow `08/08` §3 (groups editor sheet) and §7.
 - **Tests:** `ServicesViewModelTest` (+2: delete, PATCH with the new order, POST of a new group, the required name;
   retry after a partial failure),
   `ProfileScreenshotTest` (+1: `Services_groups`; `Services_list` re-recorded with the groups row).
+
+## SUB-02 · Plans, checkout and Stripe Connect
+
+Built 2026-11-04. Flow `08/09-subscription-and-billing.md` §3–§5; spec `08 §1.7, §5.3`.
+
+- **Data** (`data/subscription/SubscriptionRepository.kt`): `GET /doctor/subscription/plans` (dev: BASIC €99 and PRO
+  €199 a month; PREMIUM has no plan, admins set it), `POST /doctor/subscription/checkout {planCode, gateway:
+  "STRIPE"}` → `checkoutUrl`, `POST /doctor/payments/stripe/connect/onboard {}` → `onboardingUrl`.
+- **Subscription & billing** gained two cards above the invoicing details:
+  - **Plans** (once the plan is known, D-03): each plan's name and "99.00 EUR / month" (`Money`), "Current plan" on
+    the doctor's, "Upgrade to Pro" on higher ones, nothing on lower ones (no downgrade in the app); "Your plan is
+    managed by Shifa…" when there is nothing higher to buy (PREMIUM, or PRO with no PREMIUM plan).
+  - **Payouts:** "Not connected" or "Connected · acct_••••1234" (last four only), the helper line, and Connect Stripe /
+    Resume Stripe onboarding.
+  - Both pages open in the in-app browser (Custom Tab / SFSafariViewController, `utils/InAppBrowser`). Back in the
+    app (`ON_RESUME`) the profile is read again: after a checkout "You're now on PRO" or "No change yet. Payments can
+    take a minute."; after onboarding the account line updates. A failed request: "Couldn't open the payment page"
+    with the request id. `CodeBanner` gained `args` for the plan name. After a checkout the plan is read up to three
+    more times, 3 s apart (the webhook may lag); an unread profile keeps the check for the next return; reopening
+    the screen keeps a request in progress. "Renews on dd.MM.yyyy" from `GET /doctor/subscription/me` when there is a
+    paid period; a blank page URL is an error; failed plans show Retry.
+- **Not built:** the feature matrix, the "Needed for: …" chip from locked features, the `shifa://billing/return` app
+  link (the resume check covers closing the tab), "Open Stripe dashboard" (no endpoint).
+- **Not tried on dev:** the checkout and onboarding buttons (they create Stripe sessions); covered by tests and the
+  demo backend, which answers with placeholder pages.
+- **Tests:** `BillingSubscriptionTest` (5: plans and the checkout request, resume after checkout changed / unchanged,
+  Connect and its failure, renewal date and plans retry, empty URL), `ProfileScreenshotTest` (`Billing_ibanError` re-recorded with plans and payouts).

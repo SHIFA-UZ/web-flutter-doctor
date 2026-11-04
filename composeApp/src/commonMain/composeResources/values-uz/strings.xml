@@ -297,6 +297,7 @@
     <string name="checkInDetails">Tekshiruv tafsilotlari</string>
     <string name="checkIns">Tekshiruvlar</string>
     <string name="checkingCall">Tekshirilmoqda…</string>
+    <string name="checkoutFailed">To'lov sahifasini ochib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="chooseAClinic">Klinikani tanlang</string>
     <string name="chooseFromGallery">Galereyadan tanlash</string>
     <string name="chooseNewPasswordFor">%1$s uchun yangi parol tanlang.</string>
@@ -699,6 +700,7 @@
     <string name="confirmRegistration">Ro'yxatdan o'tishni tasdiqlash</string>
     <string name="confirmReset">Tasdiqlash</string>
     <string name="confirmed">Tasdiqlangan</string>
+    <string name="connectStripe">Stripe'ni ulash</string>
     <string name="consultationDocumentsDropHint">Fayllarni shu yerga torting yoki yuklash uchun bosing (bemorning tibbiy hujjati sifatida saqlanadi)</string>
     <string name="consultationDocumentsUploading">Yuklanmoqda…</string>
     <string name="consultationFocusModeTitle">Konsultatsiya izohlari</string>
@@ -753,6 +755,7 @@
     <string name="currentPassword">Joriy parol</string>
     <string name="currentPasswordIncorrect">Joriy parol noto'g'ri</string>
     <string name="currentPasswordIsRequired">Joriy parol talab qilinadi</string>
+    <string name="currentPlanButton">Joriy tarif</string>
     <string name="customTimesAddAtLeastOne">Kamida bitta vaqt qo'shing</string>
     <string name="customTimesAddSlot">Vaqt qo'shish</string>
     <string name="customTimesEmpty">Hali vaqtlar qo'shilmagan — quyida qo'shing.</string>
@@ -1695,6 +1698,8 @@
     <string name="paymentStateRaw">%1$s</string>
     <string name="paymentUnknown">Noma'lum</string>
     <string name="paymentsOpsTitle">To'lov operatsiyalari</string>
+    <string name="payouts">To'lovlar</string>
+    <string name="payoutsHelper">Bemorlarning karta orqali to'lovlari shu hisobga o'tkaziladi</string>
     <string name="pdfGeneratedPrintingNotImplemented">PDF yaratildi. Chop etish hali amalga oshirilmagan.</string>
     <string name="pediatrician">Pediatr</string>
     <string name="pending">Kutilmoqda</string>
@@ -1720,9 +1725,13 @@
     <string name="pinsDoNotMatch">PIN kodlar mos kelmadi</string>
     <string name="pinsDontMatch">PIN-kodlar mos kelmadi. Qaytadan boshlang.</string>
     <string name="place">Joy</string>
+    <string name="planChanged">Endi siz %1$s tarifidasiz</string>
     <string name="planCurrencyUnknown">Reja valyutasi noma'lum</string>
+    <string name="planManagedBySupport">Tarifingizni Shifa boshqaradi. O'zgartirish uchun qo'llab-quvvatlashga yozing.</string>
     <string name="planPremium">Premium</string>
     <string name="planPro">Pro</string>
+    <string name="planUnchanged">Hozircha o'zgarish yo'q. To'lov bir daqiqa olishi mumkin.</string>
+    <string name="plans">Tariflar</string>
     <string name="plansLoadFailed">Davolash rejalarini yuklab bo'lmadi</string>
     <string name="pleaseChoosePlace">Iltimos, joy tanlang</string>
     <string name="pleaseConfirmNewPasswordError">Iltimos, yangi parolni tasdiqlang</string>
@@ -1742,6 +1751,7 @@
     <string name="preparingAiDocumentation">Yozuvdan AI bayonnoma tayyorlanmoqda…</string>
     <string name="prescriptions">Retseptlar</string>
     <string name="previous">Oldingi</string>
+    <string name="pricePerMonth">%1$s / oy</string>
     <string name="priceScopeAllLocations">Barcha joylar (standart)</string>
     <string name="priceScopeLabel">Qo'llaniladi</string>
     <string name="primary">Asosiy</string>
@@ -1809,6 +1819,7 @@
     <string name="removePriceRow">Narxni olib tashlash</string>
     <string name="removeRow">Qatorni olib tashlash</string>
     <string name="removeService">Xizmatni olib tashlash</string>
+    <string name="renewsOn">%1$s da yangilanadi</string>
     <string name="repeatPin">PIN-kodni takrorlang</string>
     <string name="reportsScreenSubtitle">Klinika analitikasi, trendlar va samaradorlik hisobotlari</string>
     <string name="reportsSmsNotAllowed">Hisobingizda SMS eslatmalar yoqilmagan. Qo'llab-quvvatlash bilan bog'laning.</string>
@@ -1831,6 +1842,7 @@
     <string name="resetDoctorCalendar">Shifokor taqvimini qayta o'rnatish</string>
     <string name="resetPassword">Parolni tiklash</string>
     <string name="resetPasswordFailed">Parolni tiklab bo'lmadi. Iltimos, qayta urinib ko'ring.</string>
+    <string name="resumeStripe">Stripe ulanishini davom ettirish</string>
     <string name="retry">Qayta urinish</string>
     <string name="retryBriefing">Qayta urinish</string>
     <string name="retryMetaLine">retryCount: %1$s · lastRetryAt: %2$s · retriedByAdminUserId: %3$s</string>
@@ -2038,6 +2050,8 @@
     <string name="stepWaitingAi">AI qaydlari kutilmoqda…</string>
     <string name="streetAddress">Ko'cha manzili</string>
     <string name="streetAddressHelper">Siz bu maydonni bino tafsilotlari, qavat, xona raqami va boshqalarni qo'shish uchun tahrirlashingiz mumkin.</string>
+    <string name="stripeConnected">Ulangan · %1$s</string>
+    <string name="stripeNotConnected">Ulanmagan</string>
     <string name="submit">Yuborish</string>
     <string name="submittedAt">Yuborilgan vaqt</string>
     <string name="subscriptionAndBilling">Obuna va to'lovlar</string>
@@ -2229,6 +2243,7 @@
     <string name="updateRequiredBody">Davom etish uchun Shifa Doctor'ning yangi versiyasi kerak.</string>
     <string name="updateRequiredTitle">Yangilash talab qilinadi</string>
     <string name="updateScheduleMessage">Jadvalni yangilang\nSizning taqvimingiz bu qadar oldinga bron qilish vaqtlarini taqdim etmaydi. Iltimos, jadvalingizni yangilang.</string>
+    <string name="upgradeToPlan">%1$s tarifiga o'tish</string>
     <string name="uploadCertificate">Sertifikat yuklash</string>
     <string name="uploadDocument">Hujjat yuklash</string>
     <string name="uploadError">Yuklash xatosi</string>

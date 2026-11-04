@@ -2338,5 +2338,20 @@
   "moveUp": "{name} ni yuqoriga",
   "moveDown": "{name} ni pastga",
   "deleteGroupTitle": "Guruh o'chirilsinmi?",
-  "deleteGroupBody": "Uning xizmatlari qoladi va guruhsiz bo'ladi."
+  "deleteGroupBody": "Uning xizmatlari qoladi va guruhsiz bo'ladi.",
+  "plans": "Tariflar",
+  "pricePerMonth": "{price} / oy",
+  "currentPlanButton": "Joriy tarif",
+  "upgradeToPlan": "{plan} tarifiga o'tish",
+  "planManagedBySupport": "Tarifingizni Shifa boshqaradi. O'zgartirish uchun qo'llab-quvvatlashga yozing.",
+  "payouts": "To'lovlar",
+  "payoutsHelper": "Bemorlarning karta orqali to'lovlari shu hisobga o'tkaziladi",
+  "stripeNotConnected": "Ulanmagan",
+  "stripeConnected": "Ulangan · {account}",
+  "connectStripe": "Stripe'ni ulash",
+  "resumeStripe": "Stripe ulanishini davom ettirish",
+  "planChanged": "Endi siz {plan} tarifidasiz",
+  "planUnchanged": "Hozircha o'zgarish yo'q. To'lov bir daqiqa olishi mumkin.",
+  "checkoutFailed": "To'lov sahifasini ochib bo'lmadi. Qayta urinib ko'ring.",
+  "renewsOn": "{date} da yangilanadi"
 }

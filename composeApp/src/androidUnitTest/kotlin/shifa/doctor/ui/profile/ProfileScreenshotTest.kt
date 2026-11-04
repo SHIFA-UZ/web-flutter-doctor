@@ -36,6 +36,7 @@ class ProfileScreenshotTest {
     fun contact() = captureRoboImage("screenshots/Contact_phoneError.png") { ContactPreview() }
 
     @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
     fun billing() = captureRoboImage("screenshots/Billing_ibanError.png") { BillingPreview() }
 
     @Test

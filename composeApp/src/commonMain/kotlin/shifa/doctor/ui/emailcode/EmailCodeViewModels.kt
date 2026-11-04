@@ -37,6 +37,8 @@ data class CodeBanner(
     val text: StringResource,
     val error: Boolean = true,
     val requestId: String? = null,
+    // Placeholders in [text] ("You're now on {plan}").
+    val args: List<Any> = emptyList(),
 )
 
 data class EmailEntryUiState(

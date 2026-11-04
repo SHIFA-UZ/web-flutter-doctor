@@ -2338,5 +2338,20 @@
   "moveUp": "Переместить {name} выше",
   "moveDown": "Переместить {name} ниже",
   "deleteGroupTitle": "Удалить группу?",
-  "deleteGroupBody": "Её услуги останутся и будут без группы."
+  "deleteGroupBody": "Её услуги останутся и будут без группы.",
+  "plans": "Тарифы",
+  "pricePerMonth": "{price} / мес.",
+  "currentPlanButton": "Текущий тариф",
+  "upgradeToPlan": "Перейти на {plan}",
+  "planManagedBySupport": "Вашим тарифом управляет Shifa. Чтобы изменить его, напишите в поддержку.",
+  "payouts": "Выплаты",
+  "payoutsHelper": "Оплаты пациентов картой выплачиваются на этот счёт",
+  "stripeNotConnected": "Не подключено",
+  "stripeConnected": "Подключено · {account}",
+  "connectStripe": "Подключить Stripe",
+  "resumeStripe": "Продолжить подключение Stripe",
+  "planChanged": "Теперь у вас тариф {plan}",
+  "planUnchanged": "Пока без изменений. Платёж может занять минуту.",
+  "checkoutFailed": "Не удалось открыть страницу оплаты. Попробуйте ещё раз.",
+  "renewsOn": "Продлится {date}"
 }

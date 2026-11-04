@@ -297,6 +297,7 @@
     <string name="checkInDetails">Детали отметки</string>
     <string name="checkIns">Отметки</string>
     <string name="checkingCall">Проверяем…</string>
+    <string name="checkoutFailed">Не удалось открыть страницу оплаты. Попробуйте ещё раз.</string>
     <string name="chooseAClinic">Выберите клинику</string>
     <string name="chooseFromGallery">Выбрать из галереи</string>
     <string name="chooseNewPasswordFor">Придумайте новый пароль для %1$s.</string>
@@ -699,6 +700,7 @@
     <string name="confirmRegistration">Подтвердить регистрацию</string>
     <string name="confirmReset">Подтвердить сброс</string>
     <string name="confirmed">Подтверждено</string>
+    <string name="connectStripe">Подключить Stripe</string>
     <string name="consultationDocumentsDropHint">Перетащите файлы сюда или нажмите для загрузки (сохраняются как медицинский документ)</string>
     <string name="consultationDocumentsUploading">Загрузка…</string>
     <string name="consultationFocusModeTitle">Заметки приёма</string>
@@ -753,6 +755,7 @@
     <string name="currentPassword">Текущий пароль</string>
     <string name="currentPasswordIncorrect">Текущий пароль неверен</string>
     <string name="currentPasswordIsRequired">Текущий пароль обязателен</string>
+    <string name="currentPlanButton">Текущий тариф</string>
     <string name="customTimesAddAtLeastOne">Добавьте хотя бы одно время</string>
     <string name="customTimesAddSlot">Добавить время</string>
     <string name="customTimesEmpty">Времена ещё не добавлены — добавьте ниже.</string>
@@ -1695,6 +1698,8 @@
     <string name="paymentStateRaw">%1$s</string>
     <string name="paymentUnknown">Неизвестно</string>
     <string name="paymentsOpsTitle">Платёжные операции</string>
+    <string name="payouts">Выплаты</string>
+    <string name="payoutsHelper">Оплаты пациентов картой выплачиваются на этот счёт</string>
     <string name="pdfGeneratedPrintingNotImplemented">PDF создан. Печать пока не реализована.</string>
     <string name="pediatrician">Педиатр</string>
     <string name="pending">В ожидании</string>
@@ -1720,9 +1725,13 @@
     <string name="pinsDoNotMatch">PIN-коды не совпадают</string>
     <string name="pinsDontMatch">PIN-коды не совпадают. Начните заново.</string>
     <string name="place">Место</string>
+    <string name="planChanged">Теперь у вас тариф %1$s</string>
     <string name="planCurrencyUnknown">Валюта плана неизвестна</string>
+    <string name="planManagedBySupport">Вашим тарифом управляет Shifa. Чтобы изменить его, напишите в поддержку.</string>
     <string name="planPremium">Premium</string>
     <string name="planPro">Pro</string>
+    <string name="planUnchanged">Пока без изменений. Платёж может занять минуту.</string>
+    <string name="plans">Тарифы</string>
     <string name="plansLoadFailed">Не удалось загрузить планы лечения</string>
     <string name="pleaseChoosePlace">Пожалуйста, выберите место</string>
     <string name="pleaseConfirmNewPasswordError">Пожалуйста, подтвердите новый пароль</string>
@@ -1742,6 +1751,7 @@
     <string name="preparingAiDocumentation">Готовим документацию AI-секретаря из записи…</string>
     <string name="prescriptions">Рецепты</string>
     <string name="previous">Назад</string>
+    <string name="pricePerMonth">%1$s / мес.</string>
     <string name="priceScopeAllLocations">Все локации (по умолчанию)</string>
     <string name="priceScopeLabel">Действует для</string>
     <string name="primary">Основное</string>
@@ -1809,6 +1819,7 @@
     <string name="removePriceRow">Удалить цену</string>
     <string name="removeRow">Удалить строку</string>
     <string name="removeService">Удалить услугу</string>
+    <string name="renewsOn">Продлится %1$s</string>
     <string name="repeatPin">Повторите PIN-код</string>
     <string name="reportsScreenSubtitle">Аналитика клиники, тренды и отчёты</string>
     <string name="reportsSmsNotAllowed">SMS-напоминания не включены для вашего аккаунта. Обратитесь в поддержку.</string>
@@ -1831,6 +1842,7 @@
     <string name="resetDoctorCalendar">Сбросить календарь врача</string>
     <string name="resetPassword">Сброс пароля</string>
     <string name="resetPasswordFailed">Не удалось сбросить пароль. Попробуйте ещё раз.</string>
+    <string name="resumeStripe">Продолжить подключение Stripe</string>
     <string name="retry">Повторить</string>
     <string name="retryBriefing">Повторить брифинг</string>
     <string name="retryMetaLine">retryCount: %1$s · lastRetryAt: %2$s · retriedByAdminUserId: %3$s</string>
@@ -2038,6 +2050,8 @@
     <string name="stepWaitingAi">Ожидаем AI-заметки…</string>
     <string name="streetAddress">Адрес улицы</string>
     <string name="streetAddressHelper">Вы можете отредактировать это поле, чтобы добавить детали здания, этаж, номер комнаты и т.д.</string>
+    <string name="stripeConnected">Подключено · %1$s</string>
+    <string name="stripeNotConnected">Не подключено</string>
     <string name="submit">Отправить</string>
     <string name="submittedAt">Отправлено</string>
     <string name="subscriptionAndBilling">Подписка и оплата</string>
@@ -2229,6 +2243,7 @@
     <string name="updateRequiredBody">Чтобы продолжить, установите новую версию Shifa Doctor.</string>
     <string name="updateRequiredTitle">Требуется обновление</string>
     <string name="updateScheduleMessage">Обновите расписание\nВаш календарь не предоставляет время для бронирования так далеко вперед. Пожалуйста, обновите свое расписание.</string>
+    <string name="upgradeToPlan">Перейти на %1$s</string>
     <string name="uploadCertificate">Загрузить сертификат</string>
     <string name="uploadDocument">Загрузить документ</string>
     <string name="uploadError">Ошибка загрузки</string>

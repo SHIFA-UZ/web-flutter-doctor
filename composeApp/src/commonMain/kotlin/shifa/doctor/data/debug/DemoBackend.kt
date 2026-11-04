@@ -191,6 +191,22 @@ class DemoBackend(
                 Reply(HttpStatusCode.NoContent, "")
             }
             get && path == Endpoints.SERVICE_GROUPS -> ok(JsonArray(groups))
+            // Plans like dev's; the hosted pages are placeholders (nothing reaches Stripe in demo mode).
+            get && path == Endpoints.SUBSCRIPTION_PLANS -> ok(apiJson.parseToJsonElement(DEMO_PLANS))
+            // The demo doctor's plan is admin-set: no paid subscription.
+            get && path == Endpoints.SUBSCRIPTION_ME -> ok(JsonNull)
+            request.method == HttpMethod.Post && path == Endpoints.SUBSCRIPTION_CHECKOUT ->
+                ok(
+                    apiJson.parseToJsonElement(
+                        """{"checkoutUrl":"https://example.com/shifa-demo-checkout","sessionId":"demo"}""",
+                    ),
+                )
+            request.method == HttpMethod.Post && path == Endpoints.STRIPE_CONNECT_ONBOARD ->
+                ok(
+                    apiJson.parseToJsonElement(
+                        """{"accountId":"acct_demo0001","onboardingUrl":"https://example.com/shifa-demo-onboarding"}""",
+                    ),
+                )
             request.method == HttpMethod.Post && path == Endpoints.SERVICE_GROUPS -> saveGroup(null, body)
             request.method == HttpMethod.Patch && path.startsWith(Endpoints.SERVICE_GROUPS + "/") ->
                 saveGroup(path.substringAfterLast('/').toLongOrNull(), body)
@@ -447,3 +463,7 @@ private const val DEMO_SERVICES =
         """{"id":3,"title":"Cleaning","description":null,"isActive":true,"isFreeConsultation":false,"clinicManaged":true,"groupId":null,"groupName":null,"prices":[{"amountMinor":30000000,"currency":"UZS","locationId":null}]}]"""
 
 private const val DEMO_LOCATIONS = """[{"id":1,"label":"Shifa Demo Clinic","clinic":"Shifa Demo Clinic","locationCity":"Tashkent","isPrimary":true}]"""
+
+private const val DEMO_PLANS =
+    """[{"code":"BASIC","name":"Basic","priceMinor":9900,"currency":"EUR","interval":"MONTH"},""" +
+        """{"code":"PRO","name":"Pro","priceMinor":19900,"currency":"EUR","interval":"MONTH"}]"""
