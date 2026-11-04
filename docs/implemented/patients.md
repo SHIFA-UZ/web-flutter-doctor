@@ -237,3 +237,20 @@ Built 2026-11-04. Spec 06 §4.1, §4.3–4.6, §2.10 (download). No screen (DOCS
 - **Tests:** `DocumentModelsTest` (3: categories, file names in every form, type order), `DocumentsRepositoryTest` (3:
   lenient list with the clinic, a Cyrillic RFC 5987 name and a JPEG behind an octet-stream type, the locked 404;
   request access), `DemoBackendTest` (+1).
+
+## DOCS-02 · Pickers and photos to PDF
+
+Built 2026-11-04. Spec 06 §4.2, §9. No screen (DOCS-03 uses it); a "Photos to PDF" check on the debug Spikes screen.
+
+- **Already there (CORE-07, PROF):** the PDF picker (`rememberDocumentPickerLauncher`, PDF only), the photo library and
+  camera launchers (`rememberImagePickerLauncher`, `rememberCameraLauncher`: upright JPEG, quality 85, at most
+  1600 px, so the "compressJpeg" step of the plan is done by the pickers), and `FileSaver`. Nothing duplicated.
+- **New: `utils/imagesToPdf`** (multi-page scan): each JPEG on its own A4 page, fitted inside a 24 pt margin and
+  centred. **One shared writer instead of the planned `PdfDocument` / `UIGraphicsPDFRenderer`:** it puts each JPEG in as
+  it is (`/DCTDecode`), so a page weighs what its photo does. Measured on the emulator: Android's `PdfDocument` stored
+  two small images as 2.7 MB; two camera photos through the shared writer are 48 KB and render in the PDF view. Only an
+  8-bit baseline, extended or progressive JPEG with 1 or 3 channels, complete and ending with its end marker, is
+  embedded; anything else (a cut-off photo, lossless or 12-bit JPEG, CMYK, not a JPEG) is skipped; none left is null. Flutter embedded camera photos at quality 85 the same way.
+- **Tests:** `ImagesToPdfTest` (5: the JPEG frame header after other segments and what can't be embedded; pages with
+  the image bytes unchanged and others skipped; the cross-reference offsets point at every object; tall and wide
+  photos fit the page). Checked on the emulator: two camera photos → a 2-page PDF shown by `PdfView`.

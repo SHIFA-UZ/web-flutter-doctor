@@ -64,6 +64,7 @@ fun SpikesScreen(modifier: Modifier = Modifier) {
                 PdfView(it, Modifier.fillMaxWidth().height(ShifaSize.S320)) { Text("PDF did not open") }
             }
         }
+        ScanSpike()
         ShifaSection("FCM token") {
             var token by remember { mutableStateOf("Asking Firebase…") }
             // Only the length and the tail: a push token is not shown or logged whole.
@@ -135,4 +136,28 @@ private fun AudioSpike() =
             style = ShifaTextStyles.metaSmall(),
             color = ShifaColors.Text.Secondary,
         )
+    }
+
+/** DOCS-02: camera photos (JPEG) to a multi-page PDF, shown with the PDF view. */
+@Composable
+private fun ScanSpike() =
+    ShifaSection("Photos to PDF") {
+        var pages by remember { mutableStateOf(listOf<ByteArray>()) }
+        var pdf by remember { mutableStateOf<ByteArray?>(null) }
+        var denied by remember { mutableStateOf(false) }
+        val camera =
+            shifa.doctor.utils.rememberCameraLauncher({ it?.let { p -> pages = pages + p.bytes } }, { denied = true })
+        if (denied) {
+            shifa.doctor.ui.widgets.ShifaLink(
+                "Camera access is off: open Settings",
+                { shifa.doctor.utils.openAppSettings() },
+            )
+        }
+        Text("${pages.size} pages", style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+        shifa.doctor.ui.widgets.ShifaLink("Add camera photo", camera)
+        shifa.doctor.ui.widgets.ShifaLink("Make PDF", { pdf = shifa.doctor.utils.imagesToPdf(pages) })
+        pdf?.let {
+            Text("PDF: ${it.size / 1024} KB", style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+            PdfView(it, Modifier.fillMaxWidth().height(ShifaSize.S320)) { Text("PDF did not open") }
+        }
     }

@@ -105,7 +105,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | PAT-06 Medical info | Done (no prophylaxis yet) | Per-field saves with rollback (dropdowns at once, phones and allergies with Save), localised chronic diseases, discard guard, Edit details (the create sheet, PATCH of changes). Prophylaxis with CLINIC-06. See patients.md. |
 | PAT-07 Appointments & Activity | Done (visits only) | Visits on the practice clock, Appointments tab, Activity by month and Recent activity (visits; documents and forms join later), New appointment → free-slot sheet → CAL-7 booking with the patient chosen. See patients.md. |
 | DOCS-01 Document models | Done | 27 categories (labels), lenient list, download named by Content-Disposition (RFC 5987) and typed by bytes, request access; a locked download is 404 on dev. See patients.md. |
-| DOCS-02 … CLIN-02 | Not started | |
+| DOCS-02 Pickers & photos to PDF | Done | Existing pickers reused; a shared photos-to-PDF writer that embeds the JPEGs unchanged (48 KB for two photos instead of megabytes). See patients.md. |
+| DOCS-03 … CLIN-02 | Not started | |
 
 ## Log
 
@@ -168,3 +169,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · PAT-06 · Medical info and Edit details; prophylaxis card moved to CLINIC-06.
 - 2026-11-04 · PAT-07 · Appointments and Activity tabs; booking from the record through CAL-7's screen.
 - 2026-11-04 · DOCS-01 · Document models and repository.
+- 2026-11-04 · DOCS-02 · Photos to PDF in shared code (platform PDF writers were megabytes a page).
