@@ -46,3 +46,21 @@ Built 2026-11-04. Spec `03 §5–7`; endpoint `GET /calendar?day=YYYY-MM-DD[&doc
 - **Tests:** `CalendarRepositoryTest` (6: row parsing and sorting, wrapped answer and preview, throttle / force /
   invalidate, month batch and sign-out, older answer vs forced / late answer after sign-out, shared in-flight reads
   and location key), `DemoBackendTest` (+1).
+
+## CAL-2 · Today, next appointment and the change bus
+
+Built 2026-11-04. Spec `03 §5` (providers and the invalidation graph).
+
+- **Selectors** (`data/calendar/CalendarSelectors.kt`, on the shared repository):
+  - `todayAppointments(clock)`: the practice day's appointments in time order, cancelled ones left out (reads the day
+    if it isn't cached).
+  - `nextAppointment(clock, horizonDays = 14)`: one in progress now, else the next one today, else the first in the
+    next 14 days, read day by day (from cache when fresh) and stopping at the first hit; completed, cancelled and
+    no-show ones don't count. Returns a failure when a day before the hit can't be read.
+- **`AppointmentChanges` and `changed(clock, days…)`:** after a booking, cancel, move, a block that cancels some, or a
+  push about one, today and the touched days are read again once each (forced, deduplicated: Flutter read the same
+  day two or three times per booking), then one event with those days goes to every other listener (home,
+  analytics) instead of each chaining its own reloads. Other cached copies of those dates (another location or
+  colleague) are marked stale; the event is never dropped (suspending emit). `PracticeClock.nowInstant()` was added for the comparisons.
+- **Tests:** `CalendarSelectorsTest` (6: today without cancelled, in progress / next today / next days with the cache
+  reused, nothing within the horizon, one read per touched day plus the event, a failed day, location copies stale).

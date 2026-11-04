@@ -33,6 +33,9 @@ class PracticeClock(
 
     fun now(): LocalDateTime = clock().toLocalDateTime(zone)
 
+    /** Now as an instant, for comparing with backend times. */
+    fun nowInstant(): Instant = clock()
+
     /** "Today" is the date in the practice zone, not the phone's. */
     fun today(): LocalDate = now().date
 
