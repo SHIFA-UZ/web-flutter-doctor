@@ -198,3 +198,40 @@ internal fun EndProgressPreview() =
             EndActions(),
         )
     }
+
+// DENTAL-01: the tooth map, free mode (teeth with services and their counts) and plan mode (planned, partly done,
+// completed), adult and child teeth.
+@Composable
+internal fun ToothMapPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            verticalArrangement =
+                androidx.compose.foundation.layout.Arrangement.spacedBy(
+                    shifa.doctor.ui.theme.ShifaSize.S16,
+                ),
+        ) {
+            ToothMap(
+                shifa.doctor.data.forms.Dentition.Permanent,
+                mapOf(
+                    "16" to 2,
+                    "21" to 1,
+                    "36" to 3,
+                ),
+                selected = "36",
+                onTap = {
+                },
+            )
+            ToothMap(
+                shifa.doctor.data.forms.Dentition.Permanent,
+                emptyMap(),
+                states =
+                    mapOf(
+                        "16" to ToothPlanState.Done,
+                        "17" to ToothPlanState.Partial,
+                        "26" to ToothPlanState.Planned,
+                        "46" to ToothPlanState.Planned,
+                    ),
+            )
+            ToothMap(shifa.doctor.data.forms.Dentition.Primary, mapOf("54" to 1), onTap = {})
+        }
+    }

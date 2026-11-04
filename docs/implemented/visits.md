@@ -302,3 +302,31 @@ it; this carries what the embedding was for.
 - **Not built:** the in-place embedded editor with Save & Switch (the board doesn't embed it).
 - **Tests:** `FormEditorViewModelTest` (a preset code on a new form, not on an existing one), `VisitViewModelTest`
   (Apply keeps the code and switches mode).
+
+## DENTAL-01 · Tooth map and dental record
+
+Built 2026-11-04. Spec 05 §4.1–4.2, ticket DENTAL-01, board `DaVisit` "TOOTH MAP" (`.dr-teeth`, `.dr-tooth`).
+
+- **Record** (`data/model/DentalModels.kt`): `DentalRecord` is the `/appointments/{id}/dental-documentation` payload,
+  version 2: dentition, service lines per FDI tooth key (and `__general__`), discount percent, notes.
+  `DentalRecord.read` accepts any saved version: legacy keys ("UR1") become FDI through `DentalChartCodec`, a bad line
+  is skipped and the rest are kept, a discount sent as text is read as a number, and `{}` means no record. `payload()`
+  leaves out empty teeth and trims the notes, as Flutter does.
+- **Totals per currency:** `subtotals` / `totals`. Flutter summed only the first currency's lines and silently dropped
+  the rest (05 §10). The discount is clamped to 0–100 and the total rounds half up, as Dart's `round()` does.
+- **Tooth map** (`ui/visit/ToothMap.kt`): the upper jaw 18→11 | 21→28 and the lower 48→41 | 31→38 (primary teeth
+  55→51 | 61→65, 85→81 | 71→75), with a gap between quadrants. Each tile shows the tooth number at the root side and
+  a service-count badge.
+  - **Free mode:** teeth with services are filled.
+  - **Plan mode** (`states`): teeth show as planned, partly done (half filled) or done.
+  - The selected tooth has a focus border. On a phone the tiles are small, so all 16 fit; from 560 dp they are wider,
+    and the map scrolls sideways if even that doesn't fit.
+  - Each tooth has a screen-reader description. With no `onTap` the map is read-only.
+- **Accessibility:** each tooth's screen-reader text includes its count and plan state, and the selected tooth is
+  announced as selected.
+- **Not in the board, so not built:** Flutter's anatomy captions (English only) and quadrant numerals. The dentition
+  toggle goes in the DENTAL-02 panel.
+- **Not built:** the panel that uses them (DENTAL-02), plan states fed from a treatment plan (DENTAL-03).
+- **Tests:** `DentalModelsTest`: legacy keys (a key and its FDI twin are one tooth), bad lines, odd metadata and a text
+  discount read; payload with a clamped discount; totals per currency with
+  half-up rounding. Screenshots `ToothMap` (free and plan modes, primary teeth) and `ToothMap_wide`.

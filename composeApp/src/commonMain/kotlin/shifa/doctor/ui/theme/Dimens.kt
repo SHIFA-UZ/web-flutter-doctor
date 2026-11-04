@@ -172,6 +172,17 @@ object ShifaDimens {
     val SignaturePadHeight = 151.dp
     val SignatureStroke = 2.5.dp
 
+    // The tooth map's tiles (`.dr-tooth`): a phone's 16 across, and the wider screens'.
+    val ToothW = 19.dp
+    val ToothH = 30.dp
+    val ToothWideW = 36.dp
+    val ToothWideH = 40.dp
+    val ToothCrownRadius = 6.dp
+    val ToothRootRadius = 10.dp
+
+    // From this width the map uses the wider tiles (the board's container query).
+    val ToothMapWide = 560.dp
+
     // rating
     val RatingStar = 29.dp
 }

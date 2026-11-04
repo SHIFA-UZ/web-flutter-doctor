@@ -32,4 +32,11 @@ class VisitScreenshotTest {
 
     @Test
     fun endProgress() = captureRoboImage("screenshots/End_progress.png") { EndProgressPreview() }
+
+    @Test
+    fun toothMap() = captureRoboImage("screenshots/ToothMap.png") { ToothMapPreview() }
+
+    @Test
+    @Config(qualifiers = "w720dp-h874dp-xhdpi")
+    fun toothMapWide() = captureRoboImage("screenshots/ToothMap_wide.png") { ToothMapPreview() }
 }
