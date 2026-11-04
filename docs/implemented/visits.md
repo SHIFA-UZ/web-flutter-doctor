@@ -38,3 +38,24 @@ Built 2026-11-04. Spec 05 §2.2, §7, ticket APPT-02. No screen yet (the footer 
   visit) and the demo patient signs 15 s later.
 - **Tests:** `AppointmentsRepositoryTest` (3: polling while awaited with a failed read in between, ending when
   signed; a visit not asked is read once, the request's PUT; a 404 ends it), `DemoBackendTest` (the demo visit and its signature).
+
+## AI-11 · Consultation notes and scribe API
+
+Built 2026-11-04. Spec 02 §7.1, ticket AI-11. No screen yet (APPT-03/04 use it).
+
+- **Models** (`data/model/ConsultationModels.kt`): `ConsultationNote` (`MANUAL` or `AI_DRAFT`; `displayText` = the
+  body without its transcript, else S/A/P), `DraftNote` with `IcdSuggestion`s, `CompleteRequest` (visit charges join
+  with APPT-07), `CompleteResult`, `ScribeStatus`. Helpers ported: `joinedManualNotes`, `stripScribeTranscript` (cut
+  at a line starting "TRANSCRIPT:"), `composeVisitDocumentationText` (Shifa AI's notes and drafts first, then the
+  doctor's, each under its heading; an empty block left out).
+- **Repository** (`data/consultation/ConsultationRepository.kt`): notes (read, save trimmed, blank saves nothing),
+  drafts (read, confirm with the patient and visit, discard), `complete` (blank notes left out, `awaitingScribe` only
+  when true), scribe status and `scribeUpdates`: every 3 s until the scribe's note is there or 120 s passed (a deadline from the start, slow reads included),
+  cancelled with its collector (Flutter's wait couldn't be); a passing failure is tried again, a lasting one ends it.
+  **Fix:** a failed read is a failure (Flutter showed an empty list, so a failed read looked like a visit without
+  notes); one bad note doesn't drop the others.
+- **Demo backend:** notes per visit in memory (one manual note, updated, as the backend upserts it; complete saves the
+  doctor's notes first); the video visit (101) has one scribe draft (SOAP, an ICD suggestion,
+  and a transcript the app hides) until it is saved or dropped; scribe status and complete answer from the notes.
+- **Tests:** `ConsultationModelsTest` (3: Flutter's two tests ported, plus edges), `ConsultationRepositoryTest` (4:
+  failures, bodies, the scribe poll, its deadline with a hanging read), `DemoBackendTest` (draft → note → complete).

@@ -473,4 +473,30 @@ class DemoBackendTest {
             assertThat(later["patientSignedAt"]?.jsonPrimitive?.content).isEqualTo("2026-11-04T05:00:15Z")
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `a demo visit's scribe draft becomes its note, with the doctor's own, and completing reports both`() =
+        runTest {
+            val repo = shifa.doctor.data.consultation.ConsultationRepository({ client })
+            val draft = repo.drafts(101).getOrThrow().single()
+            assertThat(draft.icdSuggestions.single().code).isEqualTo("K04.0")
+            assertThat(repo.scribeStatus(101).getOrThrow().hasScribeNote).isFalse()
+            assertThat(repo.confirmDraft(draft.id, 11, 101).isSuccess).isTrue()
+            assertThat(
+                repo.confirmDraft(draft.id, 11, 101).exceptionOrNull(),
+            ).isInstanceOf(ApiException.NotFound::class.java)
+            assertThat(repo.saveNotes(101, "Review in a few days").isSuccess).isTrue()
+            assertThat(repo.saveNotes(101, "Review in a week").isSuccess).isTrue()
+            val notes = repo.notes(101).getOrThrow()
+            assertThat(notes.map { it.fromAi }).containsExactly(true, false).inOrder()
+            assertThat(notes.first().displayText).doesNotContain("TRANSCRIPT")
+            assertThat(repo.scribeStatus(101).getOrThrow().hasScribeNote).isTrue()
+            val done = repo.complete(101).getOrThrow()
+            assertThat(done.hasDocumentation to done.hasScribeNote).isEqualTo(true to true)
+            assertThat(repo.drafts(102).getOrThrow()).isEmpty()
+            // Completing saves the doctor's notes first (one manual note per visit).
+            repo.complete(102, doctorNotes = "Follow up").getOrThrow()
+            assertThat(shifa.doctor.data.model.joinedManualNotes(repo.notes(102).getOrThrow())).isEqualTo("Follow up")
+            assertThat(forwarded).isEmpty()
+        }
 }

@@ -87,6 +87,18 @@ object ApiConfig {
 
         fun appointmentSignature(id: Long) = "appointments/$id/request-signature"
 
+        fun consultationNotes(id: Long) = "appointments/$id/consultation-notes"
+
+        fun draftNotes(id: Long) = "appointments/$id/draft-notes"
+
+        fun appointmentComplete(id: Long) = "appointments/$id/complete"
+
+        fun scribeStatus(id: Long) = "appointments/$id/scribe-status"
+
+        fun draftConfirm(id: String) = "ai/draft/$id/confirm"
+
+        fun draftDiscard(id: String) = "ai/draft/$id/discard"
+
         const val SUBSCRIPTION_PLANS = "doctor/subscription/plans"
         const val SUBSCRIPTION_ME = "doctor/subscription/me"
         const val SUBSCRIPTION_CHECKOUT = "doctor/subscription/checkout"

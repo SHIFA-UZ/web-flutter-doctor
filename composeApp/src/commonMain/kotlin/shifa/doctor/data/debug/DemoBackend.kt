@@ -111,6 +111,22 @@ class DemoBackend(
     private val uploadFiles = mutableMapOf<Long, Pair<ByteArray, String>>()
 
     // APPT-02: when each visit's signature was asked; the demo patient signs 15 s later.
+    // AI-11: each visit's saved notes, and Shifa AI's pending drafts (one for the video visit until saved or dropped).
+    private val visitNotes = mutableMapOf<Long, List<JsonObject>>()
+    private var visitDrafts = mapOf(DEMO_DRAFT_ID to 101L)
+
+    /** The visit's manual note replaced (the backend keeps one per visit and updates it), else added. */
+    private fun upsertManualNote(
+        visit: Long,
+        text: String,
+    ) {
+        val notes = visitNotes[visit].orEmpty()
+        val manual = notes.indexOfLast { it["source"]?.jsonPrimitive?.content == "MANUAL" }
+        val id = notes.getOrNull(manual)?.get("id")?.jsonPrimitive?.longOrNull ?: (500L + visit)
+        val note = demoNote(id, text, "MANUAL")
+        visitNotes[visit] = if (manual >= 0) notes.toMutableList().also { it[manual] = note } else notes + note
+    }
+
     private val signatureAsked = mutableMapOf<Long, kotlinx.datetime.Instant>()
     private var forms: Map<String, List<JsonElement>> = emptyMap()
     private var lastFormId = 500L
@@ -474,6 +490,79 @@ class DemoBackend(
                     signatureAsked.getOrPut(id) { currentInstant() }
                     Reply(HttpStatusCode.OK, "")
                 }
+            }
+            // A visit's notes (AI-11).
+            path.matches(Regex("appointments/\\d+/consultation-notes")) -> {
+                val id = path.split('/')[1].toLong()
+                if (!get) {
+                    val text =
+                        runCatching { apiJson.parseToJsonElement(body).jsonObject["body"]?.jsonPrimitive?.content }
+                            .getOrNull()
+                    if (!text.isNullOrBlank()) upsertManualNote(id, text.trim())
+                    Reply(HttpStatusCode.OK, "")
+                } else {
+                    ok(JsonArray(visitNotes[id].orEmpty()))
+                }
+            }
+            get && path.matches(Regex("appointments/\\d+/draft-notes")) ->
+                ok(
+                    JsonArray(
+                        visitDrafts.filterValues { it == path.split('/')[1].toLong() }.keys.map {
+                            apiJson.parseToJsonElement(DEMO_DRAFT)
+                        },
+                    ),
+                )
+            path.matches(Regex("ai/draft/[^/]+/(confirm|discard)")) && !get -> {
+                val draft = path.split('/')[2]
+                val visit = visitDrafts[draft]
+                if (visit == null) {
+                    Reply(HttpStatusCode.NotFound, """{"status":404,"code":"NOT_FOUND"}""")
+                } else {
+                    visitDrafts = visitDrafts - draft
+                    if (path.endsWith("confirm")) {
+                        val text = apiJson.parseToJsonElement(DEMO_DRAFT).jsonObject["body"]?.jsonPrimitive?.content
+                        visitNotes[visit] = visitNotes[visit].orEmpty() + demoNote(900L, text, "AI_DRAFT")
+                    }
+                    Reply(HttpStatusCode.OK, """{"success":true}""")
+                }
+            }
+            get && path.matches(Regex("appointments/\\d+/scribe-status")) -> {
+                val ai =
+                    visitNotes[
+                        path.split(
+                            '/',
+                        )[1].toLong(),
+                    ].orEmpty().any { it["source"]?.jsonPrimitive?.content == "AI_DRAFT" }
+                ok(
+                    JsonObject(
+                        mapOf(
+                            "status" to JsonPrimitive(if (ai) "ready" else "none"),
+                            "hasDocumentation" to JsonPrimitive(ai),
+                            "hasScribeNote" to JsonPrimitive(ai),
+                        ),
+                    ),
+                )
+            }
+            request.method == HttpMethod.Put && path.matches(Regex("appointments/\\d+/complete")) -> {
+                val id = path.split('/')[1].toLong()
+                // The doctor's notes are saved first, as the backend does.
+                runCatching { apiJson.parseToJsonElement(body).jsonObject["doctorNotes"]?.jsonPrimitive?.content }
+                    .getOrNull()
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { upsertManualNote(id, it) }
+                val notes = visitNotes[id].orEmpty()
+                val ai = notes.any { it["source"]?.jsonPrimitive?.content == "AI_DRAFT" }
+                ok(
+                    JsonObject(
+                        mapOf(
+                            "status" to JsonPrimitive("COMPLETED"),
+                            "scribePending" to JsonPrimitive(false),
+                            "hasDocumentation" to JsonPrimitive(notes.isNotEmpty()),
+                            "hasScribeNote" to JsonPrimitive(ai),
+                        ),
+                    ),
+                )
             }
             // Appointment actions (CAL-6) succeed without changing the generated days: nothing is stored.
             path.startsWith("appointments/") && !get &&
@@ -967,11 +1056,6 @@ internal fun demoOverlap(
 }
 
 /**
- * A demo day (Tashkent, UTC+5): 30-minute slots 09:00–17:00, lunch blocked 13:00–14:00, and on even dates two
- * appointments (one by video, one in the clinic) so the calendar has something to show.
- */
-
-/**
  * The demo calendar's appointment [id] as `GET /appointments/{id}` answers it, on the next busy day from today (busy
  * days are even, so one of the next three: the 31st and the 1st are both odd); signed 15 s after [asked].
  */
@@ -996,7 +1080,7 @@ internal fun demoAppointment(
                 "id" to JsonPrimitive(id),
                 "doctorId" to JsonPrimitive(1),
                 "signatureRequested" to JsonPrimitive(asked != null),
-                "patientSignedAt" to if (signed) JsonPrimitive((asked!! + 15.seconds).toString()) else JsonNull,
+                "patientSignedAt" to if (signed) JsonPrimitive((asked + 15.seconds).toString()) else JsonNull,
                 "fulfilledLineIds" to JsonArray(emptyList()),
                 "documentIds" to JsonArray(emptyList()),
                 "attachmentCount" to JsonPrimitive(0),
@@ -1005,6 +1089,31 @@ internal fun demoAppointment(
     )
 }
 
+private const val DEMO_DRAFT_ID = "6f1c2a7e-0d3b-4c55-9a51-2b8e3f4d1a90"
+
+// A scribe draft for the demo video visit (AI-11): SOAP, then the transcript the app hides.
+private val DEMO_DRAFT =
+    """{"id":"$DEMO_DRAFT_ID","aiLabel":"AI Scribe","createdAt":"2026-11-04T05:20:00Z",
+    "body":"SUBJECTIVE:\nNight pain in the lower left molar for three days.\n\nASSESSMENT:\nAcute pulpitis of 36.\n\nPLAN:\nPulp removal, temporary filling, review in a week.\n\nTRANSCRIPT:\nDoctor: What brings you in today?",
+    "icdSuggestions":[{"code":"K04.0","title":"Pulpitis","confidence":0.82,"isTop":true}]}"""
+
+private fun demoNote(
+    id: Long,
+    body: String?,
+    source: String,
+) = JsonObject(
+    mapOf(
+        "id" to JsonPrimitive(id),
+        "body" to (body?.let(::JsonPrimitive) ?: JsonNull),
+        "source" to JsonPrimitive(source),
+        "createdAt" to JsonPrimitive(currentInstant().toString()),
+    ),
+)
+
+/**
+ * A demo day (Tashkent, UTC+5): 30-minute slots 09:00–17:00, lunch blocked 13:00–14:00, and on even dates two
+ * appointments (one by video, one in the clinic) so the calendar has something to show.
+ */
 internal fun demoCalendar(day: String?): JsonArray {
     val date = runCatching { kotlinx.datetime.LocalDate.parse(day ?: "") }.getOrNull() ?: return JsonArray(emptyList())
     val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")
