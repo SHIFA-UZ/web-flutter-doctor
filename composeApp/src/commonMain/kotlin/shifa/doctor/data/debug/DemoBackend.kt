@@ -161,6 +161,15 @@ class DemoBackend(
             get && path == Endpoints.CHAT_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":3}"""))
             get && path == Endpoints.NOTIFICATIONS_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":12}"""))
             get && path == Endpoints.TASKS -> ok(apiJson.parseToJsonElement("[]"))
+            // Counts for the profile's completeness until SVC-01 / LOC-1 bring the real lists.
+            get && path == Endpoints.DOCTOR_SERVICES ->
+                ok(
+                    apiJson.parseToJsonElement("""[{"id":1,"title":"Consultation"}]"""),
+                )
+            get && path == Endpoints.DOCTOR_LOCATIONS ->
+                ok(
+                    apiJson.parseToJsonElement("""[{"id":1,"label":"Shifa Demo Clinic"}]"""),
+                )
             get -> null
             else -> refused()
         }

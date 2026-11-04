@@ -18,6 +18,7 @@ import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.FeatureGate
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
+import shifa.doctor.ui.profile.ProfileSection
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -55,6 +56,17 @@ sealed interface ShellRoute {
 
     /** Profile → Debug menu, debug builds only. */
     data object Debug : ShellRoute
+
+    /** Profile → Schedule setup (area 04, SCHED-1 builds it). */
+    data object Schedule : ShellRoute
+
+    /** Profile → Reports, pushed so Back returns to Profile (REP-1 builds it). */
+    data object Reports : ShellRoute
+
+    /** Profile → one of its sections (PROF-02); each section's ticket builds its screen. */
+    data class Profile(
+        val section: ProfileSection,
+    ) : ShellRoute
 }
 
 data class ShellUiState(

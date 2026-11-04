@@ -1,6 +1,7 @@
 package shifa.doctor.utils
 
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.offsetAt
 
 /** The practice-timezone picker's data (flows 01/07 §3b, 01/08, 01/10; DaAuth picker). */
 object TimeZones {
@@ -16,6 +17,18 @@ object TimeZones {
     /** The device's IANA zone, or null when it can't be read (never a silent "UTC": flow 01/07 §8). */
     fun device(zone: () -> TimeZone = { TimeZone.currentSystemDefault() }): String? =
         runCatching { zone().id }.getOrNull()?.takeIf { it.contains('/') || it == "UTC" }
+
+    /** "UTC+5", "UTC−3:30" for [zoneId] now (08/01 §4); null when the id isn't a zone. */
+    fun utcLabel(
+        zoneId: String,
+        now: kotlinx.datetime.Instant = currentInstant(),
+    ): String? {
+        val seconds = runCatching { TimeZone.of(zoneId).offsetAt(now).totalSeconds }.getOrNull() ?: return null
+        val sign = if (seconds < 0) "−" else "+"
+        val h = kotlin.math.abs(seconds) / 3600
+        val m = kotlin.math.abs(seconds) % 3600 / 60
+        return if (seconds == 0) "UTC" else "UTC$sign$h" + if (m > 0) ":" + m.toString().padStart(2, '0') else ""
+    }
 
     /** The detected zone first, then the short list, or every matching zone when [query] isn't blank. */
     fun options(

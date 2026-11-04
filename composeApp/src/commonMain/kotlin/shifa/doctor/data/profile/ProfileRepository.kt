@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.json.JsonElement
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
@@ -47,6 +48,14 @@ class ProfileRepository(
             if (started == generation && mine == version) _me.value = it
         }
     }
+
+    /** How many services the doctor offers (`GET /doctors/me/services`; SVC-01 reads the services themselves). */
+    suspend fun servicesCount(): Result<Int> =
+        apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.DOCTOR_SERVICES) }.map { it.size }
+
+    /** How many practice locations the doctor has (`GET /doctors/me/locations`; LOC-1 reads them). */
+    suspend fun locationsCount(): Result<Int> =
+        apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.DOCTOR_LOCATIONS) }.map { it.size }
 
     /** `GET /me/profile`: name, photo and role for either role (the clinic-staff profile, 08 §1.12). */
     suspend fun meProfile(): Result<MeProfile> = apiCall<MeProfile> { client().get(ApiConfig.Endpoints.ME_PROFILE) }

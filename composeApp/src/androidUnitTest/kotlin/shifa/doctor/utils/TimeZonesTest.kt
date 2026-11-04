@@ -22,4 +22,14 @@ class TimeZonesTest {
         assertThat(TimeZones.device { TimeZone.of("+05:00") }).isNull()
         assertThat(TimeZones.device { error("no zone") }).isNull()
     }
+
+    @Test
+    fun `offsets read like the board's chip`() {
+        val now = kotlinx.datetime.Instant.parse("2026-11-04T10:00:00Z")
+        assertThat(TimeZones.utcLabel("Asia/Tashkent", now)).isEqualTo("UTC+5")
+        assertThat(TimeZones.utcLabel("Asia/Kolkata", now)).isEqualTo("UTC+5:30")
+        assertThat(TimeZones.utcLabel("America/New_York", now)).isEqualTo("UTC−5")
+        assertThat(TimeZones.utcLabel("UTC", now)).isEqualTo("UTC")
+        assertThat(TimeZones.utcLabel("Nowhere/City", now)).isNull()
+    }
 }

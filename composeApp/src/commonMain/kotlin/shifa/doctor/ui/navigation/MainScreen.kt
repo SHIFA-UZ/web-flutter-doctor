@@ -40,9 +40,12 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.chat
 import shifa.doctor.generated.resources.clinicNavClinic
+import shifa.doctor.generated.resources.contactAndClinicAddress
+import shifa.doctor.generated.resources.extendedProfile
 import shifa.doctor.generated.resources.home
 import shifa.doctor.generated.resources.ic_bell_22
 import shifa.doctor.generated.resources.ic_calendar_22
@@ -68,11 +71,17 @@ import shifa.doctor.generated.resources.navReports
 import shifa.doctor.generated.resources.needsProPlan
 import shifa.doctor.generated.resources.notifications
 import shifa.doctor.generated.resources.patients
+import shifa.doctor.generated.resources.personalInformation
 import shifa.doctor.generated.resources.planPremium
 import shifa.doctor.generated.resources.planPro
+import shifa.doctor.generated.resources.practiceTimezone
 import shifa.doctor.generated.resources.profile
+import shifa.doctor.generated.resources.schedule
+import shifa.doctor.generated.resources.servicesPricing
+import shifa.doctor.generated.resources.settings
 import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.signOut
+import shifa.doctor.generated.resources.subscriptionAndBilling
 import shifa.doctor.generated.resources.talkWithAi
 import shifa.doctor.generated.resources.tasks
 import shifa.doctor.generated.resources.unreadBadge
@@ -83,6 +92,9 @@ import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
 import shifa.doctor.ui.auth.short
 import shifa.doctor.ui.debug.DebugMenuScreen
+import shifa.doctor.ui.profile.ProfileActions
+import shifa.doctor.ui.profile.ProfileScreen
+import shifa.doctor.ui.profile.ProfileSection
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -263,9 +275,26 @@ private fun RouteContent(
 ) = when (route) {
     is ShellRoute.Root ->
         if (route.tab == ShellTab.Profile) {
-            ProfilePlaceholder(actions, staff)
+            ProfileScreen(
+                staff,
+                ProfileActions(
+                    open = { actions.push(ShellRoute.Profile(it)) },
+                    schedule = { actions.push(ShellRoute.Schedule) },
+                    reports = { actions.push(ShellRoute.Reports) },
+                    signOut = actions.signOut,
+                ),
+            )
         } else {
             TabPlaceholder(route.tab.label, route.tab.icon)
+        }
+    is ShellRoute.Profile -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
+    ShellRoute.Schedule ->
+        Pushed(Res.string.schedule, actions) {
+            TabPlaceholder(Res.string.schedule, Res.drawable.ic_calendar_22)
+        }
+    ShellRoute.Reports ->
+        Pushed(Res.string.navReports, actions) {
+            TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
         }
     ShellRoute.Language ->
         Pushed(Res.string.language, actions) {
@@ -292,36 +321,40 @@ private fun TabPlaceholder(
     EmptyState(tr(title), icon)
 }
 
-// PROF-02 replaces this; until then Profile holds the app lock (SET-03's) and, in debug builds, the debug menu.
+/** A Profile section until its ticket builds it. Settings holds the app lock (SET-03) and Language meanwhile. */
 @Composable
-private fun ProfilePlaceholder(
+private fun ProfileSectionPlaceholder(
+    section: ProfileSection,
     actions: ShellActions,
-    staff: Boolean,
-) = Column(
-    Modifier
-        .fillMaxSize()
-        .statusBarsPadding()
-        .verticalScroll(rememberScrollState())
-        .padding(ShifaSpacing.Inset.Md),
-    verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
-) {
-    AppLockSection()
-    // Staff have no More sheet: Language and Sign Out live here (flow 01/18 §3).
-    if (staff) {
+) = if (section == ProfileSection.Settings) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
+        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+    ) {
+        AppLockSection()
         ShifaSettingsItem(
             tr(Res.string.language),
             { actions.push(ShellRoute.Language) },
             icon = Res.drawable.ic_globe_22,
         )
-        ShifaSettingsItem(
-            tr(Res.string.signOut),
-            actions.signOut,
-            icon = Res.drawable.ic_logout_22,
-            destructive = true,
-        )
+        if (isDebugBuild) ShifaSettingsItem("Debug menu", { actions.push(ShellRoute.Debug) }, divider = false)
     }
-    if (isDebugBuild) ShifaSettingsItem("Debug menu", { actions.push(ShellRoute.Debug) }, divider = false)
+} else {
+    TabPlaceholder(section.title, Res.drawable.ic_user_22)
 }
+
+private val ProfileSection.title: StringResource
+    get() =
+        when (this) {
+            ProfileSection.PersonalInfo -> Res.string.personalInformation
+            ProfileSection.Contact -> Res.string.contactAndClinicAddress
+            ProfileSection.Timezone -> Res.string.practiceTimezone
+            ProfileSection.Extended -> Res.string.extendedProfile
+            ProfileSection.Services -> Res.string.servicesPricing
+            ProfileSection.Subscription -> Res.string.subscriptionAndBilling
+            ProfileSection.Settings -> Res.string.settings
+            ProfileSection.About -> Res.string.about
+        }
 
 /**
  * The More sheet (flow 01/17, DaApp `moreOpen`): Shifa Intelligence, the five other destinations (Clinic only with a

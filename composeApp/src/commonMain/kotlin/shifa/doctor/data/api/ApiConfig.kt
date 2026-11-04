@@ -24,6 +24,8 @@ object ApiConfig {
         const val DOCTOR_CONTACT = "doctors/me/contact"
         const val DOCTOR_BILLING = "doctors/me/billing"
         const val DOCTOR_SETTINGS = "doctors/me/settings"
+        const val DOCTOR_SERVICES = "doctors/me/services"
+        const val DOCTOR_LOCATIONS = "doctors/me/locations"
         const val ME_PROFILE = "me/profile"
         const val ME_CLINICS = "me/clinics"
         const val CHAT_UNREAD = "messages/unread-count"
