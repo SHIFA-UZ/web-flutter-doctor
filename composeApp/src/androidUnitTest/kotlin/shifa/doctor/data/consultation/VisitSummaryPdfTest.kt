@@ -99,6 +99,23 @@ class VisitSummaryPdfTest {
     }
 
     @Test
+    fun `before and after photos follow the summary, one page each with its label`() {
+        val pages =
+            classToTest.pages(
+                summary.copy(
+                    photos = listOf("Before Treatment" to byteArrayOf(1), "After Treatment" to byteArrayOf(2)),
+                ),
+                VisitSummaryLabels(),
+            )
+        assertThat(pages).hasSize(3)
+        assertThat(texts(listOf(pages[1]))).contains("Before Treatment")
+        assertThat(pages[1].ops.filterIsInstance<PdfOp.Image>().single().bytes.single()).isEqualTo(1.toByte())
+        assertThat(texts(listOf(pages[2]))).contains("After Treatment")
+        assertThat(texts(listOf(pages[2]))).contains("Page 3 / 3")
+        assertThat(pages[2].ops.filterIsInstance<PdfOp.Image>().single().bytes.single()).isEqualTo(2.toByte())
+    }
+
+    @Test
     fun `long notes flow onto more pages, each with its page number, and a signature is drawn with its date`() {
         val long = (1..120).joinToString("\n") { "Line $it of the doctor's notes about the visit." }
         val png = byteArrayOf(-119, 80, 78, 71)

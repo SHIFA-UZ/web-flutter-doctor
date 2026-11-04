@@ -7,15 +7,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -34,7 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,6 +62,7 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.addToNotes
+import shifa.doctor.generated.resources.afterTreatment
 import shifa.doctor.generated.resources.aiNote
 import shifa.doctor.generated.resources.aiNotesHeading
 import shifa.doctor.generated.resources.aiNotesNeedPro
@@ -66,6 +73,8 @@ import shifa.doctor.generated.resources.appointmentEndedDocumentationSaved
 import shifa.doctor.generated.resources.appointmentGone
 import shifa.doctor.generated.resources.appointmentLoadFailed
 import shifa.doctor.generated.resources.back
+import shifa.doctor.generated.resources.beforeTreatment
+import shifa.doctor.generated.resources.chooseFromGallery
 import shifa.doctor.generated.resources.clinicPaymentsColAmount
 import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.complaints
@@ -110,11 +119,13 @@ import shifa.doctor.generated.resources.gender
 import shifa.doctor.generated.resources.genderFemale
 import shifa.doctor.generated.resources.genderMale
 import shifa.doctor.generated.resources.ic_alert_16
+import shifa.doctor.generated.resources.ic_camera_22
 import shifa.doctor.generated.resources.ic_chev_d_16
 import shifa.doctor.generated.resources.ic_chev_l_16
 import shifa.doctor.generated.resources.ic_chev_r_16
 import shifa.doctor.generated.resources.ic_clipboard_22
 import shifa.doctor.generated.resources.ic_eye_16
+import shifa.doctor.generated.resources.ic_image_22
 import shifa.doctor.generated.resources.ic_lock_16
 import shifa.doctor.generated.resources.ic_menu_16
 import shifa.doctor.generated.resources.ic_mic_16
@@ -129,6 +140,8 @@ import shifa.doctor.generated.resources.intelService
 import shifa.doctor.generated.resources.lastForm0252
 import shifa.doctor.generated.resources.lastVisitOn
 import shifa.doctor.generated.resources.leaveAnyway
+import shifa.doctor.generated.resources.leavePhotosBody
+import shifa.doctor.generated.resources.leavePhotosTitle
 import shifa.doctor.generated.resources.noDocumentsYet
 import shifa.doctor.generated.resources.notes
 import shifa.doctor.generated.resources.notesNotSavedBody
@@ -139,8 +152,10 @@ import shifa.doctor.generated.resources.patientAgeYears
 import shifa.doctor.generated.resources.patientId
 import shifa.doctor.generated.resources.patientRecordUnavailable
 import shifa.doctor.generated.resources.patientSigned
+import shifa.doctor.generated.resources.photoSummaryHint
 import shifa.doctor.generated.resources.recommended
 import shifa.doctor.generated.resources.recordingForAiNotes
+import shifa.doctor.generated.resources.removePhoto
 import shifa.doctor.generated.resources.requestSignature
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.retryScribeUpload
@@ -171,6 +186,7 @@ import shifa.doctor.generated.resources.summarySignedElectronically
 import shifa.doctor.generated.resources.summaryTitle
 import shifa.doctor.generated.resources.summaryVideoVisit
 import shifa.doctor.generated.resources.summaryVisitType
+import shifa.doctor.generated.resources.takePhoto
 import shifa.doctor.generated.resources.tooth
 import shifa.doctor.generated.resources.treatment
 import shifa.doctor.generated.resources.upload
@@ -193,6 +209,7 @@ import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.patients.ChronicWarning
 import shifa.doctor.ui.patients.chronicLabel
+import shifa.doctor.ui.profile.CameraDeniedBanner
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.speech.DictationState
@@ -225,6 +242,8 @@ import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.displayTime
+import shifa.doctor.utils.rememberCameraLauncher
+import shifa.doctor.utils.rememberImagePickerLauncher
 import shifa.doctor.utils.rememberMicPermission
 import shifa.doctor.utils.tr
 import kotlin.time.Duration
@@ -297,6 +316,11 @@ class VisitActions(
     val clearIcd: () -> Unit = {},
     // DENTAL-02: the dental record's changes and its services sheet.
     val dental: DentalActions = DentalActions(),
+    // APPT-05: a photo kind's Camera / Gallery sheet, its sources, a photo removed.
+    val photo: (PhotoKind) -> Unit = {},
+    val takePhoto: () -> Unit = {},
+    val choosePhoto: () -> Unit = {},
+    val removePhoto: (Int) -> Unit = {},
 )
 
 /**
@@ -350,6 +374,17 @@ fun VisitScreen(
     val scribeState by scribe.state.collectAsStateWithLifecycle()
     val scribeAllowed = rememberAllowed(DoctorFeature.AiNotes)
     val askScribe = rememberMicPermission { granted -> if (granted) scribe.start(SCRIBE) else scribe.denied() }
+    // APPT-05: the answer goes to the kind the picker was opened for (VisitViewModel.pickingPhoto).
+    val gallery = rememberImagePickerLauncher(viewModel::addPhoto)
+    val camera =
+        rememberCameraLauncher(viewModel::addPhoto) {
+            viewModel.addPhoto(null)
+            viewModel.ui { it.copy(cameraDenied = true) }
+        }
+    val pick = { source: () -> Unit ->
+        viewModel.pickingPhoto()
+        source()
+    }
     val actions =
         VisitActions(
             back = back,
@@ -386,6 +421,10 @@ fun VisitScreen(
                     remove = viewModel.dentalRecord::remove,
                     retryServices = viewModel.dentalRecord::loadServices,
                 ),
+            photo = viewModel::photo,
+            takePhoto = { pick(camera) },
+            choosePhoto = { pick(gallery) },
+            removePhoto = viewModel::removePhoto,
         )
     // Dictation for the notes fields (AI-06); the AI scribe (SCRIBE-01) has its own recorder, its state passed down.
     CompositionLocalProvider(LocalDictation provides rememberDictation()) {
@@ -400,18 +439,24 @@ fun VisitScreen(
         }
     }
     state.askLeave?.let { to ->
+        // Photos would be lost (APPT-05); otherwise the notes couldn't be saved.
+        val photos = state.photos.isNotEmpty()
         ProfileSheet({ viewModel.ui { it.copy(askLeave = null) } }) {
             ShifaDialogSheet(
-                tr(Res.string.notesNotSavedTitle),
+                tr(if (photos) Res.string.leavePhotosTitle else Res.string.notesNotSavedTitle),
                 tr(Res.string.leaveAnyway),
                 { viewModel.leave(to, force = true) },
-                body = tr(Res.string.notesNotSavedBody),
+                body = tr(if (photos) Res.string.leavePhotosBody else Res.string.notesNotSavedBody),
                 cancelText = tr(Res.string.stay),
                 onCancel = { viewModel.ui { it.copy(askLeave = null) } },
             )
         }
     }
     if (state.menu) NotesMenu(state, actions)
+    state.photoSheet?.let {
+        val close = { viewModel.ui { s -> s.copy(photoSheet = null) } }
+        ProfileSheet(close) { PhotoSource(it, actions, close) }
+    }
     val end = state.end
     if ((end.confirm || end.running || end.completed || end.error != null) && !end.hidden) {
         val clock = remember { PracticeClock(profileRepository.me.value?.profile?.timeZone) }
@@ -506,6 +551,10 @@ private fun PatientParts(
             applyIcd = actions.applyIcd,
             clearIcd = actions.clearIcd,
             dental = actions.dental,
+            photo = actions.photo,
+            takePhoto = actions.takePhoto,
+            choosePhoto = actions.choosePhoto,
+            removePhoto = actions.removePhoto,
             documents =
                 DocumentsActions(
                     retry = documents::load,
@@ -787,6 +836,72 @@ private fun NotesCard(
         VisitMode.Dental -> DentalPanel(dental, state.dentalTooth, actions.dental)
         VisitMode.Form0252 -> Form0252(state.forms, state.visit?.patientId != null, state.icd, actions)
     }
+    if (state.cameraDenied) CameraDeniedBanner { actions.ui { it.copy(cameraDenied = false) } }
+    if (state.mode != VisitMode.Form0252) Photos(state.photos, actions)
+}
+
+/** APPT-05: the photos taken, "Before Treatment · IMG_0012.jpg", each removable (board `DaVisit` photo chips). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Photos(
+    photos: List<VisitPhoto>,
+    actions: VisitActions,
+) {
+    if (photos.isEmpty()) return
+    val before = tr(Res.string.beforeTreatment)
+    val after = tr(Res.string.afterTreatment)
+    val remove = tr(Res.string.removePhoto)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+    ) {
+        photos.forEachIndexed { i, p ->
+            Row(
+                Modifier
+                    .height(ShifaSize.S30)
+                    .background(ShifaColors.Bg.Canvas, ShifaRadius.Full)
+                    .padding(start = ShifaSize.S10, end = ShifaSize.S6),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+            ) {
+                Text(
+                    "${if (p.kind == PhotoKind.Before) before else after} · ${p.name}",
+                    Modifier.widthIn(max = ShifaSize.S240),
+                    style = ShifaTextStyles.caption(),
+                    color = ShifaColors.Text.Primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                    painterResource(Res.drawable.ic_x_16),
+                    remove,
+                    Modifier.clip(ShifaRadius.Full).clickable(role = Role.Button) { actions.removePhoto(i) },
+                    tint = ShifaColors.Icon.Secondary,
+                )
+            }
+        }
+    }
+}
+
+/** APPT-05: Camera or Gallery for a photo kind (board `DaVisit` "photo source"). */
+@Composable
+internal fun PhotoSource(
+    kind: PhotoKind,
+    actions: VisitActions,
+    close: () -> Unit,
+) = ShifaTray(tr(if (kind == PhotoKind.Before) Res.string.beforeTreatment else Res.string.afterTreatment), close) {
+    Text(
+        tr(Res.string.photoSummaryHint),
+        style = ShifaTextStyles.caption(),
+        color = ShifaColors.Text.Secondary,
+    )
+    ShifaSettingsItem(tr(Res.string.takePhoto), actions.takePhoto, icon = Res.drawable.ic_camera_22)
+    ShifaSettingsItem(
+        tr(Res.string.chooseFromGallery),
+        actions.choosePhoto,
+        icon = Res.drawable.ic_image_22,
+        divider = false,
+    )
 }
 
 private fun modeLabel(m: VisitMode) =
@@ -1263,6 +1378,19 @@ private fun NotesMenu(
             ShifaSettingsItem(tr(Res.string.fromLast0252Form), {
                 actions.helper(VisitHelper.Form)
             }, icon = Res.drawable.ic_clipboard_22)
+            // APPT-05: before/after photos (General and Dental modes, as on the board).
+            if (state.mode != VisitMode.Form0252) {
+                ShifaSettingsItem(
+                    tr(Res.string.beforeTreatment),
+                    { actions.photo(PhotoKind.Before) },
+                    icon = Res.drawable.ic_camera_22,
+                )
+                ShifaSettingsItem(
+                    tr(Res.string.afterTreatment),
+                    { actions.photo(PhotoKind.After) },
+                    icon = Res.drawable.ic_camera_22,
+                )
+            }
             VisitMode.entries.filter { it != VisitMode.Dental || state.dental }.forEach { m ->
                 ShifaSettingsItem(
                     tr(modeLabel(m)),
@@ -1374,7 +1502,10 @@ private fun rememberEndLabels(): EndLabels {
     val title = tr(Res.string.summaryDocumentTitle, "%D%", "%T%")
     val male = tr(Res.string.genderMale)
     val female = tr(Res.string.genderFemale)
+    val before = tr(Res.string.beforeTreatment)
+    val after = tr(Res.string.afterTreatment)
     return EndLabels(
+        photo = { if (it == PhotoKind.Before) before else after },
         summary = summary,
         aiHeading = tr(Res.string.aiNotesHeading),
         doctorHeading = tr(Res.string.doctorNotesSection),

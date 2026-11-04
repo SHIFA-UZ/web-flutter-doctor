@@ -372,6 +372,9 @@ in M5 has run on iOS yet (everything compiles and links).
 Notes from M5:
 - **One commit (`b5d0490`, APPT-02) has a lint-only issue** (an orphaned comment) fixed in the next commit; the branch
   head is clean. My lint check filtered for "error", which ktlint's style failures don't print; fixed since.
+- **Lint-only issue in `8727e58` (DENTAL-02):** one line over 120 characters, from the last review fix. It compiles;
+  the next commit (APPT-05) wraps it. My check looked for "FAILED", but Gradle prints "FAILURE"; the check now matches
+  both.
 - **A real bug caught by a test:** a retry ran the upload inside a state update, which can run twice; it uploaded the
   recording twice. Fixed before commit (SCRIBE-01).
 - **Backend facts:** the doctor's appointment detail has no video flag (only the patient side has it); notes are one

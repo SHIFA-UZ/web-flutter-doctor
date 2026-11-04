@@ -109,9 +109,10 @@ data class DentalRecord(
             if (map.isEmpty()) return null
             // Teeth of another shape can't be read: null, so nothing is saved over them (a bad line alone is skipped).
             val teethJson = map["teeth"]
-            if (teethJson != null && teethJson !is JsonNull) {
-                if (teethJson !is JsonObject || teethJson.values.any { it !is JsonArray && it !is JsonNull }) return null
-            }
+            val badTeeth =
+                teethJson != null && teethJson !is JsonNull &&
+                    (teethJson !is JsonObject || teethJson.values.any { it !is JsonArray && it !is JsonNull })
+            if (badTeeth) return null
             val dentition = (map["dentition"] as? JsonPrimitive)?.contentOrNull?.trim()?.lowercase() ?: "permanent"
             val kind = if (dentition == "primary") Dentition.Primary else Dentition.Permanent
             val teeth =

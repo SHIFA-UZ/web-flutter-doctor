@@ -1482,6 +1482,8 @@
     <string name="leaveCall">Qo'ng'iroqdan chiqish</string>
     <string name="leaveCallBody">Tashrif siz uni yakunlamaguningizcha ochiq qoladi.</string>
     <string name="leaveCallTitle">Qo'ng'iroqdan chiqilsinmi?</string>
+    <string name="leavePhotosBody">Rasmlar qabulni yakunlaganingizda tashrif xulosasiga qo'shiladi. Hozir chiqsangiz, ular yo'qoladi.</string>
+    <string name="leavePhotosTitle">Rasmlar hali saqlanmagan</string>
     <string name="leaveWhileRecordingBody">Yozuv qayta ishlanadi.</string>
     <string name="leaveWhileRecordingTitle">Yozuv to'xtatilib, chiqilsinmi?</string>
     <string name="legalAndSupport">Huquqiy ma'lumot va yordam</string>
@@ -1884,6 +1886,8 @@
     <string name="phoneNumberRequired">Telefon raqami kiritilishi shart</string>
     <string name="phoneOrEmail">Telefon raqami yoki Email</string>
     <string name="phoneUpdated">Telefon raqami yangilandi</string>
+    <string name="photoLimit">Bir tashrifga 20 tagacha rasm.</string>
+    <string name="photoSummaryHint">Tashrif xulosasiga alohida sahifa sifatida qo'shiladi.</string>
     <string name="photoUpdated">Rasm yangilandi</string>
     <string name="photoUploadFailed">Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.</string>
     <string name="pickADate">Sanani tanlang</string>
@@ -1996,6 +2000,7 @@
     <string name="removeItem">%1$s ni olib tashlash</string>
     <string name="removeLastPhoneBody">Telefon raqamisiz bemor SMS eslatmalarini olmaydi.</string>
     <string name="removeLastPhoneTitle">Oxirgi telefon raqami o'chirilsinmi?</string>
+    <string name="removePhoto">Rasmni olib tashlash</string>
     <string name="removePriceRow">Narxni olib tashlash</string>
     <string name="removeRow">Qatorni olib tashlash</string>
     <string name="removeService">Xizmatni olib tashlash</string>

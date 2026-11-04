@@ -33,6 +33,7 @@ import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.noItemsToSave
 import shifa.doctor.generated.resources.patientSignatureRequestSent
+import shifa.doctor.generated.resources.photoLimit
 import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.stopAll
 
@@ -330,6 +331,83 @@ class VisitViewModelTest {
         classToTest.end()
         ended(classToTest)
         assertThat(classToTest.state.value.end.completed).isTrue()
+    }
+
+    @Test
+    fun `photos alone make a summary, one page each, and leaving with photos asks first`() {
+        val classToTest = opened()
+
+        fun take(
+            kind: PhotoKind,
+            name: String?,
+            byte: Byte = 0,
+        ) {
+            classToTest.photo(kind)
+            classToTest.pickingPhoto()
+            classToTest.addPhoto(name?.let { shifa.doctor.utils.PickedImage(it, byteArrayOf(byte)) })
+        }
+        take(PhotoKind.Before, "IMG_1.jpg", 1)
+        take(PhotoKind.After, null)
+        // A picker on its way keeps its kind: a second sheet can't open meanwhile.
+        classToTest.photo(PhotoKind.After)
+        classToTest.pickingPhoto()
+        classToTest.photo(PhotoKind.Before)
+        assertThat(classToTest.state.value.photoSheet).isNull()
+        classToTest.addPhoto(shifa.doctor.utils.PickedImage("IMG_2.jpg", byteArrayOf(2)))
+        take(PhotoKind.After, "IMG_3.jpg", 3)
+        assertThat(
+            classToTest.state.value.photos.map {
+                it.kind
+            },
+        ).containsExactly(PhotoKind.Before, PhotoKind.After, PhotoKind.After).inOrder()
+        classToTest.removePhoto(1)
+        assertThat(classToTest.state.value.photos.map { it.name }).containsExactly("IMG_1.jpg", "IMG_3.jpg").inOrder()
+        // The photos live only in the open visit: leaving asks.
+        classToTest.leave()
+        settle { classToTest.state.value.askLeave != null }
+        assertThat(classToTest.state.value.askLeave).isEqualTo(VisitExit.Back)
+        assertThat(classToTest.state.value.left).isNull()
+        classToTest.ui { it.copy(askLeave = null) }
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.done).isTrue()
+        assertThat(classToTest.state.value.end.noSummary).isNull()
+        assertThat(
+            summaries.single().photos.map { it.first },
+        ).containsExactly("Before Treatment", "After Treatment").inOrder()
+        assertThat(
+            summaries.single().photos.map { it.second.single() },
+        ).containsExactly(1.toByte(), 3.toByte()).inOrder()
+        // Completed: the photos are in the summary, leaving no longer asks and lets them go.
+        classToTest.leave()
+        settle { classToTest.state.value.left != null }
+        assertThat(classToTest.state.value.left).isEqualTo(VisitExit.Back)
+        assertThat(classToTest.state.value.photos).isEmpty()
+    }
+
+    @Test
+    fun `at most 20 photos, and a failed summary still asks before the photos are lost`() {
+        val classToTest = opened()
+        repeat(MAX_PHOTOS + 1) {
+            classToTest.photo(PhotoKind.Before)
+            classToTest.pickingPhoto()
+            classToTest.addPhoto(shifa.doctor.utils.PickedImage("IMG_$it.jpg", byteArrayOf(1)))
+        }
+        assertThat(classToTest.state.value.photos).hasSize(MAX_PHOTOS)
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.photoLimit)
+        documentStatus = HttpStatusCode.InternalServerError
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.summaryFailed).isTrue()
+        classToTest.leave()
+        settle { classToTest.state.value.askLeave != null }
+        assertThat(classToTest.state.value.askLeave).isEqualTo(VisitExit.Back)
+        // Opening the patient comes back to this visit: it doesn't ask.
+        classToTest.ui { it.copy(askLeave = null) }
+        classToTest.leave(VisitExit.Patient)
+        settle { classToTest.state.value.left != null }
+        assertThat(classToTest.state.value.left).isEqualTo(VisitExit.Patient)
+        assertThat(classToTest.state.value.photos).hasSize(MAX_PHOTOS)
     }
 
     @Test

@@ -377,3 +377,33 @@ Built 2026-11-04. Spec 05 §4.3, ticket DENTAL-02, board `DaVisit` dental mode a
     Consultation → badge 2 and the totals; discount 12,5 and notes; left the visit and opened it again: all read back
     from the saved record; End shows the dental row; the summary PDF shows the dental section (393 750 UZS). Demo
     mode is off again.
+
+## APPT-05 · Before/after photos
+
+Built 2026-11-05. Spec 05 §2.2 and the APPT-05 ticket, flow 05/04 §4 and 05/12, board `DaVisit` (notes menu,
+"photo source", photo chips). The ticket's document upload strip already exists: the workspace's Documents card
+uploads with progress, a per-file failure and a refresh (APPT-04, `DocumentUpload`).
+
+- **Adding a photo:** the notes menu has **Before Treatment** and **After Treatment** in General and Dental modes.
+  Each opens Take Photo / Choose from Gallery with the hint "Added to the visit summary as a separate page." The
+  pickers already compress (`PickedImage`: JPEG 85, longest side 1600 px). A refused camera shows the existing
+  "Camera access is needed" banner with Open settings.
+- **Chips:** "Before Treatment · photo.jpg" under the notes, one line with an ellipsis, each with a remove button that
+  has a screen-reader label.
+- **Kept until End:** photos stay in the visit's ViewModel until End, as in Flutter and on the board, at most 20 per
+  visit ("Up to 20 photos per visit."). A picker's answer goes to the kind it was opened for, and only one picker can
+  be open at a time. **Fix:** Flutter lost photos silently on back. Here, going back while the visit has photos and no
+  filed summary asks first ("Photos not saved yet… If you leave now, they are lost." with Leave anyway / Stay). That
+  includes after a failed summary. Going back clears them; opening the patient or the 025-2 keeps them.
+- **End:** the checklist has a "Photos: 2" row. Photos alone are enough for a summary. The summary PDF gets one page
+  per photo after the signatures, titled Before / After Treatment in the app's language, the photo fitted to the page.
+- **Not built:** uploading photos as separate patient documents (the spec's backend-PDF variant, BE-01). The board
+  puts them in the summary.
+- **Tests:**
+  - `VisitViewModelTest`: add, cancel and remove; a picker keeps its kind; leaving asks; photos alone make the
+    summary, in order; a filed summary leaves without asking and clears them; the 20 cap; a failed summary still asks;
+    the patient exit doesn't.
+  - `VisitSummaryPdfTest`: one page each, with its label and page number.
+  - Screenshots: `Visit_photoSource`, `End_confirm` (the Photos row), `Visit_workspace` (chips below the fold).
+  - **Emulator (demo):** Before from the gallery, After from the emulator camera; both chips shown; Back asked; End
+    showed Photos 2; the summary had 3 pages, the photos on pages 2 and 3. Demo mode is off again.

@@ -1482,6 +1482,8 @@
     <string name="leaveCall">Leave call</string>
     <string name="leaveCallBody">The visit stays open until you end it.</string>
     <string name="leaveCallTitle">Leave the call?</string>
+    <string name="leavePhotosBody">Photos go into the visit summary when you end the appointment. If you leave now, they are lost.</string>
+    <string name="leavePhotosTitle">Photos not saved yet</string>
     <string name="leaveWhileRecordingBody">The recording will be processed.</string>
     <string name="leaveWhileRecordingTitle">Stop recording and leave?</string>
     <string name="legalAndSupport">Legal and support</string>
@@ -1884,6 +1886,8 @@
     <string name="phoneNumberRequired">Phone number is required</string>
     <string name="phoneOrEmail">Phone Number or Email</string>
     <string name="phoneUpdated">Phone number updated</string>
+    <string name="photoLimit">Up to 20 photos per visit.</string>
+    <string name="photoSummaryHint">Added to the visit summary as a separate page.</string>
     <string name="photoUpdated">Photo updated</string>
     <string name="photoUploadFailed">Couldn't upload the photo. Try again.</string>
     <string name="pickADate">Pick a date</string>
@@ -1996,6 +2000,7 @@
     <string name="removeItem">Remove %1$s</string>
     <string name="removeLastPhoneBody">Without a phone number the patient gets no SMS reminders.</string>
     <string name="removeLastPhoneTitle">Remove the last phone number?</string>
+    <string name="removePhoto">Remove photo</string>
     <string name="removePriceRow">Remove price</string>
     <string name="removeRow">Remove row</string>
     <string name="removeService">Remove Service</string>

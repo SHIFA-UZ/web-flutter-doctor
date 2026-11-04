@@ -68,11 +68,13 @@ import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.noItemsToSave
 import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
+import shifa.doctor.generated.resources.photoLimit
 import shifa.doctor.generated.resources.scribeUploadFailed
 import shifa.doctor.generated.resources.signatureRequestFailed
 import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.patients.chronicWarned
+import shifa.doctor.utils.PickedImage
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
@@ -117,6 +119,7 @@ class EndLabels(
     val endedAt: (LocalDateTime) -> String = { "${displayDate(it.date)} ${displayTime(it.time)}" },
     val visitType: (VisitKind) -> String = { it.name },
     val gender: (String) -> String? = { it },
+    val photo: (PhotoKind) -> String = { if (it == PhotoKind.Before) "Before Treatment" else "After Treatment" },
 )
 
 /** Where the doctor goes from the visit: back, the patient's record, the 025-2 editor (the notes are saved first). */
@@ -124,6 +127,16 @@ enum class VisitExit { Back, Patient, Form }
 
 /** The helper region over the notes (05 §2.1): Shifa AI's drafts and notes, or the last 025-2's texts. */
 enum class VisitHelper { Ai, Form }
+
+/** APPT-05: which treatment photo. */
+enum class PhotoKind { Before, After }
+
+/** A before/after photo, kept with the visit until End puts it into the summary (Flutter's; board `DaVisit`). */
+class VisitPhoto(
+    val kind: PhotoKind,
+    val name: String,
+    val bytes: ByteArray,
+)
 
 data class VisitUiState(
     val loading: Boolean = true,
@@ -164,6 +177,12 @@ data class VisitUiState(
     val icd: IcdSuggestion? = null,
     // DENTAL-02: the tooth (or the general key) whose services sheet is open.
     val dentalTooth: String? = null,
+    // APPT-05: the photos taken, the Camera / Gallery sheet for one kind, the kind a picker is open for, the camera
+    // refused.
+    val photos: List<VisitPhoto> = emptyList(),
+    val photoSheet: PhotoKind? = null,
+    val photoPending: PhotoKind? = null,
+    val cameraDenied: Boolean = false,
 ) {
     val kind: VisitKind get() = visit?.kind ?: VisitKind.InPerson
 
@@ -491,7 +510,8 @@ class VisitViewModel(
         if (visit != null) _state.update { it.copy(visit = visit.copy(status = "COMPLETED")) }
         // As saved: the discount clamped, the notes trimmed.
         val dental = dentalRecord.state.value.takeIf { it.loaded && it.hasContent }?.record?.payload()
-        if (text.isBlank() && dental == null) {
+        val photos = _state.value.photos.map { labels.photo(it.kind) to it.bytes }
+        if (text.isBlank() && dental == null && photos.isEmpty()) {
             val pending = _state.value.awaitingScribe
             return _state.update {
                 it.copy(
@@ -533,6 +553,7 @@ class VisitViewModel(
                             )
                         }?.let { "${displayDate(it.date)} ${displayTime(it.time)}" },
                     dental = dental,
+                    photos = photos,
                 ),
                 labels.summary,
             )
@@ -636,6 +657,37 @@ class VisitViewModel(
 
     fun ui(change: (VisitUiState) -> VisitUiState) = _state.update(change)
 
+    /** APPT-05: Camera / Gallery for [kind]; at most [MAX_PHOTOS] (flow 05/04 §8), one picker at a time. */
+    fun photo(kind: PhotoKind) =
+        _state.update {
+            when {
+                it.photoPending != null -> it.copy(menu = false)
+                it.photos.size >= MAX_PHOTOS ->
+                    it.copy(menu = false, banner = CodeBanner(Res.string.photoLimit, error = false))
+                else -> it.copy(menu = false, photoSheet = kind)
+            }
+        }
+
+    /** A picker opens for the sheet's kind: its answer goes to that kind, whatever is opened meanwhile. */
+    fun pickingPhoto() =
+        _state.update {
+            it.copy(
+                photoPending = it.photoSheet,
+                photoSheet = null,
+                cameraDenied = false,
+            )
+        }
+
+    /** The picker's answer (null: cancelled or refused); the label is "Before Treatment · name". */
+    fun addPhoto(picked: PickedImage?) =
+        _state.update { s ->
+            val kind = s.photoPending ?: return@update s
+            val add = picked?.takeIf { s.photos.size < MAX_PHOTOS }?.let { VisitPhoto(kind, it.fileName, it.bytes) }
+            s.copy(photoPending = null, photos = s.photos + listOfNotNull(add))
+        }
+
+    fun removePhoto(index: Int) = _state.update { s -> s.copy(photos = s.photos.filterIndexed { i, _ -> i != index }) }
+
     /**
      * Leaving for [to]: the notes are saved first; when that fails the doctor is asked (05/04 §10). Going back stops
      * the signature reads (the shell keeps this ViewModel; a reopened visit gets a new one).
@@ -647,12 +699,19 @@ class VisitViewModel(
         if (force) return go(to)
         viewModelScope.launch {
             val saved = notes.flush() and dentalRecord.flush()
-            if (saved) go(to) else _state.update { it.copy(askLeave = to) }
+            // Photos live only here until a summary holds them: going back without one asks first (the patient's record
+            // and the 025-2 come back to this visit).
+            val photos = to == VisitExit.Back && _state.value.photos.isNotEmpty() && !_state.value.end.done
+            if (saved && !photos) go(to) else _state.update { it.copy(askLeave = to) }
         }
     }
 
     private fun go(to: VisitExit) {
-        if (to == VisitExit.Back) watching?.cancel()
+        // The shell keeps this ViewModel: going back lets the photos go (a reopened visit gets a new one).
+        if (to == VisitExit.Back) {
+            watching?.cancel()
+            _state.update { it.copy(photos = emptyList()) }
+        }
         _state.update { it.copy(askLeave = null, left = to) }
     }
 
@@ -661,3 +720,6 @@ class VisitViewModel(
 }
 
 private val AI_LATER = Res.string.aiDocumentationWillAppearShortly
+
+// Flow 05/04 §8: photos per visit.
+const val MAX_PHOTOS = 20

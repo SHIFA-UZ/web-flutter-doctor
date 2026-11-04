@@ -1482,6 +1482,8 @@
     <string name="leaveCall">Выйти из звонка</string>
     <string name="leaveCallBody">Визит останется открытым, пока вы его не завершите.</string>
     <string name="leaveCallTitle">Выйти из звонка?</string>
+    <string name="leavePhotosBody">Фото попадают в итог визита, когда вы завершаете приём. Если уйти сейчас, они пропадут.</string>
+    <string name="leavePhotosTitle">Фото ещё не сохранены</string>
     <string name="leaveWhileRecordingBody">Запись будет обработана.</string>
     <string name="leaveWhileRecordingTitle">Остановить запись и выйти?</string>
     <string name="legalAndSupport">Правовая информация и поддержка</string>
@@ -1884,6 +1886,8 @@
     <string name="phoneNumberRequired">Номер телефона обязателен</string>
     <string name="phoneOrEmail">Номер телефона или Email</string>
     <string name="phoneUpdated">Номер телефона обновлён</string>
+    <string name="photoLimit">До 20 фото на визит.</string>
+    <string name="photoSummaryHint">Добавляется в итог визита отдельной страницей.</string>
     <string name="photoUpdated">Фото обновлено</string>
     <string name="photoUploadFailed">Не удалось загрузить фото. Попробуйте ещё раз.</string>
     <string name="pickADate">Выберите дату</string>
@@ -1996,6 +2000,7 @@
     <string name="removeItem">Удалить %1$s</string>
     <string name="removeLastPhoneBody">Без номера телефона пациент не получает SMS-напоминания.</string>
     <string name="removeLastPhoneTitle">Удалить последний номер телефона?</string>
+    <string name="removePhoto">Удалить фото</string>
     <string name="removePriceRow">Удалить цену</string>
     <string name="removeRow">Удалить строку</string>
     <string name="removeService">Удалить услугу</string>

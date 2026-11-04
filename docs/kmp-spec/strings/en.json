@@ -2611,5 +2611,10 @@
   "dentalDocIntroFree": "Tap a tooth (FDI-style quadrants), add your catalog services, then set discount if needed.",
   "dentalLegendNone": "No services",
   "dentalLegendAdded": "Services added (count)",
-  "discountOutOfRange": "Enter a discount between 0 and 100."
+  "discountOutOfRange": "Enter a discount between 0 and 100.",
+  "photoSummaryHint": "Added to the visit summary as a separate page.",
+  "removePhoto": "Remove photo",
+  "leavePhotosTitle": "Photos not saved yet",
+  "leavePhotosBody": "Photos go into the visit summary when you end the appointment. If you leave now, they are lost.",
+  "photoLimit": "Up to 20 photos per visit."
 }

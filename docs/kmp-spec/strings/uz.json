@@ -2611,5 +2611,10 @@
   "dentalDocIntroFree": "Tishni bosing (FDI choraklari), katalogdagi xizmatlaringizni qo'shing, so'ng kerak bo'lsa chegirma kiriting.",
   "dentalLegendNone": "Xizmat yo'q",
   "dentalLegendAdded": "Xizmat qo'shilgan (soni)",
-  "discountOutOfRange": "Chegirmani 0 dan 100 gacha kiriting."
+  "discountOutOfRange": "Chegirmani 0 dan 100 gacha kiriting.",
+  "photoSummaryHint": "Tashrif xulosasiga alohida sahifa sifatida qo'shiladi.",
+  "removePhoto": "Rasmni olib tashlash",
+  "leavePhotosTitle": "Rasmlar hali saqlanmagan",
+  "leavePhotosBody": "Rasmlar qabulni yakunlaganingizda tashrif xulosasiga qo'shiladi. Hozir chiqsangiz, ular yo'qoladi.",
+  "photoLimit": "Bir tashrifga 20 tagacha rasm."
 }

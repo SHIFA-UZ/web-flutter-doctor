@@ -57,6 +57,8 @@ private val state =
             ),
         soapOpen = true,
         helper = VisitHelper.Ai,
+        // APPT-05: a photo taken before treatment.
+        photos = listOf(VisitPhoto(PhotoKind.Before, "IMG_0012.jpg", ByteArray(0))),
     )
 
 private val notes =
@@ -193,6 +195,10 @@ internal fun VisitDentalPreview() =
             dental = dental,
         )
     }
+
+// APPT-05: Camera or Gallery for an after-treatment photo.
+@Composable
+internal fun PhotoSourcePreview() = PreviewTheme { PhotoSource(PhotoKind.After, VisitActions()) {} }
 
 // DENTAL-02: tooth 36's services: the two added (removable), the group chips and the doctor's services.
 @Composable

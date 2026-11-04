@@ -33,6 +33,8 @@ data class VisitSummary(
     val signedOn: String? = null,
     // DENTAL-02: the services by tooth and their totals; null or without lines leaves the section out.
     val dental: DentalRecord? = null,
+    // APPT-05: before/after photos, each on a page of its own after the summary: its label and JPEG bytes.
+    val photos: List<Pair<String, ByteArray>> = emptyList(),
 )
 
 /** The summary's fixed words, in the app's language (the screen resolves them). */
@@ -70,7 +72,7 @@ data class VisitSummaryLabels(
  * the patient and visit block, the clinical notes (flowing across pages), the signatures (the patient's image and when
  * they signed, or an empty line) and a footer with the page on every page. Flutter's never-filled sections (diagnosis,
  * prescriptions, recommendations, follow-up) are left out. A dental visit adds its services by tooth with the totals
- * per currency (DENTAL-02); the plan joins with DENTAL-03.
+ * per currency (DENTAL-02); before/after photos follow, one per page (APPT-05). The plan joins with DENTAL-03.
  * Labels come in the app's language (Flutter: en and uz only).
  */
 class VisitSummaryPdf(
@@ -101,6 +103,12 @@ class VisitSummaryPdf(
             }
             s.dental?.takeIf { it.lineCount > 0 || it.notes.isNotBlank() }?.let(::dental)
             signatures()
+            s.photos.forEach { (label, bytes) ->
+                newPage()
+                sectionHeader(label)
+                ops += PdfOp.Image(margin, y, contentW, bottom - y, bytes)
+                y = bottom
+            }
             val all = finish()
             return all.mapIndexed { i, page -> PdfPage(page.width, page.height, page.ops + footer(i + 1, all.size)) }
         }

@@ -33,6 +33,7 @@ import shifa.doctor.generated.resources.endChecklistSigned
 import shifa.doctor.generated.resources.endVisitChecklistAi
 import shifa.doctor.generated.resources.endVisitChecklistDental
 import shifa.doctor.generated.resources.endVisitChecklistNotes
+import shifa.doctor.generated.resources.endVisitChecklistPhotos
 import shifa.doctor.generated.resources.endVisitChecklistSignature
 import shifa.doctor.generated.resources.endVisitNothingToSave
 import shifa.doctor.generated.resources.endVisitSub
@@ -70,7 +71,7 @@ class EndActions(
 
 /**
  * End appointment (APPT-07, flow 05/12, board `DaVisit` "end visit" and "end progress"): first what will be saved
- * (notes, AI notes, dental services, signature; plan, payment and photos join with their tickets), then the steps with a spinner
+ * (notes, AI notes, dental services, photos, signature; plan and payment join with their tickets), then the steps with a spinner
  * or a check, "Continue without waiting" on the AI step, the result. It can't be closed while it runs.
  */
 @Composable
@@ -105,7 +106,8 @@ internal fun EndConfirm(
     val chars = notes.text.body(SoapLabels()).length
     val aiReady = notes.notes.orEmpty().any { it.fromAi } || notes.drafts.orEmpty().isNotEmpty()
     val sig = state.signature
-    val nothing = chars == 0 && !aiReady && !state.awaitingScribe && dental?.hasContent != true
+    val nothing =
+        chars == 0 && !aiReady && !state.awaitingScribe && dental?.hasContent != true && state.photos.isEmpty()
     val waiting = sig == SignatureState.Waiting
     ShifaDialogSheet(
         tr(Res.string.endVisitTitle),
@@ -144,6 +146,11 @@ internal fun EndConfirm(
                     r.lineCount > 0,
                 )
             }
+            Row(
+                Res.string.endVisitChecklistPhotos,
+                if (state.photos.isNotEmpty()) "${state.photos.size}" else tr(Res.string.endChecklistNone),
+                state.photos.isNotEmpty(),
+            )
             Row(
                 Res.string.endVisitChecklistSignature,
                 tr(
