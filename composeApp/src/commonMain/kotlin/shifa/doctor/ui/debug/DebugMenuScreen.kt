@@ -2,6 +2,7 @@ package shifa.doctor.ui.debug
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -37,6 +38,8 @@ fun DebugMenuScreen(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     onSignOut: (() -> Unit)? = null,
+    // Signed-in sections borrowed until their own screens exist (App lock until SET-03).
+    extra: @Composable ColumnScope.() -> Unit = {},
 ) {
     var spikes by remember { mutableStateOf(spikeAutoRun) } // -spikeAutoRun (iOS check) starts there
     val demo by DemoMode.enabled.collectAsState()
@@ -67,6 +70,7 @@ fun DebugMenuScreen(
                     )
                 },
                 onSignOut = onSignOut,
+                extra = extra,
             )
         }
     }
@@ -85,6 +89,7 @@ fun DebugMenuScreenContent(
     modifier: Modifier = Modifier,
     // Signed in (the shell's stand-in until SHELL-01): the sign-out question (AUTH-09).
     onSignOut: (() -> Unit)? = null,
+    extra: @Composable ColumnScope.() -> Unit = {},
 ) = Column(
     modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
     verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
@@ -106,4 +111,5 @@ fun DebugMenuScreenContent(
         ShifaSettingsItem("Native spikes", onSpikes, divider = onSignOut != null)
         onSignOut?.let { ShifaSettingsItem(tr(Res.string.signOut), it, divider = false) }
     }
+    extra()
 }

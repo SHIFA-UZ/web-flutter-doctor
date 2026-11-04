@@ -121,6 +121,7 @@
     <string name="appActivatedSubtitle">Приложение активировано на телефоне</string>
     <string name="appLock">Блокировка приложения</string>
     <string name="appLockAttemptsHint">После 5 неверных попыток вы выйдете из системы.</string>
+    <string name="appLockChangeFailed">Не удалось изменить блокировку приложения. Попробуйте ещё раз.</string>
     <string name="appLockSubtitle">Запрашивать PIN-код при повторном открытии приложения</string>
     <string name="appName">Shifa Doctor</string>
     <string name="appliedCode">Применено: %1$s</string>
@@ -207,6 +208,7 @@
     <string name="biometricSetupFailed">Не удалось включить разблокировку по биометрии</string>
     <string name="biometricUnlock">Разблокировка по биометрии</string>
     <string name="biometricsNotEnrolled">На этом телефоне не настроены Face ID или отпечаток пальца.</string>
+    <string name="biometricsNotSetUp">На этом телефоне не настроены Face ID или отпечаток пальца.</string>
     <string name="birthDate">Дата рождения</string>
     <string name="blockCancelOverlapping">Отменить пересекающиеся записи</string>
     <string name="blockCancelOverlappingHint">Пациенты получат уведомление автоматически.</string>
@@ -1654,10 +1656,14 @@
     <string name="photoUpdated">Фото обновлено</string>
     <string name="pickADate">Выберите дату</string>
     <string name="pin">PIN-код</string>
+    <string name="pinDigitsEntered">Введено %1$s из %2$s цифр</string>
+    <string name="pinLengthHint">От 4 до 6 цифр</string>
     <string name="pinLengthRule">PIN-код должен содержать от 4 до 6 цифр</string>
     <string name="pinLockoutBanner">Слишком много неверных попыток ввода PIN-кода. Войдите снова.</string>
+    <string name="pinNotSaved">Не удалось сохранить PIN-код. Попробуйте ещё раз.</string>
     <string name="pinStaysSet">Ваш PIN-код останется на этом устройстве.</string>
     <string name="pinsDoNotMatch">PIN-коды не совпадают</string>
+    <string name="pinsDontMatch">PIN-коды не совпадают. Начните заново.</string>
     <string name="place">Место</string>
     <string name="planCurrencyUnknown">Валюта плана неизвестна</string>
     <string name="plansLoadFailed">Не удалось загрузить планы лечения</string>
@@ -1741,6 +1747,7 @@
     <string name="remove">Удалить</string>
     <string name="removeRow">Удалить строку</string>
     <string name="removeService">Удалить услугу</string>
+    <string name="repeatPin">Повторите PIN-код</string>
     <string name="reportsScreenSubtitle">Аналитика клиники, тренды и отчёты</string>
     <string name="reportsSmsNotAllowed">SMS-напоминания не включены для вашего аккаунта. Обратитесь в поддержку.</string>
     <string name="reportsSmsRateHint">%1$s %2$s за SMS</string>
@@ -1893,6 +1900,7 @@
     <string name="signInWithPhone">Войти по номеру телефона</string>
     <string name="signOut">Выйти</string>
     <string name="signOutConfirm">Вы уверены, что хотите выйти?</string>
+    <string name="signOutInstead">Выйти из аккаунта</string>
     <string name="signOutTitle">Выйти из аккаунта?</string>
     <string name="signatureNotYet">Пациент ещё не подписал. В резюме строка подписи останется пустой.</string>
     <string name="signatureRequestSent">Запрос подписи отправлен пациенту</string>
@@ -2109,6 +2117,7 @@
     <string name="treatmentPlanWizardTitle">Мастер плана лечения</string>
     <string name="treatmentResultProgress">Результат лечения (прогресс/динамика)</string>
     <string name="tuesday">Вторник</string>
+    <string name="turnOn">Включить</string>
     <string name="twoFactorAuthentication">Двухфакторная аутентификация</string>
     <string name="typeANote">Введите примечание</string>
     <string name="typeMessage">Введите сообщение...</string>
@@ -2122,6 +2131,7 @@
     <string name="unknownError">Произошла неизвестная ошибка</string>
     <string name="unlock">Разблокировать</string>
     <string name="unlockReason">Разблокируйте Shifa Doctor</string>
+    <string name="unlockShifaDoctor">Разблокировать Shifa Doctor</string>
     <string name="unmuteMic">Включить микрофон</string>
     <string name="unreadCountCap">99+</string>
     <string name="unreadCountLabel">непрочитанных</string>

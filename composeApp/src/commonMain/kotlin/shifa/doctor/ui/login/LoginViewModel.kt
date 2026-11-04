@@ -22,6 +22,7 @@ import shifa.doctor.generated.resources.enterEmailOrPhone
 import shifa.doctor.generated.resources.invalidCredentials
 import shifa.doctor.generated.resources.minimum6Characters
 import shifa.doctor.generated.resources.notDoctorAccount
+import shifa.doctor.generated.resources.pinLockoutBanner
 import shifa.doctor.generated.resources.requestTimeout
 import shifa.doctor.generated.resources.sessionExpiredBanner
 import shifa.doctor.generated.resources.somethingWentWrong
@@ -110,9 +111,10 @@ class LoginViewModel(
             when (reason) {
                 SessionEndReason.AccountDisabled -> Res.string.accountDisabledBanner
                 SessionEndReason.SignedOut -> Res.string.youveSignedOut
+                SessionEndReason.PinLockout -> Res.string.pinLockoutBanner
                 else -> Res.string.sessionExpiredBanner
             },
-            error = reason == SessionEndReason.AccountDisabled,
+            error = reason == SessionEndReason.AccountDisabled || reason == SessionEndReason.PinLockout,
             neutral = reason == SessionEndReason.SignedOut,
         )
 

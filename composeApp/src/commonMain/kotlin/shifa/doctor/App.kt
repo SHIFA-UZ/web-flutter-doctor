@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,10 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
@@ -33,6 +37,8 @@ import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.signOut
+import shifa.doctor.ui.applock.AppLockSection
+import shifa.doctor.ui.applock.LockScreen
 import shifa.doctor.ui.auth.LanguageSwitch
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
@@ -49,6 +55,7 @@ import shifa.doctor.ui.navigation.ShellNoticeBanner
 import shifa.doctor.ui.register.RegisterScreen
 import shifa.doctor.ui.register.VerifyKeyScreen
 import shifa.doctor.ui.splash.SplashScreen
+import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTheme
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.utils.LocalUzbekCyrillic
@@ -65,6 +72,12 @@ fun App() {
     LaunchedEffect(session != null, language) {
         if (session != null) languageRepository.sync(language.backendCode)
     }
+    // App lock (LOCK-01): a restored or new session locks when the lock is on; so does coming back after 5 s away.
+    LaunchedEffect(session?.token) {
+        if (session != null) appLockRepository.onSessionStarted() else appLockRepository.onSessionEnded()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { appLockRepository.onBackground() }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { appLockRepository.onForeground() }
     ProvideAppLocale(language.resourceCode) {
         CompositionLocalProvider(
             LocalUzbekCyrillic provides language.cyrillic,
@@ -133,99 +146,108 @@ private fun AppScreens() {
     // ended. A note left for the shell belongs to the session that left it.
     LaunchedEffect(session, screen) { if (session == null && screen == Screen.Shell) screen = Screen.SignIn }
     LaunchedEffect(session) { if (session == null) ShellNotice.pending.value = null }
-    Crossfade(screen) {
-        when (it) {
-            Screen.Splash ->
-                ScopedViewModels {
-                    SplashScreen(onFinished = { s ->
-                        screen =
-                            when {
-                                spikeAutoRun -> Screen.Debug // the iOS spike check (CORE-07)
-                                s != null -> Screen.Shell
-                                else -> Screen.SignIn
-                            }
-                    })
-                }
-            Screen.SignIn ->
-                ScopedViewModels {
-                    LoginScreen(
-                        onSignedIn = { go(Screen.SignIn, Screen.Shell) },
-                        onEmailSignIn = { screen = Screen.EmailEntry(EmailCodeMode.SignIn) },
-                        onForgotPassword = { screen = Screen.EmailEntry(EmailCodeMode.Reset) },
-                        onCreateAccount = { screen = Screen.VerifyKey },
-                        debugMenu = if (isDebugBuild) debugLink { screen = Screen.Debug } else null,
-                    )
-                }
-            is Screen.EmailEntry -> {
-                val back = { screen = Screen.SignIn }
-                BackHandler(onBack = back)
-                ScopedViewModels {
-                    EmailEntryScreen(it.mode, back, onSent = {
-                            email ->
-                        screen = Screen.EmailCode(email, it.mode)
-                    })
-                }
-            }
-            is Screen.EmailCode -> {
-                val back = { screen = Screen.EmailEntry(it.mode, it.email) }
-                BackHandler(onBack = back)
-                ScopedViewModels {
-                    CodeScreen(
-                        it.email,
-                        it.mode,
-                        back,
-                        onSignedIn = { _ -> go(it, Screen.Shell) },
-                        onResetCode = { email, code -> go(it, Screen.ResetPassword(email, code)) },
-                    )
-                }
-            }
-            is Screen.ResetPassword -> {
-                val back = { screen = Screen.EmailCode(it.email, EmailCodeMode.Reset) }
-                BackHandler(onBack = back)
-                ScopedViewModels {
-                    ResetPasswordScreen(it.email, it.code, back, onSignedIn = {
-                            _ ->
-                        go(it, Screen.Shell)
-                    })
-                }
-            }
-            Screen.VerifyKey -> {
-                val back = { screen = Screen.SignIn }
-                BackHandler(onBack = back)
-                ScopedViewModels {
-                    VerifyKeyScreen(back, onVerified = {
-                            invite ->
-                        go(Screen.VerifyKey, Screen.Register(invite))
-                    })
-                }
-            }
-            // Back from registration returns to Sign In (flow 01/06 §5). The invitation picks the doctor's or the
-            // receptionist's form.
-            is Screen.Register ->
-                ScopedViewModels {
-                    RegisterScreen(it.invite, onExit = { go(it, Screen.SignIn) }, onSignedIn = { _ ->
-                        go(it, Screen.Shell)
-                    })
-                }
-            Screen.Debug -> {
-                BackHandler { screen = Screen.SignIn }
-                DebugMenuScreen(onBack = { screen = Screen.SignIn })
-            }
-            // SHELL-01 replaces this. Debug builds reach the debug menu meanwhile.
-            // SHELL-01 replaces this; until then it offers the sign-out question (AUTH-09).
-            Screen.Shell ->
-                ScopedViewModels {
-                    val signOut = viewModel { SignOutViewModel() }
-                    val question by signOut.state.collectAsState()
-                    Column(Modifier.fillMaxSize()) {
-                        ShellNoticeBanner()
-                        Box(Modifier.weight(1f)) {
-                            if (isDebugBuild) DebugMenuScreen(onSignOut = signOut::ask) else Placeholder(signOut::ask)
-                        }
+    val locked by appLockRepository.locked.collectAsState()
+    Box(Modifier.fillMaxSize()) {
+        Crossfade(screen) {
+            when (it) {
+                Screen.Splash ->
+                    ScopedViewModels {
+                        SplashScreen(onFinished = { s ->
+                            screen =
+                                when {
+                                    spikeAutoRun -> Screen.Debug // the iOS spike check (CORE-07)
+                                    s != null -> Screen.Shell
+                                    else -> Screen.SignIn
+                                }
+                        })
                     }
-                    SignOutSheet(question, signOut::confirm, signOut::cancel)
+                Screen.SignIn ->
+                    ScopedViewModels {
+                        LoginScreen(
+                            onSignedIn = { go(Screen.SignIn, Screen.Shell) },
+                            onEmailSignIn = { screen = Screen.EmailEntry(EmailCodeMode.SignIn) },
+                            onForgotPassword = { screen = Screen.EmailEntry(EmailCodeMode.Reset) },
+                            onCreateAccount = { screen = Screen.VerifyKey },
+                            debugMenu = if (isDebugBuild) debugLink { screen = Screen.Debug } else null,
+                        )
+                    }
+                is Screen.EmailEntry -> {
+                    val back = { screen = Screen.SignIn }
+                    BackHandler(onBack = back)
+                    ScopedViewModels {
+                        EmailEntryScreen(it.mode, back, onSent = {
+                                email ->
+                            screen = Screen.EmailCode(email, it.mode)
+                        })
+                    }
                 }
+                is Screen.EmailCode -> {
+                    val back = { screen = Screen.EmailEntry(it.mode, it.email) }
+                    BackHandler(onBack = back)
+                    ScopedViewModels {
+                        CodeScreen(
+                            it.email,
+                            it.mode,
+                            back,
+                            onSignedIn = { _ -> go(it, Screen.Shell) },
+                            onResetCode = { email, code -> go(it, Screen.ResetPassword(email, code)) },
+                        )
+                    }
+                }
+                is Screen.ResetPassword -> {
+                    val back = { screen = Screen.EmailCode(it.email, EmailCodeMode.Reset) }
+                    BackHandler(onBack = back)
+                    ScopedViewModels {
+                        ResetPasswordScreen(it.email, it.code, back, onSignedIn = {
+                                _ ->
+                            go(it, Screen.Shell)
+                        })
+                    }
+                }
+                Screen.VerifyKey -> {
+                    val back = { screen = Screen.SignIn }
+                    BackHandler(onBack = back)
+                    ScopedViewModels {
+                        VerifyKeyScreen(back, onVerified = {
+                                invite ->
+                            go(Screen.VerifyKey, Screen.Register(invite))
+                        })
+                    }
+                }
+                // Back from registration returns to Sign In (flow 01/06 §5). The invitation picks the doctor's or the
+                // receptionist's form.
+                is Screen.Register ->
+                    ScopedViewModels {
+                        RegisterScreen(it.invite, onExit = { go(it, Screen.SignIn) }, onSignedIn = { _ ->
+                            go(it, Screen.Shell)
+                        })
+                    }
+                Screen.Debug -> {
+                    BackHandler { screen = Screen.SignIn }
+                    DebugMenuScreen(onBack = { screen = Screen.SignIn })
+                }
+                // SHELL-01 replaces this. Debug builds reach the debug menu meanwhile.
+                // SHELL-01 replaces this; until then it offers the sign-out question (AUTH-09).
+                Screen.Shell ->
+                    ScopedViewModels {
+                        val signOut = viewModel { SignOutViewModel() }
+                        val question by signOut.state.collectAsState()
+                        Column(Modifier.fillMaxSize()) {
+                            ShellNoticeBanner()
+                            Box(Modifier.weight(1f)) {
+                                if (isDebugBuild) {
+                                    DebugMenuScreen(onSignOut = signOut::ask, extra = { AppLockSection() })
+                                } else {
+                                    Placeholder(signOut::ask)
+                                }
+                            }
+                        }
+                        SignOutSheet(question, signOut::confirm, signOut::cancel)
+                    }
+            }
         }
+        // Above everything once the splash is done; what was on screen is kept underneath (flow 01/12 §2).
+        if (locked && session != null && screen != Screen.Splash) ScopedViewModels { LockScreen() }
     }
 }
 
@@ -239,6 +261,7 @@ private fun Placeholder(onSignOut: () -> Unit) =
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("Shifa Doctor", style = MaterialTheme.typography.headlineSmall)
+        AppLockSection(Modifier.padding(ShifaSpacing.Inset.Md))
         ShifaLink(tr(Res.string.signOut), onSignOut)
     }
 

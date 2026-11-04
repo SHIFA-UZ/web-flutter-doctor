@@ -121,6 +121,7 @@
     <string name="appActivatedSubtitle">App activated on a phone</string>
     <string name="appLock">App lock</string>
     <string name="appLockAttemptsHint">After 5 wrong attempts you will be signed out.</string>
+    <string name="appLockChangeFailed">Couldn't change the app lock. Try again.</string>
     <string name="appLockSubtitle">Require PIN when reopening the app</string>
     <string name="appName">Shifa Doctor</string>
     <string name="appliedCode">Applied: %1$s</string>
@@ -207,6 +208,7 @@
     <string name="biometricSetupFailed">Biometric unlock could not be enabled</string>
     <string name="biometricUnlock">Biometric unlock</string>
     <string name="biometricsNotEnrolled">No Face ID or fingerprint is set up on this phone.</string>
+    <string name="biometricsNotSetUp">No Face ID or fingerprint is set up on this phone.</string>
     <string name="birthDate">Birth Date</string>
     <string name="blockCancelOverlapping">Cancel overlapping appointments</string>
     <string name="blockCancelOverlappingHint">Patients will be notified automatically.</string>
@@ -1654,10 +1656,14 @@
     <string name="photoUpdated">Photo updated</string>
     <string name="pickADate">Pick a date</string>
     <string name="pin">PIN</string>
+    <string name="pinDigitsEntered">%1$s of %2$s digits entered</string>
+    <string name="pinLengthHint">4 to 6 digits</string>
     <string name="pinLengthRule">PIN must be 4 to 6 digits</string>
     <string name="pinLockoutBanner">Too many incorrect PIN attempts. Please sign in again.</string>
+    <string name="pinNotSaved">Couldn't save the PIN. Try again.</string>
     <string name="pinStaysSet">Your PIN stays set on this device.</string>
     <string name="pinsDoNotMatch">PINs do not match</string>
+    <string name="pinsDontMatch">PINs don't match. Start again.</string>
     <string name="place">Place</string>
     <string name="planCurrencyUnknown">Plan currency unknown</string>
     <string name="plansLoadFailed">Could not load treatment plans</string>
@@ -1741,6 +1747,7 @@
     <string name="remove">Remove</string>
     <string name="removeRow">Remove row</string>
     <string name="removeService">Remove Service</string>
+    <string name="repeatPin">Repeat your PIN</string>
     <string name="reportsScreenSubtitle">Clinic analytics, trends, and performance reports</string>
     <string name="reportsSmsNotAllowed">SMS reminders are not enabled for your account. Contact support.</string>
     <string name="reportsSmsRateHint">%1$s %2$s per SMS</string>
@@ -1893,6 +1900,7 @@
     <string name="signInWithPhone">Sign in with Phone Number</string>
     <string name="signOut">Sign Out</string>
     <string name="signOutConfirm">Are you sure you want to sign out?</string>
+    <string name="signOutInstead">Sign out instead</string>
     <string name="signOutTitle">Sign out?</string>
     <string name="signatureNotYet">The patient has not signed yet. The summary will show an empty signature line.</string>
     <string name="signatureRequestSent">Signature request sent to patient</string>
@@ -2109,6 +2117,7 @@
     <string name="treatmentPlanWizardTitle">Treatment plan wizard</string>
     <string name="treatmentResultProgress">Treatment result (progress/dynamics)</string>
     <string name="tuesday">Tuesday</string>
+    <string name="turnOn">Turn on</string>
     <string name="twoFactorAuthentication">Two-factor Authentication</string>
     <string name="typeANote">Type a note</string>
     <string name="typeMessage">Type a message...</string>
@@ -2122,6 +2131,7 @@
     <string name="unknownError">An unknown error occurred</string>
     <string name="unlock">Unlock</string>
     <string name="unlockReason">Unlock Shifa Doctor</string>
+    <string name="unlockShifaDoctor">Unlock Shifa Doctor</string>
     <string name="unmuteMic">Unmute microphone</string>
     <string name="unreadCountCap">99+</string>
     <string name="unreadCountLabel">unread</string>

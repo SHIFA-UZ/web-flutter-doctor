@@ -38,9 +38,9 @@ class AppLockStorageTest {
     @Test
     fun `the same PIN gets a different salt each time`() {
         lock.setPin("1234")
-        val first = settings.getStringOrNull("app_lock_pin_hash")
+        val first = settings.getStringOrNull("app_lock_pin_credential")
         lock.setPin("1234")
-        assertThat(settings.getStringOrNull("app_lock_pin_hash")).isNotEqualTo(first)
+        assertThat(settings.getStringOrNull("app_lock_pin_credential")).isNotEqualTo(first)
     }
 
     @Test
@@ -50,5 +50,13 @@ class AppLockStorageTest {
         lock.biometricEnabled = true
         lock.clear()
         assertThat(settings.keys).isEmpty()
+    }
+
+    @Test
+    fun `an unreadable credential uses up the attempts instead of failing forever`() {
+        lock.setPin("1234")
+        settings.putString("app_lock_pin_credential", "garbage")
+        assertThat(lock.verifyPin("1234")).isFalse()
+        assertThat(lock.failedAttempts).isEqualTo(AppLockStorage.MAX_ATTEMPTS)
     }
 }

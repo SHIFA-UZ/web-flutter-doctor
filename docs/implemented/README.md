@@ -60,7 +60,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | AUTH-07 Registration step 2 | Done | Date of birth (Material date picker), gender, address, clinic search, professions (multi), timezone; PATCHed once after `register`, failure leaves a shell notice. Pickers built here are the ones PROF-05/06 reuse. See auth.md. |
 | AUTH-08 Receptionist registration | Done | One-step staff form on the registration screen: clinic card, invited address read-only (editable only when the invitation has none, C-4), names, timezone, passwords; `register-clinic-staff` → session → shell (SHELL-02 gives staff their shell). See auth.md. |
 | AUTH-09 Sign out | Done (push token: D-15) | One sign-out question (`SignOutSheet` + `SignOutViewModel`) for every place that offers it, PIN line when app lock is on, one navigation through the session, "You've signed out" on Sign In. Offered in the shell stand-in until SHELL-01. See auth.md. |
-| LOCK-01, LOCK-02 | Not started | |
+| LOCK-01 App lock | Done | Lock window over every screen and sheet after a restored/new session and after ≥ 5 s in the background (monotonic clock), PIN 4–6 digits with "Unlock" (D-09), attempts left, fifth wrong PIN → sign-out with its banner and the PIN forgotten, biometrics (BiometricPrompt / LAContext) with auto-prompt, "Sign out instead", Back blocked, suppress hook. Settings section with set/repeat/off/change sheets (shell stand-in until SET-03). See auth.md. |
+| LOCK-02 | Not started | |
 
 ## Log
 
@@ -82,3 +83,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · AUTH-07 · Registration step 2: birth date, gender, address, clinic and profession pickers, one profile PATCH.
 - 2026-11-04 · AUTH-08 · Receptionist registration on the same screen (`register-clinic-staff`).
 - 2026-11-04 · AUTH-09 · Sign-out question and neutral "You've signed out" on Sign In.
+- 2026-11-04 · LOCK-01 · App lock: lock window, biometrics, PIN settings section; 4–6 digit PIN with explicit Unlock (D-09).

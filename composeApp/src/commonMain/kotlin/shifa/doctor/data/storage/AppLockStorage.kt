@@ -19,7 +19,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 class AppLockStorage(
     private val settings: Settings = secureSettings,
 ) {
-    val hasPin: Boolean get() = settings.hasKey(KEY_HASH)
+    val hasPin: Boolean get() = settings.hasKey(KEY_CREDENTIAL)
 
     var lockEnabled: Boolean
         get() = settings.getBoolean(KEY_ENABLED, false)
@@ -35,20 +35,30 @@ class AppLockStorage(
 
     val failedAttempts: Int get() = settings.getInt(KEY_ATTEMPTS, 0)
 
-    /** Saves [pin] (4–6 digits, else false) with a fresh salt. */
+    /**
+     * Saves [pin] (4–6 digits, else false) with a fresh salt. Salt and hash are one value, written in one go, so a
+     * failed write can't leave a new salt next to the old hash (a PIN nobody could enter).
+     */
     fun setPin(pin: String): Boolean {
         if (!isValidPin(pin)) return false
         val salt = secureRandomBytes(SALT_BYTES)
-        settings[KEY_SALT] = Base64.encode(salt)
-        settings[KEY_HASH] = Base64.encode(hash(pin, salt))
+        settings[KEY_CREDENTIAL] = Base64.encode(salt) + SEPARATOR + Base64.encode(hash(pin, salt))
         settings.remove(KEY_ATTEMPTS)
         return true
     }
 
-    /** True when [pin] matches; a mismatch counts a failed attempt, a match resets the count. */
+    /**
+     * True when [pin] matches; a mismatch counts a failed attempt, a match resets the count. A credential that can't
+     * be read counts as all attempts used, so the lock ends in the sign-out fallback instead of never opening.
+     */
     fun verifyPin(pin: String): Boolean {
-        val salt = settings.getStringOrNull(KEY_SALT)?.let(Base64::decode) ?: return false
-        val stored = settings.getStringOrNull(KEY_HASH)?.let(Base64::decode) ?: return false
+        val parts = settings.getStringOrNull(KEY_CREDENTIAL)?.split(SEPARATOR)
+        val salt = parts?.getOrNull(0)?.let { runCatching { Base64.decode(it) }.getOrNull() }
+        val stored = parts?.getOrNull(1)?.let { runCatching { Base64.decode(it) }.getOrNull() }
+        if (salt == null || stored == null) {
+            settings[KEY_ATTEMPTS] = MAX_ATTEMPTS
+            return false
+        }
         val ok = constantTimeEquals(hash(pin, salt), stored)
         if (ok) settings.remove(KEY_ATTEMPTS) else settings[KEY_ATTEMPTS] = failedAttempts + 1
         return ok
@@ -56,15 +66,17 @@ class AppLockStorage(
 
     /** Turning the lock off forgets the PIN and the biometric choice (01 §7.1). */
     fun clear() {
-        listOf(KEY_HASH, KEY_SALT, KEY_ENABLED, KEY_BIOMETRIC, KEY_ATTEMPTS).forEach(settings::remove)
+        listOf(KEY_CREDENTIAL, KEY_ENABLED, KEY_BIOMETRIC, KEY_ATTEMPTS).forEach(settings::remove)
     }
 
     companion object {
         const val MAX_ATTEMPTS = 5
         private const val SALT_BYTES = 16
         private const val ITERATIONS = 10_000
-        private const val KEY_HASH = "app_lock_pin_hash"
-        private const val KEY_SALT = "app_lock_pin_salt"
+
+        // "salt.hash", both Base64 (which never contains a dot).
+        private const val KEY_CREDENTIAL = "app_lock_pin_credential"
+        private const val SEPARATOR = "."
         private const val KEY_ENABLED = "app_lock_enabled"
         private const val KEY_BIOMETRIC = "biometric_enabled"
         private const val KEY_ATTEMPTS = "app_lock_failed_attempts"

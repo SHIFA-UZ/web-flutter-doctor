@@ -267,3 +267,55 @@ question.
 - **Tests:** `SignOutViewModelTest` (2), `LoginViewModelTest` (+1), `SessionRepositoryTest` (sign-out now records
   its reason), `SignOutScreenshotTest` (1).
 
+## LOCK-01 · App lock
+
+Built 2026-11-04. Flows `01/11-app-lock-set-pin.md`, `01/12-app-lock-enter-pin.md`; boards `DaApp.dc.html` (the lock
+over the app, `showLock`) and `DaProfile.dc.html` (Security → App lock and its `pin` sheet).
+
+- **PIN: 4–6 ASCII digits, the doctor's choice, submitted with "Unlock"** (D-09, the user's call). The board fixes six
+  digits and checks on the sixth; D-09 wins, so the set sheet says "Set PIN" with "4 to 6 digits" under the field, the
+  lock shows six dot slots and an "Unlock" button (enabled from four digits). Nothing is checked mid-typing (fixes
+  Flutter's check at four digits, which made 5- and 6-digit PINs unusable). Digits from other scripts are dropped, as
+  the keypad can only type 0–9.
+- **State** (`data/applock/AppLockRepository.kt`, app-wide `appLockRepository`): PIN as the salted iterated hash
+  (`AppLockStorage`, CORE-06), lock on/off, biometrics. Locks when a session starts (restored on a cold start, or a new
+  sign-in on a phone where the lock is on: flow 01/12 §2) and when the app returns after ≥ 5 s in the background,
+  measured on the monotonic clock (`App.kt` lifecycle ON_STOP / ON_START; a changed device clock can't skip it).
+  `suppress(on)` is the temporary-disable hook for pickers and the camera (no user yet). Storage failures read as
+  "no lock" (flow 01/12 §6).
+- **Lock screen** (`ui/applock/LockScreen.kt`, DaApp): canvas background, the 64 logo, "Enter PIN", six dot slots
+  (screen reader: "3 of 6 digits entered"), "Incorrect PIN. 4 attempts left." (live region, haptic), the kit's
+  `PinPad` with the fingerprint key when biometrics are on, "Unlock", "Sign out instead" (the AUTH-09 question). It is
+  its own full-screen dialog window, so it also covers any sheet or dialog that was open (they are windows too); not
+  over the splash; what was on screen stays underneath; system Back does nothing. On Android the system bars around
+  it are dimmed (CMP 1.9's common `DialogProperties` has no scrim switch; cosmetic).
+  - A secure store or credential that can't be read counts as the fifth wrong PIN (sign-out, the flow's documented
+    fallback), never a lock nobody can pass. Salt and hash are stored as one value, so a failed write can't leave a
+    PIN nobody can enter. A PIN that can't be saved says "Couldn't save the PIN. Try again."; a lock that can't be
+    removed says "Couldn't change the app lock. Try again." and stays on.
+  - Wrong PINs count in the secure store, so a rotation or rebuild doesn't reset them (Flutter kept them in the
+    widget). The fifth ends the session with `SessionEndReason.PinLockout` → Sign In says "Too many incorrect PIN
+    attempts. Please sign in again." and the **PIN is forgotten**, so the next sign-in isn't locked by a PIN nobody
+    knows (flow §8 target).
+  - Biometrics (`utils/Biometrics`: `BiometricPrompt` strong or weak on Android, `MainActivity` is now a
+    `FragmentActivity`; `LAContext` on iOS): the prompt opens by itself when the lock appears and again on every
+    return while locked; the fingerprint key re-opens it; a cancel leaves the PIN pad.
+- **Settings** (`ui/applock/AppLockSection.kt`, DaProfile Security → App lock): "App lock" switch ("Require PIN when
+  reopening the app"); with the lock on, "Biometric unlock" (turning it on runs the system prompt once first, flow
+  §5 target; no face or finger enrolled → the row says "No Face ID or fingerprint is set up on this phone." instead
+  of hiding) and "Change PIN". The PIN sheet: "Set PIN" (4 to 6 digits) → "Repeat your PIN" → "Turn on"; a mismatch starts
+  again with "PINs don't match. Start again."; turning off and changing ask "Enter your current PIN" first, and
+  wrong PINs there count towards the same five. Lives in the shell stand-in (debug menu, release placeholder) until
+  SET-03 puts it on the Security screen.
+- **Not built:** "Or use Face ID" hint line under the dots (board); the shake animation (a haptic instead); clearing
+  the PIN when a *different* user signs in (flow 01/11 §8 open question); the extra sign-out lines for running
+  uploads/calls.
+- **Checked on the emulator** (Pixel 9 Pro, dev session): set a PIN twice → lock on; Home for 7 s and back → the lock;
+  Home for 2 s and back → no lock; with the Change PIN sheet open, 7 s away → the lock covers the sheet; a cold start
+  with the lock on → locked right after the splash; 1234 + Unlock opens it; turning off with the PIN works. Biometrics not tried (no
+  enrolled finger on the emulator: the row shows the "not set up" line).
+- **Dependency:** `androidx.biometric:biometric` 1.1.0.
+- **Tests:** `AppLockRepositoryTest` (5: session lock and the 4–6 ASCII rule, 5 s on a test clock and suppress,
+  countdown and lockout, turning off, an unreadable store signs out), `AppLockViewModelsTest` (4: check only on Unlock from four digits, lockout ends the session, set twice and mismatch,
+  off/change need the PIN), `AppLockScreenshotTest` (5).
+

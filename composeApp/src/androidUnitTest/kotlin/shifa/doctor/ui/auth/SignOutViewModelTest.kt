@@ -41,7 +41,8 @@ class SignOutViewModelTest {
     }
 
     private fun pinRepo(pin: Boolean) =
-        AppLockRepository {
-            AppLockStorage(MapSettings()).also { if (pin) it.setPin("1234") }
+        AppLockStorage(MapSettings()).let { store ->
+            if (pin) store.setPin("123456")
+            AppLockRepository(storage = { store })
         }
 }
