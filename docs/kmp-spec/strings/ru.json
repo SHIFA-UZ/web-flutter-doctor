@@ -2580,5 +2580,17 @@
   "transcriptionReportFailed": "Не удалось отправить отчёт. Попробуйте ещё раз.",
   "startAiNotesAgain": "Снова запустить заметки ИИ",
   "scribeUploadFailed": "Не удалось загрузить запись. Она сохранена: попробуйте ещё раз.",
-  "retryScribeUpload": "Загрузить запись снова"
+  "retryScribeUpload": "Загрузить запись снова",
+  "summaryTitle": "Итоги приёма",
+  "summaryAppointmentId": "ID приёма {id}",
+  "summaryVisitType": "Тип приёма",
+  "summaryVideoVisit": "Видеоконсультация",
+  "summaryMinutes": "{minutes} мин",
+  "summarySignatures": "Подписи",
+  "summaryDoctorSignature": "Подпись врача",
+  "summaryPatientSignature": "Подпись пациента",
+  "summarySignedElectronically": "Подписано электронно {date} в приложении SHIFA для пациентов",
+  "summaryFooter": "Создано в Shifa · Конфиденциально",
+  "summaryPage": "Стр. {page} / {pages}",
+  "summaryDocumentTitle": "Документация приёма {date} {time}"
 }

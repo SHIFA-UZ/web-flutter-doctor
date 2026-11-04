@@ -4,6 +4,7 @@ package shifa.doctor.data.forms
 
 import shifa.doctor.data.model.PatientForm
 import shifa.doctor.utils.PdfAlign
+import shifa.doctor.utils.PdfFlow
 import shifa.doctor.utils.PdfOp
 import shifa.doctor.utils.PdfPage
 import shifa.doctor.utils.measurePdfText
@@ -28,11 +29,7 @@ class Form0252Pdf(
 
     private inner class Layout(
         private val form: PatientForm,
-    ) {
-        private val pages = mutableListOf<PdfPage>()
-        private var ops = mutableListOf<PdfOp>()
-        private var y = MARGIN
-
+    ) : PdfFlow(PAGE_W, PAGE_H, MARGIN, measure) {
         fun run(): List<PdfPage> {
             header()
             patientBlock()
@@ -60,22 +57,7 @@ class Form0252Pdf(
                 followups()
             }
             signature()
-            pages += PdfPage(PAGE_W, PAGE_H, ops)
-            return pages
-        }
-
-        private val contentW = PAGE_W - 2 * MARGIN
-        private val bottom = PAGE_H - MARGIN
-
-        private fun newPage() {
-            pages += PdfPage(PAGE_W, PAGE_H, ops)
-            ops = mutableListOf()
-            y = MARGIN
-        }
-
-        /** Room for [height] more points, on a new page if this one is full (never for an empty page). */
-        private fun need(height: Float) {
-            if (y + height > bottom && y > MARGIN) newPage()
+            return finish()
         }
 
         private fun header() {
@@ -140,73 +122,12 @@ class Form0252Pdf(
             y += total + 2
         }
 
-        private fun sectionHeader(title: String) {
-            val h = measure(title, 14f, true, contentW - 16) + 12
-            // The header keeps at least one line of its section with it.
-            need(14 + h + 16)
-            y += 14
-            ops += PdfOp.Rect(MARGIN, y, contentW, h, fill = 0.88f)
-            ops += PdfOp.Text(MARGIN + 8, y + 6, contentW - 16, title, 14f, bold = true)
-            y += h + 4
-        }
-
         private fun section(
             title: String,
             text: String?,
         ) {
             sectionHeader(title)
             text?.trim()?.takeIf(String::isNotEmpty)?.split('\n')?.forEach { paragraph(it) }
-        }
-
-        /** A paragraph, split between words across pages when it doesn't fit (06 §3.6: long notes). */
-        private fun paragraph(text: String) {
-            var rest = text
-            while (rest.isNotEmpty()) {
-                val h = measure(rest, 11f, false, contentW)
-                if (y + h <= bottom) {
-                    ops += PdfOp.Text(MARGIN, y, contentW, rest, 11f)
-                    y += h + 2
-                    return
-                }
-                val words = rest.split(' ')
-                val fit = fitWords(words, 11f, false, contentW, bottom - y)
-                if (fit == 0) {
-                    if (y == MARGIN) {
-                        // One word taller than a page: drawn as it is (it can't be split by words).
-                        ops += PdfOp.Text(MARGIN, y, contentW, rest, 11f)
-                        y += h + 2
-                        return
-                    }
-                    newPage()
-                    continue
-                }
-                ops += PdfOp.Text(MARGIN, y, contentW, words.take(fit).joinToString(" "), 11f)
-                newPage()
-                rest = words.drop(fit).joinToString(" ")
-            }
-        }
-
-        /** How many of [words] fit in [room] points of height at [width] (binary search; 0 when not even one). */
-        private fun fitWords(
-            words: List<String>,
-            size: Float,
-            bold: Boolean,
-            width: Float,
-            room: Float,
-        ): Int {
-            var fit = 0
-            var lo = 1
-            var hi = words.size
-            while (lo <= hi) {
-                val mid = (lo + hi) / 2
-                if (measure(words.take(mid).joinToString(" "), size, bold, width) <= room) {
-                    fit = mid
-                    lo = mid + 1
-                } else {
-                    hi = mid - 1
-                }
-            }
-            return fit
         }
 
         private fun dentalChart() {

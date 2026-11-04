@@ -2580,5 +2580,17 @@
   "transcriptionReportFailed": "Hisobotni yuborib bo'lmadi. Qayta urinib ko'ring.",
   "startAiNotesAgain": "AI qaydlarni qayta boshlash",
   "scribeUploadFailed": "Yozuvni yuklab bo'lmadi. U saqlanib qoldi: qayta urinib ko'ring.",
-  "retryScribeUpload": "Yozuvni qayta yuklash"
+  "retryScribeUpload": "Yozuvni qayta yuklash",
+  "summaryTitle": "Qabul xulosasi",
+  "summaryAppointmentId": "Qabul ID {id}",
+  "summaryVisitType": "Qabul turi",
+  "summaryVideoVisit": "Video konsultatsiya",
+  "summaryMinutes": "{minutes} daq",
+  "summarySignatures": "Imzolar",
+  "summaryDoctorSignature": "Shifokor imzosi",
+  "summaryPatientSignature": "Bemor imzosi",
+  "summarySignedElectronically": "{date} da SHIFA Patient ilovasi orqali elektron imzolangan",
+  "summaryFooter": "Shifa tomonidan yaratilgan · Maxfiy",
+  "summaryPage": "{page} / {pages}-sahifa",
+  "summaryDocumentTitle": "Qabul hujjati {date} {time}"
 }

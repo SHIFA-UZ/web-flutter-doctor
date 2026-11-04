@@ -67,6 +67,7 @@ fun SpikesScreen(modifier: Modifier = Modifier) {
         }
         ScanSpike()
         FormPdfSpike()
+        SummaryPdfSpike()
         ShifaSection("FCM token") {
             var token by remember { mutableStateOf("Asking Firebase…") }
             // Only the length and the tail: a push token is not shown or logged whole.
@@ -220,3 +221,38 @@ private fun FormPdfSpike() =
     }
 
 private const val LEVEL_MS = 60L
+
+/** PDF-01: a sample visit summary (two pages of notes, Cyrillic, a signature line) to look at on the device. */
+@Composable
+private fun SummaryPdfSpike() =
+    ShifaSection("Visit summary PDF") {
+        var pdf by remember { mutableStateOf<ByteArray?>(null) }
+        val saver = shifa.doctor.utils.rememberFileSaver()
+        shifa.doctor.ui.widgets.ShifaLink("Make summary PDF", {
+            pdf =
+                shifa.doctor.data.consultation.VisitSummaryPdf().pdf(
+                    shifa.doctor.data.consultation.VisitSummary(
+                        appointmentId = 102,
+                        clinic = "Shifa Dev Clinic",
+                        endedAt = "Wednesday, 4 November 2026 · 10:05",
+                        patientName = "Жасур Алиев (Jasur Aliyev)",
+                        patientId = 14,
+                        birthDate = "11.01.1985",
+                        gender = "Male",
+                        doctorName = "Ulugbek Karimov",
+                        profession = "Dentist",
+                        visitType = "In-person",
+                        minutes = 25,
+                        notes =
+                            "From Shifa AI\n\nSUBJECTIVE:\nNight pain in 36. Боль ночью.\n\nDoctor notes\n\n" +
+                                (1..70).joinToString("\n") { "Davolash bosqichi $it: pulpa olib tashlandi." },
+                    ),
+                    shifa.doctor.data.consultation.VisitSummaryLabels(),
+                )
+        })
+        pdf?.let {
+            Text("PDF: ${it.size / 1024} KB", style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+            shifa.doctor.ui.widgets.ShifaLink("Save to device", { saver.saveFile("visit_summary_spike.pdf", it) })
+            PdfView(it, Modifier.fillMaxWidth().height(ShifaSize.S320)) { Text("PDF did not open") }
+        }
+    }
