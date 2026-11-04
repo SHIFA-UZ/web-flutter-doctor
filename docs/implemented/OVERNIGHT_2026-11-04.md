@@ -251,7 +251,7 @@ the timezone warning (cancelled).
 8. **A flaky test pattern:** "Dispatchers.Main is used concurrently with setting it" once, when a previous test class
    left a ViewModel coroutine running; it passes on rerun.
 
-## M3 · Calendar & schedule (in progress)
+## M3 · Calendar & schedule (done on the phone; CAL-5, CAL-9, CAL-10 open)
 
 | Ticket | Commit | What it is |
 |---|---|---|
@@ -264,15 +264,25 @@ the timezone warning (cancelled).
 | CAL-7 | `aca31ee` | Booking a free slot: patient picker, clinic or video, multi-slot range on instants (DST-safe), reason; BE-33 |
 | CAL-8 | `cfa82fc` | Block time (day / hours / several days, debounced overlap count) and the blocked-row panel with Remove block |
 | LOC-1 | `d05c88d` | Profile → Locations: list, editor, delete; one shared location list; BE-34 |
+| SCHED-1 | `3fd0578` | Schedule data: weekly template per location, periods, date-specific hours, the backend's checks first |
+| SCHED-2 | `b12c2fa` | Working hours: week overview, a sheet per day, the bookable period, extra hours on dates |
+| LOC-2 | `6adb114` | Location map pin with the shared picker (geocoding waits for BE-15) |
 
-Checked against dev on the emulator, dev left as it was: a one-hour booking moved and cancelled (CAL-6/7), an
-11:00–17:00 block created and removed (CAL-8), a location added and deleted (LOC-1).
+Checked against dev on the emulator, dev left as it was:
+- CAL-6/7: a one-hour booking, moved and then cancelled.
+- CAL-8: an 11:00–17:00 block, created and then removed.
+- LOC-1: a location, added and then deleted.
+- SCHED-2 and LOC-2: the working hours and the map pin, read only.
+
+The M3 "done when" (set up a week, book an hour over two slots, move it, block an afternoon, all in Asia/Tashkent while
+the phone is on Berlin time) holds on the phone.
 
 Not built yet, on purpose:
 - **CAL-9** (push and quick-book intents): its only callers are push (D-15, at the end) and Home (M6). It lands with
   them rather than as unused code.
 - **CAL-10** (staff calendars): needs the clinic workspace members (CLINIC-05, M11).
-- **CAL-5** (the tablet N-day grid): left for the end of M3, as the plan says.
+- **CAL-5** (the tablet N-day grid): the master plan leaves it to you: build it now, or in a later tablet pass. The
+  phone layout doesn't need it, so I went on to M4. **Your call.**
 
 Shared fixes made on the way:
 - ktlint failed on lines from earlier tickets; they are wrapped now.
