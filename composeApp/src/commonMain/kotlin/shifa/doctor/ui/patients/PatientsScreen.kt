@@ -19,6 +19,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -100,6 +103,7 @@ import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
 import kotlin.time.Duration.Companion.milliseconds
@@ -270,10 +274,21 @@ class PatientsActions(
 @Composable
 fun PatientsScreen(
     onOpen: (Patient) -> Unit,
-    onCreate: (() -> Unit)?,
     viewModel: PatientsViewModel = viewModel { PatientsViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // The create sheet's open stamp (a fresh form each time), null when closed (PAT-04).
+    var creating by rememberSaveable { mutableStateOf<Long?>(null) }
+    creating?.let { opened ->
+        CreatePatientSheet(
+            opened,
+            onCreated = { patient ->
+                creating = null
+                onOpen(patient) // the new patient opens, as the flow asks
+            },
+            onClose = { creating = null },
+        )
+    }
     LaunchedEffect(Unit) { viewModel.load() }
     PatientsContent(
         state,
@@ -285,7 +300,7 @@ fun PatientsScreen(
             viewModel::page,
             viewModel::clearFilters,
             onOpen,
-            onCreate,
+            { creating = currentInstant().toEpochMilliseconds() },
         ),
     )
 }

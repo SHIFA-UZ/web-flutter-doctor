@@ -2443,5 +2443,15 @@
   "noPatientsYet": "Hali bemorlar yo'q",
   "noPatientsYetBody": "Yozuvlarni yuritish uchun birinchi bemoringizni qo'shing.",
   "clearFilters": "Filtrlarni tozalash",
-  "patientsFilterTitle": "Holat"
+  "patientsFilterTitle": "Holat",
+  "fullNameRequired": "To'liq ism majburiy",
+  "patientPhoneExists": "Bu telefon raqamli bemor allaqachon mavjud.",
+  "createPatientFailed": "Bemorni yaratib bo'lmadi. Qayta urinib ko'ring.",
+  "createPatientInvalid": "Bemorni yaratib bo'lmadi. Ma'lumotlarni tekshiring.",
+  "karakalpak": "Qoraqalpoq",
+  "kazakh": "Qozoq",
+  "kyrgyz": "Qirg'iz",
+  "tajik": "Tojik",
+  "turkmen": "Turkman",
+  "arabic": "Arab"
 }

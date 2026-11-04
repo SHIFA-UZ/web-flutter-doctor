@@ -202,6 +202,7 @@
     <string name="appointmentsTodayShort">appointments today</string>
     <string name="approve">Approve</string>
     <string name="approved">Approved</string>
+    <string name="arabic">Arabic</string>
     <string name="ask">Ask</string>
     <string name="askAboutPatient">Ask about this patient…</string>
     <string name="askShifaAi">Ask Shifa AI</string>
@@ -772,6 +773,8 @@
     <string name="createNewPatient">Create New Patient</string>
     <string name="createPatient">Create Patient</string>
     <string name="createPatientAccount">Create Patient Account</string>
+    <string name="createPatientFailed">Couldn't create the patient. Try again.</string>
+    <string name="createPatientInvalid">Couldn't create the patient. Check the details.</string>
     <string name="createRemoteCareTask">Create Remote Care Task</string>
     <string name="createTask">Create Task</string>
     <string name="createTreatmentPlan">Create treatment plan</string>
@@ -1112,6 +1115,7 @@
     <string name="fromShifaAi">From Shifa AI</string>
     <string name="fulfilLineError">%1$s could not be marked as completed</string>
     <string name="fullName">Full Name</string>
+    <string name="fullNameRequired">Full name is required</string>
     <string name="gender">Gender</string>
     <string name="genderFemale">Female</string>
     <string name="genderMale">Male</string>
@@ -1364,12 +1368,15 @@
     <string name="joined">Joined</string>
     <string name="justFlagFollowUp">Just flag for follow-up</string>
     <string name="justNow">Just now</string>
+    <string name="karakalpak">Karakalpak</string>
+    <string name="kazakh">Kazakh</string>
     <string name="keepAppointment">Keep appointment</string>
     <string name="keepEditing">Keep editing</string>
     <string name="keepRecording">Keep recording</string>
     <string name="keyCopiedToClipboard">Key copied to clipboard</string>
     <string name="keyVerified">Key verified</string>
     <string name="kidneyDisease">Kidney Disease</string>
+    <string name="kyrgyz">Kyrgyz</string>
     <string name="label">Label</string>
     <string name="labelRequired">Label is required</string>
     <string name="language">Language</string>
@@ -1733,6 +1740,7 @@
     <string name="patientName">Patient Name</string>
     <string name="patientNotArrived">Started %1$s min ago — patient not arrived</string>
     <string name="patientNumber">Patient #%1$s</string>
+    <string name="patientPhoneExists">A patient with this phone number already exists.</string>
     <string name="patientRecordUnavailable">Patient record unavailable</string>
     <string name="patientSignaturePending">A signature request was sent. The patient is notified in the mobile app.</string>
     <string name="patientSignatureRequestSent">The patient has been notified to review and sign the form.</string>
@@ -2147,6 +2155,7 @@
     <string name="summarySaveFailed">Visit completed. Summary could not be saved.</string>
     <string name="sunday">Sunday</string>
     <string name="systemConfiguration">System Configuration</string>
+    <string name="tajik">Tajik</string>
     <string name="takeExtraCareForChronicDiseasePatient">Please be careful and double-check all procedures, medications, and treatments you are planning for this patient.</string>
     <string name="takePhoto">Take Photo</string>
     <string name="talkWithAi">Talk with AI</string>
@@ -2296,6 +2305,7 @@
     <string name="treatmentPlanWizardTitle">Treatment plan wizard</string>
     <string name="treatmentResultProgress">Treatment result (progress/dynamics)</string>
     <string name="tuesday">Tuesday</string>
+    <string name="turkmen">Turkmen</string>
     <string name="turnOn">Turn on</string>
     <string name="twoFactorAuthentication">Two-factor Authentication</string>
     <string name="typeANote">Type a note</string>

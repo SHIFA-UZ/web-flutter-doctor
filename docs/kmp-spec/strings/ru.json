@@ -2443,5 +2443,15 @@
   "noPatientsYet": "Пациентов пока нет",
   "noPatientsYetBody": "Добавьте первого пациента, чтобы вести записи.",
   "clearFilters": "Сбросить фильтры",
-  "patientsFilterTitle": "Статус"
+  "patientsFilterTitle": "Статус",
+  "fullNameRequired": "Укажите полное имя",
+  "patientPhoneExists": "Пациент с этим номером телефона уже есть.",
+  "createPatientFailed": "Не удалось создать пациента. Попробуйте снова.",
+  "createPatientInvalid": "Не удалось создать пациента. Проверьте данные.",
+  "karakalpak": "Каракалпакский",
+  "kazakh": "Казахский",
+  "kyrgyz": "Киргизский",
+  "tajik": "Таджикский",
+  "turkmen": "Туркменский",
+  "arabic": "Арабский"
 }

@@ -68,6 +68,7 @@ import shifa.doctor.generated.resources.defaultVisitReason
 import shifa.doctor.generated.resources.durationLabelShort
 import shifa.doctor.generated.resources.failedToLoadPatients
 import shifa.doctor.generated.resources.ic_alert_circle_16
+import shifa.doctor.generated.resources.newPatient
 import shifa.doctor.generated.resources.noPatientsFound
 import shifa.doctor.generated.resources.pastSlotCannotAssign
 import shifa.doctor.generated.resources.patientAssignedName
@@ -133,6 +134,8 @@ data class BookingUiState(
     val patientMissing: Boolean = false,
     // The picker: everyone bookable (read once), the search, its error.
     val picking: Boolean = false,
+    // The create-patient sheet over the picker (PAT-04), its open stamp; null when closed.
+    val creating: Long? = null,
     val patients: List<PatientOption>? = null,
     val patientsError: CodeBanner? = null,
     val query: String = "",
@@ -256,6 +259,24 @@ class BookingViewModel(
         if (_state.value.patients == null) loadPatients()
     }
 
+    /** A patient made from the picker joins the list and is picked (flow 06/02 §2). */
+    fun patientCreated(p: shifa.doctor.data.model.Patient) {
+        val option = PatientOption(p.id, p.name, p.photoUrl)
+        _state.update {
+                s ->
+            s.copy(
+                creating = null,
+                patients =
+                    (
+                        s.patients.orEmpty().filter {
+                            it.id != p.id
+                        } + option
+                    ).sortedBy { it.name.orEmpty().lowercase() },
+            )
+        }
+        pickPatient(option)
+    }
+
     fun pickPatient(patient: PatientOption) =
         _state.update { it.copy(patient = patient, picking = false, patientMissing = false, query = "") }
 
@@ -377,10 +398,17 @@ fun BookingScreen(
             pickStart = viewModel::pickStart,
             openPicker = viewModel::openPicker,
             pickPatient = viewModel::pickPatient,
+            patientCreated = viewModel::patientCreated,
             retryPatients = viewModel::loadPatients,
             book = viewModel::book,
         ),
     )
+    // The stateful create sheet lives here, not in the stateless content (PAT-04).
+    state.creating?.let { opened ->
+        shifa.doctor.ui.patients.CreatePatientSheet(opened, viewModel::patientCreated, {
+            viewModel.ui { it.copy(creating = null) }
+        })
+    }
 }
 
 class BookingActions(
@@ -389,6 +417,7 @@ class BookingActions(
     val pickStart: (CalendarEntry.FreeSlot) -> Unit = {},
     val openPicker: () -> Unit = {},
     val pickPatient: (PatientOption) -> Unit = {},
+    val patientCreated: (shifa.doctor.data.model.Patient) -> Unit = {},
     val retryPatients: () -> Unit = {},
     val book: () -> Unit = {},
 )
@@ -593,6 +622,10 @@ private fun PatientPicker(
     actions: BookingActions,
 ) = ProfileSheet({ actions.ui { it.copy(picking = false) } }) {
     ShifaTray(tr(Res.string.assignPatient), { actions.ui { it.copy(picking = false) } }) {
+        // "New patient" (PAT-04): the sheet opens over the picker and returns the patient picked.
+        ShifaLink(tr(Res.string.newPatient), {
+            actions.ui { it.copy(creating = shifa.doctor.utils.currentInstant().toEpochMilliseconds()) }
+        })
         ShifaSearchField(
             state.query,
             { q -> actions.ui { it.copy(query = q) } },

@@ -2443,5 +2443,15 @@
   "noPatientsYet": "No patients yet",
   "noPatientsYetBody": "Add your first patient to start keeping records.",
   "clearFilters": "Clear filters",
-  "patientsFilterTitle": "Status"
+  "patientsFilterTitle": "Status",
+  "fullNameRequired": "Full name is required",
+  "patientPhoneExists": "A patient with this phone number already exists.",
+  "createPatientFailed": "Couldn't create the patient. Try again.",
+  "createPatientInvalid": "Couldn't create the patient. Check the details.",
+  "karakalpak": "Karakalpak",
+  "kazakh": "Kazakh",
+  "kyrgyz": "Kyrgyz",
+  "tajik": "Tajik",
+  "turkmen": "Turkmen",
+  "arabic": "Arabic"
 }

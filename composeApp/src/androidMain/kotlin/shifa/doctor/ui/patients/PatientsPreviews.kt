@@ -40,3 +40,23 @@ internal fun PatientsEmptyPreview() =
     PreviewTheme {
         PatientsContent(PatientsUiState(emptyList(), today = today), PatientsActions(create = {}))
     }
+
+// PAT-04: the create sheet after a try with no name, two phones (one taken) and a picked birth date.
+@Composable
+internal fun CreatePatientPreview() =
+    PreviewTheme {
+        CreatePatientTray(
+            CreatePatientUiState(
+                NewPatient(
+                    phones = listOf("+998 90 123 45 67", "12"),
+                    birthDate = LocalDate(1990, 5, 15),
+                    bloodGroup = "O+",
+                ),
+                tried = true,
+            ),
+            {},
+            {},
+            {},
+            {},
+        )
+    }

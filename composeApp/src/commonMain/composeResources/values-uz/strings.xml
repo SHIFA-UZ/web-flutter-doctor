@@ -202,6 +202,7 @@
     <string name="appointmentsTodayShort">bugungi uchrashuv</string>
     <string name="approve">Tasdiqlash</string>
     <string name="approved">Tasdiqlandi</string>
+    <string name="arabic">Arab</string>
     <string name="ask">So'rash</string>
     <string name="askAboutPatient">Ushbu bemor haqida so'rang…</string>
     <string name="askShifaAi">Shifa AI dan so'rang</string>
@@ -772,6 +773,8 @@
     <string name="createNewPatient">Yangi bemor yaratish</string>
     <string name="createPatient">Bemor yaratish</string>
     <string name="createPatientAccount">Bemor hisobini yaratish</string>
+    <string name="createPatientFailed">Bemorni yaratib bo'lmadi. Qayta urinib ko'ring.</string>
+    <string name="createPatientInvalid">Bemorni yaratib bo'lmadi. Ma'lumotlarni tekshiring.</string>
     <string name="createRemoteCareTask">Masofaviy parvarish vazifasi yaratish</string>
     <string name="createTask">Vazifa yaratish</string>
     <string name="createTreatmentPlan">Davolash rejasi yaratish</string>
@@ -1112,6 +1115,7 @@
     <string name="fromShifaAi">Shifa AI dan</string>
     <string name="fulfilLineError">%1$s ni bajarilgan deb belgilab bo'lmadi</string>
     <string name="fullName">F.I.O</string>
+    <string name="fullNameRequired">To'liq ism majburiy</string>
     <string name="gender">Jins</string>
     <string name="genderFemale">Ayol</string>
     <string name="genderMale">Erkak</string>
@@ -1364,12 +1368,15 @@
     <string name="joined">Ro'yxatdan o'tgan</string>
     <string name="justFlagFollowUp">Faqat takroriy qabul uchun belgilash</string>
     <string name="justNow">Hozir</string>
+    <string name="karakalpak">Qoraqalpoq</string>
+    <string name="kazakh">Qozoq</string>
     <string name="keepAppointment">Qabulni qoldirish</string>
     <string name="keepEditing">Tahrirlashda davom etish</string>
     <string name="keepRecording">Yozishni davom ettirish</string>
     <string name="keyCopiedToClipboard">Kalit buferga nusxalandi</string>
     <string name="keyVerified">Kalit tasdiqlandi</string>
     <string name="kidneyDisease">Buyrak kasalligi</string>
+    <string name="kyrgyz">Qirg'iz</string>
     <string name="label">Nomi</string>
     <string name="labelRequired">Nomi majburiy</string>
     <string name="language">Til</string>
@@ -1733,6 +1740,7 @@
     <string name="patientName">Bemor ismi</string>
     <string name="patientNotArrived">Boshlanganiga %1$s daqiqa bo'ldi — bemor kelmadi</string>
     <string name="patientNumber">Bemor #%1$s</string>
+    <string name="patientPhoneExists">Bu telefon raqamli bemor allaqachon mavjud.</string>
     <string name="patientRecordUnavailable">Bemor kartasi mavjud emas</string>
     <string name="patientSignaturePending">Imzo so'rovi yuborildi. Bemorga mobil ilovada bildirishnoma boradi.</string>
     <string name="patientSignatureRequestSent">Bemor formani ko'rib chiqish va imzolash uchun xabardor qilindi.</string>
@@ -2147,6 +2155,7 @@
     <string name="summarySaveFailed">Tashrif yakunlandi. Xulosani saqlab bo'lmadi.</string>
     <string name="sunday">Yakshanba</string>
     <string name="systemConfiguration">Tizim sozlamalari</string>
+    <string name="tajik">Tojik</string>
     <string name="takeExtraCareForChronicDiseasePatient">Iltimos, ehtiyot bo'ling va bu bemor uchun siz rejalashtirayotgan protseduralar, dorilar va davolanishni ikki martta tekshiring.</string>
     <string name="takePhoto">Rasm olish</string>
     <string name="talkWithAi">AI bilan suhbat</string>
@@ -2296,6 +2305,7 @@
     <string name="treatmentPlanWizardTitle">Reja yordamchisi</string>
     <string name="treatmentResultProgress">Davolanish natijasi (epikriz)</string>
     <string name="tuesday">Seshanba</string>
+    <string name="turkmen">Turkman</string>
     <string name="turnOn">Yoqish</string>
     <string name="twoFactorAuthentication">Ikki bosqichli autentifikatsiya</string>
     <string name="typeANote">Izoh yozing</string>

@@ -76,3 +76,35 @@ screen, PAT-05).
 - **Tests:** `PatientsViewModelTest` (6: + page kept in range and through a sheet, words not matching phones; ten per page and page resets, both orders; debounced search over name, display
   id and phone digits; follow-ups, the status filter with unknown as Active, clear filters; favourites across screens and
   no second read while fresh; a failed first read), `PatientsScreenshotTest` (2: `Patients_list`, `Patients_empty`).
+
+## PAT-04 · Create patient
+
+Built 2026-11-04. Flow `06/02-add-patient.md`; spec 06 §1.6. One sheet for every caller (Flutter had two with
+different fields): the directory's New patient (the new patient then opens) and the booking picker's New patient
+(the new patient comes back picked); Home and the clinic will use the same.
+
+- **Sheet** (`ui/patients/CreatePatient.kt`): Full Name * (required; "Full name is required" after the first try),
+  phone rows (one at least; remove on each when there are several; Add phone number), Email, Address, Language (ten),
+  Gender (Not specified / Male / Female / Other), Blood group (Not specified / A+ … O−), Allergies, Birth date (the
+  registration date picker: 1900 to today, "dd.MM.yyyy"). Create Patient stays off while the name is empty.
+- **Request** (`POST /patients`): name trimmed; phones normalised to E.164 with the Uzbek default (`PhoneE164`), once
+  each, `phone` too when exactly one; blank fields left out; `chronicDisease` "" (set later in Medical info).
+- **Language decision (2026-11-04, mine, to confirm):** stored as a code ("uz", "ru", "en", "de", "kaa", "kk", "ky",
+  "tg", "tk", "ar"), as the patient app and dev's seed store it; Flutter's doctor app sent English words ("uzbek").
+  `PatientLanguage.of` reads both.
+- **Saving:** the sheet stays open and locked with the button's spinner (Flutter closed it first and lost the input on
+  an error). 409 → "A patient with this phone number already exists." under the phones (the server's text is never
+  shown); 400 → "Couldn't create the patient. Check the details."; other failures → the mapped message with the request
+  id. Success → "Patient created" on both paths (set after the caller opens the new patient, since opening a screen
+  clears success notices).
+- **Closing** (×, scrim, drag, Back) with anything typed asks "Discard changes?"; never while saving. A drag or scrim
+  tap can't hide it then: the shared `ProfileSheet` gained `confirmHide`, asked before the sheet hides (other sheets
+  keep hiding as before). A picked birth date can be cleared.
+- **Not built:** "Open existing patient" on a duplicate (the backend doesn't return the id), the E.164 preview line,
+  contacts import.
+- **Verified on the emulator (demo data, 2026-11-04):** "Demo New" with "901112233" was created, opened, and listed
+  with +998901112233. Not created on dev: there is no way to delete a test patient there.
+- **Tests:** `CreatePatientViewModelTest` (4: the exact request with E.164 phones once each, a language code and blank
+  fields left out; no name / a bad phone / a bad email send nothing; a 409 keeps the sheet with the phone marked and a
+  400 says check the details; closing asks only with input, and language codes and words both read),
+  `PatientsScreenshotTest` (+1: `Patients_create`).

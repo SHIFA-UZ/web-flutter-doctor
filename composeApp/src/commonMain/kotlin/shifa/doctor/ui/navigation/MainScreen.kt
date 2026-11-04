@@ -320,7 +320,7 @@ private fun RouteContent(
                 )
                 if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
             } else if (route.tab == ShellTab.Patients && !staff) {
-                PatientsScreen(onOpen = { actions.push(ShellRoute.Patient(it.id)) }, onCreate = null)
+                PatientsScreen(onOpen = { actions.push(ShellRoute.Patient(it.id)) })
             } else if (route.tab == ShellTab.Calendar && !staff) {
                 CalendarScreen(
                     onOpen = {

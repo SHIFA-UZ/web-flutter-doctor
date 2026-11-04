@@ -202,6 +202,7 @@
     <string name="appointmentsTodayShort">записей сегодня</string>
     <string name="approve">Разрешить</string>
     <string name="approved">Разрешено</string>
+    <string name="arabic">Арабский</string>
     <string name="ask">Спросить</string>
     <string name="askAboutPatient">Спросите об этом пациенте…</string>
     <string name="askShifaAi">Спросить Shifa AI</string>
@@ -772,6 +773,8 @@
     <string name="createNewPatient">Создать нового пациента</string>
     <string name="createPatient">Создать пациента</string>
     <string name="createPatientAccount">Создать учетную запись пациента</string>
+    <string name="createPatientFailed">Не удалось создать пациента. Попробуйте снова.</string>
+    <string name="createPatientInvalid">Не удалось создать пациента. Проверьте данные.</string>
     <string name="createRemoteCareTask">Создать задачу удаленного ухода</string>
     <string name="createTask">Создать задачу</string>
     <string name="createTreatmentPlan">Создать план лечения</string>
@@ -1112,6 +1115,7 @@
     <string name="fromShifaAi">Из Shifa AI</string>
     <string name="fulfilLineError">Не удалось отметить «%1$s» как выполненное</string>
     <string name="fullName">Полное имя</string>
+    <string name="fullNameRequired">Укажите полное имя</string>
     <string name="gender">Пол</string>
     <string name="genderFemale">Женский</string>
     <string name="genderMale">Мужской</string>
@@ -1364,12 +1368,15 @@
     <string name="joined">Регистрация</string>
     <string name="justFlagFollowUp">Только отметить для повторного приёма</string>
     <string name="justNow">Только что</string>
+    <string name="karakalpak">Каракалпакский</string>
+    <string name="kazakh">Казахский</string>
     <string name="keepAppointment">Оставить приём</string>
     <string name="keepEditing">Продолжить редактирование</string>
     <string name="keepRecording">Продолжить запись</string>
     <string name="keyCopiedToClipboard">Ключ скопирован в буфер обмена</string>
     <string name="keyVerified">Ключ подтверждён</string>
     <string name="kidneyDisease">Заболевание почек</string>
+    <string name="kyrgyz">Киргизский</string>
     <string name="label">Название</string>
     <string name="labelRequired">Название обязательно</string>
     <string name="language">Язык</string>
@@ -1733,6 +1740,7 @@
     <string name="patientName">Имя пациента</string>
     <string name="patientNotArrived">Началось %1$s мин назад — пациент не пришёл</string>
     <string name="patientNumber">Пациент №%1$s</string>
+    <string name="patientPhoneExists">Пациент с этим номером телефона уже есть.</string>
     <string name="patientRecordUnavailable">Карта пациента недоступна</string>
     <string name="patientSignaturePending">Запрос подписи отправлен. Пациент получит уведомление в приложении.</string>
     <string name="patientSignatureRequestSent">Пациент уведомлён: нужно просмотреть и подписать форму.</string>
@@ -2147,6 +2155,7 @@
     <string name="summarySaveFailed">Визит завершён. Резюме не удалось сохранить.</string>
     <string name="sunday">Воскресенье</string>
     <string name="systemConfiguration">Настройки системы</string>
+    <string name="tajik">Таджикский</string>
     <string name="takeExtraCareForChronicDiseasePatient">Пожалуйста, будьте осторожны и дважды проверьте все процедуры, лекарства и методы лечения, которые вы планируете для этого пациента.</string>
     <string name="takePhoto">Сделать фото</string>
     <string name="talkWithAi">Разговор с ИИ</string>
@@ -2296,6 +2305,7 @@
     <string name="treatmentPlanWizardTitle">Мастер плана лечения</string>
     <string name="treatmentResultProgress">Результат лечения (прогресс/динамика)</string>
     <string name="tuesday">Вторник</string>
+    <string name="turkmen">Туркменский</string>
     <string name="turnOn">Включить</string>
     <string name="twoFactorAuthentication">Двухфакторная аутентификация</string>
     <string name="typeANote">Введите примечание</string>

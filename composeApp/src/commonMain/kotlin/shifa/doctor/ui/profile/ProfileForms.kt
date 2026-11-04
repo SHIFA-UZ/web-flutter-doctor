@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -140,10 +141,15 @@ internal fun DiscardChangesSheet(
 @Composable
 internal fun ProfileSheet(
     onDismiss: () -> Unit,
+    // Asked before a drag or a scrim tap hides the sheet: false keeps it (a form saving, or asking to discard first).
+    confirmHide: () -> Boolean = { true },
     content: @Composable () -> Unit,
 ) = ModalBottomSheet(
     onDismiss,
-    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    sheetState =
+        rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = {
+            it != SheetValue.Hidden || confirmHide()
+        }),
     shape = RectangleShape,
     containerColor = Color.Transparent,
     dragHandle = null,

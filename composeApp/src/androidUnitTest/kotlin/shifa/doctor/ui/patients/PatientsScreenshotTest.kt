@@ -17,4 +17,8 @@ class PatientsScreenshotTest {
 
     @Test
     fun empty() = captureRoboImage("screenshots/Patients_empty.png") { PatientsEmptyPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun create() = captureRoboImage("screenshots/Patients_create.png") { CreatePatientPreview() }
 }
