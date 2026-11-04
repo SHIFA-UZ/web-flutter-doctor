@@ -260,8 +260,27 @@ the timezone warning (cancelled).
 | CAL-2 | `5977cb1` | Today / next-appointment selectors and one refresh + event per appointment change |
 | CAL-3 | `3198023` | Month picker with the board's occupancy shading |
 | CAL-4 | `f4c5954` | Calendar tab: day agenda, filters, timezone-mismatch banner (checked on the emulator against dev) |
+| CAL-6 | `b1c4db1` | Appointment panel: reschedule (month + free slots where the visit fits), adjust duration, payment reminder, main button by time window, cancel |
+| CAL-7 | `aca31ee` | Booking a free slot: patient picker, clinic or video, multi-slot range on instants (DST-safe), reason; BE-33 |
+| CAL-8 | `cfa82fc` | Block time (day / hours / several days, debounced overlap count) and the blocked-row panel with Remove block |
+| LOC-1 | `d05c88d` | Profile → Locations: list, editor, delete; one shared location list; BE-34 |
 
-CAL-5 (the tablet N-day grid) is left for the end of M3, as the plan says.
+Checked against dev on the emulator, dev left as it was: a one-hour booking moved and cancelled (CAL-6/7), an
+11:00–17:00 block created and removed (CAL-8), a location added and deleted (LOC-1).
+
+Not built yet, on purpose:
+- **CAL-9** (push and quick-book intents): its only callers are push (D-15, at the end) and Home (M6). It lands with
+  them rather than as unused code.
+- **CAL-10** (staff calendars): needs the clinic workspace members (CLINIC-05, M11).
+- **CAL-5** (the tablet N-day grid): left for the end of M3, as the plan says.
+
+Shared fixes made on the way:
+- ktlint failed on lines from earlier tickets; they are wrapped now.
+- The "Dispatchers.Main is used concurrently" test flake: tests now stop their ViewModels before Main is reset.
+- Dropdowns scroll to their value.
+- Sheets open at full height.
+- The calendar refresh reads four days at a time.
+- Profile actions are passed by name: a positional list had sent Reports to the new Locations row.
 
 ## Decisions
 

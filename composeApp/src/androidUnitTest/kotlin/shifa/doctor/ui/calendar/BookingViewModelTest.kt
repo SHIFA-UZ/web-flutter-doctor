@@ -2,7 +2,6 @@
 
 package shifa.doctor.ui.calendar
 
-import androidx.lifecycle.viewModelScope
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -36,6 +35,7 @@ import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.bookingRangeUnavailable
 import shifa.doctor.generated.resources.patientAssignedName
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.PracticeClock
 
@@ -100,7 +100,7 @@ class BookingViewModelTest {
 
     @After fun tearDown() {
         screen.cancel()
-        created.forEach { it.viewModelScope.cancel() }
+        created.stopAll()
         ShellNotice.pending.value = null
         Dispatchers.resetMain()
     }

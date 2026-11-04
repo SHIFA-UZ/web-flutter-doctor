@@ -296,4 +296,37 @@ class DemoBackendTest {
             ).isEqualTo(409)
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the schedule answers locally - rules kept per location, periods added, date-specific hours`() =
+        runTest {
+            val repo = shifa.doctor.data.schedule.ScheduleRepository { client }
+
+            fun day(s: String) = kotlinx.datetime.LocalDate.parse(s)
+
+            fun hours(
+                on: String,
+                at: Long,
+            ) = shifa.doctor.data.model.DateSpecificRuleDto(
+                on,
+                on,
+                "10:00",
+                "14:00",
+                30,
+                at,
+            )
+            val week = repo.rules(1).getOrThrow()
+            assertThat(week.ranges(1)).hasSize(2)
+            repo.saveRules(1, week.with(1, emptyList())).getOrThrow()
+            assertThat(repo.rules(1).getOrThrow().ranges(1)).isEmpty()
+            repo.addPeriod(day("2027-01-01"), day("2027-02-28"), day("2026-11-04")).getOrThrow()
+            assertThat(repo.periods().getOrThrow()).hasSize(2)
+            val first = repo.addDateSpecific(hours("2026-12-27", 1)).getOrThrow()
+            val second = repo.addDateSpecific(hours("2026-12-28", 2)).getOrThrow()
+            repo.deleteDateSpecific(first.id!!).getOrThrow()
+            val third = repo.addDateSpecific(hours("2026-12-29", 1)).getOrThrow()
+            assertThat(third.id).isNotEqualTo(second.id) // ids never come back after a delete
+            assertThat(repo.dateSpecific(1).getOrThrow().map { it.id }).containsExactly(third.id)
+            assertThat(forwarded).isEmpty()
+        }
 }

@@ -92,6 +92,13 @@ class DemoBackend(
 
     private var groups: List<JsonElement> = emptyList()
     private var lastGroupId = 0L
+    private var rules: Map<String?, List<JsonElement>> = emptyMap()
+    private var periods: List<JsonElement> =
+        listOf(
+            JsonObject(mapOf("validFrom" to JsonPrimitive("2026-09-01"), "validUntil" to JsonPrimitive("2026-12-31"))),
+        )
+    private var dates: List<JsonElement> = emptyList()
+    private var lastDateId = 0L
     private var places: List<JsonElement> = apiJson.parseToJsonElement(DEMO_LOCATIONS).jsonArray.toList()
 
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
@@ -274,6 +281,49 @@ class DemoBackend(
                         path.endsWith("/change") ||
                         path.endsWith("/notify-payment-reminder")
                 ) -> Reply(HttpStatusCode.OK, "")
+            // The schedule (SCHED-1) in memory: rules per location, validity periods, date-specific hours.
+            get && path == Endpoints.SCHEDULE_RULES ->
+                ok(
+                    JsonArray(
+                        rules[request.url.parameters["locationId"]] ?: demoRules(request.url.parameters["locationId"]),
+                    ),
+                )
+            request.method == HttpMethod.Put && path == Endpoints.SCHEDULE_RULES -> {
+                rules = rules + (
+                    request.url.parameters["locationId"] to
+                        apiJson.parseToJsonElement(
+                            body,
+                        ).jsonArray.toList()
+                )
+                ok(apiJson.parseToJsonElement(body))
+            }
+            get && path == Endpoints.SCHEDULE_VALIDITY_PERIODS -> ok(JsonArray(periods))
+            request.method == HttpMethod.Patch && path == Endpoints.SCHEDULE_VALID_RANGE -> {
+                val sent = apiJson.parseToJsonElement(body).jsonObject
+                val inside =
+                    periods.any {
+                        val o = it.jsonObject
+                        sent["validFrom"]!!.jsonPrimitive.content >= o["validFrom"]!!.jsonPrimitive.content &&
+                            sent["validUntil"]!!.jsonPrimitive.content <= o["validUntil"]!!.jsonPrimitive.content
+                    }
+                if (!inside) periods = periods + sent
+                ok(sent)
+            }
+            // Without locationId every location's rows, like the backend.
+            get && path == Endpoints.SCHEDULE_DATE_SPECIFIC -> {
+                val at = request.url.parameters["locationId"]
+                ok(JsonArray(dates.filter { at == null || it.jsonObject["locationId"]?.jsonPrimitive?.content == at }))
+            }
+            request.method == HttpMethod.Post && path == Endpoints.SCHEDULE_DATE_SPECIFIC -> {
+                val saved =
+                    JsonObject(apiJson.parseToJsonElement(body).jsonObject + ("id" to JsonPrimitive(++lastDateId)))
+                dates = dates + saved
+                ok(saved)
+            }
+            request.method == HttpMethod.Delete && path.startsWith(Endpoints.SCHEDULE_DATE_SPECIFIC + "/") -> {
+                dates = dates.filterNot { it.jsonObject["id"]?.jsonPrimitive?.content == path.substringAfterLast('/') }
+                Reply(HttpStatusCode.OK, "")
+            }
             // Locations (LOC-1) in memory: one primary, the last one can't be deleted (the backend's 409).
             get && path == Endpoints.DOCTOR_LOCATIONS -> ok(JsonArray(places))
             request.method == HttpMethod.Post && path == Endpoints.DOCTOR_LOCATIONS -> savePlace(null, body)
@@ -574,6 +624,22 @@ private const val DEMO_PATIENTS =
     """{"content":[{"id":11,"name":"Dilnoza Rahimova","photoUrl":null},""" +
         """{"id":12,"name":"Jasur Karimov","photoUrl":null},{"id":13,"name":"Malika Tursunova","photoUrl":null},""" +
         """{"id":14,"name":"Bekzod Aliyev","photoUrl":null},{"id":15,"name":"","photoUrl":null}],"last":true}"""
+
+/** The demo week like the demo calendar: Monday to Friday 09:00–13:00 and 14:00–17:00, 30-minute slots. */
+internal fun demoRules(locationId: String?): List<JsonElement> =
+    (1..5).flatMap { day ->
+        listOf("09:00" to "13:00", "14:00" to "17:00").map { (from, to) ->
+            JsonObject(
+                mapOf(
+                    "weekday" to JsonPrimitive(day),
+                    "startTime" to JsonPrimitive(from),
+                    "endTime" to JsonPrimitive(to),
+                    "slotMinutes" to JsonPrimitive(30),
+                    "locationId" to (locationId?.toLongOrNull()?.let { JsonPrimitive(it) } ?: JsonNull),
+                ),
+            )
+        }
+    }
 
 /** Appointments of the generated days overlapping [startAt, endAt) (at most two months are looked at). */
 internal fun demoOverlap(

@@ -2,7 +2,6 @@
 
 package shifa.doctor.ui.calendar
 
-import androidx.lifecycle.viewModelScope
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -14,7 +13,6 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -34,6 +32,7 @@ import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.blockTimeSuccessWithCancel
 import shifa.doctor.generated.resources.unblockSuccess
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.PracticeClock
 
@@ -95,7 +94,7 @@ class BlockViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
 
     @After fun tearDown() {
-        created.forEach { it.viewModelScope.cancel() }
+        created.stopAll()
         ShellNotice.pending.value = null
         Dispatchers.resetMain()
     }

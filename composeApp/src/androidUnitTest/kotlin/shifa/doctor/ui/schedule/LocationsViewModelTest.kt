@@ -2,7 +2,6 @@
 
 package shifa.doctor.ui.schedule
 
-import androidx.lifecycle.viewModelScope
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -13,7 +12,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -25,6 +23,7 @@ import shifa.doctor.data.locations.LocationsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.locationDeleteBlocked
 import shifa.doctor.generated.resources.locationSaved
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LocationsViewModelTest {
@@ -60,7 +59,7 @@ class LocationsViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     @After fun tearDown() {
-        created.forEach { it.viewModelScope.cancel() }
+        created.stopAll()
         Dispatchers.resetMain()
     }
 

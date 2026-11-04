@@ -28,6 +28,13 @@ object ApiConfig {
         const val SERVICE_GROUPS = "doctors/me/service-groups"
         const val CALENDAR = "calendar"
         const val SCHEDULE_BOOK = "schedule/book"
+        const val SCHEDULE_RULES = "schedule/rules"
+        const val SCHEDULE_VALIDITY_PERIODS = "schedule/validity-periods"
+        const val SCHEDULE_VALID_RANGE = "schedule/valid-range"
+        const val SCHEDULE_DATE_SPECIFIC = "schedule/date-specific"
+
+        fun scheduleDateSpecific(id: Long) = "schedule/date-specific/$id"
+
         const val SCHEDULE_BLOCKS = "schedule/blocks"
         const val SCHEDULE_BLOCKS_OVERLAP = "schedule/blocks/overlapping-count"
 

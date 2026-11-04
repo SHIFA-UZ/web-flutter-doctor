@@ -1,0 +1,7 @@
+- **[P2] Fractional seconds are still silently lost on save.** [ScheduleRules.kt:93](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/schedule/ScheduleRules.kt:93): `time()` accepts `09:00:00.500`, but `hhmm()` writes `09:00`. The backend accepts and returns full `LocalTime` values (`ScheduleController.kt:61,128`). Loading and saving an unchanged schedule therefore changes valid times. Preserve nanoseconds or explicitly reject unsupported precision.
+
+- **[P3] Calendar parsing failures now disappear without a diagnostic.** [CalendarRepository.kt:147](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/calendar/CalendarRepository.kt:147): `rows()` counts only DTO decoding failures; rows rejected by `CalendarEntry.from()` are subsequently discarded without logging. A row with missing/invalid timestamps or an appointment without its ID previously contributed to the skipped-row error count. Restore aggregate error logging for these mapping failures, without logging row contents.
+---
+**Answers (round 2, all fixed):**
+1. *Fractional seconds lost:* a time with seconds or fractions is written back exactly as read (`LocalTime.toString()`); only a whole minute is shortened to "HH:mm". Tested with "09:00:00.500".
+2. *Calendar mapping failures unlogged:* `rows()` takes the mapping step too (null = unusable), so a calendar row that decodes but can't become an entry is counted in the same "rows skipped" log line.

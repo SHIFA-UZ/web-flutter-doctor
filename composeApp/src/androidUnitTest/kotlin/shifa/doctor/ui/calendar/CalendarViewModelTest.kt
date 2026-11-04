@@ -2,7 +2,6 @@
 
 package shifa.doctor.ui.calendar
 
-import androidx.lifecycle.viewModelScope
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -11,7 +10,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -27,6 +25,7 @@ import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.couldNotLoadThisDay
+import shifa.doctor.stopAll
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -68,7 +67,7 @@ class CalendarViewModelTest {
 
     // A month prefetch still running would resume on Main while the next test sets it: stop them first.
     @After fun tearDown() {
-        created.forEach { it.viewModelScope.cancel() }
+        created.stopAll()
         Dispatchers.resetMain()
     }
 

@@ -18,9 +18,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
-import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.httpClient
-import shifa.doctor.data.api.httpLogger
+import shifa.doctor.data.api.rows
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.CalendarEntryDto
 import kotlin.time.Duration
@@ -144,19 +143,11 @@ class CalendarRepository(
                         listOf("content", "data", "entries").firstNotNullOfOrNull { o[it] as? JsonArray }
                     }
                     ?: JsonArray(emptyList())
-            var skipped = 0
-            val parsed =
-                rows.mapNotNull { row ->
-                    runCatching {
-                        CalendarEntry.from(
-                            apiJson.decodeFromJsonElement(CalendarEntryDto.serializer(), row),
-                        )
-                    }
-                        .getOrNull()
-                        .also { if (it == null) skipped++ }
-                }
-            if (skipped > 0) httpLogger.log("FAILED parse calendar: $skipped of ${rows.size} rows skipped")
-            return parsed.sortedBy { it.start }
+            return rows.toList().rows(
+                CalendarEntryDto.serializer(),
+                "calendar",
+                CalendarEntry::from,
+            ).sortedBy { it.start }
         }
     }
 }
