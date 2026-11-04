@@ -136,7 +136,26 @@ class DemoBackend(
             request.method == HttpMethod.Post && path == Endpoints.CHECK_EXISTING_PATIENT -> ok(existingPatient(body))
             get && path == Endpoints.PUBLIC_PROFESSIONS -> ok(apiJson.parseToJsonElement(DEMO_PROFESSIONS))
             get && path == Endpoints.PUBLIC_CLINICS -> ok(clinics(request.url.parameters["search"]))
-            request.method == HttpMethod.Patch && path == Endpoints.DOCTOR_PROFILE -> updateProfile(body)
+            request.method == HttpMethod.Patch && path == Endpoints.DOCTOR_PROFILE -> merge("profile", body)
+            request.method == HttpMethod.Patch && path == Endpoints.DOCTOR_CONTACT ->
+                merge(
+                    "contact",
+                    body,
+                    replace = true,
+                )
+            request.method == HttpMethod.Patch && path == Endpoints.DOCTOR_BILLING ->
+                merge(
+                    "billing",
+                    body,
+                    replace = true,
+                )
+            request.method == HttpMethod.Patch && path == Endpoints.DOCTOR_SETTINGS ->
+                merge(
+                    "settings",
+                    body,
+                    replace = true,
+                )
+            get && path == Endpoints.ME_PROFILE -> ok(meProfile())
             get -> null
             else -> refused()
         }
@@ -211,15 +230,30 @@ class DemoBackend(
         )
     }
 
-    // The profile keys the app sends are merged into the demo doctor's profile, so later reads show them.
-    private suspend fun updateProfile(body: String): Reply {
+    // Like the backend: the profile PATCH is partial (keys sent are merged), contact, billing and settings replace the
+    // whole block (an omitted nullable key is cleared). The block is returned like the backend's DTO.
+    private suspend fun merge(
+        block: String,
+        body: String,
+        replace: Boolean = false,
+    ): Reply {
         val patch =
             runCatching { apiJson.parseToJsonElement(body).jsonObject }.getOrNull()
                 ?: return fail(HttpStatusCode.BadRequest, "VALIDATION")
         val current = doctorMe()
-        val profile = JsonObject((current["profile"]?.jsonObject ?: JsonObject(emptyMap())) + patch)
-        me = JsonObject(current + ("profile" to profile))
-        return ok(profile)
+        val merged = if (replace) patch else JsonObject((current[block]?.jsonObject ?: JsonObject(emptyMap())) + patch)
+        me = JsonObject(current + (block to merged))
+        return ok(merged)
+    }
+
+    private suspend fun meProfile(): JsonObject {
+        val current = doctorMe()
+        val profile = current["profile"]?.jsonObject ?: JsonObject(emptyMap())
+        val contact = current["contact"]?.jsonObject ?: JsonObject(emptyMap())
+        val keep = listOf("id", "firstName", "lastName", "photoUrl", "timeZone")
+        return JsonObject(
+            profile.filterKeys { it in keep } + contact + ("role" to JsonPrimitive("DOCTOR")),
+        )
     }
 
     private fun jsonField(

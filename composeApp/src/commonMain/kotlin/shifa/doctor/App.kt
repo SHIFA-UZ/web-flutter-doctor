@@ -33,6 +33,7 @@ import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.debug.DemoMode
+import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
@@ -160,7 +161,13 @@ private fun AppScreens() {
     // Keyed on the screen too: a screen that finishes late (registration) must not open the shell after the session
     // ended. A note left for the shell belongs to the session that left it.
     LaunchedEffect(session, screen) { if (session == null && screen == Screen.Shell) screen = Screen.SignIn }
-    LaunchedEffect(session) { if (session == null) ShellNotice.pending.value = null }
+    // What belonged to the session that ended goes with it: the shell note and the shared profile.
+    LaunchedEffect(session) {
+        if (session == null) {
+            ShellNotice.pending.value = null
+            profileRepository.clear()
+        }
+    }
     val locked by appLockRepository.locked.collectAsState()
     // Presses and releases are activity (LOCK-02); separate windows (sheets, the lock) track it themselves.
     Box(Modifier.fillMaxSize().trackActivity()) {

@@ -27,6 +27,8 @@ import shifa.doctor.data.config.BootGate
 import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.CheckExistingPatientRequest
+import shifa.doctor.data.model.DoctorContact
+import shifa.doctor.data.model.DoctorSettings
 import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.model.RegisterRequest
 import shifa.doctor.data.profile.ProfileRepository
@@ -147,6 +149,19 @@ class DemoBackendTest {
             ).isTrue()
             val me = apiCall<JsonObject> { client.get(ApiConfig.Endpoints.DOCTOR_ME) }.getOrThrow()
             assertThat(me["profile"]!!.jsonObject["address"]!!.jsonPrimitive.content).isEqualTo("Chilonzor 5")
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `contact, billing and settings are merged into the demo doctor, me_profile follows`() =
+        runTest {
+            val profile = ProfileRepository({ client })
+            profile.updateSettings(DoctorSettings(defaultStartTab = "calendar"))
+            profile.updateContact(DoctorContact(phone = "+998901112233", email = "new@shifa.dev"))
+            val me = profile.refresh().getOrThrow()
+            assertThat(me.settings.defaultStartTab).isEqualTo("calendar")
+            assertThat(me.contact.email).isEqualTo("new@shifa.dev")
+            assertThat(profile.meProfile().getOrThrow().firstName).isEqualTo("Aziza")
             assertThat(forwarded).isEmpty()
         }
 }
