@@ -143,6 +143,18 @@ class AuthRepository(
             }
         }.map { it.token }
 
+    /**
+     * `POST /auth/register-clinic-staff` (01 §2.7): a receptionist's token (CLINIC_STAFF), same body as [register]. The
+     * backend refuses any address but the invited one when the invitation names it.
+     */
+    suspend fun registerClinicStaff(request: RegisterRequest): Result<String> =
+        apiCall<TokenResponse> {
+            client().post(ApiConfig.Endpoints.REGISTER_CLINIC_STAFF) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+        }.map { it.token }
+
     private companion object {
         const val RECEPTIONIST_INVITE = "CLINIC_RECEPTIONIST_INVITE"
         const val APP = "doctor"

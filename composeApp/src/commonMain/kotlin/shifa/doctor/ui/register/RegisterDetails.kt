@@ -43,6 +43,7 @@ import shifa.doctor.generated.resources.profession
 import shifa.doctor.generated.resources.search
 import shifa.doctor.generated.resources.searchProfession
 import shifa.doctor.generated.resources.searching
+import shifa.doctor.generated.resources.timezoneScheduleHint
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -104,9 +105,15 @@ internal fun ColumnScope.DetailsStep(
         enabled = enabled,
         chips = state.professions.map { it.label() },
     )
-    TimeZoneField(state, actions, hint = true)
+    TimeZoneField(state, actions, hint = Res.string.timezoneScheduleHint)
     StepDots(1)
-    ShifaPrimaryButton(tr(Res.string.createAccount), actions.register, Modifier.fillMaxWidth(), loading = state.loading)
+    ShifaPrimaryButton(
+        tr(Res.string.createAccount),
+        actions.register,
+        Modifier.fillMaxWidth(),
+        loading = state.loading,
+        enabled = !state.completed,
+    )
 }
 
 /** The clinic sheet: the backend's list or search, "Searching…", "Couldn't load. Retry", and "No clinic" to clear. */

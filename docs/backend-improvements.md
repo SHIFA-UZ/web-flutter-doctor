@@ -436,8 +436,15 @@ Also, `check-existing-doctor` matches the e-mail case-sensitively (`users.findBy
 case-insensitively (`findByEmailIgnoreCase`), and contact updates keep the casing typed. A doctor stored as
 `Doctor@example.uz` is therefore "not found" for `doctor@example.uz` but merged (and re-keyed) by `register`.
 
+`register-clinic-staff` does the same for an existing user (it adds CLINIC_STAFF and sets the new password); when the
+invitation has no `emailSentTo` (C-4), any address can be typed. And a locked address proves nothing: the clinic
+invitation endpoint (`ClinicInvitationController`) returns the key to the inviter, who can register with it and set
+the password of whoever owns the invited address.
+
 **Change:** if the existing user already has the DOCTOR role, reject with 409 `code: DOCTOR_EXISTS` before touching the
-password; and make `check-existing-doctor` use `findByEmailIgnoreCase` like `register`. For an existing patient, keep today's merge (it is the flow's "existing patient" branch) but require the
+password; and make `check-existing-doctor` use `findByEmailIgnoreCase` like `register`. In general, adding a role to an
+**existing** account must prove ownership (the account's password, or an e-mail code sent to it: BE-03), never just a
+key; the registration endpoints should only create new accounts. For an existing patient, keep today's merge (it is the flow's "existing patient" branch) but require the
 patient's current password or the registration e-mail code (BE-03), since a doctor key must not reset a patient's
 password either.
 

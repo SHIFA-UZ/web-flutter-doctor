@@ -42,6 +42,8 @@ import shifa.doctor.generated.resources.passwordRequired
 import shifa.doctor.generated.resources.passwordsDoNotMatch
 import shifa.doctor.generated.resources.profileExtrasNotSaved
 import shifa.doctor.generated.resources.registrationConflict
+import shifa.doctor.generated.resources.registrationIncomplete
+import shifa.doctor.generated.resources.staffEmailInUse
 import shifa.doctor.generated.resources.timezoneDetectionFailed
 import shifa.doctor.ui.navigation.ShellNotice
 
@@ -56,6 +58,11 @@ class RegisterViewModelTest {
         mutableMapOf(
             "check-existing-doctor" to (HttpStatusCode.NotFound to """{"error":404,"status":404,"code":"NOT_FOUND","requestId":"r1"}"""),
             "check-existing-patient" to (HttpStatusCode.OK to """{"email":null,"found":false,"fullName":null,"photoUrl":null}"""),
+            "register-clinic-staff" to (
+                HttpStatusCode.OK to """{"token":"${jwt(
+                    4_000_000_000L,
+                )}","forcePasswordReset":false}"""
+            ),
             "register" to (HttpStatusCode.OK to """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""),
             "profile" to (HttpStatusCode.OK to """{}"""),
             "professions" to (HttpStatusCode.OK to """[{"id":59,"english":"Dentist","uzbek":"Stomatolog","name":"Dentist","category":"Dental","displayOrder":1},{"english":"Orthodontist","uzbek":"Ortodont"},{"english":"Cardiologist","uzbek":"Kardiolog"}]"""),
@@ -390,6 +397,75 @@ class RegisterViewModelTest {
                 respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
             },
         )
+    }
+
+    @Test
+    fun `a receptionist invitation opens the staff form with the invited address and registers as staff`() {
+        val vm = vm(Invite("STAFF-1", true, 7, "Shifa Dental", "dilfuza@shifadental.uz"))
+        val s = vm.state.value
+        assertThat(s.step).isEqualTo(RegisterStep.Staff)
+        assertThat(s.email).isEqualTo("dilfuza@shifadental.uz")
+        assertThat(s.timeZone).isEqualTo("Asia/Tashkent")
+        vm.register()
+        assertThat(vm.state.value.firstNameError).isEqualTo(Res.string.enterFirstName)
+        assertThat(vm.state.value.passwordError).isEqualTo(Res.string.passwordRequired)
+        assertThat(calls).isEmpty()
+        vm.onFirstName("Dilfuza ")
+        vm.onLastName("Yusupova")
+        vm.onPassword("Secret1!")
+        vm.onConfirm("Secret1!")
+        vm.register()
+        vm.settle()
+        assertThat(calls.single()).isEqualTo(
+            "register-clinic-staff" to """{"firstName":"Dilfuza","lastName":"Yusupova","email":"dilfuza@shifadental.uz","password":"Secret1!","key":"STAFF-1","timeZone":"Asia/Tashkent"}""",
+        )
+        assertThat(vm.state.value.signedIn).isNotNull()
+    }
+
+    @Test
+    fun `a staff invitation without an address asks for one, and a filled form asks before leaving`() {
+        val vm = vm(Invite("STAFF-2", true), zone = null)
+        assertThat(vm.state.value.emailLocked).isFalse()
+        assertThat(vm.state.value.timeZoneError).isEqualTo(Res.string.timezoneDetectionFailed)
+        vm.onEmail("not-an-address")
+        vm.register()
+        assertThat(vm.state.value.emailError).isEqualTo(Res.string.enterEmail)
+        assertThat(vm.back()).isFalse()
+        assertThat(vm.state.value.askDiscard).isTrue()
+        assertThat(vm.state.value.step).isEqualTo(RegisterStep.Staff)
+    }
+
+    @Test
+    fun `a typed staff address that already has an account is refused before registering`() {
+        replies["check-existing-patient"] = HttpStatusCode.OK to """{"email":"someone@shifa.uz","found":true,"fullName":"S","photoUrl":null}"""
+        val vm = vm(Invite("STAFF-3", true))
+        vm.onEmail("Someone@shifa.uz")
+        vm.onFirstName("A")
+        vm.onLastName("B")
+        vm.onPassword("Secret1!")
+        vm.onConfirm("Secret1!")
+        vm.register()
+        vm.settle()
+        assertThat(vm.state.value.emailError).isEqualTo(Res.string.staffEmailInUse)
+        assertThat(calls.map { it.first }).containsExactly("check-existing-patient")
+    }
+
+    @Test
+    fun `an account created without a usable token says so and only lets the user leave`() {
+        replies["register-clinic-staff"] = HttpStatusCode.OK to """{"forcePasswordReset":false}"""
+        val vm = vm(Invite("STAFF-4", true, email = "r@shifa.uz"))
+        vm.onFirstName("A")
+        vm.onLastName("B")
+        vm.onPassword("Secret1!")
+        vm.onConfirm("Secret1!")
+        vm.register()
+        vm.settle()
+        assertThat(vm.state.value.banner?.text).isEqualTo(Res.string.registrationIncomplete)
+        assertThat(vm.state.value.completed).isTrue()
+        assertThat(vm.state.value.signedIn).isNull()
+        vm.register()
+        assertThat(calls.count { it.first == "register-clinic-staff" }).isEqualTo(1)
+        assertThat(vm.back()).isTrue()
     }
 
     private companion object {

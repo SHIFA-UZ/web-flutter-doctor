@@ -29,7 +29,6 @@ import shifa.doctor.data.debug.DemoMode
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
-import shifa.doctor.ui.auth.AuthFrame
 import shifa.doctor.ui.auth.LanguageSwitch
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.debug.DebugMenuScreen
@@ -193,17 +192,13 @@ private fun AppScreens() {
                     })
                 }
             }
-            // Back from registration returns to Sign In (flow 01/06 §5). AUTH-08 replaces the receptionist placeholder.
+            // Back from registration returns to Sign In (flow 01/06 §5). The invitation picks the doctor's or the
+            // receptionist's form.
             is Screen.Register ->
-                if (it.invite.receptionist) {
-                    BackHandler { screen = Screen.SignIn }
-                    AuthFrame(onBack = { screen = Screen.SignIn }) {}
-                } else {
-                    ScopedViewModels {
-                        RegisterScreen(it.invite, onExit = { go(it, Screen.SignIn) }, onSignedIn = { _ ->
-                            go(it, Screen.Shell)
-                        })
-                    }
+                ScopedViewModels {
+                    RegisterScreen(it.invite, onExit = { go(it, Screen.SignIn) }, onSignedIn = { _ ->
+                        go(it, Screen.Shell)
+                    })
                 }
             Screen.Debug -> {
                 BackHandler { screen = Screen.SignIn }

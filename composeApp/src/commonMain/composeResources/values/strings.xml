@@ -1928,6 +1928,8 @@
     <string name="speakToType">Speak to type</string>
     <string name="specialtyFilter">Specialty</string>
     <string name="speechToTextRequiresPro">Speech-to-text requires a Pro subscription.</string>
+    <string name="staffEmailInUse">An account with this email already exists. Ask the clinic to send the invitation to that address.</string>
+    <string name="staffTimezoneHint">Your own notifications use this timezone. Clinic times always show in the clinic's timezone.</string>
     <string name="start">Start</string>
     <string name="startAiNotes">Start AI Notes</string>
     <string name="startAnyway">Start anyway</string>

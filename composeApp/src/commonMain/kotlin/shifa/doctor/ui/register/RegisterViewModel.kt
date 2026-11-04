@@ -38,7 +38,9 @@ import shifa.doctor.generated.resources.invalidPhone
 import shifa.doctor.generated.resources.profileExtrasNotSaved
 import shifa.doctor.generated.resources.registrationConflict
 import shifa.doctor.generated.resources.registrationFailed
+import shifa.doctor.generated.resources.registrationIncomplete
 import shifa.doctor.generated.resources.requestTimeout
+import shifa.doctor.generated.resources.staffEmailInUse
 import shifa.doctor.generated.resources.timezoneDetectionFailed
 import shifa.doctor.ui.auth.newPasswordErrors
 import shifa.doctor.ui.emailcode.CodeBanner
@@ -49,8 +51,11 @@ import shifa.doctor.utils.UzbekCyrillic
 import shifa.doctor.utils.isEmailAddress
 import shifa.doctor.utils.normalizedEmail
 
-/** Flow 01/07: the form (step 1), the existing-patient confirmation (3b), and step 2 (flow 01/08, AUTH-07). */
-enum class RegisterStep { Form, ExistingPatient, Details }
+/**
+ * Flow 01/07: the form (step 1), the existing-patient confirmation (3b), step 2 (flow 01/08, AUTH-07), and the
+ * receptionist's one-step form (flow 01/10, AUTH-08), which a receptionist invitation opens instead of the form.
+ */
+enum class RegisterStep { Form, ExistingPatient, Details, Staff }
 
 /** The searchable sheets (DaAuth picker). */
 enum class RegisterPicker { TimeZone, Clinic, Profession }
@@ -72,7 +77,7 @@ data class RegisterUiState(
     val phoneError: StringResource? = null,
     val passwordError: StringResource? = null,
     val confirmError: StringResource? = null,
-    val step: RegisterStep = RegisterStep.Form,
+    val step: RegisterStep = if (invite.receptionist) RegisterStep.Staff else RegisterStep.Form,
     val existing: ExistingPatient? = null,
     val timeZone: String? = null,
     val timeZoneError: StringResource? = null,
@@ -95,6 +100,8 @@ data class RegisterUiState(
     val banner: CodeBanner? = null,
     val askDiscard: Boolean = false,
     val signedIn: Session? = null,
+    // The account exists but its token couldn't be used: only Back (to Sign In) is left (flow 01/10 §9).
+    val completed: Boolean = false,
 ) {
     val emailLocked get() = invite.email != null
 
@@ -140,7 +147,19 @@ class RegisterViewModel(
 ) : ViewModel() {
     private var lookup: Job? = null
 
-    private val _state = MutableStateFlow(RegisterUiState(invite))
+    // A receptionist's single form shows the timezone at once (flow 01/10 §3), detected like step 2's.
+    private val _state =
+        MutableStateFlow(
+            RegisterUiState(invite).let {
+                if (!invite.receptionist) return@let it
+                val detected = deviceTimeZone()
+                it.copy(
+                    detectedTimeZone = detected,
+                    timeZone = detected,
+                    timeZoneError = if (detected == null) Res.string.timezoneDetectionFailed else null,
+                )
+            },
+        )
     val state: StateFlow<RegisterUiState> = _state.asStateFlow()
 
     fun onFirstName(v: String) = _state.update { it.copy(firstName = v, firstNameError = null) }
@@ -246,11 +265,12 @@ class RegisterViewModel(
         val s = _state.value
         return when {
             s.loading -> false
+            s.completed -> true
             s.askDiscard -> {
                 keepEditing()
                 false
             }
-            s.step != RegisterStep.Form -> {
+            s.step != RegisterStep.Form && s.step != RegisterStep.Staff -> {
                 _state.update { it.copy(step = RegisterStep.Form, existing = null, banner = null) }
                 false
             }
@@ -340,17 +360,27 @@ class RegisterViewModel(
         }
     }
 
-    /** "Confirm registration" (3b) and "Create account" (step 2). */
+    /** "Confirm registration" (3b), "Create account" (step 2) and the receptionist's "Create account". */
     fun register() {
         val s = _state.value
-        if (s.loading || s.step == RegisterStep.Form) return
+        if (s.loading || s.completed || s.step == RegisterStep.Form) return
+        val staff = s.step == RegisterStep.Staff
         val (pwError, confirmError) = newPasswordErrors(s.password, s.confirm)
-        val tzError = Res.string.timezoneDetectionFailed.takeIf { s.timeZone == null }
-        if (pwError != null || confirmError != null || tzError != null) {
-            return _state.update {
-                it.copy(passwordError = pwError, confirmError = confirmError, timeZoneError = tzError)
+        val checked =
+            s.copy(
+                passwordError = pwError,
+                confirmError = confirmError,
+                timeZoneError = Res.string.timezoneDetectionFailed.takeIf { s.timeZone == null },
+                // The receptionist's names are asked on this screen; the e-mail only when the invitation has none (C-4).
+                firstNameError = Res.string.enterFirstName.takeIf { staff && s.firstName.isBlank() },
+                lastNameError = Res.string.enterLastName.takeIf { staff && s.lastName.isBlank() },
+                emailError = Res.string.enterEmail.takeIf { staff && !isEmailAddress(normalizedEmail(s.email)) },
+            )
+        val errors =
+            with(checked) {
+                listOf(passwordError, confirmError, timeZoneError, firstNameError, lastNameError, emailError)
             }
-        }
+        if (errors.any { it != null }) return _state.update { checked }
         _state.update { it.copy(loading = true, banner = null) }
         viewModelScope.launch {
             val request =
@@ -363,7 +393,39 @@ class RegisterViewModel(
                     phone = s.phone.trim().takeIf { it.isNotEmpty() }?.let(PhoneE164::normalize),
                     timeZone = s.timeZone,
                 )
-            val result = auth.register(request).mapCatching { sessions.signIn(it).getOrThrow() }
+            // An invitation without an address lets the receptionist type any; the backend would then re-key whoever
+            // owns it (BE-29), so an address that already has an account is refused here (fails closed).
+            if (staff && !s.emailLocked) {
+                val taken =
+                    auth.existingPatient(
+                        CheckExistingPatientRequest(request.firstName, request.lastName, request.email),
+                    )
+                taken.exceptionOrNull()?.let {
+                        e ->
+                    return@launch _state.update { it.copy(loading = false, banner = banner(e)) }
+                }
+                if (taken.getOrNull() != null) {
+                    return@launch _state.update { it.copy(loading = false, emailError = Res.string.staffEmailInUse) }
+                }
+            }
+            val token =
+                (if (staff) auth.registerClinicStaff(request) else auth.register(request)).getOrElse { e ->
+                    return@launch _state.update { it.copy(loading = false, banner = banner(e)) }
+                }
+            // From here the account exists and the key is used: a retry can't help, so a token that can't be used
+            // says so and leaves only the way back to Sign In.
+            val result = sessions.signIn(token)
+            if (result.isFailure) {
+                return@launch _state.update {
+                    it.copy(
+                        loading = false,
+                        completed = true,
+                        password = "",
+                        confirm = "",
+                        banner = CodeBanner(Res.string.registrationIncomplete),
+                    )
+                }
+            }
             // Step 2's details, once, now that the account exists (the timezone already went with `register`). The
             // account is made either way: a failure only leaves a note for the shell (flow 01/08 §8 target).
             val extras = s.extras

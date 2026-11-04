@@ -47,4 +47,12 @@ class RegisterScreenshotTest {
 
     @Test
     fun timeZonePicker() = captureRoboImage("screenshots/Register_timeZonePicker.png") { TimeZonePickerPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1100dp-xhdpi")
+    fun staff() = captureRoboImage("screenshots/Register_staff.png") { RegisterStaffPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1100dp-xhdpi")
+    fun staffNoEmail() = captureRoboImage("screenshots/Register_staffNoEmail.png") { RegisterStaffNoEmailPreview() }
 }

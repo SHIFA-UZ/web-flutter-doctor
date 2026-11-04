@@ -1928,6 +1928,8 @@
     <string name="speakToType">Говорить для ввода текста</string>
     <string name="specialtyFilter">Специальность</string>
     <string name="speechToTextRequiresPro">Преобразование речи в текст доступно с подпиской Pro.</string>
+    <string name="staffEmailInUse">Аккаунт с этим email уже существует. Попросите клинику отправить приглашение на этот адрес.</string>
+    <string name="staffTimezoneHint">Ваши уведомления используют этот часовой пояс. Время клиники всегда показывается в часовом поясе клиники.</string>
     <string name="start">Начать</string>
     <string name="startAiNotes">Начать AI заметки</string>
     <string name="startAnyway">Всё равно начать</string>

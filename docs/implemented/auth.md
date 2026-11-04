@@ -217,3 +217,30 @@ sheets (`clinic`, `prof` multi). Built on AUTH-06's screen (`ui/register/Registe
   retry, professions), `DemoBackendTest` (+1), `RegisterScreenshotTest` (+3: clinic, clinic failed, professions; step 2
   re-recorded with all fields).
 
+## AUTH-08 · Receptionist registration
+
+Built 2026-11-04. Flow `01/10-receptionist-create-account.md`; board `DaAuth.dc.html`, branch `staffReg`.
+
+- **Screen:** a fourth step of the registration screen (`RegisterStep.Staff`, `ui/register/RegisterStaff.kt`), which a
+  `CLINIC_RECEPTIONIST_INVITE` key opens instead of the doctor form, so it shares names, passwords, the timezone, the
+  banner and the discard question. Same transparent bar as every auth screen (flow §12: Flutter's differed). Top-aligned.
+  - A canvas card with the clinic name and the invited address (only the lines that exist), the address read-only
+    (labelled "Email", not Flutter's "Enter email address"), first and last name, the practice timezone with "Your own
+    notifications use this timezone. Clinic times always show in the clinic's timezone.", password with the checklist,
+    confirmation, "Create account".
+  - No invited address (C-4 still open): the e-mail field is editable instead of Flutter's dead end. Because the
+    backend would then re-key whoever owns a typed address (BE-29), the app first asks `check-existing-patient`
+    (which matches any existing user, case-insensitively) and refuses an address that has an account: "An account with
+    this email already exists. Ask the clinic to send the invitation to that address." Fails closed.
+- **Submit:** names required, e-mail valid, the shared password rules, a timezone (detected at once; not detected →
+  red field, must be chosen). `POST /auth/register-clinic-staff {firstName, lastName, email, password, key, timeZone}`
+  (same body as `register`, no phone field on this form) → session (CLINIC_STAFF) → shell. Staff are allowed on mobile
+  (the user's call); their reduced shell and Clinic start tab are SHELL-02. Once the account exists, a response without a
+  usable token (missing, or not a staff/doctor token) shows "Your account was created but sign-in failed. Please sign in
+  with your new password.", disables Create account and lets Back go straight to Sign In (flow §8–9; the same for the
+  doctor's registration) instead of Flutter's silent dead end or a pointless retry.
+- **Backend:** `register-clinic-staff` also sets the password of an existing account with that address (added to
+  BE-29's note).
+- **Demo data:** a write, so refused like `register` (try the form with `DEMO-RECEPTION`).
+- **Tests:** `RegisterViewModelTest` (+4), `RegisterScreenshotTest` (+2: staff, staff without an address).
+

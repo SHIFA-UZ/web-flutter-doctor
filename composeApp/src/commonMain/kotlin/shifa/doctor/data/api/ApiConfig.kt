@@ -19,6 +19,7 @@ object ApiConfig {
         const val CHECK_EXISTING_DOCTOR = "auth/check-existing-doctor"
         const val CHECK_EXISTING_PATIENT = "auth/check-existing-patient"
         const val REGISTER = "auth/register"
+        const val REGISTER_CLINIC_STAFF = "auth/register-clinic-staff"
         const val DOCTOR_PROFILE = "doctors/me/profile"
         const val PUBLIC_PROFESSIONS = "public/professions"
         const val PUBLIC_CLINICS = "public/clinics"

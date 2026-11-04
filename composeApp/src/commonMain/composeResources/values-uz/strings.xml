@@ -1928,6 +1928,8 @@
     <string name="speakToType">Gapirish orqali yozish</string>
     <string name="specialtyFilter">Mutaxassislik</string>
     <string name="speechToTextRequiresPro">Ovozdan matnga PRO obuna talab qilinadi.</string>
+    <string name="staffEmailInUse">Bu email bilan hisob allaqachon mavjud. Klinikadan taklifni shu manzilga yuborishni so'rang.</string>
+    <string name="staffTimezoneHint">Shaxsiy bildirishnomalaringiz shu vaqt zonasida keladi. Klinika vaqtlari doim klinika vaqt zonasida ko'rsatiladi.</string>
     <string name="start">Boshlash</string>
     <string name="startAiNotes">AI yozuvlarni boshlash</string>
     <string name="startAnyway">Baribir boshlash</string>

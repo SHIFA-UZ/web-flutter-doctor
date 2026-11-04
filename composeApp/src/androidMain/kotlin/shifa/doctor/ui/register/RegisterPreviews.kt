@@ -135,3 +135,22 @@ internal fun TimeZonePickerPreview() =
             RegisterActions(),
         )
     }
+
+// DaAuth `staffReg` (flow 01/10).
+private val staff =
+    RegisterUiState(Invite("SHIFA-STAFF-2026", true, 7, "Shifa Dental Clinic", "dilfuza@shifadental.uz"))
+        .copy(firstName = "Dilfuza", lastName = "Yusupova", timeZone = "Asia/Tashkent", password = "Shifa2026")
+
+@Preview(widthDp = 402, heightDp = 1100)
+@Composable
+internal fun RegisterStaffPreview() = PreviewTheme { RegisterScreenContent(staff, RegisterActions()) }
+
+@Preview(widthDp = 402, heightDp = 1100)
+@Composable
+internal fun RegisterStaffNoEmailPreview() =
+    PreviewTheme {
+        RegisterScreenContent(
+            RegisterUiState(Invite("SHIFA-STAFF-2026", true)).copy(timeZoneError = Res.string.timezoneDetectionFailed),
+            RegisterActions(),
+        )
+    }

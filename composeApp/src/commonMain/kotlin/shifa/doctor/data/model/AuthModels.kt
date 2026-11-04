@@ -14,7 +14,8 @@ data class LoginRequest(
  */
 @Serializable
 data class TokenResponse(
-    val token: String,
+    // Missing reads as "": the call succeeded but there is nothing to sign in with (flow 01/10 §8).
+    val token: String = "",
     val forcePasswordReset: Boolean = false,
 )
 

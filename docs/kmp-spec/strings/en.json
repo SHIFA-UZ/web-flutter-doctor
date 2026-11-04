@@ -1753,6 +1753,8 @@
   "requirementMet": "met",
   "requirementNotMet": "not met",
   "errorRequestId": "Request ID: {id}",
+  "staffEmailInUse": "An account with this email already exists. Ask the clinic to send the invitation to that address.",
+  "staffTimezoneHint": "Your own notifications use this timezone. Clinic times always show in the clinic's timezone.",
   "noClinic": "No clinic",
   "clearAll": "Clear all",
   "chooseAClinic": "Choose a clinic",

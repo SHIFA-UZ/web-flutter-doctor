@@ -65,7 +65,6 @@ import shifa.doctor.generated.resources.practiceTimezone
 import shifa.doctor.generated.resources.practiceTimezonePlaceholder
 import shifa.doctor.generated.resources.searchTimezone
 import shifa.doctor.generated.resources.stepOfTotal
-import shifa.doctor.generated.resources.timezoneScheduleHint
 import shifa.doctor.ui.auth.AuthFrame
 import shifa.doctor.ui.auth.AuthTitle
 import shifa.doctor.ui.auth.PasswordChecklist
@@ -186,6 +185,7 @@ fun RegisterScreenContent(
             RegisterStep.Form -> FormStep(state, actions)
             RegisterStep.ExistingPatient -> ExistingPatientStep(state, actions)
             RegisterStep.Details -> DetailsStep(state, actions)
+            RegisterStep.Staff -> StaffStep(state, actions)
         }
     }
     state.picker?.let { picker ->
@@ -312,13 +312,14 @@ private fun ColumnScope.ExistingPatientStep(
         style = ShifaTextStyles.bodyText(),
         color = ShifaColors.Text.Primary,
     )
-    TimeZoneField(state, actions, hint = false)
+    TimeZoneField(state, actions, hint = null)
     Passwords(state, actions, actions.register, !state.loading)
     ShifaPrimaryButton(
         tr(Res.string.confirmRegistration),
         actions.register,
         Modifier.fillMaxWidth(),
         loading = state.loading,
+        enabled = !state.completed,
     )
 }
 
@@ -326,7 +327,7 @@ private fun ColumnScope.ExistingPatientStep(
 internal fun TimeZoneField(
     state: RegisterUiState,
     actions: RegisterActions,
-    hint: Boolean,
+    hint: StringResource?,
 ) = ShifaPickField(
     tr(Res.string.practiceTimezone),
     state.timeZone.orEmpty(),
@@ -335,13 +336,13 @@ internal fun TimeZoneField(
     Modifier.fillMaxWidth(),
     supportingText =
         state.timeZoneError?.let { tr(it) }
-            ?: tr(Res.string.timezoneScheduleHint).takeIf { hint },
+            ?: hint?.let { tr(it) },
     isError = state.timeZoneError != null,
     enabled = !state.loading,
 )
 
 @Composable
-private fun Passwords(
+internal fun Passwords(
     state: RegisterUiState,
     actions: RegisterActions,
     submit: () -> Unit,
