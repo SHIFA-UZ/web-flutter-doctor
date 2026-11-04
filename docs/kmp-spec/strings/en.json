@@ -2359,5 +2359,9 @@
   "notificationsSystemSettings": "Manage in system settings",
   "uzbekCyrillic": "Uzbek (Cyrillic)",
   "appLockOn": "App lock on",
-  "appLockOff": "App lock off"
+  "appLockOff": "App lock off",
+  "previousMonth": "Previous month",
+  "nextMonth": "Next month",
+  "dayAppointments": "{count} appointments",
+  "dayBlocked": "Day blocked"
 }

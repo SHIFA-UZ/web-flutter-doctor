@@ -2359,5 +2359,9 @@
   "notificationsSystemSettings": "Управление в настройках системы",
   "uzbekCyrillic": "Узбекский (кириллица)",
   "appLockOn": "Блокировка включена",
-  "appLockOff": "Блокировка выключена"
+  "appLockOff": "Блокировка выключена",
+  "previousMonth": "Предыдущий месяц",
+  "nextMonth": "Следующий месяц",
+  "dayAppointments": "Приёмов: {count}",
+  "dayBlocked": "День заблокирован"
 }

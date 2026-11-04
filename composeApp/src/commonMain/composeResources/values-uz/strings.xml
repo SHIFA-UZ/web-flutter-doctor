@@ -768,6 +768,8 @@
     <string name="date">Sana</string>
     <string name="dateAndTime">Sana va vaqt</string>
     <string name="dateOfBirth">Tug'ilgan sana</string>
+    <string name="dayAppointments">%1$s ta qabul</string>
+    <string name="dayBlocked">Kun band qilingan</string>
     <string name="daySlots">vaqtlar</string>
     <string name="days">kunlar</string>
     <string name="dealingWithChronicDiseasePatient">Siz surunkali kasallikka chalingan bemor bilan ishlayapsiz:</string>
@@ -1453,6 +1455,7 @@
     <string name="next">Keyingi</string>
     <string name="nextAppointmentInMinutes">Keyingi uchrashuv %1$s daqiqadan keyin boshlanadi.</string>
     <string name="nextAvailable">Keyingi bo'sh kun: %1$s</string>
+    <string name="nextMonth">Keyingi oy</string>
     <string name="nextPatient">Keyingi bemor</string>
     <string name="no">Yo'q</string>
     <string name="noAccountYet">Hisob hali mavjud emas</string>
@@ -1754,6 +1757,7 @@
     <string name="preparingAiDocumentation">Yozuvdan AI bayonnoma tayyorlanmoqda…</string>
     <string name="prescriptions">Retseptlar</string>
     <string name="previous">Oldingi</string>
+    <string name="previousMonth">Oldingi oy</string>
     <string name="pricePerMonth">%1$s / oy</string>
     <string name="priceScopeAllLocations">Barcha joylar (standart)</string>
     <string name="priceScopeLabel">Qo'llaniladi</string>

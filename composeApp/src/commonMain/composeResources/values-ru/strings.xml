@@ -768,6 +768,8 @@
     <string name="date">Дата</string>
     <string name="dateAndTime">Дата и время</string>
     <string name="dateOfBirth">Дата рождения</string>
+    <string name="dayAppointments">Приёмов: %1$s</string>
+    <string name="dayBlocked">День заблокирован</string>
     <string name="daySlots">слоты</string>
     <string name="days">дни</string>
     <string name="dealingWithChronicDiseasePatient">Вы имеете дело с пациентом с хроническим заболеванием:</string>
@@ -1453,6 +1455,7 @@
     <string name="next">Далее</string>
     <string name="nextAppointmentInMinutes">Следующий приём через %1$s мин.</string>
     <string name="nextAvailable">Ближайшая дата: %1$s</string>
+    <string name="nextMonth">Следующий месяц</string>
     <string name="nextPatient">Следующий пациент</string>
     <string name="no">Нет</string>
     <string name="noAccountYet">Нет аккаунта</string>
@@ -1754,6 +1757,7 @@
     <string name="preparingAiDocumentation">Готовим документацию AI-секретаря из записи…</string>
     <string name="prescriptions">Рецепты</string>
     <string name="previous">Назад</string>
+    <string name="previousMonth">Предыдущий месяц</string>
     <string name="pricePerMonth">%1$s / мес.</string>
     <string name="priceScopeAllLocations">Все локации (по умолчанию)</string>
     <string name="priceScopeLabel">Действует для</string>

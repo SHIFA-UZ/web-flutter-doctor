@@ -2359,5 +2359,9 @@
   "notificationsSystemSettings": "Tizim sozlamalarida boshqarish",
   "uzbekCyrillic": "O'zbekcha (kirill)",
   "appLockOn": "Ilova qulfi yoqilgan",
-  "appLockOff": "Ilova qulfi o'chirilgan"
+  "appLockOff": "Ilova qulfi o'chirilgan",
+  "previousMonth": "Oldingi oy",
+  "nextMonth": "Keyingi oy",
+  "dayAppointments": "{count} ta qabul",
+  "dayBlocked": "Kun band qilingan"
 }

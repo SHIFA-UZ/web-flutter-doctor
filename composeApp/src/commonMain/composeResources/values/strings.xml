@@ -768,6 +768,8 @@
     <string name="date">Date</string>
     <string name="dateAndTime">Date and Time</string>
     <string name="dateOfBirth">Date of Birth</string>
+    <string name="dayAppointments">%1$s appointments</string>
+    <string name="dayBlocked">Day blocked</string>
     <string name="daySlots">slots</string>
     <string name="days">days</string>
     <string name="dealingWithChronicDiseasePatient">You are dealing with a patient who has a chronic disease:</string>
@@ -1453,6 +1455,7 @@
     <string name="next">Next</string>
     <string name="nextAppointmentInMinutes">Next appointment starts in %1$s minutes.</string>
     <string name="nextAvailable">Next available: %1$s</string>
+    <string name="nextMonth">Next month</string>
     <string name="nextPatient">Next patient</string>
     <string name="no">No</string>
     <string name="noAccountYet">No account yet</string>
@@ -1754,6 +1757,7 @@
     <string name="preparingAiDocumentation">Preparing AI scribe documentation from the recording…</string>
     <string name="prescriptions">Prescriptions</string>
     <string name="previous">Previous</string>
+    <string name="previousMonth">Previous month</string>
     <string name="pricePerMonth">%1$s / month</string>
     <string name="priceScopeAllLocations">All locations (default)</string>
     <string name="priceScopeLabel">Applies to</string>

@@ -119,16 +119,22 @@ data class DayOccupancy(
     val freeSlots: Int,
     val appointments: Int,
     val blocked: Int,
+    // A block that starts at midnight in the practice zone: the whole day is off (the board's red day).
+    val fullDayBlock: Boolean = false,
 ) {
     /** Free share of the day's rows, blocked ones included (03 §1.3), or null for a day without any; fully blocked is 0. */
     val freeRatio: Float? get() = (freeSlots + appointments + blocked).takeIf { it > 0 }?.let { freeSlots.toFloat() / it }
 
     companion object {
-        fun of(entries: List<CalendarEntry>) =
-            DayOccupancy(
-                entries.count { it is CalendarEntry.FreeSlot },
-                entries.count { it is CalendarEntry.Appointment && !it.cancelled },
-                entries.count { it is CalendarEntry.Blocked },
-            )
+        /** [startsAtMidnight] says whether an instant is 00:00 on the practice wall clock. */
+        fun of(
+            entries: List<CalendarEntry>,
+            startsAtMidnight: (Instant) -> Boolean = { false },
+        ) = DayOccupancy(
+            entries.count { it is CalendarEntry.FreeSlot },
+            entries.count { it is CalendarEntry.Appointment && !it.cancelled },
+            entries.count { it is CalendarEntry.Blocked },
+            entries.any { it is CalendarEntry.Blocked && startsAtMidnight(it.start) },
+        )
     }
 }

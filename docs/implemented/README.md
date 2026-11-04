@@ -85,7 +85,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | TZ-2 Timezone list | Done | Detection and the shared list came with registration and PROF-06. See calendar.md. |
 | CAL-1 Calendar data | Done | Typed calendar entries, per-day cache with 60 s throttle, month batch, colleague preview; demo days. See calendar.md. |
 | CAL-2 Today, next, changes | Done | Today's appointments, the next appointment (14-day horizon), one refresh and one event per appointment change. See calendar.md. |
-| CAL-3 … LOC-2 | Not started | |
+| CAL-3 Month picker | Done | Monday-first month card with the board's occupancy shading, today ring, appointment dots. See calendar.md. |
+| CAL-4 … LOC-2 | Not started | |
 
 ## Log
 
@@ -131,3 +132,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · TZ-1, TZ-2 · Shared date/time formatters and DST tests; M3 started.
 - 2026-11-04 · CAL-1 · Calendar models and the cached day repository.
 - 2026-11-04 · CAL-2 · Today / next-appointment selectors and the appointment change bus.
+- 2026-11-04 · CAL-3 · Month picker with occupancy shading.

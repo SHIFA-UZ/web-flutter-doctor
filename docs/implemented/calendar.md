@@ -64,3 +64,21 @@ Built 2026-11-04. Spec `03 §5` (providers and the invalidation graph).
   colleague) are marked stale; the event is never dropped (suspending emit). `PracticeClock.nowInstant()` was added for the comparisons.
 - **Tests:** `CalendarSelectorsTest` (6: today without cancelled, in progress / next today / next days with the cache
   reused, nothing within the horizon, one read per touched day plus the event, a failed day, location copies stale).
+
+## CAL-3 · Month picker
+
+Built 2026-11-04. Flow `04/01` §3.4, §4; board `DaCalendar.dc.html` (month grid, `dr-month` / `dr-day` in
+`shifa-ds.css`).
+
+- **`ui/calendar/MonthPicker.kt`:** the month card: previous / next month with the localised month title, one letter
+  per weekday (each weekday's own name, Monday first in every language), and the days in a Monday-first grid padded to
+  full weeks (`monthCells`).
+- **Day cells (the board, which differs from the flow's grey ramp):** the booked share of the bookable time
+  (appointments over appointments plus free slots) shades the day: none → no fill, under two thirds → teal 15 %, more
+  → teal 25 %; a day blocked from midnight (practice zone, `DayOccupancy.fullDayBlock`) → the error tint; a day not
+  read yet is plain (`dayShade`). Selected = filled teal
+  with white bold number; today = teal ring and strong-teal bold number; past days tertiary; a charcoal dot under a
+  future day that has appointments. Each cell reads its date, its appointment count and "Day blocked" to screen readers and says when it is selected.
+  Months page with the chevrons or a horizontal swipe, within January 2020 – December 2030.
+- **Tests:** `MonthPickerTest` (2: shading rules, Monday-first padding for Nov 2026 and Feb 2027),
+  `CalendarScreenshotTest` (`Calendar_monthPicker`).
