@@ -14,6 +14,10 @@ import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.subscription.DoctorFeature
+import shifa.doctor.data.subscription.FeatureGate
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.tasksNotOnPlan
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -56,9 +60,6 @@ sealed interface ShellRoute {
     data object Debug : ShellRoute
 }
 
-/** The plan's gates the shell needs before SHELL-04's full feature gating: unknown means "not yet" (D-03). */
-enum class Plan { Unknown, Basic, Pro, Premium }
-
 data class ShellUiState(
     // Clinic staff (SHELL-02, flow 01/18): four tabs, no More, no plan, start and "home" on Clinic.
     val staff: Boolean = false,
@@ -67,7 +68,8 @@ data class ShellUiState(
     val moreOpen: Boolean = false,
     // Null until `GET /me/clinics` answers; a failure counts as no clinic for this session (flow 01/16 §6).
     val hasClinic: Boolean? = null,
-    val plan: Plan = Plan.Unknown,
+    // SHELL-04: what the plan allows; unknown until the profile answers (D-03).
+    val gate: FeatureGate = FeatureGate.Unknown,
     // The staff bar's Profile slot shows the person's photo (`GET /me/profile`).
     val avatarUrl: String? = null,
     // SHELL-03 counts; a failed refresh keeps the last value (flow 01/16 §6: badges freeze offline).
@@ -86,8 +88,8 @@ data class ShellUiState(
     // Pushed screens hide the bar (flow 01/16 §3 target).
     val barVisible: Boolean get() = stack.size == 1
 
-    val canTasks: Boolean get() = plan == Plan.Premium
-    val canIntelligence: Boolean get() = plan == Plan.Pro || plan == Plan.Premium
+    val canTasks: Boolean get() = gate.allows(DoctorFeature.RemoteCareTasks)
+    val canIntelligence: Boolean get() = gate.allows(DoctorFeature.AskShifaAi)
 
     private companion object {
         val STAFF_TABS = listOf(ShellTab.Chat, ShellTab.Clinic, ShellTab.Notifications, ShellTab.Profile)
@@ -126,7 +128,7 @@ class ShellViewModel(
             val clinicResult = clinics.mine()
             _state.update { it.copy(hasClinic = clinicResult.getOrNull()?.isNotEmpty() ?: false) }
             val me = profile.refresh().getOrNull()
-            _state.update { it.copy(plan = planOf(me?.subscription?.tier)) }
+            _state.update { it.copy(gate = FeatureGate.of(me?.subscription)) }
             val waiting = pending
             pending = null
             when {
@@ -140,7 +142,20 @@ class ShellViewModel(
             if (_state.value.canTasks) {
                 badges.activeTasks().onSuccess { n -> _state.update { it.copy(activeTasks = n) } }
             }
+            // Any later profile read (a resume refresh, a Profile save) may bring a new plan.
+            profile.me.collect { me -> if (me != null) onPlan(FeatureGate.of(me.subscription)) }
         }
+    }
+
+    /**
+     * A new plan seen after the start: gated entries follow it, and a doctor on Tasks without Tasks any more goes Home
+     * with "Tasks are not available on your plan." (flow 01/16 §7 target; Flutter bounced silently).
+     */
+    private fun onPlan(gate: FeatureGate) {
+        if (gate == _state.value.gate) return
+        val lostTasks = _state.value.tab == ShellTab.Tasks && !gate.allows(DoctorFeature.RemoteCareTasks)
+        _state.update { it.copy(gate = gate, tab = if (lostTasks) it.home else it.tab) }
+        if (lostTasks) ShellNotice.pending.value = Res.string.tasksNotOnPlan
     }
 
     /**
@@ -151,7 +166,7 @@ class ShellViewModel(
         switched = true
         val s0 = _state.value
         val unknownGate =
-            (tab == ShellTab.Tasks && s0.plan == Plan.Unknown) || (tab == ShellTab.Clinic && s0.hasClinic == null)
+            (tab == ShellTab.Tasks && !s0.gate.known) || (tab == ShellTab.Clinic && s0.hasClinic == null)
         if (!s0.staff && unknownGate) {
             pending = tab
             return closeMore()
@@ -238,12 +253,4 @@ class ShellViewModel(
     private companion object {
         val CHAT_POLL = 10.seconds
     }
-
-    private fun planOf(tier: String?) =
-        when (tier?.uppercase()) {
-            "BASIC" -> Plan.Basic
-            "PRO" -> Plan.Pro
-            "PREMIUM" -> Plan.Premium
-            else -> Plan.Unknown
-        }
 }

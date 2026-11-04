@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import shifa.doctor.data.subscription.DoctorTier
+import shifa.doctor.data.subscription.FeatureGate
 import shifa.doctor.ui.theme.PreviewTheme
 
 // DaApp phone shell (flow 01/16) and the More sheet (flow 01/17).
@@ -13,13 +15,21 @@ import shifa.doctor.ui.theme.PreviewTheme
 @Composable
 internal fun ShellHomePreview() =
     PreviewTheme {
-        MainScreenContent(ShellUiState(plan = Plan.Premium, hasClinic = true, chatUnread = 3), ShellActions())
+        MainScreenContent(
+            ShellUiState(gate = FeatureGate.forTier(DoctorTier.Premium), hasClinic = true, chatUnread = 3),
+            ShellActions(),
+        )
     }
 
 @Preview(widthDp = 402, heightDp = 874)
 @Composable
 internal fun ShellMoreTabPreview() =
-    PreviewTheme { MainScreenContent(ShellUiState(tab = ShellTab.Reports, plan = Plan.Premium), ShellActions()) }
+    PreviewTheme {
+        MainScreenContent(
+            ShellUiState(tab = ShellTab.Reports, gate = FeatureGate.forTier(DoctorTier.Premium)),
+            ShellActions(),
+        )
+    }
 
 @Preview(widthDp = 402, heightDp = 640)
 @Composable
@@ -29,7 +39,7 @@ internal fun MoreSheetPremiumPreview() =
             MoreSheetContent(
                 ShellUiState(
                     tab = ShellTab.Notifications,
-                    plan = Plan.Premium,
+                    gate = FeatureGate.forTier(DoctorTier.Premium),
                     hasClinic = true,
                     notificationsUnread = 140,
                     activeTasks = 4,
@@ -44,7 +54,10 @@ internal fun MoreSheetPremiumPreview() =
 internal fun MoreSheetBasicPreview() =
     PreviewTheme {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            MoreSheetContent(ShellUiState(plan = Plan.Basic, hasClinic = false), ShellActions())
+            MoreSheetContent(
+                ShellUiState(gate = FeatureGate.forTier(DoctorTier.Basic), hasClinic = false),
+                ShellActions(),
+            )
         }
     }
 

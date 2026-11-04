@@ -21,11 +21,22 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.profile.ProfileRepository
+import shifa.doctor.data.subscription.DoctorFeature
+import shifa.doctor.data.subscription.DoctorTier
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.tasksNotOnPlan
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShellViewModelTest {
     private var startTab = "calendar"
     private var tier = "PREMIUM"
+
+    // What the backend lists for the tier.
+    private fun features() =
+        DoctorFeature.entries
+            .filter { it.minTier <= DoctorTier.valueOf(tier.lowercase().replaceFirstChar(Char::uppercase)) }
+            .joinToString(",") { "\"${it.key}\"" }
+
     private var clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic"}]"""
     private var hold = CompletableDeferred(Unit)
     private val paths = mutableListOf<String>()
@@ -48,7 +59,7 @@ class ShellViewModelTest {
                         """{"id":5,"role":"CLINIC_STAFF","firstName":"Dilfuza","lastName":"Y","photoUrl":"https://x/p.jpg"}"""
                     } else {
                         hold.await()
-                        """{"profile":{},"settings":{"defaultStartTab":"$startTab"},"subscription":{"tier":"$tier","features":[]}}"""
+                        """{"profile":{},"settings":{"defaultStartTab":"$startTab"},"subscription":{"tier":"$tier","features":[${features()}]}}"""
                     }
                 respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             },
@@ -61,12 +72,14 @@ class ShellViewModelTest {
 
     @After fun tearDown() = Dispatchers.resetMain()
 
+    private val profile by lazy { ProfileRepository { client } }
+
     private fun vm(staff: Boolean = false) =
-        ShellViewModel(staff, ProfileRepository { client }, ClinicsRepository { client }, BadgesRepository { client })
+        ShellViewModel(staff, profile, ClinicsRepository { client }, BadgesRepository { client })
 
     private fun ShellViewModel.settle() {
         repeat(200) {
-            if (state.value.plan != Plan.Unknown) return
+            if (state.value.gate.known) return
             Thread.sleep(10)
         }
     }
@@ -193,4 +206,20 @@ class ShellViewModelTest {
         Thread.sleep(100)
         assertThat(classToTest.state.value.chatUnread).isEqualTo(2) // nothing polled in the background
     }
+
+    @Test
+    fun `a doctor on Tasks who loses Tasks goes Home with a note`() =
+        kotlinx.coroutines.test.runTest {
+            startTab = "tasks"
+            val classToTest = vm()
+            classToTest.settle()
+            assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Tasks)
+            ShellNotice.pending.value = null
+            tier = "PRO" // the admin changed the plan; the next profile read brings it
+            profile.refresh()
+            waitFor { classToTest.state.value.tab == ShellTab.Home }
+            assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Home)
+            assertThat(ShellNotice.pending.value).isEqualTo(Res.string.tasksNotOnPlan)
+            ShellNotice.pending.value = null
+        }
 }

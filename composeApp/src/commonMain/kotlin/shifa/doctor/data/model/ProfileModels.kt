@@ -133,7 +133,8 @@ data class DoctorSettings(
 @Serializable
 data class DoctorSubscription(
     val tier: String? = null,
-    val features: List<String> = emptyList(),
+    // Null only when an old backend leaves it out; an empty list means nothing is included.
+    val features: List<String>? = null,
 )
 
 /** `GET /me/profile`: who is signed in, for both roles (clinic staff have no `/doctors/me`). */

@@ -73,3 +73,21 @@ Built 2026-11-04. Flow `01/16` §4, §8; spec `01` §6.3; board `DaApp.dc.html` 
 - **Tests:** `ShellViewModelTest` (+1: polling only in front on a test clock, notifications on return, tasks once),
   screenshots re-recorded with counts (Home, More PREMIUM, staff).
 
+## SHELL-04 · Plan gating (also SUB-01's source)
+
+Built 2026-11-04. Spec `01` §5.3, `08` §5; flow `01/16` §6–7; D-03 (the user's call).
+
+- **Gate** (`data/subscription/FeatureGate.kt`): `DoctorTier` and `DoctorFeature` mirror the backend's
+  `SubscriptionTier` / `SubscriptionFeature` (`auth/domain/SubscriptionTier.kt`: BASIC calendar, documents, chat,
+  patients, basic analytics; PRO + video, AI notes, speech-to-text, briefing, Ask Shifa AI; PREMIUM + remote-care
+  tasks, advanced analytics, differential diagnosis). `allows(feature)` reads `subscription.features` whenever it is
+  there, also when empty (nothing included); only an old backend that leaves the list out falls back to the tier. **Unknown allows nothing** (Flutter treated
+  unknown as PREMIUM: fail open). The backend remains the source of truth for every gated call.
+- **Shell:** `ShellUiState.gate` replaces SHELL-01's ad-hoc plan: Tasks (`REMOTE_CARE_TASKS`) and Shifa Intelligence
+  (`ASK_SHIFA_AI`) rows, the start-tab clamp and the tasks count use it; the Intelligence row and the rows with a plan
+  badge appear only once the plan is known. The shell watches the shared profile: a later read with a new plan (resume refresh, a Profile save)
+  updates the gates, and a doctor on Tasks who lost it goes Home with "Tasks are not available on your plan." (flow
+  §7 target; Flutter bounced silently).
+- **Tests:** `FeatureGateTest` (2: codes, unknown/list/tier), `ShellViewModelTest` (+1: losing Tasks; the mock now
+  lists features per tier like the backend).
+

@@ -344,21 +344,24 @@ internal fun MoreSheetContent(
                 .size(ShifaSize.S36, ShifaSize.S4)
                 .background(ShifaColors.Bg.Disabled, ShifaRadius.Full),
         )
-        MoreRow(
-            Res.string.shifaIntelligence,
-            Res.drawable.ic_sparkles_18,
-            sub = tr(if (state.canIntelligence) Res.string.talkWithAi else Res.string.needsProPlan),
-            badge = if (state.canIntelligence || state.plan == Plan.Unknown) null else tr(Res.string.planPro),
-            ai = true,
-            enabled = state.canIntelligence,
-        ) { actions.push(ShellRoute.Intelligence) }
-        HorizontalDivider(Modifier.padding(vertical = ShifaSize.S6), ShifaSize.S1, ShifaColors.Border.Default)
+        // Gated: hidden until the plan is known (D-03), then shown, with "Pro" when the plan lacks it.
+        if (state.gate.known) {
+            MoreRow(
+                Res.string.shifaIntelligence,
+                Res.drawable.ic_sparkles_18,
+                sub = tr(if (state.canIntelligence) Res.string.talkWithAi else Res.string.needsProPlan),
+                badge = if (state.canIntelligence) null else tr(Res.string.planPro),
+                ai = true,
+                enabled = state.canIntelligence,
+            ) { actions.push(ShellRoute.Intelligence) }
+            HorizontalDivider(Modifier.padding(vertical = ShifaSize.S6), ShifaSize.S1, ShifaColors.Border.Default)
+        }
         ShellTab.entries.filterNot { it.inBar }.forEach { tab ->
             when {
                 tab == ShellTab.Clinic && state.hasClinic != true -> Unit
                 tab == ShellTab.Tasks && !state.canTasks ->
                     // Shown with its plan, not tappable, once the plan is known (D-03: nothing before that).
-                    if (state.plan != Plan.Unknown) {
+                    if (state.gate.known) {
                         MoreRow(tab.label, tab.icon, badge = tr(Res.string.planPremium), enabled = false) {}
                     }
                 else ->
