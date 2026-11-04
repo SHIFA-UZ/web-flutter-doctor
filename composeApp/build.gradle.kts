@@ -185,6 +185,11 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 
+// Res lives in the app's own package (the default derives it from the root project name).
+compose.resources {
+    packageOfResClass = "shifa.doctor.generated.resources"
+}
+
 ktlint {
     version.set("1.1.1")
     android.set(true)

@@ -20,7 +20,7 @@ ktlint_standard_value-argument-comment = disabled
 # Theme files are named after Figma (Color.kt holds ShifaColors).
 ktlint_standard_filename = disabled
 # The generated Compose resources (Res.string.x, Res.drawable.x) are imported on demand.
-ij_kotlin_packages_to_use_import_on_demand = shifa.composeapp.generated.resources.*
+ij_kotlin_packages_to_use_import_on_demand = shifa.doctor.generated.resources.*
 
 [*.md]
 max_line_length = off
