@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keys the KMP UI kit added (CORE-03); not in the Flutter app. Hand-written: the generated strings.xml never holds these. -->
+<resources>
+    <string name="attach">Attach</string>
+    <string name="clear">Clear</string>
+    <string name="pause">Pause</string>
+    <string name="play">Play</string>
+    <string name="recordVoiceMessage">Record voice message</string>
+    <string name="seeAll">See all</string>
+    <string name="select">Select</string>
+    <string name="share">Share</string>
+    <string name="stopRecording">Stop recording</string>
+    <string name="verified">Verified</string>
+    <string name="notIncluded">Not included</string>
+</resources>

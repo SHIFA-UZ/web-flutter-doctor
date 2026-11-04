@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="back">Orqaga</string>
+    <string name="close">Yopish</string>
+    <string name="copy">Nusxalash</string>
+    <string name="loading">Yuklanmoqda...</string>
+    <string name="more">Yana</string>
+    <string name="notifications">Bildirishnomalar</string>
+    <string name="regenerate">Qayta yaratish</string>
+    <string name="send">Yuborish</string>
+    <string name="profile">Profil</string>
+</resources>

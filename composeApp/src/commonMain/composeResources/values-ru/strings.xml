@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="back">Назад</string>
+    <string name="close">Закрыть</string>
+    <string name="copy">Копировать</string>
+    <string name="loading">Загрузка...</string>
+    <string name="more">Ещё</string>
+    <string name="notifications">Уведомления</string>
+    <string name="regenerate">Сгенерировать заново</string>
+    <string name="send">Отправить</string>
+    <string name="profile">Профиль</string>
+</resources>

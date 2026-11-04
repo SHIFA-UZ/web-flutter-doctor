@@ -127,9 +127,68 @@ object ShifaTextStyles {
     @Composable
     fun notificationBody() = manrope(manropeFontFamily(), FontWeight.Medium, 12, 14)
 
+    // `.dr-tab`, `.dr-underline` and menu labels (Medium 14/16; Bold when selected)
+    @Composable
+    fun tabLabel() = manrope(manropeFontFamily(), FontWeight.Medium, 14, 16)
+
+    // row and card meta lines (`.dr-*__meta`, Medium 12/14)
+    @Composable
+    fun metaSmall() = manrope(manropeFontFamily(), FontWeight.Medium, 12, 14)
+
+    // dialog, empty-state, toast and insight text (Medium 14/20)
+    @Composable
+    fun dialogBody() = manrope(manropeFontFamily(), FontWeight.Medium, 14, 20)
+
+    // panel, card and empty-state titles (`.dr-plan__title`, `.dr-empty__title`, `.dr-form__title`; Bold 16/22)
+    @Composable
+    fun panelTitle() = manrope(manropeFontFamily(), FontWeight.Bold, 16, 22)
+
+    // OTP cell digit (Bold 24/28) and PIN pad key (SemiBold 24/28)
+    @Composable
+    fun otpDigit() = manrope(manropeFontFamily(), FontWeight.Bold, 24, 28)
+
+    @Composable
+    fun pinKey() = manrope(manropeFontFamily(), FontWeight.SemiBold, 24, 28)
+
+    // count bubbles on tabs, nav items and avatars (Bold 10/16)
+    @Composable
+    fun badgeCount() = manrope(manropeFontFamily(), FontWeight.Bold, 10, 16)
+
+    // legends and progress labels (`.dr-slider__legend`, `.dr-plan__progress`; SemiBold 12/16)
+    @Composable
+    fun legend() = manrope(manropeFontFamily(), FontWeight.SemiBold, 12, 16)
+
+    // `.dr-context__name` (Bold 16/20)
+    @Composable
+    fun contextName() = manrope(manropeFontFamily(), FontWeight.Bold, 16, 20)
+
+    // the date in the day strip (`.dr-daystrip b`, Bold 16/20)
+    @Composable
+    fun dayNumber() = manrope(manropeFontFamily(), FontWeight.Bold, 16, 20)
+
+    // FDI number on a tooth (Bold 10/12)
+    @Composable
+    fun toothNumber() = manrope(manropeFontFamily(), FontWeight.Bold, 10, 12)
+
+    // the hero's patient name at phone width (`.dr-hero__name`, Bold 20/24)
+    @Composable
+    fun heroNamePhone() = manrope(manropeFontFamily(), FontWeight.Bold, 20, 24, -1)
+
+    // times in the timeline gutter (Bold 14/16, tabular numerals)
+    @Composable
+    fun timeLabel() = manrope(manropeFontFamily(), FontWeight.Bold, 14, 16).copy(fontFeatureSettings = "tnum")
+
+    // `.sh-btn--compact` label (Bold 14/16)
+    @Composable
+    fun buttonCompact() = manrope(manropeFontFamily(), FontWeight.Bold, 14, 16)
+
     // Doctor workspace (`.kpi-value`, `.kpi-label`, …): KpiCard value with tabular numerals, and its label
     @Composable
     fun kpiValue() = manrope(manropeFontFamily(), FontWeight.Bold, 32, 36, -1).copy(fontFeatureSettings = "tnum")
+
+    // `.dr-kpi__value` below 560: 24/28
+    @Composable
+    fun kpiValuePhone() = manrope(manropeFontFamily(), FontWeight.Bold, 24, 28, -1).copy(fontFeatureSettings = "tnum")
 
     @Composable
     fun kpiLabel() = manrope(manropeFontFamily(), FontWeight.Medium, 12, 16)
