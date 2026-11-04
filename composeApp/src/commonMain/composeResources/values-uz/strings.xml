@@ -31,6 +31,7 @@
     <string name="addName">Ismingizni kiriting</string>
     <string name="addPage">Sahifa qo'shish</string>
     <string name="addPatient">Bemor qo'shish</string>
+    <string name="addPeriod">Davr qo'shish</string>
     <string name="addPhone">Telefon qo'shish</string>
     <string name="addPhoneNumber">Telefon raqam qo'shish</string>
     <string name="addPhoto">Rasm qo'shish</string>
@@ -41,6 +42,7 @@
     <string name="addRow">Qator qo'shish</string>
     <string name="addService">Xizmat qo'shish</string>
     <string name="addServices">Xizmatlarni qo'shish</string>
+    <string name="addTimeRange">Vaqt qo'shish</string>
     <string name="addToNotes">Eslatmalarga qo'shish</string>
     <string name="addedToNotes">Eslatmalarga qo'shildi</string>
     <string name="address">Manzili</string>
@@ -141,6 +143,7 @@
     <string name="apply">Qo'llash</string>
     <string name="applyAppointmentDuration">Davomiylikni qo'llash</string>
     <string name="applyDurationChange">Davomiylikni saqlash</string>
+    <string name="applyToMonFri">Du–Ju ga qo'llash</string>
     <string name="appointmentAlreadyCancelled">Uchrashuv allaqachon bekor qilingan</string>
     <string name="appointmentBookedFor">Uchrashuv %1$s %2$s ga belgilandi</string>
     <string name="appointmentCancelled">Uchrashuv muvaffaqiyatli bekor qilindi</string>
@@ -257,6 +260,7 @@
     <string name="bloodGroup">Qon guruhi</string>
     <string name="book">Yozish</string>
     <string name="bookFollowUp">Takroriy qabulga yozish</string>
+    <string name="bookableUntil">%1$s gacha band qilish mumkin</string>
     <string name="bookingEndTime">Tugash vaqti</string>
     <string name="bookingFailed">Band qilib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="bookingRangeUnavailable">Tanlangan vaqt oralig'i mavjud emas — taqvim yangilandi.</string>
@@ -743,6 +747,7 @@
     <string name="copied">Nusxa olindi</string>
     <string name="copiedToClipboard">xotiraga nusxalandi</string>
     <string name="copy">Nusxalash</string>
+    <string name="copyFrom">Nusxa olish</string>
     <string name="copyFromAnotherDay">Boshqa kundan nusxa olish</string>
     <string name="copyFromPreviousDay">Oldingi kundan nusxa olish</string>
     <string name="copyKey">Kalitni nusxalash</string>
@@ -788,9 +793,12 @@
     <string name="dashboardSubtitle">Klinikangiz faoliyati haqida umumiy ma'lumot</string>
     <string name="date">Sana</string>
     <string name="dateAndTime">Sana va vaqt</string>
+    <string name="dateHoursFailed">Bu vaqtni saqlab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="dateOfBirth">Tug'ilgan sana</string>
+    <string name="dateSpecificHours">Sanalar uchun qo'shimcha vaqt</string>
     <string name="dayAppointments">%1$s ta qabul</string>
     <string name="dayBlocked">Kun band qilingan</string>
+    <string name="dayHasNoHours">%1$s uchun hali vaqt yo'q.</string>
     <string name="daySlots">vaqtlar</string>
     <string name="days">kunlar</string>
     <string name="dealingWithChronicDiseasePatient">Siz surunkali kasallikka chalingan bemor bilan ishlayapsiz:</string>
@@ -1501,6 +1509,7 @@
     <string name="noAppointments">Uchrashuvlar yo'q</string>
     <string name="noAppointmentsToday">Bugun uchrashuvlar yo'q</string>
     <string name="noAvailabilityPublished">%1$s uchun hali bo'sh vaqtlar e'lon qilinmagan</string>
+    <string name="noBookablePeriod">Hali band qilish davri yo'q</string>
     <string name="noCarePartnerships">Hali hamkorlik yo‘q</string>
     <string name="noCertificatesYet">Hali sertifikatlar yo'q</string>
     <string name="noCheckInsFound">Tekshiruvlar topilmadi</string>
@@ -1509,6 +1518,7 @@
     <string name="noContact">Aloqa yo'q</string>
     <string name="noConversations">Hali suhbatlar yo'q</string>
     <string name="noData">Ma'lumot mavjud emas</string>
+    <string name="noDateSpecific">Hali qo'shimcha vaqt yo'q.</string>
     <string name="noDateSpecificRules">Sana bo'yicha kengaytirishlar hali yo'q.</string>
     <string name="noDocuments">Hujjatlar mavjud emas</string>
     <string name="noDocumentsYet">Hali hujjatlar yo'q</string>
@@ -1542,6 +1552,7 @@
     <string name="noServicesYet">Hali xizmatlar yo'q. Birinchisini quyida qo'shing.</string>
     <string name="noShowConfirmBody">Tashrif o'tkazib yuborilgan deb qayd etiladi. Bemorga xabar beriladi, vaqt esa hisobingiz uchun band bo'lib qoladi.</string>
     <string name="noShowMarked">Kelmadi deb belgilandi</string>
+    <string name="noSlotFits">Bu vaqtga birorta slot sig'maydi.</string>
     <string name="noSlotsAvailable">Mavjud vaqtlar yo'q</string>
     <string name="noSlotsYet">Hali vaqtlar yo'q</string>
     <string name="noSourceDaysToCopyFrom">Nusxa olish uchun boshqa kunlarda jadval yo'q.</string>
@@ -1753,6 +1764,7 @@
     <string name="pending">Kutilmoqda</string>
     <string name="pendingReports">kutilayotgan hisobot</string>
     <string name="perDay">kuniga</string>
+    <string name="periodOverlaps">Yangi davr mavjud davrdan oldin, keyin yoki uning ichida bo'lishi kerak.</string>
     <string name="personalInformation">Shaxsiy ma'lumotlar</string>
     <string name="phone">Telefon</string>
     <string name="phoneNumber">Telefon raqami</string>
@@ -1929,11 +1941,14 @@
     <string name="scheduleCopiedFromDay">Jadval %1$s dan nusxa olindi.</string>
     <string name="scheduleCopiedFromPreviousDay">Jadval oldingi kundan nusxa olindi.</string>
     <string name="scheduleIsClear">Jadvalingiz bo'sh</string>
+    <string name="scheduleLoadFailed">Ish vaqtingizni yuklab bo'lmadi.</string>
     <string name="scheduleMode">Jadval turi</string>
     <string name="scheduleModeCustomTimes">Maxsus vaqtlar</string>
     <string name="scheduleModeEvenSpacing">Teng oraliq</string>
     <string name="scheduleOverlapsExisting">Jadval mavjud jadval bilan mos keladi</string>
+    <string name="scheduleSaveFailed">Ish vaqtingizni saqlab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="scheduleSaved">Jadval saqlandi!</string>
+    <string name="scheduleSavedPeriodFailed">Vaqt saqlandi, lekin yangi davr qo'shilmadi. Qayta urinib ko'ring.</string>
     <string name="scheduleValidFrom">Jadval dan amal qiladi:</string>
     <string name="scheduleValidFromNew">Yangi davr boshlanishi</string>
     <string name="scheduleValidUntil">Jadval tugaguncha amal qiladi:</string>
@@ -2054,6 +2069,7 @@
     <string name="slotDetails">Vaqt tafsilotlari</string>
     <string name="slotJustBooked">Bu vaqt hozirgina band qilindi. Boshqasini tanlang.</string>
     <string name="slotTimeframe">Vaqt oralig'i</string>
+    <string name="slotTooShortError">Slotlar kamida 5 daqiqa bo'lishi kerak.</string>
     <string name="slotsPreviewClipped">%1$d ta vaqt yarim tungacha sig'maydi. Kichikroq interval yoki ertaroq boshlanish vaqtini tanlang.</string>
     <string name="slotsPreviewLabel">Kunlik vaqtlar</string>
     <string name="smsReminderDescription">Bemor har bir kelajakdagi qabuldan oldin quyida tanlangan vaqtda SMS oladi.</string>
@@ -2171,6 +2187,7 @@
     <string name="tokenRegenerated">Token qayta yaratildi</string>
     <string name="tokenRevoked">Token bekor qilindi</string>
     <string name="tooManyRequests">Juda ko'p so'rovlar. Keyinroq urinib ko'ring.</string>
+    <string name="tooManySlotsError">Slotlar juda ko'p: slotlarni uzunroq yoki vaqtni qisqaroq qiling.</string>
     <string name="toothCanine">Qoziq tish</string>
     <string name="toothIncisors">Kesuvchi tishlar</string>
     <string name="toothMap">Tishlar holati</string>
@@ -2401,6 +2418,7 @@
     <string name="withAppAccount">ilova hisobi bilan</string>
     <string name="withDevice">Qurilmasi bor</string>
     <string name="withoutDevice">Qurilmasi yo'q</string>
+    <string name="workingHours">Ish vaqti</string>
     <string name="workingHoursAndLocations">Ish vaqti va manzillar</string>
     <string name="workplaceInformation">Ish joyi ma'lumotlari</string>
     <string name="wrongOrExpiredCodeBackToCode">Kod noto'g'ri yoki muddati o'tgan. Yangi kod so'rang.</string>

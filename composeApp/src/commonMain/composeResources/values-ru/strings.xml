@@ -31,6 +31,7 @@
     <string name="addName">Указать имя</string>
     <string name="addPage">Добавить страницу</string>
     <string name="addPatient">Добавить пациента</string>
+    <string name="addPeriod">Добавить период</string>
     <string name="addPhone">Добавить телефон</string>
     <string name="addPhoneNumber">Добавить номер телефона</string>
     <string name="addPhoto">Добавить фото</string>
@@ -41,6 +42,7 @@
     <string name="addRow">Добавить строку</string>
     <string name="addService">Добавить услугу</string>
     <string name="addServices">Добавить услуги</string>
+    <string name="addTimeRange">Добавить часы</string>
     <string name="addToNotes">Добавить в заметки</string>
     <string name="addedToNotes">Добавлено в заметки</string>
     <string name="address">Адрес</string>
@@ -141,6 +143,7 @@
     <string name="apply">Применить</string>
     <string name="applyAppointmentDuration">Применить изменение длительности</string>
     <string name="applyDurationChange">Применить длительность</string>
+    <string name="applyToMonFri">Применить к Пн–Пт</string>
     <string name="appointmentAlreadyCancelled">Запись уже отменена</string>
     <string name="appointmentBookedFor">Запись создана на %1$s %2$s</string>
     <string name="appointmentCancelled">Запись успешно отменена</string>
@@ -257,6 +260,7 @@
     <string name="bloodGroup">Группа крови</string>
     <string name="book">Записать</string>
     <string name="bookFollowUp">Записать на повторный приём</string>
+    <string name="bookableUntil">Запись открыта до %1$s</string>
     <string name="bookingEndTime">Время окончания</string>
     <string name="bookingFailed">Не удалось записать. Попробуйте снова.</string>
     <string name="bookingRangeUnavailable">Выбранный диапазон времени недоступен — календарь обновлён.</string>
@@ -743,6 +747,7 @@
     <string name="copied">Скопировано</string>
     <string name="copiedToClipboard">скопировано в буфер обмена</string>
     <string name="copy">Копировать</string>
+    <string name="copyFrom">Скопировать из</string>
     <string name="copyFromAnotherDay">Копировать с другого дня</string>
     <string name="copyFromPreviousDay">Копировать с предыдущего дня</string>
     <string name="copyKey">Копировать ключ</string>
@@ -788,9 +793,12 @@
     <string name="dashboardSubtitle">Обзор деятельности вашей клиники</string>
     <string name="date">Дата</string>
     <string name="dateAndTime">Дата и время</string>
+    <string name="dateHoursFailed">Не удалось сохранить эти часы. Попробуйте снова.</string>
     <string name="dateOfBirth">Дата рождения</string>
+    <string name="dateSpecificHours">Дополнительные часы по датам</string>
     <string name="dayAppointments">Приёмов: %1$s</string>
     <string name="dayBlocked">День заблокирован</string>
+    <string name="dayHasNoHours">У дня «%1$s» ещё нет часов.</string>
     <string name="daySlots">слоты</string>
     <string name="days">дни</string>
     <string name="dealingWithChronicDiseasePatient">Вы имеете дело с пациентом с хроническим заболеванием:</string>
@@ -1501,6 +1509,7 @@
     <string name="noAppointments">Нет записей</string>
     <string name="noAppointmentsToday">Нет записей на сегодня</string>
     <string name="noAvailabilityPublished">На %1$s доступное время ещё не опубликовано</string>
+    <string name="noBookablePeriod">Период записи ещё не задан</string>
     <string name="noCarePartnerships">Партнёрств пока нет</string>
     <string name="noCertificatesYet">Сертификатов пока нет</string>
     <string name="noCheckInsFound">Отметки не найдены</string>
@@ -1509,6 +1518,7 @@
     <string name="noContact">Нет контакта</string>
     <string name="noConversations">Пока нет бесед</string>
     <string name="noData">Нет данных</string>
+    <string name="noDateSpecific">Дополнительных часов пока нет.</string>
     <string name="noDateSpecificRules">Пока нет расширений по датам.</string>
     <string name="noDocuments">Нет доступных документов</string>
     <string name="noDocumentsYet">Документов пока нет</string>
@@ -1542,6 +1552,7 @@
     <string name="noServicesYet">Услуг пока нет. Добавьте первую ниже.</string>
     <string name="noShowConfirmBody">Визит будет отмечен как пропущенный. Пациент получит уведомление, а слот останется занятым для вашей отчётности.</string>
     <string name="noShowMarked">Неявка отмечена</string>
+    <string name="noSlotFits">В этот интервал не помещается ни один слот.</string>
     <string name="noSlotsAvailable">Нет доступных слотов</string>
     <string name="noSlotsYet">Пока нет слотов</string>
     <string name="noSourceDaysToCopyFrom">Нет других дней с расписанием для копирования.</string>
@@ -1753,6 +1764,7 @@
     <string name="pending">В ожидании</string>
     <string name="pendingReports">ожидающих отчётов</string>
     <string name="perDay">в день</string>
+    <string name="periodOverlaps">Новый период должен быть до, после или внутри существующего.</string>
     <string name="personalInformation">Личная информация</string>
     <string name="phone">Телефон</string>
     <string name="phoneNumber">Номер телефона</string>
@@ -1929,11 +1941,14 @@
     <string name="scheduleCopiedFromDay">Расписание скопировано с %1$s.</string>
     <string name="scheduleCopiedFromPreviousDay">Расписание скопировано с предыдущего дня.</string>
     <string name="scheduleIsClear">Ваше расписание свободно</string>
+    <string name="scheduleLoadFailed">Не удалось загрузить часы работы.</string>
     <string name="scheduleMode">Расписание</string>
     <string name="scheduleModeCustomTimes">Свои времена</string>
     <string name="scheduleModeEvenSpacing">Равные интервалы</string>
     <string name="scheduleOverlapsExisting">Расписание пересекается с существующим расписанием</string>
+    <string name="scheduleSaveFailed">Не удалось сохранить часы работы. Попробуйте снова.</string>
     <string name="scheduleSaved">Расписание сохранено!</string>
+    <string name="scheduleSavedPeriodFailed">Часы сохранены, но новый период не добавлен. Попробуйте снова.</string>
     <string name="scheduleValidFrom">Расписание действительно с:</string>
     <string name="scheduleValidFromNew">Новый период с</string>
     <string name="scheduleValidUntil">Расписание действительно до:</string>
@@ -2054,6 +2069,7 @@
     <string name="slotDetails">Детали слота</string>
     <string name="slotJustBooked">Это время только что заняли. Выберите другое.</string>
     <string name="slotTimeframe">Временной интервал слота</string>
+    <string name="slotTooShortError">Слот должен быть не короче 5 минут.</string>
     <string name="slotsPreviewClipped">%1$d слот(ов) не поместятся до полуночи. Выберите меньший интервал или более раннее время начала.</string>
     <string name="slotsPreviewLabel">Времена в день</string>
     <string name="smsReminderDescription">Пациент получает SMS перед каждым будущим приёмом в выбранное ниже время.</string>
@@ -2171,6 +2187,7 @@
     <string name="tokenRegenerated">Токен перегенерирован</string>
     <string name="tokenRevoked">Токен отозван</string>
     <string name="tooManyRequests">Слишком много запросов. Попробуйте позже.</string>
+    <string name="tooManySlotsError">Слишком много слотов: сделайте слоты длиннее или интервал короче.</string>
     <string name="toothCanine">Клык</string>
     <string name="toothIncisors">Резцы</string>
     <string name="toothMap">Карта зубов</string>
@@ -2401,6 +2418,7 @@
     <string name="withAppAccount">с аккаунтом в приложении</string>
     <string name="withDevice">С устройством</string>
     <string name="withoutDevice">Без устройства</string>
+    <string name="workingHours">Часы работы</string>
     <string name="workingHoursAndLocations">Часы работы и адреса</string>
     <string name="workplaceInformation">Информация о рабочем месте</string>
     <string name="wrongOrExpiredCodeBackToCode">Код неверный или устарел. Запросите новый код.</string>

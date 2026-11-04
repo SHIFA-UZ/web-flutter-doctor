@@ -114,6 +114,7 @@ import shifa.doctor.ui.profile.ServicesScreen
 import shifa.doctor.ui.profile.SettingsActions
 import shifa.doctor.ui.profile.SettingsScreen
 import shifa.doctor.ui.schedule.LocationsScreen
+import shifa.doctor.ui.schedule.ScheduleScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -356,9 +357,9 @@ private fun RouteContent(
                 else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section) }
             }
         ShellRoute.Schedule ->
-            Pushed(Res.string.schedule, actions) {
-                TabPlaceholder(Res.string.schedule, Res.drawable.ic_calendar_22)
-            }
+            ScheduleScreen(onClose = actions.back, onManageLocations = {
+                actions.push(ShellRoute.Locations)
+            })
         ShellRoute.Reports ->
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)

@@ -31,6 +31,7 @@
     <string name="addName">Add your name</string>
     <string name="addPage">Add page</string>
     <string name="addPatient">Add patient</string>
+    <string name="addPeriod">Add a period</string>
     <string name="addPhone">Add phone</string>
     <string name="addPhoneNumber">Add phone number</string>
     <string name="addPhoto">Add photo</string>
@@ -41,6 +42,7 @@
     <string name="addRow">Add row</string>
     <string name="addService">Add Service</string>
     <string name="addServices">Add services</string>
+    <string name="addTimeRange">Add hours</string>
     <string name="addToNotes">Add to notes</string>
     <string name="addedToNotes">Added to notes</string>
     <string name="address">Address</string>
@@ -141,6 +143,7 @@
     <string name="apply">Apply</string>
     <string name="applyAppointmentDuration">Apply duration change</string>
     <string name="applyDurationChange">Apply duration change</string>
+    <string name="applyToMonFri">Apply to Mon–Fri</string>
     <string name="appointmentAlreadyCancelled">Appointment was already cancelled</string>
     <string name="appointmentBookedFor">Appointment booked for %1$s %2$s</string>
     <string name="appointmentCancelled">Appointment cancelled successfully</string>
@@ -257,6 +260,7 @@
     <string name="bloodGroup">Blood group</string>
     <string name="book">Book</string>
     <string name="bookFollowUp">Book follow-up</string>
+    <string name="bookableUntil">Bookable until %1$s</string>
     <string name="bookingEndTime">End time</string>
     <string name="bookingFailed">Couldn't book. Try again.</string>
     <string name="bookingRangeUnavailable">Selected time range is no longer fully available — calendar refreshed.</string>
@@ -743,6 +747,7 @@
     <string name="copied">Copied</string>
     <string name="copiedToClipboard">copied to clipboard</string>
     <string name="copy">Copy</string>
+    <string name="copyFrom">Copy from</string>
     <string name="copyFromAnotherDay">Copy from another day</string>
     <string name="copyFromPreviousDay">Copy from previous day</string>
     <string name="copyKey">Copy Key</string>
@@ -788,9 +793,12 @@
     <string name="dashboardSubtitle">Overview of your clinic activity</string>
     <string name="date">Date</string>
     <string name="dateAndTime">Date and Time</string>
+    <string name="dateHoursFailed">Couldn't save these hours. Try again.</string>
     <string name="dateOfBirth">Date of Birth</string>
+    <string name="dateSpecificHours">Extra hours on dates</string>
     <string name="dayAppointments">%1$s appointments</string>
     <string name="dayBlocked">Day blocked</string>
+    <string name="dayHasNoHours">%1$s has no hours yet.</string>
     <string name="daySlots">slots</string>
     <string name="days">days</string>
     <string name="dealingWithChronicDiseasePatient">You are dealing with a patient who has a chronic disease:</string>
@@ -1501,6 +1509,7 @@
     <string name="noAppointments">No appointments</string>
     <string name="noAppointmentsToday">No appointments today</string>
     <string name="noAvailabilityPublished">No availability published yet for %1$s</string>
+    <string name="noBookablePeriod">No bookable period yet</string>
     <string name="noCarePartnerships">No care partnerships yet</string>
     <string name="noCertificatesYet">No certificates yet</string>
     <string name="noCheckInsFound">No check-ins found</string>
@@ -1509,6 +1518,7 @@
     <string name="noContact">No contact</string>
     <string name="noConversations">No conversations yet</string>
     <string name="noData">No data available</string>
+    <string name="noDateSpecific">No extra hours yet.</string>
     <string name="noDateSpecificRules">No date-specific expansions yet.</string>
     <string name="noDocuments">No documents available</string>
     <string name="noDocumentsYet">No documents yet</string>
@@ -1542,6 +1552,7 @@
     <string name="noServicesYet">No services yet. Add the first one below.</string>
     <string name="noShowConfirmBody">The visit will be recorded as missed. The patient is notified and the slot stays booked for your records.</string>
     <string name="noShowMarked">Marked as no-show</string>
+    <string name="noSlotFits">No slot fits in this range.</string>
     <string name="noSlotsAvailable">No slots available</string>
     <string name="noSlotsYet">No slots yet</string>
     <string name="noSourceDaysToCopyFrom">No other days have schedule to copy from.</string>
@@ -1753,6 +1764,7 @@
     <string name="pending">Pending</string>
     <string name="pendingReports">pending reports</string>
     <string name="perDay">per day</string>
+    <string name="periodOverlaps">A new period must be before, after or inside an existing one.</string>
     <string name="personalInformation">Personal Information</string>
     <string name="phone">Phone</string>
     <string name="phoneNumber">Phone Number</string>
@@ -1929,11 +1941,14 @@
     <string name="scheduleCopiedFromDay">Schedule copied from %1$s.</string>
     <string name="scheduleCopiedFromPreviousDay">Schedule copied from previous day.</string>
     <string name="scheduleIsClear">Your schedule is clear</string>
+    <string name="scheduleLoadFailed">Couldn't load your working hours.</string>
     <string name="scheduleMode">Schedule</string>
     <string name="scheduleModeCustomTimes">Custom times</string>
     <string name="scheduleModeEvenSpacing">Even spacing</string>
     <string name="scheduleOverlapsExisting">Schedule overlaps with existing schedule</string>
+    <string name="scheduleSaveFailed">Couldn't save your working hours. Try again.</string>
     <string name="scheduleSaved">Schedule saved!</string>
+    <string name="scheduleSavedPeriodFailed">Hours saved, but the new period couldn't be added. Try again.</string>
     <string name="scheduleValidFrom">Schedule valid from:</string>
     <string name="scheduleValidFromNew">New period from</string>
     <string name="scheduleValidUntil">Schedule valid until:</string>
@@ -2054,6 +2069,7 @@
     <string name="slotDetails">Slot Details</string>
     <string name="slotJustBooked">That slot was just booked. Pick another.</string>
     <string name="slotTimeframe">Slot timeframe</string>
+    <string name="slotTooShortError">Slots must be at least 5 minutes.</string>
     <string name="slotsPreviewClipped">%1$d slot(s) won't fit before midnight. Pick a smaller interval or earlier start time.</string>
     <string name="slotsPreviewLabel">Daily slots</string>
     <string name="smsReminderDescription">Patient receives an SMS before each future appointment at the time you choose below.</string>
@@ -2171,6 +2187,7 @@
     <string name="tokenRegenerated">Token regenerated</string>
     <string name="tokenRevoked">Token revoked</string>
     <string name="tooManyRequests">Too many requests. Please try again later.</string>
+    <string name="tooManySlotsError">Too many slots: make the slots longer or the range shorter.</string>
     <string name="toothCanine">Canine</string>
     <string name="toothIncisors">Incisors</string>
     <string name="toothMap">Tooth map</string>
@@ -2401,6 +2418,7 @@
     <string name="withAppAccount">with app account</string>
     <string name="withDevice">With device</string>
     <string name="withoutDevice">Without device</string>
+    <string name="workingHours">Working hours</string>
     <string name="workingHoursAndLocations">Working hours and locations</string>
     <string name="workplaceInformation">Workplace Information</string>
     <string name="wrongOrExpiredCodeBackToCode">The code is wrong or has expired. Request a new code.</string>

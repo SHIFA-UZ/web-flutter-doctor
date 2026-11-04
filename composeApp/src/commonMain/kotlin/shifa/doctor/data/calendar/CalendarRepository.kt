@@ -117,6 +117,18 @@ class CalendarRepository(
 
     fun clear() = _state.update { CalendarCache(generation = it.generation + 1) }
 
+    /**
+     * Every day is stale (the schedule changed): cached days are read again when shown, and answers still on their way
+     * (asked before the change) are dropped instead of cached; the days shown keep their entries until then.
+     */
+    fun invalidateAll() {
+        inFlight.value = emptyMap()
+        _state.update {
+                s ->
+            s.copy(loadedAt = emptyMap(), requests = s.requests.mapValues { nextRequest.incrementAndGet() })
+        }
+    }
+
     private fun fresh(key: DayKey): Boolean {
         val s = _state.value
         return key in s.days && s.loadedAt[key]?.let { it.elapsedNow() < throttle } == true

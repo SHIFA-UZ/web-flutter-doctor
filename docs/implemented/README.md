@@ -95,7 +95,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CAL-10 Staff calendars | Waits for CLINIC-05 | Needs the clinic workspace members (M11). |
 | CAL-5 N-day grid | Last in M3 | Tablet only (master plan: build last in M3 or in a tablet pass). |
 | SCHED-1 Schedule data | Done | Weekly template per location, validity periods, date-specific hours; range and period validators. See schedule.md. |
-| SCHED-2, LOC-2 | Not started | |
+| SCHED-2 Working hours | Done | Profile → Schedule: week overview with a sheet per day (ranges, copy, Mon–Fri), the bookable period, extra hours on dates; Save blocked until the rules are read. See schedule.md. |
+| LOC-2 | Not started | |
 
 ## Log
 
@@ -148,3 +149,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CAL-8 · Block time and the blocked-row panel; dropdowns scroll to their value.
 - 2026-11-04 · LOC-1 · Locations list and editor, one shared location list; BE-34.
 - 2026-11-04 · SCHED-1 · Schedule models, repository and validators.
+- 2026-11-04 · SCHED-2 · Working hours screen.

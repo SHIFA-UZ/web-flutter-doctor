@@ -63,3 +63,43 @@ Built 2026-11-04. Spec 03 §2.1–2.3, §6; flows `04/10`, `04/11`. No screen (S
   used concurrently" flake.
 - **Tests:** `ScheduleRulesTest` (4: the round trip with sorting and skipped rows; range rules; the three allowed period
   placements and two refusals; the repository's location scope and request bodies), `DemoBackendTest` (+1).
+
+## SCHED-2 · Working hours
+
+Built 2026-11-04. Flows `04/10-availability-setup.md`, `04/11-date-specific-hours.md`, `04/12` (slot size and time
+pickers); spec 03 §2.2–2.3. The flow's target layout (week overview + a sheet per day), not Flutter's seven
+expandable cards. Reached from Profile → Schedule (`ShellRoute.Schedule`, the placeholder is gone); the calendar's
+"Go to schedule" card is not built yet.
+
+- **Screen** (`ui/schedule/ScheduleScreen.kt`, "Working hours"): location chips when there are two or more (one: its
+  name), Manage → Locations; none → "Add at least one practice location…" with Add location. The location is the one
+  picked this session, else the one last used on this phone (per doctor, `ActiveLocationStorage`), else the primary,
+  else the first.
+- **Week:** seven rows, Monday first: "09:00 – 13:00, 14:00 – 18:00 · 30 min" or "Off". A row opens the **day sheet**:
+  its ranges (remove each; "No slot fits in this range." when a range is shorter than its slot), Add hours (Start /
+  End in quarter hours, 24-hour labels, ending by 23:45 since the backend reads a time of day; slot size chips
+  10/15/20/30/45 min/1 h), checked like the backend with inline messages (end after start, overlap, slots ≥ 5 min,
+  ≤ 200 slots), Copy from (the days with hours), Apply to Mon–Fri.
+- **Bookable period:** "Bookable until {date}" (the latest period's end) or "No bookable period yet" (then Save adds
+  60 days from today with the hours, so a first setup is bookable); Add a period starts the next one the day after the
+  last (or today) for 60 days, never past a year from today; From / To from the calendar's month inline (today
+  to a year ahead); a period across an existing one says "A new period must be before, after or inside an existing
+  one." and Save stays off.
+- **Extra hours on dates** (04/11): the list (date or span, hours, slot) with delete, and Add in a sheet (From / To,
+  hours, slot); written at once, not with Save.
+- **Save** (sticky): off until the rules, periods and extra hours are all read (a failed read shows the error with
+  Retry and never offers to save an empty template, Flutter's bug) and while nothing changed; nothing can be edited
+  while it runs. Reads are numbered, so switching A → B → A can't end with the first A's answer. `PUT` the location's rules if they changed, then `PATCH
+  valid-range` if a period was added; a failed period after saved hours says "Hours saved, but the new period couldn't
+  be added." The calendar is marked stale as soon as the hours are saved (`CalendarRepository.invalidateAll()`:
+  answers already on their way are dropped too); success closes with "Schedule saved!". Back or switching the
+  location with unsaved edits asks first.
+- **Not built:** the shell's active-location label, the calendar's "Update schedule" card and its first-run hint, editing a date-specific entry in place (`PUT
+  /schedule/date-specific/{id}` exists; delete and add again for now).
+- **Verified on dev (2026-11-04):** the week (Monday to Friday 09:00–17:00), "Bookable until 30 October 2027", the
+  Monday sheet; left without saving (dev rules unchanged).
+- **Tests:** `ScheduleViewModelTest` (11: + the A → B → A race, no edits while saving, the first setup's 60 days, the
+  one-year limit and the remembered location, extra hours that can't be read; primary first and Save off until the rules are read, a failed read saves
+  nothing; day ranges checked, copy and Mon–Fri; save with the period after the last one and the notice; a failed
+  period keeps the hours saved; switching location asks and a crossing period is refused; extra hours written at once
+  and deleted), `ScheduleScreenshotTest` (+1: `Schedule_week`).

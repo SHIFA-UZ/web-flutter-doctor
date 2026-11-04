@@ -16,4 +16,8 @@ class ScheduleScreenshotTest {
 
     @Test
     fun locationEditor() = captureRoboImage("screenshots/Schedule_locationEditor.png") { LocationEditorPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun schedule() = captureRoboImage("screenshots/Schedule_week.png") { SchedulePreview() }
 }
