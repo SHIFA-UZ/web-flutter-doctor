@@ -514,4 +514,22 @@ class DemoBackendTest {
             assertThat(later["status"]?.jsonPrimitive?.content).isEqualTo("READY")
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `demo speech to text answers a fixed sentence and takes reports`() =
+        runTest {
+            val repo = shifa.doctor.data.speech.TranscriptionRepository({ client })
+            val t =
+                repo.transcribe(
+                    byteArrayOf(1, 2),
+                    shifa.doctor.data.storage.AppLanguage.English,
+                    "rec-1",
+                ).getOrThrow()
+            assertThat(t.text).isEqualTo("Pain in the lower left molar for three days.")
+            assertThat(t.language).isEqualTo("en")
+            assertThat(
+                repo.report(t.text, shifa.doctor.data.storage.AppLanguage.English, null, null).isSuccess,
+            ).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }

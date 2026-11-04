@@ -127,6 +127,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | APPT-04 Visit workspace | Done (phone; no End, video pane, dental yet) | Header with the visit clock, patient chips, notes card (modes, menu, Shifa AI and last-025-2 helpers, SOAP + free notes autosaved, focus mode), grouped documents with upload, signature footer; leaving saves; staff screen. See visits.md. |
 | APPT-06 Visit briefing sheet | Done | Row on the appointment details, sheet with pending / ready / failed / empty, meta line, attached documents, Copy, Retry; reads every 3 s (10 s after a minute) only while open. See visits.md. |
 | AI-03 Recorder level | Done (level not yet seen on a phone) | `VoiceRecorder.level()` (Flutter's bar height from Android's peak / iOS metering), recording id and duration; the debug spike shows it. See visits.md. |
+| AI-05 Transcription | Done (no field yet) | `/ai/transcribe` multipart with the language hint and recording id, 90 s, typed 403 / 429 / 502, "(No speech detected)", reports and the public-config flag. See visits.md. |
 
 ## Log
 
@@ -207,3 +208,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · APPT-04 · Visit workspace (General and 025-2 modes, helpers, documents, signature).
 - 2026-11-04 · APPT-06 · Visit briefing sheet from the appointment details.
 - 2026-11-04 · AI-03 · The recorder's live level for the recording pill.
+- 2026-11-04 · AI-05 · Speech to text and transcription reports.

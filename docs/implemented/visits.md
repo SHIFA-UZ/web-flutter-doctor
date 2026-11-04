@@ -156,3 +156,21 @@ Built 2026-11-04. Spec 02 §3.5, ticket AI-03 (the recorder itself is CORE-07's 
 - **Checked:** the emulator records (33 KB `.m4a` in 2 s) and shows the bar, but its microphone has no input, so the
   level stays near 0; the level is still to be checked on a phone (Android and iOS).
 - **Tests:** `VoiceLevelTest` (2: the dB mapping, new ids).
+
+## AI-05 · Transcription
+
+Built 2026-11-04. Spec 02 §7.2, ticket AI-05. No field yet (AI-06 uses it).
+
+- **`data/speech/TranscriptionRepository.kt`:** `transcribe(audio, language, recordingId)` posts the `.m4a` as
+  `file` (`audio/mp4`, named by the recording id) with `languageHint` (the app's `AppLanguage.backendCode`: en, uz
+  or ru; Cyrillic Uzbek is uz) and `recordingId`, 90 s timeout; the answer's text is trimmed and its language lower-cased;
+  `Transcript.empty` covers blank and "(No speech detected)". Failures stay typed for the field to say in the app's
+  language: 403 (no PRO plan: `SPEECH_TO_TEXT`), 429 (daily AI limit), 502 (recognition failed); Flutter showed
+  "error: <message>". `report(transcript, language, audio, recordingId)` for "Report" (404: no longer collected).
+- **Public config:** `transcriptionFeedbackEnabled` ("true" or true) as a `Result`, read once per run (a failure
+  too); Report shows only on a success that says true.
+- **Demo backend:** a fixed sentence for any recording; reports are accepted.
+- **Not checked against dev:** a transcription is a paid AI call; the request shape follows the backend's
+  `DoctorAiController.transcribe` (`file`, `languageHint`, `recordingId`) and the demo.
+- **Tests:** `TranscriptionRepositoryTest` (3: the multipart parts and trimmed answer, typed failures, the flag),
+  `DemoBackendTest`.

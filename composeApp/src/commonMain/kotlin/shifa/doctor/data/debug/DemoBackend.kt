@@ -494,6 +494,21 @@ class DemoBackend(
                     Reply(HttpStatusCode.OK, "")
                 }
             }
+            // Speech to text (AI-05): a fixed sentence for any recording; reports are taken and dropped.
+            request.method == HttpMethod.Post && path == Endpoints.AI_TRANSCRIBE ->
+                ok(
+                    JsonObject(
+                        mapOf(
+                            "text" to JsonPrimitive(" Pain in the lower left molar for three days. "),
+                            "language" to JsonPrimitive("EN"),
+                        ),
+                    ),
+                )
+            request.method == HttpMethod.Post && path == Endpoints.AI_TRANSCRIPTION_FEEDBACK ->
+                Reply(
+                    HttpStatusCode.OK,
+                    """{"id":"demo"}""",
+                )
             // The visit briefing (APPT-06): ready for the video visit, failed for the clinic one until asked again.
             get && path.matches(Regex("appointments/\\d+/briefing")) ->
                 ok(demoBriefing(path.split('/')[1].toLong(), briefingRetried[path.split('/')[1].toLong()]))

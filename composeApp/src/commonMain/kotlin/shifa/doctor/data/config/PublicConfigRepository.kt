@@ -4,6 +4,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
@@ -18,7 +20,12 @@ import shifa.doctor.utils.platformName
 @Serializable
 data class PublicConfig(
     val doctorApp: AppGateConfig? = null,
-)
+    // "true" or true (Flutter read both); anything else is off.
+    val transcriptionFeedbackEnabled: JsonElement? = null,
+) {
+    val feedbackEnabled: Boolean
+        get() = (transcriptionFeedbackEnabled as? JsonPrimitive)?.content?.lowercase() == "true"
+}
 
 @Serializable
 data class AppGateConfig(
@@ -70,6 +77,18 @@ class PublicConfigRepository(
         apiCall<PublicConfig> {
             client().get(ApiConfig.Endpoints.PUBLIC_CONFIG) { timeout { requestTimeoutMillis = timeoutMs } }
         }.map { gateOf(it.doctorApp, language) }
+
+    private var feedback: Result<Boolean>? = null
+
+    /**
+     * Whether the backend collects transcription reports (AI-05, 02 §7.2: the "Report" action on a transcription).
+     * Read once per run, a failure included (no second 5 s wait); the caller offers Report only on a success that
+     * says true.
+     */
+    suspend fun transcriptionFeedbackEnabled(): Result<Boolean> =
+        feedback ?: apiCall<PublicConfig> {
+            client().get(ApiConfig.Endpoints.PUBLIC_CONFIG) { timeout { requestTimeoutMillis = timeoutMs } }
+        }.map { it.feedbackEnabled }.also { feedback = it }
 
     private fun gateOf(
         gate: AppGateConfig?,
