@@ -2,9 +2,10 @@ package shifa.doctor.data.api
 
 /**
  * Why a session ended; the sign-in screen words its banner from it. [SignedOut] is the doctor's own choice (AUTH-09),
- * [PinLockout] five wrong app-lock PINs (LOCK-01), the others come from the backend or the pre-flight expiry check.
+ * [PinLockout] five wrong app-lock PINs (LOCK-01), [Inactivity] 30 days untouched (LOCK-02), the others come from the
+ * backend or the expiry checks.
  */
-enum class SessionEndReason { Expired, Unauthorized, AccountDisabled, SignedOut, PinLockout }
+enum class SessionEndReason { Expired, Unauthorized, AccountDisabled, SignedOut, PinLockout, Inactivity }
 
 /**
  * The one place a session ends from the network (17 §1): [apiCall] reports here with the token the failing request

@@ -135,6 +135,7 @@ fun ShifaPickerSheet(
     val shape = RoundedCornerShape(topStart = ShifaSize.S24, topEnd = ShifaSize.S24)
     Column(
         modifier
+            .trackActivity()
             .fillMaxWidth()
             .dropShadow(shape, ShifaShadow.Tray)
             .background(ShifaColors.Bg.Surface, shape)

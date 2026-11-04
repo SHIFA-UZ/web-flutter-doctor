@@ -70,6 +70,7 @@ import shifa.doctor.ui.widgets.PinDots
 import shifa.doctor.ui.widgets.PinPad
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.rememberBiometrics
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
@@ -177,6 +178,7 @@ fun LockScreenContent(
     Column(
         Modifier
             .fillMaxSize()
+            .trackActivity()
             .background(ShifaColors.Bg.Canvas)
             // Nothing behind the lock can be touched.
             .clickable(remember { MutableInteractionSource() }, indication = null) {}

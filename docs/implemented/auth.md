@@ -319,3 +319,25 @@ over the app, `showLock`) and `DaProfile.dc.html` (Security → App lock and its
   countdown and lockout, turning off, an unreadable store signs out), `AppLockViewModelsTest` (4: check only on Unlock from four digits, lockout ends the session, set twice and mismatch,
   off/change need the PIN), `AppLockScreenshotTest` (5).
 
+## LOCK-02 · Inactivity timeout
+
+Built 2026-11-04. Flow `01/13-inactivity-timeout.md`; `01` §7.2. No screen of its own (not in the design).
+
+- **Where** (`data/session/SessionRepository.kt`): `touch()` on every press and release (not moves, scrolls or
+  hovers: flow appendix) via `Modifier.trackActivity()` (`ui/widgets/Activity.kt`, fed by `LocalActivity`), which the
+  app's root, the shared sheets (`ShifaDialogSheet`, `ShifaPickerSheet`) and the lock window each carry, since
+  separate windows don't pass through the root. It writes to the store at most every 5 minutes
+  (`shifa_doctor_last_activity_s`, epoch seconds; cleared when the session ends) and enforces an overdue deadline
+  first, so a late tap can't erase it. `onForeground()` runs the checks each time the app comes back (before the app
+  lock asks for a PIN) and, if the session stays, counts as activity; `enforce()` (checks only) also runs hourly
+  while the app stays open (the flow's foreground timer).
+- **Rules:** 30 days without a touch → the session ends with `SessionEndReason.Inactivity` → Sign In says "You were
+  signed out after a long period of inactivity." (flow §3 target). A token past its expiry (30 s grace) ends it with
+  `Expired` → "session expired" banner, on a cold start, on coming back, and on a tap (before any request). Nothing
+  readable about the last activity means no timeout (flow §6: fail open).
+- **Cold start:** decided in `restore()` during the splash, so the shell never shows for a frame (flow §5 target);
+  opening the app counts as activity.
+- **Not built:** the web's 1-hour limit (the Flutter web build keeps it).
+- **Tests:** `SessionRepositoryTest` (+5: coming back counts and a late tap can't erase an overdue deadline, expired token on a cold start says why, 30 days on the next start, rare
+  writes and the resume check, an expired token on a tap and fail-open), `LoginViewModelTest` (+1).
+

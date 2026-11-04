@@ -25,6 +25,7 @@ import shifa.doctor.generated.resources.notDoctorAccount
 import shifa.doctor.generated.resources.pinLockoutBanner
 import shifa.doctor.generated.resources.requestTimeout
 import shifa.doctor.generated.resources.sessionExpiredBanner
+import shifa.doctor.generated.resources.signedOutInactivity
 import shifa.doctor.generated.resources.somethingWentWrong
 import shifa.doctor.generated.resources.youveSignedOut
 
@@ -112,6 +113,7 @@ class LoginViewModel(
                 SessionEndReason.AccountDisabled -> Res.string.accountDisabledBanner
                 SessionEndReason.SignedOut -> Res.string.youveSignedOut
                 SessionEndReason.PinLockout -> Res.string.pinLockoutBanner
+                SessionEndReason.Inactivity -> Res.string.signedOutInactivity
                 else -> Res.string.sessionExpiredBanner
             },
             error = reason == SessionEndReason.AccountDisabled || reason == SessionEndReason.PinLockout,

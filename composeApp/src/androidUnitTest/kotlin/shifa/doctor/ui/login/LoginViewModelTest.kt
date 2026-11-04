@@ -36,6 +36,7 @@ import shifa.doctor.generated.resources.enterEmailOrPhone
 import shifa.doctor.generated.resources.invalidCredentials
 import shifa.doctor.generated.resources.minimum6Characters
 import shifa.doctor.generated.resources.networkError
+import shifa.doctor.generated.resources.signedOutInactivity
 import shifa.doctor.generated.resources.youveSignedOut
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -146,5 +147,12 @@ class LoginViewModelTest {
         assertThat(
             vm().state.value.banner,
         ).isEqualTo(LoginBanner(Res.string.youveSignedOut, error = false, neutral = true))
+    }
+
+    @Test
+    fun `an inactivity sign-out explains itself`() {
+        sessions.signIn(jwt(4_000_000_000L))
+        sessions.end(SessionEndReason.Inactivity, sessions.session.value!!.token)
+        assertThat(vm().state.value.banner).isEqualTo(LoginBanner(Res.string.signedOutInactivity, error = false))
     }
 }

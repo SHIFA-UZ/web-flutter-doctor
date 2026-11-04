@@ -185,6 +185,7 @@ fun ShifaDialogSheet(
     val centred = tone == DialogTone.Destructive || content == null
     Column(
         modifier
+            .trackActivity()
             .fillMaxWidth()
             .dropShadow(sheetShape, ShifaShadow.Tray)
             .background(ShifaColors.Bg.Surface, sheetShape)

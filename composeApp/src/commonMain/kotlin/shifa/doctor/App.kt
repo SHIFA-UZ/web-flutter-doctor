@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import shifa.doctor.data.applock.appLockRepository
 import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.debug.BackendChoice
@@ -57,11 +58,14 @@ import shifa.doctor.ui.register.VerifyKeyScreen
 import shifa.doctor.ui.splash.SplashScreen
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTheme
+import shifa.doctor.ui.widgets.LocalActivity
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
 import shifa.doctor.utils.isDebugBuild
 import shifa.doctor.utils.tr
+import kotlin.time.Duration.Companion.hours
 
 /** Root of the app: language, theme, and the top-level screens (no navigation library: CLAUDE.md). */
 @Composable
@@ -77,11 +81,22 @@ fun App() {
         if (session != null) appLockRepository.onSessionStarted() else appLockRepository.onSessionEnded()
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { appLockRepository.onBackground() }
-    LifecycleEventEffect(Lifecycle.Event.ON_START) { appLockRepository.onForeground() }
+    // The foreground timer (flow 01/13 §2): an app left open still ends a session that has gone idle or expired.
+    LaunchedEffect(session?.token) {
+        while (session != null) {
+            delay(1.hours)
+            sessionRepository.enforce()
+        }
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        sessionRepository.onForeground() // LOCK-02: expiry and 30 days of inactivity, before the lock asks for a PIN
+        appLockRepository.onForeground()
+    }
     ProvideAppLocale(language.resourceCode) {
         CompositionLocalProvider(
             LocalUzbekCyrillic provides language.cyrillic,
             LocalLanguageSwitch provides LanguageSwitch(language, languageStorage::set),
+            LocalActivity provides sessionRepository::touch,
         ) {
             ShifaTheme {
                 // Debug menu → Demo data or Development backend restarts everything from the splash.
@@ -147,7 +162,8 @@ private fun AppScreens() {
     LaunchedEffect(session, screen) { if (session == null && screen == Screen.Shell) screen = Screen.SignIn }
     LaunchedEffect(session) { if (session == null) ShellNotice.pending.value = null }
     val locked by appLockRepository.locked.collectAsState()
-    Box(Modifier.fillMaxSize()) {
+    // Presses and releases are activity (LOCK-02); separate windows (sheets, the lock) track it themselves.
+    Box(Modifier.fillMaxSize().trackActivity()) {
         Crossfade(screen) {
             when (it) {
                 Screen.Splash ->

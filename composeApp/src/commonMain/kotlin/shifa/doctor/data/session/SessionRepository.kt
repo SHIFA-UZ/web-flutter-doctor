@@ -54,6 +54,10 @@ class SessionRepository(
     /** The last reason a session ended (sign-out included); the sign-in screen shows its banner once. */
     val ended: SharedFlow<SessionEndReason> = _ended.asSharedFlow()
 
+    // LOCK-02 (01 §7.2): the last touch, in memory, and when it was last written to the store (at most every 5 min).
+    private var lastActivity: Long? = null
+    private var lastSaved: Long? = null
+
     init {
         SessionEvents.listener = ::end
     }
@@ -64,11 +68,96 @@ class SessionRepository(
      */
     fun restore(): Session? =
         synchronized(this) {
-            val session = runCatching { tokens.token }.getOrNull()?.let(::sessionOf)
-            if (session == null) clear()
+            val token = runCatching { tokens.token }.getOrNull()
+            val session = token?.let(::sessionOf)
+            val now = nowEpochSeconds()
+            // Decided here, before the shell is shown, so no patient data flashes (flow 01/13 §5 target).
+            val reason =
+                when {
+                    token != null &&
+                        Jwt.isExpired(
+                            token,
+                            now,
+                            ApiConfig.EXPIRY_GRACE_SECONDS,
+                        )
+                    -> SessionEndReason.Expired
+                    session != null && inactive(now) -> SessionEndReason.Inactivity
+                    else -> null
+                }
+            if (session == null || reason != null) {
+                clear()
+                reason?.let(_ended::tryEmit)
+                return@synchronized null
+            }
             _session.value = session
+            record(now) // opening the app counts as activity
             session
         }
+
+    /**
+     * Any touch in the app (LOCK-02, flow 01/13 §2): remembers the time, written to the store at most every 5 minutes;
+     * a token already past its expiry ends the session at once, before any request.
+     */
+    fun touch() =
+        synchronized(this) {
+            val session = _session.value ?: return@synchronized
+            val now = nowEpochSeconds()
+            // An overdue deadline is enforced first, so a late tap can't erase it.
+            if (!expiredOrIdle(session, now)) record(now)
+        }
+
+    /**
+     * The checks alone: an expired token or 30 days without a touch ends the session (01 §7.2). [onForeground] runs
+     * them on coming back; the shell also runs them hourly while the app stays open (flow 01/13 §2 timer).
+     */
+    fun enforce() =
+        synchronized(this) {
+            val session = _session.value ?: return@synchronized
+            expiredOrIdle(session, nowEpochSeconds())
+        }
+
+    /** Back in the foreground: the checks, and if the session stays, coming back counts as activity. */
+    fun onForeground() =
+        synchronized(this) {
+            val session = _session.value ?: return@synchronized
+            val now = nowEpochSeconds()
+            if (!expiredOrIdle(session, now)) record(now)
+        }
+
+    // True when it ended the session.
+    private fun expiredOrIdle(
+        session: Session,
+        now: Long,
+    ): Boolean {
+        val reason =
+            when {
+                Jwt.isExpired(session.token, now, ApiConfig.EXPIRY_GRACE_SECONDS) -> SessionEndReason.Expired
+                inactive(now) -> SessionEndReason.Inactivity
+                else -> return false
+            }
+        endNow(reason)
+        return true
+    }
+
+    private fun record(now: Long) {
+        lastActivity = now
+        val saved = lastSaved
+        if (saved == null || now - saved >= SAVE_EVERY_SECONDS) {
+            runCatching { settings.putLong(KEY_LAST_ACTIVITY, now) }
+            lastSaved = now
+        }
+    }
+
+    // Memory first, then the store; nothing readable means no information, so no timeout (flow 01/13 §6: fail open).
+    private fun inactive(now: Long): Boolean {
+        val last = lastActivity ?: runCatching { settings.getLongOrNull(KEY_LAST_ACTIVITY) }.getOrNull() ?: return false
+        return now - last >= INACTIVITY_SECONDS
+    }
+
+    private fun endNow(reason: SessionEndReason) {
+        clear()
+        _ended.tryEmit(reason)
+    }
 
     /**
      * After any successful sign-in, registration or password reset. Fails with [IllegalArgumentException] when the
@@ -83,6 +172,7 @@ class SessionRepository(
             runCatching { tokens.token = token }.map {
                 _ended.resetReplayCache()
                 _session.value = session
+                record(nowEpochSeconds())
                 session
             }
         }
@@ -105,8 +195,7 @@ class SessionRepository(
         token: String,
     ) = synchronized(this) {
         if (_session.value?.token != token) return@synchronized
-        clear()
-        _ended.tryEmit(reason)
+        endNow(reason)
     }
 
     private fun sessionOf(token: String): Session? {
@@ -119,13 +208,19 @@ class SessionRepository(
     private fun clear() {
         runCatching { tokens.token = null }
         runCatching { settings.remove(KEY_LAST_ACTIVITY) }
+        lastActivity = null
+        lastSaved = null
         language.reset()
         _session.value = null
     }
 
     companion object {
-        /** LOCK-02's inactivity clock (01 §7.2); cleared on logout. */
-        const val KEY_LAST_ACTIVITY = "shifa_doctor_last_activity_ms"
+        /** LOCK-02's inactivity clock (01 §7.2), epoch seconds; cleared on logout. */
+        const val KEY_LAST_ACTIVITY = "shifa_doctor_last_activity_s"
+
+        /** Phones: 30 days without a touch (01 §7.2; the web's 1 hour is the Flutter web build's). */
+        const val INACTIVITY_SECONDS = 30L * 24 * 60 * 60
+        const val SAVE_EVERY_SECONDS = 5L * 60
     }
 }
 
