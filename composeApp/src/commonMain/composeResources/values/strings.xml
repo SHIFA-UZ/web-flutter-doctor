@@ -108,6 +108,7 @@
     <string name="aiInsightAllClear">Your schedule looks clear. Ask me anything about your patients.</string>
     <string name="aiInsightAppointments">You have %1$s appointments remaining today.</string>
     <string name="aiInsightTasks">%1$s follow-up tasks are pending.</string>
+    <string name="aiNote">AI note</string>
     <string name="aiNotesNeedPro">AI notes need PRO</string>
     <string name="aiNotesNotReadyTryLater">AI notes are not ready yet. Please try again in 30 seconds.</string>
     <string name="aiNotesUploaded">Recording uploaded. Notes will be ready in a few minutes.</string>
@@ -125,6 +126,7 @@
     <string name="allPatients">All patients</string>
     <string name="allRoles">All Roles</string>
     <string name="allergies">Allergies</string>
+    <string name="allergyChip">Allergy: %1$s</string>
     <string name="allow">Allow</string>
     <string name="alreadyBooked">Already booked: %1$s %2$s</string>
     <string name="alreadyCompletedElsewhere">This visit was already completed on another device.</string>
@@ -161,7 +163,9 @@
     <string name="appointmentEnded">Appointment ended successfully</string>
     <string name="appointmentEndedDocumentationSaved">Appointment ended. Documentation saved.</string>
     <string name="appointmentEndedShort">Appointment Ended</string>
+    <string name="appointmentGone">This appointment no longer exists or was moved.</string>
     <string name="appointmentLinkedPlanBanner">Part of plan #%1$s — %2$s</string>
+    <string name="appointmentLoadFailed">Failed to load</string>
     <string name="appointmentMoved">Appointment moved</string>
     <string name="appointmentNotes">Appointment Notes</string>
     <string name="appointmentOver">Appointment Ended</string>
@@ -747,6 +751,7 @@
     <string name="consultationFocusModeTooltip">Focus mode (large notes)</string>
     <string name="consultationScheduleLine">%1$s - %2$s - Consultation</string>
     <string name="consultationUploadFailed">Upload failed</string>
+    <string name="consultationUploadHint">Tap to upload (saved as a medical document)</string>
     <string name="consultationUploadNoBytes">Could not read file data. Try a smaller file or another format.</string>
     <string name="consumed">Consumed</string>
     <string name="contactAndClinicAddress">Contact &amp; clinic address</string>
@@ -1127,7 +1132,9 @@
     <string name="findTherapyPartner">Find therapy partner</string>
     <string name="finish">Finish</string>
     <string name="firstName">First name</string>
+    <string name="firstVisit">First visit</string>
     <string name="flipCamera">Flip camera</string>
+    <string name="focusMode">Focus mode</string>
     <string name="followUpReasonDefault">Follow-up</string>
     <string name="followUpSubtitle">%1$s · after today's visit</string>
     <string name="followUpTask">Follow-up task</string>
@@ -1139,9 +1146,11 @@
     <string name="form0252">Form 025-2</string>
     <string name="form0252Description">Dental outpatient card (Uzbekistan form 025-2)</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
+    <string name="form0252VisitHint">The official dental outpatient card (form 025-2) for this visit: complaints, diagnosis with ICD-10, dental chart, treatment and the patient's signature.</string>
     <string name="formDocumentFailed">The form is saved, but its PDF couldn't be uploaded. Try again.</string>
     <string name="formDocumentTitle">Form 025-2 (%1$s)</string>
     <string name="formGeneral">General</string>
+    <string name="formListEntry">%1$s, %2$s</string>
     <string name="formLoadFailed">Couldn't load the form.</string>
     <string name="formNeedsDiagnosis">Add at least a diagnosis or complaints before saving.</string>
     <string name="formNoPdf">No PDF</string>
@@ -1203,6 +1212,7 @@
     <string name="iUnderstand">I Understand</string>
     <string name="ibanAccountNumber">IBAN / Account number</string>
     <string name="icd10SearchHint">Search ICD-10 code or title</string>
+    <string name="icdAppliedOpenForm">Applied: %1$s. Open Form 025-2 to finish the diagnosis.</string>
     <string name="icdSearchFailed">Couldn't search ICD-10. Tap to try again.</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Image not available</string>
@@ -1443,12 +1453,14 @@
     <string name="languageNativeUzCyrl">Ўзбекча</string>
     <string name="languageSecurityNotifications">Language · Security · Notifications</string>
     <string name="largeFileWarning">Large file: the upload may take a while.</string>
+    <string name="lastForm0252">Last form 025-2</string>
     <string name="lastLogin">Last Login</string>
     <string name="lastName">Last name</string>
     <string name="lastVisit">Last visit</string>
     <string name="lastVisitOn">Last visit: %1$s</string>
     <string name="latitude">Latitude</string>
     <string name="leaveAndEndVisit">Leave and end visit</string>
+    <string name="leaveAnyway">Leave anyway</string>
     <string name="leaveCall">Leave call</string>
     <string name="leaveCallBody">The visit stays open until you end it.</string>
     <string name="leaveCallTitle">Leave the call?</string>
@@ -1592,6 +1604,7 @@
     <string name="noFailedOrUnprocessedStripeWebhooks">No failed or unprocessed Stripe webhook events.</string>
     <string name="noFileData">No file data to upload</string>
     <string name="noFileSelected">No file selected</string>
+    <string name="noForm0252Yet">This patient has no 025-2 form yet.</string>
     <string name="noFormsYet">No forms yet</string>
     <string name="noFreeSlots">No free slots</string>
     <string name="noFreeSlotsThisDay">No free slots on this day</string>
@@ -1647,6 +1660,8 @@
     <string name="noteCharCounter">%1$s / %2$s</string>
     <string name="notes">Notes</string>
     <string name="notesLabel">Notes Label</string>
+    <string name="notesNotSavedBody">The visit's notes couldn't be saved. If you leave now, the last changes are lost.</string>
+    <string name="notesNotSavedTitle">Notes not saved</string>
     <string name="notesOptional">Notes (optional)</string>
     <string name="notesRequired">Notes Required</string>
     <string name="notesSaveFailed">Couldn't save the notes. They stay here; try again.</string>
@@ -2151,6 +2166,7 @@
     <string name="signOutInstead">Sign out instead</string>
     <string name="signOutTitle">Sign out?</string>
     <string name="signatureNotYet">The patient has not signed yet. The summary will show an empty signature line.</string>
+    <string name="signatureRequestFailed">Couldn't ask the patient to sign. Try again.</string>
     <string name="signatureRequestSent">Signature request sent to patient</string>
     <string name="signedOutElsewhere">You were signed out. Please sign in again.</string>
     <string name="signedOutInactivity">You were signed out after a long period of inactivity.</string>
@@ -2192,6 +2208,8 @@
     <string name="staffEmailInUse">An account with this email already exists. Ask the clinic to send the invitation to that address.</string>
     <string name="staffProfileManagedByClinic">Staff profiles are managed by the clinic owner.</string>
     <string name="staffTimezoneHint">Your own notifications use this timezone. Clinic times always show in the clinic's timezone.</string>
+    <string name="staffVisitsBody">Clinic staff can view, reschedule and cancel bookings from the clinic schedule.</string>
+    <string name="staffVisitsTitle">Visits are run by the doctor</string>
     <string name="start">Start</string>
     <string name="startAiNotes">Start AI Notes</string>
     <string name="startAnyway">Start anyway</string>
@@ -2201,6 +2219,7 @@
     <string name="startTime">Start Time</string>
     <string name="startingScreen">Starting screen</string>
     <string name="startingScreenHint">Main tab when you open the app. Notifications still open the relevant screen.</string>
+    <string name="startsIn">Starts in</string>
     <string name="status">Status</string>
     <string name="statusCancelled">Cancelled</string>
     <string name="statusCompleted">Complete</string>
@@ -2211,6 +2230,7 @@
     <string name="statusPendingPayment">Awaiting payment</string>
     <string name="statusRequested">Requested</string>
     <string name="statusUnprocessed">UNPROCESSED</string>
+    <string name="stay">Stay</string>
     <string name="stepApplyingPlan">Applying treatment plan…</string>
     <string name="stepCompleting">Completing visit…</string>
     <string name="stepOfTotal">Step %1$s of %2$s</string>
@@ -2506,6 +2526,7 @@
     <string name="visitOther">Visit</string>
     <string name="visitReason">Visit reason</string>
     <string name="visitRequested">Visit requested</string>
+    <string name="visitTime">Visit time</string>
     <string name="visitTypeDistribution">Visit Type Distribution</string>
     <string name="visualCheckup">Visual checkup</string>
     <string name="vital">Vital</string>

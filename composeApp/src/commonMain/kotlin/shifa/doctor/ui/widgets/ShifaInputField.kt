@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.Dp
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clear
@@ -60,6 +61,8 @@ fun ShifaInputField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: (@Composable () -> Unit)? = null,
     multiline: Boolean = false, // the comment field: grows from Figma's 134, text from the top
+    // A multiline field's starting height (a short field grows from one line).
+    areaMinHeight: Dp = ShifaDimens.TextAreaHeight,
     fieldModifier: Modifier = Modifier, // on the editable field itself: focus requesters, autofill content types
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -88,7 +91,7 @@ fun ShifaInputField(
                 Row(
                     modifier =
                         Modifier
-                            .then(if (multiline) Modifier.heightIn(min = ShifaDimens.TextAreaHeight) else Modifier)
+                            .then(if (multiline) Modifier.heightIn(min = areaMinHeight) else Modifier)
                             .clip(ShifaRadius.ControlMd)
                             .background(if (enabled) ShifaColors.Bg.Surface else ShifaColors.Bg.Disabled)
                             .border(ShifaSize.S2, border, ShifaRadius.ControlMd)

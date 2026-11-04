@@ -79,3 +79,43 @@ Built 2026-11-04. Spec 05 §2.2, flow 05/05, ticket APPT-03. No screen yet (APPT
   one at a time per draft, then the notes and drafts are read again (only the newest read may write the lists).
 - **Tests:** `VisitNotesTest` (5: hydrate once and never over typing; one save 2 s after the last edit with the
   labelled body; flush, a failed save, blank text, the cancelled timer; a confirmed draft re-reads the lists; an edit during a held save saved after it, in order).
+
+## APPT-04 · Visit workspace
+
+Built 2026-11-04. Flow 05/04 (and 05/05 for the notes), spec 05 §2.1–2.4, ticket APPT-04. Board `DaVisit` "VISIT
+WORKSPACE" (phone: one column), "STAFF CANNOT RUN VISITS", "NOT FOUND", the notes menu and focus mode.
+
+- **Opening** (`ui/visit/VisitViewModel.kt`, route `ShellRoute.Visit` from the calendar panel's Start / Continue):
+  the visit (`GET /appointments/{id}`), then its patient, the patient's visits (the reason and the last completed
+  visit before this one) and 025-2 forms; those extras can fail without blocking the visit. A dentist starts in the
+  dental record (profession, on the first open only). The chronic-disease warning once per patient per session.
+- **Screen** (`ui/visit/VisitScreen.kt`): header (back, name, status pill, age · ID, time · reason · place or Video
+  call, the visit clock "Visit time" / "Starts in" ticking every second); patient chips (allergy, chronic disease,
+  last visit or first visit; tapping opens the patient); the **notes card**: title by mode, focus mode (General), the
+  notes menu (From Shifa AI, From last 025-2 form, the modes), the mode tabs (General Form, Dental visit record for
+  dental professions, Form 025-2); the **helpers**: Shifa AI's drafts (text without the transcript, suggested ICD
+  codes with Recommended and Apply, Discard / Save as note) and saved AI notes (carousel, + adds to notes), the last
+  025-2's complaints / diagnosis / treatment (+ adds to notes); **General**: the SOAP expander and the free notes
+  (APPT-03: autosaved, "Could not load earlier notes · Retry", a save error); **Form 025-2**: what the card is, the
+  patient's forms (signed or not) and Open Form 025-2 (the editor, FORM-04); **documents** grouped Laboratory,
+  Imaging, Clinical, Forms, Private, Other (the record's cards: open, request access), Upload (DOCS-03's sheets)
+  and the finalize hint; the **footer**: Request Signature (saves the notes first), "Waiting for patient
+  signature..." (read every 10 s, APPT-02) or "Patient Signed ✓".
+- **Leaving** (back, system back, the patient chips, Open Form 025-2) saves the notes; when that fails: "Notes not
+  saved" with Leave anyway / Stay. Going back stops the signature reads. A visit without a patient says "Patient
+  record unavailable" instead of documents and upload.
+  **Mode switch** saves the notes and switches: no Save / Discard question (the notes autosave, and the backend
+  can't empty them, so "Discard and switch" couldn't undo anything saved). Clinic staff get "Visits are run by the
+  doctor" (flow 01/18).
+- **Apply** on an AI ICD suggestion switches to Form 025-2 and says "Applied: K04.0. Open Form 025-2 to finish the
+  diagnosis." (the board's); carrying the code into the editor is APPT-08.
+- **Not built (their tickets):** End appointment (APPT-07), the video pane (VIDEO-02; video visits open this same
+  workspace), the dental record (DENTAL-02: the tab shows "on its way"), dictation mics (AI-05/06), Start AI Notes
+  (SCRIBE-01), before/after photos (APPT-05), the treatment-plan panel (TP-06), tablet two panes (CAL-5's open call).
+  The board's "open tasks" chip waits for M9.
+- **Tests:** `VisitViewModelTest` (5: the visit with its patient, reason, last visit and forms, warned once; a
+  dentist's mode and a missing visit; the signature after the notes; helpers and modes; leaving), screenshots
+  `Visit_workspace`, `Visit_form0252`, `Visit_staff`.
+  **Emulator (demo mode):** calendar → 6 Nov → Jasur Karimov → Start Appointment → the workspace ("Starts in",
+  first visit, grouped documents); a typed note, Request Signature → "Waiting for patient signature..." → "Patient
+  Signed ✓" about 15 s later.

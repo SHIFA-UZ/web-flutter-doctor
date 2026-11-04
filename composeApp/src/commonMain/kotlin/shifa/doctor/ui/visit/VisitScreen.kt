@@ -1,0 +1,1084 @@
+package shifa.doctor.ui.visit
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Instant
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.model.DocumentCategory
+import shifa.doctor.data.model.PatientDocument
+import shifa.doctor.data.model.PatientForm
+import shifa.doctor.data.model.SignatureState
+import shifa.doctor.data.model.VisitKind
+import shifa.doctor.data.model.stripScribeTranscript
+import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.addToNotes
+import shifa.doctor.generated.resources.aiNote
+import shifa.doctor.generated.resources.aiSuggestedDiagnoses
+import shifa.doctor.generated.resources.allergyChip
+import shifa.doctor.generated.resources.apply
+import shifa.doctor.generated.resources.appointmentGone
+import shifa.doctor.generated.resources.appointmentLoadFailed
+import shifa.doctor.generated.resources.back
+import shifa.doctor.generated.resources.close
+import shifa.doctor.generated.resources.complaints
+import shifa.doctor.generated.resources.consultationFocusModeTitle
+import shifa.doctor.generated.resources.consultationUploadHint
+import shifa.doctor.generated.resources.diagnosis
+import shifa.doctor.generated.resources.discard
+import shifa.doctor.generated.resources.docMode0252
+import shifa.doctor.generated.resources.docModeDental
+import shifa.doctor.generated.resources.docModeGeneral
+import shifa.doctor.generated.resources.docSectionClinical
+import shifa.doctor.generated.resources.docSectionImaging
+import shifa.doctor.generated.resources.docSectionLaboratory
+import shifa.doctor.generated.resources.docSectionOther
+import shifa.doctor.generated.resources.docSectionPrivate
+import shifa.doctor.generated.resources.documents
+import shifa.doctor.generated.resources.documentsFinalizeHint
+import shifa.doctor.generated.resources.draft
+import shifa.doctor.generated.resources.enterNotes
+import shifa.doctor.generated.resources.firstVisit
+import shifa.doctor.generated.resources.focusMode
+import shifa.doctor.generated.resources.form0252
+import shifa.doctor.generated.resources.form0252VisitHint
+import shifa.doctor.generated.resources.formListEntry
+import shifa.doctor.generated.resources.formNotSignedYet
+import shifa.doctor.generated.resources.formSignedBadge
+import shifa.doctor.generated.resources.formsTab
+import shifa.doctor.generated.resources.fromLast0252Form
+import shifa.doctor.generated.resources.fromShifaAi
+import shifa.doctor.generated.resources.ic_alert_16
+import shifa.doctor.generated.resources.ic_chev_d_16
+import shifa.doctor.generated.resources.ic_chev_l_16
+import shifa.doctor.generated.resources.ic_chev_r_16
+import shifa.doctor.generated.resources.ic_clipboard_22
+import shifa.doctor.generated.resources.ic_eye_16
+import shifa.doctor.generated.resources.ic_menu_16
+import shifa.doctor.generated.resources.ic_plus_16
+import shifa.doctor.generated.resources.ic_sparkles_22
+import shifa.doctor.generated.resources.ic_upload_16
+import shifa.doctor.generated.resources.ic_users_22
+import shifa.doctor.generated.resources.ic_x_16
+import shifa.doctor.generated.resources.icdAppliedOpenForm
+import shifa.doctor.generated.resources.lastForm0252
+import shifa.doctor.generated.resources.lastVisitOn
+import shifa.doctor.generated.resources.leaveAnyway
+import shifa.doctor.generated.resources.noDocumentsYet
+import shifa.doctor.generated.resources.notes
+import shifa.doctor.generated.resources.notesNotSavedBody
+import shifa.doctor.generated.resources.notesNotSavedTitle
+import shifa.doctor.generated.resources.openForm0252
+import shifa.doctor.generated.resources.patientAgeYears
+import shifa.doctor.generated.resources.patientRecordUnavailable
+import shifa.doctor.generated.resources.patientSigned
+import shifa.doctor.generated.resources.recommended
+import shifa.doctor.generated.resources.requestSignature
+import shifa.doctor.generated.resources.retry
+import shifa.doctor.generated.resources.saveAsNote
+import shifa.doctor.generated.resources.soapAssessment
+import shifa.doctor.generated.resources.soapNotesSectionSubtitle
+import shifa.doctor.generated.resources.soapNotesSectionTitle
+import shifa.doctor.generated.resources.soapObjective
+import shifa.doctor.generated.resources.soapPlan
+import shifa.doctor.generated.resources.soapSubjective
+import shifa.doctor.generated.resources.staffVisitsBody
+import shifa.doctor.generated.resources.staffVisitsTitle
+import shifa.doctor.generated.resources.startsIn
+import shifa.doctor.generated.resources.stay
+import shifa.doctor.generated.resources.tabComesLater
+import shifa.doctor.generated.resources.treatment
+import shifa.doctor.generated.resources.upload
+import shifa.doctor.generated.resources.videoCall
+import shifa.doctor.generated.resources.visitTime
+import shifa.doctor.generated.resources.waitingForPatientSignature
+import shifa.doctor.ui.calendar.status
+import shifa.doctor.ui.documents.DocumentCard
+import shifa.doctor.ui.documents.DocumentUploadViewModel
+import shifa.doctor.ui.documents.DocumentsActions
+import shifa.doctor.ui.documents.PatientDocumentsViewModel
+import shifa.doctor.ui.documents.UploadSheets
+import shifa.doctor.ui.documents.UploadStatus
+import shifa.doctor.ui.documents.UploadUiState
+import shifa.doctor.ui.documents.documentTitle
+import shifa.doctor.ui.documents.rememberUploadSources
+import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.patients.ChronicWarning
+import shifa.doctor.ui.patients.chronicLabel
+import shifa.doctor.ui.profile.ProfileChip
+import shifa.doctor.ui.profile.ProfileSheet
+import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaRadius
+import shifa.doctor.ui.theme.ShifaSize
+import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.SegmentedTabs
+import shifa.doctor.ui.widgets.ShifaButtonSize
+import shifa.doctor.ui.widgets.ShifaDialogSheet
+import shifa.doctor.ui.widgets.ShifaIconButton
+import shifa.doctor.ui.widgets.ShifaIconButtonVariant
+import shifa.doctor.ui.widgets.ShifaInputField
+import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.ShifaSecondaryButton
+import shifa.doctor.ui.widgets.ShifaSettingsItem
+import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.ui.widgets.ShifaTray
+import shifa.doctor.ui.widgets.TabItem
+import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.currentInstant
+import shifa.doctor.utils.displayDate
+import shifa.doctor.utils.displayTime
+import shifa.doctor.utils.tr
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+/** The board's document groups (05 §2.1: laboratory, imaging, clinical, forms, private, other). */
+enum class DocBucket(
+    val label: StringResource,
+) {
+    Laboratory(Res.string.docSectionLaboratory),
+    Imaging(Res.string.docSectionImaging),
+    Clinical(Res.string.docSectionClinical),
+    Forms(Res.string.formsTab),
+    Private(Res.string.docSectionPrivate),
+    Other(Res.string.docSectionOther),
+    ;
+
+    companion object {
+        private val IMAGING =
+            setOf(
+                DocumentCategory.MRI,
+                DocumentCategory.CT_SCAN,
+                DocumentCategory.XRAY,
+                DocumentCategory.ULTRASOUND,
+                DocumentCategory.MAMMOGRAPHY,
+                DocumentCategory.IMAGING_OTHER,
+            )
+
+        fun of(d: PatientDocument): DocBucket {
+            val kind = d.kind
+            return when {
+                kind == null || kind == DocumentCategory.OTHER_MEDICAL -> Other
+                kind.lab -> Laboratory
+                kind in IMAGING -> Imaging
+                kind == DocumentCategory.FORM_025_2 -> Forms
+                !kind.medical -> Private
+                else -> Clinical
+            }
+        }
+    }
+}
+
+class VisitActions(
+    val back: () -> Unit = {},
+    val ui: ((VisitUiState) -> VisitUiState) -> Unit = {},
+    val retry: () -> Unit = {},
+    val mode: (VisitMode) -> Unit = {},
+    val helper: (VisitHelper) -> Unit = {},
+    val addToNotes: (String) -> Unit = {},
+    val edit: ((SoapNotes) -> SoapNotes) -> Unit = {},
+    val retryNotes: () -> Unit = {},
+    val confirmDraft: (shifa.doctor.data.model.DraftNote) -> Unit = {},
+    val discardDraft: (shifa.doctor.data.model.DraftNote) -> Unit = {},
+    val dismissNotesBanner: () -> Unit = {},
+    val requestSignature: () -> Unit = {},
+    val openPatient: () -> Unit = {},
+    val openForm: () -> Unit = {},
+    val documents: DocumentsActions = DocumentsActions(),
+)
+
+/**
+ * The visit workspace (APPT-04, flow 05/04, board `DaVisit` "VISIT WORKSPACE"; phone, single column). Clinic staff
+ * get the board's "Visits are run by the doctor" instead (flow 01/18). Not built yet: the video pane (VIDEO-02),
+ * the dental record (DENTAL-02), dictation (AI-05/06), the AI scribe (SCRIBE-01), before/after photos (APPT-05) and
+ * End appointment (APPT-07).
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun VisitScreen(
+    appointmentId: Long,
+    opened: Long,
+    staff: Boolean,
+    onBack: () -> Unit,
+    onOpenPatient: (Long) -> Unit = {},
+    // A document in the viewer: the patient, the document, its title.
+    onOpenDocument: (Long, PatientDocument, String) -> Unit = { _, _, _ -> },
+    onOpenForm: (Long) -> Unit = {},
+    viewModel: VisitViewModel = viewModel(key = "visit-$appointmentId-$opened") { VisitViewModel(appointmentId) },
+) {
+    if (staff) return StaffCannotRunVisits(onBack)
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val notes by viewModel.notes.state.collectAsStateWithLifecycle()
+    viewModel.notes.labels =
+        SoapLabels(
+            tr(Res.string.soapSubjective),
+            tr(Res.string.soapObjective),
+            tr(Res.string.soapAssessment),
+            tr(Res.string.soapPlan),
+        )
+    LaunchedEffect(viewModel) { viewModel.load() }
+    LaunchedEffect(state.left) {
+        val to = state.left ?: return@LaunchedEffect
+        val patient = state.visit?.patientId
+        viewModel.leaving()
+        when (to) {
+            VisitExit.Back -> onBack()
+            VisitExit.Patient -> patient?.let(onOpenPatient)
+            VisitExit.Form -> patient?.let(onOpenForm)
+        }
+    }
+    val back = {
+        if (state.focus) viewModel.ui { it.copy(focus = false) } else viewModel.leave()
+    }
+    BackHandler(onBack = back)
+    val patientId = state.visit?.patientId
+    val actions =
+        VisitActions(
+            back = back,
+            ui = viewModel::ui,
+            retry = viewModel::load,
+            mode = viewModel::mode,
+            helper = viewModel::helper,
+            addToNotes = viewModel::addToNotes,
+            edit = viewModel.notes::edit,
+            retryNotes = viewModel.notes::load,
+            confirmDraft = viewModel.notes::confirm,
+            discardDraft = viewModel.notes::discard,
+            dismissNotesBanner = viewModel.notes::dismissBanner,
+            requestSignature = viewModel::requestSignature,
+            openPatient = { if (patientId != null) viewModel.leave(VisitExit.Patient) },
+            openForm = { if (patientId != null) viewModel.leave(VisitExit.Form) },
+        )
+    if (patientId == null) {
+        VisitContent(state, notes, actions)
+    } else {
+        // The documents and uploads need the patient: they start once the visit says who it is.
+        PatientParts(patientId, state, notes, actions, onOpenDocument)
+    }
+    state.askLeave?.let { to ->
+        ProfileSheet({ viewModel.ui { it.copy(askLeave = null) } }) {
+            ShifaDialogSheet(
+                tr(Res.string.notesNotSavedTitle),
+                tr(Res.string.leaveAnyway),
+                { viewModel.leave(to, force = true) },
+                body = tr(Res.string.notesNotSavedBody),
+                cancelText = tr(Res.string.stay),
+                onCancel = { viewModel.ui { it.copy(askLeave = null) } },
+            )
+        }
+    }
+    if (state.menu) NotesMenu(state, actions)
+    state.patient?.chronic?.takeIf { state.chronicWarning }?.let {
+        ChronicWarning(chronicLabel(it)) { viewModel.ui { s -> s.copy(chronicWarning = false) } }
+    }
+}
+
+@Composable
+private fun PatientParts(
+    patientId: Long,
+    state: VisitUiState,
+    notes: VisitNotesState,
+    actions: VisitActions,
+    onOpenDocument: (Long, PatientDocument, String) -> Unit,
+    documents: PatientDocumentsViewModel =
+        viewModel(key = "visit-documents-$patientId") { PatientDocumentsViewModel(patientId) },
+    uploads: DocumentUploadViewModel =
+        viewModel(key = "visit-upload-$patientId") { DocumentUploadViewModel(patientId) },
+) {
+    val docs by documents.state.collectAsStateWithLifecycle()
+    val upload by uploads.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { documents.load() }
+    LaunchedEffect(upload.uploaded) { if (upload.uploaded > 0) documents.load() }
+    var opening by remember { mutableStateOf<PatientDocument?>(null) }
+    opening?.let { d ->
+        val title = documentTitle(d)
+        LaunchedEffect(d) {
+            opening = null
+            onOpenDocument(patientId, d, title)
+        }
+    }
+    val sources = rememberUploadSources(uploads)
+    VisitContent(
+        state,
+        notes,
+        VisitActions(
+            back = actions.back,
+            ui = actions.ui,
+            retry = actions.retry,
+            mode = actions.mode,
+            helper = actions.helper,
+            addToNotes = actions.addToNotes,
+            edit = actions.edit,
+            retryNotes = actions.retryNotes,
+            confirmDraft = actions.confirmDraft,
+            discardDraft = actions.discardDraft,
+            dismissNotesBanner = actions.dismissNotesBanner,
+            requestSignature = actions.requestSignature,
+            openPatient = actions.openPatient,
+            openForm = actions.openForm,
+            documents =
+                DocumentsActions(
+                    retry = documents::load,
+                    open = { opening = it },
+                    requestAccess = documents::requestAccess,
+                    ui = documents::ui,
+                    upload = { uploads.ui { it.copy(options = true) } },
+                    cancelUpload = uploads::cancelUpload,
+                    retryUpload = uploads::retry,
+                    dismissUpload = { uploads.ui { it.copy(banner = null) } },
+                ),
+        ),
+        docs,
+        upload,
+    )
+    UploadSheets(upload, uploads, sources)
+}
+
+@Composable
+internal fun VisitContent(
+    state: VisitUiState,
+    notes: VisitNotesState,
+    actions: VisitActions,
+    documents: shifa.doctor.ui.documents.PatientDocumentsUiState = shifa.doctor.ui.documents.PatientDocumentsUiState(),
+    upload: UploadUiState = UploadUiState(),
+    clock: PracticeClock = PracticeClock(profileRepository.me.value?.profile?.timeZone),
+    now: () -> Instant = ::currentInstant,
+) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
+    val visit = state.visit
+    when {
+        visit == null && state.error != null ->
+            Gone(
+                if (state.notFound) tr(Res.string.appointmentGone) else tr(state.error.text),
+                state.error.requestId,
+                actions,
+            )
+        visit == null -> {
+            ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
+            Column(Modifier.padding(ShifaSpacing.Inset.Md), verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
+                repeat(4) { ShifaSkeleton(Modifier.fillMaxWidth().size(ShifaSize.S80)) }
+            }
+        }
+        state.focus -> FocusMode(notes, actions)
+        else -> {
+            Header(state, actions, clock, now)
+            val gap = Modifier.padding(horizontal = ShifaSpacing.Inset.Md)
+            LazyColumn(
+                Modifier.weight(1f).imePadding(),
+                contentPadding = PaddingValues(vertical = ShifaSpacing.Inset.Md),
+                verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+            ) {
+                item { Box(gap) { Chips(state, actions) } }
+                listOfNotNull(state.banner, notes.banner).forEach { b ->
+                    item {
+                        Box(gap) {
+                            codeBanner(b) {
+                                actions.ui { it.copy(banner = null) }
+                                actions.dismissNotesBanner()
+                            }?.invoke()
+                        }
+                    }
+                }
+                item { Box(gap) { NotesCard(state, notes, actions) } }
+                documentRows(documents, upload, actions.documents, gap, hasPatient = visit.patientId != null)
+            }
+            Footer(state, actions)
+        }
+    }
+}
+
+@Composable
+private fun Header(
+    state: VisitUiState,
+    actions: VisitActions,
+    clock: PracticeClock,
+    now: () -> Instant,
+) {
+    val visit = state.visit ?: return
+    val patient = state.patient
+    val name = visit.patientName ?: patient?.name.orEmpty()
+    // The visit's clock, every second: time since the start, or until it.
+    var tick by remember { mutableStateOf(now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1.seconds)
+            tick = now()
+        }
+    }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(ShifaColors.Bg.Surface)
+            .statusBarsPadding()
+            .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSize.S8),
+        verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10),
+        ) {
+            ShifaIconButton(
+                Res.drawable.ic_chev_l_16,
+                tr(Res.string.back),
+                actions.back,
+                variant = ShifaIconButtonVariant.Secondary,
+            )
+            Column(Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+                ) {
+                    Text(
+                        name,
+                        Modifier.weight(1f, fill = false),
+                        style = ShifaTextStyles.panelTitle(),
+                        color = ShifaColors.Text.Primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    status(visit.status)?.let { (label, bg, ink) -> ProfileChip(label, bg, ink) }
+                }
+                val today = clock.local(now()).date
+                listOfNotNull(
+                    patient?.age(today)?.let { tr(Res.string.patientAgeYears, it) },
+                    patient?.let { "ID #${it.id}" },
+                ).joinToString(" · ").takeIf { it.isNotEmpty() }?.let {
+                    Text(it, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+                }
+                val start = visit.start
+                val end = visit.end
+                if (start != null && end != null) {
+                    Text(
+                        listOfNotNull(
+                            "${displayTime(clock.local(start).time)} – ${displayTime(clock.local(end).time)}",
+                            state.reason,
+                            if (state.kind == VisitKind.Video) tr(Res.string.videoCall) else visit.location,
+                        ).joinToString(" · "),
+                        style = ShifaTextStyles.metaSmall(),
+                        color = ShifaColors.Text.Secondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            visit.start?.let { start ->
+                val elapsed = tick - start
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        tr(if (elapsed.isNegative()) Res.string.startsIn else Res.string.visitTime),
+                        style = ShifaTextStyles.caption(),
+                        color = ShifaColors.Text.Secondary,
+                    )
+                    Text(
+                        clockText(elapsed.absoluteValue),
+                        style = ShifaTextStyles.buttonCompact(),
+                        color = ShifaColors.Text.Primary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** "mm:ss", or "h:mm:ss" from an hour. */
+internal fun clockText(d: Duration): String {
+    val total = d.inWholeSeconds
+    val h = total / 3600
+    val m = (total % 3600) / 60
+    val s = total % 60
+
+    fun two(n: Long) = n.toString().padStart(2, '0')
+    return if (h > 0) "$h:${two(m)}:${two(s)}" else "${two(m)}:${two(s)}"
+}
+
+/** Allergy, chronic disease, last visit (board `DaVisit` patient summary); tapping opens the patient. */
+@Composable
+private fun Chips(
+    state: VisitUiState,
+    actions: VisitActions,
+) {
+    val patient = state.patient ?: return
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+        @Composable
+        fun chip(
+            text: String,
+            bg: Color,
+            ink: Color,
+        ) = Box(Modifier.clickable(onClick = actions.openPatient)) { ProfileChip(text, bg, ink) }
+        patient.allergies?.takeIf { it.isNotBlank() }?.let {
+            chip(tr(Res.string.allergyChip, it.trim()), ShifaColors.Bg.ErrorSubtle, ShifaColors.Text.Error)
+        }
+        patient.chronic?.let { chip(chronicLabel(it), ShifaColors.Bg.WarningSubtle, ShifaColors.Text.Warning) }
+        chip(
+            state.lastVisit?.let {
+                tr(
+                    Res.string.lastVisitOn,
+                    displayDate(PracticeClock(profileRepository.me.value?.profile?.timeZone).local(it).date),
+                )
+            }
+                ?: tr(Res.string.firstVisit),
+            ShifaColors.Bg.Surface,
+            ShifaColors.Text.Secondary,
+        )
+    }
+}
+
+@Composable
+private fun Card(content: @Composable ColumnScope.() -> Unit) =
+    Column(
+        Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg).padding(ShifaSize.S14),
+        verticalArrangement = Arrangement.spacedBy(ShifaSize.S10),
+        content = content,
+    )
+
+@Composable
+private fun NotesCard(
+    state: VisitUiState,
+    notes: VisitNotesState,
+    actions: VisitActions,
+) = Card {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+        Text(
+            tr(
+                when (state.mode) {
+                    VisitMode.General -> Res.string.notes
+                    VisitMode.Dental -> Res.string.docModeDental
+                    VisitMode.Form0252 -> Res.string.form0252
+                },
+            ),
+            Modifier.weight(1f),
+            style = ShifaTextStyles.panelTitle(),
+            color = ShifaColors.Text.Primary,
+        )
+        if (state.mode == VisitMode.General) {
+            ShifaIconButton(
+                Res.drawable.ic_eye_16,
+                tr(Res.string.focusMode),
+                { actions.ui { it.copy(focus = true) } },
+                variant = ShifaIconButtonVariant.Secondary,
+            )
+        }
+        ShifaIconButton(
+            Res.drawable.ic_menu_16,
+            tr(Res.string.notes),
+            { actions.ui { it.copy(menu = true) } },
+            variant = ShifaIconButtonVariant.Secondary,
+        )
+    }
+    val modes = VisitMode.entries.filter { it != VisitMode.Dental || state.dental }
+    SegmentedTabs(
+        modes.map { TabItem(tr(modeLabel(it))) },
+        modes.indexOf(state.mode).coerceAtLeast(0),
+        { actions.mode(modes[it]) },
+        block = true,
+    )
+    when (state.helper) {
+        VisitHelper.Ai -> AiHelper(state, notes, actions)
+        VisitHelper.Form -> FormHelper(state.forms.firstOrNull(), actions)
+        null -> Unit
+    }
+    when (state.mode) {
+        VisitMode.General -> General(state, notes, actions)
+        VisitMode.Dental -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_clipboard_22)
+        VisitMode.Form0252 -> Form0252(state.forms, state.visit?.patientId != null, actions)
+    }
+}
+
+private fun modeLabel(m: VisitMode) =
+    when (m) {
+        VisitMode.General -> Res.string.docModeGeneral
+        VisitMode.Dental -> Res.string.docModeDental
+        VisitMode.Form0252 -> Res.string.docMode0252
+    }
+
+@Composable
+private fun General(
+    state: VisitUiState,
+    notes: VisitNotesState,
+    actions: VisitActions,
+) {
+    val text = notes.text
+    Column(
+        Modifier.fillMaxWidth().background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd),
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable { actions.ui { it.copy(soapOpen = !it.soapOpen) } }
+                .padding(ShifaSize.S12),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    tr(Res.string.soapNotesSectionTitle),
+                    style = ShifaTextStyles.buttonCompact(),
+                    color = ShifaColors.Text.Primary,
+                )
+                Text(
+                    tr(Res.string.soapNotesSectionSubtitle),
+                    style = ShifaTextStyles.caption(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            }
+            Icon(painterResource(Res.drawable.ic_chev_d_16), null, tint = ShifaColors.Icon.Secondary)
+        }
+        if (state.soapOpen) {
+            Column(Modifier.padding(ShifaSize.S12), verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                listOf<Triple<StringResource, String, (SoapNotes, String) -> SoapNotes>>(
+                    Triple(Res.string.soapSubjective, text.subjective) { n, v -> n.copy(subjective = v) },
+                    Triple(Res.string.soapObjective, text.objective) { n, v -> n.copy(objective = v) },
+                    Triple(Res.string.soapAssessment, text.assessment) { n, v -> n.copy(assessment = v) },
+                    Triple(Res.string.soapPlan, text.plan) { n, v -> n.copy(plan = v) },
+                ).forEach { (label, value, set) ->
+                    ShifaInputField(
+                        value,
+                        { v -> actions.edit { set(it, v) } },
+                        tr(label),
+                        Modifier.fillMaxWidth(),
+                        clearable = false,
+                        multiline = true,
+                        areaMinHeight = ShifaSize.S56,
+                    )
+                }
+            }
+        }
+    }
+    ShifaInputField(
+        text.free,
+        { v -> actions.edit { it.copy(free = v) } },
+        tr(Res.string.enterNotes),
+        Modifier.fillMaxWidth(),
+        clearable = false,
+        multiline = true,
+    )
+    notes.saveError?.let { codeBanner(it) {}?.invoke() }
+    notes.loadError?.let {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+        ) {
+            Text(
+                tr(it.text),
+                Modifier.weight(1f),
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Secondary,
+            )
+            ShifaLink(tr(Res.string.retry), actions.retryNotes)
+        }
+    }
+}
+
+@Composable
+private fun AiHelper(
+    state: VisitUiState,
+    notes: VisitNotesState,
+    actions: VisitActions,
+) = HelperBox(tr(Res.string.fromShifaAi), Res.drawable.ic_sparkles_22, actions) {
+    notes.drafts.orEmpty().forEach { d ->
+        Column(
+            Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface, ShifaRadius.ControlMd).padding(ShifaSize.S10),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        ) {
+            ProfileChip(tr(Res.string.draft), ShifaColors.Bg.WarningSubtle, ShifaColors.Text.Warning)
+            Text(stripScribeTranscript(d.body), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Primary)
+            if (d.icdSuggestions.isNotEmpty()) {
+                Text(
+                    tr(Res.string.aiSuggestedDiagnoses),
+                    style = ShifaTextStyles.caption(),
+                    color = ShifaColors.Text.Secondary,
+                )
+                d.icdSuggestions.forEach { c ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+                    ) {
+                        Text(
+                            "${c.code} ${c.title}",
+                            Modifier.weight(1f),
+                            style = ShifaTextStyles.metaSmall(),
+                            color = ShifaColors.Text.Primary,
+                        )
+                        if (c.isTop) {
+                            ProfileChip(
+                                tr(Res.string.recommended),
+                                ShifaColors.Bg.SuccessSubtle,
+                                ShifaColors.Text.Primary,
+                            )
+                        }
+                        // ponytail: the code isn't carried into the editor yet (APPT-08); the board's banner says to finish there.
+                        ShifaLink(tr(Res.string.apply), {
+                            actions.mode(VisitMode.Form0252)
+                            actions.ui {
+                                it.copy(
+                                    helper = null,
+                                    banner =
+                                        CodeBanner(
+                                            Res.string.icdAppliedOpenForm,
+                                            error = false,
+                                            args = listOf(c.code),
+                                        ),
+                                )
+                            }
+                        })
+                    }
+                }
+            }
+            val busy = d.id in notes.busy
+            Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                ShifaSecondaryButton(tr(Res.string.discard), {
+                    actions.discardDraft(d)
+                }, enabled = !busy, size = ShifaButtonSize.Compact)
+                ShifaPrimaryButton(tr(Res.string.saveAsNote), {
+                    actions.confirmDraft(d)
+                }, enabled = !busy, size = ShifaButtonSize.Compact)
+            }
+        }
+    }
+    val saved = notes.notes.orEmpty().filter { it.fromAi }
+    if (saved.isNotEmpty()) {
+        val i = state.savedIndex.coerceIn(saved.indices)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        ) {
+            Text(
+                tr(Res.string.aiNote),
+                Modifier.weight(1f),
+                style = ShifaTextStyles.buttonCompact(),
+                color = ShifaColors.Text.Primary,
+            )
+            if (saved.size > 1) {
+                ShifaIconButton(Res.drawable.ic_chev_l_16, null, {
+                    actions.ui { it.copy(savedIndex = (i - 1 + saved.size) % saved.size) }
+                }, variant = ShifaIconButtonVariant.Secondary)
+                Text("${i + 1}/${saved.size}", style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+                ShifaIconButton(Res.drawable.ic_chev_r_16, null, {
+                    actions.ui { it.copy(savedIndex = (i + 1) % saved.size) }
+                }, variant = ShifaIconButtonVariant.Secondary)
+            }
+            ShifaIconButton(
+                Res.drawable.ic_plus_16,
+                tr(Res.string.addToNotes),
+                { actions.addToNotes(saved[i].displayText) },
+                variant = ShifaIconButtonVariant.Secondary,
+            )
+        }
+        Text(saved[i].displayText, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Primary)
+    }
+}
+
+@Composable
+private fun FormHelper(
+    form: PatientForm?,
+    actions: VisitActions,
+) = HelperBox(tr(Res.string.lastForm0252), Res.drawable.ic_clipboard_22, actions) {
+    form ?: return@HelperBox
+    listOf(
+        Res.string.complaints to form.complaints,
+        Res.string.diagnosis to listOfNotNull(form.diagnosisCode, form.diagnosis).joinToString(" ").ifBlank { null },
+        Res.string.treatment to form.treatment,
+    ).forEach { (label, value) ->
+        val text = value?.trim()?.ifEmpty { null } ?: return@forEach
+        val labelText = tr(label)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(labelText, style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
+                Text(text, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Primary)
+            }
+            ShifaIconButton(
+                Res.drawable.ic_plus_16,
+                tr(Res.string.addToNotes),
+                { actions.addToNotes("$labelText: $text") },
+                variant = ShifaIconButtonVariant.Secondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HelperBox(
+    title: String,
+    icon: DrawableResource,
+    actions: VisitActions,
+    content: @Composable ColumnScope.() -> Unit,
+) = Column(
+    Modifier.fillMaxWidth().background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd).padding(ShifaSize.S10),
+    verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+        Icon(painterResource(icon), null, Modifier.size(ShifaSize.S16), tint = ShifaColors.Icon.Brand)
+        Text(title, Modifier.weight(1f), style = ShifaTextStyles.buttonCompact(), color = ShifaColors.Text.Brand)
+        ShifaIconButton(Res.drawable.ic_x_16, tr(Res.string.close), {
+            actions.ui { it.copy(helper = null) }
+        }, variant = ShifaIconButtonVariant.Secondary)
+    }
+    content()
+}
+
+@Composable
+private fun Form0252(
+    forms: List<PatientForm>,
+    hasPatient: Boolean,
+    actions: VisitActions,
+) {
+    Text(tr(Res.string.form0252VisitHint), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    forms.forEach { f ->
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+        ) {
+            Text(
+                tr(Res.string.formListEntry, tr(Res.string.form0252), f.day?.let(::displayDate) ?: f.date),
+                Modifier.weight(1f),
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Primary,
+            )
+            Text(
+                tr(if (f.signed) Res.string.formSignedBadge else Res.string.formNotSignedYet),
+                style = ShifaTextStyles.caption(),
+                color = if (f.signed) ShifaColors.Text.Brand else ShifaColors.Text.Secondary,
+            )
+        }
+    }
+    if (hasPatient) ShifaPrimaryButton(tr(Res.string.openForm0252), actions.openForm, Modifier.fillMaxWidth())
+}
+
+/** The patient's documents grouped as the board shows them, then the upload row (05 §2.1). */
+private fun LazyListScope.documentRows(
+    state: shifa.doctor.ui.documents.PatientDocumentsUiState,
+    upload: UploadUiState,
+    actions: DocumentsActions,
+    gap: Modifier,
+    hasPatient: Boolean,
+) {
+    item { Text(tr(Res.string.documents), gap, style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary) }
+    // A visit without a patient (flow 05/04 §8): no documents to read, nothing to upload to.
+    if (!hasPatient) {
+        return item {
+            Text(
+                tr(Res.string.patientRecordUnavailable),
+                gap,
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Secondary,
+            )
+        }
+    }
+    state.banner?.let { b -> item { Box(gap) { codeBanner(b) { actions.ui { it.copy(banner = null) } }?.invoke() } } }
+    val docs = state.documents
+    when {
+        state.error != null ->
+            item {
+                Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                    codeBanner(state.error) {}?.invoke()
+                    ShifaLink(tr(Res.string.retry), actions.retry)
+                }
+            }
+        docs == null -> item { Box(gap) { ShifaSkeleton(Modifier.fillMaxWidth().size(ShifaSize.S64)) } }
+        docs.isEmpty() ->
+            item {
+                Text(
+                    tr(Res.string.noDocumentsYet),
+                    gap,
+                    style = ShifaTextStyles.metaSmall(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            }
+        else ->
+            docs.groupBy(DocBucket::of).toSortedMapByOrdinal().forEach { (bucket, list) ->
+                item(key = "bucket-$bucket") {
+                    Text(tr(bucket.label), gap, style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
+                }
+                items(
+                    list,
+                    key = { "visit-doc-${it.id}" },
+                ) { d -> Box(gap) { DocumentCard(d, d.id in state.requesting, actions) } }
+            }
+    }
+    item {
+        Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+            ShifaSecondaryButton(
+                tr(Res.string.upload),
+                actions.upload,
+                Modifier.fillMaxWidth(),
+                icon = Res.drawable.ic_upload_16,
+                enabled = upload.uploading == null,
+            )
+            Text(
+                tr(Res.string.consultationUploadHint),
+                style = ShifaTextStyles.caption(),
+                color = ShifaColors.Text.Secondary,
+            )
+            UploadStatus(upload, actions.cancelUpload, actions.retryUpload, actions.dismissUpload)
+            Text(
+                tr(Res.string.documentsFinalizeHint),
+                style = ShifaTextStyles.caption(),
+                color = ShifaColors.Text.Secondary,
+            )
+        }
+    }
+}
+
+private fun <V> Map<DocBucket, V>.toSortedMapByOrdinal(): List<Pair<DocBucket, V>> =
+    entries.sortedBy {
+        it.key.ordinal
+    }.map { it.key to it.value }
+
+/** The signature state and Request signature (board `DaVisit` action bar); End appointment joins with APPT-07. */
+@Composable
+private fun Footer(
+    state: VisitUiState,
+    actions: VisitActions,
+) = Column(Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface).navigationBarsPadding()) {
+    HorizontalDivider(color = ShifaColors.Border.Default)
+    Row(
+        Modifier.fillMaxWidth().padding(ShifaSpacing.Inset.Md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10),
+    ) {
+        when (state.signature) {
+            SignatureState.Signed ->
+                Text(
+                    tr(Res.string.patientSigned),
+                    Modifier.weight(1f),
+                    style = ShifaTextStyles.buttonCompact(),
+                    color = ShifaColors.Text.Brand,
+                )
+            SignatureState.Waiting ->
+                Text(
+                    tr(Res.string.waitingForPatientSignature),
+                    Modifier.weight(1f),
+                    style = ShifaTextStyles.buttonCompact(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            SignatureState.None ->
+                ShifaSecondaryButton(
+                    tr(Res.string.requestSignature),
+                    actions.requestSignature,
+                    Modifier.weight(1f),
+                    loading = state.signing,
+                    enabled = !state.signing,
+                )
+        }
+    }
+}
+
+/** The free notes alone, full screen (flow 05/05 "focus mode"); the same text, saved the same way. */
+@Composable
+private fun FocusMode(
+    notes: VisitNotesState,
+    actions: VisitActions,
+) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Surface)) {
+    ShifaSubHeader(tr(Res.string.consultationFocusModeTitle), Modifier.statusBarsPadding(), onBack = actions.back)
+    ShifaInputField(
+        notes.text.free,
+        { v -> actions.edit { it.copy(free = v) } },
+        tr(Res.string.enterNotes),
+        Modifier.fillMaxWidth().weight(1f).padding(ShifaSpacing.Inset.Md).imePadding(),
+        clearable = false,
+        multiline = true,
+    )
+}
+
+@Composable
+private fun Gone(
+    message: String,
+    requestId: String?,
+    actions: VisitActions,
+) = Column(Modifier.fillMaxSize()) {
+    ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
+    EmptyState(
+        tr(Res.string.appointmentLoadFailed),
+        Res.drawable.ic_alert_16,
+        Modifier.weight(1f),
+        body = listOfNotNull(message, requestId).joinToString("\n"),
+    ) {
+        ShifaSecondaryButton(tr(Res.string.retry), actions.retry)
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+internal fun StaffCannotRunVisits(onBack: () -> Unit) =
+    Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
+        BackHandler(onBack = onBack)
+        ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = onBack)
+        EmptyState(
+            tr(Res.string.staffVisitsTitle),
+            Res.drawable.ic_users_22,
+            Modifier.weight(1f),
+            body = tr(Res.string.staffVisitsBody),
+        )
+    }
+
+/** The notes menu (board `DaVisit` "Notes"): the helpers, then the modes. Photos join with APPT-05. */
+@Composable
+private fun NotesMenu(
+    state: VisitUiState,
+    actions: VisitActions,
+) {
+    val close = { actions.ui { it.copy(menu = false) } }
+    ProfileSheet(close) {
+        ShifaTray(tr(Res.string.notes), close) {
+            ShifaSettingsItem(
+                tr(Res.string.fromShifaAi),
+                { actions.helper(VisitHelper.Ai) },
+                icon = Res.drawable.ic_sparkles_22,
+            )
+            ShifaSettingsItem(tr(Res.string.fromLast0252Form), {
+                actions.helper(VisitHelper.Form)
+            }, icon = Res.drawable.ic_clipboard_22)
+            VisitMode.entries.filter { it != VisitMode.Dental || state.dental }.forEach { m ->
+                ShifaSettingsItem(
+                    tr(modeLabel(m)),
+                    { actions.mode(m) },
+                    selected = m == state.mode,
+                    divider = m != VisitMode.Form0252,
+                )
+            }
+        }
+    }
+}

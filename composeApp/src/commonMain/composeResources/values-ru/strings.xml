@@ -108,6 +108,7 @@
     <string name="aiInsightAllClear">Расписание свободно. Спросите о пациентах.</string>
     <string name="aiInsightAppointments">Сегодня осталось %1$s приёмов.</string>
     <string name="aiInsightTasks">%1$s задач на контроль ожидают.</string>
+    <string name="aiNote">Заметка ИИ</string>
     <string name="aiNotesNeedPro">Для AI-заметок нужен PRO</string>
     <string name="aiNotesNotReadyTryLater">Заметки AI ещё не готовы. Попробуйте снова через 30 секунд.</string>
     <string name="aiNotesUploaded">Запись загружена. Заметки будут готовы через несколько минут.</string>
@@ -125,6 +126,7 @@
     <string name="allPatients">Все пациенты</string>
     <string name="allRoles">Все роли</string>
     <string name="allergies">Аллергии</string>
+    <string name="allergyChip">Аллергия: %1$s</string>
     <string name="allow">Разрешить</string>
     <string name="alreadyBooked">Уже записан: %1$s %2$s</string>
     <string name="alreadyCompletedElsewhere">Этот визит уже завершён на другом устройстве.</string>
@@ -161,7 +163,9 @@
     <string name="appointmentEnded">Прием успешно завершен</string>
     <string name="appointmentEndedDocumentationSaved">Прием завершен. Документация сохранена.</string>
     <string name="appointmentEndedShort">Приём завершён</string>
+    <string name="appointmentGone">Этот приём больше не существует или перенесён.</string>
     <string name="appointmentLinkedPlanBanner">Часть плана #%1$s — %2$s</string>
+    <string name="appointmentLoadFailed">Не удалось загрузить</string>
     <string name="appointmentMoved">Приём перенесён</string>
     <string name="appointmentNotes">Записи приёма</string>
     <string name="appointmentOver">Приём завершён</string>
@@ -747,6 +751,7 @@
     <string name="consultationFocusModeTooltip">Режим крупных записей</string>
     <string name="consultationScheduleLine">%1$s - %2$s - Консультация</string>
     <string name="consultationUploadFailed">Ошибка загрузки</string>
+    <string name="consultationUploadHint">Нажмите, чтобы загрузить (сохраняется как медицинский документ)</string>
     <string name="consultationUploadNoBytes">Не удалось прочитать файл. Попробуйте меньший файл или другой формат.</string>
     <string name="consumed">Использован</string>
     <string name="contactAndClinicAddress">Контакты и адрес клиники</string>
@@ -1127,7 +1132,9 @@
     <string name="findTherapyPartner">Найти врача-партнёра</string>
     <string name="finish">Завершить</string>
     <string name="firstName">Имя</string>
+    <string name="firstVisit">Первый визит</string>
     <string name="flipCamera">Сменить камеру</string>
+    <string name="focusMode">Режим фокуса</string>
     <string name="followUpReasonDefault">Повторный приём</string>
     <string name="followUpSubtitle">%1$s · после сегодняшнего визита</string>
     <string name="followUpTask">Задача на контроль</string>
@@ -1139,9 +1146,11 @@
     <string name="form0252">Форма 025-2</string>
     <string name="form0252Description">Стоматологическая амбулаторная карта (форма 025-2, Узбекистан)</string>
     <string name="form0252MedicalDocument">Медицинский документ 025-2</string>
+    <string name="form0252VisitHint">Официальная стоматологическая амбулаторная карта (форма 025-2) для этого приёма: жалобы, диагноз с МКБ-10, зубная формула, лечение и подпись пациента.</string>
     <string name="formDocumentFailed">Форма сохранена, но её PDF не удалось загрузить. Попробуйте ещё раз.</string>
     <string name="formDocumentTitle">Форма 025-2 (%1$s)</string>
     <string name="formGeneral">Общее</string>
+    <string name="formListEntry">%1$s, %2$s</string>
     <string name="formLoadFailed">Не удалось загрузить форму.</string>
     <string name="formNeedsDiagnosis">Перед сохранением добавьте хотя бы диагноз или жалобы.</string>
     <string name="formNoPdf">Нет PDF</string>
@@ -1203,6 +1212,7 @@
     <string name="iUnderstand">Я понимаю</string>
     <string name="ibanAccountNumber">IBAN / Номер счета</string>
     <string name="icd10SearchHint">Поиск по коду или названию ICD-10</string>
+    <string name="icdAppliedOpenForm">Применено: %1$s. Откройте форму 025-2, чтобы завершить диагноз.</string>
     <string name="icdSearchFailed">Не удалось выполнить поиск МКБ-10. Нажмите, чтобы повторить.</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Изображение недоступно</string>
@@ -1443,12 +1453,14 @@
     <string name="languageNativeUzCyrl">Ўзбекча</string>
     <string name="languageSecurityNotifications">Язык · Безопасность · Уведомления</string>
     <string name="largeFileWarning">Большой файл: загрузка может занять время.</string>
+    <string name="lastForm0252">Последняя форма 025-2</string>
     <string name="lastLogin">Последний вход</string>
     <string name="lastName">Фамилия</string>
     <string name="lastVisit">Последний визит</string>
     <string name="lastVisitOn">Последний визит: %1$s</string>
     <string name="latitude">Широта</string>
     <string name="leaveAndEndVisit">Выйти и завершить визит</string>
+    <string name="leaveAnyway">Всё равно выйти</string>
     <string name="leaveCall">Выйти из звонка</string>
     <string name="leaveCallBody">Визит останется открытым, пока вы его не завершите.</string>
     <string name="leaveCallTitle">Выйти из звонка?</string>
@@ -1592,6 +1604,7 @@
     <string name="noFailedOrUnprocessedStripeWebhooks">Нет неуспешных или необработанных Stripe webhook событий.</string>
     <string name="noFileData">Нет данных файла для загрузки</string>
     <string name="noFileSelected">Файл не выбран</string>
+    <string name="noForm0252Yet">У этого пациента ещё нет формы 025-2.</string>
     <string name="noFormsYet">Форм пока нет</string>
     <string name="noFreeSlots">Нет свободных слотов</string>
     <string name="noFreeSlotsThisDay">На этот день нет свободного времени</string>
@@ -1647,6 +1660,8 @@
     <string name="noteCharCounter">%1$s / %2$s</string>
     <string name="notes">Примечания</string>
     <string name="notesLabel">Метка примечаний</string>
+    <string name="notesNotSavedBody">Не удалось сохранить заметки приёма. Если выйти сейчас, последние изменения пропадут.</string>
+    <string name="notesNotSavedTitle">Заметки не сохранены</string>
     <string name="notesOptional">Примечания (необязательно)</string>
     <string name="notesRequired">Примечания обязательны</string>
     <string name="notesSaveFailed">Не удалось сохранить заметки. Они остаются здесь; попробуйте ещё раз.</string>
@@ -2151,6 +2166,7 @@
     <string name="signOutInstead">Выйти из аккаунта</string>
     <string name="signOutTitle">Выйти из аккаунта?</string>
     <string name="signatureNotYet">Пациент ещё не подписал. В резюме строка подписи останется пустой.</string>
+    <string name="signatureRequestFailed">Не удалось запросить подпись пациента. Попробуйте ещё раз.</string>
     <string name="signatureRequestSent">Запрос подписи отправлен пациенту</string>
     <string name="signedOutElsewhere">Вы вышли из системы. Войдите снова.</string>
     <string name="signedOutInactivity">Вы вышли из системы из-за длительного бездействия.</string>
@@ -2192,6 +2208,8 @@
     <string name="staffEmailInUse">Аккаунт с этим email уже существует. Попросите клинику отправить приглашение на этот адрес.</string>
     <string name="staffProfileManagedByClinic">Профилями сотрудников управляет владелец клиники.</string>
     <string name="staffTimezoneHint">Ваши уведомления используют этот часовой пояс. Время клиники всегда показывается в часовом поясе клиники.</string>
+    <string name="staffVisitsBody">Сотрудники клиники могут просматривать, переносить и отменять записи в расписании клиники.</string>
+    <string name="staffVisitsTitle">Приём ведёт врач</string>
     <string name="start">Начать</string>
     <string name="startAiNotes">Начать AI заметки</string>
     <string name="startAnyway">Всё равно начать</string>
@@ -2201,6 +2219,7 @@
     <string name="startTime">Время начала</string>
     <string name="startingScreen">Стартовый экран</string>
     <string name="startingScreenHint">Главная вкладка при запуске приложения. Уведомления по-прежнему открывают нужный экран.</string>
+    <string name="startsIn">До начала</string>
     <string name="status">Статус</string>
     <string name="statusCancelled">Отменено</string>
     <string name="statusCompleted">Завершено</string>
@@ -2211,6 +2230,7 @@
     <string name="statusPendingPayment">Ожидает оплаты</string>
     <string name="statusRequested">Запрошено</string>
     <string name="statusUnprocessed">НЕ ОБРАБОТАНО</string>
+    <string name="stay">Остаться</string>
     <string name="stepApplyingPlan">Применяем план лечения…</string>
     <string name="stepCompleting">Завершаем визит…</string>
     <string name="stepOfTotal">Шаг %1$s из %2$s</string>
@@ -2506,6 +2526,7 @@
     <string name="visitOther">Визит</string>
     <string name="visitReason">Причина визита</string>
     <string name="visitRequested">Запрошен визит</string>
+    <string name="visitTime">Время приёма</string>
     <string name="visitTypeDistribution">Распределение типов посещений</string>
     <string name="visualCheckup">Визуальный осмотр</string>
     <string name="vital">Жизненно важные показатели</string>

@@ -108,6 +108,7 @@
     <string name="aiInsightAllClear">Jadvalingiz aniq. Bemorlar haqida istalgan savol bering.</string>
     <string name="aiInsightAppointments">Bugun yana %1$s ta uchrashuvingiz bor.</string>
     <string name="aiInsightTasks">%1$s ta kuzatuv vazifasi kutilmoqda.</string>
+    <string name="aiNote">AI qaydi</string>
     <string name="aiNotesNeedPro">AI qaydlari uchun PRO kerak</string>
     <string name="aiNotesNotReadyTryLater">AI yozuvchining qaydlari hali tayyor emas. Iltimos, 30 soniyadan so'ng qayta urinib ko'ring.</string>
     <string name="aiNotesUploaded">Yozuv yuklandi. Yozuvlar bir necha daqiqada tayyor bo'ladi.</string>
@@ -125,6 +126,7 @@
     <string name="allPatients">Barcha bemorlar</string>
     <string name="allRoles">Barcha rollar</string>
     <string name="allergies">Allergiyalar</string>
+    <string name="allergyChip">Allergiya: %1$s</string>
     <string name="allow">Ruxsat berish</string>
     <string name="alreadyBooked">Allaqachon yozilgan: %1$s %2$s</string>
     <string name="alreadyCompletedElsewhere">Bu tashrif boshqa qurilmada allaqachon yakunlangan.</string>
@@ -161,7 +163,9 @@
     <string name="appointmentEnded">Uchrashuv muvaffaqiyatli yakunlandi</string>
     <string name="appointmentEndedDocumentationSaved">Uchrashuv yakunlandi. Hujjatlar saqlandi.</string>
     <string name="appointmentEndedShort">Uchrashuv tugadi</string>
+    <string name="appointmentGone">Bu qabul endi mavjud emas yoki ko'chirilgan.</string>
     <string name="appointmentLinkedPlanBanner">Reja #%1$s qismi — %2$s</string>
+    <string name="appointmentLoadFailed">Yuklab bo'lmadi</string>
     <string name="appointmentMoved">Qabul ko'chirildi</string>
     <string name="appointmentNotes">Uchrashuv yozuvlari</string>
     <string name="appointmentOver">Qabul tugagan</string>
@@ -747,6 +751,7 @@
     <string name="consultationFocusModeTooltip">Katta izoh rejimi</string>
     <string name="consultationScheduleLine">%1$s - %2$s - Konsultatsiya</string>
     <string name="consultationUploadFailed">Yuklash amalga oshmadi</string>
+    <string name="consultationUploadHint">Yuklash uchun bosing (tibbiy hujjat sifatida saqlanadi)</string>
     <string name="consultationUploadNoBytes">Fayl o'qilmadi. Kichikroq fayl yoki boshqa formatdan foydalaning.</string>
     <string name="consumed">Ishlatilgan</string>
     <string name="contactAndClinicAddress">Aloqa va klinika manzili</string>
@@ -1127,7 +1132,9 @@
     <string name="findTherapyPartner">Hamkor shifokor topish</string>
     <string name="finish">Tugallandi</string>
     <string name="firstName">Ism</string>
+    <string name="firstVisit">Birinchi tashrif</string>
     <string name="flipCamera">Kamerani almashtirish</string>
+    <string name="focusMode">Diqqat rejimi</string>
     <string name="followUpReasonDefault">Takroriy qabul</string>
     <string name="followUpSubtitle">%1$s · bugungi tashrifdan keyin</string>
     <string name="followUpTask">Kuzatuv vazifasi</string>
@@ -1139,9 +1146,11 @@
     <string name="form0252">Form 025-2</string>
     <string name="form0252Description">Stomatologik ambulator karta (O'zbekiston 025-2 shakli)</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
+    <string name="form0252VisitHint">Ushbu qabul uchun rasmiy stomatologik ambulator karta (025-2 shakli): shikoyatlar, MKB-10 bilan tashxis, tish diagrammasi, davolash va bemor imzosi.</string>
     <string name="formDocumentFailed">Shakl saqlandi, lekin uning PDF faylini yuklab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="formDocumentTitle">025-2 shakli (%1$s)</string>
     <string name="formGeneral">Umumiy</string>
+    <string name="formListEntry">%1$s, %2$s</string>
     <string name="formLoadFailed">Shaklni yuklab bo'lmadi.</string>
     <string name="formNeedsDiagnosis">Saqlashdan oldin kamida tashxis yoki shikoyatlarni kiriting.</string>
     <string name="formNoPdf">PDF yo'q</string>
@@ -1203,6 +1212,7 @@
     <string name="iUnderstand">Tushundim</string>
     <string name="ibanAccountNumber">IBAN / Hisob raqami</string>
     <string name="icd10SearchHint">ICD-10 kodi yoki nomi bo'yicha qidiring</string>
+    <string name="icdAppliedOpenForm">Qo'llandi: %1$s. Tashxisni yakunlash uchun 025-2 shaklini oching.</string>
     <string name="icdSearchFailed">ICD-10 bo'yicha qidirib bo'lmadi. Qayta urinish uchun bosing.</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Rasm mavjud emas</string>
@@ -1443,12 +1453,14 @@
     <string name="languageNativeUzCyrl">Ўзбекча</string>
     <string name="languageSecurityNotifications">Til · Xavfsizlik · Bildirishnomalar</string>
     <string name="largeFileWarning">Katta fayl: yuklash biroz vaqt olishi mumkin.</string>
+    <string name="lastForm0252">Oxirgi 025-2 shakli</string>
     <string name="lastLogin">Oxirgi kirish</string>
     <string name="lastName">Familiya</string>
     <string name="lastVisit">Oxirgi tashrif</string>
     <string name="lastVisitOn">Oxirgi tashrif: %1$s</string>
     <string name="latitude">Kenglik</string>
     <string name="leaveAndEndVisit">Chiqish va tashrifni yakunlash</string>
+    <string name="leaveAnyway">Baribir chiqish</string>
     <string name="leaveCall">Qo'ng'iroqdan chiqish</string>
     <string name="leaveCallBody">Tashrif siz uni yakunlamaguningizcha ochiq qoladi.</string>
     <string name="leaveCallTitle">Qo'ng'iroqdan chiqilsinmi?</string>
@@ -1592,6 +1604,7 @@
     <string name="noFailedOrUnprocessedStripeWebhooks">Muvaffaqiyatsiz yoki qayta ishlanmagan Stripe webhook hodisalari yo'q.</string>
     <string name="noFileData">Yuklash uchun fayl ma'lumotlari yo'q</string>
     <string name="noFileSelected">Fayl tanlanmagan</string>
+    <string name="noForm0252Yet">Bu bemorda hali 025-2 shakli yo'q.</string>
     <string name="noFormsYet">Hali formalar yo'q</string>
     <string name="noFreeSlots">Bo'sh vaqtlar yo'q</string>
     <string name="noFreeSlotsThisDay">Bu kunda bo'sh vaqt yo'q</string>
@@ -1647,6 +1660,8 @@
     <string name="noteCharCounter">%1$s / %2$s</string>
     <string name="notes">Izohlar</string>
     <string name="notesLabel">Izoh yorlig'i</string>
+    <string name="notesNotSavedBody">Qabul qaydlarini saqlab bo'lmadi. Hozir chiqsangiz, oxirgi o'zgarishlar yo'qoladi.</string>
+    <string name="notesNotSavedTitle">Qaydlar saqlanmadi</string>
     <string name="notesOptional">Izohlar (ixtiyoriy)</string>
     <string name="notesRequired">Izoh talab qilinadi</string>
     <string name="notesSaveFailed">Qaydlarni saqlab bo'lmadi. Ular shu yerda qoladi; qayta urinib ko'ring.</string>
@@ -2151,6 +2166,7 @@
     <string name="signOutInstead">Buning o'rniga tizimdan chiqish</string>
     <string name="signOutTitle">Tizimdan chiqasizmi?</string>
     <string name="signatureNotYet">Bemor hali imzo qo'ymagan. Xulosada imzo qatori bo'sh bo'ladi.</string>
+    <string name="signatureRequestFailed">Bemordan imzo so'rab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="signatureRequestSent">Bemorga imzo so'rovi yuborildi</string>
     <string name="signedOutElsewhere">Siz tizimdan chiqarildingiz. Iltimos, qayta kiring.</string>
     <string name="signedOutInactivity">Uzoq vaqt faollik bo'lmagani uchun tizimdan chiqarildingiz.</string>
@@ -2192,6 +2208,8 @@
     <string name="staffEmailInUse">Bu email bilan hisob allaqachon mavjud. Klinikadan taklifni shu manzilga yuborishni so'rang.</string>
     <string name="staffProfileManagedByClinic">Xodimlar profillarini klinika egasi boshqaradi.</string>
     <string name="staffTimezoneHint">Shaxsiy bildirishnomalaringiz shu vaqt zonasida keladi. Klinika vaqtlari doim klinika vaqt zonasida ko'rsatiladi.</string>
+    <string name="staffVisitsBody">Klinika xodimlari yozuvlarni klinika jadvalidan ko'rishi, ko'chirishi va bekor qilishi mumkin.</string>
+    <string name="staffVisitsTitle">Qabulni shifokor o'tkazadi</string>
     <string name="start">Boshlash</string>
     <string name="startAiNotes">AI yozuvlarni boshlash</string>
     <string name="startAnyway">Baribir boshlash</string>
@@ -2201,6 +2219,7 @@
     <string name="startTime">Boshlanish vaqti</string>
     <string name="startingScreen">Boshlang'ich ekran</string>
     <string name="startingScreenHint">Ilovani ochganda ko'rsatiladigan asosiy bo'lim. Bildirishnomalar tegishli ekranni ochadi.</string>
+    <string name="startsIn">Boshlanishiga</string>
     <string name="status">Holat</string>
     <string name="statusCancelled">Bekor qilingan</string>
     <string name="statusCompleted">Yakunlangan</string>
@@ -2211,6 +2230,7 @@
     <string name="statusPendingPayment">To'lov kutilmoqda</string>
     <string name="statusRequested">So'ralgan</string>
     <string name="statusUnprocessed">QAYTA ISHLANMAGAN</string>
+    <string name="stay">Qolish</string>
     <string name="stepApplyingPlan">Davolash rejasi qo'llanmoqda…</string>
     <string name="stepCompleting">Tashrif yakunlanmoqda…</string>
     <string name="stepOfTotal">%2$s qadamdan %1$s-qadam</string>
@@ -2506,6 +2526,7 @@
     <string name="visitOther">Tashrif</string>
     <string name="visitReason">Tashrif sababi</string>
     <string name="visitRequested">Tashrif so'raldi</string>
+    <string name="visitTime">Qabul vaqti</string>
     <string name="visitTypeDistribution">Uchrashuv turi taqsimoti</string>
     <string name="visualCheckup">Obyektiv tekshiruv, tashqi ko'rinishi</string>
     <string name="vital">Hayotiy</string>
