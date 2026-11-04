@@ -241,7 +241,13 @@ the timezone warning (cancelled).
 5. **iOS:** the photo picker, camera, downsampling and the map tap compile and link; none ran on a simulator yet.
 6. **Stripe on dev was not touched:** the checkout and Connect buttons create Stripe sessions, so they are covered by
    tests and the demo backend only. Dev has BASIC and PRO plans; PREMIUM has no plan (admins set it).
-7. **Next (your D-08):** the KMP web target now that M2 is done, then M3.
+7. **D-08 (KMP web) needs your call before it can start:** the pinned libraries have no `wasmJs` build: Ktor 2.3.7
+   (web arrives in Ktor 3), kotlinx-datetime 0.5.0, multiplatform-settings 1.1.1 and Kamel 0.9.5. A web target means
+   upgrading those four (and, by the "same versions in both apps" rule, the patient app too), plus web versions of 24
+   platform declarations in 17 files (secure storage, HTTP engine, pickers, PDF view, maps, audio, voice, biometrics,
+   push…), several with no browser equivalent. I started M3 instead. Options: (a) upgrade both apps' libraries in one
+   `chore/` change, then add `wasmJs`; (b) keep Flutter web until the mobile app ships, then decide; (c) a compile-only
+   web target later. My recommendation is (b).
 8. **A flaky test pattern:** "Dispatchers.Main is used concurrently with setting it" once, when a previous test class
    left a ViewModel coroutine running; it passes on rerun.
 
