@@ -81,7 +81,7 @@ desktop/web target is ever chosen.
 | CORE-06 | Storage & session: `secureSettings` (Keychain / EncryptedSharedPreferences) with the exact keys of 01 §4, plain settings, single `Jwt` decoder (`exp`, `role`), `SessionRepository` (`StateFlow<Session?>`, restore, logout clears only the listed keys) | S | CORE-05 | 01 §4, §5.1, §2.9 |
 | CORE-07 | Native risk spikes (throwaway, both OSes): Daily room join, FCM/APNs token + push, AAC m4a record + play, PDF render (platform API) vs backend decision, native map pin. Write the choices into `CLAUDE.md` | L | CORE-01 | 05 §9; 07 §7; 08 §12 |
 | CORE-08 | `DemoBackend` (`MockEngine`) + debug menu (demo data, fake pushes), `DemoBackendTest`; fixtures = endpoint tables of docs 01–09 | M | CORE-05 | CLAUDE.kmp.md "Debug builds" |
-| CORE-09 | Cross-cutting utils: `PracticeClock`/`Dates.kt` (practice-TZ formatting, `getCurrentInstant`), `Money.format`, `PhoneE164`, `PasswordPolicy` (8–128, upper/lower/digit/special), `sanitizeErrorMessage` port, `expect` helpers for pickers/share/open-URL/clipboard | M | CORE-01 | 03 §4; 09 §8; 01 §11 |
+| CORE-09 | Cross-cutting utils: `PracticeClock`/`Dates.kt` (practice-TZ formatting, `getCurrentInstant`), `Money.format`, `PhoneE164`, `PasswordPolicy` (8–128, upper/lower/digit/special), ~~`sanitizeErrorMessage` port~~ (superseded by 17 §1: errors map the backend `code` in CORE-05's `toUserMessage`), `expect` helpers for pickers/share/open-URL/clipboard | M | CORE-01 | 03 §4; 09 §8; 01 §11 |
 
 Done when: both apps launch to a token gallery + component gallery that matches Figma; CI runs ktlint, unit tests
 and Roborazzi on a PR.

@@ -183,7 +183,7 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   errors to the sealed `ApiException` (ValidationError, Unauthorized, NotFound, Conflict, RateLimit, ServerError,
   NetworkError…). DTOs tolerate `null` in list fields and unknown keys; one bad item must not drop the whole list.
 - **Times:** sent as UTC ISO-8601; **displayed in the doctor's practice time zone** (`doctor_profiles.practiceTimeZone`,
-  IANA id), never in device-local time unless the spec says so. `utils/Dates.kt` takes the zone explicitly. Device zone
+  IANA id), never in device-local time unless the spec says so. `utils/PracticeClock` takes the zone explicitly; money is `utils/Money`. Device zone
   is only used for the "your device differs from the schedule zone" hint.
 - Debug builds have Profile → Debug menu: demo data (`data/debug/DemoBackend.kt`, a `MockEngine` behind
   `httpClient`, writes never reach production) and fake pushes of each type. A new endpoint gets a `DemoBackend`

@@ -168,3 +168,29 @@ Built 2026-11-04 on `doc-app2.0`, after the patient app's `DemoBackend`.
   **Not built:** fake pushes; their payloads are defined by PUSH-01 and NOTIF-*, which add them here.
 - **Tests:** `DemoBackendTest` (3: fixture answer, language write and read-back, `auth`/unknown GET passthrough and
   write refusal).
+
+## CORE-09 · Cross-cutting utils (`utils/`)
+
+Built 2026-11-04 on `doc-app2.0`.
+
+- **`PracticeClock(zoneId)`** (flow 04 README §4.2, 03 §4): `today()`, `now()`, `local(instant)`, `instant(date, time)`
+  (DST-correct: 09:00 Berlin is 08:00Z before the March switch, 07:00Z after), `startOfDay`, `deviceDiffers()` for the
+  mismatch banner, `zoneMissing` when the profile zone is empty or unknown (UTC fallback, so the screen can ask). The
+  clinic screens build one with the clinic's zone. `parseInstant` reads a zone-less backend timestamp as UTC (Flutter
+  read it as device time, 03 §4.3 item 6). `currentInstant()` reads the stdlib clock, since kotlinx-datetime 0.5's
+  `Clock` doesn't resolve on iOS with Kotlin 2.3.
+- **`Money`** (flow 09 README "Money formatting"): `format(minor, currency)`: UZS whole sums ("1 250 000 UZS", tiyin
+  rounded away, never shown), others two decimals ("1 250.50 USD"), grouped with a narrow no-break space (the spec's
+  thin space, but unbreakable), "0 UZS" for zero, U+2212 for negatives. `parse(text, currency)` takes "1 250 000",
+  "1250.50" or "1250,5"; UZS refuses decimals.
+- **`PhoneE164`**: `normalize` ("90 123 45 67", "998…", "+998 …", "00998…" → "+998901234567"; other countries need
+  their code), `display` groups Uzbek numbers.
+- **`PasswordPolicy`**: the backend's rule with its own patterns (8–128, ASCII upper, lower, digit, a non-space
+  special character); `missing()` lists what the form still needs.
+- **Platform helpers** (from the patient app): `rememberDocumentPickerLauncher` (PDF), `rememberTextShare`,
+  `rememberInAppBrowser` (open-URL: Custom Tab / `SFSafariViewController`), `FileSaver`. Clipboard needs nothing:
+  Compose's `LocalClipboardManager` is multiplatform. The camera/gallery picker and image compression come with DOCS-02
+  (they need a FileProvider and the compression rules).
+- **Not built: `sanitizeErrorMessage` port.** It matched English server text, which 17 §1 forbids ("never match English
+  text"); CORE-05's `toUserMessage(fallback)` maps the backend's `code` instead. The plan row is corrected.
+- **Tests:** `PracticeClockTest` (4), `MoneyTest` (3), `PhoneE164Test` (3), `PasswordPolicyTest` (1).
