@@ -60,3 +60,33 @@ Built 2026-11-04. Flow `01-launch-auth-shell/02-login.md`; board `DaAuth.dc.html
   `POST /auth/check-identifier` for an identifier hint (17 §4 optional), the inactivity and PIN-lockout banners (their
   reasons come with LOCK-01/02).
 - **Tests:** `LoginViewModelTest` (5), `LoginScreenshotTest` (5: empty, errors, loading, failed, session expired).
+
+## AUTH-03 · Sign in with an e-mail code
+
+Built 2026-11-04. Flows `01/03-email-input.md`, `01/04-email-otp-code.md`; board `DaAuth.dc.html`, branches `email`
+and `otp`.
+
+- **Screens** (`ui/emailcode/`): `EmailEntryScreen` (title 24 left, the "Enter your email address…" line, the Email field,
+  Continue) and `CodeScreen` (Enter OTP, "A 6-digit code has been sent to {email}", the Code field, the resend link,
+  Verify), both on `AuthFrame` with Back and the language pill (flow 01/03 §3 asks for the pill everywhere). One
+  `EmailCodeMode` (SignIn / Reset) drives both, so AUTH-04 reuses them.
+- **E-mail:** required and checked against a full pattern (new copy "Please enter a valid email address") before a
+  request. `POST /auth/send-login-otp {email}` (sign in) or `/auth/send-forgot-password-otp {identifier, app:"doctor"}`
+  (reset). The address is trimmed and lower-cased first. A code sent less than a minute ago is still used: going back and
+  pressing Continue again doesn't send a second e-mail (`OtpCooldown`, per address **and purpose**, in memory). Back
+  from the code screen keeps the address.
+- **Code:** digits only, 6; the sixth digit submits (flow target). Sign-in mode: `POST /auth/verify-email-otp
+  {email, code}` → token → session → shell. A rejected code (400/401/404) shows "Invalid or expired OTP." and clears the
+  field; other failures "Verification failed…" or the code-mapped text (429 → too many requests). Reset mode sends
+  nothing and hands the code to the new-password step (flow §5 step 5).
+- **Resend:** "Resend code in 42 s" while the 60 s cooldown runs (disabled), then "Resend code"; success shows the
+  "Code resent." banner and restarts the wait.
+- **Navigation:** the app's screens became a sealed type carrying data (address, mode); a completion only navigates
+  while its screen is still current (`go(from, to)`), so a late reply can't undo Back. The code field is disabled
+  during a request. System Back: code → e-mail →
+  Sign In. **Correction:** the system-Back handlers reported fixed in AUTH-02 (`6a4b9fe`) had not applied (only the
+  import landed); they are in this commit, for every secondary auth screen and the debug menu.
+- **Not checked end to end against dev:** the seed accounts have no mailbox, so a real code can't be read; the flow is
+  covered by `EmailCodeViewModelTest` against the backend's request and error shapes.
+- **Deviation:** the envelope sits at the field's end (the kit field has a trailing slot only), not as a prefix.
+- **Tests:** `EmailCodeViewModelTest` (5), `EmailCodeScreenshotTest` (5).

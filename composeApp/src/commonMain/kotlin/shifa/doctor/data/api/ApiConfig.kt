@@ -11,6 +11,10 @@ object ApiConfig {
 
     object Endpoints {
         const val LOGIN = "auth/login"
+        const val SEND_LOGIN_OTP = "auth/send-login-otp"
+        const val VERIFY_EMAIL_OTP = "auth/verify-email-otp"
+        const val SEND_FORGOT_PASSWORD_OTP = "auth/send-forgot-password-otp"
+        const val FORGOT_PASSWORD_RESET = "auth/forgot-password-reset"
         const val RESET_PASSWORD = "auth/reset-password"
         const val DOCTOR_ME = "doctors/me"
         const val DOCTOR_LANGUAGE = "doctors/me/language"

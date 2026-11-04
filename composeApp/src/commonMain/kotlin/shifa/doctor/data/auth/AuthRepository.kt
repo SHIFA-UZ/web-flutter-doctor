@@ -10,7 +10,10 @@ import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.model.LoginRequest
+import shifa.doctor.data.model.SendForgotPasswordOtpRequest
+import shifa.doctor.data.model.SendLoginOtpRequest
 import shifa.doctor.data.model.TokenResponse
+import shifa.doctor.data.model.VerifyEmailOtpRequest
 
 /** The sign-in calls (01 §2). They go without a token (`auth/` is public); the session repository keeps the result. */
 class AuthRepository(
@@ -32,6 +35,39 @@ class AuthRepository(
                 setBody(LoginRequest(username.trim(), password))
             }
         }.map { it.token }
+
+    /** `POST /auth/send-login-otp` (01 §2.2): a 6-digit code by e-mail. */
+    suspend fun sendLoginOtp(email: String): Result<Unit> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.SEND_LOGIN_OTP) {
+                contentType(ContentType.Application.Json)
+                setBody(SendLoginOtpRequest(email.trim()))
+            }
+        }
+
+    /** `POST /auth/verify-email-otp` (01 §2.2): the code for a session token. */
+    suspend fun verifyEmailOtp(
+        email: String,
+        code: String,
+    ): Result<String> =
+        apiCall<TokenResponse> {
+            client().post(ApiConfig.Endpoints.VERIFY_EMAIL_OTP) {
+                contentType(ContentType.Application.Json)
+                setBody(VerifyEmailOtpRequest(email.trim(), code))
+            }
+        }.map { it.token }
+
+    /**
+     * `POST /auth/send-forgot-password-otp` (01 §2.4) with `app=doctor`, so the code is for the doctor account and not a
+     * patient account on the same address.
+     */
+    suspend fun sendForgotPasswordOtp(email: String): Result<Unit> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.SEND_FORGOT_PASSWORD_OTP) {
+                contentType(ContentType.Application.Json)
+                setBody(SendForgotPasswordOtpRequest(email.trim(), APP))
+            }
+        }
 
     private companion object {
         const val APP = "doctor"

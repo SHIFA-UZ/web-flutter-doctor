@@ -18,3 +18,5 @@
 5. *Stateless Content:* password visibility lives in `LoginUiState` with a `togglePasswordVisible` callback.
 6. *Banner placement:* `AuthFrame` puts the banner directly under the bar, outside the centred form.
 Also, found while planning AUTH-03: login now sends `?app=doctor`, and a 403 shows the new `notDoctorAccount` text. These are small and covered by tests, so no second round.
+
+**Correction (2026-11-04, AUTH-03):** answer 3 was wrong when committed: the `BackHandler` edit did not apply in `6a4b9fe` (only the import landed, and ktlint then removed it). The handlers are in the AUTH-03 commit.

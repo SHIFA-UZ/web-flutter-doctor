@@ -1532,6 +1532,7 @@
     <string name="other">Boshqa</string>
     <string name="otherCountry">Boshqa</string>
     <string name="otherIllnessesAndComplications">Boshidan o'tkazgan va yo'ldosh kasalliklar</string>
+    <string name="otpCode">Kod</string>
     <string name="otpResendHint">Yangi kod olish uchun orqaga qayting va Davom etishni bosing.</string>
     <string name="otpResent">Kod qayta yuborildi.</string>
     <string name="otpSent">Tasdiqlash kodi yuborildi.</string>

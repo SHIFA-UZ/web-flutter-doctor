@@ -1532,6 +1532,7 @@
     <string name="other">Другой</string>
     <string name="otherCountry">Другое</string>
     <string name="otherIllnessesAndComplications">Другие заболевания и осложнения</string>
+    <string name="otpCode">Код</string>
     <string name="otpResendHint">Чтобы получить новый код, вернитесь назад и нажмите «Продолжить».</string>
     <string name="otpResent">Код отправлен снова.</string>
     <string name="otpSent">Код подтверждения отправлен.</string>

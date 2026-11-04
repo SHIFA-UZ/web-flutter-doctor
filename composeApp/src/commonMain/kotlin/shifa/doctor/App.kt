@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -31,6 +32,9 @@ import shifa.doctor.ui.auth.LanguageSwitch
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.debug.spikeAutoRun
+import shifa.doctor.ui.emailcode.CodeScreen
+import shifa.doctor.ui.emailcode.EmailCodeMode
+import shifa.doctor.ui.emailcode.EmailEntryScreen
 import shifa.doctor.ui.login.LoginScreen
 import shifa.doctor.ui.splash.SplashScreen
 import shifa.doctor.ui.theme.ShifaTheme
@@ -63,15 +67,44 @@ fun App() {
     }
 }
 
-private enum class Screen { Splash, SignIn, EmailSignIn, ForgotPassword, VerifyKey, Debug, Shell }
+// The signed-out screens and the shell; data classes carry what the next screen needs (no navigation library).
+private sealed interface Screen {
+    data object Splash : Screen
+
+    data object SignIn : Screen
+
+    data class EmailEntry(
+        val mode: EmailCodeMode,
+        val email: String = "",
+    ) : Screen
+
+    data class EmailCode(
+        val email: String,
+        val mode: EmailCodeMode,
+    ) : Screen
+
+    data object VerifyKey : Screen
+
+    data object Debug : Screen
+
+    data object Shell : Screen
+}
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun AppScreens() {
     // Not saveable: a recreated process starts at the splash again, which restores the session (01 §2.9). Each
     // screen has its own ViewModel store, cleared when it leaves (Login must not keep a finished sign-in).
-    var screen by remember { mutableStateOf(Screen.Splash) }
+    var screen by remember { mutableStateOf<Screen>(Screen.Splash) }
     val session by sessionRepository.session.collectAsState()
+
+    // A screen that is leaving (Crossfade keeps it a moment) must not navigate when its request finishes late.
+    fun go(
+        from: Screen,
+        to: Screen,
+    ) {
+        if (screen == from) screen = to
+    }
     // One navigation for every way a session ends (sign-out, 401, expiry, disabled account: 17 §1, AUTH-09).
     LaunchedEffect(session) { if (session == null && screen == Screen.Shell) screen = Screen.SignIn }
     Crossfade(screen) {
@@ -90,36 +123,52 @@ private fun AppScreens() {
             Screen.SignIn ->
                 ScopedViewModels {
                     LoginScreen(
-                        onSignedIn = { screen = Screen.Shell },
-                        onEmailSignIn = { screen = Screen.EmailSignIn },
-                        onForgotPassword = { screen = Screen.ForgotPassword },
+                        onSignedIn = { go(Screen.SignIn, Screen.Shell) },
+                        onEmailSignIn = { screen = Screen.EmailEntry(EmailCodeMode.SignIn) },
+                        onForgotPassword = { screen = Screen.EmailEntry(EmailCodeMode.Reset) },
                         onCreateAccount = { screen = Screen.VerifyKey },
-                        debugMenu =
-                            if (isDebugBuild) {
-                                (
-                                    {
-                                        ShifaLink(
-                                            "Debug menu",
-                                            { screen = Screen.Debug },
-                                        )
-                                    }
-                                )
-                            } else {
-                                null
-                            },
+                        debugMenu = if (isDebugBuild) debugLink { screen = Screen.Debug } else null,
                     )
                 }
-            // AUTH-03…05 replace these.
-            Screen.EmailSignIn, Screen.ForgotPassword, Screen.VerifyKey ->
-                AuthFrame(
-                    onBack = { screen = Screen.SignIn },
-                ) {}
-            Screen.Debug -> DebugMenuScreen(onBack = { screen = Screen.SignIn })
+            is Screen.EmailEntry -> {
+                val back = { screen = Screen.SignIn }
+                BackHandler(onBack = back)
+                ScopedViewModels {
+                    EmailEntryScreen(it.mode, back, onSent = {
+                            email ->
+                        screen = Screen.EmailCode(email, it.mode)
+                    })
+                }
+            }
+            is Screen.EmailCode -> {
+                val back = { screen = Screen.EmailEntry(it.mode, it.email) }
+                BackHandler(onBack = back)
+                ScopedViewModels {
+                    CodeScreen(
+                        it.email,
+                        it.mode,
+                        back,
+                        onSignedIn = { _ -> go(it, Screen.Shell) },
+                        onResetCode = { _, _ -> }, // AUTH-04: the new-password screen
+                    )
+                }
+            }
+            // AUTH-05 replaces this.
+            Screen.VerifyKey -> {
+                BackHandler { screen = Screen.SignIn }
+                AuthFrame(onBack = { screen = Screen.SignIn }) {}
+            }
+            Screen.Debug -> {
+                BackHandler { screen = Screen.SignIn }
+                DebugMenuScreen(onBack = { screen = Screen.SignIn })
+            }
             // SHELL-01 replaces this. Debug builds reach the debug menu meanwhile.
             Screen.Shell -> if (isDebugBuild) DebugMenuScreen() else Placeholder()
         }
     }
 }
+
+private fun debugLink(open: () -> Unit): @Composable () -> Unit = { ShifaLink("Debug menu", open) }
 
 @Composable
 private fun Placeholder() =

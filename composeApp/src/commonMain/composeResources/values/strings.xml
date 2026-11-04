@@ -1532,6 +1532,7 @@
     <string name="other">Other</string>
     <string name="otherCountry">Other</string>
     <string name="otherIllnessesAndComplications">Other illnesses and complications</string>
+    <string name="otpCode">Code</string>
     <string name="otpResendHint">To get a new code, go back and tap Continue again.</string>
     <string name="otpResent">Code resent.</string>
     <string name="otpSent">Verification code sent.</string>

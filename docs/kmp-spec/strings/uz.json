@@ -1537,6 +1537,7 @@
   "other": "Boshqa",
   "otherCountry": "Boshqa",
   "otherIllnessesAndComplications": "Boshidan o'tkazgan va yo'ldosh kasalliklar",
+  "otpCode": "Kod",
   "otpResendHint": "Yangi kod olish uchun orqaga qayting va Davom etishni bosing.",
   "otpResent": "Kod qayta yuborildi.",
   "otpSent": "Tasdiqlash kodi yuborildi.",

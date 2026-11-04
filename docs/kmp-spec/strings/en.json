@@ -1537,6 +1537,7 @@
   "other": "Other",
   "otherCountry": "Other",
   "otherIllnessesAndComplications": "Other illnesses and complications",
+  "otpCode": "Code",
   "otpResendHint": "To get a new code, go back and tap Continue again.",
   "otpResent": "Code resent.",
   "otpSent": "Verification code sent.",
