@@ -62,7 +62,6 @@ import shifa.doctor.generated.resources.ic_home_bold_22
 import shifa.doctor.generated.resources.ic_logout_22
 import shifa.doctor.generated.resources.ic_more_22
 import shifa.doctor.generated.resources.ic_reports_22
-import shifa.doctor.generated.resources.ic_shield_22
 import shifa.doctor.generated.resources.ic_sparkles_18
 import shifa.doctor.generated.resources.ic_tasks_22
 import shifa.doctor.generated.resources.ic_user_22
@@ -106,13 +105,14 @@ import shifa.doctor.ui.profile.ProfileScreen
 import shifa.doctor.ui.profile.ProfileSection
 import shifa.doctor.ui.profile.SecurityScreen
 import shifa.doctor.ui.profile.ServicesScreen
+import shifa.doctor.ui.profile.SettingsActions
+import shifa.doctor.ui.profile.SettingsScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.EmptyState
-import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.isDebugBuild
@@ -322,7 +322,18 @@ private fun RouteContent(
                 ProfileSection.Extended -> ExtendedProfileScreen(onClose = actions.back)
                 ProfileSection.Services -> ServicesScreen(onClose = actions.back)
                 ProfileSection.Security -> SecurityScreen(onClose = actions.back)
-                else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
+                ProfileSection.Settings ->
+                    SettingsScreen(
+                        staff,
+                        SettingsActions(
+                            back = actions.back,
+                            language = { actions.push(ShellRoute.Language) },
+                            security = { actions.push(ShellRoute.Profile(ProfileSection.Security)) },
+                            about = { actions.push(ShellRoute.Profile(ProfileSection.About)) },
+                            debug = { actions.push(ShellRoute.Debug) }.takeIf { isDebugBuild },
+                        ),
+                    )
+                else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section) }
             }
         ShellRoute.Schedule ->
             Pushed(Res.string.schedule, actions) {
@@ -358,31 +369,9 @@ private fun TabPlaceholder(
     EmptyState(tr(title), icon)
 }
 
-/** A Profile section until its ticket builds it. Settings holds the app lock (SET-03) and Language meanwhile. */
+/** A Profile section until its ticket builds it (About for now). */
 @Composable
-private fun ProfileSectionPlaceholder(
-    section: ProfileSection,
-    actions: ShellActions,
-) = if (section == ProfileSection.Settings) {
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
-        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
-    ) {
-        ShifaSettingsItem(
-            tr(Res.string.security),
-            { actions.push(ShellRoute.Profile(ProfileSection.Security)) },
-            icon = Res.drawable.ic_shield_22,
-        )
-        ShifaSettingsItem(
-            tr(Res.string.language),
-            { actions.push(ShellRoute.Language) },
-            icon = Res.drawable.ic_globe_22,
-        )
-        if (isDebugBuild) ShifaSettingsItem("Debug menu", { actions.push(ShellRoute.Debug) }, divider = false)
-    }
-} else {
-    TabPlaceholder(section.title, Res.drawable.ic_user_22)
-}
+private fun ProfileSectionPlaceholder(section: ProfileSection) = TabPlaceholder(section.title, Res.drawable.ic_user_22)
 
 private val ProfileSection.title: StringResource
     get() =

@@ -1567,6 +1567,7 @@
     <string name="notificationViewAppointment">View Appointment</string>
     <string name="notificationViewResult">View Result</string>
     <string name="notifications">Notifications</string>
+    <string name="notificationsSystemSettings">Manage in system settings</string>
     <string name="notifyPatient">Notify patient</string>
     <string name="now">Now</string>
     <string name="numeric">Numeric</string>
@@ -1899,6 +1900,7 @@
     <string name="searchUsersPlaceholder">Search by name, number, role</string>
     <string name="searching">Searching…</string>
     <string name="security">Security</string>
+    <string name="securitySubtitle">Password and app lock</string>
     <string name="selectChronicDisease">Select Chronic Disease</string>
     <string name="selectConversation">Select a conversation</string>
     <string name="selectDate">Select Date</string>
@@ -1965,6 +1967,7 @@
     <string name="setUpAvailabilityFirst">Set up your availability first</string>
     <string name="setUpClinicWorkspace">Set up a clinic workspace to create treatment plans.</string>
     <string name="settings">Settings</string>
+    <string name="settingsGeneral">General</string>
     <string name="settingsSaved">Settings saved</string>
     <string name="settingsSubtitle">Country, Language, Starting screen, 2FA, Encrypted Docs</string>
     <string name="setupYourSchedule">Setup your Schedule</string>
@@ -2036,6 +2039,7 @@
     <string name="startAnyway">Start anyway</string>
     <string name="startAppointment">Start Appointment</string>
     <string name="startDate">Start Date</string>
+    <string name="startTabHelper">Main tab when you open the app. Notifications still open the relevant screen.</string>
     <string name="startTime">Start Time</string>
     <string name="startingScreen">Starting screen</string>
     <string name="startingScreenHint">Main tab when you open the app. Notifications still open the relevant screen.</string>

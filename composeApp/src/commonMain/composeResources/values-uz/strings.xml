@@ -1567,6 +1567,7 @@
     <string name="notificationViewAppointment">Uchrashuvni ko'rish</string>
     <string name="notificationViewResult">Natijani ko'rish</string>
     <string name="notifications">Bildirishnomalar</string>
+    <string name="notificationsSystemSettings">Tizim sozlamalarida boshqarish</string>
     <string name="notifyPatient">Bemorga xabar berish</string>
     <string name="now">Hozir</string>
     <string name="numeric">Raqamli</string>
@@ -1899,6 +1900,7 @@
     <string name="searchUsersPlaceholder">Ism, raqam yoki rol bo'yicha qidirish</string>
     <string name="searching">Qidirilmoqda…</string>
     <string name="security">Xavfsizlik</string>
+    <string name="securitySubtitle">Parol va ilova qulfi</string>
     <string name="selectChronicDisease">Surunkali kasallikni tanlash</string>
     <string name="selectConversation">Suhbatni tanlash</string>
     <string name="selectDate">Sanani tanlash</string>
@@ -1965,6 +1967,7 @@
     <string name="setUpAvailabilityFirst">Avval bo'sh vaqtlaringizni sozlang</string>
     <string name="setUpClinicWorkspace">Davolash rejalari yaratish uchun klinika ish maydonini sozlang.</string>
     <string name="settings">Sozlamalar</string>
+    <string name="settingsGeneral">Umumiy</string>
     <string name="settingsSaved">Sozlamalar saqlandi</string>
     <string name="settingsSubtitle">Mamlakat, Til, Boshlang'ich ekran, Ikki bosqichli autentifikatsiya, Shifrlangan hujjatlar</string>
     <string name="setupYourSchedule">Jadvalni sozlash</string>
@@ -2036,6 +2039,7 @@
     <string name="startAnyway">Baribir boshlash</string>
     <string name="startAppointment">Qabulni boshlash</string>
     <string name="startDate">Boshlanish sanasi</string>
+    <string name="startTabHelper">Ilovani ochganda asosiy bo'lim. Bildirishnomalar baribir tegishli ekranni ochadi.</string>
     <string name="startTime">Boshlanish vaqti</string>
     <string name="startingScreen">Boshlang'ich ekran</string>
     <string name="startingScreenHint">Ilovani ochganda ko'rsatiladigan asosiy bo'lim. Bildirishnomalar tegishli ekranni ochadi.</string>

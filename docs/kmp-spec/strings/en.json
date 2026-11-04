@@ -2353,5 +2353,9 @@
   "planChanged": "You're now on {plan}",
   "planUnchanged": "No change yet. Payments can take a minute.",
   "checkoutFailed": "Couldn't open the payment page. Try again.",
-  "renewsOn": "Renews on {date}"
+  "renewsOn": "Renews on {date}",
+  "settingsGeneral": "General",
+  "startTabHelper": "Main tab when you open the app. Notifications still open the relevant screen.",
+  "securitySubtitle": "Password and app lock",
+  "notificationsSystemSettings": "Manage in system settings"
 }

@@ -2353,5 +2353,9 @@
   "planChanged": "Endi siz {plan} tarifidasiz",
   "planUnchanged": "Hozircha o'zgarish yo'q. To'lov bir daqiqa olishi mumkin.",
   "checkoutFailed": "To'lov sahifasini ochib bo'lmadi. Qayta urinib ko'ring.",
-  "renewsOn": "{date} da yangilanadi"
+  "renewsOn": "{date} da yangilanadi",
+  "settingsGeneral": "Umumiy",
+  "startTabHelper": "Ilovani ochganda asosiy bo'lim. Bildirishnomalar baribir tegishli ekranni ochadi.",
+  "securitySubtitle": "Parol va ilova qulfi",
+  "notificationsSystemSettings": "Tizim sozlamalarida boshqarish"
 }

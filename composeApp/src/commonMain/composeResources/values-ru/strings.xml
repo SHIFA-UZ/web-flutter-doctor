@@ -1567,6 +1567,7 @@
     <string name="notificationViewAppointment">Открыть запись</string>
     <string name="notificationViewResult">Посмотреть результат</string>
     <string name="notifications">Уведомления</string>
+    <string name="notificationsSystemSettings">Управление в настройках системы</string>
     <string name="notifyPatient">Уведомить пациента</string>
     <string name="now">Сейчас</string>
     <string name="numeric">Числовой</string>
@@ -1899,6 +1900,7 @@
     <string name="searchUsersPlaceholder">Поиск по имени, номеру, роли</string>
     <string name="searching">Поиск…</string>
     <string name="security">Безопасность</string>
+    <string name="securitySubtitle">Пароль и блокировка приложения</string>
     <string name="selectChronicDisease">Выбрать хроническое заболевание</string>
     <string name="selectConversation">Выбрать беседу</string>
     <string name="selectDate">Выбрать дату</string>
@@ -1965,6 +1967,7 @@
     <string name="setUpAvailabilityFirst">Сначала настройте доступное время</string>
     <string name="setUpClinicWorkspace">Настройте рабочее пространство клиники, чтобы создавать планы лечения.</string>
     <string name="settings">Настройки</string>
+    <string name="settingsGeneral">Общие</string>
     <string name="settingsSaved">Настройки сохранены</string>
     <string name="settingsSubtitle">Страна, Язык, Стартовый экран, 2FA, Зашифрованные документы</string>
     <string name="setupYourSchedule">Настройка расписания</string>
@@ -2036,6 +2039,7 @@
     <string name="startAnyway">Всё равно начать</string>
     <string name="startAppointment">Начать прием</string>
     <string name="startDate">Дата начала</string>
+    <string name="startTabHelper">Главная вкладка при открытии приложения. Уведомления по-прежнему открывают нужный экран.</string>
     <string name="startTime">Время начала</string>
     <string name="startingScreen">Стартовый экран</string>
     <string name="startingScreenHint">Главная вкладка при запуске приложения. Уведомления по-прежнему открывают нужный экран.</string>

@@ -288,3 +288,23 @@ internal fun ServiceGroupsPreview() =
             ServicesActions(),
         )
     }
+
+@Composable
+internal fun SettingsPreview() =
+    PreviewTheme {
+        SettingsContent(
+            SettingsUiState(
+                settings =
+                    shifa.doctor.data.model.DoctorSettings(
+                        "Uzbekistan",
+                        "uz",
+                        twoFA = false,
+                        encryptedDocs = true,
+                        defaultStartTab = "calendar",
+                    ),
+                tasksAllowed = true,
+            ),
+            SettingsActions(debug = {}),
+            "O'zbekcha",
+        )
+    }

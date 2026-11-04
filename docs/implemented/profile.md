@@ -329,3 +329,27 @@ Built 2026-11-04. Flow `08/09-subscription-and-billing.md` §3–§5; spec `08 �
   demo backend, which answers with placeholder pages.
 - **Tests:** `BillingSubscriptionTest` (5: plans and the checkout request, resume after checkout changed / unchanged,
   Connect and its failure, renewal date and plans retry, empty URL), `ProfileScreenshotTest` (`Billing_ibanError` re-recorded with plans and payouts).
+
+## SET-01 · Settings
+
+Built 2026-11-04. Flow `08/10-settings-root.md`; spec `08 §1.8`; board `DaProfile.dc.html` (`settings`).
+
+- **Screen** (`ui/profile/SettingsScreen.kt`, Profile → Settings; replaces the placeholder):
+  - General: Country (sheet: Uzbekistan, Germany, USA, Other; stored as those English words, shown localised),
+    Language (→ the language screen, SET-02; the row shows the language in its own name), Starting screen (sheet of
+    the shell's tabs; Tasks only when the plan has remote-care tasks) with the helper line.
+  - Security: the Security screen (PROF-04: password and app lock), Two-factor Authentication and Encrypted Documents
+    switches (stored flags only; no helper text promising behaviour the backend may not have, as the flow asks).
+  - Notifications → the OS settings for the app (no in-app preferences), About (placeholder until LEGAL), and in
+    debug builds the debug menu.
+- **Writes:** every change shows at once and `PATCH /doctors/me/settings` sends the whole block (`country, language,
+  twoFA, encryptedDocs, defaultStartTab`), built from the latest state when its turn comes in one queue, so two quick
+  toggles never overwrite each other; `language` is the app language's backend code (Cyrillic Uzbek is `uz`). A
+  failure puts back only the fields that request carried (a later change stays and goes out next), with the error
+  and request id. A spinner shows while a write is in flight; a start tab the plan no longer allows is saved as Home;
+  the Tasks choice follows the plan when the profile refreshes.
+- **Clinic staff:** no doctor settings (the route is doctor-only): Language, Security, Notifications, About.
+- **Not built:** Privacy & data (LEGAL), the app-lock preview on the Security row ("App lock on · Face ID"), the
+  notification-permission state ("Allowed" / "Blocked").
+- **Tests:** `SettingsViewModelTest` (6: whole-block payload with the language code, quick toggles in order, revert
+  on failure, Tasks gating and staff, partial revert, start-tab repair), `ProfileScreenshotTest` (+1: `Settings_doctor`).

@@ -78,7 +78,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SVC-01 Services & pricing | Done | Grouped list with prices per currency and location, editor with checked writes and validation, confirmed delete, clinic-managed read-only. See profile.md. |
 | SVC-02 Service groups | Done | Groups editor: rename, reorder (up / down), add, delete; saved in order, then the list reloads. See profile.md. |
 | SUB-02 Checkout and Stripe Connect | Done | Plan cards with prices and Upgrade, Stripe checkout and Connect onboarding in the in-app browser, plan re-read on return. See profile.md. |
-| SET-01 … SET-03 | Not started | |
+| SET-01 Settings | Done | Country, language row, starting screen, 2FA and encrypted-documents flags with queued whole-block PATCH; staff variant. See profile.md. |
+| SET-02, SET-03 | Not started | |
 
 ## Log
 
@@ -118,3 +119,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · SVC-01 · Services & pricing list and editor.
 - 2026-11-04 · SVC-02 · Service groups editor.
 - 2026-11-04 · SUB-02 · Plans, Stripe checkout and Connect onboarding with the return check.
+- 2026-11-04 · SET-01 · Settings screen with queued settings PATCH.

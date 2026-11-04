@@ -56,4 +56,7 @@ class ProfileScreenshotTest {
 
     @Test
     fun serviceGroups() = captureRoboImage("screenshots/Services_groups.png") { ServiceGroupsPreview() }
+
+    @Test
+    fun settings() = captureRoboImage("screenshots/Settings_doctor.png") { SettingsPreview() }
 }
