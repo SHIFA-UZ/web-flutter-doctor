@@ -28,7 +28,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clear
 import shifa.doctor.generated.resources.ic_x_20
@@ -39,6 +38,7 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.theme.lineBox
+import shifa.doctor.utils.tr
 
 /**
  * Figma input-field. States map to: disabled = !enabled, error = isError,
@@ -117,7 +117,7 @@ fun ShifaInputField(
                     } else if (enabled && clearable && value.isNotEmpty()) {
                         Icon(
                             painterResource(Res.drawable.ic_x_20),
-                            contentDescription = stringResource(Res.string.clear),
+                            contentDescription = tr(Res.string.clear),
                             modifier = Modifier.clip(ShifaRadius.Full).clickable { onValueChange("") },
                             tint = ShifaColors.Icon.Secondary,
                         )

@@ -37,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.ic_check_16
 import shifa.doctor.generated.resources.ic_chev_d_16
@@ -52,6 +51,7 @@ import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.utils.tr
 
 /**
  * `.dr-slider`: a 0–100 value (revenue share) with its number field in [valueField], the split bar and the legend
@@ -279,7 +279,7 @@ fun TierCard(
             Text(period, style = ShifaTextStyles.kpiLabel(), color = ShifaColors.Text.Secondary)
         }
         Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs)) {
-            val notIncluded = stringResource(Res.string.notIncluded)
+            val notIncluded = tr(Res.string.notIncluded)
             features.forEach { f ->
                 Row(
                     Modifier.semantics(mergeDescendants = true) { if (!f.included) stateDescription = notIncluded },

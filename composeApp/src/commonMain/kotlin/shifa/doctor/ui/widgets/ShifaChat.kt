@@ -44,7 +44,6 @@ import androidx.compose.ui.text.style.TextAlign
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clear
 import shifa.doctor.generated.resources.copy
@@ -66,6 +65,7 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.theme.lineBox
+import shifa.doctor.utils.tr
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -104,7 +104,7 @@ fun ShifaChatBar(
             RecordingWaveform(Modifier.weight(1f))
             Icon(
                 Icons.Rounded.Stop,
-                stringResource(Res.string.stopRecording),
+                tr(Res.string.stopRecording),
                 Modifier.clip(ShifaRadius.Full).clickable(onClick = onMic),
                 tint = ShifaColors.Icon.Primary,
             )
@@ -125,9 +125,9 @@ fun ShifaChatBar(
                 },
             )
             if (value.isEmpty()) {
-                BarIcon(Res.drawable.ic_mic_22, stringResource(Res.string.recordVoiceMessage), onMic)
+                BarIcon(Res.drawable.ic_mic_22, tr(Res.string.recordVoiceMessage), onMic)
             } else {
-                BarIcon(Res.drawable.ic_x_22, stringResource(Res.string.clear)) { onValueChange("") }
+                BarIcon(Res.drawable.ic_x_22, tr(Res.string.clear)) { onValueChange("") }
             }
         }
     }
@@ -255,7 +255,7 @@ private fun ReplyAction(
 ) = ShifaActionButton(
     onClick,
     icon = icon,
-    contentDescription = stringResource(label),
+    contentDescription = tr(label),
     variant = ShifaActionVariant.Secondary,
 )
 
@@ -318,7 +318,7 @@ fun ShifaChatVoiceBubble(
     ) {
         Icon(
             if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-            stringResource(if (playing) Res.string.pause else Res.string.play),
+            tr(if (playing) Res.string.pause else Res.string.play),
             Modifier.clip(ShifaRadius.Full).clickable(onClick = onToggle),
             tint = ShifaColors.Icon.Primary,
         )

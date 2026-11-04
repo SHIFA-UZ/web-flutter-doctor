@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.ic_alert_20
@@ -49,6 +48,7 @@ import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.utils.tr
 
 enum class ToastTone { Ok, Err, Warn, Info }
 
@@ -104,7 +104,7 @@ fun ShifaToast(
             ) {
                 Icon(
                     painterResource(Res.drawable.ic_x_16),
-                    stringResource(Res.string.close),
+                    tr(Res.string.close),
                     tint = ShifaColors.Alpha.White70,
                 )
             }

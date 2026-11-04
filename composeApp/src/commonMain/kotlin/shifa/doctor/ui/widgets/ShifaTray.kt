@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.attach
 import shifa.doctor.generated.resources.close
@@ -32,6 +31,7 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.utils.tr
 
 // Trays are visual only. In a ModalBottomSheet pass shape = RectangleShape,
 // containerColor = Color.Transparent and dragHandle = null.
@@ -82,14 +82,14 @@ fun ShifaChatTray(
     ) {
         ShifaIconButton(
             Res.drawable.ic_plus_18,
-            stringResource(Res.string.attach),
+            tr(Res.string.attach),
             onAttach,
             variant = ShifaIconButtonVariant.Secondary,
         )
         Box(Modifier.weight(1f)) { chatBar() }
         ShifaIconButton(
             Res.drawable.ic_send_18,
-            stringResource(Res.string.send),
+            tr(Res.string.send),
             onSend,
             enabled = sendEnabled,
         )
@@ -127,7 +127,7 @@ internal fun TrayHeader(
     ShifaActionButton(
         onClose,
         icon = Res.drawable.ic_x_16,
-        contentDescription = stringResource(Res.string.close),
+        contentDescription = tr(Res.string.close),
         variant = ShifaActionVariant.Secondary,
     )
 }

@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.loading
 import shifa.doctor.ui.theme.ShifaColors
@@ -34,6 +33,7 @@ import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.utils.tr
 
 /**
  * Not in Figma: a placeholder block that pulses while its content loads. Canvas grey, so it reads on surface cards.
@@ -87,7 +87,7 @@ fun ShifaListSkeleton(
     shadow: Boolean = true,
     card: @Composable () -> Unit = { ShifaCardSkeleton(shadow = shadow) },
 ) {
-    val description = stringResource(Res.string.loading)
+    val description = tr(Res.string.loading)
     Column(
         modifier.fillMaxWidth().semantics { contentDescription = description },
         verticalArrangement = Arrangement.spacedBy(gap),
@@ -97,7 +97,7 @@ fun ShifaListSkeleton(
 /** A chat's first load: bubbles alternating sent (end) and received (start), in the bubbles' shapes. */
 @Composable
 fun ShifaChatSkeleton(modifier: Modifier = Modifier) {
-    val description = stringResource(Res.string.loading)
+    val description = tr(Res.string.loading)
     Column(
         modifier.fillMaxWidth().semantics { contentDescription = description },
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),

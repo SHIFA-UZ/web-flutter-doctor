@@ -199,13 +199,19 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   `ShifaSpacing.<Inset|Gap|Stack>.X` (`semantic/space/*`), `ShifaSize`, `ShifaRadius.*`, `ShifaShadow.*` (via
   `Modifier.dropShadow(shape, shadow)`), `ShifaDimens.<Component><Part>` for raw design sizes. Shared components come
   from `ui/widgets`. Use `Modifier.lineBox(style)` where text height must match the design's line boxes.
-- Icons and images are exports from the `docs/design/` boards (inline SVG icons of the design system) in
-  `composeResources/drawable` (`ic_<name>_<size>`, `img_*`); reuse the patient app's exports where the icon is the same.
-- Strings: `composeResources/values{,-ru,-uz}/strings.xml` (en is the fallback), keys in camelCase, placeholders as
-  `%1$s`. CMP doesn't unescape `\'`, `\"` or `%%`, so write them literally; only `&`, `<`, `>` are XML-escaped.
-  Screen-reader labels come from strings too. `StringsTest` checks keys and placeholders across locales. The in-app
-  language override lives in `LanguageStorage`, is applied by `ProvideAppLocale` in `App.kt`, and is synced to the
-  backend with `PUT /doctors/me/language`.
+- Icons come from the design's icon library: reference `Res.drawable.ic_<name>_<size>` (`_filled`, `_bold`) and run
+  `node scripts/design_icons.js`, which writes the vectors from the `ic` map in `docs/design/boards/DaApp.dc.html` and
+  deletes unused ones. Images (`img_*`) are exports in `composeResources/drawable`.
+- Strings: the source is `docs/kmp-spec/strings/{en,uz,ru}.json` + `plurals.json`; `python3 scripts/strings_from_json.py`
+  generates `composeResources/values{,-ru,-uz}/strings.xml` and `plurals.xml` (never edit those by hand). Kit-only
+  labels that are not in the JSON live in the hand-written `strings_kit.xml`. Keys are camelCase, placeholders become
+  `%1$s` numbered in English order. CMP doesn't unescape `\'`, `\"` or `%%`, so the generator writes them literally;
+  only `&`, `<`, `>` are XML-escaped. **Resolve strings with `tr(Res.string.x, args)` / `trPlural(Res.plurals.x, n,
+  args)` from `utils/AppLocale.kt`, never `stringResource`**: they transliterate `uz` to Cyrillic when the doctor picked
+  Ўзбекча (`LocalUzbekCyrillic`), template first, arguments after. Screen-reader labels come from strings too.
+  `StringsTest` checks keys, plurals and placeholders across locales. The language (`LanguageStorage`: en, uz,
+  uz-Cyrl, ru; Uzbekistan defaults to uz) is applied by `ProvideAppLocale` in `App.kt` and synced to the backend
+  with `PUT /doctors/me/language` (wired with the HTTP client).
 - Loading: every first load shows skeletons (`ShifaSkeleton`, `ShifaCardSkeleton`, `ShifaListSkeleton`…), not a
   spinner. Errors show inline in a `ShifaBanner`, never a SnackBar. Lists pull to refresh.
 - Avatars without a photo, or whose photo fails to load, show the brand fallback picture (`ShifaAvatar`).

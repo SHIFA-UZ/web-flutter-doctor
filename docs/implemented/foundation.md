@@ -27,3 +27,36 @@ between the two repos.
   (internal default, plus alpha and production); `ios_testflight.yml` keeps the whitespace-trimming App Store Connect
   key step and builds the Kotlin framework in its own step. `deploy_web.yml` is untouched (Flutter web from `main`).
 - **App:** `App()` shows a placeholder until AUTH-01.
+
+## CORE-04 · Strings (`composeResources/values*/`, `utils/AppLocale.kt`, `utils/UzbekCyrillic.kt`, `data/storage/LanguageStorage.kt`)
+
+Built 2026-11-04 on `doc-app2.0`.
+
+- **Source → resources.** `docs/kmp-spec/strings/{en,uz,ru}.json` + `plurals.json` are the source;
+  `python3 scripts/strings_from_json.py` writes `values{,-uz,-ru}/strings.xml` (2206 each) and `plurals.xml` (16 each).
+  Placeholders `{x}`, `{{x}}`, `%s`, `%d` become `%1$s`/`%1$d`, numbered in the English order and mapped by name, so a
+  translation that reorders them keeps the argument numbers. Only `& < >`, backslash and newline are escaped: CMP 1.9.3
+  unescapes nothing else (`strings/README.md` rule 2 said `\'`, which would have shown the backslash; corrected).
+- **Gaps filled** (2218 keys per locale): 1 `en`, 10 `uz`, 92 `ru`, 41 defined nowhere (English from the Flutter
+  fallbacks where they exist), and the NEW keys of the flow files' §11 (257 strings + 7 plurals). Dropped 19 names the
+  extraction picked up that are data fields or formats (`createdAt`, `taskId`, `visitTimer`, …). Translations were
+  written for the port and follow `uz.json`/`ru.json` terminology; a native-speaker pass is still worth doing.
+- **Plurals** (`plurals.json`, each lists the JSON keys it replaces): `consultationUploadSuccess`, `patientsCount`,
+  `visitsCount`, `patientsPagination` (Russian genitive after "из"), `aiInsightNotifications`, `customTimesCount`,
+  `minutesAgo`, `hoursAgo`, `intelCancelPreview` (its `{visitWord}` was a hand-made plural and the uz/ru copies had
+  dropped it), and the NEW `attemptsLeft`, `visitBriefingMeta`, `dentalHiddenLines`, `dentalSwitchToPlanConfirm`,
+  `toothA11y`, `discardTicks`, `visitFactsCommitted`. `visitFactsCommittedWithTasks` has two counts, so it became
+  "Facts documented: {n}. Medication tasks drafted: {m}." (flow 03/21 updated).
+- **Uzbek Cyrillic.** `tr()` / `trPlural()` (`utils/AppLocale.kt`) replace `stringResource`: they fetch the template,
+  transliterate it when `LocalUzbekCyrillic` is on, then fill the arguments, so names and numbers stay as typed.
+  `UzbekCyrillic.fromLatin` ports the Dart function and adds the orthography it lacked: `ya/yu/yo/ye` → я/ю/ё/е,
+  word-initial `e` → э, `ye` after a consonant → ъе (Объектив), the separating apostrophe → ъ, `%1$s` placeholders kept (the Dart only kept `{x}`). All kit
+  widgets use `tr`. Golden tests: `UzbekCyrillicTest`.
+- **Language.** `AppLanguage` en / uz / uz-Cyrl / ru (`backendCode` maps Cyrillic to `uz`); `LanguageStorage` keeps
+  the Flutter keys `doctor_language` + `doctor_language_explicit`: a saved language wins (LANG-02 Fix: no cold-start
+  override of a saved non-explicit value), else Uzbekistan (device language `uz`, region `UZ`, zone Asia/Tashkent)
+  means Uzbek, else English. `applyRegionalDefault(phone)` (login screens) saves Uzbek for a +998 number while
+  nothing is saved. `App.kt` applies it with `ProvideAppLocale` (copied from the patient app).
+  **Not here:** `PUT /doctors/me/language` needs `apiCall`, so the sync is wired in CORE-05.
+- **Tests:** `StringsTest` (keys, plurals and placeholders equal across locales; no `\'`/`\"`),
+  `UzbekCyrillicTest`, `LanguageStorageTest`.

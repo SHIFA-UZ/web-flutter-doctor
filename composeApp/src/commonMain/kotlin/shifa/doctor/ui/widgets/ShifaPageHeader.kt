@@ -21,7 +21,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.ic_arrow_l_16
@@ -37,6 +36,7 @@ import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.utils.tr
 
 /** Figma page-header, page = main: the 32 title on every tab. */
 @Composable
@@ -64,7 +64,7 @@ fun ShifaMainHeader(
                     ShifaActionButton(
                         it,
                         icon = Res.drawable.ic_bell_16,
-                        contentDescription = stringResource(Res.string.notifications),
+                        contentDescription = tr(Res.string.notifications),
                         variant = ShifaActionVariant.Secondary,
                     )
                 }
@@ -76,7 +76,7 @@ fun ShifaMainHeader(
                     ShifaRadius.Full,
                 ).then(
                     if (onAvatar != null) {
-                        val label = stringResource(Res.string.profile)
+                        val label = tr(Res.string.profile)
                         Modifier.clickable(
                             role = Role.Button,
                             onClick = onAvatar,
@@ -111,7 +111,7 @@ fun ShifaSubHeader(
             ShifaActionButton(
                 it,
                 icon = Res.drawable.ic_arrow_l_16,
-                contentDescription = stringResource(Res.string.back),
+                contentDescription = tr(Res.string.back),
                 variant = ShifaActionVariant.Secondary,
             )
         }
@@ -135,7 +135,7 @@ fun ShifaSubHeader(
                 ShifaActionButton(
                     it,
                     icon = Res.drawable.ic_tasks_16,
-                    contentDescription = stringResource(Res.string.select),
+                    contentDescription = tr(Res.string.select),
                     variant = ShifaActionVariant.Secondary,
                 )
             }
@@ -149,7 +149,7 @@ fun ShifaSubHeader(
                 ) {
                     Icon(
                         painterResource(Res.drawable.ic_more_v_16),
-                        stringResource(Res.string.more),
+                        tr(Res.string.more),
                         tint = ShifaColors.Icon.Primary,
                     )
                 }

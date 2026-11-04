@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import org.jetbrains.compose.resources.stringResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.ic_arrow_r_16
 import shifa.doctor.generated.resources.seeAll
@@ -22,6 +21,7 @@ import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.utils.tr
 
 // Figma names the background the section sits on: card-on-color = white on a coloured page, etc.
 enum class ShifaSectionType(internal val bg: Color, internal val border: Color? = null) {
@@ -78,7 +78,7 @@ fun ShifaSection(
                     ShifaActionButton(
                         it,
                         icon = Res.drawable.ic_arrow_r_16,
-                        contentDescription = stringResource(Res.string.seeAll),
+                        contentDescription = tr(Res.string.seeAll),
                         variant = ShifaActionVariant.Secondary,
                     )
                 }
