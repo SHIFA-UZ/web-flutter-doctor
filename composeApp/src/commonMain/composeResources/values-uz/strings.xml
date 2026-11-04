@@ -275,6 +275,7 @@
     <string name="checkIns">Tekshiruvlar</string>
     <string name="checkingCall">Tekshirilmoqda…</string>
     <string name="chooseFromGallery">Galereyadan tanlash</string>
+    <string name="chooseNewPasswordFor">%1$s uchun yangi parol tanlang.</string>
     <string name="choosePlace">Joyni tanlash</string>
     <string name="choosePlanForVisit">Ushbu tashrif uchun rejani tanlang</string>
     <string name="chronicDisease">Surunkali kasallik</string>
@@ -1741,6 +1742,8 @@
     <string name="requestSignature">Imzo so'rash</string>
     <string name="requestTimeout">So'rov vaqti tugadi. Qayta urinib ko'ring.</string>
     <string name="required">Majburiy</string>
+    <string name="requirementMet">bajarildi</string>
+    <string name="requirementNotMet">bajarilmadi</string>
     <string name="requiresProPlan">Shifa intellekti uchun PRO tarif kerak.</string>
     <string name="resendCode">Kodni qayta yuborish</string>
     <string name="resendCodeIn">Kodni %1$s da qayta yuborish</string>

@@ -275,6 +275,7 @@
     <string name="checkIns">Отметки</string>
     <string name="checkingCall">Проверяем…</string>
     <string name="chooseFromGallery">Выбрать из галереи</string>
+    <string name="chooseNewPasswordFor">Придумайте новый пароль для %1$s.</string>
     <string name="choosePlace">Выбрать место</string>
     <string name="choosePlanForVisit">Выберите план для этого визита</string>
     <string name="chronicDisease">Хроническое заболевание</string>
@@ -1741,6 +1742,8 @@
     <string name="requestSignature">Запросить подпись</string>
     <string name="requestTimeout">Время ожидания истекло. Попробуйте снова.</string>
     <string name="required">Обязательно</string>
+    <string name="requirementMet">выполнено</string>
+    <string name="requirementNotMet">не выполнено</string>
     <string name="requiresProPlan">Для Shifa Intelligence нужен тариф PRO.</string>
     <string name="resendCode">Отправить код снова</string>
     <string name="resendCodeIn">Отправить код снова через %1$s</string>

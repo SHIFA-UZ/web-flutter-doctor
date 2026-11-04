@@ -90,3 +90,27 @@ and `otp`.
   covered by `EmailCodeViewModelTest` against the backend's request and error shapes.
 - **Deviation:** the envelope sits at the field's end (the kit field has a trailing slot only), not as a prefix.
 - **Tests:** `EmailCodeViewModelTest` (5), `EmailCodeScreenshotTest` (5).
+
+## AUTH-04 · Forgot password
+
+Built 2026-11-04. Flows `01/03`, `01/04` (reset mode), `01/05-reset-password.md`; board `DaAuth.dc.html`, branches
+`email`, `otp` (mode reset) and `reset`.
+
+- **Path:** "Forgot Password?" → e-mail (title "Reset Password") → `POST /auth/send-forgot-password-otp {identifier,
+  app:"doctor"}` → code screen (no request: the code is only checked with the new password, flow 01/04 §5) → new
+  password → `POST /auth/forgot-password-reset {email, emailOtp, newPassword, app:"doctor"}` → token → session → shell.
+- **New password** (`ResetPasswordScreen`): "Choose a new password for {email}." (board subtitle, new string), New
+  Password with the live **`PasswordChecklist`** (`ui/auth/`, shared with registration: the backend's own rules from
+  `PasswordPolicy`, ticked as typed, a polite live region; "At most 128 characters" past 128), Confirm password, each
+  with its own eye toggle; Submit. Errors are inline only: the first unmet rule under the password, "Please confirm
+  your password" / "Passwords do not match." under the confirmation (Flutter also showed a snackbar). Passwords go as
+  typed.
+- **A wrong or expired code** (401) is found only here: banner "The code is wrong or has expired. Request a new
+  code."; Back returns to the code screen, where Resend works after its cooldown. A 400 is the backend refusing the password
+  (its policy): "Could not reset the password…"; also timeout, network, code-mapped text. The fields are disabled
+  while submitting; each checklist rule says "met" / "not met" to a screen reader.
+- **Not built:** the success notice in the shell ("Password updated successfully", flow §5 step 5) comes with SHELL-01;
+  the "if you already changed it, sign in with the new password" hint for a lost reply (flow §8) is not separate copy
+  yet. Autofill `newPassword` hints wait for the autofill check (AUTH-02).
+- **Tests:** `ResetPasswordViewModelTest` (4), `ResetPasswordScreenshotTest` (3), plus the reset cases in
+  `EmailCodeViewModelTest`.

@@ -35,6 +35,7 @@ import shifa.doctor.ui.debug.spikeAutoRun
 import shifa.doctor.ui.emailcode.CodeScreen
 import shifa.doctor.ui.emailcode.EmailCodeMode
 import shifa.doctor.ui.emailcode.EmailEntryScreen
+import shifa.doctor.ui.emailcode.ResetPasswordScreen
 import shifa.doctor.ui.login.LoginScreen
 import shifa.doctor.ui.splash.SplashScreen
 import shifa.doctor.ui.theme.ShifaTheme
@@ -81,6 +82,11 @@ private sealed interface Screen {
     data class EmailCode(
         val email: String,
         val mode: EmailCodeMode,
+    ) : Screen
+
+    data class ResetPassword(
+        val email: String,
+        val code: String,
     ) : Screen
 
     data object VerifyKey : Screen
@@ -149,8 +155,18 @@ private fun AppScreens() {
                         it.mode,
                         back,
                         onSignedIn = { _ -> go(it, Screen.Shell) },
-                        onResetCode = { _, _ -> }, // AUTH-04: the new-password screen
+                        onResetCode = { email, code -> go(it, Screen.ResetPassword(email, code)) },
                     )
+                }
+            }
+            is Screen.ResetPassword -> {
+                val back = { screen = Screen.EmailCode(it.email, EmailCodeMode.Reset) }
+                BackHandler(onBack = back)
+                ScopedViewModels {
+                    ResetPasswordScreen(it.email, it.code, back, onSignedIn = {
+                            _ ->
+                        go(it, Screen.Shell)
+                    })
                 }
             }
             // AUTH-05 replaces this.

@@ -54,7 +54,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | AUTH-01 Splash | Done | Session restore + BE-04 boot check in parallel (0.8 s for a returning doctor), force-update and maintenance frames, top-level navigation. See auth.md. |
 | AUTH-02 Sign In | Done | Shared `AuthFrame` (bar, banner, language pill, centred scrolling content); validation, password sent as typed, banners by error type, forced-logout reason banner. Signed in against dev on the emulator. See auth.md. |
 | AUTH-03 E-mail code sign-in | Done | E-mail and code screens (one mode for sign-in and reset), 60 s resend per address, sixth digit submits, wrong code clears the field. See auth.md. |
-| AUTH-04 … LOCK-02 | Not started | |
+| AUTH-04 Forgot password | Done | Reset code by e-mail (app=doctor), new password with the shared live checklist (backend policy), wrong/expired code banner and Back to the code. See auth.md. |
+| AUTH-05 … LOCK-02 | Not started | |
 
 ## Log
 
@@ -70,3 +71,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · AUTH-01 · Splash with session restore, the BE-04 boot gate and the app's top-level navigation.
 - 2026-11-04 · AUTH-02 · Sign In on the shared auth frame; real sign-in against dev verified.
 - 2026-11-04 · AUTH-03 · Sign in with an e-mail code; system Back on the auth screens (missed in AUTH-02).
+- 2026-11-04 · AUTH-04 · Forgot password with the shared password checklist.

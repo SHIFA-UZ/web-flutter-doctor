@@ -275,6 +275,7 @@
     <string name="checkIns">Check-ins</string>
     <string name="checkingCall">Checking…</string>
     <string name="chooseFromGallery">Choose from Gallery</string>
+    <string name="chooseNewPasswordFor">Choose a new password for %1$s.</string>
     <string name="choosePlace">Choose Place</string>
     <string name="choosePlanForVisit">Choose the plan for this visit</string>
     <string name="chronicDisease">Chronic Disease</string>
@@ -1741,6 +1742,8 @@
     <string name="requestSignature">Request Signature</string>
     <string name="requestTimeout">Request timed out. Please try again.</string>
     <string name="required">Required</string>
+    <string name="requirementMet">met</string>
+    <string name="requirementNotMet">not met</string>
     <string name="requiresProPlan">Shifa Intelligence requires the PRO plan.</string>
     <string name="resendCode">Resend code</string>
     <string name="resendCodeIn">Resend code in %1$s</string>

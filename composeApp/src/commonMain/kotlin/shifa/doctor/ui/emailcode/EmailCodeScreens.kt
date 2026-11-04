@@ -47,7 +47,7 @@ import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.utils.tr
 
 @Composable
-private fun Banner(
+internal fun codeBanner(
     banner: CodeBanner?,
     onDismiss: () -> Unit,
 ): (@Composable () -> Unit)? =
@@ -90,7 +90,7 @@ fun EmailEntryScreenContent(
     onSubmit: () -> Unit,
     onDismissBanner: () -> Unit,
     onBack: () -> Unit,
-) = AuthFrame(onBack = onBack, banner = Banner(state.banner, onDismissBanner)) {
+) = AuthFrame(onBack = onBack, banner = codeBanner(state.banner, onDismissBanner)) {
     AuthTitle(
         tr(if (mode == EmailCodeMode.Reset) Res.string.resetPassword else Res.string.signInWithEmail),
         size = ShifaFontSize.F24,
@@ -137,7 +137,7 @@ fun CodeScreenContent(
     onResend: () -> Unit,
     onDismissBanner: () -> Unit,
     onBack: () -> Unit,
-) = AuthFrame(onBack = onBack, banner = Banner(state.banner, onDismissBanner)) {
+) = AuthFrame(onBack = onBack, banner = codeBanner(state.banner, onDismissBanner)) {
     AuthTitle(tr(Res.string.enterOtp), size = ShifaFontSize.F24, align = TextAlign.Start)
     Text(
         tr(Res.string.otpSentToEmail, state.email),

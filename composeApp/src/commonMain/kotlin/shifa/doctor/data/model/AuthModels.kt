@@ -34,3 +34,11 @@ data class SendForgotPasswordOtpRequest(
     val identifier: String,
     val app: String,
 )
+
+@Serializable
+data class ForgotPasswordResetRequest(
+    val email: String,
+    val emailOtp: String,
+    val newPassword: String,
+    val app: String,
+)

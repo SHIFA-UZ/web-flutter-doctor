@@ -9,6 +9,7 @@ import io.ktor.http.contentType
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
+import shifa.doctor.data.model.ForgotPasswordResetRequest
 import shifa.doctor.data.model.LoginRequest
 import shifa.doctor.data.model.SendForgotPasswordOtpRequest
 import shifa.doctor.data.model.SendLoginOtpRequest
@@ -68,6 +69,19 @@ class AuthRepository(
                 setBody(SendForgotPasswordOtpRequest(email.trim(), APP))
             }
         }
+
+    /** `POST /auth/forgot-password-reset` (01 §2.4): the e-mailed code and the new password, for a session token. */
+    suspend fun resetForgottenPassword(
+        email: String,
+        code: String,
+        newPassword: String,
+    ): Result<String> =
+        apiCall<TokenResponse> {
+            client().post(ApiConfig.Endpoints.FORGOT_PASSWORD_RESET) {
+                contentType(ContentType.Application.Json)
+                setBody(ForgotPasswordResetRequest(email.trim(), code, newPassword, APP))
+            }
+        }.map { it.token }
 
     private companion object {
         const val APP = "doctor"
