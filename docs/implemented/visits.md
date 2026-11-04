@@ -59,3 +59,23 @@ Built 2026-11-04. Spec 02 §7.1, ticket AI-11. No screen yet (APPT-03/04 use it)
   and a transcript the app hides) until it is saved or dropped; scribe status and complete answer from the notes.
 - **Tests:** `ConsultationModelsTest` (3: Flutter's two tests ported, plus edges), `ConsultationRepositoryTest` (4:
   failures, bodies, the scribe poll, its deadline with a hanging read), `DemoBackendTest` (draft → note → complete).
+
+## APPT-03 · Visit notes with autosave
+
+Built 2026-11-04. Spec 05 §2.2, flow 05/05, ticket APPT-03. No screen yet (APPT-04 shows it).
+
+- **`ui/visit/VisitNotes.kt`**, a state holder the visit's ViewModel owns: `SoapNotes` (four optional SOAP fields and
+  the free notes) saved as **one body**, "Label\ntext" per filled field then the free notes (Flutter's format), with
+  the labels the screen passes in the app's language (`SoapLabels`).
+- **Autosave** 2 s after the last edit, and `flush()` at once when the screen leaves, switches mode or ends the
+  visit (Flutter saved only then, so a crash lost the notes). Saves never overlap: an edit cancels only the wait, a
+  save already sent runs to its answer before the next (so the server applies them in order); an edit made while
+  saving stays unsaved and is saved by its own timer; a failed save keeps the text, marks it unsaved and says "Couldn't save the
+  notes. They stay here; try again." Blank text isn't sent: the backend ignores it, so notes **can't be emptied**
+  once saved (the backend keeps one manual note per visit and updates it).
+- **Hydration:** the doctor's earlier notes (manual, joined) fill the free notes once, only while all five fields
+  are empty; an edit before they arrive wins. A failed read says "Could not load earlier notes" (Flutter: silent).
+- **Helpers and drafts:** `append` adds a helper's text after a blank line; `confirm` / `discard` a Shifa AI draft,
+  one at a time per draft, then the notes and drafts are read again (only the newest read may write the lists).
+- **Tests:** `VisitNotesTest` (5: hydrate once and never over typing; one save 2 s after the last edit with the
+  labelled body; flush, a failed save, blank text, the cancelled timer; a confirmed draft re-reads the lists; an edit during a held save saved after it, in order).

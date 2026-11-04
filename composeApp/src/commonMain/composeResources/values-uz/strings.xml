@@ -1649,6 +1649,7 @@
     <string name="notesLabel">Izoh yorlig'i</string>
     <string name="notesOptional">Izohlar (ixtiyoriy)</string>
     <string name="notesRequired">Izoh talab qilinadi</string>
+    <string name="notesSaveFailed">Qaydlarni saqlab bo'lmadi. Ular shu yerda qoladi; qayta urinib ko'ring.</string>
     <string name="notesSectionsHidden">AI va shakl qaydlari yashirilgan. Ko'rsatish uchun ⋮ → Ko'rsatish.</string>
     <string name="notifPrePromptBody">Uchrashuvlar haqida eslatmalar va bemorlardan yangi xabarlarni oling.</string>
     <string name="notifPrePromptTitle">Xabardor bo'ling</string>

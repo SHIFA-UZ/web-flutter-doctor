@@ -1649,6 +1649,7 @@
     <string name="notesLabel">Notes Label</string>
     <string name="notesOptional">Notes (optional)</string>
     <string name="notesRequired">Notes Required</string>
+    <string name="notesSaveFailed">Couldn't save the notes. They stay here; try again.</string>
     <string name="notesSectionsHidden">AI and form notes are hidden. Use ⋮ → Show to display.</string>
     <string name="notifPrePromptBody">Get reminders for appointments and new patient messages.</string>
     <string name="notifPrePromptTitle">Stay informed</string>

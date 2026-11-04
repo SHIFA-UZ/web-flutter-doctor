@@ -1649,6 +1649,7 @@
     <string name="notesLabel">Метка примечаний</string>
     <string name="notesOptional">Примечания (необязательно)</string>
     <string name="notesRequired">Примечания обязательны</string>
+    <string name="notesSaveFailed">Не удалось сохранить заметки. Они остаются здесь; попробуйте ещё раз.</string>
     <string name="notesSectionsHidden">Записи AI и формы скрыты. Нажмите ⋮ → Показать.</string>
     <string name="notifPrePromptBody">Получайте напоминания о приёмах и новых сообщениях от пациентов.</string>
     <string name="notifPrePromptTitle">Будьте в курсе</string>
