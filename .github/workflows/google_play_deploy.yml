@@ -22,7 +22,7 @@ concurrency:
 env:
   JAVA_VERSION: '17'
   # versionCode = offset + github.run_number. The Flutter app used 1 + run_number (last upload: run 8 =
-  # versionCode 9). Same file name, same run counter, same offset: one rising sequence for both apps.
+  # versionCode 9), so the first KMP run (9) uploads versionCode 10, the same start as iOS.
   VERSION_CODE_OFFSET: 1
 
 jobs:

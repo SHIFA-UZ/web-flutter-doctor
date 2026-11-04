@@ -14,7 +14,7 @@ fixed and identical to the patient app's. Follow them for every new feature.
 | Firebase project | `shifa-doctor-staging` (production uses it too; `shifa-doctor-qa` exists) |
 | Backend | `https://api.shifa.uz/api` in `ApiConfig.BASE_URL` (paths written without `/api`); debug builds can switch to `https://api-dev.shifa.uz` (seeded, `seed.doctor1@shifa.dev` / `Dev12345!`). The Railway host stays alive for old store builds. |
 | Design source | `docs/design/` (a verbatim copy of the Claude Design canvas: `tokens.json`, `shifa-ds.css`, 51 boards); read `docs/design/README.md` first. No Figma. |
-| First `MARKETING_VERSION` | `1.1.0` (Flutter shipped `1.0.0`). Build numbers stay `1 + run_number` of the same workflow files: last Flutter uploads were Play run 8 (versionCode 9) and TestFlight run 5 (build 6), so the counters keep rising across both apps (D-10, 2026-11-04). |
+| First `MARKETING_VERSION` | `1.0.1` (Flutter shipped `1.0.0`). Build number = offset + `run_number` of the same workflow files, offsets Play 1 and iOS 4, so both start at 10: last Flutter uploads were Play run 8 (versionCode 9) and TestFlight run 5 (build 6) (D-10, 2026-11-04). |
 | Locales | `en` (default), `uz` (+ runtime Latin→Cyrillic transliteration), `ru` |
 
 ## Sources of truth
@@ -85,8 +85,9 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
   has no branch yet, create one from `main` named `feature/<feature-name>` (kebab-case, e.g.
   `feature/schedule-management`) and do all the work there. Update this section when that happens.
 - Never push to `main` directly or merge into it unless the user asks; changes reach `main` through a pull request.
-- Never commit `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme`: the IDE rewrites it locally and
-  drops the Archive action TestFlight builds need.
+- `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme` is committed (the user's call, 2026-11-04) because
+  fastlane needs it for TestFlight. The IDE rewrites it locally: never commit those local edits, and keep its
+  `ArchiveAction` (Release).
 - Never commit or push on your own. Show the user the finished work (what changed, screenshots, test results), and
   only commit and push once they approve. Standing permission for `doc-app2.0` is not approval for a given change.
 - Commits are authored by the user only, with the repo's git identity (`git config user.name` / `user.email`). Never

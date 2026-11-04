@@ -367,7 +367,7 @@ M11 comes later.
 
 | ID | Title | Size | Depends | Spec |
 |---|---|---|---|---|
-| REL-01 | Port `google_play_deploy.yml` (offset above the Flutter `versionCode`, `track` input incl. alpha/production) and `ios_testflight.yml` (framework step, fastlane `beta`, ASC key trimming); `MARKETING_VERSION` 1.1.0 | M | CORE-01 | CLAUDE.kmp.md CI/CD |
+| REL-01 | Port `google_play_deploy.yml` (offset above the Flutter `versionCode`, `track` input incl. alpha/production) and `ios_testflight.yml` (framework step, fastlane `beta`, ASC key trimming); `MARKETING_VERSION` 1.0.1 | M | CORE-01 | CLAUDE.kmp.md CI/CD |
 | REL-02 | Firebase per flavour (`google-services.json`, `GoogleService-Info.plist` from the `DOCTOR_*` secrets), App Distribution for debug builds | S | PUSH-01 | 07 §2.5 |
 | REL-03 | Full regression: all `*ScreenshotTest`s recorded, `StringsTest`, `DemoBackendTest`, device matrix (Android 8+/iOS 15+), accessibility pass (content descriptions, 48 dp targets) | M | all | 04 §7 |
 | REL-04 | Remove the Flutter code and assets (`lib/`, `android/`, `ios/`, `web/`, `windows/`, `pubspec.*`, `test/`, fonts), update `README.md`, keep docs/contracts/scripts that still apply; web hosting decision executed | S | REL-03 | CLAUDE.kmp.md "Rewrite in place" |

@@ -117,7 +117,7 @@ both as strings. A breaking backend change cannot be communicated to installed a
 ```json
 {
   "doctorApp": {
-    "minVersion": { "android": "1.1.0", "ios": "1.1.0" },
+    "minVersion": { "android": "1.0.1", "ios": "1.0.1" },
     "latestVersion": { "android": "1.1.3", "ios": "1.1.3" },
     "storeUrl": { "android": "https://play.google.com/store/apps/details?id=com.shifa.doc", "ios": "https://apps.apple.com/app/id<ID>" },
     "maintenance": { "active": false, "message": { "en": "", "uz": "", "ru": "" }, "until": null }

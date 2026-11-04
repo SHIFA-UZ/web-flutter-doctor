@@ -29,7 +29,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | D-07 | Not ported: waiting room, typing indicator, doc-access approve/reject in the inbox, phone OTP. | The user's call, 2026-11-04 (§3 default) |
 | D-08 | Flutter web keeps deploying from `main`; no desktop layouts in the KMP app. | The user's call, 2026-11-04 (§3 default) |
 | D-09 | App-lock PIN 4–6 digits, user's choice, explicit submit, salted hash. | The user's call, 2026-11-04 (§3 default) |
-| D-10 | Version offsets: `VERSION_CODE_OFFSET` = `BUILD_NUMBER_OFFSET` = 1, the Flutter formula, on the same workflow files, so the run counters keep rising (last Flutter uploads: Play run 8 → versionCode 9, TestFlight run 5 → build 6; read from the public Actions API on 2026-11-04). | The user's call, 2026-11-04 (§3 default) |
+| D-10 | Version `1.0.1`; build numbers start at 10 on both stores: `VERSION_CODE_OFFSET` 1 (next Play run 9 → 10), `BUILD_NUMBER_OFFSET` 4 (next TestFlight run 6 → 10), same workflow files (last Flutter uploads: Play run 8 → versionCode 9, TestFlight run 5 → build 6; public Actions API, 2026-11-04). The shared `iosApp.xcscheme` is committed so fastlane can build. | The user's call, 2026-11-04 (§3 default) |
 | D-11 | Doctor delete-account UI built; the action goes to "contact support" until BE-02 ships. | The user's call, 2026-11-04 (§3 default) |
 | D-12 | Video gated on `VIDEO_CONSULTATION` in `features`, hidden while unresolved. | The user's call, 2026-11-04 (§3 default) |
 | D-13 | Push language and per-device tokens: inherit the patient app's asks (BE-05, BE-06); single token until then. | The user's call, 2026-11-04 (§3 default) |

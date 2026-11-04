@@ -15,7 +15,7 @@ between the two repos.
   https). Version name from `MARKETING_VERSION`, version code from `-PversionBuild`.
 - **iOS:** `iosApp/` from the patient app without PostHog and Daily (Daily comes back with VIDEO-01 or CORE-07),
   `PRODUCT_BUNDLE_IDENTIFIER = uz.shifa.doc`, team `NH97PGA9PT`, product `ShifaDoctor`, display name "Shifa Doctor",
-  `MARKETING_VERSION = 1.1.0`, the Flutter app's usage descriptions, background modes and 1024 px icon (RGB, no
+  `MARKETING_VERSION = 1.0.1`, the Flutter app's usage descriptions, background modes and 1024 px icon (RGB, no
   alpha), its `GoogleService-Info.plist`, Firebase Messaging via SPM. The AppDelegate only configures Firebase; the
   push bridge comes with PUSH-01.
 - **Shared scheme:** `iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme` exists locally (copied, with the

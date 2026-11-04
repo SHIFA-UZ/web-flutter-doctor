@@ -10,8 +10,8 @@ concurrency:
 
 env:
   # build number = offset + github.run_number. The Flutter app used 1 + run_number (last upload: run 5 =
-  # build 6). Same file name, same run counter, same offset: one rising sequence for both apps.
-  BUILD_NUMBER_OFFSET: 1
+  # build 6). Offset 4 makes the first KMP run (6) build 10, the same start as Android's versionCode.
+  BUILD_NUMBER_OFFSET: 4
 
 jobs:
   build-and-deploy-ios:
