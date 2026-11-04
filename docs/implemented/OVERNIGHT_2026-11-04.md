@@ -165,6 +165,43 @@ Run on the Pixel 9 Pro emulator and the iPhone 16 Pro simulator (iOS 18.6).
 - **Tests:** `PracticeClockTest` (4), `MoneyTest` (3), `PhoneE164Test` (3), `PasswordPolicyTest` (1), both builds.
 - **Codex:** fixed exception logging in the pickers (no file names), the iPad share-sheet crash, money overflow and "." parsed as zero, junk phone input accepted, a picker stream leak, a saver reporting success without writing, and a padded zone id.
 
+## M1 · Launch and auth (after your "continue with all rest tickets")
+
+All eleven M1 tickets are committed, one commit each, each with a Codex review (findings and answers in
+`docs/implemented/codex/`). Details per ticket in `docs/implemented/auth.md`.
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| AUTH-01 | `ee3c7a7` | Splash, session restore, BE-04 boot gate (force update / maintenance) |
+| AUTH-02 | `6a4b9fe` | Sign In on the shared auth frame (`?app=doctor`), reason banners |
+| AUTH-03 | `fa7bcaa` | Sign in with an e-mail code |
+| AUTH-04 | `485d828` | Forgot password with the live password checklist |
+| AUTH-05 | `ace20a0` | Invitation key; request ids in every error banner |
+| AUTH-06 | `069d299` | Doctor registration, duplicate-doctor check, existing-patient branch, timezone |
+| AUTH-07 | `93c7365` | Registration step 2: birth date, gender, address, clinic and profession pickers, one profile PATCH |
+| AUTH-08 | `9d39d2e` | Receptionist registration (`register-clinic-staff`) |
+| AUTH-09 | `c5318ea` | One shared sign-out question, "You've signed out" |
+| LOCK-01 | `0c47979` | App lock: lock window, 4–6 digit PIN (D-09), biometrics, settings section |
+| LOCK-02 | `2ae2edf` | 30-day inactivity and token-expiry sign-out |
+
+Checked on the emulator: real sign-in against dev; the app lock (set, lock after 7 s away, not after 2 s, covers an
+open sheet, cold start locked, unlock, turn off). Not tried: biometrics on a device with an enrolled finger, iOS on
+the simulator beyond building the framework.
+
+**For you to look at:**
+1. **Security, production backend (BE-29, High):** `POST /auth/register` and `/auth/register-clinic-staff` set a new
+   password on an *existing* account for anyone with an unused invitation key. A clinic inviter gets the key in the
+   API response, so they can take over the invited person's account; with a key that has no `emailSentTo`, anyone
+   with the key can take over any doctor or patient by e-mail. `check-existing-doctor` also matches e-mails
+   case-sensitively while `register` doesn't. The app only guards honest users. Details and the proposed fix in
+   `docs/backend-improvements.md` (BE-29). The backend repo was not touched.
+2. **PIN length:** the design board fixes six digits; D-09 (your default) says 4–6 with an explicit submit. D-09 is
+   built ("Unlock" button). Say if you prefer the board's fixed six.
+3. **Lock screen on Android:** the system bars around it are dimmed (it is a dialog window so it can cover sheets;
+   CMP 1.9 has no switch for that). Cosmetic.
+4. **Registration e-mail code:** still waiting on BE-03 (D-04); the doctor and staff registrations go straight in.
+5. **The shell is still a stand-in** (debug menu with sign-out and the app-lock section) until SHELL-01, next.
+
 ## Decisions
 
 - **D-00:** one branch, `doc-app2.0`.
