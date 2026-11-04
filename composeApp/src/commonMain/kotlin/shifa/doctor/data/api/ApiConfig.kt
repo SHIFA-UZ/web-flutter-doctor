@@ -52,6 +52,18 @@ object ApiConfig {
 
         fun patientTestSms(id: Long) = "patients/$id/send-test-sms"
 
+        fun patientDocuments(id: Long) = "patients/$id/documents"
+
+        fun patientDocumentDownload(
+            id: Long,
+            documentId: Long,
+        ) = "patients/$id/documents/$documentId/download"
+
+        fun patientDocumentRequestAccess(
+            id: Long,
+            documentId: Long,
+        ) = "patients/$id/documents/$documentId/request-access"
+
         fun appointment(id: Long) = "appointments/$id"
 
         fun appointmentChange(id: Long) = "appointments/$id/change"

@@ -212,3 +212,28 @@ Activity (month groups), Overview's Recent activity.
   failed read with Retry), `SlotPickViewModelTest` (4: today's past slots hidden and past days closed; a slot booked
   elsewhere leaves with its selection; a failed day; a slot starting while open), `BookingViewModelTest` (+1: a chosen patient, not a change); screenshots
   `PatientDetail_appointments`, `PatientDetail_activity`, `Patients_slotPick`, and Overview with Recent activity.
+
+## DOCS-01 · Document models and repository
+
+Built 2026-11-04. Spec 06 §4.1, §4.3–4.6, §2.10 (download). No screen (DOCS-04 lists, DOCS-05 views, DOCS-03 uploads).
+
+- **Models** (`data/model/DocumentModels.kt`): `PatientDocument` as dev answers `GET /patients/{id}/documents`
+  (id, title, date, url, canView, creatorLabel, creatorType, category, isSharedWithTeam, uploadedByPatient,
+  appointmentId; checked against dev's OpenAPI and a real read). A missing or bad date is null (Flutter turned it into
+  "now"); `locked` = not `canView`. `DocumentCategory`: the 27 codes, 22 medical results (shared with every doctor)
+  and 4 private, plus `FORM_025_2`, which the upload sheet won't offer but which now gets a label (Flutter showed form
+  documents without a chip); `lab` for the activity feed (by category only, never by title). Labels in the app's
+  language: `ui/documents/DocumentLabels.kt` (the `documentCategory_*` keys).
+- **Download** (`DocumentFile`): always through `/download` (never the list's `url`); the name from
+  `Content-Disposition` (RFC 5987 `filename*=UTF-8''…` first, so Cyrillic names survive, then quoted or bare
+  `filename`, quotes and a language tag respected); the type from the first bytes (JPEG, PNG, GIF, WebP, PDF), then the content type, then the extension;
+  anything else stays a binary the viewer won't try to draw as a PDF (Flutter did).
+- **Repository** (`data/documents/DocumentsRepository.kt`): `list` (one bad row never drops the rest), `download`,
+  `requestAccess` (`POST …/request-access` with `{}`), each in a clinic's scope when given. **Dev fact:** downloading
+  a locked document answers **404 with an empty body**, not 403; it comes back as `NotFound`, which DOCS-04/05 show as
+  "locked, request access".
+- **Demo:** a shared blood test that downloads as a real one-page PDF (valid cross-reference table, for the viewer) and
+  the patient's locked ECG (404); request access succeeds.
+- **Tests:** `DocumentModelsTest` (3: categories, file names in every form, type order), `DocumentsRepositoryTest` (3:
+  lenient list with the clinic, a Cyrillic RFC 5987 name and a JPEG behind an octet-stream type, the locked 404;
+  request access), `DemoBackendTest` (+1).

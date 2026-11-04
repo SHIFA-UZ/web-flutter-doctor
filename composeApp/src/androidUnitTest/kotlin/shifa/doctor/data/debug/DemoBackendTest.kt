@@ -350,4 +350,20 @@ class DemoBackendTest {
             assertThat(repo.createAccount(13).getOrThrow().username).isNotEmpty()
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `documents answer locally - the list, an open one as a PDF, the locked one 404, request access`() =
+        runTest {
+            val repo = shifa.doctor.data.documents.DocumentsRepository { client }
+            val docs = repo.list(12).getOrThrow()
+            assertThat(docs.map { it.locked }).containsExactly(false, true).inOrder()
+            val file = repo.download(12, docs[0].id).getOrThrow()
+            assertThat(file.isPdf).isTrue()
+            assertThat(file.fileName).isEqualTo("demo-document.pdf")
+            assertThat(file.bytes.decodeToString()).endsWith("%%EOF\n")
+            assertThat(repo.download(12, docs[1].id).exceptionOrNull())
+                .isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            assertThat(repo.requestAccess(12, docs[1].id).isSuccess).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }

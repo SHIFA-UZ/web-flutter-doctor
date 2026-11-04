@@ -111,7 +111,17 @@ class DemoBackend(
         MockEngine { request ->
             val body = if (request.method == HttpMethod.Get) "" else request.body.toByteArray().decodeToString()
             val reply = mutex.withLock { route(request, body) }
-            if (reply != null) {
+            val file = reply?.file
+            if (file != null) {
+                respond(
+                    file,
+                    reply.status,
+                    headersOf(
+                        HttpHeaders.ContentType to listOf(ContentType.Application.Pdf.toString()),
+                        HttpHeaders.ContentDisposition to listOf("inline; filename=\"demo-document.pdf\""),
+                    ),
+                )
+            } else if (reply != null) {
                 respond(
                     reply.body,
                     reply.status,
@@ -138,6 +148,8 @@ class DemoBackend(
     private class Reply(
         val status: HttpStatusCode,
         val body: String,
+        // A file answer (a document download): sent as a PDF instead of [body].
+        val file: ByteArray? = null,
     )
 
     private suspend fun route(
@@ -302,6 +314,17 @@ class DemoBackend(
                 ok(saved)
             }
             get && path.matches(Regex("patients/\\d+/appointments")) -> ok(JsonArray(emptyList()))
+            // Documents (DOCS-01): a shared blood test anyone can open, and the patient's own ECG, locked (404 to download).
+            get && path.matches(Regex("patients/\\d+/documents")) ->
+                ok(apiJson.parseToJsonElement(DEMO_DOCUMENTS))
+            get && path.matches(Regex("patients/\\d+/documents/\\d+/download")) ->
+                if (path.split('/')[3] == "902") {
+                    Reply(HttpStatusCode.NotFound, "")
+                } else {
+                    Reply(HttpStatusCode.OK, "", demoPdf())
+                }
+            request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/documents/\\d+/request-access")) ->
+                ok(JsonObject(emptyMap()))
             request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/create-account")) ->
                 ok(
                     JsonObject(
@@ -792,4 +815,31 @@ internal fun demoCalendar(day: String?): JsonArray {
             }
         }
     return JsonArray(rows)
+}
+
+private const val DEMO_DOCUMENTS =
+    """[{"id":901,"title":"Complete blood count","date":"2026-10-22","url":"demo","canView":true,"creatorLabel":"Demo Doctor",
+    "creatorType":"DOCTOR","category":"BLOOD_TEST","isSharedWithTeam":true,"uploadedByPatient":false,"appointmentId":null},
+    {"id":902,"title":"ECG","date":"2026-09-29","url":null,"canView":false,"creatorLabel":"Demo Patient",
+    "creatorType":"PATIENT","category":"ECG","isSharedWithTeam":false,"uploadedByPatient":true,"appointmentId":null}]"""
+
+/** A valid one-page PDF ("Shifa demo document") with a correct cross-reference table, for the viewer. */
+private fun demoPdf(): ByteArray {
+    val text = "BT /F1 18 Tf 72 720 Td (Shifa demo document) Tj ET"
+    val objects =
+        listOf(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R " +
+                "/Resources << /Font << /F1 5 0 R >> >> >>",
+            "<< /Length ${text.length} >>\nstream\n$text\nendstream",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        )
+    val out = StringBuilder("%PDF-1.4\n")
+    val offsets = objects.mapIndexed { i, body -> out.length.also { out.append("${i + 1} 0 obj\n$body\nendobj\n") } }
+    val xref = out.length
+    out.append("xref\n0 ${objects.size + 1}\n0000000000 65535 f \n")
+    offsets.forEach { out.append(it.toString().padStart(10, '0')).append(" 00000 n \n") }
+    out.append("trailer\n<< /Size ${objects.size + 1} /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n")
+    return out.toString().encodeToByteArray()
 }
