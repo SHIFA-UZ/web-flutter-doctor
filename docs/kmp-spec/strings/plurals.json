@@ -256,5 +256,37 @@
     "uz": {
       "other": "{count} tashrif"
     }
+  },
+  "scannedDocumentPages": {
+    "en": {
+      "one": "Scanned document ({count} page)",
+      "other": "Scanned document ({count} pages)"
+    },
+    "replaces": [],
+    "ru": {
+      "one": "Скан документа ({count} страница)",
+      "few": "Скан документа ({count} страницы)",
+      "many": "Скан документа ({count} страниц)",
+      "other": "Скан документа ({count} страницы)"
+    },
+    "uz": {
+      "other": "Skanerlangan hujjat ({count} sahifa)"
+    }
+  },
+  "pagesScannedCount": {
+    "en": {
+      "one": "{count} page scanned",
+      "other": "{count} pages scanned"
+    },
+    "replaces": [],
+    "ru": {
+      "one": "Отсканирована {count} страница",
+      "few": "Отсканировано {count} страницы",
+      "many": "Отсканировано {count} страниц",
+      "other": "Отсканировано {count} страницы"
+    },
+    "uz": {
+      "other": "{count} sahifa skanerlandi"
+    }
   }
 }

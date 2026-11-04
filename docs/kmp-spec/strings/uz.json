@@ -2493,5 +2493,13 @@
   "documentsLoadFailed": "Hujjatlarni yuklab bo'lmadi.",
   "requestAlreadySent": "So'rov allaqachon yuborilgan",
   "uploadedByName": "Yukladi: {name}",
-  "formDocumentTitle": "025-2 shakli ({date})"
+  "formDocumentTitle": "025-2 shakli ({date})",
+  "largeFileWarning": "Katta fayl: yuklash biroz vaqt olishi mumkin.",
+  "selectDocumentType": "Hujjat turini tanlang",
+  "uploadCancelled": "Yuklash bekor qilindi",
+  "cameraAccessOff": "Kamera o'chiq. Hujjatlarni skanerlash uchun uni Sozlamalarda yoqing.",
+  "documentUploadedNamed": "“{title}” hujjati yuklandi",
+  "upload": "Yuklash",
+  "discardScannedPages": "Skanerlangan sahifalar o'chirilsinmi?",
+  "onlyPdfOrImages": "Faqat PDF va rasm fayllarini yuklash mumkin."
 }

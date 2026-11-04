@@ -19,4 +19,11 @@ class DocumentViewerScreenshotTest {
 
     @Test
     fun cantPreview() = captureRoboImage("screenshots/DocumentViewer_cantPreview.png") { ViewerCantPreviewPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun uploadDetails() = captureRoboImage("screenshots/Upload_details.png") { UploadDetailsPreview() }
+
+    @Test
+    fun uploadStatus() = captureRoboImage("screenshots/Upload_status.png") { UploadStatusPreview() }
 }

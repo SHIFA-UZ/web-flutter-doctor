@@ -364,6 +364,24 @@ class DemoBackendTest {
             assertThat(repo.download(12, docs[1].id).exceptionOrNull())
                 .isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
             assertThat(repo.requestAccess(12, docs[1].id).isSuccess).isTrue()
+            val up =
+                repo.upload(
+                    12,
+                    shifa.doctor.data.documents.UploadFile(
+                        "%PDF-1.4".encodeToByteArray(),
+                        "scan.pdf",
+                        "application/pdf",
+                    ),
+                    "Scan",
+                    "XRAY",
+                ).getOrThrow()
+            assertThat(up.title to up.category).isEqualTo("Scan" to "XRAY")
+            assertThat(repo.list(12).getOrThrow().first().id).isEqualTo(up.id)
+            // Kept for that patient only, and it opens as what was uploaded.
+            assertThat(repo.list(14).getOrThrow().map { it.id }).doesNotContain(up.id)
+            val back = repo.download(12, up.id).getOrThrow()
+            assertThat(back.bytes.decodeToString()).isEqualTo("%PDF-1.4")
+            assertThat(back.mime).isEqualTo("application/pdf")
             assertThat(forwarded).isEmpty()
         }
 }

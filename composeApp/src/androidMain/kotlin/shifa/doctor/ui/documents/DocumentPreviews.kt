@@ -1,7 +1,10 @@
 package shifa.doctor.ui.documents
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import shifa.doctor.data.model.DocumentFile
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.uploadFailed
 import shifa.doctor.ui.theme.PreviewTheme
 
 @Composable
@@ -22,4 +25,48 @@ internal fun ViewerCantPreviewPreview() =
             ),
             DocumentViewerActions(),
         )
+    }
+
+// DOCS-03: the title & type sheet after a scan, Add tried without a type.
+@Composable
+internal fun UploadDetailsPreview() =
+    PreviewTheme {
+        UploadDetailsTray(
+            UploadDraft(
+                shifa.doctor.data.documents.UploadFile(ByteArray(3), "scan.pdf", "application/pdf"),
+                "Scanned document (3 pages)",
+                pages = 3,
+            ),
+            tried = true,
+            {},
+            {},
+            {},
+        )
+    }
+
+// DOCS-03: a running upload over the list, and a failed one's banner with Retry.
+@Composable
+internal fun UploadStatusPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.padding(shifa.doctor.ui.theme.ShifaSpacing.Inset.Md),
+        ) {
+            UploadStatus(UploadUiState(uploading = "Scanned document (3 pages)", progress = 0.42f), {}, {}, {})
+            UploadStatus(
+                UploadUiState(
+                    failed =
+                        UploadDraft(
+                            shifa.doctor.data.documents.UploadFile(ByteArray(3), "x.pdf", "application/pdf"),
+                            "x",
+                        ),
+                    banner =
+                        shifa.doctor.ui.emailcode.CodeBanner(
+                            shifa.doctor.generated.resources.Res.string.uploadFailed,
+                        ),
+                ),
+                {},
+                {},
+                {},
+            )
+        }
     }

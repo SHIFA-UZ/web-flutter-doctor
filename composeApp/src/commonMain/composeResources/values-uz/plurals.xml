@@ -31,11 +31,17 @@
     <plurals name="minutesAgo">
         <item quantity="other">%1$s daqiqa oldin</item>
     </plurals>
+    <plurals name="pagesScannedCount">
+        <item quantity="other">%1$s sahifa skanerlandi</item>
+    </plurals>
     <plurals name="patientsCount">
         <item quantity="other">%1$s bemor</item>
     </plurals>
     <plurals name="patientsPagination">
         <item quantity="other">%3$s bemordan %1$s–%2$s ko'rsatilmoqda</item>
+    </plurals>
+    <plurals name="scannedDocumentPages">
+        <item quantity="other">Skanerlangan hujjat (%1$s sahifa)</item>
     </plurals>
     <plurals name="toothA11y">
         <item quantity="other">%1$s-tish, %2$s ta xizmat</item>

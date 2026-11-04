@@ -284,6 +284,7 @@
     <string name="callErrorOccurred">Call error occurred</string>
     <string name="callPaused">Call paused</string>
     <string name="cameraAccessNeeded">Camera access is needed to take a photo</string>
+    <string name="cameraAccessOff">Camera access is off. Enable it in Settings to scan documents.</string>
     <string name="cameraLabel">Camera</string>
     <string name="cameraOff">Camera off</string>
     <string name="cameraOn">Camera on</string>
@@ -879,6 +880,7 @@
     <string name="discardChangesTitle">Discard changes?</string>
     <string name="discardRegistrationBody">Your entries will be lost.</string>
     <string name="discardRegistrationTitle">Discard registration?</string>
+    <string name="discardScannedPages">Discard the scanned pages?</string>
     <string name="discountRange">0–100</string>
     <string name="dismiss">Dismiss</string>
     <string name="district">District</string>
@@ -951,6 +953,7 @@
     <string name="documentSaved">Saved to your device</string>
     <string name="documentTitle">Document Title</string>
     <string name="documentUploaded">Document uploaded successfully</string>
+    <string name="documentUploadedNamed">Document “%1$s” uploaded</string>
     <string name="documenting">Documenting…</string>
     <string name="documents">Documents</string>
     <string name="documentsEmptyHint">Uploaded files and scans will appear here so you can open them during the visit.</string>
@@ -1405,6 +1408,7 @@
     <string name="languageNativeUz">O'zbekcha</string>
     <string name="languageNativeUzCyrl">Ўзбекча</string>
     <string name="languageSecurityNotifications">Language · Security · Notifications</string>
+    <string name="largeFileWarning">Large file: the upload may take a while.</string>
     <string name="lastLogin">Last Login</string>
     <string name="lastName">Last name</string>
     <string name="lastVisit">Last visit</string>
@@ -1664,6 +1668,7 @@
     <string name="oneTimeKey">One-time key</string>
     <string name="oneTimePassword">One-time Password</string>
     <string name="onlineVisit">Online</string>
+    <string name="onlyPdfOrImages">Only PDF and image files can be uploaded.</string>
     <string name="openAfterCall">Open after the call</string>
     <string name="openChart">Open chart</string>
     <string name="openDocument">Open Document</string>
@@ -2014,6 +2019,7 @@
     <string name="selectDateRange">Select date range</string>
     <string name="selectDatesToSeeSchedule">Select dates to see your schedule</string>
     <string name="selectDocument">Select Document</string>
+    <string name="selectDocumentType">Select a document type</string>
     <string name="selectFile">Select File</string>
     <string name="selectFormTemplate">Select Form Template</string>
     <string name="selectImage">Select Image</string>
@@ -2373,6 +2379,8 @@
     <string name="updateRequiredTitle">Update required</string>
     <string name="updateScheduleMessage">Update schedule - Your calendar does not provide booking slots this far ahead</string>
     <string name="upgradeToPlan">Upgrade to %1$s</string>
+    <string name="upload">Upload</string>
+    <string name="uploadCancelled">Upload cancelled</string>
     <string name="uploadCertificate">Upload Certificate</string>
     <string name="uploadDocument">Upload Document</string>
     <string name="uploadError">Upload error</string>

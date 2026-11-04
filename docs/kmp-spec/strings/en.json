@@ -2493,5 +2493,13 @@
   "documentsLoadFailed": "Couldn't load the documents.",
   "requestAlreadySent": "Request already sent",
   "uploadedByName": "Uploaded by {name}",
-  "formDocumentTitle": "Form 025-2 ({date})"
+  "formDocumentTitle": "Form 025-2 ({date})",
+  "largeFileWarning": "Large file: the upload may take a while.",
+  "selectDocumentType": "Select a document type",
+  "uploadCancelled": "Upload cancelled",
+  "cameraAccessOff": "Camera access is off. Enable it in Settings to scan documents.",
+  "documentUploadedNamed": "Document “{title}” uploaded",
+  "upload": "Upload",
+  "discardScannedPages": "Discard the scanned pages?",
+  "onlyPdfOrImages": "Only PDF and image files can be uploaded."
 }

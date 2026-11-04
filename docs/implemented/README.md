@@ -107,8 +107,9 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | DOCS-01 Document models | Done | 27 categories (labels), lenient list, download named by Content-Disposition (RFC 5987) and typed by bytes, request access; a locked download is 404 on dev. See patients.md. |
 | DOCS-02 Pickers & photos to PDF | Done | Existing pickers reused; a shared photos-to-PDF writer that embeds the JPEGs unchanged (48 KB for two photos instead of megabytes). See patients.md. |
 | DOCS-05 Document viewer | Done | Download → zoomable image, PDF in the zoomable PDF view, or "can't preview" with Save to device; 403 request access, 404 gone, Retry. See patients.md. |
-| DOCS-04 Documents tab | Done (no upload yet) | Search, cards (lock, chip, shared mark, byline, localised 025-2 title), open in the viewer, request access; read on each showing. See patients.md. |
-| DOCS-03, FORM-01 … CLIN-02 | Not started | |
+| DOCS-04 Documents tab | Done | Search, cards (lock, chip, shared mark, byline, localised 025-2 title), open in the viewer, request access; read on each showing. See patients.md. |
+| DOCS-03 Upload | Done | PDF, photo (as JPEG), gallery, multi-page scan → title & required type → multipart upload with progress, Cancel, Retry, 25 MB cap. See patients.md. |
+| FORM-01 … CLIN-02 | Not started | |
 
 ## Log
 
@@ -174,3 +175,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · DOCS-02 · Photos to PDF in shared code (platform PDF writers were megabytes a page).
 - 2026-11-04 · DOCS-05 · Document viewer (before DOCS-04, which opens it).
 - 2026-11-04 · DOCS-04 · Documents tab.
+- 2026-11-04 · DOCS-03 · Upload (PDF, photo, scan) from the Documents tab.

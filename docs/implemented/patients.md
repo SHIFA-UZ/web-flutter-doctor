@@ -308,3 +308,35 @@ Built 2026-11-04. Flow `06/06-patient-documents.md`; spec 06 §2.6, §4.6. Board
 - **Tests:** `PatientDocumentsViewModelTest` (4: list and search; first-read error vs refresh banner; a late failing
   read; request access sent / already sent / error), `DocumentModelsTest` (+1: openable), screenshot
   `PatientDetail_documents`.
+
+## DOCS-03 · Upload
+
+Built 2026-11-04. Flow `06/07-upload-document.md`; spec 06 §4.2, §9. Not a board screen (the board's Documents tab
+has the Upload button); built in the existing style. Started from the Documents tab's "Upload".
+
+- **Sources** (`ui/documents/DocumentUpload.kt`): Upload PDF (the PDF picker; the file is typed by its bytes and only a PDF
+  or a JPEG/PNG goes, else "Only PDF and image files can be uploaded."), Take Photo and Choose from Gallery (one
+  JPEG, uploaded as the image itself: Flutter wrapped it in a PDF), Scan (multi-page): camera, "Add another page?"
+  with "2 pages scanned", Finish (or the camera cancelled with pages taken) → one PDF through DOCS-02's writer, named
+  `scan_20261104_0930.pdf` on the practice clock. Camera refused for good → "Camera access is off…" with Open
+  settings.
+- **Title & type sheet:** the title prefilled (the file name without its extension, or "Scanned document (2 pages)",
+  plural rules; an emptied title falls back to it; at most 120 characters); the type is required (chips in two
+  headed groups, medical results shared with every doctor, then private types; Add stays disabled with "Select a
+  document type" under the choices until one is picked);
+  "Large file: the upload may take a while." above 10 MB; Cancel with scanned pages asks "Discard the scanned
+  pages?" (a drag or a scrim tap too).
+- **Upload:** multipart `file` (the right content type and name) with `title` and `category` as form fields and the
+  clinic as a query parameter (dev's OpenAPI lists them as request parameters; Flutter sent fields). A card over the
+  list shows the title, the share sent once the size is known, and Cancel ("Upload cancelled"). Success: "Document
+  “…” uploaded" and the list read again (the new document on top). Failure: the banner with the request id and Retry
+  sending the same bytes (kept in memory only; no offline queue, flow §6); a 404 says "Patient not found". Over
+  25 MB is refused before sending ("The file is too large (max 25 MB)"); an empty file says "No file data to upload".
+- **Demo:** uploads are kept in memory per patient, listed first, and open as what was uploaded. **Checked on the emulator in demo mode** (an upload on dev
+  can't be deleted): a two-page camera scan, the type required, uploaded, on top of the list as an X-ray.
+- **Not built:** the in-visit entry with `appointmentId` (folder 05; the repository takes it), Quick actions / ⋮
+  entries (later tickets), HEIC conversion (the gallery picker already returns JPEG), several uploads at once (one at
+  a time: Upload is disabled while one runs).
+- **Tests:** `DocumentUploadViewModelTest` (4: PDF naming, empty and too large; the type required, then the multipart
+  body with title fallback, category and clinic; the scan loop to a 2-page PDF and the discard question; failure with
+  Retry, Cancel of a running upload), `DemoBackendTest` (+ upload), screenshots `Upload_details`, `Upload_status`.

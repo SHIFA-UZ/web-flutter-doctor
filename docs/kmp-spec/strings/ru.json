@@ -2493,5 +2493,13 @@
   "documentsLoadFailed": "Не удалось загрузить документы.",
   "requestAlreadySent": "Запрос уже отправлен",
   "uploadedByName": "Загрузил(а): {name}",
-  "formDocumentTitle": "Форма 025-2 ({date})"
+  "formDocumentTitle": "Форма 025-2 ({date})",
+  "largeFileWarning": "Большой файл: загрузка может занять время.",
+  "selectDocumentType": "Выберите тип документа",
+  "uploadCancelled": "Загрузка отменена",
+  "cameraAccessOff": "Доступ к камере выключен. Включите его в настройках, чтобы сканировать документы.",
+  "documentUploadedNamed": "Документ «{title}» загружен",
+  "upload": "Загрузить",
+  "discardScannedPages": "Удалить отсканированные страницы?",
+  "onlyPdfOrImages": "Можно загружать только PDF и изображения."
 }

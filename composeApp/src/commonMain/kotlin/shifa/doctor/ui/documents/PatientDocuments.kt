@@ -57,6 +57,7 @@ import shifa.doctor.generated.resources.requestAlreadySent
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.search
 import shifa.doctor.generated.resources.sharedWithTeamTooltip
+import shifa.doctor.generated.resources.upload
 import shifa.doctor.generated.resources.uploadedByName
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
@@ -67,10 +68,12 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaActionButton
 import shifa.doctor.ui.widgets.ShifaActionVariant
+import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.tr
@@ -165,6 +168,11 @@ data class DocumentsActions(
     val open: (PatientDocument) -> Unit = {},
     val requestAccess: (PatientDocument) -> Unit = {},
     val ui: ((PatientDocumentsUiState) -> PatientDocumentsUiState) -> Unit = {},
+    // DOCS-03: the upload sheet, and the running upload's Cancel / Retry / banner close.
+    val upload: () -> Unit = {},
+    val cancelUpload: () -> Unit = {},
+    val retryUpload: () -> Unit = {},
+    val dismissUpload: () -> Unit = {},
 )
 
 /** The tab's rows in the record's lazy list (200+ documents stay lazy, flow §8). */
@@ -172,10 +180,26 @@ fun LazyListScope.documentRows(
     state: PatientDocumentsUiState,
     actions: DocumentsActions,
     gap: Modifier,
+    upload: UploadUiState = UploadUiState(),
 ) {
     item {
         Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S10)) {
-            Text(tr(Res.string.documentHistory), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    tr(Res.string.documentHistory),
+                    Modifier.weight(1f),
+                    style = ShifaTextStyles.panelTitle(),
+                    color = ShifaColors.Text.Primary,
+                )
+                // One upload at a time (flow §8 allows more; the card shows one).
+                ShifaPrimaryButton(
+                    tr(Res.string.upload),
+                    actions.upload,
+                    size = ShifaButtonSize.Compact,
+                    enabled = upload.uploading == null,
+                )
+            }
+            UploadStatus(upload, actions.cancelUpload, actions.retryUpload, actions.dismissUpload)
             codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
             if (state.documents?.isNotEmpty() == true) {
                 ShifaSearchField(state.query, actions.search, tr(Res.string.search), Modifier.fillMaxWidth())

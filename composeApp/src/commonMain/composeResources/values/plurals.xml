@@ -41,6 +41,10 @@
         <item quantity="one">%1$s minute ago</item>
         <item quantity="other">%1$s minutes ago</item>
     </plurals>
+    <plurals name="pagesScannedCount">
+        <item quantity="one">%1$s page scanned</item>
+        <item quantity="other">%1$s pages scanned</item>
+    </plurals>
     <plurals name="patientsCount">
         <item quantity="one">%1$s patient</item>
         <item quantity="other">%1$s patients</item>
@@ -48,6 +52,10 @@
     <plurals name="patientsPagination">
         <item quantity="one">Showing %1$s to %2$s of %3$s patient</item>
         <item quantity="other">Showing %1$s to %2$s of %3$s patients</item>
+    </plurals>
+    <plurals name="scannedDocumentPages">
+        <item quantity="one">Scanned document (%1$s page)</item>
+        <item quantity="other">Scanned document (%1$s pages)</item>
     </plurals>
     <plurals name="toothA11y">
         <item quantity="one">Tooth %1$s, %2$s service</item>

@@ -284,6 +284,7 @@
     <string name="callErrorOccurred">Qo'ng'iroqda xatolik yuz berdi</string>
     <string name="callPaused">Qo'ng'iroq to'xtatildi</string>
     <string name="cameraAccessNeeded">Suratga olish uchun kameraga ruxsat kerak</string>
+    <string name="cameraAccessOff">Kamera o'chiq. Hujjatlarni skanerlash uchun uni Sozlamalarda yoqing.</string>
     <string name="cameraLabel">Kamera</string>
     <string name="cameraOff">Kamera o'chirilgan</string>
     <string name="cameraOn">Kamera yoqilgan</string>
@@ -879,6 +880,7 @@
     <string name="discardChangesTitle">O'zgarishlar bekor qilinsinmi?</string>
     <string name="discardRegistrationBody">Kiritgan ma'lumotlaringiz yo'qoladi.</string>
     <string name="discardRegistrationTitle">Ro'yxatdan o'tish bekor qilinsinmi?</string>
+    <string name="discardScannedPages">Skanerlangan sahifalar o'chirilsinmi?</string>
     <string name="discountRange">0–100</string>
     <string name="dismiss">Yopish</string>
     <string name="district">Tuman</string>
@@ -951,6 +953,7 @@
     <string name="documentSaved">Qurilmangizga saqlandi</string>
     <string name="documentTitle">Hujjat nomi</string>
     <string name="documentUploaded">Hujjat muvaffaqiyatli yuklandi</string>
+    <string name="documentUploadedNamed">“%1$s” hujjati yuklandi</string>
     <string name="documenting">Hujjatlashtirilmoqda…</string>
     <string name="documents">Hujjatlar</string>
     <string name="documentsEmptyHint">Yuklangan fayllar va skanlar qabul vaqtida ochish uchun shu yerda paydo bo'ladi.</string>
@@ -1405,6 +1408,7 @@
     <string name="languageNativeUz">O'zbekcha</string>
     <string name="languageNativeUzCyrl">Ўзбекча</string>
     <string name="languageSecurityNotifications">Til · Xavfsizlik · Bildirishnomalar</string>
+    <string name="largeFileWarning">Katta fayl: yuklash biroz vaqt olishi mumkin.</string>
     <string name="lastLogin">Oxirgi kirish</string>
     <string name="lastName">Familiya</string>
     <string name="lastVisit">Oxirgi tashrif</string>
@@ -1664,6 +1668,7 @@
     <string name="oneTimeKey">Bir martalik kalit</string>
     <string name="oneTimePassword">Bir martalik parol</string>
     <string name="onlineVisit">Onlayn</string>
+    <string name="onlyPdfOrImages">Faqat PDF va rasm fayllarini yuklash mumkin.</string>
     <string name="openAfterCall">Qo'ng'iroqdan keyin ochish</string>
     <string name="openChart">Kartani ochish</string>
     <string name="openDocument">Hujjatni ochish</string>
@@ -2014,6 +2019,7 @@
     <string name="selectDateRange">Sana oralig'ini tanlang</string>
     <string name="selectDatesToSeeSchedule">Jadvalni ko'rish uchun sanalarni tanlang</string>
     <string name="selectDocument">Hujjat tanlash</string>
+    <string name="selectDocumentType">Hujjat turini tanlang</string>
     <string name="selectFile">Faylni tanlash</string>
     <string name="selectFormTemplate">Forma shablonini tanlang</string>
     <string name="selectImage">Rasm tanlash</string>
@@ -2373,6 +2379,8 @@
     <string name="updateRequiredTitle">Yangilash talab qilinadi</string>
     <string name="updateScheduleMessage">Jadvalni yangilang\nSizning taqvimingiz bu qadar oldinga bron qilish vaqtlarini taqdim etmaydi. Iltimos, jadvalingizni yangilang.</string>
     <string name="upgradeToPlan">%1$s tarifiga o'tish</string>
+    <string name="upload">Yuklash</string>
+    <string name="uploadCancelled">Yuklash bekor qilindi</string>
     <string name="uploadCertificate">Sertifikat yuklash</string>
     <string name="uploadDocument">Hujjat yuklash</string>
     <string name="uploadError">Yuklash xatosi</string>

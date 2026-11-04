@@ -146,11 +146,15 @@ import shifa.doctor.generated.resources.takeExtraCareForChronicDiseasePatient
 import shifa.doctor.generated.resources.username
 import shifa.doctor.ui.calendar.SlotPickSheet
 import shifa.doctor.ui.calendar.longDate
+import shifa.doctor.ui.documents.DocumentUploadViewModel
 import shifa.doctor.ui.documents.DocumentsActions
 import shifa.doctor.ui.documents.PatientDocumentsUiState
 import shifa.doctor.ui.documents.PatientDocumentsViewModel
+import shifa.doctor.ui.documents.UploadSheets
+import shifa.doctor.ui.documents.UploadUiState
 import shifa.doctor.ui.documents.documentRows
 import shifa.doctor.ui.documents.documentTitle
+import shifa.doctor.ui.documents.rememberUploadSources
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.DiscardChangesSheet
@@ -681,9 +685,14 @@ fun PatientDetailScreen(
     onOpenDocument: (PatientDocument, String) -> Unit = { _, _ -> },
     viewModel: PatientDetailViewModel = viewModel(key = "patient-$id") { PatientDetailViewModel(id) },
     documents: PatientDocumentsViewModel = viewModel(key = "patient-documents-$id") { PatientDocumentsViewModel(id) },
+    uploads: DocumentUploadViewModel = viewModel(key = "patient-upload-$id") { DocumentUploadViewModel(id) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val docs by documents.state.collectAsStateWithLifecycle()
+    val upload by uploads.state.collectAsStateWithLifecycle()
+    // Each finished upload: the list again, with the new document on top.
+    LaunchedEffect(upload.uploaded) { if (upload.uploaded > 0) documents.load() }
+    val sources = rememberUploadSources(uploads)
     LaunchedEffect(Unit) { viewModel.load() }
     // Read each time the tab shows, back from the viewer included (access may have changed, flow 06/06 §5).
     LaunchedEffect(state.tab) { if (state.tab == RecordTab.Documents) documents.load() }
@@ -723,6 +732,10 @@ fun PatientDetailScreen(
                     open = { opening = it },
                     requestAccess = documents::requestAccess,
                     ui = documents::ui,
+                    upload = { uploads.ui { it.copy(options = true) } },
+                    cancelUpload = uploads::cancelUpload,
+                    retryUpload = uploads::retry,
+                    dismissUpload = { uploads.ui { it.copy(banner = null) } },
                 ),
             medical =
                 MedicalActions(
@@ -737,7 +750,9 @@ fun PatientDetailScreen(
                 ),
         ),
         docs,
+        upload,
     )
+    UploadSheets(upload, uploads, sources)
     val patient = state.patient
     val booking = state.booking
     if (patient != null && booking != null) {
@@ -779,6 +794,7 @@ fun PatientDetailContent(
     state: PatientDetailUiState,
     actions: PatientDetailActions,
     documents: PatientDocumentsUiState = PatientDocumentsUiState(),
+    upload: UploadUiState = UploadUiState(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     // No title: the header below names the patient (flow 06/03 §3.1).
     ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
@@ -815,7 +831,7 @@ fun PatientDetailContent(
                         // Long lists are rows of the lazy list (100+ visits, flow 06/03 §8).
                         RecordTab.Appointments -> appointmentRows(state, actions, gap)
                         RecordTab.Activity -> activityRows(state, actions, gap)
-                        RecordTab.Documents -> documentRows(documents, actions.documents, gap)
+                        RecordTab.Documents -> documentRows(documents, actions.documents, gap, upload)
                         else ->
                             item {
                                 Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {

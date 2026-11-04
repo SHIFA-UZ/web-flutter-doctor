@@ -102,6 +102,10 @@ class DemoBackend(
         listOf(11L to "Dilnoza Rahimova", 12L to "Jasur Karimov", 13L to "Malika Tursunova", 14L to "Bekzod Aliyev")
             .map { (id, name) -> JsonObject(demoPatient(id, name)) }
     private var lastPatientId = 14L
+
+    // Uploaded documents per patient id, newest first, and their files by document id.
+    private var uploads: Map<String, List<JsonElement>> = emptyMap()
+    private val uploadFiles = mutableMapOf<Long, Pair<ByteArray, String>>()
     private var lastDateId = 0L
     private var places: List<JsonElement> = apiJson.parseToJsonElement(DEMO_LOCATIONS).jsonArray.toList()
 
@@ -109,16 +113,22 @@ class DemoBackend(
 
     fun engine(): HttpClientEngine =
         MockEngine { request ->
-            val body = if (request.method == HttpMethod.Get) "" else request.body.toByteArray().decodeToString()
-            val reply = mutex.withLock { route(request, body) }
+            val raw = if (request.method == HttpMethod.Get) ByteArray(0) else request.body.toByteArray()
+            val body = raw.decodeToString()
+            val reply = mutex.withLock { route(request, body, raw) }
             val file = reply?.file
             if (file != null) {
                 respond(
                     file,
                     reply.status,
                     headersOf(
-                        HttpHeaders.ContentType to listOf(ContentType.Application.Pdf.toString()),
-                        HttpHeaders.ContentDisposition to listOf("inline; filename=\"demo-document.pdf\""),
+                        HttpHeaders.ContentType to listOf(reply.fileType),
+                        HttpHeaders.ContentDisposition to
+                            listOf(
+                                "inline; filename=\"demo-document.${reply.fileType.substringAfter(
+                                    '/',
+                                ).replace("jpeg", "jpg")}\"",
+                            ),
                     ),
                 )
             } else if (reply != null) {
@@ -148,13 +158,15 @@ class DemoBackend(
     private class Reply(
         val status: HttpStatusCode,
         val body: String,
-        // A file answer (a document download): sent as a PDF instead of [body].
+        // A file answer (a document download), sent instead of [body].
         val file: ByteArray? = null,
+        val fileType: String = ContentType.Application.Pdf.toString(),
     )
 
     private suspend fun route(
         request: HttpRequestData,
         body: String,
+        raw: ByteArray,
     ): Reply? {
         val get = request.method == HttpMethod.Get
         // The API host is the chosen backend's (production or development); other hosts are files.
@@ -316,12 +328,45 @@ class DemoBackend(
             get && path.matches(Regex("patients/\\d+/appointments")) -> ok(JsonArray(emptyList()))
             // Documents (DOCS-01): a shared blood test anyone can open, and the patient's own ECG, locked (404 to download).
             get && path.matches(Regex("patients/\\d+/documents")) ->
-                ok(apiJson.parseToJsonElement(DEMO_DOCUMENTS))
+                ok(
+                    JsonArray(
+                        uploads[path.split('/')[1]].orEmpty() + apiJson.parseToJsonElement(DEMO_DOCUMENTS).jsonArray,
+                    ),
+                )
+            // An upload (DOCS-03) joins the list on top, named and typed from its form fields.
+            request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/documents")) -> {
+                // A part's headers (name quoted or not, then any others), a blank line, the value.
+                fun field(name: String) =
+                    Regex("name=\"?$name\"?(?:\\r\\n[^\\r\\n]+)*\\r\\n\\r\\n([^\\r]*)").find(body)?.groupValues?.get(1)
+                val id = 1000L + uploadFiles.size
+                filePart(raw)?.let { uploadFiles[id] = it }
+                val saved =
+                    JsonObject(
+                        mapOf(
+                            "id" to JsonPrimitive(id),
+                            "title" to JsonPrimitive(field("title") ?: "Document"),
+                            "date" to JsonPrimitive("2026-11-04"),
+                            "url" to JsonPrimitive("demo"),
+                            "canView" to JsonPrimitive(true),
+                            "category" to JsonPrimitive(field("category")),
+                            "creatorLabel" to JsonPrimitive("Demo Doctor"),
+                            "creatorType" to JsonPrimitive("DOCTOR"),
+                        ),
+                    )
+                val patient = path.split('/')[1]
+                uploads = uploads + (patient to listOf(saved) + uploads[patient].orEmpty())
+                ok(saved)
+            }
             get && path.matches(Regex("patients/\\d+/documents/\\d+/download")) ->
-                if (path.split('/')[3] == "902") {
-                    Reply(HttpStatusCode.NotFound, "")
-                } else {
-                    Reply(HttpStatusCode.OK, "", demoPdf())
+                when (val id = path.split('/')[3].toLong()) {
+                    902L -> Reply(HttpStatusCode.NotFound, "")
+                    // An upload opens as what was uploaded.
+                    in uploadFiles ->
+                        uploadFiles.getValue(id).let {
+                                (bytes, type) ->
+                            Reply(HttpStatusCode.OK, "", bytes, type)
+                        }
+                    else -> Reply(HttpStatusCode.OK, "", demoPdf())
                 }
             request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/documents/\\d+/request-access")) ->
                 ok(JsonObject(emptyMap()))
@@ -842,4 +887,24 @@ private fun demoPdf(): ByteArray {
     offsets.forEach { out.append(it.toString().padStart(10, '0')).append(" 00000 n \n") }
     out.append("trailer\n<< /Size ${objects.size + 1} /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n")
     return out.toString().encodeToByteArray()
+}
+
+/** The `file` part of a multipart body: its bytes and content type (byte offsets: the file is binary). */
+private fun filePart(raw: ByteArray): Pair<ByteArray, String>? {
+    fun find(
+        pattern: String,
+        from: Int,
+    ): Int {
+        val p = pattern.encodeToByteArray()
+        for (i in from..raw.size - p.size) if (p.indices.all { raw[i + it] == p[it] }) return i
+        return -1
+    }
+    val named = find("name=file", 0).takeIf { it >= 0 } ?: find("name=\"file\"", 0).takeIf { it >= 0 } ?: return null
+    val start = find("\r\n\r\n", named).takeIf { it >= 0 } ?: return null
+    val end = find("\r\n--", start + 4).takeIf { it >= 0 } ?: return null
+    val headers = raw.copyOfRange(named, start).decodeToString()
+    val type =
+        Regex("Content-Type: *([^\r\n]+)", RegexOption.IGNORE_CASE).find(headers)?.groupValues?.get(1)?.trim()
+            ?: "application/octet-stream"
+    return raw.copyOfRange(start + 4, end) to type
 }

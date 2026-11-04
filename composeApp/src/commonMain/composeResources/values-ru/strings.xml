@@ -284,6 +284,7 @@
     <string name="callErrorOccurred">Произошла ошибка звонка</string>
     <string name="callPaused">Звонок приостановлен</string>
     <string name="cameraAccessNeeded">Чтобы сделать фото, нужен доступ к камере</string>
+    <string name="cameraAccessOff">Доступ к камере выключен. Включите его в настройках, чтобы сканировать документы.</string>
     <string name="cameraLabel">Камера</string>
     <string name="cameraOff">Камера выключена</string>
     <string name="cameraOn">Камера включена</string>
@@ -879,6 +880,7 @@
     <string name="discardChangesTitle">Отменить изменения?</string>
     <string name="discardRegistrationBody">Введённые данные будут потеряны.</string>
     <string name="discardRegistrationTitle">Отменить регистрацию?</string>
+    <string name="discardScannedPages">Удалить отсканированные страницы?</string>
     <string name="discountRange">0–100</string>
     <string name="dismiss">Закрыть</string>
     <string name="district">Район</string>
@@ -951,6 +953,7 @@
     <string name="documentSaved">Сохранено на устройстве</string>
     <string name="documentTitle">Название документа</string>
     <string name="documentUploaded">Документ успешно загружен</string>
+    <string name="documentUploadedNamed">Документ «%1$s» загружен</string>
     <string name="documenting">Документирование…</string>
     <string name="documents">Документы</string>
     <string name="documentsEmptyHint">Загруженные файлы и сканы появятся здесь для быстрого просмотра во время приёма.</string>
@@ -1405,6 +1408,7 @@
     <string name="languageNativeUz">O'zbekcha</string>
     <string name="languageNativeUzCyrl">Ўзбекча</string>
     <string name="languageSecurityNotifications">Язык · Безопасность · Уведомления</string>
+    <string name="largeFileWarning">Большой файл: загрузка может занять время.</string>
     <string name="lastLogin">Последний вход</string>
     <string name="lastName">Фамилия</string>
     <string name="lastVisit">Последний визит</string>
@@ -1664,6 +1668,7 @@
     <string name="oneTimeKey">Одноразовый ключ</string>
     <string name="oneTimePassword">Одноразовый пароль</string>
     <string name="onlineVisit">Онлайн</string>
+    <string name="onlyPdfOrImages">Можно загружать только PDF и изображения.</string>
     <string name="openAfterCall">Открыть после звонка</string>
     <string name="openChart">Карта</string>
     <string name="openDocument">Открыть документ</string>
@@ -2014,6 +2019,7 @@
     <string name="selectDateRange">Выберите период</string>
     <string name="selectDatesToSeeSchedule">Выберите даты для просмотра расписания</string>
     <string name="selectDocument">Выбрать документ</string>
+    <string name="selectDocumentType">Выберите тип документа</string>
     <string name="selectFile">Выбрать файл</string>
     <string name="selectFormTemplate">Выберите шаблон формы</string>
     <string name="selectImage">Выбрать изображение</string>
@@ -2373,6 +2379,8 @@
     <string name="updateRequiredTitle">Требуется обновление</string>
     <string name="updateScheduleMessage">Обновите расписание\nВаш календарь не предоставляет время для бронирования так далеко вперед. Пожалуйста, обновите свое расписание.</string>
     <string name="upgradeToPlan">Перейти на %1$s</string>
+    <string name="upload">Загрузить</string>
+    <string name="uploadCancelled">Загрузка отменена</string>
     <string name="uploadCertificate">Загрузить сертификат</string>
     <string name="uploadDocument">Загрузить документ</string>
     <string name="uploadError">Ошибка загрузки</string>
