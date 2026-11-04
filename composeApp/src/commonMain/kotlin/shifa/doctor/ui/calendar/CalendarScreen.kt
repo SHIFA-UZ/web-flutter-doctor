@@ -337,7 +337,7 @@ private fun Header(
 
 /** "4 November 2026", the month in the app's language. */
 @Composable
-private fun longDate(date: LocalDate) = "${date.dayOfMonth} ${monthTitle(date)}"
+internal fun longDate(date: LocalDate) = "${date.dayOfMonth} ${monthTitle(date)}"
 
 @Composable
 private fun MismatchBanner(
@@ -582,7 +582,7 @@ private fun FilterSheet(
 
 /** The status chip (flow 04/02 §3): label and colours; null when the backend sent none. */
 @Composable
-private fun status(
+internal fun status(
     raw: String?,
 ): Triple<String, androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>? {
     val code = raw?.uppercase()?.takeIf { it.isNotBlank() } ?: return null
@@ -597,11 +597,11 @@ private fun status(
     }
 }
 
-private const val CANCELLED_ALPHA = 0.55f
+internal const val CANCELLED_ALPHA = 0.55f
 
 /** The payment chip of a video appointment (flow 04/02 §3): label and colours; null when unknown. */
 @Composable
-private fun payment(
+internal fun payment(
     raw: String?,
 ): Triple<String, androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>? {
     val code = raw?.uppercase()?.takeIf { it.isNotBlank() } ?: return null
@@ -616,7 +616,7 @@ private fun payment(
 
 /** "30 min", "1 h", "1 h 30 min". */
 @Composable
-private fun duration(minutes: Int): String {
+internal fun duration(minutes: Int): String {
     val h = minutes / 60
     val m = minutes % 60
     return when {

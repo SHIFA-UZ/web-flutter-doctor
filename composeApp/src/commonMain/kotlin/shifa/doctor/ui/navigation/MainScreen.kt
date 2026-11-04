@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.calendar
@@ -94,6 +95,7 @@ import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
 import shifa.doctor.ui.auth.short
+import shifa.doctor.ui.calendar.AppointmentPanelScreen
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.profile.BillingScreen
@@ -117,6 +119,7 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.trackActivity
+import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.isDebugBuild
 import shifa.doctor.utils.tr
 
@@ -310,8 +313,16 @@ private fun RouteContent(
                 )
                 if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
             } else if (route.tab == ShellTab.Calendar && !staff) {
-                // Rows open their panels with CAL-6 (appointment) / CAL-7 (booking) / CAL-8 (block).
-                CalendarScreen(onOpen = {})
+                // Free slots (CAL-7) and blocks (CAL-8) open their panels with their tickets.
+                CalendarScreen(
+                    onOpen = {
+                        if (it is CalendarEntry.Appointment) {
+                            actions.push(
+                                ShellRoute.Appointment(it, currentInstant().toEpochMilliseconds()),
+                            )
+                        }
+                    },
+                )
             } else {
                 TabPlaceholder(route.tab.label, route.tab.icon)
             }
@@ -348,6 +359,7 @@ private fun RouteContent(
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
+        is ShellRoute.Appointment -> AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back)
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
     }

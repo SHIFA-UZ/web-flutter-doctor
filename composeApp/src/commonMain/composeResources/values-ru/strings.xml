@@ -48,6 +48,7 @@
     <string name="addressFromCoordinates">Адрес по координатам</string>
     <string name="addressNotFound">Адрес не найден</string>
     <string name="adjustAppointmentDuration">Изменить длительность</string>
+    <string name="adjustDuration">Изменить длительность</string>
     <string name="admin">Администратор</string>
     <string name="adminChangeAccount">Другой аккаунт</string>
     <string name="adminClinicAddressLabel">Адрес</string>
@@ -139,6 +140,7 @@
     <string name="appliedCode">Применено: %1$s</string>
     <string name="apply">Применить</string>
     <string name="applyAppointmentDuration">Применить изменение длительности</string>
+    <string name="applyDurationChange">Применить длительность</string>
     <string name="appointmentAlreadyCancelled">Запись уже отменена</string>
     <string name="appointmentBookedFor">Запись создана на %1$s %2$s</string>
     <string name="appointmentCancelled">Запись успешно отменена</string>
@@ -151,7 +153,9 @@
     <string name="appointmentEndedDocumentationSaved">Прием завершен. Документация сохранена.</string>
     <string name="appointmentEndedShort">Приём завершён</string>
     <string name="appointmentLinkedPlanBanner">Часть плана #%1$s — %2$s</string>
+    <string name="appointmentMoved">Приём перенесён</string>
     <string name="appointmentNotes">Записи приёма</string>
+    <string name="appointmentOver">Приём завершён</string>
     <string name="appointmentPlace">Место</string>
     <string name="appointmentPlaceLockedHint">Место записи отображается только для информации и недоступно для изменения здесь.</string>
     <string name="appointmentPlanAllDone">Все пункты этого плана выполнены.</string>
@@ -265,6 +269,7 @@
     <string name="cameraUnavailable">Камера недоступна</string>
     <string name="cancel">Отмена</string>
     <string name="cancelAppointment">Отменить запись</string>
+    <string name="cancelAppointmentTitle">Отменить приём?</string>
     <string name="cancelConfirm">Вы уверены, что хотите отменить эту запись?</string>
     <string name="cancelPartnerInvite">Отменить приглашение</string>
     <string name="cancelRecording">Отменить запись</string>
@@ -719,6 +724,7 @@
     <string name="contactSavedAddressFailed">Контакты сохранены, но адрес сохранить не удалось</string>
     <string name="contactSection">Контакты</string>
     <string name="continue">Продолжить</string>
+    <string name="continueAppointment">Продолжить приём</string>
     <string name="continueWithoutWaiting">Продолжить, не дожидаясь</string>
     <string name="coordinatesFromAddress">Координаты по адресу</string>
     <string name="coordinatesNotSet">Координаты не заданы</string>
@@ -761,6 +767,7 @@
     <string name="currentPasswordIncorrect">Текущий пароль неверен</string>
     <string name="currentPasswordIsRequired">Текущий пароль обязателен</string>
     <string name="currentPlanButton">Текущий тариф</string>
+    <string name="currentSlot">текущее</string>
     <string name="customTimesAddAtLeastOne">Добавьте хотя бы одно время</string>
     <string name="customTimesAddSlot">Добавить время</string>
     <string name="customTimesEmpty">Времена ещё не добавлены — добавьте ниже.</string>
@@ -926,6 +933,7 @@
     <string name="draftSavedBanner">Черновик сохранён</string>
     <string name="droppedFacts">Отброшено (не сказано)</string>
     <string name="duration">Продолжительность</string>
+    <string name="durationChanged">Длительность изменена</string>
     <string name="durationDays">Продолжительность (дни)</string>
     <string name="durationHours">%1$s ч</string>
     <string name="durationHoursMinutes">%1$s ч %2$s мин</string>
@@ -1336,6 +1344,7 @@
     <string name="joined">Регистрация</string>
     <string name="justFlagFollowUp">Только отметить для повторного приёма</string>
     <string name="justNow">Только что</string>
+    <string name="keepAppointment">Оставить приём</string>
     <string name="keepEditing">Продолжить редактирование</string>
     <string name="keepRecording">Продолжить запись</string>
     <string name="keyCopiedToClipboard">Ключ скопирован в буфер обмена</string>
@@ -1431,6 +1440,7 @@
     <string name="moreOptions">Другие разделы</string>
     <string name="morningTime">Утреннее время</string>
     <string name="moveDown">Переместить %1$s ниже</string>
+    <string name="moveTo">Перенести на %1$s</string>
     <string name="moveUp">Переместить %1$s выше</string>
     <string name="muteMic">Выключить микрофон</string>
     <string name="mySchedule">Моё расписание</string>
@@ -1607,6 +1617,7 @@
     <string name="openServicesPricing">Открыть «Услуги и цены»</string>
     <string name="openServicesPricingToManageEntries">Откройте «Услуги и цены», чтобы управлять записями</string>
     <string name="openSettings">Открыть настройки</string>
+    <string name="openSummary">Открыть заключение</string>
     <string name="openedFromNotification">Открыто из уведомления</string>
     <string name="optional">Необязательно</string>
     <string name="orAfter">или после</string>
@@ -1649,6 +1660,7 @@
     <string name="passwordUpdatedSuccessfully">Пароль успешно обновлен</string>
     <string name="passwordsDoNotMatch">Пароли не совпадают</string>
     <string name="pastAppointmentNoChange">Прошедшие записи нельзя изменить или отменить.</string>
+    <string name="pastAppointmentsCannotBeChanged">Прошедшие приёмы нельзя изменить или отменить.</string>
     <string name="pastSlotCannotAssign">Этот слот в прошлом. Назначить пациента нельзя.</string>
     <string name="paste">Вставить</string>
     <string name="patient">Пациент</string>
@@ -1694,6 +1706,7 @@
     <string name="patientStatusActive">Активный</string>
     <string name="patientStatusAtRisk">В группе риска</string>
     <string name="patientStatusFollowUp">На наблюдении</string>
+    <string name="patientWillBeNotified">Пациент получит уведомление.</string>
     <string name="patientWithChronicDisease">Пациент с хроническим заболеванием</string>
     <string name="patients">Пациенты</string>
     <string name="patientsPageSubtitle">Управление списком пациентов и клиническими записями</string>
@@ -1740,6 +1753,7 @@
     <string name="pinsDoNotMatch">PIN-коды не совпадают</string>
     <string name="pinsDontMatch">PIN-коды не совпадают. Начните заново.</string>
     <string name="place">Место</string>
+    <string name="placeReadOnlyHint">Место приёма здесь изменить нельзя.</string>
     <string name="planChanged">Теперь у вас тариф %1$s</string>
     <string name="planCurrencyUnknown">Валюта плана неизвестна</string>
     <string name="planManagedBySupport">Вашим тарифом управляет Shifa. Чтобы изменить его, напишите в поддержку.</string>
@@ -1853,6 +1867,7 @@
     <string name="requirementMet">выполнено</string>
     <string name="requirementNotMet">не выполнено</string>
     <string name="requiresProPlan">Для Shifa Intelligence нужен тариф PRO.</string>
+    <string name="reschedule">Перенести</string>
     <string name="resendCode">Отправить код снова</string>
     <string name="resendCodeIn">Отправить код снова через %1$s</string>
     <string name="reset">Сбросить</string>
@@ -2252,6 +2267,7 @@
     <string name="undo">Отменить</string>
     <string name="unknown">Неизвестно</string>
     <string name="unknownError">Произошла неизвестная ошибка</string>
+    <string name="unknownPatient">Неизвестный пациент</string>
     <string name="unlock">Разблокировать</string>
     <string name="unlockReason">Разблокируйте Shifa Doctor</string>
     <string name="unlockShifaDoctor">Разблокировать Shifa Doctor</string>
@@ -2311,7 +2327,9 @@
     <string name="videoCallPaymentRequiredMessage">Перед подключением к видеоконсультации необходимо произвести оплату.</string>
     <string name="videoCallReady">Видеозвонок готов</string>
     <string name="videoCallTooLateAfterOneHour">Видеоконсультация завершилась более часа назад. Открывайте только если приём уже идёт.</string>
+    <string name="videoEndedHint">Этот видеоприём закончился больше часа назад.</string>
     <string name="videoNeedsPro">Для видеоконсультаций нужен PRO</string>
+    <string name="videoStartHint">Начать можно за 5 минут до приёма.</string>
     <string name="viewDocument">Просмотреть документ</string>
     <string name="viewFullHistory">Полная история</string>
     <string name="viewLogs">Журналы</string>

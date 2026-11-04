@@ -48,6 +48,7 @@
     <string name="addressFromCoordinates">Address from Coordinates</string>
     <string name="addressNotFound">Address not found</string>
     <string name="adjustAppointmentDuration">Adjust duration</string>
+    <string name="adjustDuration">Adjust duration</string>
     <string name="admin">Admin</string>
     <string name="adminChangeAccount">Use a different account</string>
     <string name="adminClinicAddressLabel">Address</string>
@@ -139,6 +140,7 @@
     <string name="appliedCode">Applied: %1$s</string>
     <string name="apply">Apply</string>
     <string name="applyAppointmentDuration">Apply duration change</string>
+    <string name="applyDurationChange">Apply duration change</string>
     <string name="appointmentAlreadyCancelled">Appointment was already cancelled</string>
     <string name="appointmentBookedFor">Appointment booked for %1$s %2$s</string>
     <string name="appointmentCancelled">Appointment cancelled successfully</string>
@@ -151,7 +153,9 @@
     <string name="appointmentEndedDocumentationSaved">Appointment ended. Documentation saved.</string>
     <string name="appointmentEndedShort">Appointment Ended</string>
     <string name="appointmentLinkedPlanBanner">Part of plan #%1$s — %2$s</string>
+    <string name="appointmentMoved">Appointment moved</string>
     <string name="appointmentNotes">Appointment Notes</string>
+    <string name="appointmentOver">Appointment Ended</string>
     <string name="appointmentPlace">Place</string>
     <string name="appointmentPlaceLockedHint">Booked appointment location is informational and cannot be changed here.</string>
     <string name="appointmentPlanAllDone">All planned items on this plan are completed.</string>
@@ -265,6 +269,7 @@
     <string name="cameraUnavailable">Camera unavailable</string>
     <string name="cancel">Cancel</string>
     <string name="cancelAppointment">Cancel Appointment</string>
+    <string name="cancelAppointmentTitle">Cancel appointment?</string>
     <string name="cancelConfirm">Are you sure you want to cancel this appointment?</string>
     <string name="cancelPartnerInvite">Cancel invite</string>
     <string name="cancelRecording">Cancel recording</string>
@@ -719,6 +724,7 @@
     <string name="contactSavedAddressFailed">Contact saved, but the address could not be saved</string>
     <string name="contactSection">Contact</string>
     <string name="continue">Continue</string>
+    <string name="continueAppointment">Continue Appointment</string>
     <string name="continueWithoutWaiting">Continue without waiting</string>
     <string name="coordinatesFromAddress">Coordinates from Address</string>
     <string name="coordinatesNotSet">Coordinates not set</string>
@@ -761,6 +767,7 @@
     <string name="currentPasswordIncorrect">Current password is incorrect</string>
     <string name="currentPasswordIsRequired">Current password is required</string>
     <string name="currentPlanButton">Current plan</string>
+    <string name="currentSlot">current</string>
     <string name="customTimesAddAtLeastOne">Add at least one time slot</string>
     <string name="customTimesAddSlot">Add time slot</string>
     <string name="customTimesEmpty">No slots yet — add one below.</string>
@@ -926,6 +933,7 @@
     <string name="draftSavedBanner">Draft saved</string>
     <string name="droppedFacts">Dropped (not said)</string>
     <string name="duration">Duration</string>
+    <string name="durationChanged">Duration changed</string>
     <string name="durationDays">Duration (days)</string>
     <string name="durationHours">%1$s h</string>
     <string name="durationHoursMinutes">%1$s h %2$s min</string>
@@ -1336,6 +1344,7 @@
     <string name="joined">Joined</string>
     <string name="justFlagFollowUp">Just flag for follow-up</string>
     <string name="justNow">Just now</string>
+    <string name="keepAppointment">Keep appointment</string>
     <string name="keepEditing">Keep editing</string>
     <string name="keepRecording">Keep recording</string>
     <string name="keyCopiedToClipboard">Key copied to clipboard</string>
@@ -1431,6 +1440,7 @@
     <string name="moreOptions">More options</string>
     <string name="morningTime">Morning Time</string>
     <string name="moveDown">Move %1$s down</string>
+    <string name="moveTo">Move to %1$s</string>
     <string name="moveUp">Move %1$s up</string>
     <string name="muteMic">Mute microphone</string>
     <string name="mySchedule">My schedule</string>
@@ -1607,6 +1617,7 @@
     <string name="openServicesPricing">Open Services &amp; Pricing</string>
     <string name="openServicesPricingToManageEntries">Open Services &amp; Pricing to manage entries</string>
     <string name="openSettings">Open settings</string>
+    <string name="openSummary">Open Summary</string>
     <string name="openedFromNotification">Opened from notification</string>
     <string name="optional">Optional</string>
     <string name="orAfter">or after</string>
@@ -1649,6 +1660,7 @@
     <string name="passwordUpdatedSuccessfully">Password updated successfully</string>
     <string name="passwordsDoNotMatch">Passwords do not match</string>
     <string name="pastAppointmentNoChange">Past appointments cannot be changed or cancelled.</string>
+    <string name="pastAppointmentsCannotBeChanged">Past appointments cannot be changed or cancelled.</string>
     <string name="pastSlotCannotAssign">This slot is in the past. You cannot assign a patient.</string>
     <string name="paste">Paste</string>
     <string name="patient">Patient</string>
@@ -1694,6 +1706,7 @@
     <string name="patientStatusActive">Active</string>
     <string name="patientStatusAtRisk">At risk</string>
     <string name="patientStatusFollowUp">Follow-up</string>
+    <string name="patientWillBeNotified">The patient will be notified.</string>
     <string name="patientWithChronicDisease">Patient with Chronic Disease</string>
     <string name="patients">Patients</string>
     <string name="patientsPageSubtitle">Manage your patient directory and clinical records</string>
@@ -1740,6 +1753,7 @@
     <string name="pinsDoNotMatch">PINs do not match</string>
     <string name="pinsDontMatch">PINs don't match. Start again.</string>
     <string name="place">Place</string>
+    <string name="placeReadOnlyHint">The booked place can't be changed here.</string>
     <string name="planChanged">You're now on %1$s</string>
     <string name="planCurrencyUnknown">Plan currency unknown</string>
     <string name="planManagedBySupport">Your plan is managed by Shifa. Contact support to change it.</string>
@@ -1853,6 +1867,7 @@
     <string name="requirementMet">met</string>
     <string name="requirementNotMet">not met</string>
     <string name="requiresProPlan">Shifa Intelligence requires the PRO plan.</string>
+    <string name="reschedule">Reschedule</string>
     <string name="resendCode">Resend code</string>
     <string name="resendCodeIn">Resend code in %1$s</string>
     <string name="reset">Reset</string>
@@ -2252,6 +2267,7 @@
     <string name="undo">Undo</string>
     <string name="unknown">Unknown</string>
     <string name="unknownError">An unknown error occurred</string>
+    <string name="unknownPatient">Unknown patient</string>
     <string name="unlock">Unlock</string>
     <string name="unlockReason">Unlock Shifa Doctor</string>
     <string name="unlockShifaDoctor">Unlock Shifa Doctor</string>
@@ -2311,7 +2327,9 @@
     <string name="videoCallPaymentRequiredMessage">Payment is required before joining this video consultation.</string>
     <string name="videoCallReady">Video call ready</string>
     <string name="videoCallTooLateAfterOneHour">This video appointment ended more than an hour ago. Open it only if the consultation is already in progress.</string>
+    <string name="videoEndedHint">This video appointment ended more than an hour ago.</string>
     <string name="videoNeedsPro">Video consultations need PRO</string>
+    <string name="videoStartHint">You can start 5 minutes before the appointment.</string>
     <string name="viewDocument">View Document</string>
     <string name="viewFullHistory">View full history</string>
     <string name="viewLogs">View Logs</string>

@@ -229,6 +229,13 @@ class DemoBackend(
                     }
                 Reply(HttpStatusCode.NoContent, "")
             }
+            // Appointment actions (CAL-6) succeed without changing the generated days: nothing is stored.
+            path.startsWith("appointments/") && !get &&
+                (
+                    request.method == HttpMethod.Delete ||
+                        path.endsWith("/change") ||
+                        path.endsWith("/notify-payment-reminder")
+                ) -> Reply(HttpStatusCode.OK, "")
             get && path == Endpoints.DOCTOR_LOCATIONS -> ok(apiJson.parseToJsonElement(DEMO_LOCATIONS))
             get -> null
             else -> refused()

@@ -229,4 +229,14 @@ class DemoBackendTest {
             assertThat(counts.freeSlots).isEqualTo(12)
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `appointment cancel, change and the payment reminder answer locally`() =
+        runTest {
+            val repo = shifa.doctor.data.appointments.AppointmentsRepository { client }
+            assertThat(repo.cancel(101).isSuccess).isTrue()
+            assertThat(repo.change(102, kotlinx.datetime.Instant.parse("2026-11-04T10:00:00Z"), 60).isSuccess).isTrue()
+            assertThat(repo.remindPayment(102).isSuccess).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }

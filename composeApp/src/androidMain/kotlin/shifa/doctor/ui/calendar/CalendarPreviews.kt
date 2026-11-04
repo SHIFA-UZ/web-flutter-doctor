@@ -76,7 +76,8 @@ private val day =
                 16,
                 0,
             ),
-            103, 13, "Malika Tursunova", null, "REQUESTED", "PENDING", "Braces check", "Shifa Clinic", 1, "Shifa Clinic",
+            103, 13, "Malika Tursunova", null, "REQUESTED", "PENDING",
+            "Braces check", "Shifa Clinic", 1, "Shifa Clinic",
         ),
     )
 
@@ -95,3 +96,49 @@ internal fun CalendarDayPreview() = PreviewTheme { CalendarContent(state(false),
 
 @Composable
 internal fun CalendarDetailsPreview() = PreviewTheme { CalendarContent(state(true), CalendarActions()) }
+
+// CAL-6: an unpaid video visit at 11:00 (now 10:15): too early to start, the reminder offered, 30 or 60 minutes.
+private val video =
+    shifa.doctor.data.model.CalendarEntry.Appointment(
+        at(11, 0),
+        at(11, 30),
+        104,
+        14,
+        "Dilnoza Rahimova",
+        null,
+        "CONFIRMED",
+        "PENDING",
+        "Follow-up",
+        "Video Consultation",
+        1,
+    )
+
+@Composable
+internal fun AppointmentPanelPreview() =
+    PreviewTheme {
+        AppointmentPanel(
+            PanelUiState(
+                video,
+                clock,
+                day =
+                    listOf(
+                        video,
+                        shifa.doctor.data.model.CalendarEntry.FreeSlot(at(11, 30), at(12, 0), 1, "Shifa Clinic"),
+                    ),
+            ),
+            PanelActions(durations = { listOf(30, 60) }),
+        )
+    }
+
+// A visit that is over: the summary, no changes, no cancel.
+@Composable
+internal fun AppointmentPanelCompletedPreview() =
+    PreviewTheme {
+        AppointmentPanel(
+            PanelUiState(
+                video.copy(start = at(9, 0), end = at(9, 30), status = "COMPLETED", paymentStatus = "PAID"),
+                clock,
+            ),
+            PanelActions(),
+        )
+    }

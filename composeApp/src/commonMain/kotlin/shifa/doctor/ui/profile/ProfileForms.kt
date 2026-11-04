@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -131,13 +132,22 @@ internal fun DiscardChangesSheet(
     )
 }
 
-/** A bottom sheet that only hosts a drawn tray (`ShifaDialogSheet`, `ShifaPickerSheet`). */
+/**
+ * A bottom sheet that only hosts a drawn tray (`ShifaDialogSheet`, `ShifaPickerSheet`). It opens at full height, so a
+ * tall tray (the reschedule month) shows its button instead of stopping half way.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ProfileSheet(
     onDismiss: () -> Unit,
     content: @Composable () -> Unit,
-) = ModalBottomSheet(onDismiss, shape = RectangleShape, containerColor = Color.Transparent, dragHandle = null) {
+) = ModalBottomSheet(
+    onDismiss,
+    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    shape = RectangleShape,
+    containerColor = Color.Transparent,
+    dragHandle = null,
+) {
     content()
 }
 

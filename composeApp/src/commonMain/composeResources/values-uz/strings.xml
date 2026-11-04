@@ -48,6 +48,7 @@
     <string name="addressFromCoordinates">Koordinatalardan manzil</string>
     <string name="addressNotFound">Manzil topilmadi</string>
     <string name="adjustAppointmentDuration">Davomiylikni boshqarish</string>
+    <string name="adjustDuration">Davomiylikni o'zgartirish</string>
     <string name="admin">Administrator</string>
     <string name="adminChangeAccount">Boshqa hisob</string>
     <string name="adminClinicAddressLabel">Manzil</string>
@@ -139,6 +140,7 @@
     <string name="appliedCode">Qo'llandi: %1$s</string>
     <string name="apply">Qo'llash</string>
     <string name="applyAppointmentDuration">Davomiylikni qo'llash</string>
+    <string name="applyDurationChange">Davomiylikni saqlash</string>
     <string name="appointmentAlreadyCancelled">Uchrashuv allaqachon bekor qilingan</string>
     <string name="appointmentBookedFor">Uchrashuv %1$s %2$s ga belgilandi</string>
     <string name="appointmentCancelled">Uchrashuv muvaffaqiyatli bekor qilindi</string>
@@ -151,7 +153,9 @@
     <string name="appointmentEndedDocumentationSaved">Uchrashuv yakunlandi. Hujjatlar saqlandi.</string>
     <string name="appointmentEndedShort">Uchrashuv tugadi</string>
     <string name="appointmentLinkedPlanBanner">Reja #%1$s qismi — %2$s</string>
+    <string name="appointmentMoved">Qabul ko'chirildi</string>
     <string name="appointmentNotes">Uchrashuv yozuvlari</string>
+    <string name="appointmentOver">Qabul tugagan</string>
     <string name="appointmentPlace">Joy</string>
     <string name="appointmentPlaceLockedHint">Band qilingan joy ma'lumot xarakterida va bu yerda o'zgartirib bo'lmaydi.</string>
     <string name="appointmentPlanAllDone">Ushbu rejadagi barcha bandlar bajarilgan.</string>
@@ -265,6 +269,7 @@
     <string name="cameraUnavailable">Kamera mavjud emas</string>
     <string name="cancel">Bekor qilish</string>
     <string name="cancelAppointment">Uchrashuvni bekor qilish</string>
+    <string name="cancelAppointmentTitle">Qabul bekor qilinsinmi?</string>
     <string name="cancelConfirm">Ushbu uchrashuvni bekor qilishni xohlaysizmi?</string>
     <string name="cancelPartnerInvite">Taklifni bekor qilish</string>
     <string name="cancelRecording">Yozuvni bekor qilish</string>
@@ -719,6 +724,7 @@
     <string name="contactSavedAddressFailed">Aloqa saqlandi, lekin manzilni saqlab bo'lmadi</string>
     <string name="contactSection">Aloqa</string>
     <string name="continue">Davom etish</string>
+    <string name="continueAppointment">Qabulni davom ettirish</string>
     <string name="continueWithoutWaiting">Kutmasdan davom etish</string>
     <string name="coordinatesFromAddress">Manzildan koordinatalar</string>
     <string name="coordinatesNotSet">Koordinatalar kiritilmagan</string>
@@ -761,6 +767,7 @@
     <string name="currentPasswordIncorrect">Joriy parol noto'g'ri</string>
     <string name="currentPasswordIsRequired">Joriy parol talab qilinadi</string>
     <string name="currentPlanButton">Joriy tarif</string>
+    <string name="currentSlot">joriy</string>
     <string name="customTimesAddAtLeastOne">Kamida bitta vaqt qo'shing</string>
     <string name="customTimesAddSlot">Vaqt qo'shish</string>
     <string name="customTimesEmpty">Hali vaqtlar qo'shilmagan — quyida qo'shing.</string>
@@ -926,6 +933,7 @@
     <string name="draftSavedBanner">Qoralama saqlandi</string>
     <string name="droppedFacts">Tashlab yuborilgan (aytilmagan)</string>
     <string name="duration">Davomiylik</string>
+    <string name="durationChanged">Davomiylik o'zgartirildi</string>
     <string name="durationDays">Davomiylik (kunlar)</string>
     <string name="durationHours">%1$s soat</string>
     <string name="durationHoursMinutes">%1$s soat %2$s daq</string>
@@ -1336,6 +1344,7 @@
     <string name="joined">Ro'yxatdan o'tgan</string>
     <string name="justFlagFollowUp">Faqat takroriy qabul uchun belgilash</string>
     <string name="justNow">Hozir</string>
+    <string name="keepAppointment">Qabulni qoldirish</string>
     <string name="keepEditing">Tahrirlashda davom etish</string>
     <string name="keepRecording">Yozishni davom ettirish</string>
     <string name="keyCopiedToClipboard">Kalit buferga nusxalandi</string>
@@ -1431,6 +1440,7 @@
     <string name="moreOptions">Boshqa bo'limlar</string>
     <string name="morningTime">Ertalabki vaqt</string>
     <string name="moveDown">%1$s ni pastga</string>
+    <string name="moveTo">%1$s ga ko'chirish</string>
     <string name="moveUp">%1$s ni yuqoriga</string>
     <string name="muteMic">Mikrofonni o'chirish</string>
     <string name="mySchedule">Mening taqvimim</string>
@@ -1607,6 +1617,7 @@
     <string name="openServicesPricing">Xizmatlar va narxlarni ochish</string>
     <string name="openServicesPricingToManageEntries">Yozuvlarni boshqarish uchun Xizmatlar va narxlar sahifasini oching</string>
     <string name="openSettings">Sozlamalarni ochish</string>
+    <string name="openSummary">Xulosani ochish</string>
     <string name="openedFromNotification">Bildirishnomadan ochildi</string>
     <string name="optional">Ixtiyoriy</string>
     <string name="orAfter">yoki keyin</string>
@@ -1649,6 +1660,7 @@
     <string name="passwordUpdatedSuccessfully">Parol muvaffaqiyatli yangilandi</string>
     <string name="passwordsDoNotMatch">Parollar mos kelmaydi</string>
     <string name="pastAppointmentNoChange">O'tgan uchrashuvlarni o'zgartirish yoki bekor qilish mumkin emas.</string>
+    <string name="pastAppointmentsCannotBeChanged">O'tgan qabullarni o'zgartirib yoki bekor qilib bo'lmaydi.</string>
     <string name="pastSlotCannotAssign">Bu vaqt o'tgan. Bemorni tayinlash mumkin emas.</string>
     <string name="paste">Qo'yish</string>
     <string name="patient">Bemor</string>
@@ -1694,6 +1706,7 @@
     <string name="patientStatusActive">Faol</string>
     <string name="patientStatusAtRisk">Xavf ostida</string>
     <string name="patientStatusFollowUp">Kuzatuvda</string>
+    <string name="patientWillBeNotified">Bemor xabardor qilinadi.</string>
     <string name="patientWithChronicDisease">Surunkali kasallikka chalingan bemor</string>
     <string name="patients">Bemorlar</string>
     <string name="patientsPageSubtitle">Bemorlar ro'yxati va klinik yozuvlarni boshqaring</string>
@@ -1740,6 +1753,7 @@
     <string name="pinsDoNotMatch">PIN kodlar mos kelmadi</string>
     <string name="pinsDontMatch">PIN-kodlar mos kelmadi. Qaytadan boshlang.</string>
     <string name="place">Joy</string>
+    <string name="placeReadOnlyHint">Band qilingan joyni bu yerda o'zgartirib bo'lmaydi.</string>
     <string name="planChanged">Endi siz %1$s tarifidasiz</string>
     <string name="planCurrencyUnknown">Reja valyutasi noma'lum</string>
     <string name="planManagedBySupport">Tarifingizni Shifa boshqaradi. O'zgartirish uchun qo'llab-quvvatlashga yozing.</string>
@@ -1853,6 +1867,7 @@
     <string name="requirementMet">bajarildi</string>
     <string name="requirementNotMet">bajarilmadi</string>
     <string name="requiresProPlan">Shifa intellekti uchun PRO tarif kerak.</string>
+    <string name="reschedule">Ko'chirish</string>
     <string name="resendCode">Kodni qayta yuborish</string>
     <string name="resendCodeIn">Kodni %1$s da qayta yuborish</string>
     <string name="reset">Tiklash</string>
@@ -2252,6 +2267,7 @@
     <string name="undo">Qaytarish</string>
     <string name="unknown">Noma'lum</string>
     <string name="unknownError">Noma'lum xatolik yuz berdi</string>
+    <string name="unknownPatient">Noma'lum bemor</string>
     <string name="unlock">Qulflarni ochish</string>
     <string name="unlockReason">Shifa Doctor qulfini ochish</string>
     <string name="unlockShifaDoctor">Shifa Doctor'ni ochish</string>
@@ -2311,7 +2327,9 @@
     <string name="videoCallPaymentRequiredMessage">Ushbu video konsultatsiyaga qo'shilishdan oldin to'lov talab qilinadi.</string>
     <string name="videoCallReady">Video qo'ng'iroq tayyor</string>
     <string name="videoCallTooLateAfterOneHour">Ushbu video uchrashuv tugaganiga bir soatdan ortiq vaqt o'tdi. Faqat konsultatsiya allaqachon boshlangan bo'lsa oching.</string>
+    <string name="videoEndedHint">Bu video qabul bir soatdan ko'proq oldin tugagan.</string>
     <string name="videoNeedsPro">Video konsultatsiyalar uchun PRO kerak</string>
+    <string name="videoStartHint">Qabulni 5 daqiqa oldin boshlash mumkin.</string>
     <string name="viewDocument">Hujjatni ko'rish</string>
     <string name="viewFullHistory">To'liq tarixni ko'rish</string>
     <string name="viewLogs">Jurnallar</string>

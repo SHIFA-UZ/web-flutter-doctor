@@ -119,3 +119,53 @@ Built 2026-11-04. Flows `04/01-calendar-tab.md`, `04/02-day-agenda-item.md`, `04
   request id and forced retry, month paging keeps the day, a late profile moving today and re-reading, the filter
   draft), `CalendarScreenshotTest` (+2: `Calendar_day`,
   `Calendar_details`).
+
+## CAL-6 · Appointment panel
+
+Built 2026-11-04. Flows `04/05-appointment-preview-sheet.md`, `04/07` (reschedule and adjust duration), `04/08`
+(cancel); board `DaCalendar.dc.html` (appointment detail). On the phone it is a pushed screen (the tab bar steps aside
+for its buttons), not a sheet.
+
+- **Data** (`data/appointments/`): `AppointmentsRepository` with `cancel` (`DELETE /appointments/{id}`), `change`
+  (`PUT /appointments/{id}/change {startAt, slotMinutes}`, used for both a move and a new length) and `remindPayment`
+  (`POST /appointments/{id}/notify-payment-reminder`); all three checked against dev's OpenAPI. Every status is checked
+  (Flutter didn't). `AppointmentRules.kt`: `ctaFor` (the 04/05 §4 table: Completed → Open Summary, In progress →
+  Continue, cancelled → none, video from 5 minutes before until 1 hour after the end, in-person until the end of the
+  practice day), `changeable`, `durationOptions` (shorter by the grain: the GCD of the free-slot lengths at its location,
+  5–240, never under 5 minutes; longer by chaining the free slots right after it at the same location), and `fits` (a
+  slot can take the move only when free slots chained without a gap cover the visit's whole length).
+- **Panel** (`ui/calendar/AppointmentPanel.kt`): patient and time with status and (video) payment chips; Date and Time →
+  Reschedule sheet (the month picker, shaded from the cache, past days closed; the day's future free slots where the
+  visit fits as chips, the location named when it differs, the current slot greyed as "current"; "Move to 10:30", the
+  length kept; a failed read shows the error with Retry);
+  Adjust duration (the end time and length per option, Apply); Place (read-only, "Video Call" or the location); "Remind
+  patient to pay" for an unpaid video visit; the main button with its hint; Cancel. A past, cancelled, completed or
+  no-show visit offers no changes. The time rules re-evaluate every 30 seconds while the panel is open; an unapplied
+  duration pick survives other days arriving in the cache, and Back asks before dropping it (the shared Discard
+  question). A successful move reads both days, closes the panel and the shell shows "Appointment moved"; a length
+  change stays in the panel with its banner. If the appointment disappears from its re-read day the panel closes; if it
+  turns cancelled the cancel question closes. Each open is a new route, so the panel starts fresh; the cache collector
+  and the clock tick run only while the panel is shown (`follow()`).
+- **Shared fix:** `ProfileSheet` opens at full height, so a tall tray (the reschedule month) shows its button instead
+  of stopping half way.
+- **Cancel** (04/08): the question names the patient, date and time and says the patient will be notified; the button
+  spins; a failure stays in the question with the request id for a retry; success closes the panel and the shell shows
+  "Appointment cancelled successfully". No reason field until BE-10.
+- **Refresh:** after every change the touched days and today are read once (`CalendarRepository.changed`), also after a
+  failed change or cancel (a conflict means the calendar moved; a lost answer may hide a change that went through). The panel follows the live entry in the cache and takes the new
+  times on success, so after a move it watches the new day.
+- **Not built:** the date strip above the month (the month alone covers it), grouping slots by location (the
+  location is on the chip instead), a same-day move that overlaps the visit's own time (its slot isn't free), the main
+  button's targets (start / continue / summary are the visit flows, M5), the patient link,
+  the colleague's calendar (CAL-10).
+- **Demo:** the three calls answer OK without changing the generated days, so after a move the panel shows the old
+  time again once the day is re-read (the demo calendar is stateless).
+- **Verified on the emulator (demo data, 2026-11-04):** opened Jasur Karimov's 6 November visit, rescheduled to 11:00
+  ("Appointment moved"), the month sheet at full height with the greyed current slot, a move
+  closing with its notice, the Discard question on Back after picking 1 h, cancelled (the calendar showed with the success notice). Dev has no appointments for the seed
+  doctor, so the real calls wait for a booking (CAL-7).
+- **Tests:** `AppointmentRulesTest` (6: + the GCD grain and the 5-minute floor, `fits`), `AppointmentPanelViewModelTest`
+  (6: duration options and the PUT body, a move to another day refreshing both and following it, cancel failure keeping
+  the question with the request id and re-reading the day, then success with the notice; a failed slot read with Retry
+  and past days closed; a duration pick surviving cache updates; Back asking before dropping a length and closing when the visit is gone), `DemoBackendTest` (+1), `CalendarScreenshotTest` (+2: `Calendar_appointmentPanel`,
+  `Calendar_appointmentPanelCompleted`).

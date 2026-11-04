@@ -87,7 +87,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CAL-2 Today, next, changes | Done | Today's appointments, the next appointment (14-day horizon), one refresh and one event per appointment change. See calendar.md. |
 | CAL-3 Month picker | Done | Monday-first month card with the board's occupancy shading, today ring, appointment dots. See calendar.md. |
 | CAL-4 Calendar screen | Done | Doctor's Calendar tab: month picker, day agenda (compact and details rows), filters, timezone-mismatch banner, resume reads. See calendar.md. |
-| CAL-5 … LOC-2 | Not started | |
+| CAL-6 Appointment panel | Done | Appointment details from the calendar: status, reschedule to a free slot, adjust duration, payment reminder, main button by time window, cancel. See calendar.md. |
+| CAL-5, CAL-7 … LOC-2 | Not started | |
 
 ## Log
 
@@ -135,3 +136,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · CAL-2 · Today / next-appointment selectors and the appointment change bus.
 - 2026-11-04 · CAL-3 · Month picker with occupancy shading.
 - 2026-11-04 · CAL-4 · Calendar tab with the day agenda.
+- 2026-11-04 · CAL-6 · Appointment panel: reschedule, duration, payment reminder, cancel.

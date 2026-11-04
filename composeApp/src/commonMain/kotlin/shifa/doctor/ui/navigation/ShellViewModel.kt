@@ -12,6 +12,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.subscription.DoctorFeature
@@ -62,6 +63,15 @@ sealed interface ShellRoute {
 
     /** Profile → Reports, pushed so Back returns to Profile (REP-1 builds it). */
     data object Reports : ShellRoute
+
+    /**
+     * Calendar → one appointment's panel (CAL-6); pushed so the bar steps aside for its actions. [opened] makes each
+     * open a new route, so its ViewModel starts fresh instead of coming back with an open question.
+     */
+    data class Appointment(
+        val appointment: CalendarEntry.Appointment,
+        val opened: Long,
+    ) : ShellRoute
 
     /** Profile → one of its sections (PROF-02); each section's ticket builds its screen. */
     data class Profile(

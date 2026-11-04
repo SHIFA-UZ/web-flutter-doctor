@@ -21,4 +21,11 @@ class CalendarScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h1500dp-xhdpi")
     fun details() = captureRoboImage("screenshots/Calendar_details.png") { CalendarDetailsPreview() }
+
+    @Test
+    fun appointmentPanel() = captureRoboImage("screenshots/Calendar_appointmentPanel.png") { AppointmentPanelPreview() }
+
+    @Test
+    fun appointmentPanelCompleted() =
+        captureRoboImage("screenshots/Calendar_appointmentPanelCompleted.png") { AppointmentPanelCompletedPreview() }
 }
