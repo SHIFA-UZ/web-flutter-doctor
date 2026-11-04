@@ -1,0 +1,806 @@
+package shifa.doctor.ui.patients
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toUserMessage
+import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.model.Patient
+import shifa.doctor.data.model.PatientAccount
+import shifa.doctor.data.model.PatientRequest
+import shifa.doctor.data.model.PatientStatus
+import shifa.doctor.data.patients.FavoritesRepository
+import shifa.doctor.data.patients.PatientsRepository
+import shifa.doctor.data.patients.favoritesRepository
+import shifa.doctor.data.patients.patientsRepository
+import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.accountActive
+import shifa.doctor.generated.resources.accountCreateFailed
+import shifa.doctor.generated.resources.accountCreated
+import shifa.doctor.generated.resources.activePatient
+import shifa.doctor.generated.resources.activityTab
+import shifa.doctor.generated.resources.addToFavorites
+import shifa.doctor.generated.resources.age
+import shifa.doctor.generated.resources.aiRiskDetected
+import shifa.doctor.generated.resources.allergies
+import shifa.doctor.generated.resources.appointments
+import shifa.doctor.generated.resources.back
+import shifa.doctor.generated.resources.birthDate
+import shifa.doctor.generated.resources.bloodGroup
+import shifa.doctor.generated.resources.chronicDisease
+import shifa.doctor.generated.resources.clinicalSummary
+import shifa.doctor.generated.resources.copied
+import shifa.doctor.generated.resources.copy
+import shifa.doctor.generated.resources.createPatientAccount
+import shifa.doctor.generated.resources.dealingWithChronicDiseasePatient
+import shifa.doctor.generated.resources.documents
+import shifa.doctor.generated.resources.done
+import shifa.doctor.generated.resources.failedToUpdate
+import shifa.doctor.generated.resources.forSecurityPasswordShownOnce
+import shifa.doctor.generated.resources.formsTab
+import shifa.doctor.generated.resources.gender
+import shifa.doctor.generated.resources.iUnderstand
+import shifa.doctor.generated.resources.ic_alert_16
+import shifa.doctor.generated.resources.ic_alert_20
+import shifa.doctor.generated.resources.ic_check_circle_20
+import shifa.doctor.generated.resources.ic_copy_16
+import shifa.doctor.generated.resources.ic_sparkles_16
+import shifa.doctor.generated.resources.ic_star_24
+import shifa.doctor.generated.resources.ic_star_filled_24
+import shifa.doctor.generated.resources.ic_users_22
+import shifa.doctor.generated.resources.language
+import shifa.doctor.generated.resources.lastVisitOn
+import shifa.doctor.generated.resources.medicalInfo
+import shifa.doctor.generated.resources.noAccountYet
+import shifa.doctor.generated.resources.noKnownAllergies
+import shifa.doctor.generated.resources.noRecentVisit
+import shifa.doctor.generated.resources.none
+import shifa.doctor.generated.resources.notSpecified
+import shifa.doctor.generated.resources.oneTimePassword
+import shifa.doctor.generated.resources.overview
+import shifa.doctor.generated.resources.patient
+import shifa.doctor.generated.resources.patientAccountExists
+import shifa.doctor.generated.resources.patientAppAccess
+import shifa.doctor.generated.resources.patientId
+import shifa.doctor.generated.resources.patientLoadFailed
+import shifa.doctor.generated.resources.patientNotFound
+import shifa.doctor.generated.resources.patientWithChronicDisease
+import shifa.doctor.generated.resources.phone
+import shifa.doctor.generated.resources.reminder1Hour
+import shifa.doctor.generated.resources.reminder24Hours
+import shifa.doctor.generated.resources.reminderTiming
+import shifa.doctor.generated.resources.removeFromFavorites
+import shifa.doctor.generated.resources.reportsSmsNotAllowed
+import shifa.doctor.generated.resources.retry
+import shifa.doctor.generated.resources.shareCredentialsWithPatient
+import shifa.doctor.generated.resources.smsReminderDescription
+import shifa.doctor.generated.resources.smsReminderEnabled
+import shifa.doctor.generated.resources.smsReminderNoPhone
+import shifa.doctor.generated.resources.smsReminderSaved
+import shifa.doctor.generated.resources.smsReminderTitle
+import shifa.doctor.generated.resources.smsSendTest
+import shifa.doctor.generated.resources.smsSendTestHint
+import shifa.doctor.generated.resources.smsServiceUnavailable
+import shifa.doctor.generated.resources.smsTestSent
+import shifa.doctor.generated.resources.tabComesLater
+import shifa.doctor.generated.resources.takeExtraCareForChronicDiseasePatient
+import shifa.doctor.generated.resources.username
+import shifa.doctor.ui.calendar.longDate
+import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.profile.ProfileChip
+import shifa.doctor.ui.profile.ProfileSheet
+import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaRadius
+import shifa.doctor.ui.theme.ShifaSize
+import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.ShifaAvatar
+import shifa.doctor.ui.widgets.ShifaCardSkeleton
+import shifa.doctor.ui.widgets.ShifaDialogSheet
+import shifa.doctor.ui.widgets.ShifaDropdown
+import shifa.doctor.ui.widgets.ShifaIconButton
+import shifa.doctor.ui.widgets.ShifaIconButtonVariant
+import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.ShifaSecondaryButton
+import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.ui.widgets.ShifaSwitch
+import shifa.doctor.ui.widgets.TabItem
+import shifa.doctor.ui.widgets.UnderlineTabs
+import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.displayDate
+import shifa.doctor.utils.tr
+
+/** Patients whose chronic-disease warning was shown this session (flow 06/04: once per patient, not every open). */
+internal val chronicWarned = mutableSetOf<Long>()
+
+/** The record's sections (flow 06/03 §3.5); PAT-06/07, DOCS-04, FORM-* and the activity ticket fill the rest. */
+enum class RecordTab(
+    val label: StringResource,
+) {
+    Overview(Res.string.overview),
+    Medical(Res.string.medicalInfo),
+    Appointments(Res.string.appointments),
+    Documents(Res.string.documents),
+    Forms(Res.string.formsTab),
+    Activity(Res.string.activityTab),
+}
+
+data class PatientDetailUiState(
+    val patient: Patient? = null,
+    val loading: Boolean = false,
+    val refreshing: Boolean = false,
+    // The patient couldn't be read and none is shown: a full-screen error with Retry, or "Patient not found".
+    val error: CodeBanner? = null,
+    val notFound: Boolean = false,
+    val banner: CodeBanner? = null,
+    val today: LocalDate = LocalDate(1970, 1, 1),
+    val lastVisit: LocalDate? = null,
+    val favorite: Boolean = false,
+    val smsAllowed: Boolean = false,
+    val smsSaving: Boolean = false,
+    val testing: Boolean = false,
+    val creatingAccount: Boolean = false,
+    // The new login, shown once in a dialog that only Done closes.
+    val account: PatientAccount? = null,
+    val chronicWarning: Boolean = false,
+    val tab: RecordTab = RecordTab.Overview,
+)
+
+/** The signed-in doctor as this screen needs them: id (favourites), practice zone (dates), SMS allowed. */
+data class DetailDoctor(
+    val id: Long? = null,
+    val zone: String? = null,
+    val smsAllowed: Boolean = false,
+)
+
+/**
+ * PAT-05 (flow 06/03, spec 06 §2.1–2.3, §1.7): one patient. The directory's copy shows at once, then a fresh read;
+ * "Last visit" is the last completed appointment on the practice date (Flutter used the newest document). SMS
+ * reminder changes save at once and roll back on failure; the patient-app login is created here and shown once.
+ */
+class PatientDetailViewModel(
+    private val id: Long,
+    private val repo: PatientsRepository = patientsRepository,
+    private val favorites: FavoritesRepository = favoritesRepository,
+    doctors: Flow<DetailDoctor> =
+        profileRepository.me.map {
+            DetailDoctor(it?.profile?.id, it?.profile?.timeZone, it?.profile?.smsRemindersAllowed == true)
+        },
+    private val clockOf: (String?) -> PracticeClock = { PracticeClock(it) },
+    private val warned: MutableSet<Long> = chronicWarned,
+) : ViewModel() {
+    private var clock = clockOf(profileRepository.me.value?.profile?.timeZone)
+    private var lastVisitAt: Instant? = null
+    private val _state =
+        MutableStateFlow(
+            PatientDetailUiState(patient = repo.patients.value?.firstOrNull { it.id == id }, today = clock.today()),
+        )
+    val state: StateFlow<PatientDetailUiState> = _state.asStateFlow()
+
+    init {
+        _state.value.patient?.let(::warnOnce)
+        viewModelScope.launch {
+            // A fresher copy (an edit, a refresh) replaces the shown one, but not over an SMS change being saved.
+            repo.patients.collect { list ->
+                val fresh = list?.firstOrNull { it.id == id } ?: return@collect
+                if (!_state.value.smsSaving) _state.update { it.copy(patient = fresh) }
+            }
+        }
+        viewModelScope.launch {
+            doctors.distinctUntilChanged().collect { d ->
+                favorites.load(d.id)
+                clock = clockOf(d.zone)
+                _state.update { it.copy(smsAllowed = d.smsAllowed, today = clock.today(), lastVisit = visitDay()) }
+            }
+        }
+        viewModelScope.launch { favorites.ids.collect { ids -> _state.update { it.copy(favorite = id in ids) } } }
+    }
+
+    /** On open and on pull / Retry: the patient, then the appointments for "Last visit". */
+    fun load(refresh: Boolean = false) {
+        _state.update {
+            it.copy(
+                loading = it.patient == null,
+                refreshing = refresh && it.patient != null,
+                error = null,
+                notFound = false,
+            )
+        }
+        viewModelScope.launch {
+            repo.patient(id).fold(
+                onSuccess = { p ->
+                    _state.update { it.copy(patient = if (it.smsSaving) it.patient else p, loading = false) }
+                    warnOnce(p)
+                },
+                onFailure = { e ->
+                    val shown = _state.value.patient != null
+                    val banner = CodeBanner(e.toUserMessage(Res.string.patientLoadFailed), requestId = e.requestId)
+                    _state.update {
+                        when {
+                            // Deleted elsewhere: the record (and its actions) goes, even when a copy was shown.
+                            e is ApiException.NotFound -> it.copy(loading = false, notFound = true)
+                            shown -> it.copy(loading = false, banner = banner)
+                            else -> it.copy(loading = false, error = banner)
+                        }
+                    }
+                },
+            )
+            // A failed read leaves "No recent visit" (flow 06/03 §6, partial data).
+            repo.appointments(id).onSuccess { list ->
+                val now = clock.nowInstant()
+                lastVisitAt =
+                    list
+                        .filter { it.status.equals("COMPLETED", ignoreCase = true) }
+                        .mapNotNull { PracticeClock.parseInstant(it.startAt) }
+                        .filter { it <= now }
+                        .maxOrNull()
+                _state.update { it.copy(lastVisit = visitDay()) }
+            }
+            _state.update { it.copy(refreshing = false) }
+        }
+    }
+
+    fun ui(change: (PatientDetailUiState) -> PatientDetailUiState) = _state.update(change)
+
+    fun select(tab: RecordTab) = _state.update { it.copy(tab = tab) }
+
+    fun toggleFavorite() = favorites.toggle(id)
+
+    fun acknowledgeChronic() = _state.update { it.copy(chronicWarning = false) }
+
+    fun setSms(on: Boolean) = saveSms(PatientRequest(smsReminderEnabled = on)) { it.copy(smsReminderEnabled = on) }
+
+    fun setSmsHours(hours: Int) =
+        saveSms(PatientRequest(smsReminderHoursBefore = hours)) {
+            it.copy(smsReminderHoursBefore = kotlinx.serialization.json.JsonPrimitive(hours))
+        }
+
+    fun testSms() {
+        if (_state.value.testing) return
+        _state.update { it.copy(testing = true, banner = null) }
+        viewModelScope.launch {
+            val result = repo.sendTestSms(id)
+            _state.update { s ->
+                s.copy(
+                    testing = false,
+                    banner =
+                        result.fold(
+                            { CodeBanner(Res.string.smsTestSent, error = false) },
+                            { e ->
+                                val text =
+                                    when ((e as? ApiException)?.status) {
+                                        403 -> Res.string.reportsSmsNotAllowed
+                                        503 -> Res.string.smsServiceUnavailable
+                                        else -> e.toUserMessage(Res.string.smsServiceUnavailable)
+                                    }
+                                CodeBanner(text, requestId = e.requestId)
+                            },
+                        ),
+                )
+            }
+        }
+    }
+
+    fun createAccount() {
+        if (_state.value.creatingAccount) return
+        _state.update { it.copy(creatingAccount = true, banner = null) }
+        viewModelScope.launch {
+            repo.createAccount(id).fold(
+                onSuccess = { a -> _state.update { it.copy(creatingAccount = false, account = a) } },
+                onFailure = { e ->
+                    val text =
+                        if (e is ApiException.Conflict) {
+                            Res.string.patientAccountExists
+                        } else {
+                            e.toUserMessage(Res.string.accountCreateFailed)
+                        }
+                    _state.update {
+                        it.copy(
+                            creatingAccount = false,
+                            banner = CodeBanner(text, requestId = e.requestId),
+                        )
+                    }
+                },
+            )
+            // The account flag (and username) come from a fresh read, after success or a "has one already".
+            repo.patient(id).onSuccess { p -> _state.update { it.copy(patient = p) } }
+        }
+    }
+
+    fun closeAccount() = _state.update { it.copy(account = null) }
+
+    private fun saveSms(
+        request: PatientRequest,
+        local: (Patient) -> Patient,
+    ) {
+        val before = _state.value.patient ?: return
+        if (_state.value.smsSaving || before.allPhones.isEmpty()) return
+        _state.update { it.copy(patient = local(before), smsSaving = true, banner = null) }
+        viewModelScope.launch {
+            repo.update(id, request).fold(
+                onSuccess = { p ->
+                    _state.update {
+                        it.copy(
+                            patient = p,
+                            smsSaving = false,
+                            banner = CodeBanner(Res.string.smsReminderSaved, error = false),
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _state.update {
+                        it.copy(
+                            patient = before,
+                            smsSaving = false,
+                            banner = CodeBanner(e.toUserMessage(Res.string.failedToUpdate), requestId = e.requestId),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun visitDay(): LocalDate? = lastVisitAt?.let { clock.local(it).date }
+
+    private fun warnOnce(p: Patient) {
+        if (p.chronic != null && warned.add(p.id)) _state.update { it.copy(chronicWarning = true) }
+    }
+}
+
+data class PatientDetailActions(
+    val back: () -> Unit = {},
+    val refresh: () -> Unit = {},
+    val ui: ((PatientDetailUiState) -> PatientDetailUiState) -> Unit = {},
+    val select: (RecordTab) -> Unit = {},
+    val favorite: () -> Unit = {},
+    val sms: (Boolean) -> Unit = {},
+    val smsHours: (Int) -> Unit = {},
+    val testSms: () -> Unit = {},
+    val createAccount: () -> Unit = {},
+)
+
+@Composable
+fun PatientDetailScreen(
+    id: Long,
+    onBack: () -> Unit,
+    viewModel: PatientDetailViewModel = viewModel(key = "patient-$id") { PatientDetailViewModel(id) },
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.load() }
+    PatientDetailContent(
+        state,
+        PatientDetailActions(
+            back = onBack,
+            refresh = { viewModel.load(refresh = true) },
+            ui = viewModel::ui,
+            select = viewModel::select,
+            favorite = viewModel::toggleFavorite,
+            sms = viewModel::setSms,
+            smsHours = viewModel::setSmsHours,
+            testSms = viewModel::testSms,
+            createAccount = viewModel::createAccount,
+        ),
+    )
+    state.patient?.chronic?.takeIf { state.chronicWarning }?.let { ChronicWarning(it, viewModel::acknowledgeChronic) }
+    state.account?.let { Credentials(it, viewModel::closeAccount) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun PatientDetailContent(
+    state: PatientDetailUiState,
+    actions: PatientDetailActions,
+) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
+    // No title: the header below names the patient (flow 06/03 §3.1).
+    ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
+    val patient = state.patient
+    val error = state.error
+    when {
+        state.notFound ->
+            EmptyState(tr(Res.string.patientNotFound), Res.drawable.ic_users_22, Modifier.weight(1f)) {
+                ShifaSecondaryButton(tr(Res.string.back), actions.back)
+            }
+        patient != null ->
+            PullToRefreshBox(state.refreshing, actions.refresh, Modifier.weight(1f)) {
+                val gap = Modifier.padding(horizontal = ShifaSpacing.Inset.Md)
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = ShifaSpacing.Inset.Md),
+                    verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+                ) {
+                    state.banner?.let { b ->
+                        item { Box(gap) { codeBanner(b) { actions.ui { it.copy(banner = null) } }?.invoke() } }
+                    }
+                    item { Box(gap) { Header(patient, state, actions) } }
+                    item { Box(gap) { Stats(patient, state.today) } }
+                    // The tabs pin under the app bar while the record scrolls (flow 06/03 §3.5).
+                    stickyHeader {
+                        UnderlineTabs(
+                            RecordTab.entries.map { TabItem(tr(it.label)) },
+                            state.tab.ordinal,
+                            { actions.select(RecordTab.entries[it]) },
+                            Modifier.background(ShifaColors.Bg.Canvas).then(gap),
+                        )
+                    }
+                    item {
+                        Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {
+                            when (state.tab) {
+                                RecordTab.Overview -> Overview(patient, state, actions)
+                                else -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_users_22)
+                            }
+                        }
+                    }
+                }
+            }
+        error != null && !state.loading ->
+            EmptyState(tr(error.text), Res.drawable.ic_users_22, Modifier.weight(1f), body = error.requestId) {
+                ShifaSecondaryButton(tr(Res.string.retry), actions.refresh)
+            }
+        else -> Skeleton()
+    }
+}
+
+@Composable
+private fun Skeleton() =
+    Column(
+        Modifier.fillMaxWidth().padding(ShifaSpacing.Inset.Md),
+        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ShifaSkeleton(Modifier.size(ShifaSize.S64), ShifaRadius.Full)
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                ShifaSkeleton(Modifier.size(ShifaSize.S160, ShifaSize.S20))
+                ShifaSkeleton(Modifier.size(ShifaSize.S96, ShifaSize.S16))
+            }
+        }
+        repeat(3) { ShifaCardSkeleton() }
+    }
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Header(
+    p: Patient,
+    state: PatientDetailUiState,
+    actions: PatientDetailActions,
+) = Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
+    ShifaAvatar(p.photoUrl, ShifaSize.S64)
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+        Text(
+            p.name.takeIf { it.isNotBlank() } ?: tr(Res.string.patient),
+            style = ShifaTextStyles.heroNamePhone(),
+            color = ShifaColors.Text.Primary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        ) {
+            if (p.status == PatientStatus.Active || p.status == PatientStatus.Unknown) {
+                ProfileChip(tr(Res.string.activePatient), ShifaColors.Bg.SuccessSubtle, ShifaColors.Text.Primary)
+            } else {
+                StatusPill(p.status)
+            }
+            if (p.atRisk) IconChip(tr(Res.string.aiRiskDetected), Res.drawable.ic_sparkles_16, warning = true)
+            p.chronic?.let { IconChip(it, Res.drawable.ic_alert_16, warning = false) }
+        }
+        Text(
+            state.lastVisit?.let { tr(Res.string.lastVisitOn, longDate(it)) } ?: tr(Res.string.noRecentVisit),
+            style = ShifaTextStyles.metaSmall(),
+            color = ShifaColors.Text.Secondary,
+        )
+    }
+    ShifaIconButton(
+        if (state.favorite) Res.drawable.ic_star_filled_24 else Res.drawable.ic_star_24,
+        tr(if (state.favorite) Res.string.removeFromFavorites else Res.string.addToFavorites),
+        actions.favorite,
+        variant = ShifaIconButtonVariant.Secondary,
+        selected = state.favorite,
+    )
+}
+
+@Composable
+private fun IconChip(
+    text: String,
+    icon: org.jetbrains.compose.resources.DrawableResource,
+    warning: Boolean,
+) = Row(
+    Modifier
+        .background(if (warning) ShifaColors.Bg.WarningSubtle else ShifaColors.Bg.ErrorSubtle, ShifaRadius.Full)
+        .padding(horizontal = ShifaSize.S8, vertical = ShifaSize.S2),
+    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S4),
+    verticalAlignment = Alignment.CenterVertically,
+) {
+    val ink = if (warning) ShifaColors.Text.Warning else ShifaColors.Text.Error
+    Icon(painterResource(icon), null, tint = ink)
+    Text(text, style = ShifaTextStyles.metaSmall(), color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+}
+
+/** Six tiles, two per row (flow 06/03 §3.3): "—" when unknown, so every tile keeps its height. */
+@Composable
+private fun Stats(
+    p: Patient,
+    today: LocalDate,
+) {
+    val dash = "—"
+    val tiles =
+        listOf(
+            Res.string.age to (p.age(today)?.toString() ?: dash),
+            Res.string.gender to (genderLabel(p.gender) ?: dash),
+            Res.string.phone to (p.allPhones.firstOrNull() ?: dash),
+            Res.string.birthDate to (p.birth?.let(::displayDate) ?: dash),
+            Res.string.patientId to p.displayId,
+            Res.string.language to (languageLabel(p.language) ?: dash),
+        )
+    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+        tiles.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                row.forEach { (label, value) ->
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .background(ShifaColors.Bg.Surface, ShifaRadius.ControlMd)
+                            .padding(horizontal = ShifaSize.S12, vertical = ShifaSize.S10),
+                        verticalArrangement = Arrangement.spacedBy(ShifaSize.S2),
+                    ) {
+                        Text(tr(label), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+                        Text(
+                            value,
+                            style = ShifaTextStyles.panelTitle(),
+                            color = ShifaColors.Text.Primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** The stored code or word in the app's language; anything else as written. */
+@Composable
+private fun languageLabel(raw: String?): String? =
+    PatientLanguage.of(raw)?.let { tr(it.label) } ?: raw?.trim()?.takeIf(String::isNotEmpty)
+
+@Composable
+private fun Overview(
+    p: Patient,
+    state: PatientDetailUiState,
+    actions: PatientDetailActions,
+) {
+    Card(tr(Res.string.clinicalSummary)) {
+        SummaryRow(tr(Res.string.chronicDisease), p.chronic ?: tr(Res.string.none), p.chronic != null)
+        val allergies = p.allergies?.trim()?.takeIf(String::isNotEmpty)
+        SummaryRow(tr(Res.string.allergies), allergies ?: tr(Res.string.noKnownAllergies), allergies != null)
+        SummaryRow(
+            tr(Res.string.bloodGroup),
+            p.bloodGroup?.trim()?.takeIf(String::isNotEmpty) ?: tr(Res.string.notSpecified),
+            false,
+        )
+        SummaryRow(tr(Res.string.language), languageLabel(p.language) ?: tr(Res.string.notSpecified), false)
+    }
+    Card(tr(Res.string.patientAppAccess)) {
+        if (p.hasAccount) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(painterResource(Res.drawable.ic_check_circle_20), null, tint = ShifaColors.Icon.Brand)
+                Column {
+                    Text(
+                        tr(Res.string.accountActive),
+                        style = ShifaTextStyles.panelTitle(),
+                        color = ShifaColors.Text.Primary,
+                    )
+                    p.username?.let {
+                        Text(
+                            it,
+                            style = ShifaTextStyles.metaSmall(),
+                            color = ShifaColors.Text.Secondary,
+                        )
+                    }
+                }
+            }
+        } else {
+            Text(tr(Res.string.noAccountYet), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+            ShifaPrimaryButton(
+                tr(Res.string.createPatientAccount),
+                actions.createAccount,
+                loading = state.creatingAccount,
+            )
+        }
+    }
+    // Only when the doctor's plan allows SMS (06 §1.7).
+    if (state.smsAllowed) Sms(p, state, actions)
+}
+
+@Composable
+private fun Sms(
+    p: Patient,
+    state: PatientDetailUiState,
+    actions: PatientDetailActions,
+) = Card(tr(Res.string.smsReminderTitle)) {
+    val phone = p.allPhones.isNotEmpty()
+    val busy = state.smsSaving
+    Text(tr(Res.string.smsReminderDescription), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    if (!phone) {
+        Text(
+            tr(Res.string.smsReminderNoPhone),
+            Modifier.fillMaxWidth().background(
+                ShifaColors.Bg.WarningSubtle,
+                ShifaRadius.ControlMd,
+            ).padding(ShifaSize.S8),
+            style = ShifaTextStyles.metaSmall(),
+            color = ShifaColors.Text.Primary,
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12), verticalAlignment = Alignment.CenterVertically) {
+        ShifaSwitch(p.smsReminderEnabled, { if (phone && !busy) actions.sms(it) })
+        Text(tr(Res.string.smsReminderEnabled), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+    }
+    if (p.smsReminderEnabled && phone) {
+        var open by remember { mutableStateOf(false) }
+        val options = listOf(24 to Res.string.reminder24Hours, 1 to Res.string.reminder1Hour)
+        ShifaDropdown(
+            tr(Res.string.reminderTiming),
+            options.map { tr(it.second) },
+            tr(options.first { it.first == p.smsHours }.second),
+            { i ->
+                open = false
+                if (!busy && options[i].first != p.smsHours) actions.smsHours(options[i].first)
+            },
+            open,
+            { open = it },
+        )
+    }
+    if (phone) {
+        ShifaSecondaryButton(tr(Res.string.smsSendTest), actions.testSms, loading = state.testing)
+        Text(tr(Res.string.smsSendTestHint), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    }
+}
+
+@Composable
+private fun Card(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) = Column(
+    Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg).padding(ShifaSpacing.Inset.Md),
+    verticalArrangement = Arrangement.spacedBy(ShifaSize.S10),
+) {
+    Text(title, style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+    content()
+}
+
+@Composable
+private fun SummaryRow(
+    label: String,
+    value: String,
+    alert: Boolean,
+) = Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
+    Text(label, Modifier.weight(1f), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    Text(
+        value,
+        Modifier.weight(1f),
+        style = ShifaTextStyles.metaSmall(),
+        color = if (alert) ShifaColors.Text.Error else ShifaColors.Text.Primary,
+    )
+}
+
+@Composable
+private fun ChronicWarning(
+    disease: String,
+    onOk: () -> Unit,
+) = ProfileSheet(onOk) {
+    ShifaDialogSheet(
+        tr(Res.string.patientWithChronicDisease),
+        tr(Res.string.iUnderstand),
+        onOk,
+        body =
+            tr(Res.string.dealingWithChronicDiseasePatient) + "\n" + disease + "\n\n" +
+                tr(Res.string.takeExtraCareForChronicDiseasePatient),
+        icon = Res.drawable.ic_alert_20,
+    )
+}
+
+/** Shown once; only Done closes it (the password can't be read again). */
+@Composable
+private fun Credentials(
+    account: PatientAccount,
+    onDone: () -> Unit,
+) = ProfileSheet({}, confirmHide = { false }) {
+    ShifaDialogSheet(
+        tr(Res.string.accountCreated),
+        tr(Res.string.done),
+        onDone,
+        body = tr(Res.string.shareCredentialsWithPatient),
+    ) {
+        CopyRow(tr(Res.string.username), account.username)
+        CopyRow(tr(Res.string.oneTimePassword), account.oneTimePassword)
+        Text(
+            tr(Res.string.forSecurityPasswordShownOnce),
+            style = ShifaTextStyles.metaSmall(),
+            color = ShifaColors.Text.Warning,
+        )
+    }
+}
+
+@Composable
+private fun CopyRow(
+    label: String,
+    value: String,
+) {
+    val clipboard = LocalClipboardManager.current
+    var copied by remember(value) { mutableStateOf(false) }
+    Row(
+        Modifier.fillMaxWidth().background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd).padding(ShifaSize.S12),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+            Text(value, style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+        }
+        ShifaIconButton(
+            Res.drawable.ic_copy_16,
+            tr(if (copied) Res.string.copied else Res.string.copy),
+            {
+                clipboard.setText(AnnotatedString(value))
+                copied = true
+            },
+            variant = ShifaIconButtonVariant.Secondary,
+            selected = copied,
+        )
+    }
+}

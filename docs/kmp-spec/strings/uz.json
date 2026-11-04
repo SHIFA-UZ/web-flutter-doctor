@@ -2453,5 +2453,17 @@
   "kyrgyz": "Qirg'iz",
   "tajik": "Tojik",
   "turkmen": "Turkman",
-  "arabic": "Arab"
+  "arabic": "Arab",
+  "formsTab": "Shakllar",
+  "activityTab": "Faoliyat",
+  "smsServiceUnavailable": "SMS xizmati hozir ishlamayapti. Keyinroq urinib ko'ring.",
+  "patientLoadFailed": "Bemorni yuklab bo'lmadi.",
+  "patientNotFound": "Bemor topilmadi",
+  "patientAccountExists": "Bu bemorning allaqachon hisobi bor.",
+  "accountCreateFailed": "Hisobni yaratib bo'lmadi. Qayta urinib ko'ring.",
+  "addToFavorites": "Sevimlilarga qo'shish",
+  "removeFromFavorites": "Sevimlilardan olib tashlash",
+  "tabComesLater": "Yozuvning bu qismi tez orada qo'shiladi.",
+  "accountActive": "Hisob faol",
+  "lastVisitOn": "Oxirgi tashrif: {date}"
 }

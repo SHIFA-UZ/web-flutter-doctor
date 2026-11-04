@@ -108,3 +108,40 @@ different fields): the directory's New patient (the new patient then opens) and 
   fields left out; no name / a bad phone / a bad email send nothing; a 409 keeps the sheet with the phone marked and a
   400 says check the details; closing asks only with input, and language codes and words both read),
   `PatientsScreenshotTest` (+1: `Patients_create`).
+
+## PAT-05 · Patient detail
+
+Built 2026-11-04. Flow `06/03-patient-detail.md` (and the chronic warning of `06/04`); spec 06 §2.1–2.3, §1.7. Board
+`DaPatients`, screen `patDetail` (header, stats, record tabs, Overview's Clinical summary, Patient App Access and SMS
+appointment reminders). Phone layout: a pushed screen from the directory (`ShellRoute.Patient(id)`, ids only).
+
+- **Screen** (`ui/patients/PatientDetail.kt`): back (no title: the header names the patient), avatar, name (or
+  "Patient", two lines at most), the status pill ("Active patient" / At risk / Follow-up), "AI risk detected" when
+  `atRisk`, the chronic disease as a red pill, "Last visit: 21 October 2026" or "No recent visit", the star. Six tiles
+  two per row (Age, Gender, Phone, Birth date dd.MM.yyyy, Patient ID, Language in the app's language; "—" when
+  unknown). The six record tabs (Overview, Medical info, Appointments, Documents, Forms, Activity: the flow's renames);
+  only Overview is built, the others say "This part of the record is on its way." until their tickets. Pull to
+  refresh; the tabs stay pinned under the app bar while the record scrolls.
+- **Data:** the directory's copy shows at once, then a fresh read (a 404 shows "Patient not found" with Back, any other
+  failure "Couldn't load this patient." with Retry and the request id; with a patient shown, a failed refresh is a
+  banner, but a 404 still leaves: the patient was deleted elsewhere). **Last visit** is the last COMPLETED appointment up to now, on the practice date (Flutter used the newest
+  document's date); a failed appointments read leaves "No recent visit".
+- **Favourites:** one `FavoritesRepository` (flow per doctor, kept on the phone) shared with the directory, so a star
+  on the detail shows in Favorites at once (checked on the emulator).
+- **Overview:** Clinical summary (chronic disease and allergies in red when set; "None", "No known allergies", "Not
+  specified"); Patient App Access ("Account active" + username, or "No account yet" + Create Patient Account → the
+  login in a sheet only Done closes, each value copyable, "shown only once"; the account flag comes from a fresh read;
+  409 says the patient already has one); SMS appointment reminders only when the doctor's profile allows SMS: the
+  switch and the timing (24 h / 1 h) save at once with only that field, roll back on failure, one save at a time;
+  without a phone the warning shows and nothing is sent; Send test SMS names 403 (not on your plan) and 503 (service
+  down).
+- **Chronic-disease warning:** once per patient per session (Flutter showed it on every selection), cleared on sign-out.
+- **Not built here:** Quick actions, the ⋮ sheet and "AI summary" (they open booking from the detail, chat, upload,
+  forms, briefing and partners, which come with PAT-07, CHAT, DOCS, FORM, AI and CARE tickets; no dead buttons), the AI
+  copilot card and the clinical timeline (AI tickets), Recent activity (the activity ticket), the tablet two-pane
+  (same call as CAL-5), deep links to a tab (PUSH-03).
+- **Tests:** `PatientDetailViewModelTest` (7: last visit on the practice date and one warning per session; the shared
+  star; 404 (also over a directory copy) vs failure with request id; SMS save with the exact body and rollback; no phone sends nothing; test-SMS
+  403/503; the account shown once and 409), `PatientsViewModelTest` on the shared favourites; screenshots
+  `PatientDetail_overview`, `PatientDetail_sparse`, `PatientDetail_notFound`. Checked against dev on the emulator
+  (read only; the star set and cleared).

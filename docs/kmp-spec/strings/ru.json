@@ -2453,5 +2453,17 @@
   "kyrgyz": "Киргизский",
   "tajik": "Таджикский",
   "turkmen": "Туркменский",
-  "arabic": "Арабский"
+  "arabic": "Арабский",
+  "formsTab": "Формы",
+  "activityTab": "Активность",
+  "smsServiceUnavailable": "SMS-сервис сейчас недоступен. Попробуйте позже.",
+  "patientLoadFailed": "Не удалось загрузить пациента.",
+  "patientNotFound": "Пациент не найден",
+  "patientAccountExists": "У этого пациента уже есть аккаунт.",
+  "accountCreateFailed": "Не удалось создать аккаунт. Попробуйте снова.",
+  "addToFavorites": "Добавить в избранное",
+  "removeFromFavorites": "Убрать из избранного",
+  "tabComesLater": "Этот раздел записи скоро появится.",
+  "accountActive": "Аккаунт активен",
+  "lastVisitOn": "Последний визит: {date}"
 }

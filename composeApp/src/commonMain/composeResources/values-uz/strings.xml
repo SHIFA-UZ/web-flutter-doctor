@@ -5,8 +5,10 @@
     <string name="acceptInvite">Qabul qilish</string>
     <string name="accessDenied">Kirish taqiqlangan</string>
     <string name="accessRestricted">Faqat shifokorlar uchun ruxsat.</string>
+    <string name="accountActive">Hisob faol</string>
     <string name="accountAlreadyAvailable">Hisob allaqachon mavjud</string>
     <string name="accountBlocked">Hisobingiz bloklangan.</string>
+    <string name="accountCreateFailed">Hisobni yaratib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="accountCreated">Hisob yaratildi</string>
     <string name="accountCreatedPleaseSignIn">Hisob yaratildi! Iltimos, tizimga kiring.</string>
     <string name="accountDisabledBanner">Bu hisob o'chirilgan. Klinika administratoriga murojaat qiling.</string>
@@ -21,6 +23,7 @@
     <string name="activityDocumentUploaded">Hujjat yuklandi</string>
     <string name="activityLabResult">Laboratoriya natijasi yuklandi</string>
     <string name="activityPrescription">Retsept berildi</string>
+    <string name="activityTab">Faoliyat</string>
     <string name="add">Qo'shish</string>
     <string name="addAnotherPage">Yana bir sahifa qo'shish?</string>
     <string name="addClinicAddress">Klinika manzilini qo'shish</string>
@@ -43,6 +46,7 @@
     <string name="addService">Xizmat qo'shish</string>
     <string name="addServices">Xizmatlarni qo'shish</string>
     <string name="addTimeRange">Vaqt qo'shish</string>
+    <string name="addToFavorites">Sevimlilarga qo'shish</string>
     <string name="addToNotes">Eslatmalarga qo'shish</string>
     <string name="addedToNotes">Eslatmalarga qo'shildi</string>
     <string name="address">Manzili</string>
@@ -1106,6 +1110,7 @@
     <string name="form0252">Form 025-2</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
     <string name="formSavedSuccessfully">Forma muvaffaqiyatli saqlandi</string>
+    <string name="formsTab">Shakllar</string>
     <string name="freeRemovesPrices">Mavjud narxlar o'chiriladi</string>
     <string name="freeSlot">Bo'sh vaqt</string>
     <string name="freeSlots">Bo'sh vaqtlar</string>
@@ -1390,6 +1395,7 @@
     <string name="lastLogin">Oxirgi kirish</string>
     <string name="lastName">Familiya</string>
     <string name="lastVisit">Oxirgi tashrif</string>
+    <string name="lastVisitOn">Oxirgi tashrif: %1$s</string>
     <string name="latitude">Kenglik</string>
     <string name="leaveAndEndVisit">Chiqish va tashrifni yakunlash</string>
     <string name="leaveCall">Qo'ng'iroqdan chiqish</string>
@@ -1703,6 +1709,7 @@
     <string name="pastSlotCannotAssign">Bu vaqt o'tgan. Bemorni tayinlash mumkin emas.</string>
     <string name="paste">Qo'yish</string>
     <string name="patient">Bemor</string>
+    <string name="patientAccountExists">Bu bemorning allaqachon hisobi bor.</string>
     <string name="patientActivity">Bemor faoliyati</string>
     <string name="patientActivitySubtitle">Klinikangizdan jonli yangilanishlar</string>
     <string name="patientAgeYears">%1$s yosh</string>
@@ -1737,8 +1744,10 @@
     <string name="patientIdLabel">ID #%1$s</string>
     <string name="patientIdNotAvailable">Bemor ID mavjud emas</string>
     <string name="patientList">Bemorlar ro'yxati</string>
+    <string name="patientLoadFailed">Bemorni yuklab bo'lmadi.</string>
     <string name="patientName">Bemor ismi</string>
     <string name="patientNotArrived">Boshlanganiga %1$s daqiqa bo'ldi — bemor kelmadi</string>
+    <string name="patientNotFound">Bemor topilmadi</string>
     <string name="patientNumber">Bemor #%1$s</string>
     <string name="patientPhoneExists">Bu telefon raqamli bemor allaqachon mavjud.</string>
     <string name="patientRecordUnavailable">Bemor kartasi mavjud emas</string>
@@ -1890,6 +1899,7 @@
     <string name="remoteCareTasks">Masofaviy parvarish vazifalari</string>
     <string name="remoteCareTasksSubtitle">Bemor kuzatuvlarini nazorat qiling va boshqaring</string>
     <string name="remove">O'chirish</string>
+    <string name="removeFromFavorites">Sevimlilardan olib tashlash</string>
     <string name="removeItem">%1$s ni olib tashlash</string>
     <string name="removePriceRow">Narxni olib tashlash</string>
     <string name="removeRow">Qatorni olib tashlash</string>
@@ -2091,6 +2101,7 @@
     <string name="smsReminderTitle">Qabul SMS eslatmalari</string>
     <string name="smsSendTest">Test SMS yuborish</string>
     <string name="smsSendTestHint">Bir SMS darhol yuboriladi (500 UZS). Haqiqiy eslatmalar yuqorida tanlangan vaqt bo'yicha ketadi.</string>
+    <string name="smsServiceUnavailable">SMS xizmati hozir ishlamayapti. Keyinroq urinib ko'ring.</string>
     <string name="smsTestSent">Test SMS yuborildi. Bemor telefonini tekshiring.</string>
     <string name="soapAssessment">Baholash</string>
     <string name="soapNotesSectionSubtitle">Ixtiyoriy maydonlar — yakuniy konsultatsiya PDF fayliga qo'shiladi.</string>
@@ -2155,6 +2166,7 @@
     <string name="summarySaveFailed">Tashrif yakunlandi. Xulosani saqlab bo'lmadi.</string>
     <string name="sunday">Yakshanba</string>
     <string name="systemConfiguration">Tizim sozlamalari</string>
+    <string name="tabComesLater">Yozuvning bu qismi tez orada qo'shiladi.</string>
     <string name="tajik">Tojik</string>
     <string name="takeExtraCareForChronicDiseasePatient">Iltimos, ehtiyot bo'ling va bu bemor uchun siz rejalashtirayotgan protseduralar, dorilar va davolanishni ikki martta tekshiring.</string>
     <string name="takePhoto">Rasm olish</string>

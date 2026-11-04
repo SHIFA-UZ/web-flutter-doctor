@@ -2453,5 +2453,17 @@
   "kyrgyz": "Kyrgyz",
   "tajik": "Tajik",
   "turkmen": "Turkmen",
-  "arabic": "Arabic"
+  "arabic": "Arabic",
+  "formsTab": "Forms",
+  "activityTab": "Activity",
+  "smsServiceUnavailable": "The SMS service isn't available right now. Try again later.",
+  "patientLoadFailed": "Couldn't load this patient.",
+  "patientNotFound": "Patient not found",
+  "patientAccountExists": "This patient already has an account.",
+  "accountCreateFailed": "Couldn't create the account. Try again.",
+  "addToFavorites": "Add to favourites",
+  "removeFromFavorites": "Remove from favourites",
+  "tabComesLater": "This part of the record is on its way.",
+  "accountActive": "Account active",
+  "lastVisitOn": "Last visit: {date}"
 }

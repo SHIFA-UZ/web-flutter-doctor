@@ -60,3 +60,53 @@ internal fun CreatePatientPreview() =
             {},
         )
     }
+
+private val record =
+    Patient(
+        7,
+        "Jasur Karimov",
+        phones = listOf("+998 93 555 12 34"),
+        birthDate = "1978-02-01",
+        gender = "male",
+        language = "ru",
+        chronicDisease = "Diabetes",
+        allergies = "Lidocaine",
+        bloodGroup = "A+",
+        clinicalStatus = "AT_RISK",
+        atRisk = true,
+        smsReminderEnabled = true,
+    )
+
+// PAT-05: an at-risk patient with a chronic disease, a past visit, SMS allowed and on, no patient-app login yet.
+@Composable
+internal fun PatientDetailPreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(
+                record,
+                today = today,
+                lastVisit = LocalDate(2026, 10, 21),
+                favorite = true,
+                smsAllowed = true,
+            ),
+            PatientDetailActions(),
+        )
+    }
+
+// PAT-05: little known (no phone, birth date or language), an account, no visit; SMS allowed but no phone.
+@Composable
+internal fun PatientDetailSparsePreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(
+                Patient(31, "", hasAccount = true, username = "patient.31"),
+                today = today,
+                smsAllowed = true,
+            ),
+            PatientDetailActions(),
+        )
+    }
+
+@Composable
+internal fun PatientDetailNotFoundPreview() =
+    PreviewTheme { PatientDetailContent(PatientDetailUiState(notFound = true), PatientDetailActions()) }

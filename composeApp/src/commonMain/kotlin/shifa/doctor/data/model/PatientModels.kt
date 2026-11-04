@@ -89,6 +89,10 @@ data class Patient(
                 .joinToString(", ")
                 .ifEmpty { address?.trim()?.takeIf(String::isNotEmpty) }
 
+    /** The chronic disease worth a warning: set, and not "None" (the Flutter picker stored that word). */
+    val chronic: String?
+        get() = chronicDisease?.trim()?.takeIf { it.isNotEmpty() && !it.equals("none", ignoreCase = true) }
+
     val birth: LocalDate? get() = birthDate?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() }
 
     /** Whole years on [today] (the practice date, injected so tests and the practice zone decide). */

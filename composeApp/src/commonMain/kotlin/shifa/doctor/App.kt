@@ -45,6 +45,7 @@ import shifa.doctor.ui.emailcode.ResetPasswordScreen
 import shifa.doctor.ui.login.LoginScreen
 import shifa.doctor.ui.navigation.MainScreen
 import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.ui.patients.chronicWarned
 import shifa.doctor.ui.register.RegisterScreen
 import shifa.doctor.ui.register.VerifyKeyScreen
 import shifa.doctor.ui.splash.SplashScreen
@@ -158,6 +159,7 @@ private fun AppScreens() {
             calendarRepository.clear()
             locationsRepository.clear()
             patientsRepository.clear()
+            chronicWarned.clear()
         }
     }
     val locked by appLockRepository.locked.collectAsState()

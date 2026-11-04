@@ -21,4 +21,15 @@ class PatientsScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h1500dp-xhdpi")
     fun create() = captureRoboImage("screenshots/Patients_create.png") { CreatePatientPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun detail() = captureRoboImage("screenshots/PatientDetail_overview.png") { PatientDetailPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1300dp-xhdpi")
+    fun detailSparse() = captureRoboImage("screenshots/PatientDetail_sparse.png") { PatientDetailSparsePreview() }
+
+    @Test
+    fun detailNotFound() = captureRoboImage("screenshots/PatientDetail_notFound.png") { PatientDetailNotFoundPreview() }
 }

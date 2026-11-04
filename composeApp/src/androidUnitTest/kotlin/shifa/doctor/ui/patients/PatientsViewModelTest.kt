@@ -23,6 +23,7 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.model.PatientStatus
+import shifa.doctor.data.patients.FavoritesRepository
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.storage.FavoritesStorage
 import shifa.doctor.stopAll
@@ -75,7 +76,12 @@ class PatientsViewModelTest {
     }
 
     private fun opened() =
-        PatientsViewModel(repo, FavoritesStorage(settings), flowOf(42L to "Asia/Tashkent"), { clock }).also {
+        PatientsViewModel(
+            repo,
+            FavoritesRepository(FavoritesStorage(settings)),
+            flowOf(42L to "Asia/Tashkent"),
+            { clock },
+        ).also {
             created += it
             it.load()
             settle { it.state.value.patients != null || it.state.value.error != null }

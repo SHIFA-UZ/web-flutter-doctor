@@ -45,10 +45,11 @@ import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.model.PatientStatus
+import shifa.doctor.data.patients.FavoritesRepository
 import shifa.doctor.data.patients.PatientsRepository
+import shifa.doctor.data.patients.favoritesRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
-import shifa.doctor.data.storage.FavoritesStorage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.allPatients
 import shifa.doctor.generated.resources.clearFilters
@@ -178,7 +179,7 @@ private const val MIN_DIGITS = 3
  */
 class PatientsViewModel(
     private val repo: PatientsRepository = patientsRepository,
-    private val store: FavoritesStorage = FavoritesStorage(),
+    private val favorites: FavoritesRepository = favoritesRepository,
     // The signed-in doctor (id, practice zone), possibly arriving after the screen opened: their favourites and the
     // practice date for ages follow when it does.
     doctors: Flow<Pair<Long?, String?>> = profileRepository.me.map { it?.profile?.id to it?.profile?.timeZone },
@@ -188,16 +189,16 @@ class PatientsViewModel(
         MutableStateFlow(PatientsUiState(today = clockOf(profileRepository.me.value?.profile?.timeZone).today()))
     val state: StateFlow<PatientsUiState> = _state.asStateFlow()
     private var debounce: Job? = null
-    private var doctor: Long? = null
 
     init {
         viewModelScope.launch { repo.patients.collect { list -> _state.update { it.copy(patients = list) } } }
         viewModelScope.launch {
             doctors.distinctUntilChanged().collect { (id, zone) ->
-                doctor = id
-                _state.update { it.copy(favorites = id?.let(store::get).orEmpty(), today = clockOf(zone).today()) }
+                favorites.load(id)
+                _state.update { it.copy(today = clockOf(zone).today()) }
             }
         }
+        viewModelScope.launch { favorites.ids.collect { ids -> _state.update { it.copy(favorites = ids) } } }
     }
 
     /** On open (stale only) and on pull / Retry ([force]). */
@@ -247,12 +248,8 @@ class PatientsViewModel(
             it.copy(typed = "", query = "", tab = PatientTab.All, status = null, page = 0)
         }.also { debounce?.cancel() }
 
-    /** Star or unstar a patient (PAT-05's detail calls this); kept on the phone per doctor. */
-    fun toggleFavorite(id: Long) {
-        val next = _state.value.favorites.let { if (id in it) it - id else it + id }
-        _state.update { it.copy(favorites = next) }
-        doctor?.let { store.set(it, next) }
-    }
+    /** Star or unstar a patient (the detail does the same through the shared [FavoritesRepository]). */
+    fun toggleFavorite(id: Long) = favorites.toggle(id)
 
     private companion object {
         val DEBOUNCE = 300.milliseconds

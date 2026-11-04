@@ -5,8 +5,10 @@
     <string name="acceptInvite">Принять</string>
     <string name="accessDenied">Доступ запрещен</string>
     <string name="accessRestricted">Доступ только для врачей.</string>
+    <string name="accountActive">Аккаунт активен</string>
     <string name="accountAlreadyAvailable">Аккаунт уже доступен</string>
     <string name="accountBlocked">Ваш аккаунт заблокирован.</string>
+    <string name="accountCreateFailed">Не удалось создать аккаунт. Попробуйте снова.</string>
     <string name="accountCreated">Аккаунт создан</string>
     <string name="accountCreatedPleaseSignIn">Аккаунт создан! Войдите в систему.</string>
     <string name="accountDisabledBanner">Этот аккаунт отключён. Обратитесь к администратору клиники.</string>
@@ -21,6 +23,7 @@
     <string name="activityDocumentUploaded">Документ загружен</string>
     <string name="activityLabResult">Результат анализа загружен</string>
     <string name="activityPrescription">Выписан рецепт</string>
+    <string name="activityTab">Активность</string>
     <string name="add">Добавить</string>
     <string name="addAnotherPage">Добавить еще страницу?</string>
     <string name="addClinicAddress">Добавить адрес клиники</string>
@@ -43,6 +46,7 @@
     <string name="addService">Добавить услугу</string>
     <string name="addServices">Добавить услуги</string>
     <string name="addTimeRange">Добавить часы</string>
+    <string name="addToFavorites">Добавить в избранное</string>
     <string name="addToNotes">Добавить в заметки</string>
     <string name="addedToNotes">Добавлено в заметки</string>
     <string name="address">Адрес</string>
@@ -1106,6 +1110,7 @@
     <string name="form0252">Форма 025-2</string>
     <string name="form0252MedicalDocument">Медицинский документ 025-2</string>
     <string name="formSavedSuccessfully">Форма успешно сохранена</string>
+    <string name="formsTab">Формы</string>
     <string name="freeRemovesPrices">Текущие цены будут удалены</string>
     <string name="freeSlot">Свободное время</string>
     <string name="freeSlots">Свободные слоты</string>
@@ -1390,6 +1395,7 @@
     <string name="lastLogin">Последний вход</string>
     <string name="lastName">Фамилия</string>
     <string name="lastVisit">Последний визит</string>
+    <string name="lastVisitOn">Последний визит: %1$s</string>
     <string name="latitude">Широта</string>
     <string name="leaveAndEndVisit">Выйти и завершить визит</string>
     <string name="leaveCall">Выйти из звонка</string>
@@ -1703,6 +1709,7 @@
     <string name="pastSlotCannotAssign">Этот слот в прошлом. Назначить пациента нельзя.</string>
     <string name="paste">Вставить</string>
     <string name="patient">Пациент</string>
+    <string name="patientAccountExists">У этого пациента уже есть аккаунт.</string>
     <string name="patientActivity">Активность пациентов</string>
     <string name="patientActivitySubtitle">Обновления из клиники</string>
     <string name="patientAgeYears">%1$s лет</string>
@@ -1737,8 +1744,10 @@
     <string name="patientIdLabel">ID №%1$s</string>
     <string name="patientIdNotAvailable">ID пациента недоступен</string>
     <string name="patientList">Список пациентов</string>
+    <string name="patientLoadFailed">Не удалось загрузить пациента.</string>
     <string name="patientName">Имя пациента</string>
     <string name="patientNotArrived">Началось %1$s мин назад — пациент не пришёл</string>
+    <string name="patientNotFound">Пациент не найден</string>
     <string name="patientNumber">Пациент №%1$s</string>
     <string name="patientPhoneExists">Пациент с этим номером телефона уже есть.</string>
     <string name="patientRecordUnavailable">Карта пациента недоступна</string>
@@ -1890,6 +1899,7 @@
     <string name="remoteCareTasks">Задачи удаленного ухода</string>
     <string name="remoteCareTasksSubtitle">Контроль и управление наблюдением пациентов</string>
     <string name="remove">Удалить</string>
+    <string name="removeFromFavorites">Убрать из избранного</string>
     <string name="removeItem">Удалить %1$s</string>
     <string name="removePriceRow">Удалить цену</string>
     <string name="removeRow">Удалить строку</string>
@@ -2091,6 +2101,7 @@
     <string name="smsReminderTitle">SMS-напоминания о приёме</string>
     <string name="smsSendTest">Отправить тестовое SMS</string>
     <string name="smsSendTestHint">Отправляет одно SMS сейчас (500 UZS). Настоящие напоминания — по выбранному выше времени.</string>
+    <string name="smsServiceUnavailable">SMS-сервис сейчас недоступен. Попробуйте позже.</string>
     <string name="smsTestSent">Тестовое SMS отправлено. Проверьте телефон пациента.</string>
     <string name="soapAssessment">Оценка</string>
     <string name="soapNotesSectionSubtitle">Необязательные поля — включаются в сохранённый PDF приёма.</string>
@@ -2155,6 +2166,7 @@
     <string name="summarySaveFailed">Визит завершён. Резюме не удалось сохранить.</string>
     <string name="sunday">Воскресенье</string>
     <string name="systemConfiguration">Настройки системы</string>
+    <string name="tabComesLater">Этот раздел записи скоро появится.</string>
     <string name="tajik">Таджикский</string>
     <string name="takeExtraCareForChronicDiseasePatient">Пожалуйста, будьте осторожны и дважды проверьте все процедуры, лекарства и методы лечения, которые вы планируете для этого пациента.</string>
     <string name="takePhoto">Сделать фото</string>

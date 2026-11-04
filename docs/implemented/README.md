@@ -101,7 +101,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | PAT-02 Patients repository | Done | The directory as one flow (pages, 60 s TTL), one patient, create, update, appointments, account, test SMS, prophylaxis, booking list; typed errors. See patients.md. |
 | PAT-03 Patients directory | Done (phone) | Patients tab: count, search (name, id, display id, phone digits; debounced), All / Favorites / Follow-ups, status filter, name order, 10 per page, pull to refresh; favourites kept per doctor. See patients.md. |
 | PAT-04 Create patient | Done | One create sheet (directory and booking picker): name, phones in E.164, email, address, language, gender, blood group, allergies, birth date; stays open while saving. See patients.md. |
-| PAT-05 … CLIN-02 | Not started | |
+| PAT-05 Patient detail | Done (phone, Overview) | Header, stats, record tabs (Overview built), clinical summary, patient-app login shown once, SMS reminders saved at once with rollback, chronic warning once per session, shared favourites. See patients.md. |
+| PAT-06 … CLIN-02 | Not started | |
 
 ## Log
 
@@ -160,3 +161,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · PAT-02 · Patients repository; BE-33 corrected (name sort works).
 - 2026-11-04 · PAT-03 · Patients directory.
 - 2026-11-04 · PAT-04 · Create patient sheet; patient language stored as codes (decision).
+- 2026-11-04 · PAT-05 · Patient detail (Overview); favourites shared with the directory.

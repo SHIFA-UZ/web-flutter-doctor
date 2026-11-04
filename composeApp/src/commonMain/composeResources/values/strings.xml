@@ -5,8 +5,10 @@
     <string name="acceptInvite">Accept</string>
     <string name="accessDenied">Access denied</string>
     <string name="accessRestricted">Access restricted to doctors.</string>
+    <string name="accountActive">Account active</string>
     <string name="accountAlreadyAvailable">Account already available</string>
     <string name="accountBlocked">Your account has been blocked.</string>
+    <string name="accountCreateFailed">Couldn't create the account. Try again.</string>
     <string name="accountCreated">Account Created</string>
     <string name="accountCreatedPleaseSignIn">Account created! Please sign in.</string>
     <string name="accountDisabledBanner">This account has been disabled. Contact your clinic administrator.</string>
@@ -21,6 +23,7 @@
     <string name="activityDocumentUploaded">Document uploaded</string>
     <string name="activityLabResult">Lab result uploaded</string>
     <string name="activityPrescription">Prescription issued</string>
+    <string name="activityTab">Activity</string>
     <string name="add">Add</string>
     <string name="addAnotherPage">Add another page?</string>
     <string name="addClinicAddress">Add clinic address</string>
@@ -43,6 +46,7 @@
     <string name="addService">Add Service</string>
     <string name="addServices">Add services</string>
     <string name="addTimeRange">Add hours</string>
+    <string name="addToFavorites">Add to favourites</string>
     <string name="addToNotes">Add to notes</string>
     <string name="addedToNotes">Added to notes</string>
     <string name="address">Address</string>
@@ -1106,6 +1110,7 @@
     <string name="form0252">Form 025-2</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
     <string name="formSavedSuccessfully">Form saved successfully</string>
+    <string name="formsTab">Forms</string>
     <string name="freeRemovesPrices">Existing prices will be removed</string>
     <string name="freeSlot">Free slot</string>
     <string name="freeSlots">Free Slots</string>
@@ -1390,6 +1395,7 @@
     <string name="lastLogin">Last Login</string>
     <string name="lastName">Last name</string>
     <string name="lastVisit">Last visit</string>
+    <string name="lastVisitOn">Last visit: %1$s</string>
     <string name="latitude">Latitude</string>
     <string name="leaveAndEndVisit">Leave and end visit</string>
     <string name="leaveCall">Leave call</string>
@@ -1703,6 +1709,7 @@
     <string name="pastSlotCannotAssign">This slot is in the past. You cannot assign a patient.</string>
     <string name="paste">Paste</string>
     <string name="patient">Patient</string>
+    <string name="patientAccountExists">This patient already has an account.</string>
     <string name="patientActivity">Patient activity</string>
     <string name="patientActivitySubtitle">Live updates from your clinic</string>
     <string name="patientAgeYears">%1$s years</string>
@@ -1737,8 +1744,10 @@
     <string name="patientIdLabel">ID #%1$s</string>
     <string name="patientIdNotAvailable">Patient ID not available</string>
     <string name="patientList">Patient List</string>
+    <string name="patientLoadFailed">Couldn't load this patient.</string>
     <string name="patientName">Patient Name</string>
     <string name="patientNotArrived">Started %1$s min ago — patient not arrived</string>
+    <string name="patientNotFound">Patient not found</string>
     <string name="patientNumber">Patient #%1$s</string>
     <string name="patientPhoneExists">A patient with this phone number already exists.</string>
     <string name="patientRecordUnavailable">Patient record unavailable</string>
@@ -1890,6 +1899,7 @@
     <string name="remoteCareTasks">Remote Care Tasks</string>
     <string name="remoteCareTasksSubtitle">Monitor and manage patient follow-ups</string>
     <string name="remove">Remove</string>
+    <string name="removeFromFavorites">Remove from favourites</string>
     <string name="removeItem">Remove %1$s</string>
     <string name="removePriceRow">Remove price</string>
     <string name="removeRow">Remove row</string>
@@ -2091,6 +2101,7 @@
     <string name="smsReminderTitle">SMS appointment reminders</string>
     <string name="smsSendTest">Send test SMS now</string>
     <string name="smsSendTestHint">Sends one SMS immediately (500 UZS). Real reminders follow the selected time above.</string>
+    <string name="smsServiceUnavailable">The SMS service isn't available right now. Try again later.</string>
     <string name="smsTestSent">Test SMS sent. Check the patient phone.</string>
     <string name="soapAssessment">Assessment</string>
     <string name="soapNotesSectionSubtitle">Optional sections — included in the saved consultation PDF.</string>
@@ -2155,6 +2166,7 @@
     <string name="summarySaveFailed">Visit completed. Summary could not be saved.</string>
     <string name="sunday">Sunday</string>
     <string name="systemConfiguration">System Configuration</string>
+    <string name="tabComesLater">This part of the record is on its way.</string>
     <string name="tajik">Tajik</string>
     <string name="takeExtraCareForChronicDiseasePatient">Please be careful and double-check all procedures, medications, and treatments you are planning for this patient.</string>
     <string name="takePhoto">Take Photo</string>
