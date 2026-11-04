@@ -2470,5 +2470,16 @@
   "patientDetailsSaved": "Patient details saved",
   "chronicWarningNote": "A warning will be shown when opening this patient.",
   "removeLastPhoneTitle": "Remove the last phone number?",
-  "removeLastPhoneBody": "Without a phone number the patient gets no SMS reminders."
+  "removeLastPhoneBody": "Without a phone number the patient gets no SMS reminders.",
+  "visitCompleted": "Visit completed",
+  "visitCancelled": "Visit cancelled",
+  "visitNoShow": "No-show",
+  "upcomingVisit": "Upcoming visit",
+  "visitRequested": "Visit requested",
+  "visitInProgress": "Visit in progress",
+  "activityHint": "Visits, documents and forms will appear here.",
+  "appointmentsLoadFailed": "Couldn't load the appointments.",
+  "upcoming": "Upcoming",
+  "visitOther": "Visit",
+  "statusPendingPayment": "Awaiting payment"
 }

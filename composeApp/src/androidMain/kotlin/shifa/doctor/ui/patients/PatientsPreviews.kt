@@ -88,6 +88,7 @@ internal fun PatientDetailPreview() =
                 lastVisit = LocalDate(2026, 10, 21),
                 favorite = true,
                 smsAllowed = true,
+                visits = visits,
             ),
             PatientDetailActions(),
         )
@@ -101,6 +102,7 @@ internal fun PatientDetailSparsePreview() =
             PatientDetailUiState(
                 Patient(31, "", hasAccount = true, username = "patient.31"),
                 today = today,
+                visits = emptyList(),
                 smsAllowed = true,
             ),
             PatientDetailActions(),
@@ -138,5 +140,57 @@ internal fun EditPatientPreview() =
             {},
             {},
             {},
+        )
+    }
+
+private fun visit(
+    id: Long,
+    date: LocalDate,
+    h: Int,
+    status: String,
+    reason: String?,
+    video: Boolean = false,
+    upcoming: Boolean = false,
+) = Visit(
+    id,
+    kotlinx.datetime.Instant.fromEpochSeconds(id),
+    date,
+    kotlinx.datetime.LocalTime(h, 0),
+    kotlinx.datetime.LocalTime(h, 30),
+    status,
+    video,
+    null,
+    reason,
+    upcoming,
+)
+
+private val visits =
+    listOf(
+        visit(6, LocalDate(2026, 11, 20), 11, "CONFIRMED", "Crown fitting", upcoming = true),
+        visit(5, LocalDate(2026, 11, 12), 9, "CONFIRMED", "Follow-up", video = true, upcoming = true),
+        visit(4, today, 10, "IN_PROGRESS", "Check-up"),
+        visit(3, LocalDate(2026, 11, 3), 15, "NO_SHOW", null),
+        visit(2, LocalDate(2026, 10, 21), 11, "COMPLETED", "Filling 26"),
+        visit(1, LocalDate(2026, 9, 30), 9, "CANCELLED", "Cleaning"),
+        visit(0, LocalDate(2026, 9, 12), 14, "PAYMENT_FAILED", "Consultation", video = true),
+    )
+
+// PAT-07: the Appointments tab, practice-clock times, every status.
+@Composable
+internal fun PatientAppointmentsPreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(record, today = today, visits = visits, tab = RecordTab.Appointments),
+            PatientDetailActions(),
+        )
+    }
+
+// PAT-07: the Activity tab, by month, Today / Yesterday.
+@Composable
+internal fun PatientActivityPreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(record, today = today, visits = visits, tab = RecordTab.Activity),
+            PatientDetailActions(),
         )
     }

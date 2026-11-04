@@ -87,10 +87,11 @@ sealed interface ShellRoute {
         val opened: Long,
     ) : ShellRoute
 
-    /** Calendar → book a free slot (CAL-7); [opened] as for [Appointment]. */
+    /** Calendar → book a free slot (CAL-7); [opened] as for [Appointment]. From a patient's record, [patient] is set. */
     data class Booking(
         val slot: CalendarEntry.FreeSlot,
         val opened: Long,
+        val patient: shifa.doctor.data.model.PatientOption? = null,
     ) : ShellRoute
 
     /** Profile → one of its sections (PROF-02); each section's ticket builds its screen. */

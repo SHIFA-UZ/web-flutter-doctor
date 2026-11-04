@@ -40,4 +40,19 @@ class PatientsScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h1500dp-xhdpi")
     fun edit() = captureRoboImage("screenshots/Patients_edit.png") { EditPatientPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun appointments() = captureRoboImage("screenshots/PatientDetail_appointments.png") { PatientAppointmentsPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun activity() = captureRoboImage("screenshots/PatientDetail_activity.png") { PatientActivityPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1300dp-xhdpi")
+    fun slotPick() =
+        captureRoboImage(
+            "screenshots/Patients_slotPick.png",
+        ) { shifa.doctor.ui.calendar.SlotPickPreview() }
 }

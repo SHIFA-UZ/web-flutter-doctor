@@ -178,3 +178,37 @@ on the board, stacked here on a phone, allergies with Save).
   list, last-phone question; the discard guard on tab and back, allergies save and rollback, Edit details over drafts),
   `CreatePatientViewModelTest` (+3: edit filled, only changes sent as PATCH; removing every phone asks; a 404 hands back); screenshots `PatientDetail_medical`, `Patients_edit`. Checked on the emulator
   against dev (read only in the app; the clearing and phone rules checked with direct requests, restored).
+
+## PAT-07 · Appointments and Activity
+
+Built 2026-11-04. Flows `06/03` §3.6 (Appointments), `06/11-patient-activity-timeline.md`, `06/04` (Make appointment);
+spec 06 §2.5, §2.8. Board `DaPatients`, `patDetail` Appointments ("Appointment history" + New appointment, cards) and
+Activity (month groups), Overview's Recent activity.
+
+- **Visits** (`PatientDetailViewModel`): `GET /patients/{id}/appointments` once per open (and on pull, Retry), on the
+  practice clock (Flutter used the phone's time, 06 §2.5), newest first. "Last visit" comes from the same list. A
+  failed read shows "Couldn't load the appointments." with the request id and Retry in the tabs and Recent activity,
+  and "No recent visit" in the header (Flutter printed the raw error).
+- **Appointments tab** (`ui/patients/PatientVisits.kt`): "4 November 2026 · 09:00–09:30", "reason · place" (Video
+  Call, the location's name, or In Clinic), the calendar's status pill (every status, NO_SHOW too; an unknown one as
+  sent). Empty: "No appointments with you yet." Rows aren't tappable yet: the appointment panel needs a calendar
+  entry, and the visit details screen comes with folder 05 (APPT tickets).
+- **Activity tab and Recent activity** (latest six, "View full history"): visits as events (Visit completed /
+  cancelled / No-show / in progress / requested / Upcoming visit, the board's tints), Today / Yesterday / the date,
+  grouped by month in the tab; upcoming visits (ahead and still booked: confirmed, requested, awaiting payment, in
+  progress) aren't history: apart under "Upcoming" (soonest first) in
+  the tab, left out of Recent activity. Any status other than the known ones is a neutral "Visit" naming its status
+  (Awaiting payment, Expired and Payment failed now have labels in the shared status pill, the calendar's too), never "upcoming". Both
+  tabs are lazy rows (100+ visits, flow 06/03 §8). Documents, forms, tasks and partnerships join with DOCS-04, FORM-05, TASK and CARE
+  (never by sniffing titles, flow §8); the filter chips come then too.
+- **New appointment** (`ui/calendar/SlotPicker.kt`): a sheet with the month (shaded like the calendar, past days
+  closed) and the picked day's future free slots (re-checked every 30 s and at Next) (two places at one time stay two chips, named), then Next opens
+  CAL-7's booking screen with this patient already chosen (still changeable; leaving untouched doesn't ask to
+  discard). One booking screen for both paths
+  instead of Flutter's second dialog; the visit list refreshes on return. Checked on the emulator against dev up to
+  the booking screen (nothing booked).
+- **Not built:** quick actions and the ⋮ sheet (still waiting for chat, upload and forms), tapping a visit.
+- **Tests:** `PatientDetailViewModelTest` (+1, and visits on the practice clock newest first in the first test: a
+  failed read with Retry), `SlotPickViewModelTest` (4: today's past slots hidden and past days closed; a slot booked
+  elsewhere leaves with its selection; a failed day; a slot starting while open), `BookingViewModelTest` (+1: a chosen patient, not a change); screenshots
+  `PatientDetail_appointments`, `PatientDetail_activity`, `Patients_slotPick`, and Overview with Recent activity.

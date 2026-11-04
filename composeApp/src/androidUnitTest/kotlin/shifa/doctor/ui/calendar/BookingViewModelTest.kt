@@ -31,6 +31,7 @@ import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
 import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.model.PatientOption
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.bookingRangeUnavailable
@@ -253,5 +254,26 @@ class BookingViewModelTest {
         assertThat(s.rangeFree).isTrue()
         // A day read as empty is not "unknown": nothing is free.
         assertThat(s.copy(day = emptyList()).rangeFree).isFalse()
+    }
+
+    @Test
+    fun `booking from a patient's record starts with that patient chosen`() {
+        val slot =
+            runBlocking { calendar.day(DayKey(LocalDate(2026, 11, 6))).getOrThrow() }
+                .filterIsInstance<CalendarEntry.FreeSlot>().first { it.locationId == 1L }
+        val classToTest =
+            BookingViewModel(
+                slot,
+                clock,
+                "Check-up",
+                calendar,
+                AppointmentsRepository { createHttpClient({ null }, engine) },
+                PatientsRepository(client = { createHttpClient({ null }, engine) }),
+                patient = PatientOption(7, "Zarina Usmonova"),
+            ).also { created += it }
+        assertThat(classToTest.state.value.patient?.id).isEqualTo(7L)
+        assertThat(classToTest.state.value.picking).isFalse()
+        // Leaving untouched doesn't ask to discard: the patient came with the screen.
+        assertThat(classToTest.state.value.dirty).isFalse()
     }
 }

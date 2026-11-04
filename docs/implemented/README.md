@@ -103,7 +103,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | PAT-04 Create patient | Done | One create sheet (directory and booking picker): name, phones in E.164, email, address, language, gender, blood group, allergies, birth date; stays open while saving. See patients.md. |
 | PAT-05 Patient detail | Done (phone, Overview) | Header, stats, record tabs (Overview built), clinical summary, patient-app login shown once, SMS reminders saved at once with rollback, chronic warning once per session, shared favourites. See patients.md. |
 | PAT-06 Medical info | Done (no prophylaxis yet) | Per-field saves with rollback (dropdowns at once, phones and allergies with Save), localised chronic diseases, discard guard, Edit details (the create sheet, PATCH of changes). Prophylaxis with CLINIC-06. See patients.md. |
-| PAT-07 … CLIN-02 | Not started | |
+| PAT-07 Appointments & Activity | Done (visits only) | Visits on the practice clock, Appointments tab, Activity by month and Recent activity (visits; documents and forms join later), New appointment → free-slot sheet → CAL-7 booking with the patient chosen. See patients.md. |
+| DOCS-01 … CLIN-02 | Not started | |
 
 ## Log
 
@@ -164,3 +165,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · PAT-04 · Create patient sheet; patient language stored as codes (decision).
 - 2026-11-04 · PAT-05 · Patient detail (Overview); favourites shared with the directory.
 - 2026-11-04 · PAT-06 · Medical info and Edit details; prophylaxis card moved to CLINIC-06.
+- 2026-11-04 · PAT-07 · Appointments and Activity tabs; booking from the record through CAL-7's screen.

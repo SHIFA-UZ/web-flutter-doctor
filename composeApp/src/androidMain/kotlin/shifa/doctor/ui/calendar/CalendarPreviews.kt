@@ -208,3 +208,23 @@ internal fun BlockPanelPreview() =
             onClose = {},
         )
     }
+
+// PAT-07: "New appointment" from a patient's record: the month, 4 November's free slots at two places, 10:00 picked.
+@androidx.compose.runtime.Composable
+internal fun SlotPickPreview() =
+    shifa.doctor.ui.theme.PreviewTheme {
+        val slots =
+            listOf(
+                shifa.doctor.data.model.CalendarEntry.FreeSlot(at(9, 0), at(9, 30), 1, "Shifa Clinic"),
+                shifa.doctor.data.model.CalendarEntry.FreeSlot(at(10, 0), at(10, 30), 1, "Shifa Clinic"),
+                shifa.doctor.data.model.CalendarEntry.FreeSlot(at(10, 0), at(10, 30), 2, "Chilonzor branch"),
+            )
+        SlotPickTray(
+            SlotPickUiState(clock, slots = slots, target = slots[1]),
+            {},
+            {},
+            {},
+            {},
+            {},
+        )
+    }

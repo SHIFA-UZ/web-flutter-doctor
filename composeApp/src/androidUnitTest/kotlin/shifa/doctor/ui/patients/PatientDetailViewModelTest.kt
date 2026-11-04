@@ -49,6 +49,7 @@ class PatientDetailViewModelTest {
     private var phones = """["+998901234567"]"""
     private var account = false
     private var gone = false
+    private var visitsFail = false
     private var patchStatus = HttpStatusCode.OK
     private var smsStatus = HttpStatusCode.OK
     private var accountStatus = HttpStatusCode.OK
@@ -83,12 +84,15 @@ class PatientDetailViewModelTest {
                         }
                     path == "patients/7" -> json(patient())
                     path == "patients" -> json("[${patient()}]")
+                    path.endsWith("/appointments") && visitsFail -> error(HttpStatusCode.InternalServerError)
                     path.endsWith("/appointments") ->
                         json(
                             // Completed 20 Oct 20:00 UTC (21 Oct in Tashkent); a later cancelled one and a future one don't count.
                             """[{"id":1,"startAt":"2026-10-20T20:00:00Z","endAt":"2026-10-20T20:30:00Z","status":"COMPLETED"},
                                {"id":2,"startAt":"2026-10-30T09:00:00Z","endAt":"2026-10-30T09:30:00Z","status":"CANCELLED"},
-                               {"id":3,"startAt":"2026-12-01T09:00:00Z","endAt":"2026-12-01T09:30:00Z","status":"COMPLETED"}]""",
+                               {"id":3,"startAt":"2026-12-01T09:00:00Z","endAt":"2026-12-01T09:30:00Z","status":"COMPLETED"},
+                               {"id":4,"startAt":"2026-11-21T09:00:00Z","endAt":"2026-11-21T09:30:00Z","status":"CANCELLED"},
+                               {"id":5,"startAt":"2026-11-20T09:00:00Z","endAt":"2026-11-20T09:30:00Z","status":"CONFIRMED"}]""",
                         )
                     path.endsWith(
                         "/send-test-sms",
@@ -138,7 +142,9 @@ class PatientDetailViewModelTest {
     ).also {
         created += it
         it.load()
-        settle { it.state.value.lastVisit != null || it.state.value.notFound || it.state.value.error != null }
+        settle {
+            it.state.value.visits != null || it.state.value.visitsError != null || it.state.value.notFound || it.state.value.error != null
+        }
     }
 
     @Test
@@ -148,6 +154,12 @@ class PatientDetailViewModelTest {
         assertThat(s.patient?.name).isEqualTo("Dilnoza Karimova")
         assertThat(s.patient?.chronic).isEqualTo("Diabetes")
         assertThat(s.lastVisit).isEqualTo(LocalDate(2026, 10, 21))
+        // Every visit on the practice clock, newest first (Flutter showed the phone's time).
+        assertThat(s.visits!!.map { it.id }).containsExactly(3L, 4L, 5L, 2L, 1L).inOrder()
+        assertThat(s.visits!!.last().date).isEqualTo(LocalDate(2026, 10, 21))
+        assertThat(s.visits!!.last().start.toString()).isEqualTo("01:00")
+        // Upcoming: ahead and still booked; a cancelled one ahead isn't (nor an odd future "completed").
+        assertThat(s.visits!!.filter { it.upcoming }.map { it.id }).containsExactly(5L)
         assertThat(s.today).isEqualTo(LocalDate(2026, 11, 4))
         assertThat(s.smsAllowed).isTrue()
         assertThat(s.chronicWarning).isTrue()
@@ -344,5 +356,19 @@ class PatientDetailViewModelTest {
         classToTest.setGender(null)
         settle { !classToTest.state.value.saving }
         assertThat(classToTest.state.value.notFound).isTrue()
+    }
+
+    @Test
+    fun `failed appointments say so in the tabs and come back on retry`() {
+        visitsFail = true
+        val classToTest = opened()
+        settle { classToTest.state.value.visitsError != null }
+        assertThat(classToTest.state.value.visitsError?.requestId).isEqualTo("req-patients/7/appointments")
+        assertThat(classToTest.state.value.lastVisit).isNull()
+        visitsFail = false
+        classToTest.retryVisits()
+        settle { classToTest.state.value.visits != null }
+        assertThat(classToTest.state.value.visitsError).isNull()
+        assertThat(classToTest.state.value.lastVisit).isEqualTo(LocalDate(2026, 10, 21))
     }
 }

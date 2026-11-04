@@ -2470,5 +2470,16 @@
   "patientDetailsSaved": "Данные пациента сохранены",
   "chronicWarningNote": "При открытии этого пациента будет показано предупреждение.",
   "removeLastPhoneTitle": "Удалить последний номер телефона?",
-  "removeLastPhoneBody": "Без номера телефона пациент не получает SMS-напоминания."
+  "removeLastPhoneBody": "Без номера телефона пациент не получает SMS-напоминания.",
+  "visitCompleted": "Визит завершён",
+  "visitCancelled": "Визит отменён",
+  "visitNoShow": "Неявка",
+  "upcomingVisit": "Предстоящий визит",
+  "visitRequested": "Запрошен визит",
+  "visitInProgress": "Визит идёт",
+  "activityHint": "Здесь появятся визиты, документы и формы.",
+  "appointmentsLoadFailed": "Не удалось загрузить записи.",
+  "upcoming": "Предстоящие",
+  "visitOther": "Визит",
+  "statusPendingPayment": "Ожидает оплаты"
 }

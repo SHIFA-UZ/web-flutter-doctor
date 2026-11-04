@@ -369,10 +369,26 @@ private fun RouteContent(
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
         is ShellRoute.Block -> BlockPanelScreen(route.entry, route.opened, onClose = actions.back)
-        is ShellRoute.Booking -> BookingScreen(route.slot, route.opened, onClose = actions.back)
+        is ShellRoute.Booking ->
+            BookingScreen(
+                route.slot,
+                route.opened,
+                onClose = actions.back,
+                patient = route.patient,
+            )
         is ShellRoute.Appointment -> AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back)
         ShellRoute.Locations -> LocationsScreen(onClose = actions.back)
-        is ShellRoute.Patient -> PatientDetailScreen(route.id, onBack = actions.back)
+        is ShellRoute.Patient ->
+            PatientDetailScreen(
+                route.id,
+                onBack = actions.back,
+                onBook = {
+                        slot,
+                        patient,
+                    ->
+                    actions.push(ShellRoute.Booking(slot, currentInstant().toEpochMilliseconds(), patient))
+                },
+            )
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
     }

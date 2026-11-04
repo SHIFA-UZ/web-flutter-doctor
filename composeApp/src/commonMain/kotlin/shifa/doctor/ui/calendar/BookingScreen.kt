@@ -131,6 +131,8 @@ data class BookingUiState(
     val video: Boolean = false,
     val reason: String = defaultReason,
     val patient: PatientOption? = null,
+    // The patient the screen opened with (from a patient's record): not a change of the doctor's.
+    val preset: PatientOption? = null,
     val patientMissing: Boolean = false,
     // The picker: everyone bookable (read once), the search, its error.
     val picking: Boolean = false,
@@ -193,7 +195,7 @@ data class BookingUiState(
     }
 
     val dirty: Boolean
-        get() = patient != null || video || reason != defaultReason || start.start != slot.start || end != slot.end
+        get() = patient != preset || video || reason != defaultReason || start.start != slot.start || end != slot.end
 
     val shown: List<PatientOption>
         get() {
@@ -223,8 +225,11 @@ class BookingViewModel(
     private val calendar: CalendarRepository = calendarRepository,
     private val appointments: AppointmentsRepository = appointmentsRepository,
     private val patients: PatientsRepository = patientsRepository,
+    // Booking from a patient's record (PAT-07): already chosen, still changeable.
+    patient: PatientOption? = null,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(BookingUiState(slot, clock, defaultReason))
+    private val _state =
+        MutableStateFlow(BookingUiState(slot, clock, defaultReason, patient = patient, preset = patient))
     val state: StateFlow<BookingUiState> = _state.asStateFlow()
 
     init {
@@ -381,11 +386,17 @@ fun BookingScreen(
     slot: CalendarEntry.FreeSlot,
     opened: Long,
     onClose: () -> Unit,
+    patient: PatientOption? = null,
 ) {
     val defaultReason = tr(Res.string.defaultVisitReason)
     val viewModel =
         viewModel(key = "booking-${slot.start}-${slot.locationId}-$opened") {
-            BookingViewModel(slot, PracticeClock(profileRepository.me.value?.profile?.timeZone), defaultReason)
+            BookingViewModel(
+                slot,
+                PracticeClock(profileRepository.me.value?.profile?.timeZone),
+                defaultReason,
+                patient = patient,
+            )
         }
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) { viewModel.follow() }

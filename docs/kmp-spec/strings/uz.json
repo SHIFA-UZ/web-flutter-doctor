@@ -2470,5 +2470,16 @@
   "patientDetailsSaved": "Bemor ma'lumotlari saqlandi",
   "chronicWarningNote": "Bu bemorni ochganda ogohlantirish ko'rsatiladi.",
   "removeLastPhoneTitle": "Oxirgi telefon raqami o'chirilsinmi?",
-  "removeLastPhoneBody": "Telefon raqamisiz bemor SMS eslatmalarini olmaydi."
+  "removeLastPhoneBody": "Telefon raqamisiz bemor SMS eslatmalarini olmaydi.",
+  "visitCompleted": "Tashrif yakunlandi",
+  "visitCancelled": "Tashrif bekor qilindi",
+  "visitNoShow": "Kelmadi",
+  "upcomingVisit": "Kelgusi tashrif",
+  "visitRequested": "Tashrif so'raldi",
+  "visitInProgress": "Tashrif davom etmoqda",
+  "activityHint": "Tashriflar, hujjatlar va shakllar shu yerda ko'rinadi.",
+  "appointmentsLoadFailed": "Uchrashuvlarni yuklab bo'lmadi.",
+  "upcoming": "Kelgusi",
+  "visitOther": "Tashrif",
+  "statusPendingPayment": "To'lov kutilmoqda"
 }

@@ -66,10 +66,12 @@ import shifa.doctor.generated.resources.blockTime
 import shifa.doctor.generated.resources.blocked
 import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.calendarTimezoneMismatchHint
+import shifa.doctor.generated.resources.clinicFinancePaymentFailed
 import shifa.doctor.generated.resources.couldNotLoadThisDay
 import shifa.doctor.generated.resources.durationHours
 import shifa.doctor.generated.resources.durationHoursMinutes
 import shifa.doctor.generated.resources.durationMinutes
+import shifa.doctor.generated.resources.expired
 import shifa.doctor.generated.resources.filter
 import shifa.doctor.generated.resources.freeSlot
 import shifa.doctor.generated.resources.freeSlots
@@ -95,6 +97,7 @@ import shifa.doctor.generated.resources.statusCompleted
 import shifa.doctor.generated.resources.statusConfirmed
 import shifa.doctor.generated.resources.statusInProgress
 import shifa.doctor.generated.resources.statusNoShow
+import shifa.doctor.generated.resources.statusPendingPayment
 import shifa.doctor.generated.resources.statusRequested
 import shifa.doctor.generated.resources.tzMismatchZones
 import shifa.doctor.generated.resources.videoCall
@@ -611,6 +614,20 @@ internal fun status(
         "CONFIRMED" -> Triple(tr(Res.string.statusConfirmed), ShifaColors.Bg.WarningSubtle, ShifaColors.Text.Warning)
         "REQUESTED" -> Triple(tr(Res.string.statusRequested), ShifaColors.Bg.Canvas, ShifaColors.Text.Secondary)
         "NO_SHOW" -> Triple(tr(Res.string.statusNoShow), ShifaColors.Bg.Canvas, ShifaColors.Text.Secondary)
+        // An unpaid video visit holding its slot; released slots (the hold ran out, or the payment failed).
+        "PENDING_PAYMENT" ->
+            Triple(
+                tr(Res.string.statusPendingPayment),
+                ShifaColors.Bg.WarningSubtle,
+                ShifaColors.Text.Warning,
+            )
+        "EXPIRED" -> Triple(tr(Res.string.expired), ShifaColors.Bg.Canvas, ShifaColors.Text.Secondary)
+        "PAYMENT_FAILED" ->
+            Triple(
+                tr(Res.string.clinicFinancePaymentFailed),
+                ShifaColors.Bg.ErrorSubtle,
+                ShifaColors.Text.Error,
+            )
         else -> Triple(code, ShifaColors.Bg.Canvas, ShifaColors.Text.Secondary)
     }
 }

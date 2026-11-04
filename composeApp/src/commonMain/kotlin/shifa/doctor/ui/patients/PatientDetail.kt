@@ -47,13 +47,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.model.PatientAccount
+import shifa.doctor.data.model.PatientAppointment
+import shifa.doctor.data.model.PatientOption
 import shifa.doctor.data.model.PatientRequest
 import shifa.doctor.data.model.PatientStatus
 import shifa.doctor.data.patients.FavoritesRepository
@@ -73,6 +77,7 @@ import shifa.doctor.generated.resources.age
 import shifa.doctor.generated.resources.aiRiskDetected
 import shifa.doctor.generated.resources.allergies
 import shifa.doctor.generated.resources.appointments
+import shifa.doctor.generated.resources.appointmentsLoadFailed
 import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.birthDate
 import shifa.doctor.generated.resources.bloodGroup
@@ -138,6 +143,7 @@ import shifa.doctor.generated.resources.smsTestSent
 import shifa.doctor.generated.resources.tabComesLater
 import shifa.doctor.generated.resources.takeExtraCareForChronicDiseasePatient
 import shifa.doctor.generated.resources.username
+import shifa.doctor.ui.calendar.SlotPickSheet
 import shifa.doctor.ui.calendar.longDate
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
@@ -214,6 +220,11 @@ data class PatientDetailUiState(
     val leaveTo: RecordTab? = null,
     // "Edit details" sheet open (a nonce: a fresh form each time).
     val editing: Long? = null,
+    // PAT-07: this doctor's visits with the patient, newest first, on the practice clock; null until read.
+    val visits: List<Visit>? = null,
+    val visitsError: CodeBanner? = null,
+    // The "New appointment" slot sheet (a nonce).
+    val booking: Long? = null,
 ) {
     val phoneRows: List<String> get() = phones ?: patient?.allPhones?.ifEmpty { null } ?: listOf("")
 
@@ -240,6 +251,21 @@ data class PatientDetailUiState(
             }
 }
 
+/** An appointment with this doctor on the practice clock (`GET /patients/{id}/appointments`, 06 §2.5). */
+data class Visit(
+    val id: Long,
+    val at: Instant,
+    val date: LocalDate,
+    val start: LocalTime,
+    val end: LocalTime?,
+    val status: String?,
+    val video: Boolean,
+    val location: String?,
+    val reason: String?,
+    // Starts after now: shown apart from the history (flow 06/11 §8).
+    val upcoming: Boolean = false,
+)
+
 /** The signed-in doctor as this screen needs them: id (favourites), practice zone (dates), SMS allowed. */
 data class DetailDoctor(
     val id: Long? = null,
@@ -264,7 +290,7 @@ class PatientDetailViewModel(
     private val warned: MutableSet<Long> = chronicWarned,
 ) : ViewModel() {
     private var clock = clockOf(profileRepository.me.value?.profile?.timeZone)
-    private var lastVisitAt: Instant? = null
+    private var appointments: List<PatientAppointment>? = null
     private val _state =
         MutableStateFlow(
             PatientDetailUiState(patient = repo.patients.value?.firstOrNull { it.id == id }, today = clock.today()),
@@ -284,7 +310,8 @@ class PatientDetailViewModel(
             doctors.distinctUntilChanged().collect { d ->
                 favorites.load(d.id)
                 clock = clockOf(d.zone)
-                _state.update { it.copy(smsAllowed = d.smsAllowed, today = clock.today(), lastVisit = visitDay()) }
+                _state.update { it.copy(smsAllowed = d.smsAllowed, today = clock.today()) }
+                showVisits()
             }
         }
         viewModelScope.launch { favorites.ids.collect { ids -> _state.update { it.copy(favorite = id in ids) } } }
@@ -319,20 +346,62 @@ class PatientDetailViewModel(
                     }
                 },
             )
-            // A failed read leaves "No recent visit" (flow 06/03 §6, partial data).
-            repo.appointments(id).onSuccess { list ->
-                val now = clock.nowInstant()
-                lastVisitAt =
-                    list
-                        .filter { it.status.equals("COMPLETED", ignoreCase = true) }
-                        .mapNotNull { PracticeClock.parseInstant(it.startAt) }
-                        .filter { it <= now }
-                        .maxOrNull()
-                _state.update { it.copy(lastVisit = visitDay()) }
-            }
+            readVisits()
             _state.update { it.copy(refreshing = false) }
         }
     }
+
+    /** The Appointments and Activity tabs' Retry. */
+    fun retryVisits() {
+        _state.update { it.copy(visitsError = null) }
+        viewModelScope.launch { readVisits() }
+    }
+
+    // A failed read leaves "No recent visit" in the header and an error with Retry in the tabs (flow 06/03 §6).
+    private suspend fun readVisits() {
+        repo.appointments(id).fold(
+            onSuccess = {
+                appointments = it
+                _state.update { s -> s.copy(visitsError = null) }
+                showVisits()
+            },
+            onFailure = { e ->
+                val banner = CodeBanner(e.toUserMessage(Res.string.appointmentsLoadFailed), requestId = e.requestId)
+                _state.update { it.copy(visitsError = banner) }
+            },
+        )
+    }
+
+    /** Times on the practice clock (Flutter used the phone's); "Last visit" is the last completed one up to now. */
+    private fun showVisits() {
+        val list = appointments ?: return
+        val now = clock.nowInstant()
+        val visits =
+            list
+                .mapNotNull { a ->
+                    val at = PracticeClock.parseInstant(a.startAt) ?: return@mapNotNull null
+                    val start = clock.local(at)
+                    Visit(
+                        a.id,
+                        at,
+                        start.date,
+                        start.time,
+                        PracticeClock.parseInstant(a.endAt)?.let { clock.local(it).time },
+                        a.status,
+                        a.isVideo,
+                        a.location?.trim()?.takeIf(String::isNotEmpty),
+                        a.reason?.trim()?.takeIf(String::isNotEmpty),
+                        // Still to happen: ahead, and not released (cancelled, expired, payment failed…).
+                        upcoming = at > now && a.status?.uppercase() in BOOKED,
+                    )
+                }.sortedByDescending { it.at }
+        val last = visits.firstOrNull { it.at <= now && it.status.equals("COMPLETED", ignoreCase = true) }
+        _state.update { it.copy(visits = visits, lastVisit = last?.date) }
+    }
+
+    fun openBooking() = _state.update { it.copy(booking = currentInstant().toEpochMilliseconds()) }
+
+    fun closeBooking() = _state.update { it.copy(booking = null) }
 
     fun ui(change: (PatientDetailUiState) -> PatientDetailUiState) = _state.update(change)
 
@@ -574,8 +643,6 @@ class PatientDetailViewModel(
         }
     }
 
-    private fun visitDay(): LocalDate? = lastVisitAt?.let { clock.local(it).date }
-
     private fun warnOnce(p: Patient) {
         if (p.chronic != null && warned.add(p.id)) _state.update { it.copy(chronicWarning = true) }
     }
@@ -592,6 +659,8 @@ data class PatientDetailActions(
     val testSms: () -> Unit = {},
     val createAccount: () -> Unit = {},
     val medical: MedicalActions = MedicalActions(),
+    val book: () -> Unit = {},
+    val retryVisits: () -> Unit = {},
 )
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -599,6 +668,8 @@ data class PatientDetailActions(
 fun PatientDetailScreen(
     id: Long,
     onBack: () -> Unit,
+    // "New appointment": the picked free slot, with this patient chosen, for the booking screen (CAL-7).
+    onBook: (CalendarEntry.FreeSlot, PatientOption) -> Unit = { _, _ -> },
     viewModel: PatientDetailViewModel = viewModel(key = "patient-$id") { PatientDetailViewModel(id) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -617,6 +688,8 @@ fun PatientDetailScreen(
             smsHours = viewModel::setSmsHours,
             testSms = viewModel::testSms,
             createAccount = viewModel::createAccount,
+            book = viewModel::openBooking,
+            retryVisits = viewModel::retryVisits,
             medical =
                 MedicalActions(
                     phones = viewModel::editPhones,
@@ -631,6 +704,13 @@ fun PatientDetailScreen(
         ),
     )
     val patient = state.patient
+    val booking = state.booking
+    if (patient != null && booking != null) {
+        SlotPickSheet(booking, { slot ->
+            viewModel.closeBooking()
+            onBook(slot, PatientOption(patient.id, patient.name, patient.photoUrl))
+        }, viewModel::closeBooking)
+    }
     val editing = state.editing
     if (patient != null && editing != null) {
         CreatePatientSheet(
@@ -695,14 +775,20 @@ fun PatientDetailContent(
                             Modifier.background(ShifaColors.Bg.Canvas).then(gap),
                         )
                     }
-                    item {
-                        Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {
-                            when (state.tab) {
-                                RecordTab.Overview -> Overview(patient, state, actions)
-                                RecordTab.Medical -> MedicalInfo(patient, state, actions.medical)
-                                else -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_users_22)
+                    when (state.tab) {
+                        // Long lists are rows of the lazy list (100+ visits, flow 06/03 §8).
+                        RecordTab.Appointments -> appointmentRows(state, actions, gap)
+                        RecordTab.Activity -> activityRows(state, actions, gap)
+                        else ->
+                            item {
+                                Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {
+                                    when (state.tab) {
+                                        RecordTab.Overview -> Overview(patient, state, actions)
+                                        RecordTab.Medical -> MedicalInfo(patient, state, actions.medical)
+                                        else -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_users_22)
+                                    }
+                                }
                             }
-                        }
                     }
                 }
             }
@@ -861,6 +947,7 @@ private fun Overview(
         )
         SummaryRow(tr(Res.string.language), languageLabel(p.language) ?: tr(Res.string.notSpecified), false)
     }
+    RecentActivity(state, actions)
     Card(tr(Res.string.patientAppAccess)) {
         if (p.hasAccount) {
             Row(
@@ -1033,3 +1120,6 @@ private fun CopyRow(
         )
     }
 }
+
+/** Statuses of a visit that still holds its time. */
+private val BOOKED = setOf("CONFIRMED", "REQUESTED", "PENDING_PAYMENT", "IN_PROGRESS")
