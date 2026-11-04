@@ -525,18 +525,17 @@ parses server text.
 **App until then:** the form checks the same policy before sending, so a 400 is read as a wrong current password
 (field cleared, inline error). If the two policies ever drift, that message would be wrong.
 
-## BE-33 Search and sort the booking patient list
+## BE-33 Search the booking patient list
 
 **Needed by:** flow `04/06` §8 (500 patients: server search with a 300 ms debounce); ticket CAL-7.
 
-**Now:** `GET /patients/for-assignment` takes only `page`, `size`, `sort`; there is no name or id filter, so the app
-reads every page before the picker can search. `sort=name,asc` (and `user.name,asc`) answers 500 (dev, 2026-11-04):
-the DTO's `name` is not an entity property.
+**Now:** `GET /patients/for-assignment` takes only `page`, `size`, `sort` (`sort=fullName,asc` works and is already
+the default order; `name,asc` answers 500); there is no name or id filter, so the app reads every page before the
+picker can search.
 
-**Change:** a `q` parameter matching name or id (the directory's search may already have the query), and a sortable
-name (or a fixed alphabetical order).
+**Change:** a `q` parameter matching name or id (the directory's search may already have the query).
 
-**App until then:** reads the pages (500 each, at most 20) once per booking form, sorts by name and filters locally.
+**App until then:** reads the pages (500 each, at most 20) once per booking form and filters locally.
 
 ## BE-34 Tell why a location can't be deleted
 

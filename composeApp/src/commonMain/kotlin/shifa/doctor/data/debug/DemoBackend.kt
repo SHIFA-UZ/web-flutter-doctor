@@ -98,6 +98,10 @@ class DemoBackend(
             JsonObject(mapOf("validFrom" to JsonPrimitive("2026-09-01"), "validUntil" to JsonPrimitive("2026-12-31"))),
         )
     private var dates: List<JsonElement> = emptyList()
+    private var people: List<JsonElement> =
+        listOf(11L to "Dilnoza Rahimova", 12L to "Jasur Karimov", 13L to "Malika Tursunova", 14L to "Bekzod Aliyev")
+            .map { (id, name) -> JsonObject(demoPatient(id, name)) }
+    private var lastPatientId = 14L
     private var lastDateId = 0L
     private var places: List<JsonElement> = apiJson.parseToJsonElement(DEMO_LOCATIONS).jsonArray.toList()
 
@@ -271,6 +275,52 @@ class DemoBackend(
                     Endpoints.SCHEDULE_BLOCKS + "/",
                 )
             -> Reply(HttpStatusCode.OK, "")
+            // Patients (PAT-02) in memory: the directory, one patient, create, edit, their appointments, account, SMS.
+            get && path == Endpoints.PATIENTS ->
+                ok(JsonArray(if ((request.url.parameters["page"] ?: "0") == "0") people else emptyList()))
+            get && path.matches(Regex("patients/\\d+")) ->
+                people.firstOrNull {
+                    it.jsonObject["id"]?.jsonPrimitive?.content ==
+                        path.substringAfterLast(
+                            '/',
+                        )
+                }?.let(::ok)
+                    ?: fail(HttpStatusCode.NotFound, "NOT_FOUND")
+            request.method == HttpMethod.Post && path == Endpoints.PATIENTS -> {
+                val saved = JsonObject(demoPatient(++lastPatientId, "") + apiJson.parseToJsonElement(body).jsonObject)
+                people = people + saved
+                ok(saved)
+            }
+            request.method == HttpMethod.Patch && path.matches(Regex("patients/\\d+")) -> {
+                val id = path.substringAfterLast('/')
+                val old =
+                    people.firstOrNull { it.jsonObject["id"]?.jsonPrimitive?.content == id }?.jsonObject
+                        ?: return fail(HttpStatusCode.NotFound, "NOT_FOUND")
+                val saved =
+                    JsonObject(old + apiJson.parseToJsonElement(body).jsonObject.filterValues { it !is JsonNull })
+                people = people.map { if (it.jsonObject["id"]?.jsonPrimitive?.content == id) saved else it }
+                ok(saved)
+            }
+            get && path.matches(Regex("patients/\\d+/appointments")) -> ok(JsonArray(emptyList()))
+            request.method == HttpMethod.Post && path.matches(Regex("patients/\\d+/create-account")) ->
+                ok(
+                    JsonObject(
+                        mapOf(
+                            "username" to JsonPrimitive("demo.patient"),
+                            "oneTimePassword" to JsonPrimitive("Demo-1234"),
+                        ),
+                    ),
+                )
+            request.method == HttpMethod.Post &&
+                path.matches(
+                    Regex("patients/\\d+/send-test-sms"),
+                )
+            -> Reply(HttpStatusCode.OK, "")
+            get && path == Endpoints.PROPHYLAXIS_SETTINGS -> Reply(HttpStatusCode.OK, "")
+            request.method == HttpMethod.Put && path == Endpoints.PROPHYLAXIS_SETTINGS ->
+                ok(
+                    apiJson.parseToJsonElement(body),
+                )
             // The booking list (CAL-7): the demo calendar's patients and a few more, one page.
             get && path == Endpoints.PATIENTS_FOR_ASSIGNMENT -> ok(apiJson.parseToJsonElement(DEMO_PATIENTS))
             request.method == HttpMethod.Post && path == Endpoints.SCHEDULE_BOOK -> Reply(HttpStatusCode.OK, "")
@@ -624,6 +674,23 @@ private const val DEMO_PATIENTS =
     """{"content":[{"id":11,"name":"Dilnoza Rahimova","photoUrl":null},""" +
         """{"id":12,"name":"Jasur Karimov","photoUrl":null},{"id":13,"name":"Malika Tursunova","photoUrl":null},""" +
         """{"id":14,"name":"Bekzod Aliyev","photoUrl":null},{"id":15,"name":"","photoUrl":null}],"last":true}"""
+
+/** A demo patient row with the fields `/patients` answers (the rest omitted). */
+internal fun demoPatient(
+    id: Long,
+    name: String,
+): Map<String, JsonElement> =
+    mapOf(
+        "id" to JsonPrimitive(id),
+        "name" to JsonPrimitive(name),
+        "phones" to JsonArray(listOf(JsonPrimitive("+99890000" + id.toString().padStart(4, '0')))),
+        "birthDate" to JsonPrimitive("1990-0" + (1 + id % 9) + "-15"),
+        "language" to JsonPrimitive("uz"),
+        "hasAccount" to JsonPrimitive(id % 2 == 0L),
+        "smsReminderEnabled" to JsonPrimitive(false),
+        "smsReminderHoursBefore" to JsonPrimitive(24),
+        "clinicalStatus" to JsonPrimitive(if (id == 13L) "AT_RISK" else "ACTIVE"),
+    )
 
 /** The demo week like the demo calendar: Monday to Friday 09:00–13:00 and 14:00–17:00, 30-minute slots. */
 internal fun demoRules(locationId: String?): List<JsonElement> =

@@ -41,6 +41,16 @@ object ApiConfig {
         fun scheduleBlock(id: Long) = "schedule/blocks/$id"
 
         const val PATIENTS_FOR_ASSIGNMENT = "patients/for-assignment"
+        const val PATIENTS = "patients"
+        const val PROPHYLAXIS_SETTINGS = "prophylaxis/settings"
+
+        fun patient(id: Long) = "patients/$id"
+
+        fun patientAppointments(id: Long) = "patients/$id/appointments"
+
+        fun patientCreateAccount(id: Long) = "patients/$id/create-account"
+
+        fun patientTestSms(id: Long) = "patients/$id/send-test-sms"
 
         fun appointment(id: Long) = "appointments/$id"
 

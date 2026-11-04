@@ -116,3 +116,31 @@ data class ProphylaxisSetting(
     val enabled: Boolean = true,
     val lastSentAt: String? = null,
 )
+
+/**
+ * `POST /patients` and `PATCH /patients/{id}` (06 §7). Null fields are left out (on a PATCH the backend keeps them);
+ * `""` clears a text field (e.g. the chronic disease). Birth date "YYYY-MM-DD".
+ */
+@Serializable
+data class PatientRequest(
+    val name: String? = null,
+    val phones: List<String>? = null,
+    val phone: String? = null,
+    val email: String? = null,
+    val address: String? = null,
+    val birthDate: String? = null,
+    val language: String? = null,
+    val chronicDisease: String? = null,
+    val gender: String? = null,
+    val bloodGroup: String? = null,
+    val allergies: String? = null,
+    val smsReminderEnabled: Boolean? = null,
+    val smsReminderHoursBefore: Int? = null,
+)
+
+/** `POST /patients/{id}/create-account`: the patient app login to hand over once. */
+@Serializable
+data class PatientAccount(
+    val username: String = "",
+    val oneTimePassword: String = "",
+)

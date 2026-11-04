@@ -98,7 +98,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SCHED-2 Working hours | Done | Profile → Schedule: week overview with a sheet per day (ranges, copy, Mon–Fri), the bookable period, extra hours on dates; Save blocked until the rules are read. See schedule.md. |
 | LOC-2 Location map pin | Done (pin only) | Pick on map in the location editor (the contact picker, shared); coordinates saved; geocoding waits for BE-15. See schedule.md. |
 | PAT-01 Patient models | Done | Patient, status, display id, age on the practice date, phones and location; lenient reads. See patients.md. |
-| PAT-02 … CLIN-02 | Not started | |
+| PAT-02 Patients repository | Done | The directory as one flow (pages, 60 s TTL), one patient, create, update, appointments, account, test SMS, prophylaxis, booking list; typed errors. See patients.md. |
+| PAT-03 … CLIN-02 | Not started | |
 
 ## Log
 
@@ -154,3 +155,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · SCHED-2 · Working hours screen.
 - 2026-11-04 · LOC-2 · Map pin for locations (shared map picker).
 - 2026-11-04 · PAT-01 · Patient models; M4 started.
+- 2026-11-04 · PAT-02 · Patients repository; BE-33 corrected (name sort works).

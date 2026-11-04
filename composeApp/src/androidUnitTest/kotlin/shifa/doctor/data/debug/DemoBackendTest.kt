@@ -243,7 +243,7 @@ class DemoBackendTest {
     @Test
     fun `the booking list and a booking answer locally`() =
         runTest {
-            val list = shifa.doctor.data.patients.PatientsRepository { client }.forAssignment().getOrThrow()
+            val list = shifa.doctor.data.patients.PatientsRepository(client = { client }).forAssignment().getOrThrow()
             assertThat(list.map { it.id }).containsAtLeast(11L, 12L)
             val booked =
                 shifa.doctor.data.appointments.AppointmentsRepository { client }.book(
@@ -327,6 +327,27 @@ class DemoBackendTest {
             val third = repo.addDateSpecific(hours("2026-12-29", 1)).getOrThrow()
             assertThat(third.id).isNotEqualTo(second.id) // ids never come back after a delete
             assertThat(repo.dateSpecific(1).getOrThrow().map { it.id }).containsExactly(third.id)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `patients are kept in memory - the directory, one, create and edit`() =
+        runTest {
+            val repo = shifa.doctor.data.patients.PatientsRepository(client = { client })
+            assertThat(repo.refresh().getOrThrow().map { it.id }).containsExactly(11L, 12L, 13L, 14L)
+            val made =
+                repo.create(
+                    shifa.doctor.data.model.PatientRequest(name = "Anna Karimova", phones = listOf("+998901112233")),
+                ).getOrThrow()
+            assertThat(made.id).isEqualTo(15L)
+            val edited =
+                repo.update(
+                    made.id,
+                    shifa.doctor.data.model.PatientRequest(chronicDisease = "Asthma"),
+                ).getOrThrow()
+            assertThat(edited.name to edited.chronicDisease).isEqualTo("Anna Karimova" to "Asthma")
+            assertThat(repo.patient(13).getOrThrow().status).isEqualTo(shifa.doctor.data.model.PatientStatus.AtRisk)
+            assertThat(repo.createAccount(13).getOrThrow().username).isNotEmpty()
             assertThat(forwarded).isEmpty()
         }
 }

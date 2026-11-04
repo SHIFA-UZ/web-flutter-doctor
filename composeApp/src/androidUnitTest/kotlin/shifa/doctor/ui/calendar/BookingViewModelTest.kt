@@ -127,7 +127,7 @@ class BookingViewModelTest {
                 "Check-up",
                 calendar,
                 AppointmentsRepository { createHttpClient({ null }, engine) },
-                PatientsRepository { createHttpClient({ null }, engine) },
+                PatientsRepository(client = { createHttpClient({ null }, engine) }),
             )
         screen.launch { vm.follow() }
         created += vm
