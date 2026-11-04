@@ -25,6 +25,8 @@ import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.config.BootGate
 import shifa.doctor.data.config.PublicConfigRepository
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.model.CheckExistingPatientRequest
+import shifa.doctor.data.model.RegisterRequest
 import shifa.doctor.data.settings.LanguageRepository
 import java.io.File
 
@@ -113,6 +115,21 @@ class DemoBackendTest {
             assertThat(reception.receptionist).isTrue()
             assertThat(reception.email).isEqualTo("demo.reception@shifa.dev")
             assertThat(auth.verifyKey("NOPE").getOrThrow()).isNull()
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `the registration checks answer locally, register itself is refused`() =
+        runTest {
+            val auth = AuthRepository { client }
+            assertThat(auth.isDoctor(email = "DEMO.DOCTOR@shifa.dev").getOrThrow()).isTrue()
+            assertThat(auth.isDoctor(phone = "90 000 00 00").getOrThrow()).isTrue()
+            assertThat(auth.isDoctor(email = "new@shifa.dev").getOrThrow()).isFalse()
+            val patient = CheckExistingPatientRequest("A", "B", DemoBackend.DEMO_PATIENT_EMAIL)
+            assertThat(auth.existingPatient(patient).getOrThrow()).isNotNull()
+            assertThat(auth.existingPatient(patient.copy(email = "new@shifa.dev")).getOrThrow()).isNull()
+            val register = auth.register(RegisterRequest("A", "B", "new@shifa.dev", "Secret1!", "DEMO-DOCTOR"))
+            assertThat((register.exceptionOrNull() as ApiException).code).isEqualTo("DEMO_WRITE_REFUSED")
             assertThat(forwarded).isEmpty()
         }
 }

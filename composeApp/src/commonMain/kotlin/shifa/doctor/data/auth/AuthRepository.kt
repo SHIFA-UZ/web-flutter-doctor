@@ -9,8 +9,13 @@ import io.ktor.http.contentType
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
+import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.model.CheckExistingDoctorRequest
+import shifa.doctor.data.model.CheckExistingPatientRequest
+import shifa.doctor.data.model.CheckExistingPatientResponse
 import shifa.doctor.data.model.ForgotPasswordResetRequest
 import shifa.doctor.data.model.LoginRequest
+import shifa.doctor.data.model.RegisterRequest
 import shifa.doctor.data.model.SendForgotPasswordOtpRequest
 import shifa.doctor.data.model.SendLoginOtpRequest
 import shifa.doctor.data.model.TokenResponse
@@ -103,6 +108,40 @@ class AuthRepository(
                 )
             }
         }
+
+    /**
+     * `POST /auth/check-existing-doctor`: true when a doctor account already uses this e-mail or phone, so registration
+     * stops on step 1 instead of failing (or, worse, re-keying that account: BE-29) at the end (flow 01/07 §8). Ask
+     * for one identifier per call: given both, the backend looks at the phone and stops there when it finds a patient.
+     */
+    suspend fun isDoctor(
+        email: String? = null,
+        phone: String? = null,
+    ): Result<Boolean> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.CHECK_EXISTING_DOCTOR) {
+                contentType(ContentType.Application.Json)
+                setBody(CheckExistingDoctorRequest(email, phone))
+            }
+        }.map { true }.recoverCatching { if (it is ApiException.NotFound) false else throw it }
+
+    /** `POST /auth/check-existing-patient` (01 §2.6): the patient this doctor account would be added to, or null. */
+    suspend fun existingPatient(request: CheckExistingPatientRequest): Result<ExistingPatient?> =
+        apiCall<CheckExistingPatientResponse> {
+            client().post(ApiConfig.Endpoints.CHECK_EXISTING_PATIENT) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+        }.map { r -> r.takeIf { it.found }?.let { ExistingPatient(it.fullName, it.photoUrl?.ifBlank { null }) } }
+
+    /** `POST /auth/register` (01 §2.6): the new doctor's token. The password is sent exactly as typed. */
+    suspend fun register(request: RegisterRequest): Result<String> =
+        apiCall<TokenResponse> {
+            client().post(ApiConfig.Endpoints.REGISTER) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+        }.map { it.token }
 
     private companion object {
         const val RECEPTIONIST_INVITE = "CLINIC_RECEPTIONIST_INVITE"

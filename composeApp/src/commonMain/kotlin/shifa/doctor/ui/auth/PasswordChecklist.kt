@@ -18,12 +18,17 @@ import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.ic_check_16
 import shifa.doctor.generated.resources.ic_x_16
+import shifa.doctor.generated.resources.passwordRequired
 import shifa.doctor.generated.resources.passwordRequirementDigit
 import shifa.doctor.generated.resources.passwordRequirementLowercase
 import shifa.doctor.generated.resources.passwordRequirementMaxLength
 import shifa.doctor.generated.resources.passwordRequirementMinLength
 import shifa.doctor.generated.resources.passwordRequirementSpecialChar
 import shifa.doctor.generated.resources.passwordRequirementUppercase
+import shifa.doctor.generated.resources.passwordTooLong
+import shifa.doctor.generated.resources.passwordTooShort
+import shifa.doctor.generated.resources.passwordsDoNotMatch
+import shifa.doctor.generated.resources.pleaseConfirmPassword
 import shifa.doctor.generated.resources.requirementMet
 import shifa.doctor.generated.resources.requirementNotMet
 import shifa.doctor.ui.theme.ShifaColors
@@ -46,6 +51,32 @@ fun PasswordPolicy.Rule.label(password: String): StringResource =
         PasswordPolicy.Rule.Digit -> Res.string.passwordRequirementDigit
         PasswordPolicy.Rule.Special -> Res.string.passwordRequirementSpecialChar
     }
+
+/**
+ * The inline errors under a new password and its confirmation (flows 01/05, 01/07 and 01/10 §9): the password's first
+ * unmet rule ("Password must be at least 8 characters", "One uppercase letter"…), then "Please confirm your password" /
+ * "Passwords do not match". Both are compared exactly as typed: nothing is trimmed.
+ */
+fun newPasswordErrors(
+    password: String,
+    confirm: String,
+): Pair<StringResource?, StringResource?> {
+    val first = PasswordPolicy.missing(password).firstOrNull()
+    val passwordError =
+        when {
+            password.isEmpty() -> Res.string.passwordRequired
+            first == PasswordPolicy.Rule.Length && password.length > PasswordPolicy.MAX -> Res.string.passwordTooLong
+            first == PasswordPolicy.Rule.Length -> Res.string.passwordTooShort
+            else -> first?.label(password)
+        }
+    val confirmError =
+        when {
+            confirm.isEmpty() -> Res.string.pleaseConfirmPassword
+            confirm != password -> Res.string.passwordsDoNotMatch
+            else -> null
+        }
+    return passwordError to confirmError
+}
 
 /**
  * The live checklist under a new password (DaAuth `checklist`, flows 01/05 §3 and 01/07): every rule of the backend's

@@ -56,3 +56,36 @@ data class VerifyKeyResponse(
     val clinicName: String? = null,
     val emailSentTo: String? = null,
 )
+
+@Serializable
+data class CheckExistingDoctorRequest(
+    val email: String? = null,
+    val phone: String? = null,
+)
+
+@Serializable
+data class CheckExistingPatientRequest(
+    val firstName: String,
+    val lastName: String,
+    val email: String,
+    val phone: String? = null,
+)
+
+@Serializable
+data class CheckExistingPatientResponse(
+    val found: Boolean = false,
+    val fullName: String? = null,
+    val photoUrl: String? = null,
+    val email: String? = null,
+)
+
+@Serializable
+data class RegisterRequest(
+    val firstName: String,
+    val lastName: String,
+    val email: String,
+    val password: String,
+    val key: String,
+    val phone: String? = null,
+    val timeZone: String? = null,
+)

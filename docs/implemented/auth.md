@@ -136,3 +136,53 @@ Built 2026-11-04. Flow `01/06-verify-invite-key.md`; board `DaAuth.dc.html`, bra
 - **Demo data:** `auth/verify-key` is answered locally: `DEMO-DOCTOR` → doctor registration, `DEMO-RECEPTION` →
   receptionist registration ("Demo Clinic", locked address); anything else is invalid.
 - **Tests:** `VerifyKeyViewModelTest` (4), `VerifyKeyScreenshotTest` (3: empty, invalid, failed), `DemoBackendTest` (+1).
+
+## AUTH-06 · Create account (doctor)
+
+Built 2026-11-04. Flow `01/07-create-account-step1.md` (and `01/08` for the timezone); board `DaAuth.dc.html`, branches
+`reg1` (form and its `existing` view) and `reg2` (timezone row only). D-04: no e-mail code dialog until BE-03.
+
+- **Screen** (`ui/register/RegisterScreen.kt`, `RegisterViewModel.kt`): one screen with three steps, so Back from the
+  confirmation or step 2 returns to the form with every field kept.
+  - *Form:* "Create account", the "Key verified" chip (`ShifaTag` Primary with a check; the board's chip also has a
+    teal outline), first and last name, e-mail, "Phone Number (Optional)", password with the live checklist, confirm,
+    two progress dots (Flutter had three), Next. Top-aligned like the board (`justify: flex-start`).
+  - *Existing patient (3b):* the patient's photo (brand fallback without one), the teal info card, the practice
+    timezone, the two passwords (prefilled, editable), "Confirm registration". Centred.
+  - *Step 2:* only the practice timezone with "Your schedule and bookings use this timezone." and "Create account";
+    AUTH-07 adds date of birth, gender, address, clinic and professions above it.
+- **Next:** inline errors per flow §9 (`newPasswordErrors`, shared with the reset screen: "Password is required", "…at
+  least 8…", "…at most 128…", the first unmet rule, "Please confirm your password", "Passwords do not match"). The
+  e-mail is trimmed and lower-cased (consistent with the e-mail sign-in, flow §12); the phone, when given, must
+  normalise to E.164 (`PhoneE164`) and is sent that way; passwords are compared and sent exactly as typed.
+  Then `POST /auth/check-existing-doctor`, once with the e-mail and once with the phone (given both, the backend
+  checks the phone only and stops at a patient): 200 → "A doctor account with this email (phone number) already
+  exists. Sign in instead." under that field (dev: 404 for an unknown address, 200 for `seed.doctor1`). This check
+  **fails closed**: any failure shows a banner and stays, because `register` would replace an existing doctor's
+  password (BE-29). Then `POST /auth/check-existing-patient`: found → 3b, otherwise step 2; offline shows the network
+  banner, any other failure counts as "not found" (flow §8).
+- **Invited address:** the backend refuses any other address when the invitation names one (`emailSentTo`), so that
+  address is filled in and the field is read-only.
+- **Timezone:** the device's IANA zone (`TimeZones.device()`; an offset-only or unreadable zone counts as not
+  detected) is preselected. Not detected → the field is empty, red, "We could not detect your timezone. Please choose
+  it." and registration waits for a choice (never a silent UTC). The picker (`ShifaPickerSheet` in a
+  `ModalBottomSheet`) lists the detected zone first ("Detected on this device"), then the board's 19 zones; typing
+  searches every zone the platform knows.
+- **Register:** `POST /auth/register {firstName, lastName, email, password, key, phone?, timeZone}` → session → shell;
+  the typed passwords are cleared after success. 409 → "This email or phone number belongs to another account…"; other
+  failures → "Could not create the account…" (or the code's own text: disabled account, rate limit); all with the
+  request id. The Flutter "no token → password login" fallback is not ported: `TokenResponse.token` is required.
+- **Back:** confirmation / step 2 → form; a filled-in form asks "Discard registration?" (`ShifaDialogSheet`,
+  destructive, "Keep editing"); Back on the question keeps editing; nothing moves while a request runs (also system
+  Back, flow §8 target).
+- **Not built:** "This is not me" (flow §8 needs a product decision; the backend merges anyway); the e-mail code
+  dialog (D-04, BE-03).
+- **Backend:** BE-29 recorded: `register` resets the password of an existing doctor account; the duplicate-doctor
+  check only protects honest users.
+- **Demo data:** the checks answer locally (`demo.doctor@shifa.dev` has a doctor account, `demo.patient@shifa.dev` is
+  an existing patient); `register` is a write and is refused.
+- **Kit:** `ShifaPickField` and `ShifaPickerSheet` (board picker), `OptionRow` with a `sub` line extracted from
+  `ShifaOptionList`; `PasswordField` moved to `ui/auth`; `isEmailAddress` / `normalizedEmail` in `utils`.
+- **Tests:** `RegisterViewModelTest` (7), `TimeZonesTest` (2), `DemoBackendTest` (+1), `RegisterScreenshotTest` (6:
+  form, errors, existing patient, step 2, no timezone, picker).
+

@@ -56,7 +56,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | AUTH-03 E-mail code sign-in | Done | E-mail and code screens (one mode for sign-in and reset), 60 s resend per address, sixth digit submits, wrong code clears the field. See auth.md. |
 | AUTH-04 Forgot password | Done | Reset code by e-mail (app=doctor), new password with the shared live checklist (backend policy), wrong/expired code banner and Back to the code. See auth.md. |
 | AUTH-05 Invitation key | Done | Key trimmed, one neutral invalid-key banner, purpose picks the doctor or receptionist registration, kept in memory only. See auth.md. |
-| AUTH-06 … LOCK-02 | Not started | |
+| AUTH-06 Create account (doctor) | Done (no e-mail code: D-04) | Step 1 form, duplicate-doctor check, existing-patient confirmation, step 2 with the practice timezone only (AUTH-07 adds the rest), `register` → shell. Invited address locked. Found BE-29 (register re-keys an existing doctor). See auth.md. |
+| AUTH-07 … LOCK-02 | Not started | |
 
 ## Log
 
@@ -74,3 +75,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · AUTH-03 · Sign in with an e-mail code; system Back on the auth screens (missed in AUTH-02).
 - 2026-11-04 · AUTH-04 · Forgot password with the shared password checklist.
 - 2026-11-04 · AUTH-05 · Invitation key, routing to the doctor or receptionist registration.
+- 2026-11-04 · AUTH-06 · Doctor registration step 1, existing patient, timezone step; picker sheet and pick field in the kit.

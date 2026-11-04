@@ -38,6 +38,7 @@ import shifa.doctor.ui.emailcode.EmailCodeMode
 import shifa.doctor.ui.emailcode.EmailEntryScreen
 import shifa.doctor.ui.emailcode.ResetPasswordScreen
 import shifa.doctor.ui.login.LoginScreen
+import shifa.doctor.ui.register.RegisterScreen
 import shifa.doctor.ui.register.VerifyKeyScreen
 import shifa.doctor.ui.splash.SplashScreen
 import shifa.doctor.ui.theme.ShifaTheme
@@ -186,11 +187,18 @@ private fun AppScreens() {
                     })
                 }
             }
-            // AUTH-06 and AUTH-08 replace this. Back from registration returns to Sign In (flow 01/06 §5).
-            is Screen.Register -> {
-                BackHandler { screen = Screen.SignIn }
-                AuthFrame(onBack = { screen = Screen.SignIn }) {}
-            }
+            // Back from registration returns to Sign In (flow 01/06 §5). AUTH-08 replaces the receptionist placeholder.
+            is Screen.Register ->
+                if (it.invite.receptionist) {
+                    BackHandler { screen = Screen.SignIn }
+                    AuthFrame(onBack = { screen = Screen.SignIn }) {}
+                } else {
+                    ScopedViewModels {
+                        RegisterScreen(it.invite, onExit = { go(it, Screen.SignIn) }, onSignedIn = { _ ->
+                            go(it, Screen.Shell)
+                        })
+                    }
+                }
             Screen.Debug -> {
                 BackHandler { screen = Screen.SignIn }
                 DebugMenuScreen(onBack = { screen = Screen.SignIn })

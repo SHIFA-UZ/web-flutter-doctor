@@ -778,6 +778,7 @@
     <string name="dermatologist">Дерматолог</string>
     <string name="description">Описание</string>
     <string name="details">Подробнее</string>
+    <string name="detectedOnThisDevice">Определён на этом устройстве</string>
     <string name="detecting">Определение…</string>
     <string name="deviceActivationRate">Доля активаций на устройствах</string>
     <string name="diabetes">Сахарный диабет</string>
@@ -804,10 +805,12 @@
     <string name="docSectionPrivate">Частные</string>
     <string name="docSectionUncategorized">Без категории</string>
     <string name="doctor">Доктор</string>
+    <string name="doctorAccountExists">Аккаунт врача с этим email уже существует. Войдите в него.</string>
     <string name="doctorCalendarResetConfirm">Все записи и слоты доступности этого врача будут удалены без возможности восстановления. Это действие нельзя отменить. Аккаунт, профиль и учётные данные врача сохранятся; ему нужно будет заново настроить доступность.</string>
     <string name="doctorCalendarResetSuccessfully">Календарь врача успешно сброшен</string>
     <string name="doctorCreatedOnly">созданы только врачом</string>
     <string name="doctorNotesSection">Заметки врача</string>
+    <string name="doctorPhoneExists">Аккаунт врача с этим номером телефона уже существует. Войдите в него.</string>
     <string name="doctorProfileIdNotFound">Ошибка: ID профиля врача не найден. Обновите список.</string>
     <string name="doctors">Врачи</string>
     <string name="doctorsSurname">Фамилия врача</string>
@@ -1271,6 +1274,7 @@
     <string name="joined">Регистрация</string>
     <string name="justFlagFollowUp">Только отметить для повторного приёма</string>
     <string name="justNow">Только что</string>
+    <string name="keepEditing">Продолжить редактирование</string>
     <string name="keepRecording">Продолжить запись</string>
     <string name="keyCopiedToClipboard">Ключ скопирован в буфер обмена</string>
     <string name="keyVerified">Ключ подтверждён</string>
@@ -1716,6 +1720,8 @@
     <string name="regenerate">Перегенерировать</string>
     <string name="regenerateSummary">Создать резюме заново</string>
     <string name="region">Регион</string>
+    <string name="registrationConflict">Этот email или номер телефона принадлежит другому аккаунту. Укажите совпадающие данные или обратитесь в поддержку.</string>
+    <string name="registrationFailed">Не удалось создать аккаунт. Попробуйте ещё раз.</string>
     <string name="registrationIncomplete">Аккаунт создан, но войти не удалось. Войдите с новым паролем.</string>
     <string name="reject">Отклонить</string>
     <string name="rejected">Отклонено</string>
@@ -1802,6 +1808,7 @@
     <string name="searchPatientsHint">Поиск по имени, телефону или ID…</string>
     <string name="searchProfession">Поиск профессии...</string>
     <string name="searchTasksOrPatients">Поиск задач или пациентов</string>
+    <string name="searchTimezone">Поиск часового пояса</string>
     <string name="searchUsersPlaceholder">Поиск по имени, номеру, роли</string>
     <string name="selectChronicDisease">Выбрать хроническое заболевание</string>
     <string name="selectConversation">Выбрать беседу</string>
@@ -1929,6 +1936,7 @@
     <string name="statusUnprocessed">НЕ ОБРАБОТАНО</string>
     <string name="stepApplyingPlan">Применяем план лечения…</string>
     <string name="stepCompleting">Завершаем визит…</string>
+    <string name="stepOfTotal">Шаг %1$s из %2$s</string>
     <string name="stepRecordingPayment">Вносим оплату…</string>
     <string name="stepSavingSummary">Сохраняем резюме…</string>
     <string name="stepWaitingAi">Ожидаем AI-заметки…</string>
@@ -1977,6 +1985,7 @@
     <string name="timeYesterday">Вчера %1$s</string>
     <string name="timesPerDay">Раз в день</string>
     <string name="timezoneDetectionFailed">Не удалось определить ваш часовой пояс. Выберите его.</string>
+    <string name="timezoneScheduleHint">Ваше расписание и записи используют этот часовой пояс.</string>
     <string name="toDate">Дата окончания</string>
     <string name="today">Сегодня</string>
     <string name="todayAppointments">Сегодняшние записи</string>

@@ -2,7 +2,6 @@ package shifa.doctor.ui.emailcode
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,9 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,30 +33,21 @@ import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chooseNewPasswordFor
 import shifa.doctor.generated.resources.confirmPassword
-import shifa.doctor.generated.resources.hidePassword
-import shifa.doctor.generated.resources.ic_eye_20
-import shifa.doctor.generated.resources.ic_eye_off_20
 import shifa.doctor.generated.resources.newPassword
-import shifa.doctor.generated.resources.passwordMismatch
-import shifa.doctor.generated.resources.pleaseConfirmPassword
 import shifa.doctor.generated.resources.requestTimeout
 import shifa.doctor.generated.resources.resetPassword
 import shifa.doctor.generated.resources.resetPasswordFailed
-import shifa.doctor.generated.resources.showPassword
 import shifa.doctor.generated.resources.submit
 import shifa.doctor.generated.resources.wrongOrExpiredCodeBackToCode
 import shifa.doctor.ui.auth.AuthFrame
 import shifa.doctor.ui.auth.AuthTitle
 import shifa.doctor.ui.auth.PasswordChecklist
-import shifa.doctor.ui.auth.label
+import shifa.doctor.ui.auth.PasswordField
+import shifa.doctor.ui.auth.newPasswordErrors
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaFontSize
 import shifa.doctor.ui.theme.ShifaTextStyles
-import shifa.doctor.ui.widgets.ShifaIconButton
-import shifa.doctor.ui.widgets.ShifaIconButtonVariant
-import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
-import shifa.doctor.utils.PasswordPolicy
 import shifa.doctor.utils.tr
 
 data class ResetPasswordUiState(
@@ -100,13 +87,7 @@ class ResetPasswordViewModel(
         val s = _state.value
         if (s.loading) return
         // Flow §9: the backend's policy (the first unmet rule, under the field), then the confirmation, inline only.
-        val pwError = PasswordPolicy.missing(s.password).firstOrNull()?.label(s.password)
-        val confirmError =
-            when {
-                s.confirm.isEmpty() -> Res.string.pleaseConfirmPassword
-                s.confirm != s.password -> Res.string.passwordMismatch
-                else -> null
-            }
+        val (pwError, confirmError) = newPasswordErrors(s.password, s.confirm)
         if (pwError != null || confirmError != null) {
             return _state.update { it.copy(passwordError = pwError, confirmError = confirmError) }
         }
@@ -210,38 +191,3 @@ fun ResetPasswordScreenContent(
         ShifaPrimaryButton(tr(Res.string.submit), onSubmit, Modifier.fillMaxWidth(), loading = state.loading)
     }
 }
-
-/** A password field with its own eye toggle (shared by the reset and registration forms). */
-@Composable
-internal fun PasswordField(
-    value: String,
-    onValue: (String) -> Unit,
-    label: String,
-    visible: Boolean,
-    onToggle: () -> Unit,
-    error: StringResource?,
-    actions: KeyboardActions,
-    ime: ImeAction,
-    fieldModifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) = ShifaInputField(
-    value,
-    onValue,
-    label,
-    Modifier.fillMaxWidth(),
-    supportingText = error?.let { tr(it) },
-    isError = error != null,
-    enabled = enabled,
-    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ime),
-    keyboardActions = actions,
-    visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-    trailingIcon = {
-        ShifaIconButton(
-            if (visible) Res.drawable.ic_eye_off_20 else Res.drawable.ic_eye_20,
-            tr(if (visible) Res.string.hidePassword else Res.string.showPassword),
-            onToggle,
-            variant = ShifaIconButtonVariant.Ghost,
-        )
-    },
-    fieldModifier = fieldModifier,
-)

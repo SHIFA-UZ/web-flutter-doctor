@@ -26,6 +26,8 @@ import shifa.doctor.generated.resources.invalidOtp
 import shifa.doctor.generated.resources.otpResent
 import shifa.doctor.generated.resources.requestTimeout
 import shifa.doctor.generated.resources.verificationFailed
+import shifa.doctor.utils.isEmailAddress
+import shifa.doctor.utils.normalizedEmail
 
 /** Sign in with an e-mail code (AUTH-03), or the first two steps of a password reset (AUTH-04). */
 enum class EmailCodeMode { SignIn, Reset }
@@ -64,11 +66,11 @@ class EmailEntryViewModel(
     fun submit() {
         val s = _state.value
         if (s.loading) return
-        val email = normalized(s.email) // flow §4: trimmed and lower-cased before checking and sending
+        val email = normalizedEmail(s.email) // flow §4: trimmed and lower-cased before checking and sending
         val error =
             when {
                 email.isEmpty() -> Res.string.enterEmail
-                !EMAIL.matches(email) -> Res.string.invalidEmail
+                !isEmailAddress(email) -> Res.string.invalidEmail
                 else -> null
             }
         if (error != null) return _state.update { it.copy(error = error) }
@@ -195,10 +197,6 @@ class CodeViewModel(
         const val SECOND_MS = 1_000L
     }
 }
-
-private fun normalized(email: String) = email.trim().lowercase()
-
-private val EMAIL = Regex("""[^\s@]+@[^\s@]+\.[^\s@]+""")
 
 private suspend fun send(
     auth: AuthRepository,

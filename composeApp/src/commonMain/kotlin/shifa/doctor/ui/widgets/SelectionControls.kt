@@ -149,6 +149,8 @@ data class OptionItem(
     val dot: Color? = null,
     // Draws a separator above this row.
     val separatorBefore: Boolean = false,
+    // A second, smaller line ("Detected on this device").
+    val sub: String? = null,
 )
 
 /**
@@ -179,37 +181,46 @@ fun ShifaOptionList(
             if (item.separatorBefore) {
                 HorizontalDivider(Modifier.padding(vertical = ShifaSize.S4), ShifaSize.S1, ShifaColors.Border.Default)
             }
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = ShifaSize.Touch)
-                    .clip(ShifaRadius.ControlMd)
-                    .background(if (item.selected) ShifaColors.Bg.Selected else Color.Transparent)
-                    .clickable(role = Role.Button, onClick = { onSelect(i) })
-                    .semantics { selected = item.selected }
-                    .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),
-                horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                item.dot?.let { Box(Modifier.size(ShifaSize.S8).background(it, ShifaRadius.Full)) }
-                item.icon?.let {
-                    Icon(
-                        painterResource(it),
-                        null,
-                        tint = if (item.danger) ShifaColors.Icon.Error else ShifaColors.Icon.Secondary,
-                    )
-                }
-                Text(
-                    item.label,
-                    Modifier.weight(1f),
-                    style =
-                        ShifaTextStyles.bodyText().copy(
-                            fontWeight = if (item.selected) FontWeight.Bold else FontWeight.Medium,
-                        ),
-                    color = if (item.danger) ShifaColors.Text.Error else ShifaColors.Text.Primary,
-                )
-                if (item.selected) Icon(painterResource(Res.drawable.ic_check_16), null, tint = ShifaColors.Icon.Brand)
-            }
+            OptionRow(item) { onSelect(i) }
         }
     }
+}
+
+/** One `.sh-option` row, shared by [ShifaOptionList] and the lazy list of [ShifaPickerSheet]. */
+@Composable
+internal fun OptionRow(
+    item: OptionItem,
+    onClick: () -> Unit,
+) = Row(
+    Modifier
+        .fillMaxWidth()
+        .defaultMinSize(minHeight = ShifaSize.Touch)
+        .clip(ShifaRadius.ControlMd)
+        .background(if (item.selected) ShifaColors.Bg.Selected else Color.Transparent)
+        .clickable(role = Role.Button, onClick = onClick)
+        .semantics { selected = item.selected }
+        .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),
+    horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
+    verticalAlignment = Alignment.CenterVertically,
+) {
+    item.dot?.let { Box(Modifier.size(ShifaSize.S8).background(it, ShifaRadius.Full)) }
+    item.icon?.let {
+        Icon(
+            painterResource(it),
+            null,
+            tint = if (item.danger) ShifaColors.Icon.Error else ShifaColors.Icon.Secondary,
+        )
+    }
+    Column(Modifier.weight(1f)) {
+        Text(
+            item.label,
+            style =
+                ShifaTextStyles.bodyText().copy(
+                    fontWeight = if (item.selected) FontWeight.Bold else FontWeight.Medium,
+                ),
+            color = if (item.danger) ShifaColors.Text.Error else ShifaColors.Text.Primary,
+        )
+        item.sub?.let { Text(it, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary) }
+    }
+    if (item.selected) Icon(painterResource(Res.drawable.ic_check_16), null, tint = ShifaColors.Icon.Brand)
 }

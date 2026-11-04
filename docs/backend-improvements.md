@@ -40,6 +40,7 @@ Flyway migration only, regenerate `docs/api/openapi.json`, then add a "Done (dat
 | BE-26 | Pre-verify the forgot-password code | Low | M1 | Small |
 | BE-27 | Rolling validity; bulk shift on timezone change | Low | M3 | Small |
 | BE-28 | Coded `/video/token` errors; explicit join window | Low | M5 | Small |
+| BE-29 | `register` must not re-key an existing doctor account | **High (security)** | M1 AUTH-06 | Small |
 
 Then: **Confirm with the backend** (questions, C-1…C-10) and **Already satisfied** (do not request again).
 
@@ -421,6 +422,28 @@ client reproduces the window by hand (and the Flutter client used a different on
 error body, and `joinWindow` on `AppointmentDto` for video visits.
 
 **App until then:** the window is computed in the app with the backend's constants; errors map by message.
+
+## BE-29 `register` must not re-key an existing doctor account
+
+**Needed by:** flow `01/07` §8; ticket AUTH-06. Found 2026-11-04 reading `AuthController.register`.
+
+**Now:** when the e-mail (or phone) already belongs to a user, `register` adds the DOCTOR role if missing and then
+**always** sets `passwordHash` to the new password, also when the user is already a doctor. Anyone holding an unused
+doctor invitation key without `emailSentTo` can therefore take over an existing doctor's account by registering
+with that doctor's address. The invitation key is consumed, so the doctor only notices when the old password fails.
+
+Also, `check-existing-doctor` matches the e-mail case-sensitively (`users.findByEmail`) while `register` matches it
+case-insensitively (`findByEmailIgnoreCase`), and contact updates keep the casing typed. A doctor stored as
+`Doctor@example.uz` is therefore "not found" for `doctor@example.uz` but merged (and re-keyed) by `register`.
+
+**Change:** if the existing user already has the DOCTOR role, reject with 409 `code: DOCTOR_EXISTS` before touching the
+password; and make `check-existing-doctor` use `findByEmailIgnoreCase` like `register`. For an existing patient, keep today's merge (it is the flow's "existing patient" branch) but require the
+patient's current password or the registration e-mail code (BE-03), since a doctor key must not reset a patient's
+password either.
+
+**App until then:** step 1 calls `POST /auth/check-existing-doctor {email}` and stops with "A doctor account with this
+email already exists. Sign in instead." under the e-mail field. This only protects honest users; the endpoint is
+still open to direct calls.
 
 ---
 

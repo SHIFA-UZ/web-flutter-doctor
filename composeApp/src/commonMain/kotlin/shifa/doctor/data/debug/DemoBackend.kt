@@ -30,6 +30,7 @@ import shifa.doctor.data.api.ApiConfig.Endpoints
 import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.createHttpEngine
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.isDebugBuild
 
 /** Debug menu → Demo data: the shared client talks to [DemoBackend.shared]. Kept across launches; debug builds only. */
@@ -131,6 +132,8 @@ class DemoBackend(
             get && path == Endpoints.PUBLIC_CONFIG -> ok(publicConfig(bootGate()))
             request.method == HttpMethod.Put && path == Endpoints.DOCTOR_LANGUAGE -> setLanguage(body)
             request.method == HttpMethod.Post && path == Endpoints.VERIFY_KEY -> ok(verifyKey(body))
+            request.method == HttpMethod.Post && path == Endpoints.CHECK_EXISTING_DOCTOR -> existingDoctor(body)
+            request.method == HttpMethod.Post && path == Endpoints.CHECK_EXISTING_PATIENT -> ok(existingPatient(body))
             get -> null
             else -> refused()
         }
@@ -159,7 +162,7 @@ class DemoBackend(
 
     // Checking a key writes nothing. DEMO-DOCTOR and DEMO-RECEPTION open the two registrations; any other key is invalid.
     private fun verifyKey(body: String): JsonObject {
-        val key = runCatching { apiJson.parseToJsonElement(body).jsonObject["key"]?.jsonPrimitive?.content }.getOrNull()
+        val key = jsonField(body, "key")
         val answer =
             when (key?.trim()?.uppercase()) {
                 DEMO_DOCTOR_KEY -> """{"valid":true}""" // a doctor invitation has no purpose
@@ -170,6 +173,37 @@ class DemoBackend(
             }
         return apiJson.parseToJsonElement(answer).jsonObject
     }
+
+    // The registration checks only read: the demo doctor's address has a doctor account, DEMO_PATIENT_EMAIL a patient
+    // one, any other address neither. `register` itself writes, so it is refused.
+    private suspend fun existingDoctor(body: String): Reply {
+        val email = jsonField(body, "email")?.trim()?.lowercase()
+        val phone = jsonField(body, "phone")?.let(PhoneE164::normalize)
+        val contact = doctorMe()["contact"]?.jsonObject
+        val demoEmail = contact?.get("email")?.jsonPrimitive?.content?.lowercase()
+        val demoPhone = contact?.get("phone")?.jsonPrimitive?.content?.let(PhoneE164::normalize)
+        return if ((email != null && email == demoEmail) || (phone != null && phone == demoPhone)) {
+            ok(apiJson.parseToJsonElement("""{"firstName":"Aziza","lastName":"Demo"}"""))
+        } else {
+            fail(HttpStatusCode.NotFound, "NOT_FOUND")
+        }
+    }
+
+    private fun existingPatient(body: String): JsonObject {
+        val found = jsonField(body, "email")?.trim()?.lowercase() == DEMO_PATIENT_EMAIL
+        val answer =
+            if (found) {
+                """{"found":true,"fullName":"Dilnoza Demo","email":"$DEMO_PATIENT_EMAIL"}"""
+            } else {
+                """{"found":false}"""
+            }
+        return apiJson.parseToJsonElement(answer).jsonObject
+    }
+
+    private fun jsonField(
+        body: String,
+        name: String,
+    ) = runCatching { apiJson.parseToJsonElement(body).jsonObject[name]?.jsonPrimitive?.content }.getOrNull()
 
     private suspend fun setLanguage(body: String): Reply {
         val language =
@@ -194,6 +228,7 @@ class DemoBackend(
     companion object {
         const val DEMO_DOCTOR_KEY = "DEMO-DOCTOR"
         const val DEMO_RECEPTION_KEY = "DEMO-RECEPTION"
+        const val DEMO_PATIENT_EMAIL = "demo.patient@shifa.dev"
         val shared by lazy { DemoBackend() }
     }
 }

@@ -778,6 +778,7 @@
     <string name="dermatologist">Dermatologist</string>
     <string name="description">Description</string>
     <string name="details">Details</string>
+    <string name="detectedOnThisDevice">Detected on this device</string>
     <string name="detecting">Detecting…</string>
     <string name="deviceActivationRate">Device activation rate</string>
     <string name="diabetes">Diabetes</string>
@@ -804,10 +805,12 @@
     <string name="docSectionPrivate">Private</string>
     <string name="docSectionUncategorized">Uncategorized</string>
     <string name="doctor">Doctor</string>
+    <string name="doctorAccountExists">A doctor account with this email already exists. Sign in instead.</string>
     <string name="doctorCalendarResetConfirm">This will permanently delete all appointments and availability slots for this doctor. This action cannot be undone. The doctor will keep their account, profile, and credentials; they will need to set up availability again.</string>
     <string name="doctorCalendarResetSuccessfully">Doctor calendar reset successfully</string>
     <string name="doctorCreatedOnly">created by doctor only</string>
     <string name="doctorNotesSection">Doctor notes</string>
+    <string name="doctorPhoneExists">A doctor account with this phone number already exists. Sign in instead.</string>
     <string name="doctorProfileIdNotFound">Error: Doctor profile ID not found. Please refresh the list.</string>
     <string name="doctors">Doctors</string>
     <string name="doctorsSurname">Doctor's surname</string>
@@ -1271,6 +1274,7 @@
     <string name="joined">Joined</string>
     <string name="justFlagFollowUp">Just flag for follow-up</string>
     <string name="justNow">Just now</string>
+    <string name="keepEditing">Keep editing</string>
     <string name="keepRecording">Keep recording</string>
     <string name="keyCopiedToClipboard">Key copied to clipboard</string>
     <string name="keyVerified">Key verified</string>
@@ -1716,6 +1720,8 @@
     <string name="regenerate">Regenerate</string>
     <string name="regenerateSummary">Regenerate summary</string>
     <string name="region">Region</string>
+    <string name="registrationConflict">This email or phone number belongs to another account. Use matching details or contact support.</string>
+    <string name="registrationFailed">Could not create the account. Please try again.</string>
     <string name="registrationIncomplete">Your account was created but sign-in failed. Please sign in with your new password.</string>
     <string name="reject">Reject</string>
     <string name="rejected">Rejected</string>
@@ -1802,6 +1808,7 @@
     <string name="searchPatientsHint">Search by name, phone, or ID…</string>
     <string name="searchProfession">Search profession...</string>
     <string name="searchTasksOrPatients">Search tasks or patients</string>
+    <string name="searchTimezone">Search timezone</string>
     <string name="searchUsersPlaceholder">Search by name, number, role</string>
     <string name="selectChronicDisease">Select Chronic Disease</string>
     <string name="selectConversation">Select a conversation</string>
@@ -1929,6 +1936,7 @@
     <string name="statusUnprocessed">UNPROCESSED</string>
     <string name="stepApplyingPlan">Applying treatment plan…</string>
     <string name="stepCompleting">Completing visit…</string>
+    <string name="stepOfTotal">Step %1$s of %2$s</string>
     <string name="stepRecordingPayment">Recording payment…</string>
     <string name="stepSavingSummary">Saving summary…</string>
     <string name="stepWaitingAi">Waiting for AI notes…</string>
@@ -1977,6 +1985,7 @@
     <string name="timeYesterday">Yesterday %1$s</string>
     <string name="timesPerDay">Times per day</string>
     <string name="timezoneDetectionFailed">We could not detect your timezone. Please choose it.</string>
+    <string name="timezoneScheduleHint">Your schedule and bookings use this timezone.</string>
     <string name="toDate">To date</string>
     <string name="today">Today</string>
     <string name="todayAppointments">Today's Appointments</string>

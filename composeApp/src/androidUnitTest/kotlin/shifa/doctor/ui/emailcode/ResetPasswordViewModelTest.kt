@@ -25,9 +25,9 @@ import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.storage.TokenStorage
 import shifa.doctor.generated.resources.Res
-import shifa.doctor.generated.resources.passwordMismatch
-import shifa.doctor.generated.resources.passwordRequirementMaxLength
 import shifa.doctor.generated.resources.passwordRequirementSpecialChar
+import shifa.doctor.generated.resources.passwordTooLong
+import shifa.doctor.generated.resources.passwordsDoNotMatch
 import shifa.doctor.generated.resources.pleaseConfirmPassword
 import shifa.doctor.generated.resources.resetPasswordFailed
 import shifa.doctor.generated.resources.wrongOrExpiredCodeBackToCode
@@ -74,7 +74,7 @@ class ResetPasswordViewModelTest {
         vm.onConfirm("Abcdefg1?")
         vm.submit()
         assertThat(vm.state.value.passwordError).isNull()
-        assertThat(vm.state.value.confirmError).isEqualTo(Res.string.passwordMismatch)
+        assertThat(vm.state.value.confirmError).isEqualTo(Res.string.passwordsDoNotMatch)
         assertThat(bodies).isEmpty()
     }
 
@@ -114,6 +114,6 @@ class ResetPasswordViewModelTest {
         val vm = vm()
         vm.onPassword("Aa1!" + "x".repeat(130))
         vm.submit()
-        assertThat(vm.state.value.passwordError).isEqualTo(Res.string.passwordRequirementMaxLength)
+        assertThat(vm.state.value.passwordError).isEqualTo(Res.string.passwordTooLong)
     }
 }

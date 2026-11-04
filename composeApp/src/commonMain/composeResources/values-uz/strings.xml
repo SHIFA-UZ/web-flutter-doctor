@@ -778,6 +778,7 @@
     <string name="dermatologist">Dermatolog</string>
     <string name="description">Tavsif</string>
     <string name="details">Batafsil</string>
+    <string name="detectedOnThisDevice">Ushbu qurilmada aniqlandi</string>
     <string name="detecting">Aniqlanmoqda…</string>
     <string name="deviceActivationRate">Qurilmada faollashtirish ulushi</string>
     <string name="diabetes">Qandli diabet</string>
@@ -804,10 +805,12 @@
     <string name="docSectionPrivate">Shaxsiy</string>
     <string name="docSectionUncategorized">Toifalanmagan</string>
     <string name="doctor">Shifokor</string>
+    <string name="doctorAccountExists">Bu email bilan shifokor hisobi allaqachon mavjud. Tizimga kiring.</string>
     <string name="doctorCalendarResetConfirm">Bu shifokorning barcha uchrashuvlari va mavjud vaqtlarini butunlay o'chiradi. Bu amalni qaytarib bo'lmaydi. Shifokor hisobi, profili va kirish ma'lumotlari saqlanadi; mavjudlikni qayta sozlashi kerak.</string>
     <string name="doctorCalendarResetSuccessfully">Shifokor taqvimi muvaffaqiyatli qayta o'rnatildi</string>
     <string name="doctorCreatedOnly">faqat shifokor yaratgan</string>
     <string name="doctorNotesSection">Shifokor izohlari</string>
+    <string name="doctorPhoneExists">Bu telefon raqami bilan shifokor hisobi allaqachon mavjud. Tizimga kiring.</string>
     <string name="doctorProfileIdNotFound">Xato: Shifokor profil ID topilmadi. Iltimos, ro'yxatni yangilang.</string>
     <string name="doctors">Shifokorlar</string>
     <string name="doctorsSurname">Davolovchi shifokor familiyasi</string>
@@ -1271,6 +1274,7 @@
     <string name="joined">Ro'yxatdan o'tgan</string>
     <string name="justFlagFollowUp">Faqat takroriy qabul uchun belgilash</string>
     <string name="justNow">Hozir</string>
+    <string name="keepEditing">Tahrirlashda davom etish</string>
     <string name="keepRecording">Yozishni davom ettirish</string>
     <string name="keyCopiedToClipboard">Kalit buferga nusxalandi</string>
     <string name="keyVerified">Kalit tasdiqlandi</string>
@@ -1716,6 +1720,8 @@
     <string name="regenerate">Qayta yaratish</string>
     <string name="regenerateSummary">Xulosani qayta yaratish</string>
     <string name="region">Viloyat</string>
+    <string name="registrationConflict">Bu email yoki telefon raqami boshqa hisobga tegishli. Mos ma'lumotlarni kiriting yoki qo'llab-quvvatlash xizmatiga murojaat qiling.</string>
+    <string name="registrationFailed">Hisob yaratilmadi. Qaytadan urinib ko'ring.</string>
     <string name="registrationIncomplete">Hisobingiz yaratildi, lekin tizimga kirib bo'lmadi. Iltimos, yangi parolingiz bilan kiring.</string>
     <string name="reject">Rad etish</string>
     <string name="rejected">Rad etildi</string>
@@ -1802,6 +1808,7 @@
     <string name="searchPatientsHint">Ism, telefon yoki ID bo'yicha qidirish…</string>
     <string name="searchProfession">Kasbni qidirish...</string>
     <string name="searchTasksOrPatients">Vazifa yoki bemorlarni qidirish</string>
+    <string name="searchTimezone">Vaqt zonasini qidirish</string>
     <string name="searchUsersPlaceholder">Ism, raqam yoki rol bo'yicha qidirish</string>
     <string name="selectChronicDisease">Surunkali kasallikni tanlash</string>
     <string name="selectConversation">Suhbatni tanlash</string>
@@ -1929,6 +1936,7 @@
     <string name="statusUnprocessed">QAYTA ISHLANMAGAN</string>
     <string name="stepApplyingPlan">Davolash rejasi qo'llanmoqda…</string>
     <string name="stepCompleting">Tashrif yakunlanmoqda…</string>
+    <string name="stepOfTotal">%2$s qadamdan %1$s-qadam</string>
     <string name="stepRecordingPayment">To'lov qayd etilmoqda…</string>
     <string name="stepSavingSummary">Xulosa saqlanmoqda…</string>
     <string name="stepWaitingAi">AI qaydlari kutilmoqda…</string>
@@ -1977,6 +1985,7 @@
     <string name="timeYesterday">Kecha %1$s</string>
     <string name="timesPerDay">Kuniga necha marta</string>
     <string name="timezoneDetectionFailed">Vaqt zonangizni aniqlab bo'lmadi. Iltimos, uni tanlang.</string>
+    <string name="timezoneScheduleHint">Jadvalingiz va qabullar shu vaqt zonasida ko'rsatiladi.</string>
     <string name="toDate">Tugash sanasi</string>
     <string name="today">Bugun</string>
     <string name="todayAppointments">Bugungi uchrashuvlar</string>

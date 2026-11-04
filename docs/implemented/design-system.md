@@ -49,7 +49,7 @@ panes, `.dr-week`, `.dr-table` columns) wait for the tickets that need them.
 | `.sh-action` | `ShifaActionButton` · `.sh-icon-btn` → `ShifaIconButton` · `.sh-link` → `ShifaLink` · `.sh-fab` → `ShifaFab` · `.sh-spinner` → `ShifaSpinner` |
 | `.sh-field`, `.sh-input` | `ShifaInputField` · `.sh-search` → `ShifaSearchField` · `.sh-dropdown`, `.sh-select` → `ShifaDropdown` |
 | `.sh-chip`, `.sh-chip-grid`, `.sh-carousel` | `ShifaChip`, `ShifaChipGrid`, `ShifaCarousel` (ShifaChips) |
-| `.sh-switch` | `ShifaSwitch` · `.sh-option` → `ShifaOptionList` (SelectionControls) |
+| `.sh-switch` | `ShifaSwitch` · `.sh-option` → `ShifaOptionList` / `OptionRow` (SelectionControls; `sub` line) · board picker → `ShifaPickerSheet` + `ShifaPickField` (ShifaPicker.kt, AUTH-06) |
 | `.sh-tag` | `ShifaTag` · `.sh-status` → `ShifaStatusDisc` · `.sh-bubble-count`, `.sh-badged` → `ShifaNotificationBubble` |
 | `.sh-card`, `.sh-avatar` | `ShifaCard`, `ShifaAvatar` (ShifaCards; also `ShifaSettingsItem`, `ShifaDocumentCard`, `ShifaTaskCard`) |
 | `.sh-banner` | `ShifaBanner` · `.sh-section` → `ShifaSection` · `.sh-header` → `ShifaMainHeader`, `ShifaSubHeader` |
