@@ -2605,5 +2605,7 @@
   "endFailed": "Couldn't end the appointment. It is still open: try again.",
   "summaryNotSaved": "Visit completed. Summary could not be saved.",
   "endingAppointment": "Ending appointment…",
-  "aiNotesHeading": "From Shifa AI"
+  "aiNotesHeading": "From Shifa AI",
+  "icdToApply": "ICD-10 to apply: {code} {title}",
+  "icdAppliedOnOpen": "Applied: {code}. It is filled in when you open Form 025-2."
 }

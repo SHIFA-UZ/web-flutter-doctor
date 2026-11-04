@@ -44,7 +44,9 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.consultation.VisitSummaryLabels
+import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.DocumentCategory
+import shifa.doctor.data.model.IcdSuggestion
 import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
 import shifa.doctor.data.model.SignatureState
@@ -115,7 +117,7 @@ import shifa.doctor.generated.resources.ic_sparkles_22
 import shifa.doctor.generated.resources.ic_upload_16
 import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.ic_x_16
-import shifa.doctor.generated.resources.icdAppliedOpenForm
+import shifa.doctor.generated.resources.icdToApply
 import shifa.doctor.generated.resources.inPerson
 import shifa.doctor.generated.resources.lastForm0252
 import shifa.doctor.generated.resources.lastVisitOn
@@ -179,7 +181,6 @@ import shifa.doctor.ui.documents.UploadStatus
 import shifa.doctor.ui.documents.UploadUiState
 import shifa.doctor.ui.documents.documentTitle
 import shifa.doctor.ui.documents.rememberUploadSources
-import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
@@ -284,6 +285,9 @@ class VisitActions(
     // APPT-07: the End sheet; Retry summary from the footer after it was closed on a failed summary.
     val openEnd: () -> Unit = {},
     val retrySummary: () -> Unit = {},
+    // APPT-08: an AI ICD suggestion applied (kept for the 025-2), or dropped.
+    val applyIcd: (IcdSuggestion) -> Unit = {},
+    val clearIcd: () -> Unit = {},
 )
 
 /**
@@ -302,7 +306,8 @@ fun VisitScreen(
     onOpenPatient: (Long) -> Unit = {},
     // A document in the viewer: the patient, the document, its title.
     onOpenDocument: (Long, PatientDocument, String) -> Unit = { _, _, _ -> },
-    onOpenForm: (Long) -> Unit = {},
+    // The 025-2 editor for a new form: the patient, and the ICD code applied in the visit (APPT-08).
+    onOpenForm: (Long, Icd10Hit?) -> Unit = { _, _ -> },
     viewModel: VisitViewModel = viewModel(key = "visit-$appointmentId-$opened") { VisitViewModel(appointmentId) },
 ) {
     if (staff) return StaffCannotRunVisits(onBack)
@@ -324,7 +329,7 @@ fun VisitScreen(
         when (to) {
             VisitExit.Back -> onBack()
             VisitExit.Patient -> patient?.let(onOpenPatient)
-            VisitExit.Form -> patient?.let(onOpenForm)
+            VisitExit.Form -> patient?.let { onOpenForm(it, state.icd?.let { s -> Icd10Hit(s.code, s.title) }) }
         }
     }
     val back = {
@@ -359,6 +364,8 @@ fun VisitScreen(
             dismissScribe = scribe::dismiss,
             openEnd = viewModel::openEnd,
             retrySummary = viewModel::retrySummary,
+            applyIcd = viewModel::applyIcd,
+            clearIcd = { viewModel.ui { it.copy(icd = null) } },
         )
     // Dictation for the notes fields (AI-06); the AI scribe (SCRIBE-01) has its own recorder, its state passed down.
     CompositionLocalProvider(LocalDictation provides rememberDictation()) {
@@ -471,6 +478,8 @@ private fun PatientParts(
             dismissScribe = actions.dismissScribe,
             openEnd = actions.openEnd,
             retrySummary = actions.retrySummary,
+            applyIcd = actions.applyIcd,
+            clearIcd = actions.clearIcd,
             documents =
                 DocumentsActions(
                     retry = documents::load,
@@ -747,7 +756,7 @@ private fun NotesCard(
     when (state.mode) {
         VisitMode.General -> General(state, notes, actions, scribe, scribeAllowed)
         VisitMode.Dental -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_clipboard_22)
-        VisitMode.Form0252 -> Form0252(state.forms, state.visit?.patientId != null, actions)
+        VisitMode.Form0252 -> Form0252(state.forms, state.visit?.patientId != null, state.icd, actions)
     }
 }
 
@@ -880,21 +889,7 @@ private fun AiHelper(
                                 ShifaColors.Text.Primary,
                             )
                         }
-                        // ponytail: the code isn't carried into the editor yet (APPT-08); the board's banner says to finish there.
-                        ShifaLink(tr(Res.string.apply), {
-                            actions.mode(VisitMode.Form0252)
-                            actions.ui {
-                                it.copy(
-                                    helper = null,
-                                    banner =
-                                        CodeBanner(
-                                            Res.string.icdAppliedOpenForm,
-                                            error = false,
-                                            args = listOf(c.code),
-                                        ),
-                                )
-                            }
-                        })
+                        ShifaLink(tr(Res.string.apply), { actions.applyIcd(c) })
                     }
                 }
             }
@@ -997,9 +992,30 @@ private fun HelperBox(
 private fun Form0252(
     forms: List<PatientForm>,
     hasPatient: Boolean,
+    icd: IcdSuggestion?,
     actions: VisitActions,
 ) {
     Text(tr(Res.string.form0252VisitHint), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    // The applied AI code goes into the new form's ICD-10 (APPT-08); × drops it.
+    icd?.let {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        ) {
+            Text(
+                tr(Res.string.icdToApply, it.code, it.title),
+                Modifier.weight(1f),
+                style = ShifaTextStyles.buttonCompact(),
+                color = ShifaColors.Text.Brand,
+            )
+            ShifaIconButton(
+                Res.drawable.ic_x_16,
+                tr(Res.string.close),
+                actions.clearIcd,
+                variant = ShifaIconButtonVariant.Secondary,
+            )
+        }
+    }
     forms.forEach { f ->
         Row(
             verticalAlignment = Alignment.CenterVertically,

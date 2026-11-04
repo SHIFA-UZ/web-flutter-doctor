@@ -118,6 +118,8 @@ class FormEditorViewModel(
     private val locale: () -> String = { languageStorage.language.value.backendCode },
     private val pdf: (PatientForm) -> ByteArray? = { Form0252Pdf().pdf(it) },
     private val warned: MutableSet<Long> = chronicWarned,
+    // APPT-08: a new form opened from a visit with an AI-suggested ICD-10 code applied there.
+    private val presetIcd: Icd10Hit? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(FormEditorUiState())
     val state: StateFlow<FormEditorUiState> = _state.asStateFlow()
@@ -191,7 +193,7 @@ class FormEditorViewModel(
                 it.copy(
                     loading = false,
                     patient = pat,
-                    form = form,
+                    form = presetIcd?.takeIf { formId == null }?.let { form.withIcd(it) } ?: form,
                     original = form,
                     topRows = rows(form, DentalChartCodec.TOP),
                     bottomRows = rows(form, DentalChartCodec.BOTTOM),
@@ -295,7 +297,7 @@ class FormEditorViewModel(
     }
 
     fun pickIcd(hit: Icd10Hit) {
-        edit { it.copy(diagnosisCode = hit.code, diagnosisDisplay = hit.title, diagnosisSystem = PatientForm.ICD10) }
+        edit { it.withIcd(hit) }
         _state.update { it.copy(icdQuery = "", icdResults = null, icdBusy = false) }
     }
 
@@ -509,3 +511,7 @@ class FormEditorViewModel(
         const val ICD_DEBOUNCE = 250L
     }
 }
+
+/** The ICD-10 code and title picked for the diagnosis (the search's pick, or one applied in a visit). */
+internal fun PatientForm.withIcd(hit: Icd10Hit) =
+    copy(diagnosisCode = hit.code, diagnosisDisplay = hit.title, diagnosisSystem = PatientForm.ICD10)

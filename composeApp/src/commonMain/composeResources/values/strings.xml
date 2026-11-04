@@ -1224,8 +1224,10 @@
     <string name="iUnderstand">I Understand</string>
     <string name="ibanAccountNumber">IBAN / Account number</string>
     <string name="icd10SearchHint">Search ICD-10 code or title</string>
+    <string name="icdAppliedOnOpen">Applied: %1$s. It is filled in when you open Form 025-2.</string>
     <string name="icdAppliedOpenForm">Applied: %1$s. Open Form 025-2 to finish the diagnosis.</string>
     <string name="icdSearchFailed">Couldn't search ICD-10. Tap to try again.</string>
+    <string name="icdToApply">ICD-10 to apply: %1$s %2$s</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Image not available</string>
     <string name="inClinic">In Clinic</string>

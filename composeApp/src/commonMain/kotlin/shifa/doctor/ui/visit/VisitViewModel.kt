@@ -38,6 +38,7 @@ import shifa.doctor.data.model.AppointmentDetail
 import shifa.doctor.data.model.DocumentCategory
 import shifa.doctor.data.model.DocumentFile
 import shifa.doctor.data.model.FormTemplates
+import shifa.doctor.data.model.IcdSuggestion
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
@@ -57,6 +58,7 @@ import shifa.doctor.generated.resources.aiNotesNotReadyTryLater
 import shifa.doctor.generated.resources.aiNotesUploaded
 import shifa.doctor.generated.resources.appointmentLoadFailed
 import shifa.doctor.generated.resources.endFailed
+import shifa.doctor.generated.resources.icdAppliedOnOpen
 import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.noItemsToSave
 import shifa.doctor.generated.resources.notesSaveFailed
@@ -153,6 +155,8 @@ data class VisitUiState(
     val scribeUploading: Boolean = false,
     // APPT-07: End appointment.
     val end: EndUiState = EndUiState(),
+    // APPT-08: an AI-suggested ICD-10 code applied here, filled into the 025-2 opened next.
+    val icd: IcdSuggestion? = null,
 ) {
     val kind: VisitKind get() = visit?.kind ?: VisitKind.InPerson
 
@@ -585,6 +589,18 @@ class VisitViewModel(
             } else {
                 it.copy(menu = false, helper = which, savedIndex = 0)
             }
+        }
+    }
+
+    /** APPT-08: the suggestion is kept for the 025-2 (opened from the Form 025-2 mode) and that mode shows it. */
+    fun applyIcd(suggestion: IcdSuggestion) {
+        mode(VisitMode.Form0252)
+        _state.update {
+            it.copy(
+                helper = null,
+                icd = suggestion,
+                banner = CodeBanner(Res.string.icdAppliedOnOpen, error = false, args = listOf(suggestion.code)),
+            )
         }
     }
 

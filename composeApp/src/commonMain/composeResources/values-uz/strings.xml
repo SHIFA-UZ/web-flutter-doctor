@@ -1224,8 +1224,10 @@
     <string name="iUnderstand">Tushundim</string>
     <string name="ibanAccountNumber">IBAN / Hisob raqami</string>
     <string name="icd10SearchHint">ICD-10 kodi yoki nomi bo'yicha qidiring</string>
+    <string name="icdAppliedOnOpen">Qo'llandi: %1$s. 025-2 shaklini ochganingizda to'ldiriladi.</string>
     <string name="icdAppliedOpenForm">Qo'llandi: %1$s. Tashxisni yakunlash uchun 025-2 shaklini oching.</string>
     <string name="icdSearchFailed">ICD-10 bo'yicha qidirib bo'lmadi. Qayta urinish uchun bosing.</string>
+    <string name="icdToApply">Qo'llanadigan MKB-10: %1$s %2$s</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Rasm mavjud emas</string>
     <string name="inClinic">Klinikada</string>

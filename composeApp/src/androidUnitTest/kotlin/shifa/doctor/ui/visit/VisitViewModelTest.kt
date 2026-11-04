@@ -351,4 +351,13 @@ class VisitViewModelTest {
         assertThat(classToTest.state.value.end.done).isTrue()
         assertThat(classToTest.state.value.end.hidden).isFalse()
     }
+
+    @Test
+    fun `an applied AI code switches to the 025-2 and is kept for it`() {
+        val classToTest = opened()
+        classToTest.applyIcd(shifa.doctor.data.model.IcdSuggestion("K04.0", "Pulpitis", 0.8, isTop = true))
+        assertThat(classToTest.state.value.mode).isEqualTo(VisitMode.Form0252)
+        assertThat(classToTest.state.value.icd?.code).isEqualTo("K04.0")
+        assertThat(classToTest.state.value.banner?.args).containsExactly("K04.0")
+    }
 }

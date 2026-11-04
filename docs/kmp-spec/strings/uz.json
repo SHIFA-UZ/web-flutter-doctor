@@ -2605,5 +2605,7 @@
   "endFailed": "Qabulni yakunlab bo'lmadi. U ochiq qoldi: qayta urinib ko'ring.",
   "summaryNotSaved": "Qabul yakunlandi. Xulosani saqlab bo'lmadi.",
   "endingAppointment": "Qabul yakunlanmoqda…",
-  "aiNotesHeading": "Shifa AI dan"
+  "aiNotesHeading": "Shifa AI dan",
+  "icdToApply": "Qo'llanadigan MKB-10: {code} {title}",
+  "icdAppliedOnOpen": "Qo'llandi: {code}. 025-2 shaklini ochganingizda to'ldiriladi."
 }

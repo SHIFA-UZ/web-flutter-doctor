@@ -181,8 +181,12 @@ fun FormEditorScreen(
     formId: Long?,
     opened: Long,
     onClose: () -> Unit,
+    presetIcd: Icd10Hit? = null,
 ) {
-    val viewModel = viewModel(key = "form-$patientId-$formId-$opened") { FormEditorViewModel(patientId, formId) }
+    val viewModel =
+        viewModel(
+            key = "form-$patientId-$formId-$opened",
+        ) { FormEditorViewModel(patientId, formId, presetIcd = presetIcd) }
     val clinical = viewModel(key = "form-clinical-$patientId-$formId-$opened") { ClinicalPanelViewModel() }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val engine by clinical.state.collectAsStateWithLifecycle()

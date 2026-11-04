@@ -122,6 +122,7 @@ class FormEditorViewModelTest {
     private fun opened(
         formId: Long? = null,
         warned: MutableSet<Long> = mutableSetOf(),
+        icd: Icd10Hit? = null,
     ): FormEditorViewModel {
         val client = { createHttpClient({ null }, engine) }
         return FormEditorViewModel(
@@ -136,6 +137,7 @@ class FormEditorViewModelTest {
             { "en" },
             { "%PDF-1.4 form".encodeToByteArray() },
             warned,
+            icd,
         ).also {
             created += it
             it.load()
@@ -355,5 +357,18 @@ class FormEditorViewModelTest {
         assertThat(classToTest.state.value.askDiscard).isTrue()
         assertThat(classToTest.back()).isTrue()
         assertThat(classToTest.state.value.today).isEqualTo(LocalDate(2026, 11, 4))
+    }
+
+    @Test
+    fun `a code applied in the visit fills a new form's ICD-10, unsaved, and leaves an existing form alone`() {
+        val fresh = opened(icd = Icd10Hit("K04.0", "Pulpitis"))
+        val f = fresh.state.value.form!!
+        assertThat(
+            listOf(f.diagnosisCode, f.diagnosisDisplay, f.diagnosisSystem),
+        ).containsExactly("K04.0", "Pulpitis", "ICD10").inOrder()
+        assertThat(fresh.state.value.dirty).isTrue()
+        val existing = opened(formId = 5, icd = Icd10Hit("K04.0", "Pulpitis"))
+        assertThat(existing.state.value.form?.diagnosisCode).isNull()
+        assertThat(existing.state.value.dirty).isFalse()
     }
 }

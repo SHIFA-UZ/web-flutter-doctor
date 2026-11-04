@@ -398,7 +398,9 @@ private fun RouteContent(
                 onBack = actions.back,
                 onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
                 onOpenDocument = { patientId, d, title -> actions.push(ShellRoute.Document(patientId, d.id, title)) },
-                onOpenForm = { actions.push(ShellRoute.Form(it, null, currentInstant().toEpochMilliseconds())) },
+                onOpenForm = { patientId, icd ->
+                    actions.push(ShellRoute.Form(patientId, null, currentInstant().toEpochMilliseconds(), icd))
+                },
             )
         ShellRoute.Locations -> LocationsScreen(onClose = actions.back)
         is ShellRoute.Patient ->
@@ -416,7 +418,8 @@ private fun RouteContent(
                     actions.push(ShellRoute.Form(route.id, formId, currentInstant().toEpochMilliseconds()))
                 },
             )
-        is ShellRoute.Form -> FormEditorScreen(route.patientId, route.formId, route.opened, onClose = actions.back)
+        is ShellRoute.Form ->
+            FormEditorScreen(route.patientId, route.formId, route.opened, onClose = actions.back, presetIcd = route.icd)
         is ShellRoute.Document ->
             DocumentViewerScreen(route.patientId, route.documentId, route.title, route.clinicId, onBack = actions.back)
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)

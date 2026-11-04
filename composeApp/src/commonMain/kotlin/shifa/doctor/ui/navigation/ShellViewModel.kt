@@ -12,6 +12,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.profile.ProfileRepository
@@ -110,6 +111,8 @@ sealed interface ShellRoute {
         val patientId: Long,
         val formId: Long?,
         val opened: Long,
+        // A new form's ICD-10 code from the visit (APPT-08: an AI suggestion applied there).
+        val icd: Icd10Hit? = null,
     ) : ShellRoute
 
     /** A patient's document in the viewer (DOCS-05), in a clinic's scope when [clinicId] is set. */

@@ -2605,5 +2605,7 @@
   "endFailed": "Не удалось завершить приём. Он остаётся открытым: попробуйте ещё раз.",
   "summaryNotSaved": "Приём завершён. Не удалось сохранить итоги.",
   "endingAppointment": "Завершаем приём…",
-  "aiNotesHeading": "От Shifa AI"
+  "aiNotesHeading": "От Shifa AI",
+  "icdToApply": "МКБ-10 к применению: {code} {title}",
+  "icdAppliedOnOpen": "Применено: {code}. Подставится, когда вы откроете форму 025-2."
 }

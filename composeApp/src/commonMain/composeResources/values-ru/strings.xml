@@ -1224,8 +1224,10 @@
     <string name="iUnderstand">Я понимаю</string>
     <string name="ibanAccountNumber">IBAN / Номер счета</string>
     <string name="icd10SearchHint">Поиск по коду или названию ICD-10</string>
+    <string name="icdAppliedOnOpen">Применено: %1$s. Подставится, когда вы откроете форму 025-2.</string>
     <string name="icdAppliedOpenForm">Применено: %1$s. Откройте форму 025-2, чтобы завершить диагноз.</string>
     <string name="icdSearchFailed">Не удалось выполнить поиск МКБ-10. Нажмите, чтобы повторить.</string>
+    <string name="icdToApply">МКБ-10 к применению: %1$s %2$s</string>
     <string name="id">ID</string>
     <string name="imageNotAvailable">Изображение недоступно</string>
     <string name="inClinic">В клинике</string>

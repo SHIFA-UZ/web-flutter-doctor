@@ -288,3 +288,17 @@ pipeline, so both are in one change). Board `DaVisit` "end visit" and "end progr
   `Visit_workspace` / `Visit_form0252` (the End button). **Emulator (demo mode):** a typed note → End Appointment →
   the checklist (13 characters, AI notes none, not requested) → End appointment → the steps → "Appointment ended.
   Documentation saved." → Open Summary shows the filed PDF (Tashkent time) → Done returns with the notice.
+
+## APPT-08 · An AI ICD code into the 025-2
+
+Built 2026-11-04. Spec 05 §5, ticket APPT-08. The board's 025-2 mode opens the editor (FORM-04) rather than embedding
+it; this carries what the embedding was for.
+
+- **Apply** on a Shifa AI ICD suggestion switches to Form 025-2 and keeps the code: the mode shows "ICD-10 to apply:
+  K04.0 Pulpitis" (× drops it) and says "Applied: K04.0. It is filled in when you open Form 025-2."
+- **Open Form 025-2** passes it in the route (`ShellRoute.Form(…, icd)`); the editor fills a **new** form's ICD-10
+  code, title and system with it (as a search pick would), unsaved until the doctor saves. An existing form is left
+  as it is.
+- **Not built:** the in-place embedded editor with Save & Switch (the board doesn't embed it).
+- **Tests:** `FormEditorViewModelTest` (a preset code on a new form, not on an existing one), `VisitViewModelTest`
+  (Apply keeps the code and switches mode).
