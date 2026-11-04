@@ -252,6 +252,7 @@
     <string name="calendarTimezoneMismatchHint">Joriy qurilma vaqt zonasi kalendar jadvali vaqt zonasi (%1$s) bilan mos emas. Siz slotlarni bir vaqt zonasida belgilagansiz, hozir esa boshqa vaqt zonasidasiz. Iltimos, uchrashuvlar bilan ishlaganda buni inobatga oling.</string>
     <string name="callErrorOccurred">Qo'ng'iroqda xatolik yuz berdi</string>
     <string name="callPaused">Qo'ng'iroq to'xtatildi</string>
+    <string name="cameraAccessNeeded">Suratga olish uchun kameraga ruxsat kerak</string>
     <string name="cameraLabel">Kamera</string>
     <string name="cameraOff">Kamera o'chirilgan</string>
     <string name="cameraOn">Kamera yoqilgan</string>
@@ -276,6 +277,7 @@
     <string name="certificateUploaded">Sertifikat yuklandi</string>
     <string name="certificates">Sertifikatlar</string>
     <string name="changeOrResetPassword">Parolni o'zgartiring yoki tiklang</string>
+    <string name="changePhoto">Rasmni o'zgartirish</string>
     <string name="changePin">PIN kodni o'zgartirish</string>
     <string name="changeSlot">Vaqtni o'zgartirish</string>
     <string name="changeSubscriptionTier">Obuna darajasini o'zgartirish</string>
@@ -805,6 +807,8 @@
     <string name="disabled">O'chirilgan</string>
     <string name="discard">Yopish</string>
     <string name="discardAndSwitch">Tashlab, almashtirish</string>
+    <string name="discardChangesBody">Ushbu ekrandagi o'zgarishlar yo'qoladi.</string>
+    <string name="discardChangesTitle">O'zgarishlar bekor qilinsinmi?</string>
     <string name="discardRegistrationBody">Kiritgan ma'lumotlaringiz yo'qoladi.</string>
     <string name="discardRegistrationTitle">Ro'yxatdan o'tish bekor qilinsinmi?</string>
     <string name="discountRange">0–100</string>
@@ -1387,6 +1391,7 @@
     <string name="morningTime">Ertalabki vaqt</string>
     <string name="muteMic">Mikrofonni o'chirish</string>
     <string name="mySchedule">Mening taqvimim</string>
+    <string name="nameInvalid">Faqat harflar, bo'sh joy, chiziqcha yoki apostrof, 60 tagacha.</string>
     <string name="navAppointments">Uchrashuvlar</string>
     <string name="navDocuments">Hujjatlar</string>
     <string name="navFinance">Moliyaviy</string>
@@ -1671,6 +1676,7 @@
     <string name="phoneOrEmail">Telefon raqami yoki Email</string>
     <string name="phoneUpdated">Telefon raqami yangilandi</string>
     <string name="photoUpdated">Rasm yangilandi</string>
+    <string name="photoUploadFailed">Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.</string>
     <string name="pickADate">Sanani tanlang</string>
     <string name="pin">PIN kod</string>
     <string name="pinDigitsEntered">%2$s ta raqamdan %1$s tasi kiritildi</string>
@@ -1711,6 +1717,7 @@
     <string name="processAndLeave">Qayta ishlash va chiqish</string>
     <string name="processRecording">Qayta ishlash</string>
     <string name="profession">Kasb</string>
+    <string name="professional">Kasbiy ma'lumotlar</string>
     <string name="profile">Profil</string>
     <string name="profileCompletePct">Profil %1$s % to'ldirilgan</string>
     <string name="profileCreated">Profil yaratilgan</string>
@@ -1810,6 +1817,7 @@
     <string name="saveAsConsultationNote">Qayd sifatida saqlash</string>
     <string name="saveAsNote">Qayd sifatida saqlash</string>
     <string name="saveDraftNote">Qoralama Qayd Sifatida Saqlash</string>
+    <string name="saveFailed">Saqlab bo'lmadi. Qaytadan urinib ko'ring.</string>
     <string name="saveForm">Saqlash</string>
     <string name="saveLocation">Joylashuvni saqlash</string>
     <string name="saved">Saqlandi</string>

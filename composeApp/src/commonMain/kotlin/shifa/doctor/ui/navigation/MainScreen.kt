@@ -92,6 +92,7 @@ import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
 import shifa.doctor.ui.auth.short
 import shifa.doctor.ui.debug.DebugMenuScreen
+import shifa.doctor.ui.profile.PersonalInfoScreen
 import shifa.doctor.ui.profile.ProfileActions
 import shifa.doctor.ui.profile.ProfileScreen
 import shifa.doctor.ui.profile.ProfileSection
@@ -287,7 +288,12 @@ private fun RouteContent(
         } else {
             TabPlaceholder(route.tab.label, route.tab.icon)
         }
-    is ShellRoute.Profile -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
+    is ShellRoute.Profile ->
+        if (route.section == ProfileSection.PersonalInfo) {
+            PersonalInfoScreen(onClose = actions.back)
+        } else {
+            Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section, actions) }
+        }
     ShellRoute.Schedule ->
         Pushed(Res.string.schedule, actions) {
             TabPlaceholder(Res.string.schedule, Res.drawable.ic_calendar_22)

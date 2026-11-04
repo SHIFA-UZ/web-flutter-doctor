@@ -60,3 +60,49 @@ Built 2026-11-04. Flow `08/01-profile-root.md`; board `DaProfile.dc.html` (root,
 - **Tests:** `ProfileViewModelTest` (3, incl. request id and recovery), `TimeZonesTest` (+1), `DoctorNameTest` (2), `ProfileScreenshotTest` (4:
   root, incomplete, staff, error). Previews use no photo URL (Kamel can't load one under Robolectric).
 
+
+## PROF-03 · Personal information
+
+Built 2026-11-04. Flow `08/02-edit-profile.md`; board `DaProfile.dc.html` (`profEdit`).
+
+- **Screen** (`ui/profile/PersonalInfoScreen.kt`), pushed from Profile → Personal information (and the identity card):
+  - Own header: Back and a Save check (screen-reader label "Save"; `ShifaSubHeader` gained `checkDescription`),
+    shown only when something changed.
+  - **Photo:** 96 avatar with "Change photo" under it, one button → sheet with Choose from gallery / Take photo. The
+    picked or taken photo uploads at once (`POST /doctors/me/photo`, multipart `file`, JPEG ≤ 1600 px, quality 85,
+    EXIF rotation applied); a spinner sits on the avatar meanwhile; "Photo updated" or the mapped error with its
+    request id. Native pickers in `utils/ImagePicker` (Android: `GetContent` + `TakePicture` with the CAMERA
+    permission and a FileProvider; iOS: PHPicker / UIImagePickerController). No "Remove photo": the backend has no
+    way to clear it (BE-30). Every upload lands on the same backend key, so the app adds `?v=<time>` to the answer's
+    URL (BE-31).
+  - **Personal information:** first and last name (required; letters of any script, spaces, hyphens, apostrophes
+    `' ʼ ’`, ≤ 60; trimmed and inner spaces collapsed before sending), date of birth (AUTH-07's picker, dd.MM.yyyy),
+    gender (dropdown: Not set / Male / Female / Other, the values registration sends; "Not set" sends "" to clear it).
+  - **Professional:** professions as chips → the shared `ProfessionPickerSheet` (moved out of registration into
+    `ui/profile/ProfessionPicker.kt`; registration uses it too): search in English, Uzbek Latin and Cyrillic, multi
+    select, Clear all, Done; the bundled catalogue with "Couldn't load. Retry" when the backend list fails.
+  - **Save:** one `PATCH /doctors/me/profile` with only the changed keys; success shows "Profile information saved"
+    on the Profile root (`ShellNotice`, now a `Notice(text, success)`) and closes; failure keeps the form with the
+    mapped error and request id.
+  - **Back with changes:** "Discard changes?" (Discard / Keep editing); Back on the question closes the question.
+  - The ViewModel lives in the shell's store, so a tab switch keeps unsaved edits; each open re-reads the saved
+    profile unless an edit is in progress.
+- **Review fixes (Codex):** the bundled profession list shows at once; legacy professions are "Current: …" rows in
+  the shared picker; all eight EXIF orientations; iOS gallery photos are decoded straight to ≤ 1600 px (ImageIO);
+  the uploaded photo's version survives later saves and refreshes; a refused camera shows "Camera access is needed to
+  take a photo" with Open settings (`utils/openAppSettings`); Save waits while a photo uploads.
+- **Open (the user's call):** the flow's square crop before upload. Android has no platform cropper, so it needs a
+  library (uCrop) or a custom crop screen. Flutter didn't crop; avatars display center-cropped.
+- **Not built (no backend field):** the board's Short headline, Years of experience and Languages spoken (the doctor
+  PATCH has none), and its Account / e-mail block (e-mail is in Contact, PROF-04). Gender is a dropdown, not the
+  board's segmented control, matching registration.
+- **Fix found on the device:** biometric 1.1.0 pulled `androidx.fragment` 1.2.5, whose `FragmentActivity` refuses the
+  request codes of `rememberLauncherForActivityResult`, so any picker crashed the app. `androidx.fragment` 1.8.9 is
+  now a direct dependency.
+- **Verified on the emulator against dev (2026-11-04):** load, gender save and restore (`PATCH` reached dev),
+  discard question, gallery upload, camera upload with the permission prompt, camera refused → banner → Settings. The dev seed doctor
+  (`seed.doctor1`) now has a photo (no removal endpoint, BE-30).
+- **Tests:** `PersonalInfoViewModelTest` (10: initial form with Uzbek labels, changed-keys-only save and reopen, name
+  rules, discard and tab switch, failed save with request id, photo upload success / failure / cancel, photo version
+  kept after a save, camera refused, bundled professions while the backend is slow, Save blocked during an upload),
+  `DemoBackendTest` (+1, photo upload), `ProfileScreenshotTest` (+2: `PersonalInfo_edited`, `PersonalInfo_errors`).

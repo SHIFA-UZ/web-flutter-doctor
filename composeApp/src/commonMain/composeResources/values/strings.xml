@@ -252,6 +252,7 @@
     <string name="calendarTimezoneMismatchHint">Your current device timezone does not match the calendar schedule timezone (%1$s). Your slots were defined in one timezone, but you are currently in another. Please keep this in mind while managing appointments.</string>
     <string name="callErrorOccurred">Call error occurred</string>
     <string name="callPaused">Call paused</string>
+    <string name="cameraAccessNeeded">Camera access is needed to take a photo</string>
     <string name="cameraLabel">Camera</string>
     <string name="cameraOff">Camera off</string>
     <string name="cameraOn">Camera on</string>
@@ -276,6 +277,7 @@
     <string name="certificateUploaded">Certificate uploaded</string>
     <string name="certificates">Certificates</string>
     <string name="changeOrResetPassword">Change or reset your password here</string>
+    <string name="changePhoto">Change photo</string>
     <string name="changePin">Change PIN</string>
     <string name="changeSlot">Change Slot</string>
     <string name="changeSubscriptionTier">Change Subscription Tier</string>
@@ -805,6 +807,8 @@
     <string name="disabled">Disabled</string>
     <string name="discard">Discard</string>
     <string name="discardAndSwitch">Discard and switch</string>
+    <string name="discardChangesBody">Your changes on this screen will be lost.</string>
+    <string name="discardChangesTitle">Discard changes?</string>
     <string name="discardRegistrationBody">Your entries will be lost.</string>
     <string name="discardRegistrationTitle">Discard registration?</string>
     <string name="discountRange">0–100</string>
@@ -1387,6 +1391,7 @@
     <string name="morningTime">Morning Time</string>
     <string name="muteMic">Mute microphone</string>
     <string name="mySchedule">My schedule</string>
+    <string name="nameInvalid">Use letters, spaces, hyphens or apostrophes, up to 60.</string>
     <string name="navAppointments">Appointments</string>
     <string name="navDocuments">Documents</string>
     <string name="navFinance">Finance</string>
@@ -1671,6 +1676,7 @@
     <string name="phoneOrEmail">Phone Number or Email</string>
     <string name="phoneUpdated">Phone number updated</string>
     <string name="photoUpdated">Photo updated</string>
+    <string name="photoUploadFailed">Couldn't upload the photo. Try again.</string>
     <string name="pickADate">Pick a date</string>
     <string name="pin">PIN</string>
     <string name="pinDigitsEntered">%1$s of %2$s digits entered</string>
@@ -1711,6 +1717,7 @@
     <string name="processAndLeave">Process and leave</string>
     <string name="processRecording">Process</string>
     <string name="profession">Profession</string>
+    <string name="professional">Professional</string>
     <string name="profile">Profile</string>
     <string name="profileCompletePct">Profile %1$s % complete</string>
     <string name="profileCreated">Profile created</string>
@@ -1810,6 +1817,7 @@
     <string name="saveAsConsultationNote">Save as note</string>
     <string name="saveAsNote">Save as note</string>
     <string name="saveDraftNote">Save as Draft Note</string>
+    <string name="saveFailed">Couldn't save. Try again.</string>
     <string name="saveForm">Save Form</string>
     <string name="saveLocation">Save Location</string>
     <string name="saved">Saved</string>

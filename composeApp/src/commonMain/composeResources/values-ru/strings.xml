@@ -252,6 +252,7 @@
     <string name="calendarTimezoneMismatchHint">Текущий часовой пояс устройства не совпадает с часовым поясом расписания (%1$s). Слоты были заданы в одном часовом поясе, а сейчас вы в другом. Пожалуйста, учитывайте это при работе с приёмами.</string>
     <string name="callErrorOccurred">Произошла ошибка звонка</string>
     <string name="callPaused">Звонок приостановлен</string>
+    <string name="cameraAccessNeeded">Чтобы сделать фото, нужен доступ к камере</string>
     <string name="cameraLabel">Камера</string>
     <string name="cameraOff">Камера выключена</string>
     <string name="cameraOn">Камера включена</string>
@@ -276,6 +277,7 @@
     <string name="certificateUploaded">Сертификат загружен</string>
     <string name="certificates">Сертификаты</string>
     <string name="changeOrResetPassword">Изменить или сбросить пароль здесь</string>
+    <string name="changePhoto">Изменить фото</string>
     <string name="changePin">Изменить PIN-код</string>
     <string name="changeSlot">Изменить слот</string>
     <string name="changeSubscriptionTier">Изменить уровень подписки</string>
@@ -805,6 +807,8 @@
     <string name="disabled">Отключено</string>
     <string name="discard">Отменить</string>
     <string name="discardAndSwitch">Отменить изменения и переключить</string>
+    <string name="discardChangesBody">Изменения на этом экране будут потеряны.</string>
+    <string name="discardChangesTitle">Отменить изменения?</string>
     <string name="discardRegistrationBody">Введённые данные будут потеряны.</string>
     <string name="discardRegistrationTitle">Отменить регистрацию?</string>
     <string name="discountRange">0–100</string>
@@ -1387,6 +1391,7 @@
     <string name="morningTime">Утреннее время</string>
     <string name="muteMic">Выключить микрофон</string>
     <string name="mySchedule">Моё расписание</string>
+    <string name="nameInvalid">Только буквы, пробелы, дефисы и апострофы, до 60 символов.</string>
     <string name="navAppointments">Приёмы</string>
     <string name="navDocuments">Документы</string>
     <string name="navFinance">Финансы</string>
@@ -1671,6 +1676,7 @@
     <string name="phoneOrEmail">Номер телефона или Email</string>
     <string name="phoneUpdated">Номер телефона обновлён</string>
     <string name="photoUpdated">Фото обновлено</string>
+    <string name="photoUploadFailed">Не удалось загрузить фото. Попробуйте ещё раз.</string>
     <string name="pickADate">Выберите дату</string>
     <string name="pin">PIN-код</string>
     <string name="pinDigitsEntered">Введено %1$s из %2$s цифр</string>
@@ -1711,6 +1717,7 @@
     <string name="processAndLeave">Обработать и выйти</string>
     <string name="processRecording">Обработать</string>
     <string name="profession">Профессия</string>
+    <string name="professional">Профессиональные данные</string>
     <string name="profile">Профиль</string>
     <string name="profileCompletePct">Профиль заполнен на %1$s %</string>
     <string name="profileCreated">Профиль создан</string>
@@ -1810,6 +1817,7 @@
     <string name="saveAsConsultationNote">Сохранить как заметку</string>
     <string name="saveAsNote">Сохранить как заметку</string>
     <string name="saveDraftNote">Сохранить как Черновик</string>
+    <string name="saveFailed">Не удалось сохранить. Попробуйте ещё раз.</string>
     <string name="saveForm">Сохранить форму</string>
     <string name="saveLocation">Сохранить местоположение</string>
     <string name="saved">Сохранено</string>

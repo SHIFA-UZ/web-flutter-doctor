@@ -155,6 +155,7 @@ class DemoBackend(
                     body,
                     replace = true,
                 )
+            request.method == HttpMethod.Post && path == Endpoints.DOCTOR_PHOTO -> photo()
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
             get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
             // Fixed counts so the badges show; the lists behind them come with their features.
@@ -258,6 +259,15 @@ class DemoBackend(
         val merged = if (replace) patch else JsonObject((current[block]?.jsonObject ?: JsonObject(emptyMap())) + patch)
         me = JsonObject(current + (block to merged))
         return ok(merged)
+    }
+
+    /** The upload itself isn't kept: the demo answers with a picture URL that 404s, so the brand fallback shows. */
+    private suspend fun photo(): Reply {
+        val url = JsonPrimitive("https://api-dev.shifa.uz/files/doctors/demo-photo.jpg")
+        val current = doctorMe()
+        val profile = current["profile"]?.jsonObject ?: JsonObject(emptyMap())
+        me = JsonObject(current + ("profile" to JsonObject(profile + ("photoUrl" to url))))
+        return ok(JsonObject(mapOf("photoUrl" to url)))
     }
 
     private suspend fun meProfile(): JsonObject {

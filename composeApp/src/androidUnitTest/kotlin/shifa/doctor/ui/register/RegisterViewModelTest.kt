@@ -45,6 +45,7 @@ import shifa.doctor.generated.resources.registrationConflict
 import shifa.doctor.generated.resources.registrationIncomplete
 import shifa.doctor.generated.resources.staffEmailInUse
 import shifa.doctor.generated.resources.timezoneDetectionFailed
+import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -311,7 +312,7 @@ class RegisterViewModelTest {
         vm.register()
         vm.settle()
         assertThat(vm.state.value.signedIn).isNotNull()
-        assertThat(ShellNotice.pending.value).isEqualTo(Res.string.profileExtrasNotSaved)
+        assertThat(ShellNotice.pending.value).isEqualTo(Notice(Res.string.profileExtrasNotSaved))
         ShellNotice.pending.value = null
     }
 

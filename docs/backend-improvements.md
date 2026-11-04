@@ -41,6 +41,7 @@ Flyway migration only, regenerate `docs/api/openapi.json`, then add a "Done (dat
 | BE-27 | Rolling validity; bulk shift on timezone change | Low | M3 | Small |
 | BE-28 | Coded `/video/token` errors; explicit join window | Low | M5 | Small |
 | BE-29 | `register` must not re-key an existing doctor account | **High (security)** | M1 AUTH-06 | Small |
+| BE-30 | Remove the profile photo | Low | M2 PROF-03 | Small |
 
 Then: **Confirm with the backend** (questions, C-1…C-10) and **Already satisfied** (do not request again).
 
@@ -484,3 +485,29 @@ Checked on 2026-11-04 against `openapi.json` and the backend source; do not requ
 - `DELETE /patients/{id}/forms/{formId}`, `GET /schedule/blocks?day`, `PUT /schedule/date-specific/{id}`, `GET /calendar?locationId`.
 - Development backend `https://api-dev.shifa.uz` with seed accounts (patient app item 3).
 - Rate limits answer 429 `RATE_LIMITED`.
+
+## BE-30 Remove the profile photo
+
+**Needed by:** flow `08/02` §3 (photo sheet: "Remove photo"); ticket PROF-03.
+
+**Now:** `POST /doctors/me/photo` replaces the photo, but nothing removes it: `PATCH /doctors/me/profile` would run an
+empty `avatarUrl` through the URL signer.
+
+**Change:** `DELETE /doctors/me/photo` → 204, clearing `avatarUrl` (and the stored file).
+
+**App until then:** the photo sheet offers Take photo and Choose from gallery only.
+
+
+## BE-31 A new photo needs a new URL
+
+**Needed by:** flow `08/02` §3 (the new photo shows at once everywhere); ticket PROF-03.
+
+**Now:** `POST /doctors/me/photo` stores every upload under the same key (`doctors/<name>-<id>.<ext>`), so the
+`photoUrl` it returns, and every later `GET /doctors/me`, is the URL of the previous picture. Image caches keep the old
+picture (the app's for the rest of the run, and patients' apps too).
+
+**Change:** put a version in the key or the URL (a hash of the content, or `?v=<updatedAt>` added by `PublicUrls`).
+
+**App until then:** the upload answer gets `?v=<time>` on the device, so the doctor sees the new picture right after
+uploading; a later profile refresh brings back the plain URL, and the cache may show the old picture until the app
+restarts.

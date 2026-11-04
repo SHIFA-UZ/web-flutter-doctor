@@ -1753,6 +1753,13 @@
   "requirementMet": "выполнено",
   "requirementNotMet": "не выполнено",
   "errorRequestId": "ID запроса: {id}",
+  "changePhoto": "Изменить фото",
+  "discardChangesTitle": "Отменить изменения?",
+  "discardChangesBody": "Изменения на этом экране будут потеряны.",
+  "saveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+  "photoUploadFailed": "Не удалось загрузить фото. Попробуйте ещё раз.",
+  "nameInvalid": "Только буквы, пробелы, дефисы и апострофы, до 60 символов.",
+  "professional": "Профессиональные данные",
   "addServices": "Добавить услуги",
   "addProfession": "Указать специальность",
   "addPhone": "Добавить телефон",
@@ -2278,5 +2285,6 @@
   "yesCancel": "Да, отменить",
   "yesterday": "Вчера",
   "yourCameraPreview": "Предпросмотр вашей камеры",
-  "yourName": "Ваше имя"
+  "yourName": "Ваше имя",
+  "cameraAccessNeeded": "Чтобы сделать фото, нужен доступ к камере"
 }

@@ -33,6 +33,7 @@ import shifa.doctor.data.model.ProfileUpdateRequest
 import shifa.doctor.data.model.RegisterRequest
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.settings.LanguageRepository
+import shifa.doctor.utils.PickedImage
 import java.io.File
 
 // Every endpoint the app calls has a handler (CLAUDE.md "Debug builds"); this test lists them, so a new endpoint
@@ -162,6 +163,16 @@ class DemoBackendTest {
             assertThat(me.settings.defaultStartTab).isEqualTo("calendar")
             assertThat(me.contact.email).isEqualTo("new@shifa.dev")
             assertThat(profile.meProfile().getOrThrow().firstName).isEqualTo("Aziza")
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
+    fun `a photo upload answers locally and shows in doctors_me`() =
+        runTest {
+            val profile = ProfileRepository({ client })
+            val url = profile.uploadPhoto(PickedImage("photo.jpg", byteArrayOf(1, 2, 3))).getOrThrow()
+            assertThat(url).contains("demo-photo.jpg?v=")
+            assertThat(profile.refresh().getOrThrow().profile.photoUrl).endsWith("demo-photo.jpg")
             assertThat(forwarded).isEmpty()
         }
 }

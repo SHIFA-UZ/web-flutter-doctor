@@ -1753,6 +1753,13 @@
   "requirementMet": "bajarildi",
   "requirementNotMet": "bajarilmadi",
   "errorRequestId": "So'rov ID: {id}",
+  "changePhoto": "Rasmni o'zgartirish",
+  "discardChangesTitle": "O'zgarishlar bekor qilinsinmi?",
+  "discardChangesBody": "Ushbu ekrandagi o'zgarishlar yo'qoladi.",
+  "saveFailed": "Saqlab bo'lmadi. Qaytadan urinib ko'ring.",
+  "photoUploadFailed": "Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.",
+  "nameInvalid": "Faqat harflar, bo'sh joy, chiziqcha yoki apostrof, 60 tagacha.",
+  "professional": "Kasbiy ma'lumotlar",
   "addServices": "Xizmatlarni qo'shish",
   "addProfession": "Mutaxassislikni qo'shish",
   "addPhone": "Telefon qo'shish",
@@ -2278,5 +2285,6 @@
   "yesCancel": "Ha, bekor qilish",
   "yesterday": "Kecha",
   "yourCameraPreview": "Kamerangizni oldindan ko'rish",
-  "yourName": "Sizning ismingiz"
+  "yourName": "Sizning ismingiz",
+  "cameraAccessNeeded": "Suratga olish uchun kameraga ruxsat kerak"
 }

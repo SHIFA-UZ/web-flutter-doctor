@@ -19,6 +19,7 @@ import shifa.doctor.data.auth.Invite
 import shifa.doctor.data.catalog.CatalogRepository
 import shifa.doctor.data.catalog.Clinic
 import shifa.doctor.data.catalog.Profession
+import shifa.doctor.data.catalog.matching
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.CheckExistingPatientRequest
 import shifa.doctor.data.model.ProfileUpdateRequest
@@ -44,10 +45,10 @@ import shifa.doctor.generated.resources.staffEmailInUse
 import shifa.doctor.generated.resources.timezoneDetectionFailed
 import shifa.doctor.ui.auth.newPasswordErrors
 import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.TimeZones
-import shifa.doctor.utils.UzbekCyrillic
 import shifa.doctor.utils.isEmailAddress
 import shifa.doctor.utils.normalizedEmail
 
@@ -113,14 +114,7 @@ data class RegisterUiState(
     val timeZoneOptions get() = TimeZones.options(query, detectedTimeZone)
 
     // Both labels are searched, whatever the language (08 §4.1 `matches`).
-    val professionOptions get() =
-        catalog.filter {
-                p ->
-            // The Ўзбекча label is shown transliterated, so it is matched that way too.
-            query.isBlank() ||
-                listOfNotNull(p.english, p.uzbek, p.uzbek?.let(UzbekCyrillic::fromLatin))
-                    .any { it.contains(query.trim(), true) }
-        }
+    val professionOptions get() = catalog.matching(query)
 
     val extras get() =
         ProfileUpdateRequest(
@@ -240,9 +234,14 @@ class RegisterViewModel(
                 _state.update { it.copy(pickerLoading = true, pickerFailed = false) }
                 if (picker == RegisterPicker.Profession) {
                     // Offline, the bundled list is shown and "Couldn't load. Retry" stays above it until the backend answers.
-                    val result = catalogs.professions()
-                    val list = result.getOrNull() ?: catalogs.bundledProfessions()
-                    _state.update { it.copy(pickerLoading = false, catalog = list, pickerFailed = result.isFailure) }
+                    val loaded = catalogs.professionCatalog()
+                    _state.update {
+                        it.copy(
+                            pickerLoading = false,
+                            catalog = loaded.professions,
+                            pickerFailed = loaded.failed,
+                        )
+                    }
                 } else {
                     val result = catalogs.clinics(q.takeIf { it.length >= MIN_SEARCH })
                     val list =
@@ -441,7 +440,12 @@ class RegisterViewModel(
                         Result.failure(patchFailure ?: ApiException.Unauthorized(null, null))
                     else -> result
                 }
-            if (final.isSuccess && patchFailure != null) ShellNotice.pending.value = Res.string.profileExtrasNotSaved
+            if (final.isSuccess && patchFailure != null) {
+                ShellNotice.pending.value =
+                    Notice(
+                        Res.string.profileExtrasNotSaved,
+                    )
+            }
             _state.update {
                 final.fold(
                     // The typed passwords are dropped once they are no longer needed (flow §12).

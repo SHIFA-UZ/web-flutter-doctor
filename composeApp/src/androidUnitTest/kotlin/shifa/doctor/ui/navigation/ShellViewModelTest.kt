@@ -219,7 +219,7 @@ class ShellViewModelTest {
             profile.refresh()
             waitFor { classToTest.state.value.tab == ShellTab.Home }
             assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Home)
-            assertThat(ShellNotice.pending.value).isEqualTo(Res.string.tasksNotOnPlan)
+            assertThat(ShellNotice.pending.value).isEqualTo(Notice(Res.string.tasksNotOnPlan))
             ShellNotice.pending.value = null
         }
 

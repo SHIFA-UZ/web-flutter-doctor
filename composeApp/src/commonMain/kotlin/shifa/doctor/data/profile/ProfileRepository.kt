@@ -1,15 +1,20 @@
 package shifa.doctor.data.profile
 
 import io.ktor.client.HttpClient
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
@@ -21,6 +26,8 @@ import shifa.doctor.data.model.DoctorProfile
 import shifa.doctor.data.model.DoctorSettings
 import shifa.doctor.data.model.MeProfile
 import shifa.doctor.data.model.ProfileUpdateRequest
+import shifa.doctor.utils.PickedImage
+import shifa.doctor.utils.currentInstant
 
 /**
  * The signed-in doctor's profile (PROF-01, 08 §1, §10). [me] is the last `GET /doctors/me`, shared by the shell
@@ -40,13 +47,56 @@ class ProfileRepository(
     // overwrites it (two quick resumes, a save during a refresh).
     private var version = 0
 
+    // The last upload's plain URL and its versioned form (BE-31): later answers carry the plain one, which would show
+    // the cached old picture again, so it is swapped back.
+    private var uploaded: Pair<String, String>? = null
+
+    private fun DoctorMe.withPhotoVersion(): DoctorMe {
+        val (plain, versioned) = uploaded ?: return this
+        return if (profile.photoUrl == plain) copy(profile = profile.copy(photoUrl = versioned)) else this
+    }
+
     /** `GET /doctors/me`. */
     suspend fun refresh(): Result<DoctorMe> {
         val started = generation
         val mine = ++version
         return apiCall<DoctorMe> { client().get(ApiConfig.Endpoints.DOCTOR_ME) }.onSuccess {
-            if (started == generation && mine == version) _me.value = it
+            if (started == generation && mine == version) _me.value = it.withPhotoVersion()
         }
+    }
+
+    /**
+     * `POST /doctors/me/photo` (multipart part `file`, a JPEG from `utils/ImagePicker`): the new photo's URL, also put
+     * into the stored profile.
+     */
+    suspend fun uploadPhoto(photo: PickedImage): Result<String> {
+        val started = generation
+        return apiCall<UploadAnswer> {
+            client().submitFormWithBinaryData(
+                ApiConfig.Endpoints.DOCTOR_PHOTO,
+                formData {
+                    append(
+                        "file",
+                        photo.bytes,
+                        Headers.build {
+                            append(HttpHeaders.ContentType, "image/jpeg")
+                            append(HttpHeaders.ContentDisposition, "filename=\"${photo.fileName}\"")
+                        },
+                    )
+                },
+            )
+            // Every upload lands on the same key (BE-31), so a version stops the image cache showing the old picture.
+        }.map {
+            val separator = if ('?' in it.photoUrl) '&' else '?'
+            it.photoUrl to "${it.photoUrl}${separator}v=${currentInstant().toEpochMilliseconds()}"
+        }
+            .onSuccess { pair ->
+                if (started == generation) {
+                    uploaded = pair
+                    version++
+                    _me.update { it?.copy(profile = it.profile.copy(photoUrl = pair.second)) }
+                }
+            }.map { it.second }
     }
 
     /** How many services the doctor offers (`GET /doctors/me/services`; SVC-01 reads the services themselves). */
@@ -86,6 +136,7 @@ class ProfileRepository(
 
     fun clear() {
         generation++
+        uploaded = null
         _me.value = null
     }
 
@@ -103,11 +154,16 @@ class ProfileRepository(
         }.onSuccess { saved ->
             if (started == generation) {
                 version++
-                _me.update { it?.let { me -> into(me, saved) } }
+                _me.update { it?.let { me -> into(me, saved).withPhotoVersion() } }
             }
         }
     }
 }
+
+@Serializable
+private class UploadAnswer(
+    val photoUrl: String,
+)
 
 /** The app's one profile (like `sessionRepository`). */
 val profileRepository by lazy { ProfileRepository() }

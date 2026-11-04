@@ -1,8 +1,6 @@
 package shifa.doctor.ui.register
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
@@ -27,7 +25,6 @@ import shifa.doctor.generated.resources.address
 import shifa.doctor.generated.resources.cancel
 import shifa.doctor.generated.resources.chooseAClinic
 import shifa.doctor.generated.resources.chooseOneOrMore
-import shifa.doctor.generated.resources.clearAll
 import shifa.doctor.generated.resources.clinic
 import shifa.doctor.generated.resources.createAccount
 import shifa.doctor.generated.resources.dateOfBirth
@@ -41,12 +38,11 @@ import shifa.doctor.generated.resources.optional
 import shifa.doctor.generated.resources.other
 import shifa.doctor.generated.resources.profession
 import shifa.doctor.generated.resources.search
-import shifa.doctor.generated.resources.searchProfession
 import shifa.doctor.generated.resources.searching
 import shifa.doctor.generated.resources.timezoneScheduleHint
 import shifa.doctor.ui.auth.LocalLanguageSwitch
+import shifa.doctor.ui.profile.ProfessionPickerSheet
 import shifa.doctor.ui.theme.ShifaColors
-import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.widgets.OptionItem
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaLink
@@ -139,33 +135,23 @@ internal fun ClinicPicker(
         },
 )
 
-/** The profession sheet: several can be picked; "Clear all" and "Done" below (DaAuth picker, `multi`). */
+/** The profession sheet (shared with Personal information). */
 @Composable
 internal fun ProfessionPicker(
     state: RegisterUiState,
     actions: RegisterActions,
-) {
-    val options = state.professionOptions
-    ShifaPickerSheet(
-        tr(Res.string.profession),
-        state.query,
-        actions.onQuery,
-        tr(Res.string.searchProfession),
-        options.map { p -> OptionItem(p.label(), selected = state.professions.any { it.english == p.english }) },
-        onPick = { actions.toggleProfession(options[it]) },
-        onClose = actions.closePicker,
-        loadingText = if (state.pickerLoading) tr(Res.string.searching) else null,
-        onRetry = actions.retryPicker.takeIf { state.pickerFailed },
-        footer = {
-            Row(horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
-                if (state.professions.isNotEmpty()) {
-                    ShifaSecondaryButton(tr(Res.string.clearAll), actions.clearProfessions, Modifier.weight(1f))
-                }
-                ShifaPrimaryButton(tr(Res.string.done), actions.closePicker, Modifier.weight(1f))
-            }
-        },
-    )
-}
+) = ProfessionPickerSheet(
+    state.query,
+    actions.onQuery,
+    state.catalog,
+    state.professions,
+    state.pickerLoading,
+    state.pickerFailed,
+    actions.retryPicker,
+    actions.toggleProfession,
+    actions.clearProfessions,
+    actions.closePicker,
+)
 
 /**
  * The platform-neutral Material date picker for the birth date: 1900 to today, opening 25 years back (flow 01/08 §3).

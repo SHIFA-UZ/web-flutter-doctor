@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.back
@@ -98,6 +99,8 @@ fun ShifaSubHeader(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     onCheck: (() -> Unit)? = null,
+    // What the check does, for screen readers ("Save" on an edit form).
+    checkDescription: StringResource = Res.string.select,
     onMore: (() -> Unit)? = null,
     avatar: Boolean = false,
     avatarUrl: String? = null,
@@ -135,7 +138,7 @@ fun ShifaSubHeader(
                 ShifaActionButton(
                     it,
                     icon = Res.drawable.ic_tasks_16,
-                    contentDescription = tr(Res.string.select),
+                    contentDescription = tr(checkDescription),
                     variant = ShifaActionVariant.Secondary,
                 )
             }

@@ -170,7 +170,7 @@ class ShellViewModel(
         _state.update {
             it.copy(gate = gate, tab = if (lostTasks) it.home else it.tab, intelligence = it.intelligence && !lostAi)
         }
-        if (lostTasks) ShellNotice.pending.value = Res.string.tasksNotOnPlan
+        if (lostTasks) ShellNotice.pending.value = Notice(Res.string.tasksNotOnPlan)
     }
 
     /**

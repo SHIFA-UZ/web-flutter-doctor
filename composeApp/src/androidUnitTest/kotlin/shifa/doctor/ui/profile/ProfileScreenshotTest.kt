@@ -24,4 +24,10 @@ class ProfileScreenshotTest {
 
     @Test
     fun error() = captureRoboImage("screenshots/Profile_error.png") { ProfileErrorPreview() }
+
+    @Test
+    fun personalInfo() = captureRoboImage("screenshots/PersonalInfo_edited.png") { PersonalInfoPreview() }
+
+    @Test
+    fun personalInfoErrors() = captureRoboImage("screenshots/PersonalInfo_errors.png") { PersonalInfoErrorsPreview() }
 }

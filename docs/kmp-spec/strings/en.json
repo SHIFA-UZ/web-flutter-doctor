@@ -1753,6 +1753,13 @@
   "requirementMet": "met",
   "requirementNotMet": "not met",
   "errorRequestId": "Request ID: {id}",
+  "changePhoto": "Change photo",
+  "discardChangesTitle": "Discard changes?",
+  "discardChangesBody": "Your changes on this screen will be lost.",
+  "saveFailed": "Couldn't save. Try again.",
+  "photoUploadFailed": "Couldn't upload the photo. Try again.",
+  "nameInvalid": "Use letters, spaces, hyphens or apostrophes, up to 60.",
+  "professional": "Professional",
   "addServices": "Add services",
   "addProfession": "Add profession",
   "addPhone": "Add phone",
@@ -2278,5 +2285,6 @@
   "yesCancel": "Yes, Cancel",
   "yesterday": "Yesterday",
   "yourCameraPreview": "Your camera preview",
-  "yourName": "Your Name"
+  "yourName": "Your Name",
+  "cameraAccessNeeded": "Camera access is needed to take a photo"
 }

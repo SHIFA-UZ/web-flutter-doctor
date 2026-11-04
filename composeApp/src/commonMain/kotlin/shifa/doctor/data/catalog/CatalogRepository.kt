@@ -10,12 +10,31 @@ import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.model.ProfessionDto
 import shifa.doctor.data.model.PublicClinicDto
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.utils.UzbekCyrillic
 
 /** A profession of the catalogue; [english] is what the backend stores (08 §4.1). */
 data class Profession(
     val english: String,
     val uzbek: String?,
 )
+
+data class ProfessionCatalog(
+    val professions: List<Profession>,
+    val failed: Boolean,
+)
+
+/** The professions whose English, Uzbek or Ўзбекча label contains [query] (08 §4.1 `matches`). */
+fun List<Profession>.matching(query: String): List<Profession> {
+    val q = query.trim()
+    if (q.isEmpty()) return this
+    return filter { p ->
+        listOfNotNull(
+            p.english,
+            p.uzbek,
+            p.uzbek?.let(UzbekCyrillic::fromLatin),
+        ).any { it.contains(q, ignoreCase = true) }
+    }
+}
 
 data class Clinic(
     val id: Long,
@@ -44,6 +63,15 @@ class CatalogRepository(
                 apiJson.decodeFromString<List<ProfessionDto>>(bundled()),
             )
         }.getOrDefault(emptyList())
+
+    /**
+     * The catalogue for a picker: the backend's, or the bundled one when that fails ([failed] = true: the sheet offers
+     * "Couldn't load. Retry" above it).
+     */
+    suspend fun professionCatalog(): ProfessionCatalog {
+        val result = professions()
+        return ProfessionCatalog(result.getOrNull() ?: bundledProfessions(), result.isFailure)
+    }
 
     private fun toProfessions(list: List<ProfessionDto>) =
         list.filter { it.english.isNotBlank() }.map { Profession(it.english, it.uzbek) }
