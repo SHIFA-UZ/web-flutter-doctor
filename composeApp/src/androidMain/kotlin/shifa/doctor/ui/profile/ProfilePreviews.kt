@@ -263,3 +263,22 @@ internal fun ServiceEditorPreview() =
             ServicesActions(),
         )
     }
+
+@Composable
+internal fun ServiceGroupsPreview() =
+    PreviewTheme {
+        val groups =
+            listOf(
+                shifa.doctor.data.model.ServiceGroup(1, "Consultations", 1),
+                shifa.doctor.data.model.ServiceGroup(2, "Orthodontics", 2),
+            )
+        ServicesContent(
+            ServicesUiState(
+                loading = false,
+                groups = groups,
+                groupsDraft = groups + shifa.doctor.data.model.ServiceGroup(name = ""),
+                groupErrors = setOf(2),
+            ),
+            ServicesActions(),
+        )
+    }

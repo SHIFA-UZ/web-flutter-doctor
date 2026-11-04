@@ -770,6 +770,8 @@
     <string name="defaultVisitReason">Check-up</string>
     <string name="delete">Delete</string>
     <string name="deleteCertificateTitle">Delete certificate?</string>
+    <string name="deleteGroupBody">Its services stay and become ungrouped.</string>
+    <string name="deleteGroupTitle">Delete group?</string>
     <string name="deleteLocation">Delete location</string>
     <string name="deleteLocationConfirm">Delete "%1$s"? Schedule rules and appointments at this location must be removed first.</string>
     <string name="deleteServiceTitle">Delete service?</string>
@@ -1412,6 +1414,8 @@
     <string name="moreDocumentationOptions">More documentation options</string>
     <string name="moreOptions">More options</string>
     <string name="morningTime">Morning Time</string>
+    <string name="moveDown">Move %1$s down</string>
+    <string name="moveUp">Move %1$s up</string>
     <string name="muteMic">Mute microphone</string>
     <string name="mySchedule">My schedule</string>
     <string name="nameInvalid">Use letters, spaces, hyphens or apostrophes, up to 60.</string>
@@ -1918,7 +1922,10 @@
     <string name="serviceFreeConsultationHint">Patients who choose this service for a video visit are confirmed immediately with no payment.</string>
     <string name="serviceGroupLabel">Group</string>
     <string name="serviceGroupNone">No group</string>
+    <string name="serviceGroups">Service groups</string>
+    <string name="serviceGroupsHelper">Groups higher in the list show first on your profile. Services in a deleted group become ungrouped.</string>
     <string name="serviceGroupsHint">Use groups to organize services on your profile. Lower sort order appears first.</string>
+    <string name="serviceGroupsSaved">Groups saved</string>
     <string name="serviceGroupsTitle">Service groups</string>
     <string name="serviceManagedByClinic">This service is managed under Clinic → Services. Edit it there.</string>
     <string name="serviceManagedByClinicShort">Clinic-managed</string>

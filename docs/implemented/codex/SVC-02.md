@@ -1,0 +1,22 @@
+- **P1 — Retrying a partial save can delete a successfully created group.** [ServicesScreen.kt:400](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:400): successful POST responses are discarded, leaving new draft rows with null IDs. If a later write fails, `load()` refreshes `groups` but not `groupsDraft`. Retry classifies the newly persisted group as removed (line 385), deletes it, then recreates it. With `ON DELETE SET NULL`, any services assigned meanwhile lose their group.
+
+- **P2 — Reopening during the post-save refresh can undo saved changes.** [ServicesScreen.kt:408](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:408): the editor closes before reload completes. With existing services, loading remains false, so Groups can reopen using stale `groups`. The eventual refresh changes the comparison baseline beneath that draft; saving can restore old names/order or delete a newly created group absent from the stale draft.
+
+- **P2 — Edits remain enabled during saving and are silently lost.** [ServicesScreen.kt:372](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:372): `editGroups` accepts changes while `saving`, and name/add/remove/reorder controls remain enabled. Requests use the snapshot captured at Save; subsequent edits disappear when success calls `closeEditor()`, despite the “Groups saved” banner.
+
+- **P2 — Group deletion lacks the required confirmation.** [ServicesScreen.kt:847](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:847): trash immediately removes the draft row, and Save issues DELETE without the §7 “Delete group? Its services stay and become ungrouped” dialog. The general helper does not provide the ticket’s required delete confirmation.
+
+- **P2 — Demo group deletion leaves dangling service assignments.** [DemoBackend.kt:197](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/data/debug/DemoBackend.kt:197): DELETE removes only the group; services retain its `groupId`, unlike the backend’s `ON DELETE SET NULL`. Because `saveGroup` allocates `max(existing IDs)+1` (line 309), deleting the highest-ID group and adding another can also attach those services to the replacement ID.
+
+- **P2 — The required sheet interaction is absent.** [ServicesScreen.kt:792](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:792): Groups renders a full-screen `ProfileForm`, replacing the list rather than opening the §3 sheet. Consequently, the specified drag-down dismissal with discard confirmation is unavailable.
+
+- **P2 — Drag reordering is missing.** [ServicesScreen.kt:830](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-flutter-doctor-app2/composeApp/src/commonMain/kotlin/shifa/doctor/ui/profile/ServicesScreen.kt:830): ordering is exposed only through up/down buttons; no drag handle or gesture implements the target interaction explicitly required by §§3 and 7.---
+**Answers:**
+1. *A retry deletes and recreates a created group (P1):* fixed; a created group's new id goes into the draft as soon as its POST succeeds, and a failed save keeps that draft, so a retry only sends what is still missing. Tested.
+2. *Reopening during the post-save reload:* fixed; Save reloads first and closes the editor after, so a reopened editor starts from the server's groups.
+3. *Edits during saving:* fixed; the rows, buttons and Add group are disabled while saving and `editGroups` ignores changes then.
+4. *No delete confirmation:* fixed; the trash asks "Delete group? Its services stay and become ungrouped."; the row goes on Save.
+5. *Demo backend dangling assignments:* fixed; deleting a group ungroups its services and ids are never reused.
+6. *Full screen instead of a sheet:* kept; the groups editor is full screen like the service editor (it can hold many rows and the keyboard), Back with changes asks first, which covers the sheet's drag-to-dismiss question.
+7. *No drag to reorder:* kept; up / down buttons do the same and work with a screen reader without a drag library. Recorded in profile.md.
+Local; no second round.

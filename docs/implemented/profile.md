@@ -283,3 +283,22 @@ Built 2026-11-04. Flow `08/08-services-and-pricing.md`; spec `08 §2`; board `Da
 - **Tests:** `ServicesViewModelTest` (8: load with groups in order, failed load, clinic-managed, validation, create
   payload, edit / free / delete, unchanged fractional UZS price, 404 delete), `DemoBackendTest` (+1: services in memory), `ProfileScreenshotTest` (+2:
   `Services_list`, `Services_editor`).
+
+## SVC-02 · Service groups
+
+Built 2026-11-04. Flow `08/08` §3 (groups editor sheet) and §7.
+
+- **Entry:** a "Service groups" row above the services list (it shows the group names); the flow puts a folder icon in
+  the app bar, but `ShifaSubHeader` has no slot for a custom action, so the row stands in.
+- **Editor** (in the services screen, on the shared form scaffold): one row per group: name (required, ≤ 60), move up
+  and move down (the order is the sort order: 1, 2, 3…), delete; Add group; the helper says services in a deleted
+  group become ungrouped (the backend's `ON DELETE SET NULL`). Save runs the deletes, then the creates and the changed
+  rows, one request at a time, stopping at the first failure with its message and request id; then services, groups
+  and locations reload so the list shows the new group names. A group already gone (404 on delete) counts as deleted. Deleting asks "Delete group? Its services stay and become ungrouped." first; controls are off while
+  saving; a created group keeps its id in the draft, so a retry after a partial failure never creates it twice; the
+  editor closes only after the reload.
+  Back with changes asks first.
+- **Not built:** drag to reorder (up / down instead).
+- **Tests:** `ServicesViewModelTest` (+2: delete, PATCH with the new order, POST of a new group, the required name;
+  retry after a partial failure),
+  `ProfileScreenshotTest` (+1: `Services_groups`; `Services_list` re-recorded with the groups row).

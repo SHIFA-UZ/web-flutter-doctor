@@ -2331,5 +2331,12 @@
   "noServicesYet": "Hali xizmatlar yo'q. Birinchisini quyida qo'shing.",
   "freeRemovesPrices": "Mavjud narxlar o'chiriladi",
   "removePriceRow": "Narxni olib tashlash",
-  "servicesSummary": "{services} ta xizmat · {groups} ta guruh"
+  "servicesSummary": "{services} ta xizmat · {groups} ta guruh",
+  "serviceGroups": "Xizmat guruhlari",
+  "serviceGroupsHelper": "Ro'yxatda yuqoridagi guruhlar profilingizda birinchi ko'rsatiladi. O'chirilgan guruhdagi xizmatlar guruhsiz qoladi.",
+  "serviceGroupsSaved": "Guruhlar saqlandi",
+  "moveUp": "{name} ni yuqoriga",
+  "moveDown": "{name} ni pastga",
+  "deleteGroupTitle": "Guruh o'chirilsinmi?",
+  "deleteGroupBody": "Uning xizmatlari qoladi va guruhsiz bo'ladi."
 }

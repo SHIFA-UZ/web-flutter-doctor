@@ -2331,5 +2331,12 @@
   "noServicesYet": "Услуг пока нет. Добавьте первую ниже.",
   "freeRemovesPrices": "Текущие цены будут удалены",
   "removePriceRow": "Удалить цену",
-  "servicesSummary": "Услуг: {services} · групп: {groups}"
+  "servicesSummary": "Услуг: {services} · групп: {groups}",
+  "serviceGroups": "Группы услуг",
+  "serviceGroupsHelper": "Группы выше в списке показываются в профиле первыми. Услуги удалённой группы остаются без группы.",
+  "serviceGroupsSaved": "Группы сохранены",
+  "moveUp": "Переместить {name} выше",
+  "moveDown": "Переместить {name} ниже",
+  "deleteGroupTitle": "Удалить группу?",
+  "deleteGroupBody": "Её услуги останутся и будут без группы."
 }

@@ -770,6 +770,8 @@
     <string name="defaultVisitReason">Осмотр</string>
     <string name="delete">Удалить</string>
     <string name="deleteCertificateTitle">Удалить сертификат?</string>
+    <string name="deleteGroupBody">Её услуги останутся и будут без группы.</string>
+    <string name="deleteGroupTitle">Удалить группу?</string>
     <string name="deleteLocation">Удалить местоположение</string>
     <string name="deleteLocationConfirm">Удалить "%1$s"? Правила расписания и записи в этом местоположении сначала нужно удалить.</string>
     <string name="deleteServiceTitle">Удалить услугу?</string>
@@ -1412,6 +1414,8 @@
     <string name="moreDocumentationOptions">Другие варианты документирования</string>
     <string name="moreOptions">Другие разделы</string>
     <string name="morningTime">Утреннее время</string>
+    <string name="moveDown">Переместить %1$s ниже</string>
+    <string name="moveUp">Переместить %1$s выше</string>
     <string name="muteMic">Выключить микрофон</string>
     <string name="mySchedule">Моё расписание</string>
     <string name="nameInvalid">Только буквы, пробелы, дефисы и апострофы, до 60 символов.</string>
@@ -1918,7 +1922,10 @@
     <string name="serviceFreeConsultationHint">При выборе этой услуги для видеоприёма запись сразу подтверждается без оплаты.</string>
     <string name="serviceGroupLabel">Группа</string>
     <string name="serviceGroupNone">Без группы</string>
+    <string name="serviceGroups">Группы услуг</string>
+    <string name="serviceGroupsHelper">Группы выше в списке показываются в профиле первыми. Услуги удалённой группы остаются без группы.</string>
     <string name="serviceGroupsHint">Группы помогают упорядочить услуги в профиле. Меньший порядок сортировки отображается раньше.</string>
+    <string name="serviceGroupsSaved">Группы сохранены</string>
     <string name="serviceGroupsTitle">Группы услуг</string>
     <string name="serviceManagedByClinic">Эта услуга управляется в разделе Клиника → Услуги. Редактируйте её там.</string>
     <string name="serviceManagedByClinicShort">Из каталога клиники</string>

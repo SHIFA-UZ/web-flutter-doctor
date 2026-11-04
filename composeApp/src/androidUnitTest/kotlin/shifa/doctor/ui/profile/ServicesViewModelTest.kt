@@ -36,6 +36,8 @@ class ServicesViewModelTest {
     private val sent = mutableListOf<String>()
     private var failServices = false
     private var deleteStatus = HttpStatusCode.NoContent
+    private var failGroupWrite = -1 // the index of the group write to fail, -1 for none
+    private var groupWrites = 0
     private val engine =
         MockEngine { req ->
             val json = headersOf(HttpHeaders.ContentType, "application/json")
@@ -70,6 +72,14 @@ class ServicesViewModelTest {
                     } else {
                         respond("""{"status":404,"code":"NOT_FOUND"}""", deleteStatus, json)
                     }
+                }
+                path.startsWith("doctors/me/service-groups") && groupWrites++ == failGroupWrite -> {
+                    sent += "FAILED ${req.method.value} $path"
+                    respond(
+                        """{"status":500,"code":"INTERNAL","requestId":"req-g"}""",
+                        HttpStatusCode.InternalServerError,
+                        json,
+                    )
                 }
                 else -> {
                     val body = req.body.toByteArray().decodeToString()
@@ -196,5 +206,51 @@ class ServicesViewModelTest {
         classToTest.delete()
         settle { classToTest.state.value.services.size == 1 }
         assertThat(classToTest.state.value.editing).isFalse()
+    }
+
+    @Test
+    fun `groups - delete, then create and reorder with the list's order, then everything reloads`() {
+        val classToTest = loaded()
+        classToTest.openGroups()
+        assertThat(classToTest.state.value.groupsDraft?.map { it.name }).containsExactly("Basics", "Ortho").inOrder()
+        classToTest.editGroups {
+            it.reversed().filter {
+                    g ->
+                g.name == "Ortho"
+            } + shifa.doctor.data.model.ServiceGroup(name = "")
+        }
+        classToTest.saveGroups()
+        assertThat(classToTest.state.value.groupErrors).containsExactly(1) // a new group needs a name
+        classToTest.editGroups { it.mapIndexed { i, g -> if (i == 1) g.copy(name = " Implants ") else g } }
+        classToTest.saveGroups()
+        settle { !classToTest.state.value.editing }
+        assertThat(sent).containsExactly(
+            "DELETE doctors/me/service-groups/4",
+            "PATCH doctors/me/service-groups/5 {\"name\":\"Ortho\",\"sortOrder\":1}",
+            "POST doctors/me/service-groups {\"name\":\"Implants\",\"sortOrder\":2}",
+        ).inOrder()
+    }
+
+    @Test
+    fun `a retry after a partial failure doesn't delete or recreate a group that was created`() {
+        val classToTest = loaded()
+        classToTest.openGroups()
+        failGroupWrite = 1 // the POST of "A" succeeds (id 77), the PATCH after it fails
+        classToTest.editGroups {
+            listOf(shifa.doctor.data.model.ServiceGroup(name = "A")) +
+                it.map {
+                        g ->
+                    g.copy(name = g.name + "!")
+                }
+        }
+        classToTest.saveGroups()
+        settle { !classToTest.state.value.saving }
+        assertThat(classToTest.state.value.banner?.requestId).isEqualTo("req-g")
+        assertThat(classToTest.state.value.groupsDraft?.first()?.id).isEqualTo(77)
+        failGroupWrite = -1
+        sent.clear()
+        classToTest.saveGroups()
+        settle { !classToTest.state.value.editing }
+        assertThat(sent.none { it.startsWith("POST") || it.startsWith("DELETE") }).isTrue()
     }
 }

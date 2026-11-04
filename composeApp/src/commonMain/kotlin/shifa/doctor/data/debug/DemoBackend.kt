@@ -25,6 +25,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
@@ -84,6 +85,9 @@ class DemoBackend(
     private val real by lazy(passthrough)
     private val mutex = Mutex()
     private var me: JsonObject? = null
+
+    private var groups: List<JsonElement> = emptyList()
+    private var lastGroupId = 0L
 
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
 
@@ -186,7 +190,27 @@ class DemoBackend(
                 services = services.filterNot { it.jsonObject["id"]?.jsonPrimitive?.content == id.toString() }
                 Reply(HttpStatusCode.NoContent, "")
             }
-            get && path == Endpoints.SERVICE_GROUPS -> ok(JsonArray(emptyList()))
+            get && path == Endpoints.SERVICE_GROUPS -> ok(JsonArray(groups))
+            request.method == HttpMethod.Post && path == Endpoints.SERVICE_GROUPS -> saveGroup(null, body)
+            request.method == HttpMethod.Patch && path.startsWith(Endpoints.SERVICE_GROUPS + "/") ->
+                saveGroup(path.substringAfterLast('/').toLongOrNull(), body)
+            request.method == HttpMethod.Delete && path.startsWith(Endpoints.SERVICE_GROUPS + "/") -> {
+                val id = path.substringAfterLast('/')
+                groups = groups.filterNot { it.jsonObject["id"]?.jsonPrimitive?.content == id }
+                // Like the backend's ON DELETE SET NULL: its services become ungrouped.
+                services =
+                    services.map { svc ->
+                        val o = svc.jsonObject
+                        if (o["groupId"]?.jsonPrimitive?.content == id) {
+                            JsonObject(
+                                o + ("groupId" to JsonNull) + ("groupName" to JsonNull),
+                            )
+                        } else {
+                            svc
+                        }
+                    }
+                Reply(HttpStatusCode.NoContent, "")
+            }
             get && path == Endpoints.DOCTOR_LOCATIONS -> ok(apiJson.parseToJsonElement(DEMO_LOCATIONS))
             get -> null
             else -> refused()
@@ -285,6 +309,29 @@ class DemoBackend(
         val profile = current["profile"]?.jsonObject ?: JsonObject(emptyMap())
         me = JsonObject(current + ("profile" to JsonObject(profile + ("photoUrl" to url))))
         return ok(JsonObject(mapOf("photoUrl" to url)))
+    }
+
+    /** Create ([id] null) or rename / reorder a group. */
+    private fun saveGroup(
+        id: Long?,
+        body: String,
+    ): Reply {
+        val sent =
+            runCatching {
+                apiJson.parseToJsonElement(body).jsonObject
+            }.getOrNull() ?: return fail(HttpStatusCode.BadRequest, "VALIDATION")
+        // Ids never come back after a delete, like a database sequence.
+        val newId = id ?: ++lastGroupId
+        val saved = JsonObject(sent + ("id" to JsonPrimitive(newId)))
+        groups =
+            if (id == null) {
+                groups + saved
+            } else {
+                groups.map {
+                    if (it.jsonObject["id"]?.jsonPrimitive?.content == id.toString()) saved else it
+                }
+            }
+        return ok(saved)
     }
 
     /** Create ([id] null) or replace a service, answering it with its id like the backend. */

@@ -770,6 +770,8 @@
     <string name="defaultVisitReason">Ko'rik</string>
     <string name="delete">O'chirish</string>
     <string name="deleteCertificateTitle">Sertifikat o'chirilsinmi?</string>
+    <string name="deleteGroupBody">Uning xizmatlari qoladi va guruhsiz bo'ladi.</string>
+    <string name="deleteGroupTitle">Guruh o'chirilsinmi?</string>
     <string name="deleteLocation">Joylashuvni o'chirish</string>
     <string name="deleteLocationConfirm">"%1$s" joylashuvini o'chirasizmi? Bu joylashuvdagi jadval qoidalari va uchrashuvlar avval olib tashlanishi kerak.</string>
     <string name="deleteServiceTitle">Xizmat o'chirilsinmi?</string>
@@ -1412,6 +1414,8 @@
     <string name="moreDocumentationOptions">Hujjatlashtirishning boshqa usullari</string>
     <string name="moreOptions">Boshqa bo'limlar</string>
     <string name="morningTime">Ertalabki vaqt</string>
+    <string name="moveDown">%1$s ni pastga</string>
+    <string name="moveUp">%1$s ni yuqoriga</string>
     <string name="muteMic">Mikrofonni o'chirish</string>
     <string name="mySchedule">Mening taqvimim</string>
     <string name="nameInvalid">Faqat harflar, bo'sh joy, chiziqcha yoki apostrof, 60 tagacha.</string>
@@ -1918,7 +1922,10 @@
     <string name="serviceFreeConsultationHint">Bemorlar ushbu xizmatni video qabul uchun tanlasalar, to'lovsiz darhol tasdiqlanadi.</string>
     <string name="serviceGroupLabel">Guruh</string>
     <string name="serviceGroupNone">Guruhsiz</string>
+    <string name="serviceGroups">Xizmat guruhlari</string>
+    <string name="serviceGroupsHelper">Ro'yxatda yuqoridagi guruhlar profilingizda birinchi ko'rsatiladi. O'chirilgan guruhdagi xizmatlar guruhsiz qoladi.</string>
     <string name="serviceGroupsHint">Xizmatlarni profilda tartiblash uchun guruhlardan foydalaning. Kichik tartib raqami birinchi chiqadi.</string>
+    <string name="serviceGroupsSaved">Guruhlar saqlandi</string>
     <string name="serviceGroupsTitle">Xizmat guruhlari</string>
     <string name="serviceManagedByClinic">Bu xizmat Klinika → Xizmatlar bo'limida boshqariladi. Tahrirlashni u yerda qiling.</string>
     <string name="serviceManagedByClinicShort">Klinika boshqaruvi</string>

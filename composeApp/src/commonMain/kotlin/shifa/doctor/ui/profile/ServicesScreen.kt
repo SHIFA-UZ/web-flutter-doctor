@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,24 +48,34 @@ import shifa.doctor.data.model.UpsertService
 import shifa.doctor.data.services.ServicesRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.active
+import shifa.doctor.generated.resources.addGroup
 import shifa.doctor.generated.resources.addPriceRow
 import shifa.doctor.generated.resources.addService
 import shifa.doctor.generated.resources.clinicServiceCurrencyLabel
 import shifa.doctor.generated.resources.clinicServiceInactiveBadge
 import shifa.doctor.generated.resources.clinicServicePriceLabel
 import shifa.doctor.generated.resources.delete
+import shifa.doctor.generated.resources.deleteGroupBody
+import shifa.doctor.generated.resources.deleteGroupTitle
 import shifa.doctor.generated.resources.deleteServiceTitle
 import shifa.doctor.generated.resources.description
 import shifa.doctor.generated.resources.editService
 import shifa.doctor.generated.resources.failedToLoad
 import shifa.doctor.generated.resources.fieldRequired
 import shifa.doctor.generated.resources.freeRemovesPrices
+import shifa.doctor.generated.resources.groupName
 import shifa.doctor.generated.resources.ic_card_22
+import shifa.doctor.generated.resources.ic_chev_d_20
+import shifa.doctor.generated.resources.ic_chev_u_20
+import shifa.doctor.generated.resources.ic_layers_22
 import shifa.doctor.generated.resources.ic_trash_22
+import shifa.doctor.generated.resources.moveDown
+import shifa.doctor.generated.resources.moveUp
 import shifa.doctor.generated.resources.newService
 import shifa.doctor.generated.resources.noServicesYet
 import shifa.doctor.generated.resources.priceScopeAllLocations
 import shifa.doctor.generated.resources.priceScopeLabel
+import shifa.doctor.generated.resources.removeItem
 import shifa.doctor.generated.resources.removePriceRow
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.saveFailed
@@ -72,6 +83,9 @@ import shifa.doctor.generated.resources.serviceDeleted
 import shifa.doctor.generated.resources.serviceFreeConsultation
 import shifa.doctor.generated.resources.serviceGroupLabel
 import shifa.doctor.generated.resources.serviceGroupNone
+import shifa.doctor.generated.resources.serviceGroups
+import shifa.doctor.generated.resources.serviceGroupsHelper
+import shifa.doctor.generated.resources.serviceGroupsSaved
 import shifa.doctor.generated.resources.serviceManagedByClinic
 import shifa.doctor.generated.resources.serviceManagedByClinicShort
 import shifa.doctor.generated.resources.servicePriceDuplicate
@@ -98,6 +112,7 @@ import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
+import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.utils.Money
@@ -140,9 +155,13 @@ data class ServicesUiState(
     val saving: Boolean = false,
     val askDiscard: Boolean = false,
     val askDelete: DoctorService? = null,
+    // The groups editor (SVC-02): the rows as edited, in display order; null when closed.
+    val groupsDraft: List<ServiceGroup>? = null,
+    val groupErrors: Set<Int> = emptySet(),
+    val askDeleteGroup: Int? = null,
 ) {
-    val editing: Boolean get() = draft != null
-    val dirty: Boolean get() = draft != original
+    val editing: Boolean get() = draft != null || groupsDraft != null
+    val dirty: Boolean get() = if (groupsDraft != null) groupsDraft != groups else draft != original
 }
 
 /**
@@ -162,7 +181,11 @@ class ServicesViewModel(
     /** Services, groups and locations together; only the services are required (the others fall back to none). */
     fun load() {
         _state.update { it.copy(loading = it.services.isEmpty(), error = null) }
-        viewModelScope.launch {
+        viewModelScope.launch { fetch() }
+    }
+
+    private suspend fun fetch() =
+        coroutineScope {
             val groups = async { repo.groups().getOrDefault(emptyList()) }
             val locations = async { repo.locations().getOrDefault(emptyList()) }
             repo.services().fold(
@@ -186,7 +209,6 @@ class ServicesViewModel(
                 },
             )
         }
-    }
 
     fun ui(change: (ServicesUiState) -> ServicesUiState) = _state.update(change)
 
@@ -240,6 +262,8 @@ class ServicesViewModel(
     fun closeEditor() =
         _state.update {
             it.copy(
+                groupsDraft = null,
+                groupErrors = emptySet(),
                 draft = null,
                 original = null,
                 askDiscard = false,
@@ -348,6 +372,85 @@ class ServicesViewModel(
         if (!_state.value.editing && !_state.value.loading) load()
     }
 
+    /** SVC-02: the groups as they are, in sort order. */
+    fun openGroups() = _state.update { it.copy(groupsDraft = it.groups, banner = null) }
+
+    fun editGroups(change: (List<ServiceGroup>) -> List<ServiceGroup>) =
+        _state.update { s ->
+            // Not while saving: the requests use what Save saw.
+            if (s.saving) s else s.groupsDraft?.let { s.copy(groupsDraft = change(it), groupErrors = emptySet()) } ?: s
+        }
+
+    /** "Delete group?" first (flow 08/08 §7); the row goes on Save. */
+    fun deleteGroup() =
+        _state.update { s ->
+            val i = s.askDeleteGroup ?: return@update s
+            s.copy(
+                askDeleteGroup = null,
+                groupsDraft =
+                    s.groupsDraft?.filterIndexed {
+                            j,
+                            _,
+                        ->
+                        j != i
+                    },
+                groupErrors = emptySet(),
+            )
+        }
+
+    /**
+     * Deletes, then creates and renames, with the sort order taken from the list's order (1, 2, 3…); one request at a
+     * time, stopping at the first failure. Then everything reloads (services show their new group names).
+     */
+    fun saveGroups() {
+        val s = _state.value
+        val rows = s.groupsDraft ?: return
+        if (s.saving) return
+        val empty = rows.indices.filter { rows[it].name.isBlank() }.toSet()
+        if (empty.isNotEmpty()) return _state.update { it.copy(groupErrors = empty) }
+        val ordered = rows.mapIndexed { i, g -> g.copy(name = g.name.trim(), sortOrder = i + 1) }.toMutableList()
+        val removed = s.groups.mapNotNull { it.id }.filter { id -> ordered.none { it.id == id } }
+        _state.update { it.copy(saving = true, banner = null) }
+        viewModelScope.launch {
+            var failure: Throwable? =
+                removed.firstNotNullOfOrNull {
+                        id ->
+                    repo.deleteGroup(id).exceptionOrNull()?.takeUnless { it is ApiException.NotFound }
+                }
+            if (failure == null) {
+                for ((i, g) in ordered.withIndex()) {
+                    if (g.id != null && s.groups.any { it.id == g.id && it.name == g.name && it.sortOrder == g.sortOrder }) continue
+                    // A created group keeps its new id in the draft, so a retry after a later failure doesn't create it twice.
+                    repo.saveGroup(g).fold(onSuccess = {
+                            saved ->
+                        ordered[i] = g.copy(id = saved.id)
+                    }, onFailure = { failure = it })
+                    if (failure != null) break
+                }
+            }
+            // Reload before closing, so a reopened editor starts from the server's groups.
+            fetch()
+            val e = failure
+            _state.update {
+                if (e == null) {
+                    it.copy(
+                        saving = false,
+                        groupsDraft = null,
+                        groupErrors = emptySet(),
+                        askDiscard = false,
+                        banner = CodeBanner(Res.string.serviceGroupsSaved, error = false),
+                    )
+                } else {
+                    it.copy(
+                        saving = false,
+                        groupsDraft = ordered,
+                        banner = CodeBanner(e.toUserMessage(Res.string.saveFailed), requestId = e.requestId),
+                    )
+                }
+            }
+        }
+    }
+
     internal companion object {
         val CURRENCIES = listOf("UZS", "USD", "EUR", "RUB")
 
@@ -388,6 +491,10 @@ fun ServicesScreen(
             save = viewModel::save,
             discard = viewModel::closeEditor,
             delete = viewModel::delete,
+            groups = viewModel::openGroups,
+            editGroups = viewModel::editGroups,
+            saveGroups = viewModel::saveGroups,
+            deleteGroup = viewModel::deleteGroup,
         ),
     )
 }
@@ -401,6 +508,10 @@ class ServicesActions(
     val save: () -> Unit = {},
     val discard: () -> Unit = {},
     val delete: () -> Unit = {},
+    val groups: () -> Unit = {},
+    val editGroups: ((List<ServiceGroup>) -> List<ServiceGroup>) -> Unit = {},
+    val saveGroups: () -> Unit = {},
+    val deleteGroup: () -> Unit = {},
 )
 
 @Composable
@@ -408,6 +519,7 @@ fun ServicesContent(
     state: ServicesUiState,
     actions: ServicesActions,
 ) {
+    state.groupsDraft?.let { return GroupsEditor(state, it, actions) }
     val draft = state.draft
     if (draft != null) return ServiceEditor(state, draft, actions)
     Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
@@ -424,8 +536,12 @@ fun ServicesContent(
                     EmptyState(tr(error.text), Res.drawable.ic_card_22, body = error.requestId) {
                         ShifaSecondaryButton(tr(Res.string.retry), actions.retry)
                     }
-                state.services.isEmpty() -> EmptyState(tr(Res.string.noServicesYet), Res.drawable.ic_card_22)
-                else ->
+                state.services.isEmpty() -> {
+                    GroupsRow(state, actions)
+                    EmptyState(tr(Res.string.noServicesYet), Res.drawable.ic_card_22)
+                }
+                else -> {
+                    GroupsRow(state, actions)
                     // Grouped as the backend orders them (group sort order, then created); "No group" first.
                     state.services.groupBy { it.groupName }.entries.sortedBy { it.key != null }.forEach {
                             (group, services) ->
@@ -435,6 +551,7 @@ fun ServicesContent(
                             }
                         }
                     }
+                }
             }
         }
         if (!state.loading && state.error == null) {
@@ -682,3 +799,127 @@ private fun SwitchRow(
 
 private const val TITLE_MAX = 80
 private const val DESCRIPTION_MAX = 500
+
+/** The entry to the groups editor, above the list (flow 08/08 §3.1 puts it in the app bar). */
+@Composable
+private fun GroupsRow(
+    state: ServicesUiState,
+    actions: ServicesActions,
+) = ShifaSection(null) {
+    ShifaSettingsItem(
+        tr(Res.string.serviceGroups),
+        actions.groups,
+        icon = Res.drawable.ic_layers_22,
+        subtitle = state.groups.joinToString(", ") { it.name }.ifEmpty { tr(Res.string.serviceGroupNone) },
+        divider = false,
+    )
+}
+
+@Composable
+private fun GroupsEditor(
+    state: ServicesUiState,
+    rows: List<ServiceGroup>,
+    actions: ServicesActions,
+) {
+    val enabled = !state.saving
+    GroupsEditorForm(state, rows, actions, enabled)
+    state.askDeleteGroup?.let { i ->
+        ProfileSheet({ actions.ui { it.copy(askDeleteGroup = null) } }) {
+            ShifaDialogSheet(
+                tr(Res.string.deleteGroupTitle),
+                tr(Res.string.delete),
+                actions.deleteGroup,
+                body =
+                    listOfNotNull(
+                        rows.getOrNull(i)?.name?.takeIf {
+                            it.isNotBlank()
+                        },
+                        tr(Res.string.deleteGroupBody),
+                    ).joinToString("\n\n"),
+                tone = DialogTone.Destructive,
+                icon = Res.drawable.ic_trash_22,
+                onCancel = { actions.ui { it.copy(askDeleteGroup = null) } },
+            )
+        }
+    }
+}
+
+@Composable
+private fun GroupsEditorForm(
+    state: ServicesUiState,
+    rows: List<ServiceGroup>,
+    actions: ServicesActions,
+    enabled: Boolean,
+) = ProfileForm(
+    tr(Res.string.serviceGroups),
+    actions.back,
+    onSave = if (state.dirty && !state.saving) actions.saveGroups else null,
+    askDiscard = state.askDiscard,
+    onDiscard = actions.discard,
+    onKeep = { actions.ui { it.copy(askDiscard = false) } },
+) {
+    codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
+    ShifaSection(null) {
+        Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
+            Text(
+                tr(Res.string.serviceGroupsHelper),
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Secondary,
+            )
+            rows.forEachIndexed { i, group ->
+                fun move(to: Int) = actions.editGroups { it.toMutableList().apply { add(to, removeAt(i)) } }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ShifaInputField(
+                        group.name,
+                        {
+                                v ->
+                            actions.editGroups {
+                                it.mapIndexed {
+                                        j,
+                                        g,
+                                    ->
+                                    if (j == i) g.copy(name = v.take(GROUP_NAME_MAX)) else g
+                                }
+                            }
+                        },
+                        tr(Res.string.groupName),
+                        Modifier.weight(1f),
+                        supportingText = tr(Res.string.fieldRequired).takeIf { i in state.groupErrors },
+                        isError = i in state.groupErrors,
+                        enabled = enabled,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    )
+                    ShifaIconButton(
+                        Res.drawable.ic_chev_u_20,
+                        tr(Res.string.moveUp, group.name),
+                        { move(i - 1) },
+                        variant = ShifaIconButtonVariant.Ghost,
+                        enabled = enabled && i > 0,
+                    )
+                    ShifaIconButton(
+                        Res.drawable.ic_chev_d_20,
+                        tr(Res.string.moveDown, group.name),
+                        { move(i + 1) },
+                        variant = ShifaIconButtonVariant.Ghost,
+                        enabled = enabled && i < rows.lastIndex,
+                    )
+                    ShifaIconButton(
+                        Res.drawable.ic_trash_22,
+                        tr(Res.string.removeItem, group.name),
+                        { actions.ui { it.copy(askDeleteGroup = i) } },
+                        variant = ShifaIconButtonVariant.Ghost,
+                        enabled = enabled,
+                    )
+                }
+            }
+            ShifaSecondaryButton(
+                tr(Res.string.addGroup),
+                { actions.editGroups { it + ServiceGroup(name = "") } },
+                Modifier.fillMaxWidth(),
+                enabled = enabled,
+            )
+        }
+    }
+}
+
+private const val GROUP_NAME_MAX = 60
