@@ -73,6 +73,12 @@ sealed interface ShellRoute {
         val opened: Long,
     ) : ShellRoute
 
+    /** Calendar → book a free slot (CAL-7); [opened] as for [Appointment]. */
+    data class Booking(
+        val slot: CalendarEntry.FreeSlot,
+        val opened: Long,
+    ) : ShellRoute
+
     /** Profile → one of its sections (PROF-02); each section's ticket builds its screen. */
     data class Profile(
         val section: ProfileSection,

@@ -229,6 +229,9 @@ class DemoBackend(
                     }
                 Reply(HttpStatusCode.NoContent, "")
             }
+            // The booking list (CAL-7): the demo calendar's patients and a few more, one page.
+            get && path == Endpoints.PATIENTS_FOR_ASSIGNMENT -> ok(apiJson.parseToJsonElement(DEMO_PATIENTS))
+            request.method == HttpMethod.Post && path == Endpoints.SCHEDULE_BOOK -> Reply(HttpStatusCode.OK, "")
             // Appointment actions (CAL-6) succeed without changing the generated days: nothing is stored.
             path.startsWith("appointments/") && !get &&
                 (
@@ -467,15 +470,27 @@ class DemoBackend(
 internal const val DEMO_PASSWORD = "Dev12345!"
 
 private const val DEMO_SERVICES =
-    """[{"id":1,"title":"Free first consultation","description":null,"isActive":true,"isFreeConsultation":true,"clinicManaged":false,"groupId":null,"groupName":null,"prices":[]},""" +
-        """{"id":2,"title":"Consultation","description":"First visit with an examination","isActive":true,"isFreeConsultation":false,"clinicManaged":false,"groupId":null,"groupName":null,"prices":[{"amountMinor":15000000,"currency":"UZS","locationId":null},{"amountMinor":2000,"currency":"USD","locationId":1}]},""" +
-        """{"id":3,"title":"Cleaning","description":null,"isActive":true,"isFreeConsultation":false,"clinicManaged":true,"groupId":null,"groupName":null,"prices":[{"amountMinor":30000000,"currency":"UZS","locationId":null}]}]"""
+    """[{"id":1,"title":"Free first consultation","description":null,"isActive":true,"isFreeConsultation":true,""" +
+        """"clinicManaged":false,"groupId":null,"groupName":null,"prices":[]},""" +
+        """{"id":2,"title":"Consultation","description":"First visit with an examination","isActive":true,""" +
+        """"isFreeConsultation":false,"clinicManaged":false,"groupId":null,"groupName":null,"prices":[""" +
+        """{"amountMinor":15000000,"currency":"UZS","locationId":null},""" +
+        """{"amountMinor":2000,"currency":"USD","locationId":1}]},""" +
+        """{"id":3,"title":"Cleaning","description":null,"isActive":true,"isFreeConsultation":false,""" +
+        """"clinicManaged":true,"groupId":null,"groupName":null,"prices":[""" +
+        """{"amountMinor":30000000,"currency":"UZS","locationId":null}]}]"""
 
-private const val DEMO_LOCATIONS = """[{"id":1,"label":"Shifa Demo Clinic","clinic":"Shifa Demo Clinic","locationCity":"Tashkent","isPrimary":true}]"""
+private const val DEMO_LOCATIONS =
+    """[{"id":1,"label":"Shifa Demo Clinic","clinic":"Shifa Demo Clinic","locationCity":"Tashkent","isPrimary":true}]"""
 
 private const val DEMO_PLANS =
     """[{"code":"BASIC","name":"Basic","priceMinor":9900,"currency":"EUR","interval":"MONTH"},""" +
         """{"code":"PRO","name":"Pro","priceMinor":19900,"currency":"EUR","interval":"MONTH"}]"""
+
+private const val DEMO_PATIENTS =
+    """{"content":[{"id":11,"name":"Dilnoza Rahimova","photoUrl":null},""" +
+        """{"id":12,"name":"Jasur Karimov","photoUrl":null},{"id":13,"name":"Malika Tursunova","photoUrl":null},""" +
+        """{"id":14,"name":"Bekzod Aliyev","photoUrl":null},{"id":15,"name":"","photoUrl":null}],"last":true}"""
 
 /**
  * A demo day (Tashkent, UTC+5): 30-minute slots 09:00–17:00, lunch blocked 13:00–14:00, and on even dates two

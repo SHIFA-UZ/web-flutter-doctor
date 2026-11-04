@@ -249,7 +249,9 @@
     <string name="book">Yozish</string>
     <string name="bookFollowUp">Takroriy qabulga yozish</string>
     <string name="bookingEndTime">Tugash vaqti</string>
+    <string name="bookingFailed">Band qilib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="bookingRangeUnavailable">Tanlangan vaqt oralig'i mavjud emas — taqvim yangilandi.</string>
+    <string name="bookingSameDayPast">Bu vaqt bugun o'tib ketgan; tashrif sifatida yoziladi.</string>
     <string name="boolean">Ha/Yo'q</string>
     <string name="bulkRetryComplete">Ommaviy qayta urinish yakunlandi: %1$s muvaffaqiyatli, %2$s xato.</string>
     <string name="calendar">Taqvim</string>
@@ -1671,6 +1673,7 @@
     <string name="patientAppUsers">Bemor ilovasi foydalanuvchilari</string>
     <string name="patientAppointmentHistory">Uchrashuvlar tarixi</string>
     <string name="patientAssigned">Bemor tayinlandi</string>
+    <string name="patientAssignedName">Bemor biriktirildi: %1$s</string>
     <string name="patientBriefingCopied">Brifing buferga nusxalandi.</string>
     <string name="patientBriefingCopy">Nusxalash</string>
     <string name="patientBriefingEmpty">Brifing uchun hali ma'lumot yo'q.</string>
@@ -1699,6 +1702,7 @@
     <string name="patientList">Bemorlar ro'yxati</string>
     <string name="patientName">Bemor ismi</string>
     <string name="patientNotArrived">Boshlanganiga %1$s daqiqa bo'ldi — bemor kelmadi</string>
+    <string name="patientNumber">Bemor #%1$s</string>
     <string name="patientRecordUnavailable">Bemor kartasi mavjud emas</string>
     <string name="patientSignaturePending">Imzo so'rovi yuborildi. Bemorga mobil ilovada bildirishnoma boradi.</string>
     <string name="patientSignatureRequestSent">Bemor formani ko'rib chiqish va imzolash uchun xabardor qilindi.</string>

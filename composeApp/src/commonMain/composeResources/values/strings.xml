@@ -249,7 +249,9 @@
     <string name="book">Book</string>
     <string name="bookFollowUp">Book follow-up</string>
     <string name="bookingEndTime">End time</string>
+    <string name="bookingFailed">Couldn't book. Try again.</string>
     <string name="bookingRangeUnavailable">Selected time range is no longer fully available — calendar refreshed.</string>
+    <string name="bookingSameDayPast">This time has already passed today; it will be recorded as a walk-in.</string>
     <string name="boolean">Yes/No</string>
     <string name="bulkRetryComplete">Bulk retry complete: %1$s succeeded, %2$s failed.</string>
     <string name="calendar">Calendar</string>
@@ -1671,6 +1673,7 @@
     <string name="patientAppUsers">Patient App Users</string>
     <string name="patientAppointmentHistory">Appointment history</string>
     <string name="patientAssigned">Patient assigned</string>
+    <string name="patientAssignedName">Patient assigned: %1$s</string>
     <string name="patientBriefingCopied">Briefing copied to clipboard.</string>
     <string name="patientBriefingCopy">Copy</string>
     <string name="patientBriefingEmpty">No information to brief on yet.</string>
@@ -1699,6 +1702,7 @@
     <string name="patientList">Patient List</string>
     <string name="patientName">Patient Name</string>
     <string name="patientNotArrived">Started %1$s min ago — patient not arrived</string>
+    <string name="patientNumber">Patient #%1$s</string>
     <string name="patientRecordUnavailable">Patient record unavailable</string>
     <string name="patientSignaturePending">A signature request was sent. The patient is notified in the mobile app.</string>
     <string name="patientSignatureRequestSent">The patient has been notified to review and sign the form.</string>

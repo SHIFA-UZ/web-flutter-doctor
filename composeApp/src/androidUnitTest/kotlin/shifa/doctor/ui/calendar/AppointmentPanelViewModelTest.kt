@@ -2,6 +2,7 @@
 
 package shifa.doctor.ui.calendar
 
+import androidx.lifecycle.viewModelScope
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -88,8 +89,11 @@ class AppointmentPanelViewModelTest {
 
     private val screen = CoroutineScope(UnconfinedTestDispatcher())
 
+    private val created = mutableListOf<AppointmentPanelViewModel>()
+
     @After fun tearDown() {
         screen.cancel()
+        created.forEach { it.viewModelScope.cancel() }
         ShellNotice.pending.value = null
         Dispatchers.resetMain()
     }
@@ -109,6 +113,7 @@ class AppointmentPanelViewModelTest {
         // The screen runs follow() while it is shown.
         return AppointmentPanelViewModel(entry, clock, calendar, appointments).also {
                 vm ->
+            created += vm
             screen.launch { vm.follow() }
         }
     }

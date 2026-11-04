@@ -96,6 +96,7 @@ import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
 import shifa.doctor.ui.auth.short
 import shifa.doctor.ui.calendar.AppointmentPanelScreen
+import shifa.doctor.ui.calendar.BookingScreen
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.profile.BillingScreen
@@ -313,13 +314,14 @@ private fun RouteContent(
                 )
                 if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
             } else if (route.tab == ShellTab.Calendar && !staff) {
-                // Free slots (CAL-7) and blocks (CAL-8) open their panels with their tickets.
+                // Blocks (CAL-8) open their panel with their ticket.
                 CalendarScreen(
                     onOpen = {
-                        if (it is CalendarEntry.Appointment) {
-                            actions.push(
-                                ShellRoute.Appointment(it, currentInstant().toEpochMilliseconds()),
-                            )
+                        val opened = currentInstant().toEpochMilliseconds()
+                        when (it) {
+                            is CalendarEntry.Appointment -> actions.push(ShellRoute.Appointment(it, opened))
+                            is CalendarEntry.FreeSlot -> actions.push(ShellRoute.Booking(it, opened))
+                            is CalendarEntry.Blocked -> Unit
                         }
                     },
                 )
@@ -359,6 +361,7 @@ private fun RouteContent(
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
+        is ShellRoute.Booking -> BookingScreen(route.slot, route.opened, onClose = actions.back)
         is ShellRoute.Appointment -> AppointmentPanelScreen(route.appointment, route.opened, onClose = actions.back)
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)

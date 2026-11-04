@@ -249,7 +249,9 @@
     <string name="book">Записать</string>
     <string name="bookFollowUp">Записать на повторный приём</string>
     <string name="bookingEndTime">Время окончания</string>
+    <string name="bookingFailed">Не удалось записать. Попробуйте снова.</string>
     <string name="bookingRangeUnavailable">Выбранный диапазон времени недоступен — календарь обновлён.</string>
+    <string name="bookingSameDayPast">Это время сегодня уже прошло; запись сохранится как приём без записи.</string>
     <string name="boolean">Да/Нет</string>
     <string name="bulkRetryComplete">Массовый повтор завершён: успешно %1$s, ошибок %2$s.</string>
     <string name="calendar">Календарь</string>
@@ -1671,6 +1673,7 @@
     <string name="patientAppUsers">Пользователи приложения для пациентов</string>
     <string name="patientAppointmentHistory">История записей</string>
     <string name="patientAssigned">Пациент назначен</string>
+    <string name="patientAssignedName">Пациент записан: %1$s</string>
     <string name="patientBriefingCopied">Брифинг скопирован.</string>
     <string name="patientBriefingCopy">Копировать</string>
     <string name="patientBriefingEmpty">Пока нет данных для брифинга.</string>
@@ -1699,6 +1702,7 @@
     <string name="patientList">Список пациентов</string>
     <string name="patientName">Имя пациента</string>
     <string name="patientNotArrived">Началось %1$s мин назад — пациент не пришёл</string>
+    <string name="patientNumber">Пациент №%1$s</string>
     <string name="patientRecordUnavailable">Карта пациента недоступна</string>
     <string name="patientSignaturePending">Запрос подписи отправлен. Пациент получит уведомление в приложении.</string>
     <string name="patientSignatureRequestSent">Пациент уведомлён: нужно просмотреть и подписать форму.</string>

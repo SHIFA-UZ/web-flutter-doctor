@@ -2399,5 +2399,9 @@
   "durationChanged": "Длительность изменена",
   "unknownPatient": "Неизвестный пациент",
   "placeReadOnlyHint": "Место приёма здесь изменить нельзя.",
-  "currentSlot": "текущее"
+  "currentSlot": "текущее",
+  "bookingFailed": "Не удалось записать. Попробуйте снова.",
+  "patientAssignedName": "Пациент записан: {name}",
+  "patientNumber": "Пациент №{id}",
+  "bookingSameDayPast": "Это время сегодня уже прошло; запись сохранится как приём без записи."
 }

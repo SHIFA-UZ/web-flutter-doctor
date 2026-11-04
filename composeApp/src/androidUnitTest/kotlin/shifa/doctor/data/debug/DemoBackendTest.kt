@@ -239,4 +239,25 @@ class DemoBackendTest {
             assertThat(repo.remindPayment(102).isSuccess).isTrue()
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the booking list and a booking answer locally`() =
+        runTest {
+            val list = shifa.doctor.data.patients.PatientsRepository { client }.forAssignment().getOrThrow()
+            assertThat(list.map { it.id }).containsAtLeast(11L, 12L)
+            val booked =
+                shifa.doctor.data.appointments.AppointmentsRepository { client }.book(
+                    shifa.doctor.data.appointments.BookRequest(
+                        "2026-11-06T04:00:00Z",
+                        30,
+                        11,
+                        false,
+                        "Check-up",
+                        null,
+                        1,
+                    ),
+                )
+            assertThat(booked.isSuccess).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }

@@ -2399,5 +2399,9 @@
   "durationChanged": "Duration changed",
   "unknownPatient": "Unknown patient",
   "placeReadOnlyHint": "The booked place can't be changed here.",
-  "currentSlot": "current"
+  "currentSlot": "current",
+  "bookingFailed": "Couldn't book. Try again.",
+  "patientAssignedName": "Patient assigned: {name}",
+  "patientNumber": "Patient #{id}",
+  "bookingSameDayPast": "This time has already passed today; it will be recorded as a walk-in."
 }

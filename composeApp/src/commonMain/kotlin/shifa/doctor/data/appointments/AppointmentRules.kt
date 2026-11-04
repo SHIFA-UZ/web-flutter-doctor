@@ -1,6 +1,7 @@
 package shifa.doctor.data.appointments
 
 import kotlinx.datetime.Instant
+import shifa.doctor.data.calendar.chainEnds
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.utils.PracticeClock
 import kotlin.time.Duration.Companion.hours
@@ -69,13 +70,8 @@ fun durationOptions(
             MAX_GRAIN,
         ) ?: current
     val shorter = generateSequence(current - grain) { it - grain }.takeWhile { it >= MIN_MINUTES }.toList()
-    val longer = mutableListOf<Int>()
-    var end = appointment.end
-    while (true) {
-        val next = free.firstOrNull { it.start == end } ?: break
-        end = next.end
-        longer += (end - appointment.start).inWholeMinutes.toInt()
-    }
+    val longer =
+        chainEnds(day, appointment.end, appointment.locationId).map { (it - appointment.start).inWholeMinutes.toInt() }
     return (shorter + current + longer).sorted()
 }
 
@@ -88,11 +84,8 @@ fun fits(
     day: List<CalendarEntry>,
     minutes: Int,
 ): Boolean {
-    val free = day.filterIsInstance<CalendarEntry.FreeSlot>().filter { it.locationId == slot.locationId }
     val until = slot.start + minutes.minutes
-    var end = slot.end
-    while (end < until) end = free.firstOrNull { it.start == end }?.end ?: return false
-    return true
+    return chainEnds(day, slot.start, slot.locationId).any { it >= until }
 }
 
 private tailrec fun gcd(

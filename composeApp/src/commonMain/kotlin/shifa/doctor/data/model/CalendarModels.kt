@@ -123,7 +123,8 @@ data class DayOccupancy(
     val fullDayBlock: Boolean = false,
 ) {
     /** Free share of the day's rows, blocked ones included (03 §1.3), or null for a day without any; fully blocked is 0. */
-    val freeRatio: Float? get() = (freeSlots + appointments + blocked).takeIf { it > 0 }?.let { freeSlots.toFloat() / it }
+    val freeRatio: Float?
+        get() = (freeSlots + appointments + blocked).takeIf { it > 0 }?.let { freeSlots.toFloat() / it }
 
     companion object {
         /** [startsAtMidnight] says whether an instant is 00:00 on the practice wall clock. */

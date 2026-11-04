@@ -121,7 +121,17 @@ import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.tr
 
 /** The profile's child screens (each its own ticket: PROF-03/04/07/08, SVC, SUB-02, SET, LEGAL). */
-enum class ProfileSection { PersonalInfo, Contact, Timezone, Extended, Services, Subscription, Settings, Security, About }
+enum class ProfileSection {
+    PersonalInfo,
+    Contact,
+    Timezone,
+    Extended,
+    Services,
+    Subscription,
+    Settings,
+    Security,
+    About,
+}
 
 data class ProfileUiState(
     val staff: Boolean = false,

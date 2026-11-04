@@ -28,4 +28,10 @@ class CalendarScreenshotTest {
     @Test
     fun appointmentPanelCompleted() =
         captureRoboImage("screenshots/Calendar_appointmentPanelCompleted.png") { AppointmentPanelCompletedPreview() }
+
+    @Test
+    fun booking() = captureRoboImage("screenshots/Calendar_booking.png") { BookingPreview() }
+
+    @Test
+    fun bookingPast() = captureRoboImage("screenshots/Calendar_bookingPast.png") { BookingPastPreview() }
 }

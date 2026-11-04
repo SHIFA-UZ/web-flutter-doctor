@@ -2399,5 +2399,9 @@
   "durationChanged": "Davomiylik o'zgartirildi",
   "unknownPatient": "Noma'lum bemor",
   "placeReadOnlyHint": "Band qilingan joyni bu yerda o'zgartirib bo'lmaydi.",
-  "currentSlot": "joriy"
+  "currentSlot": "joriy",
+  "bookingFailed": "Band qilib bo'lmadi. Qayta urinib ko'ring.",
+  "patientAssignedName": "Bemor biriktirildi: {name}",
+  "patientNumber": "Bemor #{id}",
+  "bookingSameDayPast": "Bu vaqt bugun o'tib ketgan; tashrif sifatida yoziladi."
 }

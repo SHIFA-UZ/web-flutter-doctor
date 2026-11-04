@@ -200,7 +200,8 @@ class SettingsViewModel(
         language = now.language,
         twoFA = if (now.twoFA == sent.twoFA) server.twoFA else now.twoFA,
         encryptedDocs = if (now.encryptedDocs == sent.encryptedDocs) server.encryptedDocs else now.encryptedDocs,
-        defaultStartTab = if (now.defaultStartTab == sent.defaultStartTab) server.defaultStartTab else now.defaultStartTab,
+        defaultStartTab =
+            if (now.defaultStartTab == sent.defaultStartTab) server.defaultStartTab else now.defaultStartTab,
     )
 }
 

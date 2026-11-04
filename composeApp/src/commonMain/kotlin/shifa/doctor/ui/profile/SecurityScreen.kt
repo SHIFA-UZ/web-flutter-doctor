@@ -228,7 +228,8 @@ fun SecurityContent(
                     tr(Res.string.confirmNewPassword),
                     state.showConfirm,
                     { actions.ui { it.copy(showConfirm = !it.showConfirm) } },
-                    state.confirmError ?: Res.string.newPasswordConfirmationMismatchError.takeIf { state.confirmMismatch },
+                    state.confirmError
+                        ?: Res.string.newPasswordConfirmationMismatchError.takeIf { state.confirmMismatch },
                     KeyboardActions(onDone = { if (state.canChange) actions.change() }),
                     ImeAction.Done,
                     enabled = enabled,

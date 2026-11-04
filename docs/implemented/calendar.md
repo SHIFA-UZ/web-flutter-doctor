@@ -160,6 +160,8 @@ for its buttons), not a sheet.
   the colleague's calendar (CAL-10).
 - **Demo:** the three calls answer OK without changing the generated days, so after a move the panel shows the old
   time again once the day is re-read (the demo calendar is stateless).
+- **Verified on dev (2026-11-04, with CAL-7):** a booked hour moved from 10:00 to 14:00 (the backend kept 60
+  minutes) and was cancelled (status CANCELLED); the sheet offered only slots where the hour fits.
 - **Verified on the emulator (demo data, 2026-11-04):** opened Jasur Karimov's 6 November visit, rescheduled to 11:00
   ("Appointment moved"), the month sheet at full height with the greyed current slot, a move
   closing with its notice, the Discard question on Back after picking 1 h, cancelled (the calendar showed with the success notice). Dev has no appointments for the seed
@@ -169,3 +171,47 @@ for its buttons), not a sheet.
   the question with the request id and re-reading the day, then success with the notice; a failed slot read with Retry
   and past days closed; a duration pick surviving cache updates; Back asking before dropping a length and closing when the visit is gone), `DemoBackendTest` (+1), `CalendarScreenshotTest` (+2: `Calendar_appointmentPanel`,
   `Calendar_appointmentPanelCompleted`).
+
+## CAL-7 · Booking a free slot
+
+Built 2026-11-04. Flow `04/06-book-appointment.md`; spec 03 §1.6, §1.10; board `DaCalendar.dc.html` (slot detail). A
+pushed screen ("Slot Details") like the appointment panel.
+
+- **Chain** (`data/calendar/SlotChain.kt`, `chainEnds`): the ends reachable from a start through free slots that begin
+  exactly where the previous ended, at one location, at most 400 hops, on instants. The CAL-6 duration options and
+  `fits` use it too. `slotMinutes` is the instant difference, so a chain across a DST switch books its real length
+  (Flutter's wall-clock round trip is gone).
+- **Data:** `PatientsRepository.forAssignment()` (`data/patients/`, the start of PAT-02): `GET /patients/for-assignment`
+  page by page (500, at most 20 pages), rows without an id dropped, sorted by name here because the server's name sort
+  answers 500 and there is no search (BE-33). `AppointmentsRepository.book` → `POST /schedule/book {startAt,
+  slotMinutes, patientId, isVideo, reason, location, locationId?}`; `locationId` only in person; `location` is kept
+  for older backends only (this one labels video and known locations itself).
+- **Screen** (`ui/calendar/BookingScreen.kt`): summary (date · start – end, duration, the location chip, 04/06 §8
+  target); a day before today shows only "This slot is in the past…" and no Book; a slot today that has begun is
+  bookable (walk-ins) with a note saying so; Assign Patient → picker; Place as two chips (Clinic Address / Video Call)
+  with the helper line; Time: start among the day's free slots at the same location, end along the chain with its
+  length (a single choice is plain text); Reason prefilled with the localised "Check-up" (empty sends it); sticky
+  **Book** (the flow's target label).
+- **Picker** (sheet): search by name or id over the list read when the form opens (instant picker); a nameless patient
+  shows as "Patient #id"; error with Retry; "No patients found".
+- **Save:** no patient → "Please select a patient" under the tile, nothing sent. Success → the day (and today) read
+  once, the form closes and the shell shows "Patient assigned: {name}". 409 / 400 → the day read again, "Selected time
+  range is no longer fully available — calendar refreshed." with the request id, the form stays; other failures →
+  the mapped message or "Couldn't book. Try again.". Back asks before dropping a picked patient, place, time or reason.
+- **Follows the day:** the form watches the cached day (a day not read yet is unknown, a day read empty frees nothing);
+  a start taken meanwhile moves to one still free (the tapped slot first) with the "no longer available" banner, an
+  end the chain no longer reaches goes back to the start's own, and Book needs the whole range free. While the request
+  runs the fields are locked; Book reads the clock again before deciding "past"; the patient list is read once even if
+  the picker opens during the prefetch.
+- **Shared:** `Notice` takes arguments (`args`) for the shell banner.
+- **Not built:** "New patient" in the picker (the create-patient sheet is PAT), the chronic-disease warning (needs the
+  patient detail, PAT-04), booking for a colleague (`resourceDoctorId`, CAL-10), quick-book (CAL-9).
+- **Also in this commit:** lines over 120 characters left by earlier tickets were wrapped (ktlint failed on them), and
+  the calendar ViewModel tests cancel their ViewModels before resetting Main (the "Dispatchers.Main is used
+  concurrently" flake).
+- **Verified:** demo data (picker, search "mal", 11:00 → 12:00, "Patient assigned: Malika Tursunova") and dev (Azamat
+  Rakhimov 10:00–11:00 booked as 60 minutes, then moved and cancelled with CAL-6, dev left as it was).
+- **Tests:** `SlotChainTest` (6: the five Flutter cases, DST, venue boundary), `BookingViewModelTest` (9: two slots as
+  60 minutes with the request body and the notice; video without `locationId` and the default reason; no patient and a
+  past day send nothing; a taken range keeps the form; picker order and search; a new start resets the end and Back
+  asks; a conflict narrows the range; one patient read during the prefetch; a taken start moves back with the banner), `DemoBackendTest` (+1), `CalendarScreenshotTest` (+2: `Calendar_booking`, `Calendar_bookingPast`).

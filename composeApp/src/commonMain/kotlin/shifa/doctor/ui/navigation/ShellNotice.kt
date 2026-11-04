@@ -32,6 +32,8 @@ object ShellNotice {
 data class Notice(
     val text: StringResource,
     val success: Boolean = false,
+    // Filled into [text] ("Patient assigned: {name}").
+    val args: List<String> = emptyList(),
 )
 
 /** The pending [ShellNotice] as a closable warning banner at the top of the shell (SHELL-01 moves it under its bar). */
@@ -40,7 +42,7 @@ fun ShellNoticeBanner(modifier: Modifier = Modifier) {
     val notice by ShellNotice.pending.collectAsState()
     notice?.let {
         ShifaBanner(
-            tr(it.text),
+            tr(it.text, *it.args.toTypedArray()),
             if (it.success) Res.drawable.ic_check_circle_16 else Res.drawable.ic_info_16,
             if (it.success) ShifaBannerType.Success else ShifaBannerType.Warning,
             modifier.statusBarsPadding().padding(ShifaSpacing.Inset.Sm),

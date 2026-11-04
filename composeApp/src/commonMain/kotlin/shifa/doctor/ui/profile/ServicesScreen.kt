@@ -315,7 +315,12 @@ class ServicesViewModel(
             repo.save(d.id, body).fold(
                 onSuccess = { saved ->
                     _state.update { st ->
-                        val list = if (d.id == null) st.services + saved else st.services.map { if (it.id == saved.id) saved else it }
+                        val list =
+                            if (d.id == null) {
+                                st.services + saved
+                            } else {
+                                st.services.map { if (it.id == saved.id) saved else it }
+                            }
                         st.copy(
                             saving = false,
                             services = list,
@@ -419,7 +424,8 @@ class ServicesViewModel(
                 }
             if (failure == null) {
                 for ((i, g) in ordered.withIndex()) {
-                    if (g.id != null && s.groups.any { it.id == g.id && it.name == g.name && it.sortOrder == g.sortOrder }) continue
+                    val unchanged = s.groups.any { it.id == g.id && it.name == g.name && it.sortOrder == g.sortOrder }
+                    if (g.id != null && unchanged) continue
                     // A created group keeps its new id in the draft, so a retry after a later failure doesn't create it twice.
                     repo.saveGroup(g).fold(onSuccess = {
                             saved ->

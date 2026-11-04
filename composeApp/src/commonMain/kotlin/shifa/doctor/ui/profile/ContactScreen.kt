@@ -362,7 +362,8 @@ fun ContactContent(
         enabled = enabled,
         keyboardOptions =
             KeyboardOptions(
-                capitalization = if (type == KeyboardType.Text) KeyboardCapitalization.Sentences else KeyboardCapitalization.None,
+                capitalization =
+                    if (type == KeyboardType.Text) KeyboardCapitalization.Sentences else KeyboardCapitalization.None,
                 keyboardType = type,
                 imeAction = ImeAction.Next,
             ),

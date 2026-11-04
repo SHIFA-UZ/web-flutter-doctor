@@ -27,6 +27,8 @@ object ApiConfig {
         const val DOCTOR_SERVICES = "doctors/me/services"
         const val SERVICE_GROUPS = "doctors/me/service-groups"
         const val CALENDAR = "calendar"
+        const val SCHEDULE_BOOK = "schedule/book"
+        const val PATIENTS_FOR_ASSIGNMENT = "patients/for-assignment"
 
         fun appointment(id: Long) = "appointments/$id"
 

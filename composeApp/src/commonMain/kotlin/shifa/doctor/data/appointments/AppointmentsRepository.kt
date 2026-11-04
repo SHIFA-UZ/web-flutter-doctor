@@ -20,6 +20,19 @@ private data class ChangeSlot(
     val slotMinutes: Int,
 )
 
+/** `POST /schedule/book` (03 §6). [location] only for older backends: the backend labels video and known locations. */
+@Serializable
+data class BookRequest(
+    val startAt: String,
+    val slotMinutes: Int,
+    val patientId: Long,
+    val isVideo: Boolean,
+    val reason: String,
+    val location: String?,
+    val locationId: Long? = null,
+    val resourceDoctorId: Long? = null,
+)
+
 /**
  * Appointment actions from the calendar (CAL-6, 03 §6): cancel, move or resize, and the payment reminder. Every call's
  * status is checked (Flutter didn't); the caller refreshes the touched days through `CalendarRepository.changed`.
@@ -27,6 +40,15 @@ private data class ChangeSlot(
 class AppointmentsRepository(
     private val client: () -> HttpClient = { httpClient },
 ) {
+    /** Books a range of free slots for a patient (CAL-7); 409 / 400 mean the range is no longer free. */
+    suspend fun book(request: BookRequest): Result<Unit> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.SCHEDULE_BOOK) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+        }
+
     /** `DELETE /appointments/{id}` (no reason yet: BE-10). */
     suspend fun cancel(id: Long): Result<Unit> = apiCall<Unit> { client().delete(ApiConfig.Endpoints.appointment(id)) }
 

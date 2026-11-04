@@ -2,6 +2,7 @@
 
 package shifa.doctor.ui.calendar
 
+import androidx.lifecycle.viewModelScope
 import com.google.common.truth.Truth.assertThat
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -10,6 +11,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -62,7 +64,15 @@ class CalendarViewModelTest {
         runBlocking { profile.refresh() }
     }
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    private val created = mutableListOf<CalendarViewModel>()
+
+    // A month prefetch still running would resume on Main while the next test sets it: stop them first.
+    @After fun tearDown() {
+        created.forEach { it.viewModelScope.cancel() }
+        Dispatchers.resetMain()
+    }
+
+    private fun opened() = CalendarViewModel(calendar, profile).also { created += it }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -73,7 +83,7 @@ class CalendarViewModelTest {
 
     @Test
     fun `opens on today in the practice zone, the day and the month read`() {
-        val classToTest = CalendarViewModel(calendar, profile)
+        val classToTest = opened()
         settle { classToTest.state.value.day != null && requested.size > 20 }
         val s = classToTest.state.value
         assertThat(s.clock.zoneId).isEqualTo("Asia/Tashkent")
@@ -86,7 +96,7 @@ class CalendarViewModelTest {
 
     @Test
     fun `filters hide row kinds and say so when everything is hidden`() {
-        val classToTest = CalendarViewModel(calendar, profile)
+        val classToTest = opened()
         settle { classToTest.state.value.day != null }
         classToTest.ui { it.copy(filter = AgendaFilter(appointments = false, free = false, blocked = true)) }
         assertThat(classToTest.state.value.rows.single()).isInstanceOf(CalendarEntry.Blocked::class.java)
@@ -97,7 +107,7 @@ class CalendarViewModelTest {
 
     @Test
     fun `selecting a day reads it, a failure keeps the request id, Retry forces it`() {
-        val classToTest = CalendarViewModel(calendar, profile)
+        val classToTest = opened()
         settle { classToTest.state.value.day != null }
         failing = true
         classToTest.select(LocalDate(2030, 1, 15))
@@ -113,7 +123,7 @@ class CalendarViewModelTest {
 
     @Test
     fun `paging the month keeps the selected day, a blocked day from midnight is a day off`() {
-        val classToTest = CalendarViewModel(calendar, profile)
+        val classToTest = opened()
         settle { classToTest.state.value.day != null }
         val selected = classToTest.state.value.selected
         classToTest.month(1)
@@ -124,7 +134,7 @@ class CalendarViewModelTest {
     @Test
     fun `a profile that arrives after opening moves today to the practice zone and reads the days again`() {
         val fresh = ProfileRepository { createHttpClient({ null }, engine) } // not read yet: no zone
-        val classToTest = CalendarViewModel(calendar, fresh)
+        val classToTest = CalendarViewModel(calendar, fresh).also { created += it }
         settle { classToTest.state.value.day != null }
         assertThat(classToTest.state.value.clock.zoneMissing).isTrue()
         val before = requested.size
@@ -137,7 +147,7 @@ class CalendarViewModelTest {
 
     @Test
     fun `the filter sheet edits a draft, Apply commits, dismissing drops it`() {
-        val classToTest = CalendarViewModel(calendar, profile)
+        val classToTest = opened()
         settle { classToTest.state.value.day != null }
         classToTest.ui { it.copy(filterDraft = it.filter) }
         classToTest.ui { it.copy(filterDraft = it.filterDraft?.copy(free = false)) }
