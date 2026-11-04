@@ -280,3 +280,31 @@ opened from the Documents tab (DOCS-04).
   ViewModel) holds no document and reopening starts afresh.
 - **Tests:** `DocumentViewerViewModelTest` (5: a PDF typed by bytes; 403 / 404 / failure with request id / empty;
   request access, then reopening; a failed save; late answers after leaving), screenshots `DocumentViewer_loading`, `_noAccess`, `_cantPreview`.
+
+## DOCS-04 · Documents tab
+
+Built 2026-11-04. Flow `06/06-patient-documents.md`; spec 06 §2.6, §4.6. Board `DaPatients`, `patDetail` Documents
+("Document History", search, the cards). The record's Documents tab.
+
+- **Tab** (`ui/documents/PatientDocuments.kt`, rows in the record's lazy list): "Document History", the search (title,
+  instant, any case; shown once there are documents), then the cards newest first as the server sends them. Read when
+  the tab shows, each time it shows again (back from the viewer: access may have changed) and on pull. A failed first
+  read is the tab's error with Retry and the request id; a failed refresh is a banner over the list. Empty: "No
+  documents available" with the hint; no match: "No documents match “…”".
+- **Card:** a lock for a locked one, the title (two lines, then …), the date dd.MM.yyyy ("—" when missing; Flutter
+  showed today), the category chip (teal for results shared with every doctor, grey for private ones, the 025-2 form
+  chip too, an unknown new code humanised), the shared-with-team mark (screen reader: "Visible to all doctors of this
+  patient"), "Uploaded by …" on a locked one (a name as given; "Doctor" / "Patient" / "Another user" in the app's
+  language). Open only with a file to fetch (`canView` and a `url`); at 150% text the Request access button goes under
+  the details. A 025-2 form's PDF reads "Form 025-2
+  (21.10.2026)" in the app's language, by category, not by guessing from the title. Open (the whole card too) opens
+  the viewer with that title; a locked card offers Request access instead ("Request sent", "Request already sent" on
+  a 409; the lock stays until the owner approves).
+- **Not built yet:** Upload (DOCS-03, next), the header ⋮ (Create Form with FORM-03, Create Task with TASK), Edit on a
+  linked form (FORM-05 links forms to their PDFs), the deep-link outline (PUSH-03), the "Requested" chip (no backend
+  flag).
+- **Checked against dev on the emulator:** patient 14's blood test (shared) opens in the viewer (dev's real PDF); the
+  locked ECG shows its byline and Request access (not pressed on dev: a request can't be withdrawn).
+- **Tests:** `PatientDocumentsViewModelTest` (4: list and search; first-read error vs refresh banner; a late failing
+  read; request access sent / already sent / error), `DocumentModelsTest` (+1: openable), screenshot
+  `PatientDetail_documents`.

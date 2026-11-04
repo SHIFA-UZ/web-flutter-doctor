@@ -194,3 +194,47 @@ internal fun PatientActivityPreview() =
             PatientDetailActions(),
         )
     }
+
+// DOCS-04: the Documents tab: a shared result, a private note, a form PDF, a locked upload by the patient.
+@Composable
+internal fun PatientDocumentsPreview() =
+    PreviewTheme {
+        PatientDetailContent(
+            PatientDetailUiState(record, today = today, tab = RecordTab.Documents),
+            PatientDetailActions(),
+            shifa.doctor.ui.documents.PatientDocumentsUiState(
+                listOf(
+                    shifa.doctor.data.model.PatientDocument(
+                        5,
+                        "Complete blood count",
+                        "2026-10-22",
+                        url = "f",
+                        category = "BLOOD_TEST",
+                        isSharedWithTeam = true,
+                    ),
+                    shifa.doctor.data.model.PatientDocument(
+                        7,
+                        "Treatment notes",
+                        "2026-10-21",
+                        url = "f",
+                        category = "INTERNAL_NOTE",
+                    ),
+                    shifa.doctor.data.model.PatientDocument(
+                        8,
+                        "Form 025-2 (2026-10-21)",
+                        "2026-10-21",
+                        url = "f",
+                        category = "FORM_025_2",
+                    ),
+                    shifa.doctor.data.model.PatientDocument(
+                        6,
+                        "ECG from previous clinic, scanned at home, page 1 of 3",
+                        "2026-09-29",
+                        canView = false,
+                        category = "ECG",
+                        creatorLabel = "Jasur Karimov",
+                    ),
+                ),
+            ),
+        )
+    }

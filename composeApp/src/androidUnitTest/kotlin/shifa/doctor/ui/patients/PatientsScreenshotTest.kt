@@ -55,4 +55,8 @@ class PatientsScreenshotTest {
         captureRoboImage(
             "screenshots/Patients_slotPick.png",
         ) { shifa.doctor.ui.calendar.SlotPickPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1600dp-xhdpi")
+    fun documents() = captureRoboImage("screenshots/PatientDetail_documents.png") { PatientDocumentsPreview() }
 }

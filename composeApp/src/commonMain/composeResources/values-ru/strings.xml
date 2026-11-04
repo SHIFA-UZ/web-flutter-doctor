@@ -955,6 +955,8 @@
     <string name="documents">Документы</string>
     <string name="documentsEmptyHint">Загруженные файлы и сканы появятся здесь для быстрого просмотра во время приёма.</string>
     <string name="documentsFinalizeHint">Итоговые записи и PDF сохраняются при завершении приёма. Новые загрузки сразу отображаются здесь.</string>
+    <string name="documentsLoadFailed">Не удалось загрузить документы.</string>
+    <string name="documentsNoMatch">Нет документов по запросу «%1$s»</string>
     <string name="documentsReceived">Документы получены (30 дн.)</string>
     <string name="done">Готово</string>
     <string name="downloadSummary">Скачать</string>
@@ -1119,6 +1121,7 @@
     <string name="forgotPassword">Забыли пароль?</string>
     <string name="form0252">Форма 025-2</string>
     <string name="form0252MedicalDocument">Медицинский документ 025-2</string>
+    <string name="formDocumentTitle">Форма 025-2 (%1$s)</string>
     <string name="formSavedSuccessfully">Форма успешно сохранена</string>
     <string name="formsTab">Формы</string>
     <string name="freeRemovesPrices">Текущие цены будут удалены</string>
@@ -1927,6 +1930,7 @@
     <string name="reportsSmsTitle">SMS-напоминания</string>
     <string name="requestAccess">Запросить доступ</string>
     <string name="requestAccessSent">Запрос отправлен</string>
+    <string name="requestAlreadySent">Запрос уже отправлен</string>
     <string name="requestFailed">Запрос не выполнен. Попробуйте ещё раз.</string>
     <string name="requestPatientFormSignature">Запросить подпись пациента</string>
     <string name="requestSignature">Запросить подпись</string>
@@ -2377,6 +2381,7 @@
     <string name="uploadPhoto">Загрузить фото</string>
     <string name="uploaded">загружено</string>
     <string name="uploadedBy">Загружено</string>
+    <string name="uploadedByName">Загрузил(а): %1$s</string>
     <string name="uploading">Загрузка...</string>
     <string name="uploadingFile">Загрузка файла...</string>
     <string name="usa">США</string>

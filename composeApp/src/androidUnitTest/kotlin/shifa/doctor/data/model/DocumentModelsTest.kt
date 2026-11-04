@@ -40,4 +40,12 @@ class DocumentModelsTest {
         assertThat(DocumentFile.mime(byteArrayOf(1, 2), "application/octet-stream", "scan.JPG")).isEqualTo("image/jpeg")
         assertThat(DocumentFile.mime(byteArrayOf(1, 2), null, "notes.docx")).isEqualTo("application/octet-stream")
     }
+
+    @Test
+    fun `only a viewable document with a file opens`() {
+        assertThat(PatientDocument(1, url = "/f").openable).isTrue()
+        assertThat(PatientDocument(1, url = " ").openable).isFalse()
+        assertThat(PatientDocument(1, url = null).openable).isFalse()
+        assertThat(PatientDocument(1, url = "/f", canView = false).openable).isFalse()
+    }
 }

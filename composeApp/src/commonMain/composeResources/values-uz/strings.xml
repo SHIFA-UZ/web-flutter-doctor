@@ -955,6 +955,8 @@
     <string name="documents">Hujjatlar</string>
     <string name="documentsEmptyHint">Yuklangan fayllar va skanlar qabul vaqtida ochish uchun shu yerda paydo bo'ladi.</string>
     <string name="documentsFinalizeHint">Yakuniy izohlar va PDF fayllar uchrashuvni tugatganingizda saqlanadi. Yangi yuklamalar darhol shu yerda ko'rinadi.</string>
+    <string name="documentsLoadFailed">Hujjatlarni yuklab bo'lmadi.</string>
+    <string name="documentsNoMatch">“%1$s” bo'yicha hujjat topilmadi</string>
     <string name="documentsReceived">Qabul qilingan hujjatlar (30 kun)</string>
     <string name="done">Tayyor</string>
     <string name="downloadSummary">Yuklab olish</string>
@@ -1119,6 +1121,7 @@
     <string name="forgotPassword">Parolni unutdingizmi?</string>
     <string name="form0252">Form 025-2</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
+    <string name="formDocumentTitle">025-2 shakli (%1$s)</string>
     <string name="formSavedSuccessfully">Forma muvaffaqiyatli saqlandi</string>
     <string name="formsTab">Shakllar</string>
     <string name="freeRemovesPrices">Mavjud narxlar o'chiriladi</string>
@@ -1927,6 +1930,7 @@
     <string name="reportsSmsTitle">SMS eslatmalar</string>
     <string name="requestAccess">Kirish so'rovini yuborish</string>
     <string name="requestAccessSent">So'rov yuborildi</string>
+    <string name="requestAlreadySent">So'rov allaqachon yuborilgan</string>
     <string name="requestFailed">So'rov bajarilmadi. Iltimos, qayta urinib ko'ring.</string>
     <string name="requestPatientFormSignature">Bemordan imzo so'rash</string>
     <string name="requestSignature">Imzo so'rash</string>
@@ -2377,6 +2381,7 @@
     <string name="uploadPhoto">Rasm yuklash</string>
     <string name="uploaded">yuklandi</string>
     <string name="uploadedBy">Yuklangan</string>
+    <string name="uploadedByName">Yukladi: %1$s</string>
     <string name="uploading">Yuklanmoqda...</string>
     <string name="uploadingFile">Fayl yuklanmoqda...</string>
     <string name="usa">AQSH</string>

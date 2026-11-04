@@ -57,6 +57,7 @@ import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.model.PatientAccount
 import shifa.doctor.data.model.PatientAppointment
+import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientOption
 import shifa.doctor.data.model.PatientRequest
 import shifa.doctor.data.model.PatientStatus
@@ -145,6 +146,11 @@ import shifa.doctor.generated.resources.takeExtraCareForChronicDiseasePatient
 import shifa.doctor.generated.resources.username
 import shifa.doctor.ui.calendar.SlotPickSheet
 import shifa.doctor.ui.calendar.longDate
+import shifa.doctor.ui.documents.DocumentsActions
+import shifa.doctor.ui.documents.PatientDocumentsUiState
+import shifa.doctor.ui.documents.PatientDocumentsViewModel
+import shifa.doctor.ui.documents.documentRows
+import shifa.doctor.ui.documents.documentTitle
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.DiscardChangesSheet
@@ -661,6 +667,7 @@ data class PatientDetailActions(
     val medical: MedicalActions = MedicalActions(),
     val book: () -> Unit = {},
     val retryVisits: () -> Unit = {},
+    val documents: DocumentsActions = DocumentsActions(),
 )
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -670,17 +677,36 @@ fun PatientDetailScreen(
     onBack: () -> Unit,
     // "New appointment": the picked free slot, with this patient chosen, for the booking screen (CAL-7).
     onBook: (CalendarEntry.FreeSlot, PatientOption) -> Unit = { _, _ -> },
+    // A viewable document, for the viewer (DOCS-05): the document and the title to show.
+    onOpenDocument: (PatientDocument, String) -> Unit = { _, _ -> },
     viewModel: PatientDetailViewModel = viewModel(key = "patient-$id") { PatientDetailViewModel(id) },
+    documents: PatientDocumentsViewModel = viewModel(key = "patient-documents-$id") { PatientDocumentsViewModel(id) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val docs by documents.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.load() }
+    // Read each time the tab shows, back from the viewer included (access may have changed, flow 06/06 §5).
+    LaunchedEffect(state.tab) { if (state.tab == RecordTab.Documents) documents.load() }
+    val titleOf = @Composable { d: PatientDocument -> documentTitle(d) }
     val back = { if (viewModel.back()) onBack() }
     BackHandler(onBack = back)
+    // The viewer's title is resolved here, in the app's language, as the card shows it.
+    var opening by remember { mutableStateOf<PatientDocument?>(null) }
+    opening?.let { d ->
+        val title = titleOf(d)
+        LaunchedEffect(d) {
+            opening = null
+            onOpenDocument(d, title)
+        }
+    }
     PatientDetailContent(
         state,
         PatientDetailActions(
             back = back,
-            refresh = { viewModel.load(refresh = true) },
+            refresh = {
+                viewModel.load(refresh = true)
+                if (state.tab == RecordTab.Documents) documents.load()
+            },
             ui = viewModel::ui,
             select = viewModel::select,
             favorite = viewModel::toggleFavorite,
@@ -690,6 +716,14 @@ fun PatientDetailScreen(
             createAccount = viewModel::createAccount,
             book = viewModel::openBooking,
             retryVisits = viewModel::retryVisits,
+            documents =
+                DocumentsActions(
+                    retry = documents::load,
+                    search = documents::search,
+                    open = { opening = it },
+                    requestAccess = documents::requestAccess,
+                    ui = documents::ui,
+                ),
             medical =
                 MedicalActions(
                     phones = viewModel::editPhones,
@@ -702,6 +736,7 @@ fun PatientDetailScreen(
                     editDetails = viewModel::openEdit,
                 ),
         ),
+        docs,
     )
     val patient = state.patient
     val booking = state.booking
@@ -743,6 +778,7 @@ fun PatientDetailScreen(
 fun PatientDetailContent(
     state: PatientDetailUiState,
     actions: PatientDetailActions,
+    documents: PatientDocumentsUiState = PatientDocumentsUiState(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     // No title: the header below names the patient (flow 06/03 §3.1).
     ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
@@ -779,6 +815,7 @@ fun PatientDetailContent(
                         // Long lists are rows of the lazy list (100+ visits, flow 06/03 §8).
                         RecordTab.Appointments -> appointmentRows(state, actions, gap)
                         RecordTab.Activity -> activityRows(state, actions, gap)
+                        RecordTab.Documents -> documentRows(documents, actions.documents, gap)
                         else ->
                             item {
                                 Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {

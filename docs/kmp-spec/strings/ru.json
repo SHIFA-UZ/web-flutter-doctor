@@ -2488,5 +2488,10 @@
   "couldNotOpenPdf": "Не удалось открыть этот PDF.",
   "saveToDevice": "Сохранить на устройство",
   "documentSaved": "Сохранено на устройстве",
-  "documentSaveFailed": "Не удалось сохранить файл."
+  "documentSaveFailed": "Не удалось сохранить файл.",
+  "documentsNoMatch": "Нет документов по запросу «{query}»",
+  "documentsLoadFailed": "Не удалось загрузить документы.",
+  "requestAlreadySent": "Запрос уже отправлен",
+  "uploadedByName": "Загрузил(а): {name}",
+  "formDocumentTitle": "Форма 025-2 ({date})"
 }

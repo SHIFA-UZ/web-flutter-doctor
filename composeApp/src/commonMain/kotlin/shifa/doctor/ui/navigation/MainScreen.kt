@@ -389,6 +389,7 @@ private fun RouteContent(
                     ->
                     actions.push(ShellRoute.Booking(slot, currentInstant().toEpochMilliseconds(), patient))
                 },
+                onOpenDocument = { d, title -> actions.push(ShellRoute.Document(route.id, d.id, title)) },
             )
         is ShellRoute.Document ->
             DocumentViewerScreen(route.patientId, route.documentId, route.title, route.clinicId, onBack = actions.back)

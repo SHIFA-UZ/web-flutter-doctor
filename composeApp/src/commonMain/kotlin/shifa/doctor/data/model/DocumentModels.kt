@@ -29,6 +29,9 @@ data class PatientDocument(
     val kind: DocumentCategory? get() = DocumentCategory.of(category)
 
     val locked: Boolean get() = !canView
+
+    /** Viewable and with a file to fetch (flow 06/06 §9: `canView && url`). */
+    val openable: Boolean get() = canView && !url.isNullOrBlank()
 }
 
 /**

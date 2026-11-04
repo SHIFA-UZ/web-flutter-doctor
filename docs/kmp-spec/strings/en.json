@@ -2488,5 +2488,10 @@
   "couldNotOpenPdf": "Could not open this PDF.",
   "saveToDevice": "Save to device",
   "documentSaved": "Saved to your device",
-  "documentSaveFailed": "Couldn't save the file."
+  "documentSaveFailed": "Couldn't save the file.",
+  "documentsNoMatch": "No documents match “{query}”",
+  "documentsLoadFailed": "Couldn't load the documents.",
+  "requestAlreadySent": "Request already sent",
+  "uploadedByName": "Uploaded by {name}",
+  "formDocumentTitle": "Form 025-2 ({date})"
 }

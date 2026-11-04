@@ -955,6 +955,8 @@
     <string name="documents">Documents</string>
     <string name="documentsEmptyHint">Uploaded files and scans will appear here so you can open them during the visit.</string>
     <string name="documentsFinalizeHint">Final notes and PDFs are saved when you end the appointment. New uploads appear here immediately.</string>
+    <string name="documentsLoadFailed">Couldn't load the documents.</string>
+    <string name="documentsNoMatch">No documents match “%1$s”</string>
     <string name="documentsReceived">Documents Received (30d)</string>
     <string name="done">Done</string>
     <string name="downloadSummary">Download</string>
@@ -1119,6 +1121,7 @@
     <string name="forgotPassword">Forgot Password?</string>
     <string name="form0252">Form 025-2</string>
     <string name="form0252MedicalDocument">025-2 raqamli tibbiy hujjat</string>
+    <string name="formDocumentTitle">Form 025-2 (%1$s)</string>
     <string name="formSavedSuccessfully">Form saved successfully</string>
     <string name="formsTab">Forms</string>
     <string name="freeRemovesPrices">Existing prices will be removed</string>
@@ -1927,6 +1930,7 @@
     <string name="reportsSmsTitle">SMS reminders</string>
     <string name="requestAccess">Request access</string>
     <string name="requestAccessSent">Request sent</string>
+    <string name="requestAlreadySent">Request already sent</string>
     <string name="requestFailed">Request failed. Please try again.</string>
     <string name="requestPatientFormSignature">Request patient signature</string>
     <string name="requestSignature">Request Signature</string>
@@ -2377,6 +2381,7 @@
     <string name="uploadPhoto">Upload Photo</string>
     <string name="uploaded">uploaded</string>
     <string name="uploadedBy">Uploaded by</string>
+    <string name="uploadedByName">Uploaded by %1$s</string>
     <string name="uploading">Uploading...</string>
     <string name="uploadingFile">Uploading file...</string>
     <string name="usa">USA</string>

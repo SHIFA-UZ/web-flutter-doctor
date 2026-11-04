@@ -2488,5 +2488,10 @@
   "couldNotOpenPdf": "Bu PDF-ni ochib bo'lmadi.",
   "saveToDevice": "Qurilmaga saqlash",
   "documentSaved": "Qurilmangizga saqlandi",
-  "documentSaveFailed": "Faylni saqlab bo'lmadi."
+  "documentSaveFailed": "Faylni saqlab bo'lmadi.",
+  "documentsNoMatch": "“{query}” bo'yicha hujjat topilmadi",
+  "documentsLoadFailed": "Hujjatlarni yuklab bo'lmadi.",
+  "requestAlreadySent": "So'rov allaqachon yuborilgan",
+  "uploadedByName": "Yukladi: {name}",
+  "formDocumentTitle": "025-2 shakli ({date})"
 }
