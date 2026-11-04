@@ -251,6 +251,18 @@ the timezone warning (cancelled).
 8. **A flaky test pattern:** "Dispatchers.Main is used concurrently with setting it" once, when a previous test class
    left a ViewModel coroutine running; it passes on rerun.
 
+## M3 · Calendar & schedule (in progress)
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| TZ-1, TZ-2 | `925cce4` | Shared date / time formats; DST tests for the practice clock (the list came with PROF-06) |
+| CAL-1 | `8080c44` | Calendar entries and the cached day repository (atomic cache, 60 s throttle, month batch) |
+| CAL-2 | `5977cb1` | Today / next-appointment selectors and one refresh + event per appointment change |
+| CAL-3 | `3198023` | Month picker with the board's occupancy shading |
+| CAL-4 | `f4c5954` | Calendar tab: day agenda, filters, timezone-mismatch banner (checked on the emulator against dev) |
+
+CAL-5 (the tablet N-day grid) is left for the end of M3, as the plan says.
+
 ## Decisions
 
 - **D-00:** one branch, `doc-app2.0`.
