@@ -20,6 +20,7 @@ import shifa.doctor.generated.resources.appointmentEndedShort
 import shifa.doctor.generated.resources.backToNotes
 import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.continueWithoutWaiting
+import shifa.doctor.generated.resources.dentalLineItems
 import shifa.doctor.generated.resources.done
 import shifa.doctor.generated.resources.endAnyway
 import shifa.doctor.generated.resources.endChecklistChars
@@ -30,6 +31,7 @@ import shifa.doctor.generated.resources.endChecklistReady
 import shifa.doctor.generated.resources.endChecklistRequested
 import shifa.doctor.generated.resources.endChecklistSigned
 import shifa.doctor.generated.resources.endVisitChecklistAi
+import shifa.doctor.generated.resources.endVisitChecklistDental
 import shifa.doctor.generated.resources.endVisitChecklistNotes
 import shifa.doctor.generated.resources.endVisitChecklistSignature
 import shifa.doctor.generated.resources.endVisitNothingToSave
@@ -68,13 +70,15 @@ class EndActions(
 
 /**
  * End appointment (APPT-07, flow 05/12, board `DaVisit` "end visit" and "end progress"): first what will be saved
- * (notes, AI notes, signature; plan, payment, dental and photos join with their tickets), then the steps with a spinner
+ * (notes, AI notes, dental services, signature; plan, payment and photos join with their tickets), then the steps with a spinner
  * or a check, "Continue without waiting" on the AI step, the result. It can't be closed while it runs.
  */
 @Composable
 internal fun EndSheet(
     state: VisitUiState,
     notes: VisitNotesState,
+    // A dental doctor's record (DENTAL-02); null: no dental row.
+    dental: DentalNotesState?,
     schedule: String,
     minutes: Int,
     actions: EndActions,
@@ -82,7 +86,7 @@ internal fun EndSheet(
     val end = state.end
     ProfileSheet(actions.close, confirmHide = { !end.running && !end.completed }) {
         if (end.confirm && !end.running && !end.completed) {
-            EndConfirm(state, notes, schedule, minutes, actions)
+            EndConfirm(state, notes, dental, schedule, minutes, actions)
         } else {
             EndProgress(end, actions)
         }
@@ -93,6 +97,7 @@ internal fun EndSheet(
 internal fun EndConfirm(
     state: VisitUiState,
     notes: VisitNotesState,
+    dental: DentalNotesState?,
     schedule: String,
     minutes: Int,
     actions: EndActions,
@@ -100,7 +105,7 @@ internal fun EndConfirm(
     val chars = notes.text.body(SoapLabels()).length
     val aiReady = notes.notes.orEmpty().any { it.fromAi } || notes.drafts.orEmpty().isNotEmpty()
     val sig = state.signature
-    val nothing = chars == 0 && !aiReady && !state.awaitingScribe
+    val nothing = chars == 0 && !aiReady && !state.awaitingScribe && dental?.hasContent != true
     val waiting = sig == SignatureState.Waiting
     ShifaDialogSheet(
         tr(Res.string.endVisitTitle),
@@ -128,6 +133,17 @@ internal fun EndConfirm(
                 ),
                 aiReady || state.awaitingScribe,
             )
+            dental?.record?.let { r ->
+                Row(
+                    Res.string.endVisitChecklistDental,
+                    if (r.lineCount > 0) {
+                        "${r.lineCount} ${tr(Res.string.dentalLineItems)} · ${sums(r.totals)}"
+                    } else {
+                        tr(Res.string.endChecklistNone)
+                    },
+                    r.lineCount > 0,
+                )
+            }
             Row(
                 Res.string.endVisitChecklistSignature,
                 tr(

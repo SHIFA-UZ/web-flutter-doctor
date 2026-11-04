@@ -28,6 +28,8 @@ import shifa.doctor.data.consultation.VisitSummary
 import shifa.doctor.data.consultation.VisitSummaryLabels
 import shifa.doctor.data.consultation.VisitSummaryPdf
 import shifa.doctor.data.consultation.consultationRepository
+import shifa.doctor.data.dental.DentalRepository
+import shifa.doctor.data.dental.dentalRepository
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.documents.UploadFile
 import shifa.doctor.data.documents.documentsRepository
@@ -48,6 +50,7 @@ import shifa.doctor.data.model.composeVisitDocumentationText
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.services.ServicesRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
@@ -57,6 +60,8 @@ import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiNotesNotReadyTryLater
 import shifa.doctor.generated.resources.aiNotesUploaded
 import shifa.doctor.generated.resources.appointmentLoadFailed
+import shifa.doctor.generated.resources.dentalDocSaveFailed
+import shifa.doctor.generated.resources.dentalLoadFailed
 import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.icdAppliedOnOpen
 import shifa.doctor.generated.resources.noForm0252Yet
@@ -157,6 +162,8 @@ data class VisitUiState(
     val end: EndUiState = EndUiState(),
     // APPT-08: an AI-suggested ICD-10 code applied here, filled into the 025-2 opened next.
     val icd: IcdSuggestion? = null,
+    // DENTAL-02: the tooth (or the general key) whose services sheet is open.
+    val dentalTooth: String? = null,
 ) {
     val kind: VisitKind get() = visit?.kind ?: VisitKind.InPerson
 
@@ -186,11 +193,16 @@ class VisitViewModel(
         profileRepository.me.value?.profile.let { doctorDisplayName(it?.firstName, it?.lastName, null) to it?.clinic }
     },
     private val warned: MutableSet<Long> = chronicWarned,
+    private val dentalRepo: DentalRepository = dentalRepository,
+    private val services: ServicesRepository = ServicesRepository(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(VisitUiState())
     val state: StateFlow<VisitUiState> = _state.asStateFlow()
 
     val notes = VisitNotes(appointmentId, { _state.value.visit?.patientId }, viewModelScope, consultation)
+
+    // DENTAL-02: read for a dental doctor only.
+    val dentalRecord = DentalNotes(appointmentId, viewModelScope, dentalRepo, services)
 
     private var watching: Job? = null
 
@@ -222,6 +234,7 @@ class VisitViewModel(
                 )
             }
             notes.load()
+            if (dental) dentalRecord.load()
             if (visit.signature == SignatureState.Waiting) watchSignature()
             val patientId = visit.patientId ?: return@launch
             // The patient's facts are extras: a failure leaves them out, the visit still works.
@@ -372,6 +385,9 @@ class VisitViewModel(
         ending =
             viewModelScope.launch {
                 if (!notes.flush()) return@launch fail(CodeBanner(Res.string.notesSaveFailed))
+                // A dental record that couldn't be read would be left out of the summary: read it first (or stop).
+                if (s.dental && !dentalRecord.loaded()) return@launch fail(CodeBanner(Res.string.dentalLoadFailed))
+                if (!dentalRecord.flush()) return@launch fail(CodeBanner(Res.string.dentalDocSaveFailed))
                 step(EndStep.Complete)
                 val body = notes.state.value.text.body(notes.labels)
                 val done =
@@ -473,7 +489,9 @@ class VisitViewModel(
                 local,
             )
         if (visit != null) _state.update { it.copy(visit = visit.copy(status = "COMPLETED")) }
-        if (text.isBlank()) {
+        // As saved: the discount clamped, the notes trimmed.
+        val dental = dentalRecord.state.value.takeIf { it.loaded && it.hasContent }?.record?.payload()
+        if (text.isBlank() && dental == null) {
             val pending = _state.value.awaitingScribe
             return _state.update {
                 it.copy(
@@ -514,6 +532,7 @@ class VisitViewModel(
                                 it,
                             )
                         }?.let { "${displayDate(it.date)} ${displayTime(it.time)}" },
+                    dental = dental,
                 ),
                 labels.summary,
             )
@@ -552,7 +571,11 @@ class VisitViewModel(
     fun mode(to: VisitMode) {
         if (to == _state.value.mode) return _state.update { it.copy(menu = false) }
         _state.update { it.copy(mode = to, menu = false, helper = null) }
-        viewModelScope.launch { notes.flush() }
+        if (to == VisitMode.Dental) dentalRecord.load()
+        viewModelScope.launch {
+            notes.flush()
+            dentalRecord.flush()
+        }
     }
 
     /** The helper from the notes menu; says so when there is nothing to show (board `DaVisit` notes menu). */
@@ -604,8 +627,9 @@ class VisitViewModel(
         }
     }
 
-    /** A helper's text into the free notes (General mode, where they show). */
+    /** A helper's text into the dental record's clinical notes in Dental mode (Flutter's), else the free notes. */
     fun addToNotes(text: String) {
+        if (_state.value.mode == VisitMode.Dental && dentalRecord.state.value.loaded) return dentalRecord.append(text)
         notes.append(text)
         _state.update { it.copy(mode = VisitMode.General) }
     }
@@ -621,7 +645,10 @@ class VisitViewModel(
         force: Boolean = false,
     ) {
         if (force) return go(to)
-        viewModelScope.launch { if (notes.flush()) go(to) else _state.update { it.copy(askLeave = to) } }
+        viewModelScope.launch {
+            val saved = notes.flush() and dentalRecord.flush()
+            if (saved) go(to) else _state.update { it.copy(askLeave = to) }
+        }
     }
 
     private fun go(to: VisitExit) {

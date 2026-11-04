@@ -1,18 +1,14 @@
 package shifa.doctor.ui.visit
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
@@ -96,9 +92,7 @@ class VisitNotes(
     var labels = SoapLabels()
 
     private var hydrated = false
-    private var pending: Job? = null
-    private var edits = 0
-    private val saves = Mutex()
+    private val autosave = Autosave(scope, debounce) { save() }
 
     // Each read moves it on; only the newest may write the lists (an older one could bring back a draft just saved).
     private var reads = 0
@@ -141,15 +135,8 @@ class VisitNotes(
         if (after == before) return
         // An edit before the earlier notes arrived means they must not fill the field over it.
         hydrated = true
-        edits++
         _state.update { it.copy(text = after, dirty = true, saveError = null) }
-        // Only the wait is cancelled by a newer edit: a save already started runs to its end (see [save]).
-        pending?.cancel()
-        pending =
-            scope.launch {
-                delay(debounce)
-                scope.launch { save() }
-            }
+        autosave.changed()
     }
 
     /** Text from a helper (Shifa AI, the last 025-2) added to the free notes after a blank line. */
@@ -163,39 +150,37 @@ class VisitNotes(
      * true when nothing is left.
      */
     suspend fun flush(): Boolean {
-        pending?.cancel()
-        save()
+        autosave.flush()
         return !_state.value.dirty
     }
 
-    private suspend fun save() =
-        saves.withLock {
-            val s = _state.value
-            if (!s.dirty) return@withLock
-            val version = edits
-            val body = s.text.body(labels)
-            // Blank text isn't sent (the backend ignores it); nothing is left to save.
-            if (body.isBlank()) return@withLock _state.update { it.copy(dirty = edits != version) }
-            _state.update { it.copy(saving = true) }
-            // A PUT that has left can't be called back: it runs to its answer with the lock held, so a newer save
-            // never overtakes it on the server.
-            val result =
-                try {
-                    withContext(NonCancellable) { repo.saveNotes(appointmentId, body) }
-                } finally {
-                    _state.update { it.copy(saving = false) }
-                }
-            _state.update {
-                it.copy(
-                    // An edit made while saving stays unsaved (its own timer saves it).
-                    dirty = edits != version || result.isFailure,
-                    saveError =
-                        result.exceptionOrNull()?.let { e ->
-                            CodeBanner(e.toUserMessage(Res.string.notesSaveFailed), requestId = e.requestId)
-                        },
-                )
+    private suspend fun save() {
+        val s = _state.value
+        if (!s.dirty) return
+        val version = autosave.changes
+        val body = s.text.body(labels)
+        // Blank text isn't sent (the backend ignores it); nothing is left to save.
+        if (body.isBlank()) return _state.update { it.copy(dirty = autosave.changes != version) }
+        _state.update { it.copy(saving = true) }
+        // A PUT that has left can't be called back: it runs to its answer (Autosave holds its lock meanwhile, so a
+        // newer save never overtakes it on the server).
+        val result =
+            try {
+                withContext(NonCancellable) { repo.saveNotes(appointmentId, body) }
+            } finally {
+                _state.update { it.copy(saving = false) }
             }
+        _state.update {
+            it.copy(
+                // An edit made while saving stays unsaved (its own timer saves it).
+                dirty = autosave.changes != version || result.isFailure,
+                saveError =
+                    result.exceptionOrNull()?.let { e ->
+                        CodeBanner(e.toUserMessage(Res.string.notesSaveFailed), requestId = e.requestId)
+                    },
+            )
         }
+    }
 
     /** A Shifa AI draft saved as the visit's note; the notes and drafts are read again. */
     fun confirm(draft: DraftNote) = act(draft) { repo.confirmDraft(draft.id, patientId(), appointmentId) }

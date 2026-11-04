@@ -848,12 +848,15 @@
     <string name="dentalDiscount">Chegirma</string>
     <string name="dentalDiscountPercent">Chegirma</string>
     <string name="dentalDocIntro">Tishni bosing (FDI), xizmatlarni qo'shing, kerak bo'lsa chegirma kiriting. Jami bir xil valyutadagi narx qatorlari yig'indisidan hisoblanadi.</string>
+    <string name="dentalDocIntroFree">Tishni bosing (FDI choraklari), katalogdagi xizmatlaringizni qo'shing, so'ng kerak bo'lsa chegirma kiriting.</string>
     <string name="dentalDocSaveFailed">Stomatologik hujjatni saqlab bo'lmadi</string>
     <string name="dentalDocSaved">Stomatologik hujjat saqlandi</string>
     <string name="dentalGeneralServices">Umumiy / tishga bog'liq bo'lmagan xizmatlar</string>
     <string name="dentalGeneralServicesHint">Muayyan tishga bog'liq bo'lmagan protseduralar (masalan, lab frenektomiyasi).</string>
     <string name="dentalGeneralServicesShort">Umumiy</string>
     <string name="dentalLegend">Belgilanishlar: K=kariyes, P=plomba, pulpit, periodontit, koronka, shtift, yetishmaydigan, protez.</string>
+    <string name="dentalLegendAdded">Xizmat qo'shilgan (soni)</string>
+    <string name="dentalLegendNone">Xizmat yo'q</string>
     <string name="dentalLineItems">qatorma-qator</string>
     <string name="dentalLoadFailed">Stomatologik kartani yuklab bo'lmadi</string>
     <string name="dentalLowerJaw">Pastki jag'</string>
@@ -894,6 +897,7 @@
     <string name="discardRegistrationBody">Kiritgan ma'lumotlaringiz yo'qoladi.</string>
     <string name="discardRegistrationTitle">Ro'yxatdan o'tish bekor qilinsinmi?</string>
     <string name="discardScannedPages">Skanerlangan sahifalar o'chirilsinmi?</string>
+    <string name="discountOutOfRange">Chegirmani 0 dan 100 gacha kiriting.</string>
     <string name="discountRange">0–100</string>
     <string name="diseaseDevelopment">Kasallik rivojlanishi</string>
     <string name="diseaseGroups">Kasallik guruhlari</string>

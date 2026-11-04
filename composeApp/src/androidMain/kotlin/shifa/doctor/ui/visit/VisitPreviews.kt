@@ -7,11 +7,15 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import shifa.doctor.data.model.AppointmentDetail
 import shifa.doctor.data.model.ConsultationNote
+import shifa.doctor.data.model.DentalRecord
+import shifa.doctor.data.model.DoctorService
 import shifa.doctor.data.model.DraftNote
 import shifa.doctor.data.model.IcdSuggestion
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
+import shifa.doctor.data.model.ServicePrice
+import shifa.doctor.data.model.ToothServiceLine
 import shifa.doctor.ui.documents.PatientDocumentsUiState
 import shifa.doctor.ui.theme.PreviewTheme
 import shifa.doctor.utils.PracticeClock
@@ -130,6 +134,70 @@ internal fun VisitForm0252Preview() =
         )
     }
 
+private val dental =
+    DentalNotesState(
+        loaded = true,
+        record =
+            DentalRecord(
+                teeth =
+                    mapOf(
+                        "36" to
+                            listOf(
+                                ToothServiceLine(1, title = "Pulp removal", amountMinor = 45_000_000),
+                                ToothServiceLine(2, title = "Temporary filling", amountMinor = 15_000_000),
+                            ),
+                        "__general__" to
+                            listOf(
+                                ToothServiceLine(3, title = "Panoramic X-ray", amountMinor = 2_500, currency = "USD"),
+                            ),
+                    ),
+                discountPercent = 10.0,
+                notes = "Lidocaine 2%, tolerated well.",
+            ),
+        discount = "10",
+        services =
+            listOf(
+                DoctorService(
+                    1,
+                    "Pulp removal",
+                    groupName = "Endodontics",
+                    prices = listOf(ServicePrice(45_000_000, "UZS")),
+                ),
+                DoctorService(
+                    2,
+                    "Temporary filling",
+                    groupName = "Fillings",
+                    prices = listOf(ServicePrice(15_000_000, "UZS")),
+                ),
+                DoctorService(
+                    4,
+                    "Composite filling",
+                    groupName = "Fillings",
+                    prices = listOf(ServicePrice(60_000_000, "UZS")),
+                ),
+            ),
+    )
+
+// DENTAL-02: Dental visit record mode: the tooth map with 36's two services, one general service in USD (totals per
+// currency), a 10 % discount and clinical notes.
+@Composable
+internal fun VisitDentalPreview() =
+    PreviewTheme {
+        VisitContent(
+            state.copy(mode = VisitMode.Dental, dental = true, helper = null, soapOpen = false),
+            notes,
+            VisitActions(),
+            documents,
+            clock = clock,
+            now = { now },
+            dental = dental,
+        )
+    }
+
+// DENTAL-02: tooth 36's services: the two added (removable), the group chips and the doctor's services.
+@Composable
+internal fun DentalServicesSheetPreview() = PreviewTheme { DentalServicesSheet("36", dental, DentalActions()) }
+
 // APPT-04: clinic staff get the board's "Visits are run by the doctor".
 @Composable
 internal fun VisitStaffPreview() = PreviewTheme { StaffCannotRunVisits {} }
@@ -180,7 +248,7 @@ internal fun BriefingFailedPreview() =
 @Composable
 internal fun EndConfirmPreview() =
     PreviewTheme {
-        EndConfirm(state.copy(awaitingScribe = true), notes, "10:00–10:30", 18, EndActions())
+        EndConfirm(state.copy(awaitingScribe = true, dental = true), notes, dental, "10:00–10:30", 18, EndActions())
     }
 
 // APPT-07 / SCRIBE-02: the steps, waiting for the AI notes (0:42) with Continue without waiting.

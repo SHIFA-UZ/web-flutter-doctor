@@ -848,12 +848,15 @@
     <string name="dentalDiscount">Discount</string>
     <string name="dentalDiscountPercent">Discount</string>
     <string name="dentalDocIntro">Tap a tooth (FDI-style quadrants), add your catalog services, then set discount if needed. Totals use the first currency found on priced lines.</string>
+    <string name="dentalDocIntroFree">Tap a tooth (FDI-style quadrants), add your catalog services, then set discount if needed.</string>
     <string name="dentalDocSaveFailed">Could not save dental documentation</string>
     <string name="dentalDocSaved">Dental visit documentation saved</string>
     <string name="dentalGeneralServices">General / non-tooth services</string>
     <string name="dentalGeneralServicesHint">Procedures not tied to a specific tooth (e.g. lip frenectomy, consultation).</string>
     <string name="dentalGeneralServicesShort">General</string>
     <string name="dentalLegend">Legend: K=caries, P=filling, pulpitis, periodontitis, crown, post, missing, prosthetic.</string>
+    <string name="dentalLegendAdded">Services added (count)</string>
+    <string name="dentalLegendNone">No services</string>
     <string name="dentalLineItems">line items</string>
     <string name="dentalLoadFailed">Could not load dental record</string>
     <string name="dentalLowerJaw">Lower jaw</string>
@@ -894,6 +897,7 @@
     <string name="discardRegistrationBody">Your entries will be lost.</string>
     <string name="discardRegistrationTitle">Discard registration?</string>
     <string name="discardScannedPages">Discard the scanned pages?</string>
+    <string name="discountOutOfRange">Enter a discount between 0 and 100.</string>
     <string name="discountRange">0–100</string>
     <string name="diseaseDevelopment">Disease development</string>
     <string name="diseaseGroups">Disease groups</string>

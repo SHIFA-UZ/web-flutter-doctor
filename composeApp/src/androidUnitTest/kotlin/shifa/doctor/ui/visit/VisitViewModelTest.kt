@@ -28,6 +28,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
 import shifa.doctor.generated.resources.aiNotesUploaded
+import shifa.doctor.generated.resources.dentalLoadFailed
 import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.noItemsToSave
@@ -48,7 +49,9 @@ class VisitViewModelTest {
     private var scribePending = false
     private var notesList = "[]"
     private val completedDays = mutableListOf<kotlinx.datetime.LocalDate>()
+    private val summaries = mutableListOf<shifa.doctor.data.consultation.VisitSummary>()
     private var notesReadFails = false
+    private var dentalReadFails = false
     private var forms = """[{"id":3,"patientId":14,"templateId":"025-2","date":"2026-10-20","complaints":"Pain","diagnosis":"Caries"}]"""
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val engine =
@@ -81,6 +84,13 @@ class VisitViewModelTest {
                     respond("""{"status":500}""", HttpStatusCode.InternalServerError, json)
                 path == "appointments/7/consultation-notes" -> ok(notesList)
                 path == "appointments/7/draft-notes" -> ok(drafts)
+                path == "appointments/7/dental-documentation" && method == "GET" && dentalReadFails ->
+                    respond("""{"status":500}""", HttpStatusCode.InternalServerError, json)
+                path == "appointments/7/dental-documentation" && method == "GET" -> ok("{}")
+                path == "doctors/me/services" ->
+                    ok(
+                        """[{"id":2,"title":"Filling","isActive":true,"prices":[{"amountMinor":60000000,"currency":"UZS"}]}]""",
+                    )
                 path == "consultations/upload-recording" ->
                     if (uploadStatus == HttpStatusCode.Accepted) {
                         respond("""{"message":"ok"}""", HttpStatusCode.Accepted, json)
@@ -133,9 +143,14 @@ class VisitViewModelTest {
             profession = { profession },
             warned = warned,
             documents = shifa.doctor.data.documents.DocumentsRepository(client),
-            summaryPdf = { _, _ -> "%PDF summary".encodeToByteArray() },
+            summaryPdf = { summary, _ ->
+                summaries += summary
+                "%PDF summary".encodeToByteArray()
+            },
             doctor = { "Dr. Karimov" to "Shifa Dev Clinic" },
             completedOn = { _, day -> completedDays += day },
+            dentalRepo = shifa.doctor.data.dental.DentalRepository(client),
+            services = shifa.doctor.data.services.ServicesRepository(client),
         ).also {
             created += it
             it.load()
@@ -277,6 +292,44 @@ class VisitViewModelTest {
         // The calendar's day of the visit is read again.
         settle { completedDays.isNotEmpty() }
         assertThat(completedDays.single()).isEqualTo(kotlinx.datetime.LocalDate(2026, 11, 4))
+    }
+
+    @Test
+    fun `a dentist's End saves the dental record first, and its services alone make a summary`() {
+        val classToTest = opened(profession = "Dentist")
+        settle { classToTest.dentalRecord.state.value.let { it.loaded && it.services != null } }
+        classToTest.dentalRecord.add("36", classToTest.dentalRecord.state.value.services!!.single())
+        // Shifa AI's text goes into the dental notes in Dental mode, the mode stays.
+        classToTest.addToNotes("Pulpitis of 36")
+        assertThat(classToTest.state.value.mode).isEqualTo(VisitMode.Dental)
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.done).isTrue()
+        val writes = calls.filter { !it.startsWith("GET") }.map { it.substringBefore(" {").substringBefore(" --") }
+        assertThat(writes).containsExactly(
+            "PUT appointments/7/dental-documentation",
+            "PUT appointments/7/complete",
+            "POST patients/14/documents",
+        ).inOrder()
+        val dental = summaries.single().dental!!
+        assertThat(dental.lines("36").single().title).isEqualTo("Filling")
+        assertThat(dental.notes).isEqualTo("Pulpitis of 36")
+    }
+
+    @Test
+    fun `a dental record that can't be read stops End before the visit is completed`() {
+        dentalReadFails = true
+        val classToTest = opened(profession = "Dentist")
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.error?.text).isEqualTo(Res.string.dentalLoadFailed)
+        assertThat(classToTest.state.value.end.completed).isFalse()
+        assertThat(calls.none { it.startsWith("PUT appointments/7/complete") }).isTrue()
+        // Read again at the next End, then it goes through.
+        dentalReadFails = false
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.completed).isTrue()
     }
 
     @Test

@@ -97,6 +97,8 @@ object ApiConfig {
 
         fun consultationNotes(id: Long) = "appointments/$id/consultation-notes"
 
+        fun dentalDocumentation(id: Long) = "appointments/$id/dental-documentation"
+
         fun draftNotes(id: Long) = "appointments/$id/draft-notes"
 
         fun appointmentComplete(id: Long) = "appointments/$id/complete"

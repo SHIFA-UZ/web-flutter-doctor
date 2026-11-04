@@ -2607,5 +2607,9 @@
   "endingAppointment": "Ending appointment…",
   "aiNotesHeading": "From Shifa AI",
   "icdToApply": "ICD-10 to apply: {code} {title}",
-  "icdAppliedOnOpen": "Applied: {code}. It is filled in when you open Form 025-2."
+  "icdAppliedOnOpen": "Applied: {code}. It is filled in when you open Form 025-2.",
+  "dentalDocIntroFree": "Tap a tooth (FDI-style quadrants), add your catalog services, then set discount if needed.",
+  "dentalLegendNone": "No services",
+  "dentalLegendAdded": "Services added (count)",
+  "discountOutOfRange": "Enter a discount between 0 and 100."
 }

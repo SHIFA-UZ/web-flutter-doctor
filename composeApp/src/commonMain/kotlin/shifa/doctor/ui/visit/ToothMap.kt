@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -55,7 +56,11 @@ fun ToothMap(
     modifier: Modifier = Modifier,
     states: Map<String, ToothPlanState>? = null,
     selected: String? = null,
-    describe: (tooth: String, count: Int, state: ToothPlanState?) -> String = { t, c, _ -> if (c > 0) "$t, $c" else t },
+    describe: @Composable (
+        tooth: String,
+        count: Int,
+        state: ToothPlanState?,
+    ) -> String = { t, c, _ -> if (c > 0) "$t, $c" else t },
     onTap: ((String) -> Unit)? = null,
 ) = BoxWithConstraints(modifier.fillMaxWidth()) {
     val wide = maxWidth >= ShifaDimens.ToothMapWide
@@ -179,11 +184,12 @@ private fun Tooth(
                     .align(Alignment.TopEnd)
                     .offset(ShifaSize.S6, -ShifaSize.S6)
                     .widthIn(min = ShifaSize.S16)
+                    .height(ShifaSize.S16)
                     .background(ShifaColors.Text.Primary, androidx.compose.foundation.shape.CircleShape)
                     .padding(horizontal = ShifaSize.S4),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("$count", style = ShifaTextStyles.caption(), color = ShifaColors.Text.Inverse, maxLines = 1)
+                Text("$count", style = ShifaTextStyles.badgeCount(), color = ShifaColors.Text.Inverse, maxLines = 1)
             }
         }
     }

@@ -51,28 +51,29 @@ open class PdfFlow(
     protected fun paragraph(
         text: String,
         size: Float = 11f,
+        bold: Boolean = false,
     ) {
         var rest = text
         while (rest.isNotEmpty()) {
-            val h = measure(rest, size, false, contentW)
+            val h = measure(rest, size, bold, contentW)
             if (y + h <= bottom) {
-                ops += PdfOp.Text(margin, y, contentW, rest, size)
+                ops += PdfOp.Text(margin, y, contentW, rest, size, bold = bold)
                 y += h + 2
                 return
             }
             val words = rest.split(' ')
-            val fit = fitWords(words, size, false, contentW, bottom - y)
+            val fit = fitWords(words, size, bold, contentW, bottom - y)
             if (fit == 0) {
                 if (y == margin) {
                     // One word taller than a page: drawn as it is (it can't be split by words).
-                    ops += PdfOp.Text(margin, y, contentW, rest, size)
+                    ops += PdfOp.Text(margin, y, contentW, rest, size, bold = bold)
                     y += h + 2
                     return
                 }
                 newPage()
                 continue
             }
-            ops += PdfOp.Text(margin, y, contentW, words.take(fit).joinToString(" "), size)
+            ops += PdfOp.Text(margin, y, contentW, words.take(fit).joinToString(" "), size, bold = bold)
             newPage()
             rest = words.drop(fit).joinToString(" ")
         }

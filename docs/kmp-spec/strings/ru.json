@@ -2607,5 +2607,9 @@
   "endingAppointment": "Завершаем приём…",
   "aiNotesHeading": "От Shifa AI",
   "icdToApply": "МКБ-10 к применению: {code} {title}",
-  "icdAppliedOnOpen": "Применено: {code}. Подставится, когда вы откроете форму 025-2."
+  "icdAppliedOnOpen": "Применено: {code}. Подставится, когда вы откроете форму 025-2.",
+  "dentalDocIntroFree": "Нажмите на зуб (квадранты FDI), добавьте услуги из каталога, затем при необходимости укажите скидку.",
+  "dentalLegendNone": "Нет услуг",
+  "dentalLegendAdded": "Услуги добавлены (количество)",
+  "discountOutOfRange": "Введите скидку от 0 до 100."
 }

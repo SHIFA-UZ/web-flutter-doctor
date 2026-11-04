@@ -68,6 +68,9 @@ class DentalModelsTest {
         assertThat(twins.lineCount).isEqualTo(1)
         assertThat(twins.notes).isEmpty()
         assertThat(DentalRecord(discountPercent = 150.0).payload().discountPercent).isEqualTo(100.0)
+        assertThat(read("""{"teeth":[{"title":"Filling"}]}""")).isNull()
+        assertThat(read("""{"teeth":{"16":{"title":"Filling"}}}""")).isNull()
+        assertThat(read("""{"teeth":null,"notes":"n"}""")?.notes).isEqualTo("n")
         assertThat(read("{}")).isNull()
         assertThat(read("[]")).isNull()
     }

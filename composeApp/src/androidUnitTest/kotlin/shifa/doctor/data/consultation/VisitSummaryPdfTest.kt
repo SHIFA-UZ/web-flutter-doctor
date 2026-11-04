@@ -58,6 +58,47 @@ class VisitSummaryPdfTest {
     }
 
     @Test
+    fun `a dental visit lists its services by tooth, general last, with totals per currency and its notes`() {
+        val dental =
+            shifa.doctor.data.model.DentalRecord(
+                teeth =
+                    mapOf(
+                        "__general__" to
+                            listOf(
+                                shifa.doctor.data.model.ToothServiceLine(
+                                    title = "X-ray",
+                                    amountMinor = 2_500,
+                                    currency = "USD",
+                                ),
+                            ),
+                        "36" to
+                            listOf(
+                                shifa.doctor.data.model.ToothServiceLine(title = "Filling", amountMinor = 60_000_000),
+                            ),
+                        "16" to
+                            listOf(
+                                shifa.doctor.data.model.ToothServiceLine(title = "Cleaning", amountMinor = 10_000_000),
+                            ),
+                    ),
+                discountPercent = 10.0,
+                notes = "Lidocaine 2%.",
+            )
+        val all = texts(classToTest.pages(summary.copy(notes = "", dental = dental), VisitSummaryLabels()))
+        val order =
+            listOf("DENTAL VISIT — Procedures by tooth", "Tooth", "16", "Cleaning", "36", "Filling", "General", "X-ray", "Discount: 10%", "Lidocaine 2%.", "Signatures")
+        assertThat(order.map { t -> all.indexOfFirst { it == t } }).isInStrictOrder()
+        val money = shifa.doctor.utils.Money::format
+        assertThat(all).contains("Subtotal: ${money(70_000_000, "UZS")} + ${money(2_500, "USD")}")
+        assertThat(all).contains("Total due: ${money(63_000_000, "UZS")} + ${money(2_250, "USD")}")
+        // A discount over 100 prints as the 100 % it is saved as.
+        val over =
+            texts(classToTest.pages(summary.copy(dental = dental.copy(discountPercent = 150.0)), VisitSummaryLabels()))
+        assertThat(over).contains("Discount: 100%")
+        // No notes written: no empty notes section.
+        assertThat(all).doesNotContain("Clinical notes")
+    }
+
+    @Test
     fun `long notes flow onto more pages, each with its page number, and a signature is drawn with its date`() {
         val long = (1..120).joinToString("\n") { "Line $it of the doctor's notes about the visit." }
         val png = byteArrayOf(-119, 80, 78, 71)

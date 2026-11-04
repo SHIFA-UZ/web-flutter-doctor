@@ -116,6 +116,9 @@ class DemoBackend(
 
     // AI-11: each visit's saved notes, and Shifa AI's pending drafts (one for the video visit until saved or dropped).
     private val visitNotes = mutableMapOf<Long, List<JsonObject>>()
+
+    // DENTAL-02: each visit's dental record.
+    private val dentalRecords = mutableMapOf<Long, JsonObject>()
     private var visitDrafts = mapOf(DEMO_DRAFT_ID to 101L)
 
     /** The visit's manual note replaced (the backend keeps one per visit and updates it), else added. */
@@ -529,6 +532,20 @@ class DemoBackend(
                 val id = path.split('/')[1].toLong()
                 briefingRetried[id] = currentInstant()
                 ok(demoBriefing(id, briefingRetried[id]))
+            }
+            // A visit's dental record (DENTAL-02): stored as given, `{}` until the first save.
+            path.matches(Regex("appointments/\\d+/dental-documentation")) -> {
+                val id = path.split('/')[1].toLong()
+                if (!get) {
+                    dentalRecords[id] = runCatching {
+                        apiJson.parseToJsonElement(
+                            body,
+                        ).jsonObject
+                    }.getOrNull() ?: JsonObject(emptyMap())
+                    Reply(HttpStatusCode.OK, "")
+                } else {
+                    ok(dentalRecords[id] ?: JsonObject(emptyMap()))
+                }
             }
             // A visit's notes (AI-11).
             path.matches(Regex("appointments/\\d+/consultation-notes")) -> {

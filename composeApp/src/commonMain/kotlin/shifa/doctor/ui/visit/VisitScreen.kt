@@ -66,12 +66,18 @@ import shifa.doctor.generated.resources.appointmentEndedDocumentationSaved
 import shifa.doctor.generated.resources.appointmentGone
 import shifa.doctor.generated.resources.appointmentLoadFailed
 import shifa.doctor.generated.resources.back
+import shifa.doctor.generated.resources.clinicPaymentsColAmount
 import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.complaints
 import shifa.doctor.generated.resources.consultationFocusModeTitle
 import shifa.doctor.generated.resources.consultationUploadHint
 import shifa.doctor.generated.resources.dateOfBirth
 import shifa.doctor.generated.resources.dentalClinicalNotes
+import shifa.doctor.generated.resources.dentalDiscount
+import shifa.doctor.generated.resources.dentalGeneralServicesShort
+import shifa.doctor.generated.resources.dentalPdfHeader
+import shifa.doctor.generated.resources.dentalSubtotal
+import shifa.doctor.generated.resources.dentalTotal
 import shifa.doctor.generated.resources.diagnosis
 import shifa.doctor.generated.resources.discard
 import shifa.doctor.generated.resources.docMode0252
@@ -119,6 +125,7 @@ import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.ic_x_16
 import shifa.doctor.generated.resources.icdToApply
 import shifa.doctor.generated.resources.inPerson
+import shifa.doctor.generated.resources.intelService
 import shifa.doctor.generated.resources.lastForm0252
 import shifa.doctor.generated.resources.lastVisitOn
 import shifa.doctor.generated.resources.leaveAnyway
@@ -164,7 +171,7 @@ import shifa.doctor.generated.resources.summarySignedElectronically
 import shifa.doctor.generated.resources.summaryTitle
 import shifa.doctor.generated.resources.summaryVideoVisit
 import shifa.doctor.generated.resources.summaryVisitType
-import shifa.doctor.generated.resources.tabComesLater
+import shifa.doctor.generated.resources.tooth
 import shifa.doctor.generated.resources.treatment
 import shifa.doctor.generated.resources.upload
 import shifa.doctor.generated.resources.videoCall
@@ -288,13 +295,14 @@ class VisitActions(
     // APPT-08: an AI ICD suggestion applied (kept for the 025-2), or dropped.
     val applyIcd: (IcdSuggestion) -> Unit = {},
     val clearIcd: () -> Unit = {},
+    // DENTAL-02: the dental record's changes and its services sheet.
+    val dental: DentalActions = DentalActions(),
 )
 
 /**
  * The visit workspace (APPT-04, flow 05/04, board `DaVisit` "VISIT WORKSPACE"; phone, single column). Clinic staff
  * get the board's "Visits are run by the doctor" instead (flow 01/18). Not built yet: the video pane (VIDEO-02),
- * the dental record (DENTAL-02), dictation (AI-05/06), the AI scribe (SCRIBE-01), before/after photos (APPT-05) and
- * End appointment (APPT-07).
+ * the treatment plan (DENTAL-03) and before/after photos (APPT-05).
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -313,6 +321,7 @@ fun VisitScreen(
     if (staff) return StaffCannotRunVisits(onBack)
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notes by viewModel.notes.state.collectAsStateWithLifecycle()
+    val dental by viewModel.dentalRecord.state.collectAsStateWithLifecycle()
     viewModel.notes.labels =
         SoapLabels(
             tr(Res.string.soapSubjective),
@@ -366,14 +375,28 @@ fun VisitScreen(
             retrySummary = viewModel::retrySummary,
             applyIcd = viewModel::applyIcd,
             clearIcd = { viewModel.ui { it.copy(icd = null) } },
+            dental =
+                DentalActions(
+                    retry = viewModel.dentalRecord::load,
+                    open = { t -> viewModel.ui { it.copy(dentalTooth = t) } },
+                    edit = viewModel.dentalRecord::edit,
+                    dentition = viewModel.dentalRecord::dentition,
+                    discount = viewModel.dentalRecord::discount,
+                    add = viewModel.dentalRecord::add,
+                    remove = viewModel.dentalRecord::remove,
+                    retryServices = viewModel.dentalRecord::loadServices,
+                ),
         )
     // Dictation for the notes fields (AI-06); the AI scribe (SCRIBE-01) has its own recorder, its state passed down.
     CompositionLocalProvider(LocalDictation provides rememberDictation()) {
         if (patientId == null) {
-            VisitContent(state, notes, actions, scribe = scribeState, scribeAllowed = scribeAllowed)
+            VisitContent(state, notes, actions, scribe = scribeState, scribeAllowed = scribeAllowed, dental = dental)
         } else {
             // The documents and uploads need the patient: they start once the visit says who it is.
-            PatientParts(patientId, state, notes, actions, onOpenDocument, scribeState, scribeAllowed)
+            PatientParts(patientId, state, notes, dental, actions, onOpenDocument, scribeState, scribeAllowed)
+        }
+        state.dentalTooth?.let { tooth ->
+            ProfileSheet({ actions.dental.open(null) }) { DentalServicesSheet(tooth, dental, actions.dental) }
         }
     }
     state.askLeave?.let { to ->
@@ -405,6 +428,7 @@ fun VisitScreen(
         EndSheet(
             state,
             notes,
+            dental.takeIf { state.dental },
             schedule,
             minutes,
             EndActions(
@@ -431,6 +455,7 @@ private fun PatientParts(
     patientId: Long,
     state: VisitUiState,
     notes: VisitNotesState,
+    dental: DentalNotesState,
     actions: VisitActions,
     onOpenDocument: (Long, PatientDocument, String) -> Unit,
     scribe: DictationState,
@@ -480,6 +505,7 @@ private fun PatientParts(
             retrySummary = actions.retrySummary,
             applyIcd = actions.applyIcd,
             clearIcd = actions.clearIcd,
+            dental = actions.dental,
             documents =
                 DocumentsActions(
                     retry = documents::load,
@@ -496,6 +522,7 @@ private fun PatientParts(
         upload,
         scribe = scribe,
         scribeAllowed = scribeAllowed,
+        dental = dental,
     )
     UploadSheets(upload, uploads, sources)
 }
@@ -512,6 +539,7 @@ internal fun VisitContent(
     // The AI scribe's recording (SCRIBE-01): its state and whether the plan has AI notes; null: not offered.
     scribe: DictationState? = null,
     scribeAllowed: Boolean = false,
+    dental: DentalNotesState = DentalNotesState(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     val visit = state.visit
     when {
@@ -553,7 +581,7 @@ internal fun VisitContent(
                         }
                     }
                 }
-                item { Box(gap) { NotesCard(state, notes, actions, scribe, scribeAllowed) } }
+                item { Box(gap) { NotesCard(state, notes, dental, actions, scribe, scribeAllowed) } }
                 documentRows(documents, upload, actions.documents, gap, hasPatient = visit.patientId != null)
             }
             Footer(state, actions)
@@ -709,6 +737,7 @@ private fun Card(content: @Composable ColumnScope.() -> Unit) =
 private fun NotesCard(
     state: VisitUiState,
     notes: VisitNotesState,
+    dental: DentalNotesState,
     actions: VisitActions,
     scribe: DictationState?,
     scribeAllowed: Boolean,
@@ -755,7 +784,7 @@ private fun NotesCard(
     }
     when (state.mode) {
         VisitMode.General -> General(state, notes, actions, scribe, scribeAllowed)
-        VisitMode.Dental -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_clipboard_22)
+        VisitMode.Dental -> DentalPanel(dental, state.dentalTooth, actions.dental)
         VisitMode.Form0252 -> Form0252(state.forms, state.visit?.patientId != null, state.icd, actions)
     }
 }
@@ -1331,6 +1360,14 @@ private fun rememberEndLabels(): EndLabels {
                         t ->
                     { p: Int, n: Int -> t.replace("%P%", "$p").replace("%N%", "$n") }
                 },
+            dental = tr(Res.string.dentalPdfHeader),
+            tooth = tr(Res.string.tooth),
+            service = tr(Res.string.intelService),
+            amount = tr(Res.string.clinicPaymentsColAmount),
+            general = tr(Res.string.dentalGeneralServicesShort),
+            subtotal = tr(Res.string.dentalSubtotal),
+            discount = tr(Res.string.dentalDiscount),
+            total = tr(Res.string.dentalTotal),
         )
     val inPerson = tr(Res.string.inPerson)
     val video = tr(Res.string.summaryVideoVisit)

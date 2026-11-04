@@ -330,3 +330,50 @@ Built 2026-11-04. Spec 05 §4.1–4.2, ticket DENTAL-01, board `DaVisit` "TOOTH 
 - **Tests:** `DentalModelsTest`: legacy keys (a key and its FDI twin are one tooth), bad lines, odd metadata and a text
   discount read; payload with a clamped discount; totals per currency with
   half-up rounding. Screenshots `ToothMap` (free and plan modes, primary teeth) and `ToothMap_wide`.
+
+## DENTAL-02 · Dental visit record (free mode)
+
+Built 2026-11-04. Spec 05 §4.3, ticket DENTAL-02, board `DaVisit` dental mode and "dental services picker". API:
+`GET/PUT /appointments/{id}/dental-documentation` (checked against dev's OpenAPI and a real GET: `{}` when empty) and
+`GET /doctors/me/services`.
+
+- **Where:** a dentist's visit opens in **Dental visit record** mode (05 §2.4). It shows the intro, an Adult / Primary
+  teeth toggle (Flutter's; the board has none), the tooth map with its legend (No services / Services added), the
+  General / non-tooth services tile with its count, Discount (%), Clinical notes (dictation, AI-06) and the totals.
+- **Services sheet:** opens from a tooth tap or the General tile. It lists the lines already added (each removable),
+  group chips (All plus the doctor's groups) and the active services. Tapping a service adds it at once. The price is
+  Flutter's: the first positive price, a free consultation at 0. **Save** closes the sheet. With no services it says
+  "Define services under Services & Pricing first." (the board's "Add service" link isn't built: the visit has no
+  route to the profile).
+- **Totals per currency:** "Subtotal: 450 000 UZS + 25.00 USD · 3 line items", the discount, "Total due: …", UZS
+  first. Flutter silently dropped lines in a second currency (05 §10). A discount over 100 shows "Enter a discount
+  between 0 and 100." and is saved as 100.
+- **Autosave** (`DentalNotes`): 1200 ms after the last change, and at once when the visit leaves, switches mode or
+  ends. It shares `Autosave` with the notes (`VisitNotes` now uses it too): one save at a time, and a save already
+  sent runs to its answer. The payload is Flutter's version 2 byte for byte (DENTAL-01). **Fix:** Flutter saved an
+  empty record over one it failed to read. Here nothing can be edited until the record has been read: only `{}` means
+  "no record yet"; any other unreadable body (also teeth that aren't lists by tooth) is a failure, shown as "Could not
+  load dental record" with Retry. One bad line inside a tooth's list is still skipped.
+- **Shifa AI / last 025-2 "Add to notes"** in Dental mode go to the clinical notes and stay in Dental mode (Flutter's).
+- **End appointment:** in the Saving notes step a record not read yet is read first (a failure stops before
+  completion with "Could not load dental record", so the summary never leaves it out), then saved (a failure stops
+  with "Could not save dental documentation"). The checklist gains "Dental services: 2 line items · 393 750 UZS". The summary PDF
+  gains "DENTAL VISIT — Procedures by tooth": tooth, service and amount per line (chart order, General last), the
+  subtotal, discount and total per currency, then the clinical notes; labels are in the app's language. A visit with
+  only dental work still gets its summary.
+- **Not built:**
+  - Plan mode, fulfilment and the finance card (DENTAL-03).
+  - Filling the dental notes from the General notes, as Flutter did. It would print them twice in the summary.
+  - The board's "Add service" link to Services & Pricing.
+- **Tests:**
+  - `DentalNotesTest`: load and catalogue order, the 1200 ms payload, no edits before a successful read, flush and
+    failure, discount over 100.
+  - `VisitViewModelTest`: a dentist's End saves the record before completing, and Add to notes goes to the dental
+    notes; an unreadable record stops End before completion, and the next End goes through.
+  - `VisitSummaryPdfTest`: the dental section, a discount over 100 printed as 100 %.
+  - `VisitNotesTest` still passes on the shared `Autosave`.
+  - Screenshots: `Visit_dental`, `Dental_services`, `End_confirm` (the dental row).
+  - **Emulator (demo mode, the demo doctor switched to Dentist):** Dental mode by default; tooth 36 → Cleaning +
+    Consultation → badge 2 and the totals; discount 12,5 and notes; left the visit and opened it again: all read back
+    from the saved record; End shows the dental row; the summary PDF shows the dental section (393 750 UZS). Demo
+    mode is off again.

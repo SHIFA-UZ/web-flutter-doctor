@@ -848,12 +848,15 @@
     <string name="dentalDiscount">Скидка</string>
     <string name="dentalDiscountPercent">Скидка</string>
     <string name="dentalDocIntro">Нажмите зуб (код FDI), добавьте услуги из каталога, при необходимости укажите скидку. Итог считается по строкам в одной валюте.</string>
+    <string name="dentalDocIntroFree">Нажмите на зуб (квадранты FDI), добавьте услуги из каталога, затем при необходимости укажите скидку.</string>
     <string name="dentalDocSaveFailed">Не удалось сохранить стоматологическую документацию</string>
     <string name="dentalDocSaved">Стоматологическая документация сохранена</string>
     <string name="dentalGeneralServices">Общие / не привязанные к зубу услуги</string>
     <string name="dentalGeneralServicesHint">Процедуры, не связанные с конкретным зубом (например, френулотомия губы).</string>
     <string name="dentalGeneralServicesShort">Общие</string>
     <string name="dentalLegend">Легенда: K=кариес, P=пломба, пульпит, периодонтит, коронка, штифт, отсутствует, протез.</string>
+    <string name="dentalLegendAdded">Услуги добавлены (количество)</string>
+    <string name="dentalLegendNone">Нет услуг</string>
     <string name="dentalLineItems">поз.</string>
     <string name="dentalLoadFailed">Не удалось загрузить стоматологическую карту</string>
     <string name="dentalLowerJaw">Нижняя челюсть</string>
@@ -894,6 +897,7 @@
     <string name="discardRegistrationBody">Введённые данные будут потеряны.</string>
     <string name="discardRegistrationTitle">Отменить регистрацию?</string>
     <string name="discardScannedPages">Удалить отсканированные страницы?</string>
+    <string name="discountOutOfRange">Введите скидку от 0 до 100.</string>
     <string name="discountRange">0–100</string>
     <string name="diseaseDevelopment">Развитие заболевания</string>
     <string name="diseaseGroups">Группы заболеваний</string>

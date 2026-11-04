@@ -135,6 +135,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SCRIBE-02 Scribe wait | Done with APPT-07 | The End pipeline's AI step: cancellable, elapsed time shown. |
 | APPT-08 AI ICD into the 025-2 | Done | Apply keeps the AI code, the 025-2 mode shows it, Open Form 025-2 fills a new form's ICD-10 with it (unsaved). The editor isn't embedded (the board opens it). See visits.md. |
 | DENTAL-01 Tooth map and dental record | Done | FDI tooth map (free and plan modes, phone and wide tiles), the version 2 dental record codec with legacy keys, totals per currency. Used by DENTAL-02. See visits.md. |
+| DENTAL-02 Dental visit record | Done | Free mode: tooth map, services sheet, general services, dentition, discount, clinical notes, totals per currency; 1200 ms autosave and flush (nothing edited before the record is read); End saves it, its checklist row and the summary's dental section. Plan mode is DENTAL-03. See visits.md. |
 
 ## Log
 
@@ -222,3 +223,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · APPT-07, SCRIBE-02 · End appointment with the summary document and the scribe wait.
 - 2026-11-04 · APPT-08 · An AI-suggested ICD code carried into the new 025-2.
 - 2026-11-04 · DENTAL-01 · The tooth map and the dental record codec.
+- 2026-11-04 · DENTAL-02 · The dental visit record in free mode, autosaved, in the End checklist and the summary.

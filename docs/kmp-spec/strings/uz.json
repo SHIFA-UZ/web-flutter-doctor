@@ -2607,5 +2607,9 @@
   "endingAppointment": "Qabul yakunlanmoqda…",
   "aiNotesHeading": "Shifa AI dan",
   "icdToApply": "Qo'llanadigan MKB-10: {code} {title}",
-  "icdAppliedOnOpen": "Qo'llandi: {code}. 025-2 shaklini ochganingizda to'ldiriladi."
+  "icdAppliedOnOpen": "Qo'llandi: {code}. 025-2 shaklini ochganingizda to'ldiriladi.",
+  "dentalDocIntroFree": "Tishni bosing (FDI choraklari), katalogdagi xizmatlaringizni qo'shing, so'ng kerak bo'lsa chegirma kiriting.",
+  "dentalLegendNone": "Xizmat yo'q",
+  "dentalLegendAdded": "Xizmat qo'shilgan (soni)",
+  "discountOutOfRange": "Chegirmani 0 dan 100 gacha kiriting."
 }
