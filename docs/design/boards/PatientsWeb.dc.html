@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Patients — Web</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pl-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif; display: flex; flex-wrap: wrap; align-items: stretch">
+  <div style="flex: 1 1 260px; background: #ffffff; border-right: 1px solid #e8e8e8; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="patients" mode="full" hint-size="260px,1000px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 24px">
+    <header style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: -1px">Patients</h1>
+        <span style="font-size: 12px; line-height: 16px; font-weight: 500; color: #494d4c">12 patients in your practice</span>
+      </div>
+      <button class="pl-btn" onClick="{{openAdd}}" style="height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: #00bbb0; color: #ffffff; box-shadow: 0 0 16px #00000026; display: inline-flex; align-items: center; gap: 8px; font: 700 16px/22px Manrope, system-ui, sans-serif; cursor: pointer">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        Add Patient
+      </button>
+    </header>
+    <dc-import name="Table" layout="web" hint-size="100%,700px"></dc-import>
+  </main>
+  <sc-if value="{{adding}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px">
+      <button aria-label="Cancel" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; background: #00000080; cursor: pointer"></button>
+      <div style="position: relative; width: 100%; max-width: 480px">
+        <dc-import name="Dialog" layout="web" kind="form" on-close="{{close}}" on-confirm="{{close}}" hint-size="100%,460px"></dc-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { adding: false }; }
+  renderVals() {
+    return {
+      adding: this.state.adding,
+      openAdd: () => this.setState({ adding: true }),
+      close: () => this.setState({ adding: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

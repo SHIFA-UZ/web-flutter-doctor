@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AppointmentTimeline</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.tl-free:hover{background:#e5f8f7 !important}
+.tl-card:hover{box-shadow:0 0 6px #00000026 !important}
+.tl-btn:focus-visible,.tl-free:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 100%; box-sizing: border-box; color: #272727; font-family: Manrope, system-ui, sans-serif">
+  <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+    <div style="background: #ffffff; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+      <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 999px; background: #e5f8f7; color: #00bbb0; display: inline-flex; align-items: center; justify-content: center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+      </span>
+      <h3 style="margin: 0; font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">Your schedule is clear</h3>
+      <p style="margin: 0; font-size: 14px; line-height: 20px; color: #494d4c; max-width: 320px">Open slots in your calendar so patients can book them.</p>
+      <button class="tl-btn" style="height: 44px; padding: 0 20px; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; font: 700 16px/22px Manrope, system-ui, sans-serif; cursor: pointer">Open Calendar</button>
+    </div>
+  </sc-if>
+  <sc-if value="{{hasEntries}}" hint-placeholder-val="{{ true }}">
+    <ol aria-label="Today's appointments" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+      <sc-for list="{{entries}}" as="e" hint-placeholder-count="5">
+        <li style="display: flex; gap: {{gap}}; opacity: {{e.opacity}}">
+          <div style="width: {{gutter}}; flex: none; padding-top: 16px; display: flex; flex-direction: column; gap: 4px; text-align: right; font-variant-numeric: tabular-nums">
+            <span style="font-size: 14px; line-height: 16px; font-weight: 700">{{e.start}}</span>
+            <span style="font-size: 12px; line-height: 12px; font-weight: 500; color: #7d8282">{{e.end}}</span>
+          </div>
+          <div aria-hidden="true" style="width: 16px; flex: none; display: flex; flex-direction: column; align-items: center">
+            <span style="width: 2px; height: 18px; background: {{e.lineTop}}"></span>
+            <span style="width: 12px; height: 12px; box-sizing: border-box; border-radius: 999px; border: 2px solid {{e.dotRing}}; background: {{e.dotFill}}; box-shadow: {{e.halo}}; flex: none"></span>
+            <span style="width: 2px; flex: 1 1 auto; background: {{e.lineBottom}}"></span>
+          </div>
+          <div style="flex: 1 1 auto; min-width: 0; padding: 4px 0 12px">
+            <sc-if value="{{e.isAppt}}" hint-placeholder-val="{{ true }}">
+              <div class="tl-card" style="background: #ffffff; border-radius: 10px; box-shadow: 0 0 14px #00000026; padding: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+                <span aria-hidden="true" style="width: 42px; height: 42px; border-radius: 999px; background: #00bbb026; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{e.initials}}</span>
+                <div style="flex: 1 1 150px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                  <span style="font-size: 14px; line-height: 16px; font-weight: 700">{{e.patient}}</span>
+                  <span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; line-height: 12px; font-weight: 500; color: #494d4c">
+                    <span>{{e.visit}}</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px; color: #7d8282">
+                      <sc-if value="{{e.video}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 7l-7 5 7 5z"></path><rect x="1" y="5" width="15" height="14" rx="2"></rect></svg></sc-if>
+                      <sc-if value="{{e.clinic}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></sc-if>
+                      {{e.mode}}
+                    </span>
+                  </span>
+                </div>
+                <sc-if value="{{e.badgeIconOnly}}" hint-placeholder-val="{{ false }}">
+                  <span role="img" aria-label="{{e.badge}}" title="{{e.badge}}" style="flex: none; align-self: flex-start; box-sizing: border-box; width: 28px; height: 28px; border-radius: 999px; background: {{e.badgeBg}}; color: {{e.badgeDot}}; display: inline-flex; align-items: center; justify-content: center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{e.badgeIcon}}"></path></svg>
+                  </span>
+                </sc-if>
+                <sc-if value="{{e.badgeText}}" hint-placeholder-val="{{ true }}">
+                  <span style="flex: none; box-sizing: border-box; height: 24px; display: inline-flex; align-items: center; gap: 6px; background: {{e.badgeBg}}; color: {{e.badgeInk}}; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 10px; border-radius: 999px; white-space: nowrap">
+                    <span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: {{e.badgeDot}}"></span>{{e.badge}}
+                  </span>
+                </sc-if>
+                <sc-if value="{{e.locked}}" hint-placeholder-val="{{ false }}">
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; line-height: 14px; color: #7d8282; width: 100%">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Call room closed one hour after the visit ended
+                  </span>
+                </sc-if>
+                <sc-if value="{{e.showStart}}" hint-placeholder-val="{{ false }}">
+                  <button class="tl-btn" onClick="{{handleStart}}" style="flex: {{startFlex}}; width: {{startW}}; box-sizing: border-box; height: {{startH}}; padding: 0 16px; border: 0; border-radius: 10px; background: #00bbb0; color: #ffffff; box-shadow: 0 0 16px #00000026; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 7l-7 5 7 5z"></path><rect x="1" y="5" width="15" height="14" rx="2"></rect></svg>
+                    Start
+                  </button>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{e.isFree}}" hint-placeholder-val="{{ false }}">
+              <button class="tl-free" onClick="{{toggleFree}}" aria-pressed="{{freePicked}}" style="width: 100%; min-height: 52px; box-sizing: border-box; border: 1px solid #00bbb0; border-radius: 10px; background: {{freeBg}}; color: #272727; padding: 12px; display: flex; align-items: center; gap: 10px; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer; text-align: left">
+                <span style="display: inline-flex; color: #00bbb0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+                <span style="flex: 1 1 auto">{{freeLabel}}</span>
+                <span style="font-size: 12px; line-height: 12px; font-weight: 500; color: #494d4c">{{freeHint}}</span>
+              </button>
+            </sc-if>
+            <sc-if value="{{e.isBlocked}}" hint-placeholder-val="{{ false }}">
+              <div style="min-height: 52px; box-sizing: border-box; border-radius: 10px; background: repeating-linear-gradient(135deg, #f2f3f2 0 8px, #e8e8e8 8px 9px); padding: 12px; display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 16px; font-weight: 500; color: #494d4c">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M4.93 4.93l14.14 14.14"></path></svg>
+                Blocked · Lunch break
+              </div>
+            </sc-if>
+          </div>
+        </li>
+      </sc-for>
+    </ol>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;web&quot;},&quot;started&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;empty&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;onStart&quot;:{&quot;editor&quot;:null},&quot;$preview&quot;:{&quot;width&quot;:720,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { started: null, free: false }; }
+  renderVals() {
+    const phone = (this.props.layout ?? 'web') === 'phone';
+    const started = this.props.onStart ? !!this.props.started : (this.state.started ?? !!this.props.started);
+    const badge = {
+      done: { badge: 'Completed', badgeBg: '#e5f8f7', badgeInk: '#272727', badgeDot: '#00bbb0', badgeIcon: 'M20 6L9 17l-5-5' },
+      confirmed: { badge: 'Confirmed', badgeBg: '#ebf2f9', badgeInk: '#1c75cf', badgeDot: '#1c75cf', badgeIcon: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M9 15l2 2 4-4' },
+      pending: { badge: 'Pending payment', badgeBg: '#fcf6e8', badgeInk: '#272727', badgeDot: '#eba400', badgeIcon: 'M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM1 10h22' },
+      live: { badge: 'In progress', badgeBg: '#e5f8f7', badgeInk: '#272727', badgeDot: '#00bbb0', badgeIcon: 'M12 2a10 10 0 1 1 0 20a10 10 0 1 1 0-20M10 8l6 4-6 4z' }
+    };
+    const raw = [
+      { start: '08:00', end: '08:30', type: 'appt', patient: 'Malika Ergasheva', initials: 'ME', visit: 'Consultation', video: true, status: 'done', past: true, locked: true },
+      { start: '08:45', end: '09:15', type: 'appt', patient: 'Bekzod Rahimov', initials: 'BR', visit: 'Follow-up', video: false, status: 'done', past: true },
+      { start: '10:30', end: '11:00', type: 'appt', patient: 'Dilnoza Yusupova', initials: 'DY', visit: 'Video consultation', video: true, status: 'live', now: true },
+      { start: '11:00', end: '11:30', type: 'appt', patient: 'Jasur Tursunov', initials: 'JT', visit: 'First visit', video: false, status: 'confirmed' },
+      { start: '11:30', end: '12:00', type: 'free' },
+      { start: '12:00', end: '13:00', type: 'blocked' },
+      { start: '14:00', end: '14:30', type: 'appt', patient: 'Nodira Xasanova', initials: 'NX', visit: 'Lab review', video: true, status: 'pending' }
+    ];
+    const entries = raw.map((r, i) => {
+      const done = r.status === 'done';
+      const live = r.status === 'live';
+      const b = live ? (started ? badge.live : null) : badge[r.status];
+      return Object.assign({}, r, b || {}, {
+        isAppt: r.type === 'appt', isFree: r.type === 'free', isBlocked: r.type === 'blocked',
+        clinic: r.type === 'appt' && !r.video,
+        mode: r.video ? 'Video call' : 'In clinic',
+        opacity: r.past ? 0.72 : 1,
+        lineTop: i === 0 ? 'transparent' : '#e8e8e8',
+        lineBottom: i === raw.length - 1 ? 'transparent' : '#e8e8e8',
+        dotRing: r.type === 'blocked' ? '#979b9b' : '#00bbb0',
+        dotFill: (done || live) ? '#00bbb0' : '#ffffff',
+        halo: live ? '0 0 0 5px #00bbb040' : 'none',
+        hasBadge: !!b,
+        badgeText: !!b && !phone,
+        badgeIconOnly: !!b && phone,
+        locked: !!r.locked,
+        showStart: live && !started
+      });
+    });
+    const picked = this.state.free;
+    return {
+      empty: !!this.props.empty, hasEntries: !this.props.empty, entries,
+      gutter: phone ? '40px' : '56px',
+      gap: phone ? '8px' : '12px',
+      startFlex: phone ? '1 1 100%' : '0 0 auto',
+      startW: phone ? '100%' : 'auto',
+      startH: phone ? '44px' : '36px',
+      freePicked: picked ? 'true' : 'false',
+      freeBg: picked ? '#e5f8f7' : '#ffffff',
+      freeLabel: picked ? 'Choose a patient for 11:30' : 'Free slot · 30 min',
+      freeHint: picked ? 'Cancel' : 'Book',
+      toggleFree: () => this.setState({ free: !picked }),
+      handleStart: () => { if (this.props.onStart) this.props.onStart(); else this.setState({ started: true }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

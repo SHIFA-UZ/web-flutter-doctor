@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NextPatientHero states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1600px; height: 1040px; box-sizing: border-box; padding: 40px; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif; display: flex; gap: 40px; align-items: flex-start">
+  <div style="width: 1104px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px">
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · briefing idle, 3 min before start</figcaption>
+      <dc-import name="Hero" layout="web" briefing="idle" hint-size="100%,250px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · briefing loading (button busy)</figcaption>
+      <dc-import name="Hero" layout="web" briefing="loading" hint-size="100%,250px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · briefing ready</figcaption>
+      <dc-import name="Hero" layout="web" briefing="ready" hint-size="100%,250px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · started (countdown reads Now)</figcaption>
+      <dc-import name="Hero" layout="web" briefing="ready" started="{{yes}}" hint-size="100%,250px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · briefing error</figcaption>
+      <dc-import name="Hero" layout="web" briefing="error" hint-size="100%,250px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Web · empty day</figcaption>
+      <dc-import name="Hero" layout="web" empty="{{yes}}" hint-size="100%,250px"></dc-import>
+    </figure>
+  </div>
+  <div style="width: 358px; display: flex; flex-direction: column; gap: 32px">
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Phone · actions full width, side by side</figcaption>
+      <dc-import name="Hero" layout="phone" briefing="idle" hint-size="100%,300px"></dc-import>
+    </figure>
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 10px">
+      <figcaption style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Phone · briefing loading</figcaption>
+      <dc-import name="Hero" layout="phone" briefing="loading" hint-size="100%,300px"></dc-import>
+    </figure>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true }; }
+}
+</script>
+</body>
+</html>

@@ -23,8 +23,9 @@ contract changed after the spec was written (§1). 28 backend gaps remain (§3, 
 2. **Behaviour:** the flow file in `docs/ux-flows/<area>/<nn>-*.md` > the feature doc's section. The flow files were
    written after the feature docs by re-reading the code screen by screen; where they disagree, the flow file wins
    and the feature doc gets a one-line correction in the same commit.
-3. **Looks:** Figma only. The Flutter look is never ported. When Figma lacks a state the flow file demands, build the
-   smallest thing in the existing style and note "not in Figma" in `docs/implemented/`.
+3. **Looks:** the design canvas vendored in `docs/design/` (§8), never Figma and never the Flutter look. When a board
+   lacks a state the flow file demands, build the smallest thing in the existing style and note "not in the design"
+   in `docs/implemented/`.
 4. **Sequencing and ticket IDs:** this file > `16-implementation-plan.md` > the feature docs' ticket lists.
 5. **Workflow rules:** the workspace `CLAUDE.md` (one level above this repo) > `CLAUDE.kmp.md` > this file.
 
@@ -48,6 +49,7 @@ and from the OpenAPI file; each was checked against the backend source on 2026-1
 | Registration e-mail OTP | "collected but never verified" (UNVERIFIED on the backend) | Confirmed: `RegisterRequest` has no `emailOtp` field, the code is never checked. | Gap BE-03; decision D-04. |
 | Reference implementation | patient app branch `shifa2.0` | The patient app is fully KMP on `main` (`MARKETING_VERSION` 1.2.4, package `shifa.uz`). | Copy `gradle/libs.versions.toml`, `data/api/*`, `data/debug/DemoBackend.kt`, `ProvideAppLocale`, the CI workflows and the test setup from the patient app's `main`, then rename the package. Read `apps-flutter-patient/docs/implemented/README.md` first: it records the pitfalls (CMP string escaping, kotlinx-datetime skew on iOS, no Ktor Logging plugin, `multiplatform-settings` keys). Copy patterns, never share modules (workspace rule). |
 | Backend stack | Spring Boot 3 | Spring Boot 4, Kotlin 2, modular monolith by feature; changes are additive only and go through the backend repo on their own `feature/` branch with a PR. | Backend gaps are *requested* in `docs/backend-improvements.md`, never worked around silently. |
+| Design source | A Figma file to be shared (`<FIGMA_FILE>`), tokens and components pages | A Claude Design canvas: 11 doctor-app modules, 9 flow diagrams, component specimens, a 30 Oct 2026 audit, the Shifa design-system tokens (208 custom properties) and stylesheet (40 `.sh-*` component blocks). Vendored verbatim in `docs/design/` because the design-system artifact it installed is no longer accessible. | Every "Figma" instruction in `CLAUDE.kmp.md`, `04` and `16` now means `docs/design/` (§8). D-01 is resolved: no visual ticket is blocked. |
 
 ## 2. How to work (the loop for every ticket)
 
@@ -65,7 +67,7 @@ through a PR" without losing the single rewrite branch. `main` keeps the Flutter
 1. Read, in this order: workspace `CLAUDE.md` → `CLAUDE.kmp.md` (it becomes `CLAUDE.md` on `doc-app2.0` in CORE-01)
    → `docs/implemented/README.md` → this file's milestone table (§4) → the ticket row in `16` → the ticket text at the
    end of the feature doc → the flow files named in §4 → the feature doc sections → `15` for the endpoints →
-   `docs/backend-improvements.md` for the gaps named in §4 → the Figma frames.
+   `docs/backend-improvements.md` for the gaps named in §4 → the design board and tokens named in §8.
 2. Check every endpoint the ticket uses against `https://api-dev.shifa.uz/v3/api-docs` and one real GET as the seed
    doctor. Write the request/response shapes you observed into the repository test fixtures.
 3. Build bottom-up: DTOs (`data/model`) → repository returning `Result<T>` → `DemoBackend` handler for every endpoint
@@ -79,7 +81,7 @@ through a PR" without losing the single rewrite branch. `main` keeps the Flutter
    screen on the Android emulator and the iOS simulator against `api-dev` as `seed.doctor1@shifa.dev`.
 6. Update `docs/implemented/README.md` (status row, area file, one log line), correct the spec or flow file where
    reality differed, append to `docs/backend-improvements.md` if you found a new gap.
-7. Report: what changed, which flow files and Figma nodes it covers, what is not built and why (gap id or decision
+7. Report: what changed, which flow files and design boards it covers, what is not built and why (gap id or decision
    id), the targeted test output, screenshots. Then **stop and ask whether to commit.** Commits are the user's,
    Conventional Commits, no agent attribution, never pushed to `main`.
 
@@ -107,7 +109,7 @@ Defaults are what the plan assumes; the user confirms or changes them, and the a
 | ID | Decision | Needed by | Default |
 |---|---|---|---|
 | D-00 | Branch model | before CORE-01 | `doc-app2.0` + short PR branches per ticket group (§2) |
-| D-01 | Figma file, tokens page and components page | CORE-02, CORE-03 | **Blocks only the visual tickets.** Until shared, do CORE-01, 04, 05, 06, 07, 08, 09 and every milestone's data layer (repositories, DTOs, `DemoBackend`, ViewModels, tests); screens follow when Figma lands |
+| D-01 | Design source | CORE-02, CORE-03 | **Resolved 2026-11-04:** the Claude Design canvas vendored in `docs/design/` (§8). Nothing is blocked. The one open design question is whether the primary fill stays `teal-50` with white labels (fails WCAG AA, recorded in the audit as a brand choice); default: keep it |
 | D-02 | Clinic staff on mobile | AUTH-08, SHELL-02 | Yes, 4-tab shell (`01/18`) |
 | D-03 | Tier gating while the profile loads | SHELL-04, SUB-01 | Hide gated entries until resolved; gate on `subscription.features`, never fail open |
 | D-04 | Registration e-mail code | AUTH-06 | Do not show the code dialog until BE-03 ships (a code nobody checks is a lie to the user); keep `send-email-otp` wiring ready |
@@ -132,7 +134,7 @@ gaps. "New" marks endpoints the spec did not know (full list in §5). Flow paths
 | Ticket | Flow files | Spec | Endpoints | Gaps / notes |
 |---|---|---|---|---|
 | CORE-01 skeleton, CI | — | `CLAUDE.kmp.md`; `01` §1 | — | Copy from the patient app's `main`, not `shifa2.0`. Fill the `<angle bracket>` values in `CLAUDE.kmp.md`. D-00, D-10 |
-| CORE-02 tokens, CORE-03 UI kit | `01/19` (banners, offline strip), `01/15` (mini toggle), `04/02` (agenda row chips), `09` README §Layout (card rows) | `04` | — | D-01. Component inventory = `04` §5 + every component a flow file names in §3 |
+| CORE-02 tokens, CORE-03 UI kit | `01/19` (banners, offline strip), `01/15` (mini toggle), `04/02` (agenda row chips), `09` README §Layout (card rows) | `04`; `docs/design/README.md` | — | Tokens: patient app `ui/theme/` + every `--*` property of `docs/design/shifa-ds.css` without a counterpart. Kit: one composable per `.sh-*` block + the doctor-only components in `AuCodebase` + every component a flow file names in §3; states from the `…States` boards |
 | CORE-04 strings | every flow's §11 (**NEW** keys) | `strings/README`, `01` §8 | `PUT /doctors/me/language` | Add the 41 keys missing everywhere, 92 `ru`, 10 `uz`, and the NEW keys from the flow files' §11 |
 | CORE-05 HTTP client | `01/14` (session end), `01/19` | `01` §3, `15` §1, **§1 of this file** | all | New 401/403 rule; `code` branching; `requestId`; dev-host switch; SSE helper |
 | CORE-06 storage, session | `01/12`–`01/14` | `01` §4–5 | — | Hashed PIN (bug 1) |
@@ -357,10 +359,9 @@ renewal date and plans; form delete; blocked-day list; the development backend w
 
 ## 7. Ordering notes
 
-- **Data first while Figma is pending (D-01).** Every repository, DTO, `DemoBackend` handler and ViewModel can be
-  built and tested against `api-dev` before a single screen exists. Order: CORE-01/04/05/06/08/09 → PROF-01 → CAL-1/2,
-  SCHED-1, LOC-1 → PAT-01/02, DOCS-01, FORM-01/02 → APPT-01/02, AI-11 → CHAT-01 → NOTIF-01 → TASK-01 → CLINIC-01,
-  TP-01, FIN-01 → AI-01. When Figma lands, screens follow the `16` milestone order.
+- **M0 in the `16` order.** The design is available (§8), so CORE-02 and CORE-03 run as planned; nothing waits. If a
+  later board turns out incomplete, the data layer of that milestone (repositories, DTOs, `DemoBackend`, ViewModels,
+  tests) is built first and the screen follows.
 - **CORE-07 spikes in M1**, in parallel: Daily (Android SDK + Swift bridge), FCM/APNs, AAC record/play, PDF render,
   native map pin. Their outcomes settle D-05 and D-06.
 - **AI-03/04/05/06 are built in M4** (speech field for forms) and reused by M5 scribe and M7 voice messages.
@@ -371,3 +372,21 @@ renewal date and plans; form delete; blocked-day list; the development backend w
   BE-01…04 before M1 ends, BE-05/06 before M7, BE-07/08 before M10, BE-11/12/13 before M11. Each gap is implemented
   in `backend-kotlin-shifa` on its own `feature/` branch, additively, with the OpenAPI file regenerated, and
   `docs/backend-improvements.md` gets a "Done (date)" line, as the patient app's register does.
+
+## 8. Design source
+
+`docs/design/` holds a verbatim copy of the Claude Design canvas "Shifa Doctor App"
+(https://claude.ai/code/artifact/c966c819-e044-4509-8e35-85d2c1092ef7, version `1793750633-3da4`, copied 2026-11-04):
+`tokens.json` (generated from the patient app's `ui/theme/`), `shifa-ds.css` (the complete token set, 208 properties,
+and the 40 `.sh-*` component blocks), `canvas.json` and the 51 boards. `docs/design/README.md` maps every board to its
+flow area and tickets, and says how CORE-02, CORE-03 and the screen tickets consume it. Rules:
+
+- The board is the source for looks; the flow file stays the source for behaviour and edge cases.
+- Tokens keep the patient app's names (`ShifaColors.Text.Brand`, `ShifaSpacing.Inset.Md`, …) because `tokens.json`
+  was generated from them; doctor-only values (`teal-70`, `grey-550`, the `font-size` scale, `layout-*`, `chart-*`)
+  are added under the same scheme.
+- The audit's fixed rules apply to every screen: 44 px targets, minimum text 10, one `ActionBar` per form, one top
+  `Toast`, skeletons not spinners, only cancelled visits struck through.
+- `AuRecommend` items (week view, drag to move, command palette, autosave) are out of scope unless the user adds them.
+- Refreshing the copy: read the artifact's `project/*` files with the Artifact tool and overwrite this folder; note
+  the version in `docs/design/README.md`.

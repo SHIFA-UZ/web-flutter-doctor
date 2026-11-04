@@ -1,5 +1,7 @@
 # 04 — Design System and UI Kit
 
+> **2026-11-04:** design no longer comes from Figma. The source is the Claude Design canvas vendored in `docs/design/` (tokens, stylesheet, 51 boards); see `docs/design/README.md` and `17-master-plan.md` §8. Figma node references below are historical.
+
 Status: **skeleton, waiting for the Figma file.** The new doctor app takes every colour, text style, spacing, radius,
 shadow, icon and component from the new Figma file, not from Flutter. This doc has three jobs:
 

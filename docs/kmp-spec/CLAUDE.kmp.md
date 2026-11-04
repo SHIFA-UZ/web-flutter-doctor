@@ -6,7 +6,7 @@
 
 This repo is the Shifa doctor app. It is being rebuilt from the Flutter doctor app in Kotlin Multiplatform, in this
 same repository, the way the patient app was (`SHIFA-UZ/apps-flutter-patient`, branch `shifa2.0` → `main` v1.2.0).
-API and UI come from the spec in `docs/kmp-spec/` and from Figma; the tech stack, architecture and workflow below are
+API and UI come from the spec in `docs/kmp-spec/`, the flows in `docs/ux-flows/` and the design in `docs/design/`; the tech stack, architecture and workflow below are
 fixed and identical to the patient app's. Follow them for every new feature.
 
 | Value | Doctor app |
@@ -17,7 +17,7 @@ fixed and identical to the patient app's. Follow them for every new feature.
 | iOS bundle id | `uz.shifa.doc`, team `NH97PGA9PT` |
 | Firebase project | `shifa-doctor-staging` (production uses it too; `shifa-doctor-qa` exists) |
 | Backend | `https://shifa-doc-backend-mvp-production.up.railway.app` (paths written without `/api`) |
-| Figma file | `<FIGMA_FILE>`; tokens page `<node>`, Components page `<node>` |
+| Design source | `docs/design/` (a verbatim copy of the Claude Design canvas: `tokens.json`, `shifa-ds.css`, 51 boards); read `docs/design/README.md` first. No Figma. |
 | First `MARKETING_VERSION` | `1.1.0` (Flutter shipped `1.0.0+3`; build numbers were `1 + run_number`, set the offsets above the last Actions run) |
 | Locales | `en` (default), `uz` (+ runtime Latin→Cyrillic transliteration), `ru` |
 
@@ -29,9 +29,10 @@ fixed and identical to the patient app's. Follow them for every new feature.
 - The backend publishes its OpenAPI spec at `<BASE_URL>/v3/api-docs` (no token). Check it before claiming an endpoint
   or field is missing; it can lag real responses, so confirm with a real GET when it matters. Plain GETs against
   production are fine; never write to production data while developing (use the demo backend).
-- UI comes from Figma via the Figma MCP (file `<FIGMA_FILE>`). Load the `figma-design-to-code` skill before
-  `get_design_context`. Map design tokens into `ui/theme/`, reusable components into `ui/widgets/`. Figma is
-  light-mode only; the theme has no dark scheme. Record every node ID you implement in `docs/implemented/`.
+- UI comes from `docs/design/`: `tokens.json` and `shifa-ds.css` map into `ui/theme/`, the `.sh-*` component blocks
+  into `ui/widgets/`, and each screen is a branch of a module board (`boards/Da*.dc.html`); `docs/design/README.md`
+  names the board for every flow area. Light mode only; the theme has no dark scheme. Record the board and screen
+  branch you implemented in `docs/implemented/`. There is no Figma file.
 - `docs/implemented/` records what's already built. Read `docs/implemented/README.md` before starting a task, and
   update it (status table, the area file, one log line) at the end of every job, in the same commit.
 - `docs/backend-improvements.md` lists what the app needs from the backend team: what happens now, the change, and
@@ -71,7 +72,7 @@ Keep, and reuse as they are:
 
 Delete when the KMP app replaces it: the Flutter code (`lib/`, `android/`, `ios/`, `windows/`, `web/`, `pubspec.*`,
 `test/`, `firebase.json` hosting targets if web is dropped…), the Flutter design assets, themes, fonts and icons.
-Design comes only from the new Figma file; do not port Flutter styles, colours or widgets (the legacy tokens are
+Design comes only from `docs/design/`; do not port Flutter styles, colours or widgets (the legacy tokens are
 listed in `04-design-system-and-ui-kit.md` §A only for comparison).
 
 ## Git
@@ -136,13 +137,13 @@ composeApp/src/
 │   │   ├── debug/          # DemoBackend.kt (MockEngine) + DemoMode, debug builds only
 │   │   └── <feature>/      # XxxRepository.kt
 │   ├── ui/
-│   │   ├── theme/          # Color.kt, Typography.kt, Dimens.kt, Theme.kt (tokens from Figma)
+│   │   ├── theme/          # Color.kt, Typography.kt, Dimens.kt, Theme.kt (tokens from docs/design/)
 │   │   ├── widgets/        # reusable design-system components (ShifaButton, ShifaInputField…)
 │   │   ├── navigation/     # MainScreen.kt (tab shell) + ShifaNavBar.kt
 │   │   ├── debug/          # Debug menu (demo data, fake pushes)
 │   │   └── <feature>/      # XxxScreen.kt, XxxViewModel.kt, XxxUiState.kt
 │   └── utils/              # expect/actual platform helpers (pickers, files, push, video, audio, browser, dates, timezone)
-├── commonMain/composeResources/   # values{,-ru,-uz}/strings.xml, drawable (Figma exports), font
+├── commonMain/composeResources/   # values{,-ru,-uz}/strings.xml, drawable (design exports), font
 ├── androidMain/            # actuals, MainActivity, MessagingService, @Preview files (ui/<feature>/XxxPreviews.kt)
 ├── iosMain/                # actuals, MainViewController
 └── androidUnitTest/        # ViewModel + repository tests, widget and screen screenshot tests
@@ -188,13 +189,15 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   - `internal fun XxxScreenContent(state, onXxx: () -> Unit, …)` — stateless, used by previews and screenshot tests.
 - Navigation: simple state (`rememberSaveable`) in `App.kt` / `MainScreen` + `Scaffold` bottom bar. No nav library.
   Back goes page → first tab → exit.
-- No raw hex/dp/sp in screens or widgets. Tokens live in `ui/theme/` and are named 1:1 after Figma variables:
+- No raw hex/dp/sp in screens or widgets. Tokens live in `ui/theme/` and are named 1:1 after the tokens in
+  `docs/design/tokens.json` and `shifa-ds.css` (the same names the patient app's theme uses):
   `ShifaColors.<Text|Icon|Bg|Border|Interactive|Alpha>.X` (`semantic/color/*`), `ShifaColors.Raw.<Component><Part>`
-  for values Figma sets without a variable, `MaterialTheme.typography.*` + `ShifaTextStyles`,
+  for values the design sets without a token, `MaterialTheme.typography.*` + `ShifaTextStyles`,
   `ShifaSpacing.<Inset|Gap|Stack>.X` (`semantic/space/*`), `ShifaSize`, `ShifaRadius.*`, `ShifaShadow.*` (via
-  `Modifier.dropShadow(shape, shadow)`), `ShifaDimens.<Component><Part>` for raw Figma sizes. Shared components come
-  from `ui/widgets`. Use `Modifier.lineBox(style)` where text height must match Figma's line boxes.
-- Icons and images are Figma exports in `composeResources/drawable` (`ic_<name>_<size>`, `img_*`).
+  `Modifier.dropShadow(shape, shadow)`), `ShifaDimens.<Component><Part>` for raw design sizes. Shared components come
+  from `ui/widgets`. Use `Modifier.lineBox(style)` where text height must match the design's line boxes.
+- Icons and images are exports from the `docs/design/` boards (inline SVG icons of the design system) in
+  `composeResources/drawable` (`ic_<name>_<size>`, `img_*`); reuse the patient app's exports where the icon is the same.
 - Strings: `composeResources/values{,-ru,-uz}/strings.xml` (en is the fallback), keys in camelCase, placeholders as
   `%1$s`. CMP doesn't unescape `\'`, `\"` or `%%`, so write them literally; only `&`, `<`, `>` are XML-escaped.
   Screen-reader labels come from strings too. `StringsTest` checks keys and placeholders across locales. The in-app
@@ -205,8 +208,8 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
 - Avatars without a photo, or whose photo fails to load, show the brand fallback picture (`ShifaAvatar`).
 - Keyboard: `MainActivity` is `adjustResize` and screens pad for the keyboard themselves (`imePadding`).
 - Trays and pop-ups (`ShifaTray`, `ShifaPopUp`) only draw; host them in `ModalBottomSheet` / `Dialog`.
-- When Figma lacks a state or component the spec needs (lockout banner, empty state, error), build the smallest
-  thing in the existing style and note "not in Figma" in `docs/implemented/`.
+- When the design boards lack a state or component the spec needs (lockout banner, empty state, error), build the
+  smallest thing in the existing style and note "not in the design" in `docs/implemented/`.
 
 ### Tests
 - Every ViewModel gets `XxxViewModelTest`: `StandardTestDispatcher` + `Dispatchers.setMain`, mocked repositories,
@@ -250,9 +253,10 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
 
 ## Working with the user
 
-- Read `docs/implemented/README.md`, the feature's spec doc, `15-api-reference.md`, `16-implementation-plan.md`
-  (the ticket) and the Figma frames before writing code. Implement one ticket group at a time.
+- Read `docs/implemented/README.md`, `17-master-plan.md` (the milestone row), the flow files, the feature's spec doc,
+  `15-api-reference.md`, `16-implementation-plan.md` (the ticket) and the design board before writing code.
+  Implement one ticket group at a time.
 - Decisions the user makes (a dropped feature, a chip removed, a flow changed) are recorded in
   `docs/implemented/README.md` with the date and "the user's call", so they aren't rebuilt later.
-- End every job with: what changed, which Figma nodes it covers, what's not built and why, the targeted test
-  results, and the question whether to commit.
+- End every job with: what changed, which design boards and flow files it covers, what's not built and why, the
+  targeted test results, and the question whether to commit.

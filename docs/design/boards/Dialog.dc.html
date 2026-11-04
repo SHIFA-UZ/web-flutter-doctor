@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ResponsiveDialog</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.dl-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+.dl-field:focus-within{border-color:#00bbb0 !important}
+.dl-field input,.dl-field select{font:600 16px/16px Manrope,system-ui,sans-serif;color:#272727}
+</style>
+</helmet>
+<div role="dialog" aria-modal="true" aria-labelledby="dl-title" style="width: 100%; max-width: {{maxW}}; max-height: {{maxH}}; box-sizing: border-box; margin: 0 auto; background: #ffffff; color: #272727; font-family: Manrope, system-ui, sans-serif; border-radius: {{radius}}; box-shadow: 0 0 26px #00000066; padding: {{pad}}; display: flex; flex-direction: column; gap: 20px; overflow: hidden">
+  <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}">
+    <span aria-hidden="true" style="display: block; width: 36px; height: 4px; border-radius: 999px; background: #e8e8e8; margin: -12px auto 0"></span>
+  </sc-if>
+  <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: {{textAlign}}; justify-content: flex-start">
+    <sc-if value="{{isDestructive}}" hint-placeholder-val="{{ true }}">
+      <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 999px; background: #f9ebeb; color: #dc2f2f; display: inline-flex; align-items: center; justify-content: center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+      </span>
+    </sc-if>
+    <sc-if value="{{isBriefing}}" hint-placeholder-val="{{ false }}">
+      <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 999px; background: #00bbb0; box-shadow: 0 0 0 5px #00bbb040; color: #ffffff; display: inline-flex; align-items: center; justify-content: center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg>
+      </span>
+    </sc-if>
+    <h2 id="dl-title" style="margin: 0; font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">{{title}}</h2>
+    <sc-if value="{{hasBody}}" hint-placeholder-val="{{ true }}">
+      <p style="margin: 0; font-size: 14px; line-height: 20px; color: #494d4c; text-align: center">{{body}}</p>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{isBriefing}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-height: 0">
+      <ul style="margin: 0; padding: 12px 12px 12px 30px; background: #00bbb026; border: 1px solid #00bbb0; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 500">
+        <li>Penicillin allergy recorded in her 2023 discharge letter.</li>
+        <li>Home blood pressure readings have trended up over the last two weeks.</li>
+        <li>She asked in chat whether her amlodipine dose should change.</li>
+      </ul>
+      <p style="margin: 0; font-size: 10px; line-height: 14px; color: #494d4c">From 3 documents. Shifa AI provides general information only. It is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isForm}}" hint-placeholder-val="{{ false }}">
+    <form style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-height: 0; margin: 0">
+      <label class="dl-field" style="display: flex; flex-direction: column; gap: 6px; padding: 8px 16px 12px; border: 2px solid #00bbb0; border-radius: 10px">
+        <span style="font-size: 10px; line-height: 14px; color: #7d8282">Full name</span>
+        <input placeholder="First and last name" style="border: 0; outline: 0; padding: 0; background: transparent">
+      </label>
+      <label class="dl-field" style="display: flex; flex-direction: column; gap: 6px; padding: 8px 16px 12px; border: 2px solid #e8e8e8; border-radius: 10px">
+        <span style="font-size: 10px; line-height: 14px; color: #7d8282">Phone number</span>
+        <input placeholder="+998 90 000 00 00" inputmode="tel" style="border: 0; outline: 0; padding: 0; background: transparent">
+      </label>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap">
+        <label class="dl-field" style="flex: 1 1 160px; display: flex; flex-direction: column; gap: 6px; padding: 8px 16px 12px; border: 2px solid #e8e8e8; border-radius: 10px">
+          <span style="font-size: 10px; line-height: 14px; color: #7d8282">Date of birth</span>
+          <input placeholder="DD.MM.YYYY" style="border: 0; outline: 0; padding: 0; background: transparent">
+        </label>
+        <label class="dl-field" style="flex: 1 1 160px; display: flex; flex-direction: column; gap: 6px; padding: 8px 16px 12px; border: 2px solid #e8e8e8; border-radius: 10px">
+          <span style="font-size: 10px; line-height: 14px; color: #7d8282">Language</span>
+          <select style="border: 0; outline: 0; padding: 0; background: transparent">
+            <option>Uzbek</option><option>Russian</option><option>English</option>
+          </select>
+        </label>
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 16px; color: #494d4c">We'll text the patient an invitation to the Shifa app.</p>
+    </form>
+  </sc-if>
+
+  <div style="display: flex; flex-direction: {{actDir}}; justify-content: flex-end; gap: 12px">
+    <button class="dl-btn" onClick="{{close}}" style="height: 48px; padding: 0 20px; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; font: 700 16px/22px Manrope, system-ui, sans-serif; cursor: pointer">{{cancelLabel}}</button>
+    <button class="dl-btn" onClick="{{confirm}}" style="height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: {{confirmBg}}; color: #ffffff; box-shadow: 0 0 16px #00000026; font: 700 16px/22px Manrope, system-ui, sans-serif; cursor: pointer">{{confirmText}}</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;web&quot;},&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;destructive&quot;,&quot;form&quot;,&quot;briefing&quot;],&quot;default&quot;:&quot;destructive&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null},&quot;onConfirm&quot;:{&quot;editor&quot;:null},&quot;$preview&quot;:{&quot;width&quot;:520,&quot;height&quot;:440}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = (this.props.layout ?? 'web') === 'phone';
+    const kind = this.props.kind ?? 'destructive';
+    const d = {
+      destructive: { title: 'Delete this document?', body: '“Blood test results, 18 October” will be removed from Jasur Tursunov’s record. This can’t be undone.', confirm: 'Delete', cancel: 'Cancel', bg: '#dc2f2f' },
+      form: { title: 'Add Patient', body: '', confirm: 'Add Patient', cancel: 'Cancel', bg: '#00bbb0' },
+      briefing: { title: 'Visit Briefing', body: 'Dilnoza Yusupova · Today, 10:30–11:00 · Video call', confirm: 'Start Appointment', cancel: 'Close', bg: '#00bbb0' }
+    }[kind];
+    const title = this.props.title ?? d.title;
+    const body = this.props.body ?? d.body;
+    const noop = () => {};
+    return {
+      phone,
+      isDestructive: kind === 'destructive', isForm: kind === 'form', isBriefing: kind === 'briefing',
+      title, body, hasBody: !!body,
+      confirmText: this.props.confirmLabel ?? d.confirm,
+      cancelLabel: d.cancel,
+      confirmBg: d.bg,
+      maxW: phone ? 'none' : '480px',
+      maxH: phone ? '760px' : '640px',
+      radius: phone ? '24px 24px 0 0' : '24px',
+      pad: phone ? '24px 16px 24px' : '24px',
+      align: phone && kind === 'destructive' ? 'center' : 'flex-start',
+      textAlign: phone && kind === 'destructive' ? 'center' : 'left',
+      actDir: phone ? 'column-reverse' : 'row',
+      close: this.props.onClose ?? noop,
+      confirm: this.props.onConfirm ?? noop
+    };
+  }
+}
+</script>
+</body>
+</html>

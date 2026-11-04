@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DataTable</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes dt-shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+.dt-skel{background:linear-gradient(90deg,#e8e8e8 0%,#f2f3f2 50%,#e8e8e8 100%);background-size:1200px 100%;animation:dt-shimmer 1.4s linear infinite;border-radius:6px;display:block}
+.dt-row[data-sel="false"]:hover td{background:#0000000d !important}
+.dt-row{cursor:pointer}
+.dt-btn:focus-visible,.dt-row:focus-visible{outline:2px solid #00bbb0;outline-offset:-2px}
+.dt-search:focus-within{border-color:#00bbb0 !important}
+.dt-search input::placeholder{color:#7d8282}
+.dt-card[data-sel="false"]:hover{background:#e8e8e8 !important}
+</style>
+</helmet>
+<section aria-label="Patients" style="width: 100%; box-sizing: border-box; background: #ffffff; color: #272727; font-family: Manrope, system-ui, sans-serif; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+  <div role="toolbar" aria-label="Filter patients" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+    <label class="dt-search" style="flex: 1 1 240px; min-width: 0; height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 14px; border: 2px solid #e8e8e8; border-radius: 999px; color: #494d4c">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+      <input value="{{query}}" onChange="{{onQuery}}" placeholder="Search by name, ID or phone" aria-label="Search patients" style="flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; font: 600 14px/16px Manrope, system-ui, sans-serif; color: #272727">
+      <sc-if value="{{hasQuery}}" hint-placeholder-val="{{ false }}">
+        <button class="dt-btn" onClick="{{clearQuery}}" aria-label="Clear search" style="width: 28px; height: 28px; border: 0; border-radius: 999px; background: transparent; color: #494d4c; display: inline-flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+        </button>
+      </sc-if>
+    </label>
+    <div style="display: flex; gap: 8px; overflow-x: auto; flex: {{chipsFlex}}; padding: 2px">
+      <sc-for list="{{chips}}" as="c" hint-placeholder-count="4">
+        <button class="dt-btn" onClick="{{c.pick}}" aria-pressed="{{c.selStr}}" style="flex: none; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: {{c.bg}}; box-shadow: {{c.ring}}; color: #272727; font: {{c.weight}} 12px/18px Manrope, system-ui, sans-serif; cursor: pointer; white-space: nowrap">{{c.label}}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{web}}" hint-placeholder-val="{{ true }}">
+      <label style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 2px solid #e8e8e8; border-radius: 10px; font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">
+        Sort
+        <select aria-label="Sort patients" style="border: 0; outline: 0; background: transparent; font: 700 12px/16px Manrope, system-ui, sans-serif; color: #272727; cursor: pointer">
+          <option>Next visit</option><option>Last visit</option><option>Name</option>
+        </select>
+      </label>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+    <div role="status" aria-label="Loading patients" style="display: flex; flex-direction: column; gap: 0">
+      <sc-for list="{{skel}}" as="k" hint-placeholder-count="6">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #e8e8e8">
+          <span class="dt-skel" style="width: 32px; height: 32px; border-radius: 999px"></span>
+          <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px"><span class="dt-skel" style="width: 40%; height: 12px"></span><span class="dt-skel" style="width: 25%; height: 10px"></span></span>
+          <span class="dt-skel" style="width: 18%; height: 12px"></span>
+          <span class="dt-skel" style="width: 90px; height: 24px; border-radius: 999px"></span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 48px 16px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+      <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 999px; background: #f2f3f2; color: #494d4c; display: inline-flex; align-items: center; justify-content: center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+      </span>
+      <p style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 700">Nothing matches your search or filters.</p>
+      <button class="dt-btn" onClick="{{clearAll}}" style="height: 44px; padding: 0 20px; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; font: 700 16px/22px Manrope, system-ui, sans-serif; cursor: pointer">Clear Filters</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showTable}}" hint-placeholder-val="{{ true }}">
+    <div style="overflow-x: auto">
+      <table style="width: 100%; min-width: 760px; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums">
+        <thead>
+          <tr style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">
+            <th scope="col" style="text-align: left; padding: 10px 12px; background: #f2f3f2; border-radius: 10px 0 0 10px">Patient</th>
+            <th scope="col" style="text-align: left; padding: 10px 12px; background: #f2f3f2">ID</th>
+            <th scope="col" style="text-align: right; padding: 10px 12px; background: #f2f3f2">Age</th>
+            <th scope="col" style="text-align: left; padding: 10px 12px; background: #f2f3f2">Last visit</th>
+            <th scope="col" style="text-align: left; padding: 10px 12px; background: #f2f3f2">Next visit</th>
+            <th scope="col" style="text-align: left; padding: 10px 12px; background: #f2f3f2">Status</th>
+            <th scope="col" style="padding: 10px 12px; background: #f2f3f2; border-radius: 0 10px 10px 0"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Open</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+            <tr class="dt-row" data-sel="{{r.selStr}}" aria-selected="{{r.selStr}}" onClick="{{r.pick}}" style="font-size: 14px; line-height: 20px; font-weight: 500">
+              <td style="padding: 12px; border-bottom: 1px solid #e8e8e8; background: {{r.bg}}">
+                <span style="display: flex; align-items: center; gap: 12px">
+                  <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 999px; background: #00bbb026; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{r.initials}}</span>
+                  <span style="display: flex; flex-direction: column; gap: 2px">
+                    <button class="dt-btn" onClick="{{r.pick}}" style="border: 0; padding: 0; background: transparent; color: #272727; font: 700 14px/20px Manrope, system-ui, sans-serif; text-align: left; cursor: pointer">{{r.name}}</button>
+                    <span style="font-size: 12px; line-height: 14px; color: #7d8282">{{r.phone}}</span>
+                  </span>
+                </span>
+              </td>
+              <td style="padding: 12px; border-bottom: 1px solid #e8e8e8; background: {{r.bg}}; color: #494d4c">{{r.id}}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #e8e8e8; background: {{r.bg}}; text-align: right">{{r.age}}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #e8e8e8; background: {{r.bg}}">{{r.last}}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #e8e8e8; background: {{r.bg}}">{{r.next}}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #e8e8e8; background: {{r.bg}}">
+                <span style="flex: none; box-sizing: border-box; height: 24px; display: inline-flex; align-items: center; gap: 6px; background: {{r.badgeBg}}; color: {{r.badgeInk}}; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 10px; border-radius: 999px; white-space: nowrap"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: {{r.badgeDot}}"></span>{{r.status}}</span>
+              </td>
+              <td style="padding: 12px; border-bottom: 1px solid #e8e8e8; background: {{r.bg}}; text-align: right">
+                <a href="PatientWeb.dc.html" aria-label="Open {{r.name}}" style="display: inline-flex; width: 32px; height: 32px; border-radius: 999px; align-items: center; justify-content: center; color: #494d4c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></a>
+              </td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showCards}}" hint-placeholder-val="{{ false }}">
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <li>
+          <a href="PatientMobile.dc.html" class="dt-card dt-btn" data-sel="{{r.selStr}}" style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 10px; background: {{r.cardBg}}; color: #272727; text-decoration: none">
+            <span style="display: flex; align-items: center; gap: 12px">
+              <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 999px; background: #00bbb026; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{r.initials}}</span>
+              <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-size: 14px; line-height: 20px; font-weight: 700">{{r.name}}</span>
+                <span style="font-size: 12px; line-height: 14px; color: #7d8282">{{r.phone}}</span>
+              </span>
+              <span style="flex: none; box-sizing: border-box; height: 24px; display: inline-flex; align-items: center; gap: 6px; background: {{r.badgeBg}}; color: {{r.badgeInk}}; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 10px; border-radius: 999px; white-space: nowrap"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: {{r.badgeDot}}"></span>{{r.status}}</span>
+            </span>
+            <span style="display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; line-height: 16px; font-weight: 500; color: #494d4c">
+              <span>Last visit · <b style="color: #272727">{{r.last}}</b></span>
+              <span>Next visit · <b style="color: #272727">{{r.next}}</b></span>
+            </span>
+          </a>
+        </li>
+      </sc-for>
+    </ul>
+  </sc-if>
+
+  <sc-if value="{{showFooter}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+      <span style="font-size: 12px; line-height: 16px; font-weight: 500; color: #494d4c">{{countText}}</span>
+      <nav aria-label="Pagination" style="display: flex; gap: 6px">
+        <button class="dt-btn" onClick="{{prev}}" aria-label="Previous page" style="width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f2f3f2; color: {{prevInk}}; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+        <sc-for list="{{pages}}" as="p" hint-placeholder-count="2">
+          <button class="dt-btn" onClick="{{p.pick}}" aria-current="{{p.current}}" style="min-width: 36px; height: 36px; border: 0; border-radius: 999px; background: {{p.bg}}; color: {{p.ink}}; font: 700 12px/16px Manrope, system-ui, sans-serif; cursor: pointer">{{p.n}}</button>
+        </sc-for>
+        <button class="dt-btn" onClick="{{next}}" aria-label="Next page" style="width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f2f3f2; color: {{nextInk}}; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+      </nav>
+    </div>
+  </sc-if>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;phone&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;loading&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;default&quot;},&quot;$preview&quot;:{&quot;width&quot;:1040,&quot;height&quot;:780}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { query: props.state === 'empty' ? 'Zarina' : '', filter: 'All', page: 1, sel: 'P-100482' };
+  }
+  renderVals() {
+    const phone = (this.props.layout ?? 'web') === 'phone';
+    const mode = this.props.state ?? 'default';
+    const s = this.state;
+    const B = {
+      Active: { badgeBg: '#e5f8f7', badgeInk: '#272727', badgeDot: '#00bbb0' },
+      'Pending payment': { badgeBg: '#fcf6e8', badgeInk: '#272727', badgeDot: '#eba400' },
+      Inactive: { badgeBg: '#f2f3f2', badgeInk: '#494d4c', badgeDot: '#979b9b' }
+    };
+    const data = [
+      ['Jasur Tursunov', 'JT', 'P-100482', 54, '18 Oct 2026', 'Today, 11:00', 'Active', '+998 90 123 45 67'],
+      ['Dilnoza Yusupova', 'DY', 'P-100391', 47, '2 Oct 2026', 'Today, 10:30', 'Active', '+998 93 410 22 18'],
+      ['Nodira Xasanova', 'NX', 'P-100517', 39, '13 Oct 2026', 'Today, 14:00', 'Pending payment', '+998 97 552 08 41'],
+      ['Bekzod Rahimov', 'BR', 'P-100204', 61, 'Today, 08:45', 'Not scheduled', 'Active', '+998 91 778 63 05'],
+      ['Malika Ergasheva', 'ME', 'P-100366', 33, 'Today, 08:00', '1 Nov 2026', 'Active', '+998 99 304 71 26'],
+      ['Sardor Aliyev', 'SA', 'P-100145', 28, '30 Sep 2026', 'Not scheduled', 'Inactive', '+998 90 667 19 83'],
+      ['Gulnora Abdullayeva', 'GA', 'P-100288', 66, '21 Oct 2026', '4 Nov 2026', 'Active', '+998 94 215 90 37'],
+      ['Timur Saidov', 'TS', 'P-100433', 42, '9 Oct 2026', '28 Oct 2026', 'Pending payment', '+998 93 802 44 60'],
+      ['Shahlo Mirzayeva', 'SM', 'P-100502', 25, '15 Oct 2026', 'Not scheduled', 'Active', '+998 97 139 58 12'],
+      ['Rustam Nazarov', 'RN', 'P-100118', 58, '11 Aug 2026', 'Not scheduled', 'Inactive', '+998 91 450 36 77'],
+      ['Otabek Qodirov', 'OQ', 'P-100476', 36, '20 Oct 2026', '30 Oct 2026', 'Active', '+998 99 921 05 48'],
+      ['Feruza Karimova', 'FK', 'P-100399', 50, '6 Oct 2026', '3 Nov 2026', 'Active', '+998 90 384 67 29']
+    ];
+    const q = s.query.trim().toLowerCase();
+    const filtered = data.filter((d) => (s.filter === 'All' || d[6] === s.filter) && (!q || (d[0] + ' ' + d[2] + ' ' + d[7]).toLowerCase().indexOf(q) >= 0));
+    const per = 6;
+    const pageCount = Math.max(1, Math.ceil(filtered.length / per));
+    const page = Math.min(s.page, pageCount);
+    const slice = filtered.slice((page - 1) * per, page * per);
+    const rows = slice.map((d) => {
+      const sel = d[2] === s.sel;
+      return Object.assign({ name: d[0], initials: d[1], id: d[2], age: d[3], last: d[4], next: d[5], status: d[6], phone: d[7],
+        selStr: sel ? 'true' : 'false', bg: sel ? '#e5f8f7' : '#ffffff', cardBg: sel ? '#e5f8f7' : '#f2f3f2',
+        pick: () => this.setState({ sel: d[2] }) }, B[d[6]]);
+    });
+    const chips = ['All', 'Active', 'Pending payment', 'Inactive'].map((label) => {
+      const sel = label === s.filter;
+      return { label, selStr: sel ? 'true' : 'false', bg: sel ? '#e5f8f7' : '#f2f3f2', ring: sel ? 'inset 0 0 0 1px #00bbb0' : 'none', weight: sel ? 700 : 500,
+        pick: () => this.setState({ filter: label, page: 1 }) };
+    });
+    const pages = [];
+    for (let n = 1; n <= pageCount; n++) pages.push({ n, current: n === page ? 'page' : undefined, bg: n === page ? '#00bbb0' : '#f2f3f2', ink: n === page ? '#ffffff' : '#272727', pick: () => this.setState({ page: n }) });
+    const loading = mode === 'loading';
+    const empty = !loading && filtered.length === 0;
+    const from = filtered.length ? (page - 1) * per + 1 : 0;
+    return {
+      web: !phone, chipsFlex: phone ? '1 1 100%' : '0 1 auto',
+      query: s.query, hasQuery: !!s.query,
+      chips, rows, pages, skel: [1, 2, 3, 4, 5, 6],
+      showLoading: loading, showEmpty: empty,
+      showTable: !loading && !empty && !phone,
+      showCards: !loading && !empty && phone,
+      showFooter: !loading && !empty,
+      countText: 'Showing ' + from + '–' + (from + slice.length - 1) + ' of ' + filtered.length,
+      prevInk: page > 1 ? '#272727' : '#979b9b', nextInk: page < pageCount ? '#272727' : '#979b9b',
+      onQuery: (e) => this.setState({ query: e.target.value, page: 1 }),
+      clearQuery: () => this.setState({ query: '', page: 1 }),
+      clearAll: () => this.setState({ query: '', filter: 'All', page: 1 }),
+      prev: () => this.setState({ page: Math.max(1, page - 1) }),
+      next: () => this.setState({ page: Math.min(pageCount, page + 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

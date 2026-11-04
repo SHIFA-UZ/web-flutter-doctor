@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NextPatientHero</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes hero-shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.hero-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+</style>
+</helmet>
+<section ref="{{rootRef}}" aria-label="Next patient" style="width: 100%; box-sizing: border-box; background: #ffffff; border: 2px solid #00bbb0; border-radius: 10px; padding: {{pad}}; display: flex; flex-direction: column; gap: 16px; color: #272727; font-family: Manrope, system-ui, sans-serif">
+  <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 16px 0">
+      <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 999px; background: #f2f3f2; color: #494d4c; display: inline-flex; align-items: center; justify-content: center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+      </span>
+      <h2 style="margin: 0; font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">No appointments today</h2>
+      <p style="margin: 0; font-size: 14px; line-height: 20px; color: #494d4c">New bookings will show here as soon as patients confirm them.</p>
+      <button class="hero-btn" style="border: 0; background: transparent; color: #00bbb0; font: 700 16px/22px Manrope, system-ui, sans-serif; padding: 8px 12px; cursor: pointer">Open Calendar</button>
+    </div>
+  </sc-if>
+  <sc-if value="{{hasPatient}}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+        <span style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; white-space: nowrap; background: #00bbb0; color: #ffffff; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 12px; border-radius: 999px">Next patient</span>
+        <span style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: {{pillBg}}; color: #272727; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 12px; border-radius: 999px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+          {{countdown}}
+        </span>
+      </div>
+    </sc-if>
+    <div style="display: flex; gap: {{idGap}}; align-items: center">
+      <span aria-hidden="true" style="width: {{avatar}}; height: {{avatar}}; border-radius: 999px; background: #00bbb026; color: #272727; font-size: {{avatarFont}}; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">DY</span>
+      <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: {{idStack}}; min-width: 0">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+          <h2 style="margin: 0; flex: 0 1 auto; min-width: 0; font-size: {{nameSize}}; line-height: {{nameLine}}; font-weight: 700; letter-spacing: -1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Dilnoza Yusupova</h2>
+          <sc-if value="{{web}}" hint-placeholder-val="{{ true }}">
+          <span style="flex: none; display: inline-flex; gap: 8px; align-items: center">
+            <span style="flex: none; box-sizing: border-box; height: 24px; display: inline-flex; align-items: center; white-space: nowrap; background: #00bbb0; color: #ffffff; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 10px; border-radius: 999px">Next patient</span>
+            <span style="flex: none; box-sizing: border-box; height: 24px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: {{pillBg}}; color: #272727; font-size: 12px; line-height: 16px; font-weight: 700; padding: 0 10px; border-radius: 999px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+              {{countdown}}
+            </span>
+          </span>
+          </sc-if>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; line-height: 12px; font-weight: 500; color: #494d4c">
+          <span style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>10:30–11:00</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 7l-7 5 7 5z"></path><rect x="1" y="5" width="15" height="14" rx="2"></rect></svg>Video call</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>3 documents</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #e8e8e8; padding-top: 12px">
+    <button class="hero-btn" onClick="{{toggleRecord}}" aria-expanded="{{recordStr}}" aria-controls="hero-record" style="width: 100%; min-height: 44px; border: 0; border-radius: 10px; background: transparent; color: #272727; padding: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; text-align: left; font-family: Manrope, system-ui, sans-serif">
+      <span style="display: inline-flex; flex: none; color: #494d4c"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M9 12h6M9 16h4"></path></svg></span>
+      <span style="font-size: 14px; line-height: 16px; font-weight: 700; white-space: nowrap">Medical record</span>
+      <span style="flex: none; box-sizing: border-box; height: 20px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; background: #f9ebeb; color: #272727; font-size: 10px; line-height: 12px; font-weight: 700; padding: 0 8px; border-radius: 999px"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 999px; background: #dc2f2f"></span>3 flags</span>
+      <span style="flex: 1 1 auto"></span>
+      <span style="font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c; white-space: nowrap">{{recordLabel}}</span>
+      <span style="display: inline-flex; flex: none; color: #494d4c; transform: rotate({{chevron}}); transition: transform .2s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span>
+    </button>
+    <sc-if value="{{recordOpen}}" hint-placeholder-val="{{ true }}">
+    <ul id="hero-record" aria-label="Medical record flags" style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px">
+      <li style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #f9ebeb; border: 1px solid #dc2f2f; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700">
+        <span style="display: inline-flex; flex: none; color: #dc2f2f"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4M12 17h.01"></path></svg></span>Penicillin allergy
+      </li>
+      <li style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #fcf6e8; border: 1px solid #eba400; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700">
+        <span style="display: inline-flex; flex: none; color: #eba400"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 6l-9.5 9.5-5-5L1 18"></path><path d="M17 6h6v6"></path></svg></span>Blood pressure rising
+      </li>
+      <sc-if value="{{bIdle}}" hint-placeholder-val="{{ true }}">
+        <li style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #00bbb026; border: 1px solid #00bbb0; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700">
+          <span style="display: inline-flex; flex: none; color: #00bbb0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg></span>AI briefing available
+        </li>
+      </sc-if>
+      <sc-if value="{{bLoading}}" hint-placeholder-val="{{ false }}">
+        <li aria-live="polite" style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; background: #00bbb026; border: 1px solid #00bbb0; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700">
+          <span aria-hidden="true" style="flex: none; width: 48px; height: 6px; border-radius: 999px; background: linear-gradient(90deg, #e8e8e8 0%, #ffffff 50%, #e8e8e8 100%); background-size: 200px 6px; animation: hero-shimmer 1.2s linear infinite"></span>Preparing briefing…
+        </li>
+      </sc-if>
+      <sc-if value="{{bReady}}" hint-placeholder-val="{{ false }}">
+        <li style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #e5f8f7; border: 1px solid #00bbb0; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700">
+          <span style="display: inline-flex; flex: none; color: #00bbb0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>AI briefing ready
+        </li>
+      </sc-if>
+      <sc-if value="{{bError}}" hint-placeholder-val="{{ false }}">
+        <li style="flex: none; box-sizing: border-box; height: 28px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; background: #f9ebeb; border: 1px solid #dc2f2f; border-radius: 999px; padding: 0 10px; font-size: 12px; line-height: 16px; font-weight: 700">
+          <span style="display: inline-flex; flex: none; color: #dc2f2f"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg></span>Briefing didn't load. Try again.
+        </li>
+      </sc-if>
+    </ul>
+    </sc-if>
+    </div>
+    <div style="display: flex; flex-wrap: {{wrap}}; gap: 12px">
+      <button class="hero-btn" onClick="{{start}}" style="flex: {{btnFlex}}; min-width: 0; height: 48px; padding: 0 {{btnPad}}; border: 0; border-radius: 10px; background: #00bbb0; color: #ffffff; box-shadow: 0 0 16px #00000026; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 700 {{btnFont}} Manrope, system-ui, sans-serif; cursor: pointer; white-space: nowrap">
+        <sc-if value="{{showIcons}}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 7l-7 5 7 5z"></path><rect x="1" y="5" width="15" height="14" rx="2"></rect></svg></sc-if>
+        {{startLabel}}
+      </button>
+      <button class="hero-btn" onClick="{{briefingClick}}" aria-busy="{{bLoading}}" style="flex: {{btnFlex}}; min-width: 0; height: 48px; padding: 0 {{btnPad}}; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 700 {{btnFont}} Manrope, system-ui, sans-serif; cursor: pointer; white-space: nowrap">
+        <sc-if value="{{showIcons}}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg></sc-if>
+        {{briefingLabel}}
+      </button>
+    </div>
+  </sc-if>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;web&quot;,&quot;phone&quot;],&quot;default&quot;:&quot;web&quot;},&quot;briefing&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;idle&quot;,&quot;loading&quot;,&quot;ready&quot;,&quot;error&quot;],&quot;default&quot;:&quot;ready&quot;},&quot;started&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;empty&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;onBriefing&quot;:{&quot;editor&quot;:null},&quot;onStart&quot;:{&quot;editor&quot;:null},&quot;$preview&quot;:{&quot;width&quot;:720,&quot;height&quot;:400}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { b: null, started: null, record: null, narrow: false };
+    this.rootRef = (el) => this.attach(el);
+  }
+  attach(el) {
+    if (el === this.el) return;
+    if (this.ro) this.ro.disconnect();
+    this.el = el;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    this.ro = new ResizeObserver((entries) => {
+      const narrow = entries[0].contentRect.width < 560;
+      if (narrow !== this.state.narrow) this.setState({ narrow });
+    });
+    this.ro.observe(el);
+  }
+  componentWillUnmount() { clearTimeout(this.t); if (this.ro) this.ro.disconnect(); }
+  renderVals() {
+    const layout = this.props.layout ?? 'auto';
+    const phone = layout === 'phone' || (layout === 'auto' && this.state.narrow);
+    const b = this.props.onBriefing ? (this.props.briefing ?? 'idle') : (this.state.b ?? this.props.briefing ?? 'idle');
+    const started = this.props.onStart ? !!this.props.started : (this.state.started ?? !!this.props.started);
+    const empty = !!this.props.empty;
+    const recordOpen = this.state.record ?? !phone;
+    return {
+      rootRef: this.rootRef,
+      phone, web: !phone,
+      avatar: phone ? '48px' : '56px',
+      avatarFont: phone ? '16px' : '18px',
+      nameSize: phone ? '20px' : '24px',
+      nameLine: phone ? '24px' : '28px',
+      idGap: phone ? '12px' : '12px',
+      idStack: phone ? '6px' : '8px',
+      recordOpen, recordStr: recordOpen ? 'true' : 'false',
+      recordLabel: recordOpen ? 'Hide' : 'Show',
+      chevron: recordOpen ? '180deg' : '0deg',
+      toggleRecord: () => this.setState({ record: !recordOpen }),
+      empty, hasPatient: !empty,
+      pad: phone ? '16px' : '24px',
+      wrap: phone ? 'nowrap' : 'wrap',
+      btnFlex: phone ? '1 1 0' : '0 0 auto',
+      btnPad: phone ? '8px' : '20px',
+      btnFont: phone ? '14px/18px' : '16px/22px',
+      showIcons: !phone,
+      countdown: started ? 'Now' : 'in 3 min',
+      pillBg: started ? '#e5f8f7' : '#f2f3f2',
+      startLabel: started ? (phone ? 'Rejoin Call' : 'Rejoin Video Call') : (phone ? 'Start' : 'Start Appointment'),
+      briefingLabel: b === 'loading' ? 'Preparing…' : (phone ? 'Briefing' : 'Visit Briefing'),
+      bIdle: b === 'idle', bLoading: b === 'loading', bReady: b === 'ready', bError: b === 'error',
+      start: () => { if (this.props.onStart) this.props.onStart(); else this.setState({ started: true }); },
+      briefingClick: () => {
+        if (this.props.onBriefing) { this.props.onBriefing(); return; }
+        if (b === 'loading') return;
+        if (b === 'ready') { this.setState({ b: 'idle' }); return; }
+        this.setState({ b: 'loading' });
+        this.t = setTimeout(() => this.setState({ b: 'ready' }), 1400);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

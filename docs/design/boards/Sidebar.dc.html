@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AppShell sidebar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sb-item[data-sel="false"]:hover{background:#0000000d !important}
+.sb-item .sb-tip{display:none}
+.sb-item:hover .sb-tip,.sb-item:focus-visible .sb-tip{display:block}
+.sb-item:focus-visible{outline:2px solid #00bbb0;outline-offset:-2px}
+</style>
+</helmet>
+<nav aria-label="Main" style="position: sticky; top: 0; width: {{w}}; height: 100vh; box-sizing: border-box; background: #ffffff; color: #272727; font-family: Manrope, system-ui, sans-serif; display: flex; flex-direction: column">
+  <div style="flex: 1 1 auto; min-height: 0; overflow-y: {{scrollY}}; box-sizing: border-box; padding: 20px {{padX}} 16px; display: flex; flex-direction: column; gap: 16px">
+  <div style="display: flex; align-items: center; gap: 10px; height: 36px; justify-content: {{justify}}">
+    <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 10px; background: #00bbb0; flex: none"></span>
+    <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><span style="font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">Shifa</span></sc-if>
+  </div>
+  <sc-if value="{{full}}" hint-placeholder-val="{{ true }}">
+    <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 2px solid #e8e8e8; border-radius: 999px; color: #7d8282">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+      <input type="search" placeholder="Search" aria-label="Search patients, appointments and documents" style="flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; font: 500 14px/16px Manrope, system-ui, sans-serif; color: #272727">
+      <span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #494d4c; background: #f2f3f2; border-radius: 6px; padding: 3px 6px">⌘K</span>
+    </label>
+  </sc-if>
+  <sc-if value="{{rail}}" hint-placeholder-val="{{ false }}">
+    <button class="sb-item" data-sel="false" aria-label="Search" style="position: relative; height: 44px; border: 0; border-radius: 10px; background: transparent; color: #272727; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+      <span class="sb-tip" style="position: absolute; left: 60px; top: 8px; z-index: 5; white-space: nowrap; background: #272727; color: #ffffff; font-size: 12px; line-height: 16px; font-weight: 700; padding: 6px 10px; border-radius: 8px">Search ⌘K</span>
+    </button>
+  </sc-if>
+  <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px">
+    <sc-for list="{{main}}" as="it" hint-placeholder-count="5">
+      <li>
+        <button class="sb-item" data-sel="{{it.sel}}" aria-current="{{it.current}}" aria-label="{{it.aria}}" onClick="{{it.pick}}" style="position: relative; width: 100%; height: 44px; border: 0; border-radius: 10px; background: {{it.bg}}; color: #272727; display: flex; align-items: center; gap: 12px; padding: 0 {{itemPad}}; justify-content: {{justify}}; font: {{it.weight}} 14px/20px Manrope, system-ui, sans-serif; cursor: pointer; text-align: left">
+          <span style="display: inline-flex; color: {{it.icon}}" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{it.stroke}}" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"></path></svg>
+          </span>
+          <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><span style="flex: 1 1 auto">{{it.label}}</span></sc-if>
+          <sc-if value="{{it.showCount}}" hint-placeholder-val="{{ false }}"><span style="min-width: 20px; height: 20px; border-radius: 999px; background: #00bbb0; color: #ffffff; font-size: 10px; line-height: 20px; font-weight: 700; text-align: center; padding: 0 6px; box-sizing: border-box">{{it.count}}</span></sc-if>
+          <sc-if value="{{it.showDot}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; top: 9px; right: 14px; width: 8px; height: 8px; border-radius: 999px; background: #00bbb0; border: 2px solid #ffffff"></span></sc-if>
+          <sc-if value="{{rail}}" hint-placeholder-val="{{ false }}"><span class="sb-tip" style="position: absolute; left: 60px; top: 8px; z-index: 5; white-space: nowrap; background: #272727; color: #ffffff; font-size: 12px; line-height: 16px; font-weight: 700; padding: 6px 10px; border-radius: 8px">{{it.tip}}</span></sc-if>
+        </button>
+      </li>
+    </sc-for>
+  </ul>
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; padding: 0 12px 4px; font-size: 12px; line-height: 16px; font-weight: 700; color: #494d4c">Clinic</p></sc-if>
+    <sc-if value="{{rail}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; height: 1px; background: #e8e8e8; margin: 4px 8px 8px"></span></sc-if>
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{clinic}}" as="it" hint-placeholder-count="3">
+        <li>
+          <button class="sb-item" data-sel="{{it.sel}}" aria-current="{{it.current}}" aria-label="{{it.aria}}" onClick="{{it.pick}}" style="position: relative; width: 100%; height: 44px; border: 0; border-radius: 10px; background: {{it.bg}}; color: #272727; display: flex; align-items: center; gap: 12px; padding: 0 {{itemPad}}; justify-content: {{justify}}; font: {{it.weight}} 14px/20px Manrope, system-ui, sans-serif; cursor: pointer; text-align: left">
+            <span style="display: inline-flex; color: {{it.icon}}" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{it.stroke}}" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"></path></svg>
+            </span>
+            <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><span style="flex: 1 1 auto">{{it.label}}</span></sc-if>
+            <sc-if value="{{rail}}" hint-placeholder-val="{{ false }}"><span class="sb-tip" style="position: absolute; left: 60px; top: 8px; z-index: 5; white-space: nowrap; background: #272727; color: #ffffff; font-size: 12px; line-height: 16px; font-weight: 700; padding: 6px 10px; border-radius: 8px">{{it.tip}}</span></sc-if>
+          </button>
+        </li>
+      </sc-for>
+    </ul>
+  </div>
+  </div>
+  <div style="flex: none; box-sizing: border-box; padding: 16px {{padX}} 20px; border-top: 1px solid #e8e8e8; background: #ffffff; display: flex; flex-direction: column; gap: 16px">
+  <sc-if value="{{full}}" hint-placeholder-val="{{ true }}">
+    <button style="border: 1px solid #00bbb0; background: #00bbb026; border-radius: 10px; padding: 12px; display: flex; gap: 10px; align-items: center; text-align: left; cursor: pointer; color: #272727; font-family: Manrope, system-ui, sans-serif">
+      <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 999px; background: #00bbb0; box-shadow: 0 0 0 4px #00bbb040; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; flex: none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 14px; line-height: 16px; font-weight: 700">Shifa AI</span>
+        <span style="font-size: 12px; line-height: 14px; font-weight: 500; color: #494d4c">Ask about your patients</span>
+      </span>
+    </button>
+  </sc-if>
+  <sc-if value="{{rail}}" hint-placeholder-val="{{ false }}">
+    <button class="sb-item" data-sel="false" aria-label="Shifa AI" style="position: relative; height: 44px; border: 0; border-radius: 10px; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 999px; background: #00bbb0; box-shadow: 0 0 0 4px #00bbb040; color: #ffffff; display: inline-flex; align-items: center; justify-content: center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path></svg>
+      </span>
+      <span class="sb-tip" style="position: absolute; left: 60px; top: 8px; z-index: 5; white-space: nowrap; background: #272727; color: #ffffff; font-size: 12px; line-height: 16px; font-weight: 700; padding: 6px 10px; border-radius: 8px">Shifa AI</span>
+    </button>
+  </sc-if>
+  <div style="display: flex; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid #e8e8e8; justify-content: {{justify}}">
+    <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 999px; background: #f2f3f2; color: #272727; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">NK</span>
+    <sc-if value="{{full}}" hint-placeholder-val="{{ true }}">
+      <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 14px; line-height: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Dr. Nilufar Karimova</span>
+        <span style="font-size: 12px; line-height: 14px; font-weight: 500; color: #494d4c">Cardiologist</span>
+      </span>
+      <button aria-label="Sign out" style="width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f2f3f2; color: #494d4c; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>
+      </button>
+    </sc-if>
+  </div>
+  </div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;rail&quot;],&quot;default&quot;:&quot;full&quot;},&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;calendar&quot;,&quot;patients&quot;,&quot;chat&quot;,&quot;tasks&quot;,&quot;clinic&quot;,&quot;finance&quot;,&quot;reports&quot;],&quot;default&quot;:&quot;home&quot;},&quot;$preview&quot;:{&quot;width&quot;:260,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { picked: null }; }
+  renderVals() {
+    const full = (this.props.mode ?? 'full') !== 'rail';
+    const active = this.state.picked ?? this.props.active ?? 'home';
+    const icons = {
+      home: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10',
+      calendar: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18',
+      patients: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 1 0 8a4 4 0 1 1 0-8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+      chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+      tasks: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+      clinic: 'M3 21h18M5 21V7l7-4 7 4v14M10 9h4M12 7v4M9 21v-5h6v5',
+      finance: 'M3 4h18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM1 10h22',
+      reports: 'M12 20V10M18 20V4M6 20v-4'
+    };
+    const mk = (id, label, count) => {
+      const sel = id === active;
+      return {
+        id, label, count: count || 0, d: icons[id],
+        sel: sel ? 'true' : 'false', current: sel ? 'page' : undefined,
+        aria: count ? label + ', ' + count + ' unread' : label,
+        tip: count ? label + ' · ' + count : label,
+        bg: sel ? '#e5f8f7' : 'transparent',
+        weight: sel ? 700 : 500,
+        icon: sel ? '#00bbb0' : '#272727',
+        stroke: sel ? 2.5 : 2,
+        showCount: full && !!count,
+        showDot: !full && !!count,
+        pick: () => { this.setState({ picked: id }); if (this.props.onNavigate) this.props.onNavigate(id); }
+      };
+    };
+    return {
+      full, rail: !full,
+      w: full ? '260px' : '72px',
+      padX: full ? '16px' : '12px',
+      scrollY: full ? 'auto' : 'visible',
+      itemPad: full ? '12px' : '0',
+      justify: full ? 'flex-start' : 'center',
+      main: [mk('home', 'Home'), mk('calendar', 'Calendar'), mk('patients', 'Patients'), mk('chat', 'Chat', 3), mk('tasks', 'Tasks', 5)],
+      clinic: [mk('clinic', 'Clinic'), mk('finance', 'Finance'), mk('reports', 'Reports')]
+    };
+  }
+}
+</script>
+</body>
+</html>

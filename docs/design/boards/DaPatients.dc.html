@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Patients, documents and forms</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes pt-spin{to{transform:rotate(360deg)}}
+@keyframes pt-up{from{transform:translateY(var(--size-30));opacity:0}to{transform:none;opacity:1}}
+@keyframes pt-bar{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+.pt-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.pt-row:hover{background:var(--bg-hover) !important}
+.pt-in input,.pt-in select,.pt-in textarea{font: 600 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.pt-in input::placeholder,.pt-in textarea::placeholder{color:var(--text-tertiary);font-weight:500}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div class="pt-in" style="position: relative; width: 100%; min-height: 100%; box-sizing: border-box; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans)">
+
+<!-- ======================= PATIENTS LIST ======================= -->
+<sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+  <div style="padding: {{pagePad}}; padding-bottom: {{bottomClear}}; width: 100%; max-width: var(--layout-page); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14)">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--size-10) var(--size-16)">
+      <div style="flex: 1 1 auto; display: flex; flex-direction: {{hdrDir}}; align-items: {{hdrAlign}}; justify-content: space-between; gap: var(--size-8)">
+        <h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Patients</h1>
+        <span style="flex: none; box-sizing: border-box; height: var(--size-24); display: inline-flex; align-items: center; padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-surface); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; white-space: nowrap">{{ls.count}}</span>
+      </div>
+      <sc-if value="{{webOnly}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-btn sh-btn--primary" onClick="{{ls.add}}" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.userPlus}}"></path></svg>New patient</button></sc-if>
+    </div>
+    <div style="display: flex; gap: var(--size-10); align-items: center">
+      <label style="flex: 1 1 auto; position: relative; display: block">
+        <span style="position: absolute; left: var(--size-12); top: var(--size-12); color: var(--text-secondary); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span>
+        <input class="sh-input" value="{{ls.q}}" onChange="{{ls.onQ}}" placeholder="Name, phone, or ID" aria-label="Search patients" style="width: 100%; padding: 0 var(--size-40) 0 var(--size-40)">
+        <sc-if value="{{ls.hasQ}}" hint-placeholder-val="{{ false }}"><button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{ls.clearQ}}" aria-label="Clear search" style="position: absolute; right: var(--size-6); top: var(--size-6)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if>
+      </label>
+      <sc-if value="{{webOnly}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{ls.openFilter}}" aria-label="Filter by status" aria-pressed="{{ls.filterOnStr}}" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.filter}}"></path></svg></button></sc-if>
+    </div>
+    <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><div style="display: flex; align-items: center; gap: var(--size-8)"><button class="pt-b sh-action sh-action--surface" onClick="{{ls.openFilter}}" aria-label="Filter by status" aria-pressed="{{ls.filterOnStr}}" style="flex: none; gap: var(--size-6)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.filter}}"></path></svg>Filter</button><button class="pt-b dr-select" onClick="{{ls.openSort}}" aria-haspopup="menu" style="flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden"><span style="overflow: hidden; text-overflow: ellipsis">{{ls.sortLabel}}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="{{ic.chevD}}"></path></svg></button><span style="flex: 1 1 auto"></span><button class="pt-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{ls.refresh}}" aria-label="Refresh" title="Refresh" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></button></div>
+    <button class="pt-b sh-fab sh-fab--docked" onClick="{{ls.add}}" aria-label="New patient"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.userPlus}}"></path></svg>New patient</button></sc-if>
+    <div style="display: flex; align-items: center; gap: var(--size-8); border-bottom: var(--size-1) solid var(--border-default)">
+      <div class="dr-underline dr-underline--fade" role="tablist" aria-label="Patient lists" style="flex: 1 1 auto">
+        <sc-for list="{{ls.tabs}}" as="t" hint-placeholder-count="4"><button role="tab" class="pt-b" aria-selected="{{t.selStr}}" onClick="{{t.pick}}" >{{t.label}}</button></sc-for>
+      </div>
+      <sc-if value="{{webOnly}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{ls.refresh}}" aria-label="Refresh" title="Refresh" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></button>
+      <button class="pt-b sh-action sh-action--surface" onClick="{{ls.openSort}}" aria-haspopup="menu" style="flex: none">{{ls.sortLabel}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevD}}"></path></svg></button></sc-if>
+    </div>
+    <sc-if value="{{ls.refreshing}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: var(--bg-success-subtle); overflow: hidden; margin-top: calc(-1 * var(--size-10))"><div style="width: 30%; height: var(--size-3); background: var(--interactive-primary); animation: pt-bar 1s linear infinite"></div></div></sc-if>
+    <sc-if value="{{ls.hasActive}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-6); align-items: center"><span style="box-sizing: border-box; height: var(--size-28); display: inline-flex; align-items: center; padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-success-subtle); font-size: var(--font-size-12); font-weight: 700">{{ls.activeLabel}}</span><button class="pt-b sh-link" onClick="{{ls.clear}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">Clear filters</button></div></sc-if>
+
+    <sc-if value="{{ls.emptyDir}}" hint-placeholder-val="{{ false }}">
+      <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-36) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center">
+        <span aria-hidden="true" style="width: var(--size-64); height: var(--size-64); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.users}}"></path></svg></span>
+        <h2 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">No patients yet</h2>
+        <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Add your first patient to start keeping records.</p>
+        <button class="pt-b sh-btn sh-btn--primary" onClick="{{ls.add}}" >New patient</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ls.emptyFilter}}" hint-placeholder-val="{{ false }}">
+      <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-8); text-align: center"><h2 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">No patients found</h2><button class="pt-b sh-link" onClick="{{ls.clear}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">Clear filters</button></div>
+    </sc-if>
+
+    <sc-if value="{{ls.hasRows}}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{table}}" hint-placeholder-val="{{ true }}">
+        <div role="table" aria-label="Patients" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); overflow: hidden">
+          <div role="row" style="display: grid; grid-template-columns: minmax(var(--size-220), 2fr) 1fr 1.3fr 1fr var(--size-120) var(--size-32); gap: var(--size-12); padding: var(--size-12) var(--size-16); font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary); border-bottom: var(--size-1) solid var(--border-default)"><span role="columnheader">Patient</span><span role="columnheader">Age, gender</span><span role="columnheader">Phone</span><span role="columnheader">Last visit</span><span role="columnheader">Status</span><span></span></div>
+          <sc-for list="{{ls.rows}}" as="r" hint-placeholder-count="6">
+            <button role="row" class="pt-b pt-row sh-press sh-press--trow" onClick="{{r.open}}" style="display: grid; grid-template-columns: minmax(var(--size-220), 2fr) 1fr 1.3fr 1fr var(--size-120) var(--size-32); gap: var(--size-12); align-items: center; padding: var(--size-10) var(--size-16)">
+              <span role="cell" style="display: flex; align-items: center; gap: var(--size-10); min-width: 0"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{r.ini}}</span><span style="display: flex; flex-direction: column; gap: var(--size-2); min-width: 0"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{r.id}}</span></span><sc-if value="{{r.fav}}" hint-placeholder-val="{{ false }}"><span aria-label="Favourite" role="img" style="display: inline-flex; color: var(--icon-warning)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.star}}"></path></svg></span></sc-if></span>
+              <span role="cell" style="font-size: var(--font-size-14); color: var(--text-secondary)">{{r.ageGender}}</span>
+              <span role="cell" style="font-size: var(--font-size-14); color: var(--text-secondary); white-space: nowrap">{{r.phone}}</span>
+              <span role="cell" style="font-size: var(--font-size-14); color: var(--text-secondary)">{{r.last}}</span>
+              <span role="cell"><span class="{{r.st.cls}}">{{r.st.label}}</span></span>
+              <span role="cell" style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{cards}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: var(--size-8)">
+          <sc-for list="{{ls.rows}}" as="r" hint-placeholder-count="6">
+            <button class="pt-b pt-row sh-press sh-press--card" onClick="{{r.open}}" style="width: 100%; padding: var(--size-12); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+              <span aria-hidden="true" style="width: var(--size-touch); height: var(--size-touch); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-16); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{r.ini}}</span>
+              <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.sub}}</span></span>
+              <span class="{{r.st.cls}}" style="flex: none">{{r.st.label}}</span>
+              <span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <nav aria-label="Pages" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--size-10)">
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{ls.caption}}</span>
+        <div style="display: flex; gap: var(--size-4); align-items: center">
+          <button class="pt-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{ls.prev}}" aria-label="Previous page" aria-disabled="{{ls.prevOffStr}}" style="color: {{ls.prevInk}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevL}}"></path></svg></button>
+          <sc-for list="{{ls.pages}}" as="p" hint-placeholder-count="3"><button class="pt-b dr-pager__btn" onClick="{{p.go}}" aria-current="{{p.cur}}" aria-label="{{p.aria}}">{{p.label}}</button></sc-for>
+          <button class="pt-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{ls.next}}" aria-label="Next page" aria-disabled="{{ls.nextOffStr}}" style="color: {{ls.nextInk}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></button>
+        </div>
+      </nav>
+    </sc-if>
+  </div>
+</sc-if>
+
+<!-- ======================= PATIENT DETAIL ======================= -->
+<sc-if value="{{isDetail}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; padding-bottom: {{bottomClear}}; width: 100%; max-width: var(--layout-page); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14)">
+    <button class="pt-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" style="align-self: flex-start"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+    <header style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; flex-wrap: wrap; gap: var(--size-14); align-items: center">
+      <span aria-hidden="true" style="width: var(--size-64); height: var(--size-64); border-radius: var(--radius-full); background: var(--alpha-teal-15); font-size: var(--font-size-20); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{pd.ini}}</span>
+      <div style="flex: 1 1 var(--size-220); min-width: 0; display: flex; flex-direction: column; gap: var(--size-6)">
+        <h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">{{pd.name}}</h1>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)">
+          <span class="{{pd.st.cls}}">{{pd.stLabel}}</span>
+          <sc-if value="{{pd.aiRisk}}" hint-placeholder-val="{{ false }}"><span style="flex: none; box-sizing: border-box; height: var(--size-24); display: inline-flex; align-items: center; gap: var(--size-6); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-warning-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-warning); color: var(--text-primary); font-size: var(--font-size-12); font-weight: 700; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg>AI risk detected</span></sc-if>
+          <sc-if value="{{pd.hasChronic}}" hint-placeholder-val="{{ false }}"><span style="flex: none; box-sizing: border-box; height: var(--size-24); display: inline-flex; align-items: center; gap: var(--size-6); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-error-subtle); color: var(--text-error); font-size: var(--font-size-12); font-weight: 700; white-space: nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.alert}}"></path></svg>{{pd.chronic}}</span></sc-if>
+        </div>
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{pd.lastVisit}}</span>
+      </div>
+      <div style="display: flex; gap: var(--size-8); align-items: center">
+        <button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{pd.toggleFav}}" aria-label="{{pd.favAria}}" aria-pressed="{{pd.favStr}}" style="color: {{pd.favInk}}"><svg style="fill: {{pd.favFill}}" width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.star}}"></path></svg></button>
+        <sc-if value="{{pd.canAi}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-btn sh-btn--secondary" onClick="{{pd.aiSummary}}" aria-busy="{{pd.aiBusyStr}}" ><sc-if value="{{pd.aiBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if><sc-if value="{{pd.aiIdle}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg></sc-if>AI summary</button></sc-if>
+        <button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{pd.openMore}}" aria-label="More actions" ><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.moreV}}"></path></svg></button>
+      </div>
+    </header>
+    <div style="display: grid; grid-template-columns: repeat({{pd.statCols}}, minmax(0, 1fr)); gap: var(--size-8)">
+      <sc-for list="{{pd.stats}}" as="s" hint-placeholder-count="6"><div style="background: var(--bg-surface); border-radius: var(--radius-control-md); padding: var(--size-10) var(--size-12); display: flex; flex-direction: column; gap: var(--size-2); min-width: 0"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); font-weight: 700; color: var(--text-secondary)">{{s.label}}</span><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.value}}</span></div></sc-for>
+    </div>
+    <sc-if value="{{pd.canAi}}" hint-placeholder-val="{{ true }}">
+      <section aria-label="Ask about this patient" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10); box-shadow: inset 0 0 0 var(--size-1) var(--alpha-teal-25)">
+        <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg></span><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Ask about this patient</h2><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{pd.cpCount}}</span></div>
+        <sc-for list="{{pd.cpMsgs}}" as="m" hint-placeholder-count="0"><div style="align-self: {{m.align}}; max-width: 85%; padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: {{m.bg}}; font-size: var(--font-size-14); line-height: var(--line-height-20); white-space: pre-line">{{m.text}}</div></sc-for>
+        <sc-if value="{{pd.cpBusy}}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size: var(--font-size-12); color: var(--text-secondary)">Thinking…</span></sc-if>
+        <sc-if value="{{pd.cpCapped}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-8); align-items: center; font-size: var(--font-size-12); color: var(--text-secondary)"><span>Limit reached for this patient.</span><button class="pt-b sh-link" onClick="{{pd.cpOpenIntel}}" style="font: 700 var(--font-size-14)/var(--size-18) var(--font-sans)">Continue in Shifa Intelligence</button></div></sc-if>
+        <sc-if value="{{pd.cpOpen}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--size-8)"><input class="sh-input" value="{{pd.cpQ}}" onChange="{{pd.cpOnQ}}" placeholder="e.g. Is it safe to use articaine?" aria-label="Ask about this patient" style="flex: 1 1 auto; min-width: 0"><button aria-disabled="{{pd.cpOffStr}}" class="pt-b sh-icon-btn no-shadow" onClick="{{pd.cpAsk}}" aria-label="Ask" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.send}}"></path></svg></button></div>
+          <div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{pd.cpSugs}}" as="g" hint-placeholder-count="2"><button class="pt-b sh-action sh-action--secondary" onClick="{{g.go}}">{{g.label}}</button></sc-for></div>
+        </sc-if>
+      </section>
+    </sc-if>
+    <div class="dr-underline dr-underline--fade" role="tablist" aria-label="Patient record" >
+      <sc-for list="{{pd.tabs}}" as="t" hint-placeholder-count="6"><button role="tab" class="pt-b" aria-selected="{{t.selStr}}" onClick="{{t.pick}}" >{{t.label}}</button></sc-for>
+    </div>
+
+    <!-- Overview -->
+    <sc-if value="{{pd.tOverview}}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat({{pd.ovCols}}, minmax(0, 1fr)); gap: var(--size-14); align-items: start">
+        <div style="display: flex; flex-direction: column; gap: var(--size-14); min-width: 0">
+          <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-8)">
+            <h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Clinical summary</h2>
+            <sc-for list="{{pd.summary}}" as="r" hint-placeholder-count="4"><div style="display: flex; gap: var(--size-12); padding: var(--size-6) 0; border-bottom: var(--size-1) solid var(--grey-100); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span style="flex: 0 0 var(--size-120); color: var(--text-secondary); font-weight: 600">{{r.label}}</span><span style="flex: 1 1 auto; font-weight: 700; color: {{r.ink}}">{{r.value}}</span></div></sc-for>
+          </section>
+          <sc-if value="{{pd.hasTimeline}}" hint-placeholder-val="{{ false }}">
+            <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-8)">
+              <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.activity}}"></path></svg></span><h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Clinical timeline</h2></div>
+              <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Accepted visit facts, step by step. Sourced from what was spoken.</span>
+              <sc-for list="{{pd.timeline}}" as="f" hint-placeholder-count="3"><div style="display: flex; gap: var(--size-10)"><span aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; width: var(--size-10)"><span style="width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: var(--interactive-primary); margin-top: var(--size-4)"></span><span style="flex: 1 1 auto; width: var(--size-2); background: var(--bg-disabled)"></span></span><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2); padding-bottom: var(--size-8)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 600">{{f.text}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{f.when}}</span></span></div></sc-for>
+            </section>
+          </sc-if>
+          <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-6)">
+            <h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Recent activity</h2>
+            <sc-if value="{{pd.noActivity}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); color: var(--text-secondary)">No recent activity. Visits, documents and forms will appear here.</p></sc-if>
+            <sc-for list="{{pd.recent}}" as="a" hint-placeholder-count="4"><button class="pt-b pt-row sh-press sh-press--row" onClick="{{a.open}}" style="padding: var(--size-6); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-control-md); background: {{a.tint}}; color: {{a.ink}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{a.d}}"></path></svg></span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{a.title}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{a.sub}}</span></span><span style="font-size: var(--font-size-12); color: var(--text-secondary); white-space: nowrap">{{a.when}}</span></button></sc-for>
+            <sc-if value="{{pd.hasMoreActivity}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-link" onClick="{{pd.toActivity}}" style="align-self: flex-start; font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">View full history</button></sc-if>
+          </section>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: var(--size-14); min-width: 0">
+          <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+            <h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Quick Actions</h2>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-8)"><sc-for list="{{pd.quick}}" as="q" hint-placeholder-count="4"><button class="pt-b sh-press sh-press--tint" onClick="{{q.go}}" style="min-height: var(--size-64); padding: var(--size-10); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--size-6); font: 700 var(--font-size-14)/var(--size-16) var(--font-sans); color: var(--text-primary)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{q.d}}"></path></svg></span>{{q.label}}</button></sc-for></div>
+          </section>
+          <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+            <h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Patient App Access</h2>
+            <sc-if value="{{pd.hasPortal}}" hint-placeholder-val="{{ true }}"><span style="display: flex; align-items: flex-start; gap: var(--size-8); min-width: 0"><span style="display: inline-flex; flex: none; margin-top: var(--size-2); color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.checkCircle}}"></path></svg></span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 700">Account active</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{pd.username}}</span></span></span></sc-if>
+            <sc-if value="{{pd.noPortal}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-14); color: var(--text-secondary)">No account yet</span><button class="pt-b sh-btn sh-btn--primary" onClick="{{pd.createAccount}}" aria-busy="{{pd.accBusyStr}}" ><sc-if value="{{pd.accBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Create Patient Account</button></sc-if>
+          </section>
+          <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+            <h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">SMS appointment reminders</h2>
+            <span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{pd.smsDesc}}</span>
+            <sc-if value="{{pd.smsNoPhone}}" hint-placeholder-val="{{ false }}"><span style="padding: var(--size-8) var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); font-size: var(--font-size-12); font-weight: 600">Add a phone number to send SMS reminders.</span></sc-if>
+            <button class="pt-b sh-press" role="switch" aria-checked="{{pd.smsOnStr}}" onClick="{{pd.smsToggle}}" style="padding: 0; display: flex; align-items: center; gap: var(--size-12); font: 700 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-primary); opacity: {{pd.smsOp}}"><span class="sh-switch" aria-hidden="true"></span>Send SMS reminders</button>
+            <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Reminder time<select class="sh-select" value="{{pd.smsTiming}}" onChange="{{pd.smsOnTiming}}" aria-label="Reminder time" style="opacity: {{pd.smsOp2}}"><option value="24">24 hours before appointment</option><option value="1">1 hour before appointment</option></select></label>
+            <button class="pt-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{pd.smsTest}}" aria-busy="{{pd.smsBusyStr}}" ><sc-if value="{{pd.smsBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Send test SMS now</button>
+          </section>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Medical info -->
+    <sc-if value="{{pd.tMedical}}" hint-placeholder-val="{{ false }}">
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-12); max-width: var(--layout-form-wide)">
+        <div style="display: flex; align-items: center; gap: var(--size-8)"><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">General Information</h2><button class="pt-b sh-action sh-action--secondary" onClick="{{md.editDetails}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.edit}}"></path></svg>Edit details</button></div>
+        <sc-if value="{{md.saving}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: var(--bg-success-subtle); overflow: hidden"><div style="width: 30%; height: var(--size-3); background: var(--interactive-primary); animation: pt-bar 1s linear infinite"></div></div></sc-if>
+        <sc-for list="{{md.rows}}" as="r" hint-placeholder-count="4"><div style="display: flex; gap: var(--size-12); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span style="flex: 0 0 var(--size-112); color: var(--text-secondary); font-weight: 600">{{r.label}}</span><span style="flex: 1 1 auto; font-weight: 700; min-width: 0; overflow-wrap: anywhere">{{r.value}}</span></div></sc-for>
+        <div style="display: flex; flex-direction: column; gap: var(--size-8)">
+          <span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Phone numbers</span>
+          <sc-for list="{{md.phones}}" as="ph" hint-placeholder-count="1"><div style="display: flex; gap: var(--size-8)"><input class="sh-input" value="{{ph.v}}" onChange="{{ph.on}}" inputmode="tel" aria-label="{{ph.aria}}" placeholder="+998 __ ___ __ __" style="flex: 1 1 auto; min-width: 0; border-color: {{ph.border}}"><button class="pt-b sh-press sh-press--tile" onClick="{{ph.remove}}" aria-label="Remove phone number" style="flex: none; width: var(--size-touch); height: var(--size-touch); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.minus}}"></path></svg></button></div></sc-for>
+          <sc-if value="{{md.phoneErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Enter a valid phone number</span></sc-if>
+          <div style="display: flex; gap: var(--size-8); flex-wrap: wrap"><button class="pt-b sh-press" onClick="{{md.addPhone}}" style="height: var(--size-36); padding: 0 var(--size-10); color: var(--text-primary); font: 700 var(--font-size-14)/var(--size-16) var(--font-sans); display: inline-flex; align-items: center; gap: var(--size-6)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add phone number</button><sc-if value="{{md.phonesDirty}}" hint-placeholder-val="{{ false }}"><button class="pt-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{md.savePhones}}" >Save</button></sc-if></div>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Chronic Disease<select class="sh-select" value="{{md.chronic}}" onChange="{{md.onChronic}}" aria-label="Chronic Disease"><sc-for list="{{md.chronicOpts}}" as="o" hint-placeholder-count="3"><option value="{{o}}">{{o}}</option></sc-for></select></label>
+        <sc-if value="{{md.chronicNote}}" hint-placeholder-val="{{ false }}"><span style="margin-top: calc(-1 * var(--size-6)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">A warning will be shown when opening this patient.</span></sc-if>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-10)">
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Gender<select class="sh-select" value="{{md.gender}}" onChange="{{md.onGender}}" aria-label="Gender"><option value="">—</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Blood group<select class="sh-select" value="{{md.blood}}" onChange="{{md.onBlood}}" aria-label="Blood group"><sc-for list="{{bloodOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select></label>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Allergies<input class="sh-input" value="{{md.allergies}}" onChange="{{md.onAllergies}}" placeholder="No known allergies" aria-label="Allergies"></label>
+        <sc-if value="{{md.allergyDirty}}" hint-placeholder-val="{{ false }}"><button class="pt-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{md.saveAllergies}}" style="align-self: flex-start">Save allergies</button></sc-if>
+      </section>
+    </sc-if>
+
+    <!-- Appointments -->
+    <sc-if value="{{pd.tAppts}}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: var(--size-10)">
+        <div style="display: flex; align-items: center; gap: var(--size-10)"><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Appointment history</h2><button class="pt-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{pd.book}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>New appointment</button></div>
+        <sc-if value="{{pd.noAppts}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-24); text-align: center; font-size: var(--font-size-14); color: var(--text-secondary)">No appointments with you yet.</div></sc-if>
+        <sc-for list="{{pd.appts}}" as="a" hint-placeholder-count="3">
+          <button class="pt-b pt-row sh-press sh-press--card" onClick="{{a.open}}" style="padding: var(--size-12) var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+            <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-control-md); background: var(--bg-canvas); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{a.d}}"></path></svg></span>
+            <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{a.when}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{a.sub}}</span></span>
+            <span class="{{a.st.cls}}" style="flex: none">{{a.st.label}}</span>
+          </button>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <!-- Documents -->
+    <sc-if value="{{pd.tDocs}}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: var(--size-10)">
+        <div style="display: flex; align-items: center; gap: var(--size-8)"><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Document History</h2>
+          <button class="pt-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{dc.refresh}}" aria-label="Refresh" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"></path></svg></button>
+          <button class="pt-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{dc.openMenu}}" aria-label="Document actions" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.moreV}}"></path></svg></button>
+          <button class="pt-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{dc.upload}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.upload}}"></path></svg>Upload</button>
+        </div>
+        <sc-if value="{{dc.refreshing}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: var(--bg-success-subtle); overflow: hidden"><div style="width: 30%; height: var(--size-3); background: var(--interactive-primary); animation: pt-bar 1s linear infinite"></div></div></sc-if>
+        <sc-if value="{{dc.hasUpload}}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-12) var(--size-14); display: flex; flex-direction: column; gap: var(--size-8); box-shadow: inset 0 0 0 var(--size-1) var(--border-brand)">
+            <div style="display: flex; align-items: center; gap: var(--size-10)"><span style="flex: 1 1 auto; font-size: var(--font-size-14); font-weight: 700; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{dc.upTitle}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{dc.upPct}}</span><button class="pt-b sh-action sh-action--secondary" onClick="{{dc.cancelUpload}}">Cancel</button></div>
+            <div aria-hidden="true" style="height: var(--size-6); border-radius: var(--radius-sm); background: var(--bg-disabled); overflow: hidden"><div style="height: var(--size-6); width: {{dc.upPct}}; background: var(--interactive-primary)"></div></div>
+          </div>
+        </sc-if>
+        <label style="position: relative; display: block"><span style="position: absolute; left: var(--size-12); top: var(--size-12); color: var(--text-secondary); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span><input class="sh-input" value="{{dc.q}}" onChange="{{dc.onQ}}" placeholder="Search" aria-label="Search documents" style="width: 100%; padding: 0 var(--size-12) 0 var(--size-40)"></label>
+        <sc-if value="{{dc.empty}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-8); text-align: center"><h3 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">No documents available</h3><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">Uploaded files and scans will appear here so you can open them during the visit.</p><button class="pt-b sh-btn sh-btn--primary" onClick="{{dc.upload}}" >Upload Document</button></div></sc-if>
+        <sc-if value="{{dc.noMatch}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-16); text-align: center; font-size: var(--font-size-14); color: var(--text-secondary)">{{dc.noMatchText}}</p></sc-if>
+        <sc-for list="{{dc.list}}" as="d" hint-placeholder-count="3">
+          <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-12) var(--size-14); display: flex; gap: var(--size-10); align-items: center; box-shadow: {{d.ring}}">
+            <button class="pt-b sh-press" onClick="{{d.tap}}" style="flex: 1 1 auto; min-width: 0; padding: 0; color: var(--text-primary); display: flex; flex-direction: column; gap: var(--size-6)">
+              <span style="display: flex; align-items: center; gap: var(--size-6)"><sc-if value="{{d.isForm}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-secondary)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clipboard}}"></path></svg></span></sc-if><sc-if value="{{d.locked}}" hint-placeholder-val="{{ false }}"><span role="img" aria-label="Locked" style="display: inline-flex; color: var(--text-secondary)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.lock}}"></path></svg></span></sc-if><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{d.title}}</span></span>
+              <span style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-6)"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{d.date}}</span><span style="box-sizing: border-box; height: var(--size-22); display: inline-flex; align-items: center; padding: 0 var(--size-8); border-radius: var(--radius-full); background: {{d.chipBg}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap">{{d.cat}}</span><sc-if value="{{d.shared}}" hint-placeholder-val="{{ false }}"><span title="Visible to all doctors of this patient" style="display: inline-flex; align-items: center; gap: var(--size-4); font-size: var(--font-size-12); color: var(--text-secondary)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.users}}"></path></svg>Shared with team</span></sc-if><sc-if value="{{d.requested}}" hint-placeholder-val="{{ false }}"><span style="box-sizing: border-box; height: var(--size-22); display: inline-flex; align-items: center; padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-warning-subtle); font-size: var(--font-size-12); font-weight: 700">Requested</span></sc-if></span>
+              <sc-if value="{{d.locked}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Uploaded by {{d.by}}</span></sc-if>
+            </button>
+            <sc-if value="{{d.canEdit}}" hint-placeholder-val="{{ false }}"><button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{d.edit}}" aria-label="Edit form" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.edit}}"></path></svg></button></sc-if>
+            <sc-if value="{{d.locked}}" hint-placeholder-val="{{ false }}"><button class="pt-b sh-action sh-action--secondary" onClick="{{d.request}}" style="flex: none">{{d.reqLabel}}</button></sc-if>
+            <sc-if value="{{d.open}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{d.view}}" aria-label="Open Document" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.eye}}"></path></svg></button></sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <!-- Forms -->
+    <sc-if value="{{pd.tForms}}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: var(--size-10)">
+        <div style="display: flex; align-items: center; gap: var(--size-10)"><div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><h2 style="margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700">Forms</h2><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{fm.count}}</span></div><button class="pt-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{fm.create}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Create Form</button></div>
+        <sc-if value="{{fm.empty}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28); display: flex; flex-direction: column; align-items: center; gap: var(--size-8)"><span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: var(--bg-canvas); display: inline-flex; align-items: center; justify-content: center; color: var(--text-secondary)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.clipboard}}"></path></svg></span><span style="font-size: var(--font-size-16); font-weight: 700">No forms yet</span></div></sc-if>
+        <sc-for list="{{fm.rows}}" as="f" hint-placeholder-count="2"><button class="pt-b pt-row sh-press sh-press--card" onClick="{{f.open}}" style="padding: var(--size-12) var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--bg-warning-subtle); display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.clipboard}}"></path></svg></span><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); font-weight: 700">Form 025-2</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{f.date}}</span></span><span style="display: flex; flex-wrap: wrap; gap: var(--size-4); justify-content: flex-end"><sc-for list="{{f.badges}}" as="b" hint-placeholder-count="1"><span style="box-sizing: border-box; height: var(--size-22); display: inline-flex; align-items: center; padding: 0 var(--size-8); border-radius: var(--radius-full); background: {{b.bg}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap">{{b.label}}</span></sc-for></span><span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span></button></sc-for>
+      </section>
+    </sc-if>
+
+    <!-- Activity -->
+    <sc-if value="{{pd.tActivity}}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: var(--size-10)">
+        <div role="group" aria-label="Filter activity" style="display: flex; gap: var(--size-6); overflow-x: auto"><sc-for list="{{av.chips}}" as="c" hint-placeholder-count="5"><button class="pt-b sh-chip" onClick="{{c.pick}}" aria-pressed="{{c.selStr}}" style="flex: none">{{c.label}}</button></sc-for></div>
+        <sc-if value="{{av.empty}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-24); text-align: center; font-size: var(--font-size-14); color: var(--text-secondary)">Visits, documents and forms will appear here.</div></sc-if>
+        <sc-for list="{{av.groups}}" as="g" hint-placeholder-count="2">
+          <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary); letter-spacing: var(--letter-spacing-caps)">{{g.label}}</span>
+            <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-6)"><sc-for list="{{g.items}}" as="a" hint-placeholder-count="3"><button class="pt-b pt-row sh-press sh-press--row" onClick="{{a.open}}" style="width: 100%; padding: var(--size-8); display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-control-md); background: {{a.tint}}; color: {{a.ink}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{a.d}}"></path></svg></span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700">{{a.title}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{a.sub}}</span></span><span style="font-size: var(--font-size-12); color: var(--text-secondary); white-space: nowrap">{{a.when}}</span></button></sc-for></div>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+  </div>
+</sc-if>
+
+<!-- ======================= DOCUMENT VIEWER ======================= -->
+<sc-if value="{{isViewer}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column; background: var(--bg-media)">
+    <header style="position: sticky; top: 0; z-index: 4; background: var(--bg-surface); padding: {{barPad}}; display: flex; align-items: center; gap: var(--size-8); box-shadow: 0 var(--size-1) 0 var(--border-default)">
+      <button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <h1 style="flex: 1 1 auto; min-width: 0; margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-22); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{vw.title}}</h1>
+      <sc-if value="{{vw.ok}}" hint-placeholder-val="{{ true }}"><sc-for list="{{vw.actions}}" as="x" hint-placeholder-count="3"><button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{x.go}}" aria-label="{{x.label}}" title="{{x.label}}" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{x.d}}"></path></svg></button></sc-for></sc-if>
+    </header>
+    <sc-if value="{{vw.loading}}" hint-placeholder-val="{{ false }}"><div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: var(--size-12); padding: var(--size-24) var(--size-16)"><span class="dr-shimmer" style="width: 100%; max-width: var(--layout-form-narrow); aspect-ratio: 1 / 1.414; opacity: .25"></span><span style="color: var(--text-inverse); font-size: var(--font-size-12); opacity: .8">Downloading…</span></div></sc-if>
+    <sc-if value="{{vw.err}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; padding: var(--size-24)"><div style="max-width: var(--layout-dialog-md); background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-10); text-align: center"><span aria-hidden="true" style="width: var(--size-52); height: var(--size-52); border-radius: var(--radius-full); background: var(--bg-canvas); display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{vw.errIcon}}"></path></svg></span><h2 style="margin: 0; font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">{{vw.errTitle}}</h2><button class="pt-b sh-btn sh-btn--primary" onClick="{{vw.errGo}}" >{{vw.errLabel}}</button></div></div>
+    </sc-if>
+    <sc-if value="{{vw.ok}}" hint-placeholder-val="{{ true }}">
+      <div style="flex: 1 1 auto; overflow: auto; padding: var(--size-20) var(--size-12) var(--size-90); display: flex; flex-direction: column; align-items: center; gap: var(--size-14)">
+        <sc-if value="{{vw.isImage}}" hint-placeholder-val="{{ false }}"><div role="img" aria-label="{{vw.title}}" style="width: {{vw.imgW}}; max-width: none; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); background: var(--bg-media); display: flex; align-items: flex-end; justify-content: center; color: var(--text-inverse); font-size: var(--font-size-12); padding-bottom: var(--size-8); box-sizing: border-box">[Image preview: {{vw.title}}]</div></sc-if>
+        <sc-if value="{{vw.isPdf}}" hint-placeholder-val="{{ true }}"><sc-for list="{{vw.pages}}" as="p" hint-placeholder-count="2"><article aria-label="{{p.aria}}" style="width: {{vw.imgW}}; aspect-ratio: 1 / 1.414; background: var(--bg-surface); border-radius: var(--radius-xs); padding: var(--size-28); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-10); color: var(--text-primary); font-size: var(--font-size-12); line-height: var(--line-height-18)"><b style="font-size: var(--font-size-14)">{{p.head}}</b><span style="color: var(--text-secondary)">{{p.meta}}</span><span aria-hidden="true" style="height: var(--size-8); border-radius: var(--radius-xs); background: var(--bg-disabled); width: 92%"></span><span aria-hidden="true" style="height: var(--size-8); border-radius: var(--radius-xs); background: var(--bg-disabled); width: 86%"></span><span aria-hidden="true" style="height: var(--size-8); border-radius: var(--radius-xs); background: var(--bg-disabled); width: 74%"></span><span aria-hidden="true" style="height: var(--size-8); border-radius: var(--radius-xs); background: var(--bg-disabled); width: 88%"></span><span aria-hidden="true" style="height: var(--size-8); border-radius: var(--radius-xs); background: var(--bg-disabled); width: 60%"></span></article></sc-for></sc-if>
+      </div>
+      <div style="position: sticky; bottom: var(--size-16); align-self: center; display: flex; align-items: center; gap: var(--size-6); padding: var(--size-6); border-radius: var(--radius-full); background: var(--bg-overlay); color: var(--text-inverse); margin-top: calc(-1 * var(--size-76)); margin-bottom: var(--size-16)">
+        <button class="pt-b sh-icon-btn sh-icon-btn--on-dark sh-icon-btn--sm" onClick="{{vw.zoomOut}}" aria-label="Zoom out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.minus}}"></path></svg></button>
+        <span style="min-width: var(--size-56); text-align: center; font-size: var(--font-size-12); font-weight: 700">{{vw.zoomLabel}}</span>
+        <button class="pt-b sh-icon-btn sh-icon-btn--on-dark sh-icon-btn--sm" onClick="{{vw.zoomIn}}" aria-label="Zoom in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></button>
+        <sc-if value="{{vw.isPdf}}" hint-placeholder-val="{{ true }}"><span style="padding: 0 var(--size-10); font-size: var(--font-size-12); font-weight: 700">{{vw.pageLabel}}</span></sc-if>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<!-- ======================= FORM 025-2 EDITOR ======================= -->
+<sc-if value="{{isForm}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column">
+    <header style="position: sticky; top: 0; z-index: 4; background: var(--bg-surface); padding: {{barPad}}; display: flex; align-items: center; gap: var(--size-8); box-shadow: 0 var(--size-1) 0 var(--border-default)">
+      <button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{fe.back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+      <h1 style="flex: 1 1 auto; min-width: 0; margin: 0; font-size: var(--font-size-16); line-height: var(--line-height-22); font-weight: 700">Form 025-2</h1>
+      <button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{fe.openMenu}}" aria-label="Form actions" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.moreV}}"></path></svg></button>
+    </header>
+    <div style="padding: var(--size-16) {{sidePad}} var(--size-24); max-width: var(--layout-document); width: 100%; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-14)">
+      <div role="navigation" aria-label="Sections" style="display: flex; gap: var(--size-6); overflow-x: auto"><sc-for list="{{fe.chips}}" as="c" hint-placeholder-count="5"><span style="flex: none; height: var(--size-28); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-surface); font-size: var(--font-size-12); line-height: var(--line-height-28); font-weight: 700; white-space: nowrap">{{c}}</span></sc-for></div>
+      <section style="display: grid; grid-template-columns: repeat({{fe.headCols}}, minmax(0, 1fr)); gap: var(--size-8)"><sc-for list="{{fe.head}}" as="h" hint-placeholder-count="5"><div style="background: var(--bg-disabled); border-radius: var(--radius-control-md); padding: var(--size-8) var(--size-10); display: flex; flex-direction: column; gap: var(--size-2); min-width: 0"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{h.label}}</span><span style="font-size: var(--font-size-14); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{h.value}}</span></div></sc-for></section>
+
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+        <h2 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">General</h2>
+        <sc-for list="{{fe.general}}" as="f" hint-placeholder-count="3"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<textarea class="sh-input sh-input--area" value="{{f.v}}" onChange="{{f.on}}" rows="{{f.rows}}" aria-label="{{f.label}}" style="border-color: {{f.border}}"></textarea></label></sc-for>
+        <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+          <span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">ICD-10</span>
+          <sc-if value="{{fe.hasIcd}}" hint-placeholder-val="{{ false }}"><span style="align-self: flex-start; box-sizing: border-box; min-height: var(--size-32); display: inline-flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-6) 0 var(--size-12); border-radius: var(--radius-full); background: var(--bg-success-subtle); box-shadow: inset 0 0 0 var(--size-1) var(--border-brand); font-size: var(--font-size-14); font-weight: 700">{{fe.icdLabel}}<button class="pt-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{fe.clearIcd}}" aria-label="Remove code" ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></span></sc-if>
+          <label style="position: relative; display: block"><span style="position: absolute; left: var(--size-12); top: var(--size-12); color: var(--text-secondary); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span><input class="sh-input" value="{{fe.icdQ}}" onChange="{{fe.onIcdQ}}" placeholder="Search ICD-10 code or title" aria-label="ICD-10" style="width: 100%; padding: 0 var(--size-12) 0 var(--size-40)"><sc-if value="{{fe.icdBusy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true" style="position: absolute; right: var(--size-12); top: var(--size-12)"></span></sc-if></label>
+          <sc-if value="{{fe.icdPanel}}" hint-placeholder-val="{{ false }}"><div role="listbox" aria-label="ICD-10 results" style="max-height: var(--size-240); overflow-y: auto; border-radius: var(--radius-control-md); box-shadow: var(--shadow-default); background: var(--bg-surface)"><sc-if value="{{fe.icdNone}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-12); font-size: var(--font-size-12); color: var(--text-secondary)">{{fe.icdNoneText}}</p></sc-if><sc-for list="{{fe.icdRes}}" as="r" hint-placeholder-count="3"><button role="option" class="pt-b pt-row sh-option" onClick="{{r.pick}}" style="display: flex; flex-direction: column; gap: var(--size-2); align-items: flex-start"><span style="font-size: var(--font-size-14); font-weight: 700">{{r.code}} — {{r.title}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{r.group}}</span></button></sc-for></div></sc-if>
+        </div>
+      </section>
+
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10); box-shadow: inset 0 0 0 var(--size-1) var(--alpha-teal-25)">
+        <div style="display: flex; align-items: center; gap: var(--size-8)"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sparkles}}"></path></svg></span><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); font-weight: 700">Clinical engine</h2><sc-if value="{{fe.engineLocked}}" hint-placeholder-val="{{ false }}"><span style="height: var(--size-22); padding: 0 var(--size-8); border-radius: var(--radius-full); background: var(--bg-canvas); font-size: var(--font-size-12); line-height: var(--line-height-22); font-weight: 700">PRO</span></sc-if></div>
+        <sc-if value="{{fe.engineLocked}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">Fills complaints, check-up and treatment from a disease catalogue. Available on the Pro plan.</p></sc-if>
+        <sc-if value="{{fe.engineOpen}}" hint-placeholder-val="{{ true }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Pick a disease to prefill the form. You can edit everything afterwards.</span><div style="display: flex; flex-wrap: wrap; gap: var(--size-6)"><sc-for list="{{fe.engine}}" as="e" hint-placeholder-count="4"><button class="pt-b sh-chip" onClick="{{e.pick}}" aria-pressed="{{e.selStr}}" >{{e.label}}</button></sc-for></div><button class="pt-b sh-btn sh-btn--primary sh-btn--compact" onClick="{{fe.applyEngine}}" aria-disabled="{{fe.engineOffStr}}" style="align-self: flex-start">Apply</button></sc-if>
+      </section>
+
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+        <h2 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">Anamnesis</h2>
+        <sc-for list="{{fe.anam}}" as="f" hint-placeholder-count="4"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<textarea class="sh-input sh-input--area" value="{{f.v}}" onChange="{{f.on}}" rows="{{f.rows}}" aria-label="{{f.label}}" style="border-color: {{f.border}}"></textarea></label></sc-for>
+        <sc-if value="{{fe.showErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Add at least a diagnosis or complaints before saving</span></sc-if>
+      </section>
+
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-8)"><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); font-weight: 700">Dental Chart</h2><div class="dr-tabs" role="radiogroup" aria-label="Dentition"><sc-for list="{{fe.dentition}}" as="d" hint-placeholder-count="2"><button class="pt-b dr-tab" role="radio" aria-checked="{{d.selStr}}" onClick="{{d.pick}}" style="white-space: nowrap">{{d.label}}</button></sc-for></div></div>
+        <span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Codes: O missing · R root · C caries · P pulpitis · Pt periodontitis · П filling · A paradontosis · I, II, III mobility · K crown · И implant</span>
+        <sc-for list="{{fe.jaws}}" as="j" hint-placeholder-count="2">
+          <div style="display: flex; flex-direction: column; gap: var(--size-6)">
+            <span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{j.label}}</span>
+            <div style="overflow-x: auto; padding-bottom: var(--size-4)">
+              <div style="display: flex; flex-direction: column; gap: var(--size-4); width: max-content">
+                <sc-for list="{{j.history}}" as="h" hint-placeholder-count="1"><div style="display: flex; align-items: center; gap: var(--size-4)"><span style="width: var(--size-96); font-size: var(--font-size-10); line-height: var(--line-height-12); color: var(--text-secondary)">{{h.caption}}</span><sc-for list="{{h.cells}}" as="c" hint-placeholder-count="16"><span style="width: var(--size-36); height: var(--size-28); border-radius: var(--radius-sm); background: var(--bg-canvas); font-size: var(--font-size-12); line-height: var(--line-height-28); font-weight: 700; text-align: center; color: var(--text-secondary)">{{c}}</span></sc-for></div></sc-for>
+                <div style="display: flex; align-items: center; gap: var(--size-4)"><span style="width: var(--size-96); font-size: var(--font-size-10); color: var(--text-secondary)">Tooth</span><sc-for list="{{j.teeth}}" as="t" hint-placeholder-count="16"><span style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-sm); background: {{t.bg}}; box-shadow: inset 0 0 0 var(--size-1) {{t.border}}; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: var(--font-size-12); font-weight: 700"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.tooth}}"></path></svg>{{t.n}}</span></sc-for></div>
+                <sc-for list="{{j.rows}}" as="r" hint-placeholder-count="1"><div style="display: flex; align-items: center; gap: var(--size-4)"><span style="width: var(--size-96); font-size: var(--font-size-10); color: var(--text-secondary)">{{r.caption}}</span><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="16"><select class="{{c.cls}}" value="{{c.v}}" onChange="{{c.on}}" aria-label="{{c.aria}}"><sc-for list="{{codes}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select></sc-for></div></sc-for>
+              </div>
+            </div>
+            <div style="display: flex; gap: var(--size-8)"><button class="pt-b sh-action sh-action--secondary" onClick="{{j.addRow}}">Add row</button><sc-if value="{{j.canRemove}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-action sh-action--secondary" onClick="{{j.removeRow}}">Remove row</button></sc-if></div>
+          </div>
+        </sc-for>
+      </section>
+
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+        <h2 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">Examination and treatment</h2>
+        <sc-for list="{{fe.exam}}" as="f" hint-placeholder-count="5"><label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{f.label}}<textarea class="sh-input sh-input--area" value="{{f.v}}" onChange="{{f.on}}" rows="{{f.rows}}" aria-label="{{f.label}}"></textarea></label></sc-for>
+        <div style="display: flex; flex-direction: column; gap: var(--size-4); padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-disabled)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Doctor</span><span style="font-size: var(--font-size-14); font-weight: 700">{{fe.doctor}}</span></div>
+      </section>
+
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+        <div style="display: flex; align-items: center; gap: var(--size-8)"><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-16); font-weight: 700">Return visits</h2><button class="pt-b sh-action sh-action--tint" onClick="{{fe.addReturn}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Add return visit</button></div>
+        <sc-if value="{{fe.noReturns}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; font-size: var(--font-size-12); color: var(--text-secondary)">No return visits added yet</p></sc-if>
+        <sc-for list="{{fe.returns}}" as="r" hint-placeholder-count="1"><div style="display: flex; align-items: center; gap: var(--size-8); padding: var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-canvas)"><span style="flex: 0 0 auto; font-size: var(--font-size-14); font-weight: 700">{{r.date}}</span><span style="flex: 1 1 auto; min-width: 0; font-size: var(--font-size-12); color: {{r.ink}}">{{r.text}}</span><button class="pt-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{r.edit}}" aria-label="Edit row" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.edit}}"></path></svg></button><button class="pt-b sh-icon-btn sh-icon-btn--surface sh-icon-btn--sm no-shadow" onClick="{{r.remove}}" aria-label="Remove row" ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.trash}}"></path></svg></button></div></sc-for>
+      </section>
+
+      <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-14); display: flex; flex-direction: column; gap: var(--size-10)">
+        <h2 style="margin: 0; font-size: var(--font-size-16); font-weight: 700">Patient signature</h2>
+        <span role="status" style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 700; color: {{fe.sigInk}}">{{fe.sigText}}</span>
+        <sc-if value="{{fe.sigHint}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">The form is saved first, then the request goes to the patient app.</span></sc-if>
+        <sc-if value="{{fe.canReqSig}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-btn sh-btn--secondary sh-btn--compact" onClick="{{fe.reqSig}}" style="align-self: flex-start">Request patient signature</button></sc-if>
+      </section>
+    </div>
+    <div class="dr-actionbar"><div class="dr-actionbar__inner">
+        <button class="pt-b sh-btn sh-btn--secondary" onClick="{{fe.back}}">Cancel</button>
+        <button class="pt-b sh-btn sh-btn--primary" onClick="{{fe.save}}" aria-busy="{{fe.busyStr}}"><sc-if value="{{fe.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Save Form</button>
+      </div></div>
+  </div>
+</sc-if>
+
+<!-- ======================= FIND THERAPY PARTNER ======================= -->
+<sc-if value="{{isFind}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column">
+  <div style="flex: 1 1 auto; padding: {{pagePad}}; max-width: var(--layout-form-wide); width: 100%; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12); padding-bottom: var(--size-24)">
+    <header style="display: flex; align-items: center; gap: var(--size-10)"><button class="pt-b sh-icon-btn sh-icon-btn--surface" onClick="{{pf.back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Find therapy partner</h1></header>
+    <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{pf.context}}</p>
+    <div style="display: flex; flex-wrap: wrap; gap: var(--size-8)">
+      <input class="sh-input" value="{{pf.q}}" onChange="{{pf.onQ}}" placeholder="Doctor name" aria-label="Search doctor name" style="flex: 1 1 var(--basis-200)">
+      <select class="sh-select" value="{{pf.spec}}" onChange="{{pf.onSpec}}" aria-label="Specialty" style="flex: 1 1 var(--basis-200)"><sc-for list="{{pf.specs}}" as="s" hint-placeholder-count="3"><option value="{{s.v}}">{{s.label}}</option></sc-for></select>
+    </div>
+    <sc-if value="{{pf.searching}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: var(--bg-success-subtle); overflow: hidden"><div style="width: 30%; height: var(--size-3); background: var(--interactive-primary); animation: pt-bar 1s linear infinite"></div></div></sc-if>
+    <sc-if value="{{pf.offline}}" hint-placeholder-val="{{ false }}"><p role="alert" style="margin: 0; padding: var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); font-size: var(--font-size-14); font-weight: 600">You’re offline. Search needs a connection.</p></sc-if>
+    <sc-if value="{{pf.none}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-24); text-align: center; display: flex; flex-direction: column; gap: var(--size-4)"><b>No doctors found</b><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Try another name or specialty</span></div></sc-if>
+    <div style="display: flex; flex-direction: column; gap: var(--size-6)"><sc-for list="{{pf.results}}" as="d" hint-placeholder-count="4"><button class="pt-b pt-row sh-press sh-press--card" onClick="{{d.pick}}" aria-pressed="{{d.selStr}}" style="padding: var(--size-12); display: flex; align-items: center; gap: var(--size-12)"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: var(--bg-info-subtle); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{d.ini}}</span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); font-weight: 700">{{d.name}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{d.sub}}</span><sc-if value="{{d.already}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-brand-strong)">Already a partner for this patient</span></sc-if></span><span style="display: inline-flex; color: {{d.checkInk}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{d.icon}}"></path></svg></span></button></sc-for></div>
+  </div>
+  <sc-if value="{{pf.hasSel}}" hint-placeholder-val="{{ false }}">
+    <div class="dr-actionbar"><div class="dr-actionbar__inner"><span style="font-size: var(--font-size-14); font-weight: 700">Invite {{pf.selName}}</span>
+        <input class="sh-input" value="{{pf.reason}}" onChange="{{pf.onReason}}" placeholder="Specialty requested" aria-label="Specialty requested">
+        <textarea class="sh-input sh-input--area" value="{{pf.msg}}" onChange="{{pf.onMsg}}" rows="2" placeholder="Message to partner (optional)" aria-label="Message to partner"></textarea>
+        <button class="pt-b sh-btn sh-btn--primary" onClick="{{pf.send}}" aria-busy="{{pf.busyStr}}" ><sc-if value="{{pf.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>Send invite</button></div></div>
+  </sc-if>
+  </div>
+</sc-if>
+
+<!-- ======================= PARTNERSHIPS LIST ======================= -->
+<sc-if value="{{isPartners}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; padding-bottom: {{bottomClear}}; max-width: var(--layout-form-wide); margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12)">
+    <header style="display: flex; align-items: center; gap: var(--size-10)"><button class="pt-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Care partnerships</h1></header>
+    <sc-if value="{{pl.filtered}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: var(--size-8); align-items: center; font-size: var(--font-size-12); color: var(--text-secondary)"><span>{{pl.filterLabel}}</span><button class="pt-b sh-link" onClick="{{pl.showAll}}" style="font: 700 var(--font-size-14)/var(--size-18) var(--font-sans)">Show all</button></div></sc-if>
+    <div role="group" aria-label="Filter partnerships" style="display: flex; gap: var(--size-6); overflow-x: auto"><sc-for list="{{pl.chips}}" as="c" hint-placeholder-count="5"><button class="pt-b sh-chip" onClick="{{c.pick}}" aria-pressed="{{c.selStr}}" style="flex: none">{{c.label}}</button></sc-for></div>
+    <sc-if value="{{pl.empty}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28) var(--size-20); display: flex; flex-direction: column; align-items: center; gap: var(--size-8); text-align: center"><b style="font-size: var(--font-size-16)">No care partnerships yet</b><span style="font-size: var(--font-size-14); color: var(--text-secondary)">Invite a partner doctor from a patient’s record to co-treat together.</span><sc-if value="{{pl.canFind}}" hint-placeholder-val="{{ false }}"><button class="pt-b sh-btn sh-btn--primary" onClick="{{pl.find}}" >Find therapy partner</button></sc-if></div></sc-if>
+    <sc-for list="{{pl.rows}}" as="r" hint-placeholder-count="2"><button class="pt-b pt-row sh-press sh-press--card" onClick="{{r.open}}" style="padding: var(--size-12) var(--size-14); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span aria-hidden="true" style="position: relative; width: var(--size-touch); height: var(--size-touch); border-radius: var(--radius-full); background: var(--bg-info-subtle); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{r.ini}}<sc-if value="{{r.needs}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 0; right: 0; width: var(--size-10); height: var(--size-10); border-radius: var(--radius-full); background: var(--interactive-destructive); box-shadow: 0 0 0 var(--size-2) var(--white)"></span></sc-if></span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-16); font-weight: 700">{{r.patient}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{r.with}}</span><span style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-6)"><span style="box-sizing: border-box; height: var(--size-22); display: inline-flex; align-items: center; padding: 0 var(--size-8); border-radius: var(--radius-full); background: {{r.chipBg}}; font-size: var(--font-size-12); font-weight: 700; white-space: nowrap">{{r.chip}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{r.when}}</span></span></span><span style="display: inline-flex; color: var(--text-secondary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></span></button></sc-for>
+  </div>
+</sc-if>
+
+<!-- ======================= PARTNERSHIP DETAIL ======================= -->
+<sc-if value="{{isPartner}}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100%; display: flex; flex-direction: column">
+  <div style="flex: 1 1 auto; padding: {{pagePad}}; max-width: var(--layout-form-wide); width: 100%; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--size-12); padding-bottom: var(--size-24)">
+    <header style="display: flex; align-items: center; gap: var(--size-10)"><button class="pt-b sh-icon-btn sh-icon-btn--surface" onClick="{{cp.back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button><h1 style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-26); font-weight: 700; letter-spacing: var(--letter-spacing-snug)">Partnership</h1></header>
+    <section style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-16); display: flex; flex-direction: column; gap: var(--size-12)">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-8)"><h2 style="margin: 0; flex: 1 1 auto; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700">{{cp.patient}}</h2><button class="pt-b sh-link" onClick="{{cp.openPatient}}" style="font: 700 var(--font-size-14)/var(--size-18) var(--font-sans)">Open patient</button></div>
+      <span style="align-self: flex-start; box-sizing: border-box; height: var(--size-24); display: inline-flex; align-items: center; padding: 0 var(--size-10); border-radius: var(--radius-full); background: {{cp.chipBg}}; font-size: var(--font-size-12); font-weight: 700">{{cp.chip}}</span>
+      <sc-for list="{{cp.people}}" as="d" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: var(--size-10)"><span aria-hidden="true" style="width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--bg-info-subtle); font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center">{{d.ini}}</span><span style="display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{d.role}}</span><span style="font-size: var(--font-size-14); font-weight: 700">{{d.name}}</span></span></div></sc-for>
+      <span style="font-size: var(--font-size-12); color: var(--text-secondary)">Specialty requested: {{cp.spec}}</span>
+      <sc-if value="{{cp.hasMsg}}" hint-placeholder-val="{{ false }}"><blockquote style="margin: 0; padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas); font-size: var(--font-size-14); line-height: var(--line-height-20)">“{{cp.msg}}”</blockquote></sc-if>
+      <sc-if value="{{cp.hasHint}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: 600">{{cp.hint}}</span></sc-if>
+      <sc-if value="{{cp.hasActions}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-8)"><sc-for list="{{cp.actions}}" as="a" hint-placeholder-count="2"><button class="pt-b {{a.cls}}" onClick="{{a.go}}">{{a.label}}</button></sc-for></div></sc-if>
+    </section>
+    <h2 style="margin: var(--size-4) 0 0; font-size: var(--font-size-16); font-weight: 700">Progress updates</h2>
+    <sc-if value="{{cp.noUpdates}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-20); text-align: center; display: flex; flex-direction: column; gap: var(--size-4)"><b>No progress updates yet</b><span style="font-size: var(--font-size-12); color: var(--text-secondary)">Share how the therapy is going; your partner sees it here.</span></div></sc-if>
+    <sc-for list="{{cp.updates}}" as="u" hint-placeholder-count="2"><div style="align-self: {{u.align}}; max-width: 85%; background: {{u.bg}}; border-radius: var(--radius-control-lg); padding: var(--size-10) var(--size-12); display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{u.by}} · {{u.when}}</span><span style="font-size: var(--font-size-14); line-height: var(--line-height-20)">{{u.text}}</span></div></sc-for>
+  </div>
+  <sc-if value="{{cp.canPost}}" hint-placeholder-val="{{ false }}">
+    <div class="dr-actionbar" style="padding: var(--size-10) {{sidePad}} {{footPadB}}"><div style="max-width: var(--layout-form-wide); margin: 0 auto; display: flex; gap: var(--size-8)"><input class="sh-input" value="{{cp.draft}}" onChange="{{cp.onDraft}}" placeholder="Share therapy progress…" aria-label="Share therapy progress" style="flex: 1 1 auto; min-width: 0"><button aria-disabled="{{cp.postOffStr}}" class="pt-b sh-icon-btn no-shadow" onClick="{{cp.post}}" aria-label="Send update" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.send}}"></path></svg></button></div></div>
+  </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{isGone}}" hint-placeholder-val="{{ false }}">
+  <div style="padding: {{pagePad}}; max-width: var(--layout-reading); margin: 0 auto; display: flex; flex-direction: column; gap: var(--size-16)">
+    <button class="pt-b sh-icon-btn sh-icon-btn--surface" onClick="{{back}}" aria-label="Back" style="align-self: flex-start"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button>
+    <div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-32) var(--size-20); text-align: center; display: flex; flex-direction: column; gap: var(--size-8)"><h1 style="margin: 0; font-size: var(--font-size-20); font-weight: 700">{{goneTitle}}</h1><p style="margin: 0; font-size: var(--font-size-14); color: var(--text-secondary)">It may have been removed or you no longer have access.</p></div>
+  </div>
+</sc-if>
+
+<!-- ======================= OVERLAYS ======================= -->
+<sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+    <button class="sh-scrim--fill" aria-label="Close" onClick="{{sheet.scrim}}"></button>
+    <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="pt-sh-t" data-pop="{{sheet.pop}}" style="--pop-top: {{sheet.popTop}}; --pop-left: {{sheet.popLeft}}; max-width: {{sheet.max}}; border-radius: {{dlgR}}; padding-bottom: {{sheetPadB}}">
+      <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: var(--size-36); height: var(--size-4); border-radius: var(--radius-full); background: var(--bg-disabled); margin: calc(-1 * var(--size-8)) auto 0"></span></sc-if>
+      <sc-if value="{{sheet.hasIcon}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="align-self: center; width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: {{sheet.iconBg}}; color: {{sheet.iconInk}}; display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{sheet.icon}}"></path></svg></span></sc-if>
+      <div style="display: flex; align-items: flex-start; gap: var(--size-8)"><div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-4); text-align: {{sheet.align}}"><h2 id="pt-sh-t" style="margin: 0; font-size: var(--font-size-20); line-height: var(--line-height-24); font-weight: 700; letter-spacing: var(--letter-spacing-snug); color: {{sheet.titleInk}}">{{sheet.title}}</h2><sc-if value="{{sheet.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: var(--text-secondary)">{{sheet.sub}}</span></sc-if></div><sc-if value="{{sheet.hasX}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{sheet.close}}" aria-label="Close" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if></div>
+      <sc-if value="{{sheet.isText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary); text-align: {{sheet.align}}; white-space: pre-line">{{sheet.body}}</p></sc-if>
+
+      <!-- menu (filter, sort, more, doc menu, upload options, form actions, template) -->
+      <sc-if value="{{sheet.isMenu}}" hint-placeholder-val="{{ false }}"><div role="menu" style="display: flex; flex-direction: column"><sc-for list="{{mn.items}}" as="m" hint-placeholder-count="5"><button role="menuitem" class="pt-b pt-row sh-option" onClick="{{m.go}}" style="display: flex; align-items: center; gap: var(--size-12)"><sc-if value="{{m.hasIcon}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; color: {{m.ink}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg></span></sc-if><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-20); font-weight: {{m.weight}}">{{m.label}}</span><sc-if value="{{m.hasSub}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">{{m.sub}}</span></sc-if></span><sc-if value="{{m.sel}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span></sc-if></button></sc-for></div></sc-if>
+
+      <!-- add / edit patient -->
+      <sc-if value="{{sheet.isAdd}}" hint-placeholder-val="{{ false }}">
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Full Name *<input class="sh-input" value="{{ad.name}}" onChange="{{ad.onName}}" aria-label="Full Name" placeholder="First and last name" style="border-color: {{ad.nameBorder}}"></label>
+        <sc-if value="{{ad.nameErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="margin-top: calc(-1 * var(--size-8)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Full name is required</span></sc-if>
+        <div style="display: flex; flex-direction: column; gap: var(--size-6)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Phone Number (Optional)</span><sc-for list="{{ad.phones}}" as="ph" hint-placeholder-count="1"><div style="display: flex; gap: var(--size-8)"><input class="sh-input" value="{{ph.v}}" onChange="{{ph.on}}" inputmode="tel" aria-label="{{ph.aria}}" placeholder="+998 __ ___ __ __" style="flex: 1 1 auto; min-width: 0; border-color: {{ph.border}}"><button class="pt-b sh-press sh-press--tile" onClick="{{ph.remove}}" aria-label="Remove phone number" style="flex: none; width: var(--size-touch); height: var(--size-touch); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.minus}}"></path></svg></button></div></sc-for>
+          <sc-if value="{{ad.phoneErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Enter a valid phone number</span></sc-if>
+          <sc-if value="{{ad.dupe}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-6) var(--size-10); align-items: center; padding: var(--size-8) var(--size-10); border-radius: var(--radius-control-md); background: var(--bg-warning-subtle); font-size: var(--font-size-12); font-weight: 600"><span>{{ad.dupeText}}</span><button class="pt-b sh-link" onClick="{{ad.openDupe}}" style="font: 700 var(--font-size-14)/var(--size-18) var(--font-sans)">Open existing patient</button></div></sc-if>
+          <button class="pt-b sh-press" onClick="{{ad.addPhone}}" style="align-self: flex-start; height: var(--size-36); padding: 0 var(--size-8); color: var(--text-primary); font: 700 var(--font-size-14)/var(--size-16) var(--font-sans); display: inline-flex; align-items: center; gap: var(--size-6)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg>Phone number</button>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Email<input class="sh-input" value="{{ad.email}}" onChange="{{ad.onEmail}}" inputmode="email" aria-label="Email" style="border-color: {{ad.emailBorder}}"></label>
+        <sc-if value="{{ad.emailErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="margin-top: calc(-1 * var(--size-8)); font-size: var(--font-size-12); font-weight: 700; color: var(--text-error)">Enter a valid email</span></sc-if>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Address<input class="sh-input" value="{{ad.address}}" onChange="{{ad.onAddress}}" aria-label="Address"></label>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--size-10)">
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Language<select class="sh-select" value="{{ad.lang}}" onChange="{{ad.onLang}}" aria-label="Language"><sc-for list="{{langs}}" as="o" hint-placeholder-count="3"><option value="{{o}}">{{o}}</option></sc-for></select></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Gender<select class="sh-select" value="{{ad.gender}}" onChange="{{ad.onGender}}" aria-label="Gender"><option value="">—</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Blood group<select class="sh-select" value="{{ad.blood}}" onChange="{{ad.onBlood}}" aria-label="Blood group"><sc-for list="{{bloodOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select></label>
+          <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Birth Date<input class="sh-input" type="date" value="{{ad.dob}}" min="1900-01-01" max="{{ad.max}}" onChange="{{ad.onDob}}" aria-label="Birth Date"></label>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Allergies<input class="sh-input" value="{{ad.allergies}}" onChange="{{ad.onAllergies}}" placeholder="No known allergies" aria-label="Allergies"></label>
+      </sc-if>
+
+      <!-- credentials -->
+      <sc-if value="{{sheet.isCreds}}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{cr.rows}}" as="r" hint-placeholder-count="2"><div style="display: flex; align-items: center; gap: var(--size-10); padding: var(--size-10) var(--size-12); border-radius: var(--radius-control-md); background: var(--bg-canvas)"><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{r.label}}</span><span style="font: 700 var(--font-size-16)/var(--size-22) ui-monospace, Menlo, monospace">{{r.value}}</span></span><button class="pt-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{r.copy}}" aria-label="{{r.aria}}" ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.copy}}"></path></svg></button></div></sc-for>
+        <p style="margin: 0; font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 700; color: var(--text-error)">For security, this password is shown only once.</p>
+      </sc-if>
+
+      <!-- book appointment -->
+      <sc-if value="{{sheet.isBook}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; gap: var(--size-6)"><button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{bk.prev}}" aria-label="Previous days" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevL}}"></path></svg></button><div style="flex: 1 1 auto; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--size-4)"><sc-for list="{{bk.days}}" as="d" hint-placeholder-count="7"><button class="pt-b sh-press sh-press--tile" onClick="{{d.pick}}" aria-pressed="{{d.selStr}}" aria-label="{{d.aria}}" style="height: var(--size-56); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--size-2)"><span style="font-size: var(--font-size-12); font-weight: 600">{{d.dow}}</span><span style="font-size: var(--font-size-16); font-weight: 700">{{d.num}}</span><span aria-hidden="true" style="width: var(--size-4); height: var(--size-4); border-radius: var(--radius-full); background: {{d.dot}}"></span></button></sc-for></div><button class="pt-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{bk.next}}" aria-label="Next days" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chevR}}"></path></svg></button></div>
+        <span style="font-size: var(--font-size-14); font-weight: 700">Available Slots · {{bk.dayLabel}}</span>
+        <sc-if value="{{bk.none}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: var(--size-6) var(--size-10); font-size: var(--font-size-14); color: var(--text-secondary)"><span>No slots available. Pick another date.</span><sc-if value="{{bk.hasNext}}" hint-placeholder-val="{{ false }}"><button class="pt-b sh-link" onClick="{{bk.goNext}}" style="font: 700 var(--font-size-14)/var(--size-20) var(--font-sans)">{{bk.nextLabel}}</button></sc-if></div></sc-if>
+        <div style="display: grid; grid-template-columns: repeat({{bk.cols}}, minmax(0, 1fr)); gap: var(--size-6)"><sc-for list="{{bk.slots}}" as="s" hint-placeholder-count="8"><button class="pt-b sh-chip sh-chip--slot" onClick="{{s.pick}}" aria-pressed="{{s.selStr}}">{{s.label}}</button></sc-for></div>
+        <div class="dr-tabs dr-tabs--block" role="radiogroup" aria-label="Appointment type"><sc-for list="{{bk.kinds}}" as="k" hint-placeholder-count="2"><button class="pt-b dr-tab" role="radio" aria-checked="{{k.selStr}}" onClick="{{k.pick}}">{{k.label}}</button></sc-for></div>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Reason<input class="sh-input" value="{{bk.reason}}" onChange="{{bk.onReason}}" placeholder="Consultation" aria-label="Reason"></label>
+      </sc-if>
+
+      <!-- upload meta -->
+      <sc-if value="{{sheet.isMeta}}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{um.hasPages}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: var(--size-6); overflow-x: auto"><sc-for list="{{um.pages}}" as="p" hint-placeholder-count="2"><span style="flex: none; width: var(--size-56); height: var(--size-72); border-radius: var(--radius-sm); background: var(--bg-canvas); box-shadow: inset 0 0 0 var(--size-1) var(--border-default); display: flex; align-items: flex-end; justify-content: center; font-size: var(--font-size-12); font-weight: 700; padding-bottom: var(--size-4); box-sizing: border-box">{{p}}</span></sc-for></div></sc-if>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Document Title<input class="sh-input" value="{{um.title}}" onChange="{{um.onTitle}}" placeholder="Enter document title" aria-label="Document Title"></label>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Document type<select class="sh-select" value="{{um.cat}}" onChange="{{um.onCat}}" aria-label="Document type"><option value="">Select a type</option><optgroup label="Medical results (visible to all doctors)"><sc-for list="{{um.medical}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></optgroup><optgroup label="Private (visible only to you)"><sc-for list="{{um.private}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></optgroup></select></label>
+        <span style="margin-top: calc(-1 * var(--size-6)); font-size: var(--font-size-12); line-height: var(--line-height-16); color: var(--text-secondary)">Pick a medical-result type to share this document with all doctors of this patient. Internal/private types stay visible only to you.</span>
+      </sc-if>
+
+      <!-- return visit edit -->
+      <sc-if value="{{sheet.isReturn}}" hint-placeholder-val="{{ false }}">
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Date<input class="sh-input" type="date" value="{{rv.date}}" onChange="{{rv.onDate}}" aria-label="Return visit date"></label>
+        <label style="display: flex; flex-direction: column; gap: var(--size-6); font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">Clinical findings and conclusion<textarea class="sh-input sh-input--area" value="{{rv.text}}" onChange="{{rv.onText}}" rows="3" aria-label="Clinical findings" placeholder="Tap to add findings"></textarea></label>
+      </sc-if>
+
+      <!-- briefing -->
+      <sc-if value="{{sheet.isBrief}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: var(--size-8)"><sc-for list="{{brief}}" as="l" hint-placeholder-count="3"><div style="display: flex; gap: var(--size-8); font-size: var(--font-size-14); line-height: var(--line-height-20)"><span aria-hidden="true" style="width: var(--size-6); height: var(--size-6); margin-top: var(--size-8); border-radius: var(--radius-full); background: var(--interactive-primary); flex: none"></span><span>{{l}}</span></div></sc-for><span style="font-size: var(--font-size-12); color: var(--text-tertiary)">AI summary — verify against the originals.</span></div></sc-if>
+
+      <sc-if value="{{sheet.hasErr}}" hint-placeholder-val="{{ false }}"><p role="alert" style="margin: 0; font-size: var(--font-size-14); font-weight: 700; color: var(--text-error)">{{sheet.err}}</p></sc-if>
+      <sc-if value="{{sheet.hasActions}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: var(--size-10); justify-content: flex-end; flex-direction: {{dlgActDir}}; flex-wrap: wrap; padding-top: var(--size-4)">
+          <sc-if value="{{sheet.hasSecondary}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-btn sh-btn--secondary" onClick="{{sheet.secondary}}" >{{sheet.secondaryLabel}}</button></sc-if>
+          <sc-if value="{{sheet.hasPrimary}}" hint-placeholder-val="{{ true }}"><button class="pt-b sh-btn sh-btn--primary" onClick="{{sheet.primary}}" aria-busy="{{sheet.busyStr}}" aria-disabled="{{sheet.primaryOffStr}}" style="background: {{sheet.primaryBg}}; color: {{sheet.primaryInk}}"><sc-if value="{{sheet.busy}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner" aria-hidden="true"></span></sc-if>{{sheet.primaryLabel}}</button></sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sheet: null, ls: { q: '', tab: 'all', status: '', sort: 'az', page: 1 }, refreshing: false, tabs: {}, med: {}, cp: {}, dq: {}, upload: null, reqd: {}, act: 'All', aiBusy: false, accBusy: false, smsBusy: false, fe: {}, vw: {}, pf: null, pd: {}, plFilter: 'All', plShowAll: false };
+    this.warned = {};
+    this.t = {};
+  }
+  componentDidMount() { this.handleRoute(); }
+  componentDidUpdate(prev) { const a = prev.route || {}, b = this.props.route || {}; if (a.s !== b.s || JSON.stringify(a.p) !== JSON.stringify(b.p)) { if (this.state.sheet && !this.state.sheet.keep) this.setState({ sheet: null }); this.handleRoute(); } }
+  componentWillUnmount() { Object.keys(this.t).forEach((k) => clearTimeout(this.t[k])); }
+  later(k, ms, fn) { clearTimeout(this.t[k]); this.t[k] = setTimeout(fn, ms); }
+  banner(kind, text, extra) { this.props.act('banner', Object.assign({ kind, text }, extra || {})); }
+  handleRoute() {
+    const r = this.props.route || {}; const st = this.props.store, lib = this.props.lib; if (!st || !lib) return;
+    const p = r.p || {};
+    if (r.s === 'patients' && p.create && !this.createdOnce) { this.createdOnce = true; this.openAdd(); }
+    if (r.s === 'patients' && p.sort === 'created') this.setState({ ls: Object.assign({}, this.state.ls, { sort: 'created', page: 1 }) });
+    if (r.s === 'patDetail') {
+      const pt = st.patients.find((x) => x.id === p.id);
+      if (p.tab) this.setState({ tabs: Object.assign({}, this.state.tabs, { [p.id]: p.tab }) });
+      if (pt && pt.chronic && !this.warned[pt.id]) { this.warned[pt.id] = true; this.setState({ sheet: { kind: 'chronic', name: pt.name, disease: pt.chronic } }); }
+    }
+    if (r.s === 'docView') { const key = p.id; this.setState({ vw: Object.assign({}, this.state.vw, { [key]: { loading: true, zoom: 100 } }) }); this.later('vw', 700, () => this.setState({ vw: Object.assign({}, this.state.vw, { [key]: { loading: false, zoom: 100 } }) })); }
+    if (r.s === 'partnerFind') this.setState({ pf: { q: '', spec: '', sel: null, msg: '', reason: '', busy: false, searching: true } }), this.later('pf', 600, () => this.setState({ pf: Object.assign({}, this.state.pf, { searching: false }) }));
+  }
+  setLs(p) { this.setState({ ls: Object.assign({}, this.state.ls, p) }); }
+  openAdd(edit) {
+    const lib = this.props.lib;
+    const base = edit ? { name: edit.name, phones: (edit.phones && edit.phones.length ? edit.phones.slice() : ['']), email: edit.email || '', address: edit.address || '', lang: (edit.lang || 'Uzbek').split(',')[0], gender: edit.gender || '', blood: edit.blood || '', allergies: edit.allergies || '', dob: edit.dob || '' } : { name: '', phones: [''], email: '', address: '', lang: 'Uzbek', gender: '', blood: '', allergies: '', dob: '' };
+    this.setState({ sheet: { kind: 'add', editId: edit ? edit.id : null, f: base, tried: false, busy: false } });
+  }
+  patchPatient(id, patch) { this.props.act('set', (s) => ({ patients: s.patients.map((x) => (x.id === id ? Object.assign({}, x, patch) : x)) })); }
+  phoneOk(v) { const d = String(v || '').replace(/[^\d]/g, ''); return !v || (d.length >= 9 && d.length <= 12); }
+  activity(pt, st, lib) {
+    const ic = lib.ic; const items = [];
+    st.appointments.filter((a) => a.patientId === pt.id).forEach((a) => {
+      const map = { COMPLETED: ['Visit completed', ic.checkCircle, 'var(--bg-success-subtle)', 'var(--icon-brand)'], CANCELLED: ['Visit cancelled', ic.calendar, 'var(--bg-error-subtle)', 'var(--text-error)'], NO_SHOW: ['No-show', ic.calendar, 'var(--bg-error-subtle)', 'var(--text-error)'], CONFIRMED: ['Upcoming visit', ic.calendar, 'var(--bg-success-subtle)', 'var(--icon-brand)'], REQUESTED: ['Visit requested', ic.calendar, 'var(--bg-success-subtle)', 'var(--icon-brand)'], IN_PROGRESS: ['Visit in progress', ic.calendar, 'var(--bg-success-subtle)', 'var(--icon-brand)'] }[a.status] || ['Visit', ic.calendar, 'var(--bg-success-subtle)', 'var(--icon-brand)'];
+      items.push({ type: 'Visits', at: a.day + 'T' + a.start, title: map[0], sub: a.reason + ' · ' + a.start, d: map[1], tint: map[2], ink: map[3], open: () => this.props.act('push', { s: 'apptDetails', p: { id: a.id } }) });
+    });
+    st.docs.filter((d) => d.patientId === pt.id).forEach((d) => {
+      const lab = ['BLOOD_TEST', 'URINE_TEST', 'STOOL_TEST', 'LAB_RESULT'].indexOf(d.cat) >= 0;
+      if (d.cat === 'FORM_025_2') return;
+      items.push({ type: 'Documents', at: d.day + 'T12:00', title: lab ? 'Lab result uploaded' : 'Document uploaded', sub: d.title, d: lab ? ic.activity : ic.file, tint: lab ? 'var(--bg-info-subtle)' : 'var(--bg-success-subtle)', ink: lab ? 'var(--text-info)' : 'var(--text-brand-strong)', open: () => (d.locked ? this.banner('info', 'This document is private. Request access first.') : this.props.act('push', { s: 'docView', p: { id: d.id } })) });
+    });
+    (st.forms || []).filter((f) => f.patientId === pt.id).forEach((f) => {
+      items.push({ type: 'Forms', at: f.day + 'T12:01', title: f.signed ? 'Form 025-2 signed by patient' : 'Form 025-2 saved', sub: lib.fmtDate(f.day), d: ic.clipboard, tint: 'var(--bg-warning-subtle)', ink: 'var(--text-primary)', open: () => this.props.act('push', { s: 'formEdit', p: { patientId: pt.id, id: f.id } }) });
+    });
+    st.tasks.filter((t) => t.patientId === pt.id && !t.template).forEach((t) => {
+      items.push({ type: 'Tasks', at: t.start + 'T08:00', title: (t.status === 'COMPLETED' ? 'Task completed: ' : 'Task assigned: ') + t.name, sub: t.done + ' of ' + t.total + ' check-ins', d: ic.checkCircle, tint: 'var(--bg-canvas)', ink: 'var(--text-primary)', open: () => this.props.act('push', { s: 'taskDetails', p: { id: t.id } }) });
+    });
+    (st.partnerships || []).filter((c) => c.patientId === pt.id && c.status === 'ACTIVE').forEach((c) => items.push({ type: 'All', at: c.since + 'T09:00', title: c.partner + ' accepted the care partnership', sub: c.reason, d: ic.handshake, tint: 'var(--bg-info-subtle)', ink: 'var(--text-info)', open: () => this.props.act('push', { s: 'partnerDetail', p: { id: c.id } }) }));
+    items.sort((a, b) => b.at.localeCompare(a.at));
+    return items.map((x) => { const day = x.at.slice(0, 10); const when = day === st.today ? 'Today' : (day === lib.addDays(st.today, -1) ? 'Yesterday' : (day > st.today ? lib.fmtDate(day) : lib.fmtDate(day))); return Object.assign(x, { when, day }); });
+  }
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const route = this.props.route || { s: 'patients', p: {} }; const rs = route.s; const rp = route.p || {};
+    const S = this.state; const offline = st.online === false;
+    const out = {
+      ready: true, notReady: false, ic, phone, webOnly: !phone, table: !phone && !st.compact, cards: phone || !!st.compact, back: () => act('back'),
+      pagePad: phone ? 'var(--size-48) var(--size-12) 0' : 'var(--size-24) var(--size-24) 0', bottomClear: phone ? (rs === 'patients' ? '176px' : '120px') : '40px', hdrDir: phone ? 'row' : 'column', hdrAlign: phone ? 'center' : 'flex-start', sidePad: phone ? 'var(--size-12)' : 'var(--size-24)', footPadB: phone ? 'var(--size-24)' : 'var(--size-14)', barPad: phone ? 'var(--size-48) var(--size-12) var(--size-10)' : 'var(--size-14) var(--size-24)', h1Size: lib.h1(phone, st),
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', dlgActDir: phone ? 'column-reverse' : 'row', actDir: phone ? 'column-reverse' : 'row', sheetPadB: phone ? 'var(--size-28)' : 'var(--size-20)',
+      isList: false, isDetail: false, isViewer: false, isForm: false, isFind: false, isPartners: false, isPartner: false, isGone: false, goneTitle: '',
+      hasSheet: false, sheet: {}, ls: {}, pd: {}, md: {}, dc: {}, fm: {}, av: {}, vw: {}, fe: {}, pf: {}, pl: {}, cp: {}, mn: {}, ad: {}, cr: {}, bk: {}, um: {}, rv: {}, brief: [],
+      bloodOpts: [{ v: '', label: '—' }].concat(['A (II) Rh+', 'A (II) Rh−', 'B (III) Rh+', 'B (III) Rh−', 'AB (IV) Rh+', 'AB (IV) Rh−', 'O (I) Rh+', 'O (I) Rh−'].map((b) => ({ v: b, label: b }))),
+      langs: ['English', 'Uzbek', 'Russian', 'German', 'Karakalpak', 'Kazakh', 'Kyrgyz', 'Tajik', 'Turkmen', 'Arabic'],
+      codes: [''].concat(['O', 'R', 'C', 'P', 'Pt', 'П', 'A', 'I', 'II', 'III', 'K', 'И']).map((c) => ({ v: c, label: c || '·' }))
+    };
+    const lastVisitOf = (pid) => st.appointments.filter((a) => a.patientId === pid && a.status === 'COMPLETED').sort((a, b) => (b.day + b.start).localeCompare(a.day + a.start))[0];
+    const goneOut = (t) => { out.isGone = true; out.goneTitle = t; return this.sheets(out); };
+
+    // ======================= LIST =======================
+    if (rs === 'patients') {
+      out.isList = true; const L = S.ls;
+      const all = st.patients;
+      let rows = all.slice();
+      const q = L.q.trim().toLowerCase();
+      if (q) rows = rows.filter((p) => p.name.toLowerCase().indexOf(q) >= 0 || (p.phones || []).join(' ').replace(/\s/g, '').indexOf(q.replace(/\s/g, '')) >= 0 || p.id.toLowerCase().indexOf(q) >= 0);
+      if (L.tab === 'fav') rows = rows.filter((p) => p.fav);
+      if (L.tab === 'fu') rows = rows.filter((p) => p.status === 'FOLLOW_UP');
+      if (L.status) rows = rows.filter((p) => p.status === L.status);
+      const lastAt = (p) => { const a = st.appointments.filter((x) => x.patientId === p.id && x.day <= st.today).sort((x, y) => (y.day + y.start).localeCompare(x.day + x.start))[0]; return a ? a.day + a.start : ''; };
+      if (L.tab === 'recent') rows = rows.filter((p) => lastAt(p)).sort((a, b) => lastAt(b).localeCompare(lastAt(a))).slice(0, 20);
+      else if (L.sort === 'az') rows.sort((a, b) => a.name.localeCompare(b.name));
+      else if (L.sort === 'za') rows.sort((a, b) => b.name.localeCompare(a.name));
+      else if (L.sort === 'recent') rows.sort((a, b) => lastAt(b).localeCompare(lastAt(a)));
+      else if (L.sort === 'created') rows.sort((a, b) => (b.createdOn || '').localeCompare(a.createdOn || '') || b.id.localeCompare(a.id));
+      const per = 10; const pages = Math.max(1, Math.ceil(rows.length / per)); const page = Math.min(L.page, pages);
+      const shown = rows.slice((page - 1) * per, page * per);
+      const nums = []; let s0 = Math.max(1, page - 2); let e0 = Math.min(pages, s0 + 4); s0 = Math.max(1, e0 - 4); for (let i = s0; i <= e0; i++) nums.push(i);
+      const filtersOn = !!(q || L.status || L.tab !== 'all');
+      const sortLabels = { az: 'Name (A–Z)', za: 'Name (Z–A)', recent: 'Recent activity', created: 'Newest first' };
+      out.ls = {
+        count: all.length + (all.length === 1 ? ' patient' : ' patients'), q: L.q, hasQ: !!L.q, onQ: (e) => this.setLs({ q: e.target.value, page: 1 }), clearQ: () => this.setLs({ q: '', page: 1 }),
+        add: () => { if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; } this.openAdd(); },
+        openFilter: () => this.setState({ sheet: { kind: 'filter' } }), filterOnStr: L.status ? 'true' : 'false', filterBg: L.status ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', filterBorder: L.status ? 'var(--border-brand)' : 'var(--border-default)',
+        tabs: [['all', 'All patients'], ['recent', 'Recent'], ['fav', 'Favorites'], ['fu', 'Follow-ups']].map(([k, l]) => ({ label: l, selStr: L.tab === k ? 'true' : 'false', line: L.tab === k ? 'var(--border-brand)' : 'transparent', ink: L.tab === k ? 'var(--text-primary)' : 'var(--text-secondary)', weight: L.tab === k ? 700 : 500, pick: () => this.setLs({ tab: k, page: 1 }) })),
+        refresh: () => { if (offline) { this.banner('error', 'You are offline. Showing saved data.'); return; } this.setState({ refreshing: true }); this.later('ref', 900, () => { this.setState({ refreshing: false }); this.banner('success', 'Patient list refreshed'); }); }, refreshing: S.refreshing,
+        openSort: () => this.setState({ sheet: { kind: 'sort' } }), sortLabel: L.tab === 'recent' ? 'Sort' : 'Sort: ' + sortLabels[L.sort],
+        hasActive: !!(L.status), activeLabel: L.status ? 'Status: ' + lib.pstatus[L.status].label : '', clear: () => this.setLs({ q: '', status: '', tab: 'all', page: 1 }),
+        emptyDir: all.length === 0, emptyFilter: all.length > 0 && rows.length === 0 && filtersOn, hasRows: shown.length > 0,
+        rows: shown.map((p) => { const ag = p.dob ? lib.age(p.dob, st.today) : null; const ageG = [ag !== null ? String(ag) : '', p.gender].filter(Boolean).join(', '); const lv = lastVisitOf(p.id); return { ini: lib.initials(p.name), name: p.name, id: p.id, fav: !!p.fav, ageGender: ageG || '—', phone: (p.phones || [])[0] || '—', sub: [ageG, (p.phones || [])[0]].filter(Boolean).join(' · ') || '—', last: lv ? lib.fmtDate(lv.day) : '—', st: lib.pstatus[p.status] || lib.pstatus.ACTIVE, open: () => act('push', { s: 'patDetail', p: { id: p.id } }) }; }),
+        caption: rows.length ? 'Showing ' + ((page - 1) * per + 1) + ' to ' + Math.min(page * per, rows.length) + ' of ' + rows.length + ' ' + (rows.length === 1 ? 'patient' : 'patients') : '',
+        pages: nums.map((n) => ({ label: String(n), aria: 'Page ' + n, cur: n === page ? 'page' : 'false', bg: n === page ? 'var(--interactive-primary)' : 'var(--bg-surface)', ink: n === page ? 'var(--text-inverse)' : 'var(--text-primary)', go: () => this.setLs({ page: n }) })),
+        prev: () => { if (page > 1) this.setLs({ page: page - 1 }); }, next: () => { if (page < pages) this.setLs({ page: page + 1 }); },
+        prevOffStr: page <= 1 ? 'true' : 'false', nextOffStr: page >= pages ? 'true' : 'false', prevInk: page <= 1 ? 'var(--text-tertiary)' : 'var(--text-primary)', nextInk: page >= pages ? 'var(--text-tertiary)' : 'var(--text-primary)'
+      };
+    }
+
+    // ======================= DETAIL =======================
+    if (rs === 'patDetail') {
+      const pt = st.patients.find((x) => x.id === rp.id);
+      if (!pt) return goneOut('Patient not found');
+      out.isDetail = true;
+      const tab = S.tabs[pt.id] || 'overview';
+      const canAi = lib.can(st, 'briefing') || lib.can(st, 'intel');
+      const lv = lastVisitOf(pt.id);
+      const ag = pt.dob ? lib.age(pt.dob, st.today) : null;
+      const CP = S.cp[pt.id] || { q: '', msgs: [], busy: false };
+      const setCp = (p) => this.setState({ cp: Object.assign({}, this.state.cp, { [pt.id]: Object.assign({}, CP, p) }) });
+      const ask = (qq) => {
+        const text = (qq || CP.q).trim(); if (!text || CP.busy) return;
+        if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; }
+        const msgs = CP.msgs.concat([{ me: true, text }]); setCp({ q: '', msgs, busy: true });
+        this.later('cp', 1100, () => {
+          const cur = this.state.cp[pt.id];
+          const ans = /articaine|anaest|lidoc/i.test(text) ? (pt.allergies && /lidoc/i.test(pt.allergies) ? 'Lidocaine allergy is recorded. Articaine is an amide too; cross-reactivity is rare but possible. Consider a test dose and have adrenaline ready.' : 'No local-anaesthetic allergy is recorded. ' + (pt.chronic ? 'With ' + pt.chronic.toLowerCase() + ', use the lowest effective dose with adrenaline 1:200 000.' : 'Standard dosing is fine.')) : (pt.chronic ? pt.name.split(' ')[0] + ' has ' + pt.chronic.toLowerCase() + '. Latest documents: ' + (st.docs.filter((d) => d.patientId === pt.id).slice(0, 2).map((d) => d.title).join(', ') || 'none') + '.' : 'Nothing unusual in the record. Last visit: ' + (lv ? lib.fmtDate(lv.day) : 'none') + '.');
+          this.setState({ cp: Object.assign({}, this.state.cp, { [pt.id]: Object.assign({}, cur, { busy: false, msgs: cur.msgs.concat([{ me: false, text: ans }]) }) }) });
+        });
+      };
+      const capped = CP.msgs.length >= 12;
+      const aiRisk = canAi && pt.status === 'AT_RISK';
+      const acts = this.activity(pt, st, lib);
+      const setTab = (k) => this.setState({ tabs: Object.assign({}, S.tabs, { [pt.id]: k }) });
+      const book = () => { if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; } this.setState({ sheet: { kind: 'book', pid: pt.id, base: st.today, day: st.today, sel: null, kind2: 'clinic', reason: '' } }); };
+      const message = () => { const c = st.chats.find((x) => x.patientId === pt.id); if (c) act('go', { tab: 'chat', s: 'chatThread', p: { id: c.id } }); else { const id = lib.uid('C'); act('set', (s) => ({ chats: [{ id, patientId: pt.id, unread: 0, messages: [] }].concat(s.chats) })); act('go', { tab: 'chat', s: 'chatThread', p: { id } }); } };
+      const upload = () => this.setState({ sheet: { kind: 'upOpts', pid: pt.id } });
+      out.pd = {
+        ini: lib.initials(pt.name), name: pt.name, st: lib.pstatus[pt.status] || lib.pstatus.ACTIVE, stLabel: pt.status === 'ACTIVE' ? 'Active patient' : (lib.pstatus[pt.status] || {}).label,
+        aiRisk, hasChronic: !!pt.chronic, chronic: pt.chronic, lastVisit: lv ? 'Last visit: ' + lib.fmtDate(lv.day) : 'No recent visit',
+        favStr: pt.fav ? 'true' : 'false', favAria: pt.fav ? 'Remove from favourites' : 'Add to favourites', favInk: pt.fav ? 'var(--text-warning)' : 'var(--text-primary)', favFill: pt.fav ? 'currentColor' : 'none',
+        toggleFav: () => { this.patchPatient(pt.id, { fav: !pt.fav }); this.banner('success', pt.fav ? 'Removed from favourites' : 'Added to favourites'); },
+        canAi, aiBusy: S.aiBusy, aiIdle: !S.aiBusy, aiBusyStr: S.aiBusy ? 'true' : 'false',
+        aiSummary: () => this.briefing(pt),
+        openMore: () => this.setState({ sheet: { kind: 'more', pid: pt.id } }),
+        statCols: phone ? 2 : 6,
+        stats: [['Age', ag !== null ? ag + ' years' : '—'], ['Gender', pt.gender || '—'], ['Phone', (pt.phones || [])[0] || '—'], ['Birth date', pt.dob ? pt.dob.split('-').reverse().join('.') : '—'], ['Patient ID', pt.id], ['Language', pt.lang || '—']].map(([l, v]) => ({ label: l, value: v })),
+        cpCount: CP.msgs.length ? CP.msgs.length + ' / 12' : '', cpMsgs: CP.msgs.map((m) => ({ text: m.text, align: m.me ? 'flex-end' : 'flex-start', bg: m.me ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)' })), cpBusy: CP.busy, cpCapped: capped, cpOpen: !capped,
+        cpQ: CP.q, cpOnQ: (e) => setCp({ q: e.target.value }), cpAsk: () => ask(), cpOffStr: CP.q.trim() ? 'false' : 'true',
+        cpSugs: ['Anything to watch before treatment?', 'Is it safe to use articaine?'].map((g) => ({ label: g, go: () => ask(g) })), cpOpenIntel: () => act('tab', 'intel'),
+        tabs: [['overview', 'Overview'], ['medical', 'Medical info'], ['appts', 'Appointments'], ['docs', 'Documents'], ['forms', 'Forms'], ['activity', 'Activity']].map(([k, l]) => ({ label: l, selStr: tab === k ? 'true' : 'false', line: tab === k ? 'var(--border-brand)' : 'transparent', ink: tab === k ? 'var(--text-primary)' : 'var(--text-secondary)', weight: tab === k ? 700 : 500, pick: () => setTab(k) })),
+        tOverview: tab === 'overview', tMedical: tab === 'medical', tAppts: tab === 'appts', tDocs: tab === 'docs', tForms: tab === 'forms', tActivity: tab === 'activity',
+        ovCols: phone ? 1 : 2,
+        summary: [['Chronic disease', pt.chronic || 'None', pt.chronic ? 'var(--text-error)' : 'var(--text-primary)'], ['Allergies', pt.allergies || 'No known allergies', pt.allergies ? 'var(--text-error)' : 'var(--text-primary)'], ['Blood group', pt.blood || 'Not specified', 'var(--text-primary)'], ['Language', pt.lang || 'Not specified', 'var(--text-primary)']].map(([l, v, ink]) => ({ label: l, value: v, ink })),
+        hasTimeline: canAi && (pt.id === 'P-00101' || pt.id === 'P-00102'),
+        timeline: (pt.id === 'P-00101' ? [['Pain in 26 when chewing, sensitive to cold', '22 Oct 2026 · Examination'], ['HbA1c 7.4 % reported by partner endocrinologist', '20 Oct 2026 · Partner update'], ['Fasting glucose 7.8 mmol/L', '18 Oct 2026 · Blood test']] : [['Extraction of 48, healing normally', '19 Oct 2026 · Extraction'], ['Blood pressure 145/90 before procedure', '19 Oct 2026 · Extraction']]).map(([t, w]) => ({ text: t, when: w })),
+        noActivity: acts.length === 0, recent: acts.slice(0, 6), hasMoreActivity: acts.length > 0, toActivity: () => setTab('activity'),
+        quick: [['New appointment', ic.calPlus, book], ['Send message', ic.chat, message], ['Create document', ic.filePlus, upload], ['More actions', ic.moreV, () => this.setState({ sheet: { kind: 'more', pid: pt.id } })]].map(([l, d, g]) => ({ label: l, d, go: g })),
+        hasPortal: pt.portal !== false, noPortal: pt.portal === false, username: pt.name.toLowerCase().split(' ').join('.'), accBusy: S.accBusy, accBusyStr: S.accBusy ? 'true' : 'false',
+        createAccount: () => {
+          if (S.accBusy) return; if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; }
+          this.setState({ accBusy: true });
+          this.later('acc', 900, () => { this.setState({ accBusy: false, sheet: { kind: 'creds', user: pt.name.toLowerCase().split(' ').join('.'), pass: 'K7Q4-M29X', pid: pt.id } }); this.patchPatient(pt.id, { portal: true }); });
+        },
+        smsDesc: 'Patients get a text before each appointment. ' + st.sub.sms.used + ' of ' + st.sub.sms.limit + ' SMS used this month.',
+        smsNoPhone: !(pt.phones || []).filter(Boolean).length,
+        smsOnStr: (pt.sms || {}).on === false ? 'false' : 'true', smsTrack: (pt.sms || {}).on === false ? 'var(--grey-400)' : 'var(--interactive-primary)', smsKnob: (pt.sms || {}).on === false ? '3px' : '21px', smsOp: (pt.phones || []).filter(Boolean).length ? 1 : 0.5, smsOp2: (pt.sms || {}).on === false ? 0.5 : 1,
+        smsToggle: () => { if (!(pt.phones || []).filter(Boolean).length) return; if (offline) { this.banner('error', 'Could not save. You are offline.'); return; } const on = (pt.sms || {}).on === false; this.patchPatient(pt.id, { sms: Object.assign({ timing: '24' }, pt.sms || {}, { on }) }); this.banner('success', 'SMS reminder settings saved'); },
+        smsTiming: (pt.sms || {}).timing || '24', smsOnTiming: (e) => { if ((pt.sms || {}).on === false) return; this.patchPatient(pt.id, { sms: Object.assign({ on: true }, pt.sms || {}, { timing: e.target.value }) }); this.banner('success', 'SMS reminder settings saved'); },
+        smsBusy: S.smsBusy, smsBusyStr: S.smsBusy ? 'true' : 'false',
+        smsTest: () => { if (S.smsBusy || !(pt.phones || []).filter(Boolean).length) return; if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; } this.setState({ smsBusy: true }); this.later('sms', 900, () => { this.setState({ smsBusy: false }); this.banner('success', 'Test SMS sent. Check the patient phone.'); }); },
+        book,
+        noAppts: !st.appointments.some((a) => a.patientId === pt.id && (a.doctorId || 'me') === 'me'),
+        appts: st.appointments.filter((a) => a.patientId === pt.id && (a.doctorId || 'me') === 'me').sort((a, b) => (b.day + b.start).localeCompare(a.day + a.start)).map((a) => ({ when: lib.fmtLong(a.day) + ' · ' + a.start + '–' + a.end, sub: a.reason + ' · ' + (a.kind === 'video' ? 'Video Call' : 'In Clinic'), d: a.kind === 'video' ? ic.video : ic.pin, st: lib.status[a.status], open: () => act('push', { s: 'apptDetails', p: { id: a.id } }) }))
+      };
+      // medical
+      const M = S.med[pt.id] || { phones: (pt.phones && pt.phones.length ? pt.phones.slice() : ['']), allergies: pt.allergies || '', saving: false, phoneErr: false };
+      const setM = (p) => this.setState({ med: Object.assign({}, this.state.med, { [pt.id]: Object.assign({}, M, p) }) });
+      const saveField = (patch, msg) => { if (offline) { this.banner('error', 'Failed to update. You are offline.'); return; } setM({ saving: true }); this.later('med', 600, () => { this.patchPatient(pt.id, patch); setM({ saving: false }); this.banner('success', msg); }); };
+      const chronicOpts = ['None', 'Diabetes (Type 1)', 'Type 2 diabetes', 'HIV/AIDS', 'Hypertension', 'Heart disease', 'Chronic Kidney Disease', 'Chronic Liver Disease', 'Asthma', 'COPD', 'Cancer', 'Epilepsy', 'Multiple Sclerosis', "Parkinson's Disease", 'Rheumatoid Arthritis', 'Lupus', "Crohn's Disease", 'Ulcerative Colitis', 'Hemophilia', 'Sickle Cell Disease', 'Thalassemia', 'Other'];
+      out.md = {
+        editDetails: () => this.openAdd(pt), saving: M.saving,
+        rows: [['Patient ID', pt.id], ['Birth Date', pt.dob ? pt.dob.split('-').reverse().join('.') : ''], ['Email', pt.email], ['Address', pt.address], ['Language', pt.lang]].filter((r) => r[1]).map(([l, v]) => ({ label: l, value: v })),
+        phones: M.phones.map((v, i) => ({ v, aria: i === 0 ? 'Phone Number (Optional)' : 'Phone number ' + (i + 1), border: !this.phoneOk(v) && M.phoneErr ? 'var(--border-error)' : 'var(--border-default)', on: (e) => { const ph = M.phones.slice(); ph[i] = e.target.value; setM({ phones: ph, phoneErr: false }); }, remove: () => { const ph = M.phones.length > 1 ? M.phones.filter((_, j) => j !== i) : ['']; setM({ phones: ph }); } })),
+        phoneErr: M.phoneErr, addPhone: () => setM({ phones: M.phones.concat(['']) }),
+        phonesDirty: JSON.stringify(M.phones.filter(Boolean)) !== JSON.stringify((pt.phones || []).filter(Boolean)),
+        savePhones: () => { if (M.phones.some((v) => !this.phoneOk(v))) { setM({ phoneErr: true }); return; } saveField({ phones: M.phones.filter(Boolean) }, 'Phone number updated'); },
+        chronic: pt.chronic || 'None', chronicOpts: chronicOpts.indexOf(pt.chronic || 'None') >= 0 ? chronicOpts : chronicOpts.concat([pt.chronic]),
+        onChronic: (e) => { const v = e.target.value; saveField({ chronic: v === 'None' ? '' : v }, 'Chronic disease updated'); if (v !== 'None') delete this.warned[pt.id]; },
+        chronicNote: !!pt.chronic,
+        gender: pt.gender || '', onGender: (e) => saveField({ gender: e.target.value }, 'Saved'),
+        blood: pt.blood || '', onBlood: (e) => saveField({ blood: e.target.value }, 'Saved'),
+        allergies: M.allergies, onAllergies: (e) => setM({ allergies: e.target.value }), allergyDirty: M.allergies !== (pt.allergies || ''),
+        saveAllergies: () => saveField({ allergies: M.allergies.trim() }, 'Saved')
+      };
+      // documents
+      const dq = S.dq[pt.id] || '';
+      const docsAll = st.docs.filter((d) => d.patientId === pt.id).sort((a, b) => b.day.localeCompare(a.day));
+      const docs = docsAll.filter((d) => !dq || d.title.toLowerCase().indexOf(dq.toLowerCase()) >= 0);
+      const U = S.upload && S.upload.pid === pt.id ? S.upload : null;
+      out.dc = {
+        refresh: () => { if (offline) { this.banner('error', 'You are offline. Showing saved data.'); return; } this.setState({ refreshing: true }); this.later('dref', 800, () => this.setState({ refreshing: false })); }, refreshing: S.refreshing,
+        openMenu: () => this.setState({ sheet: { kind: 'docMenu', pid: pt.id } }), upload,
+        hasUpload: !!U, upTitle: U ? 'Uploading “' + U.title + '”' : '', upPct: U ? U.pct + '%' : '0%',
+        cancelUpload: () => { clearTimeout(this.t.up); this.setState({ upload: null }); this.banner('info', 'Upload cancelled'); },
+        q: dq, onQ: (e) => this.setState({ dq: Object.assign({}, S.dq, { [pt.id]: e.target.value }) }),
+        empty: docsAll.length === 0, noMatch: docsAll.length > 0 && docs.length === 0, noMatchText: 'No documents match “' + dq + '”',
+        list: docs.map((d) => {
+          const isForm = d.cat === 'FORM_025_2'; const req = !!S.reqd[d.id]; const form = isForm ? (st.forms || []).find((f) => f.patientId === pt.id && f.day === d.day) : null;
+          const request = () => { if (req) { this.banner('info', 'Request already sent'); return; } if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; } this.setState({ reqd: Object.assign({}, S.reqd, { [d.id]: true }) }); this.banner('success', 'Request sent'); };
+          return { title: isForm ? 'Form 025-2 (' + d.day.split('-').reverse().join('.') + ')' : d.title, date: d.day.split('-').reverse().join('.'), cat: lib.catLabel(d.cat), chipBg: lib.catGroup(d.cat) === 'medical' ? 'var(--bg-success-subtle)' : (isForm ? 'var(--bg-warning-subtle)' : 'var(--bg-canvas)'), shared: lib.catGroup(d.cat) === 'medical', locked: !!d.locked, requested: req, by: d.by, isForm, canEdit: isForm && !d.locked, ring: rp.docId === d.id ? 'inset 0 0 0 2px var(--border-focus)' : 'none', reqLabel: req ? 'Requested' : 'Request access', request,
+            edit: () => act('push', { s: 'formEdit', p: { patientId: pt.id, id: form ? form.id : undefined } }), open: !d.locked, view: () => act('push', { s: 'docView', p: { id: d.id } }), tap: () => (d.locked ? request() : act('push', { s: 'docView', p: { id: d.id } })) };
+        })
+      };
+      // forms
+      const forms = (st.forms || []).filter((f) => f.patientId === pt.id).sort((a, b) => b.day.localeCompare(a.day));
+      out.fm = {
+        count: forms.length === 1 ? '1 form' : forms.length + ' forms', empty: !forms.length, create: () => this.setState({ sheet: { kind: 'template', pid: pt.id } }),
+        rows: forms.map((f) => ({ date: f.day.split('-').reverse().join('.'), badges: [f.signed ? { label: 'Signed ✓', bg: 'var(--bg-success-subtle)' } : (f.sigRequested ? { label: 'Signature requested', bg: 'var(--bg-warning-subtle)' } : null), f.pdf ? null : { label: 'No PDF', bg: 'var(--bg-canvas)' }].filter(Boolean), open: () => act('push', { s: 'formEdit', p: { patientId: pt.id, id: f.id } }) }))
+      };
+      // activity
+      const flt = S.act;
+      const fl = acts.filter((x) => flt === 'All' || x.type === flt);
+      const groups = []; fl.forEach((x) => { const label = x.day > st.today ? 'UPCOMING' : (lib.ML[Number(x.day.slice(5, 7)) - 1] + ' ' + x.day.slice(0, 4)).toUpperCase(); let g = groups.find((y) => y.label === label); if (!g) { g = { label, items: [] }; groups.push(g); } g.items.push(x); });
+      out.av = { chips: ['All', 'Visits', 'Documents', 'Forms', 'Tasks'].map((c) => ({ label: c, selStr: flt === c ? 'true' : 'false', bg: flt === c ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', ring: flt === c ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => this.setState({ act: c }) })), empty: !fl.length, groups };
+    }
+
+    // ======================= DOCUMENT VIEWER =======================
+    if (rs === 'docView') {
+      const d = st.docs.find((x) => x.id === rp.id);
+      out.isViewer = true;
+      const V = S.vw[rp.id] || { loading: false, zoom: 100 };
+      const setV = (p) => this.setState({ vw: Object.assign({}, this.state.vw, { [rp.id]: Object.assign({}, V, p) }) });
+      const errState = !d ? 'gone' : (d.locked ? 'locked' : (offline && !V.loading ? 'net' : null));
+      const isImage = d && d.kind === 'image';
+      const pt = d ? lib.patient(st, d.patientId) : null;
+      out.vw = {
+        title: d ? (d.cat === 'FORM_025_2' ? 'Form 025-2 (' + d.day.split('-').reverse().join('.') + ')' : d.title) : 'Document',
+        loading: !!V.loading && !errState, err: !!errState && !V.loading, ok: !V.loading && !errState,
+        errTitle: { gone: 'This document is no longer available', locked: 'You don’t have access to this document', net: 'Could not load document' }[errState] || '',
+        errIcon: errState === 'locked' ? ic.lock : ic.alertCircle, errLabel: { gone: 'Back', locked: S.reqd[rp.id] ? 'Request sent' : 'Request access', net: 'Retry' }[errState] || 'Back',
+        errGo: () => { if (errState === 'gone') act('back'); else if (errState === 'locked') { if (!S.reqd[rp.id]) { this.setState({ reqd: Object.assign({}, S.reqd, { [rp.id]: true }) }); this.banner('success', 'Request sent'); act('back'); } } else { setV({ loading: true }); this.later('vw', 700, () => setV({ loading: false })); } },
+        actions: [{ label: 'Share', d: ic.share, go: () => this.setState({ sheet: { kind: 'share' } }) }, { label: 'Save to device', d: ic.download, go: () => this.banner('success', 'Saved to Downloads') }].concat(isImage ? [] : [{ label: 'Print', d: ic.printer, go: () => this.banner('info', '[Prototype: opens the system print dialog.]') }]).concat([{ label: 'Document info', d: ic.info, go: () => this.setState({ sheet: { kind: 'info', did: d.id } }) }]),
+        isImage, isPdf: !isImage, imgW: Math.round(Math.min(560, (phone ? 340 : 560)) * V.zoom / 100) + 'px', zoomLabel: V.zoom + '%',
+        zoomIn: () => setV({ zoom: Math.min(400, V.zoom + 25) }), zoomOut: () => setV({ zoom: Math.max(50, V.zoom - 25) }),
+        pages: d ? [1, 2].map((n) => ({ aria: 'Page ' + n + ' of 2', head: n === 1 ? (d.cat === 'FORM_025_2' ? 'Form 025-2 · Dental outpatient card' : d.title) : 'Continued', meta: n === 1 ? (pt ? pt.name + ' · ' : '') + lib.fmtDate(d.day) + ' · ' + lib.catLabel(d.cat) : 'Page 2' })) : [],
+        pageLabel: 'Page 1 of 2'
+      };
+    }
+
+    // ======================= FORM 025-2 =======================
+    if (rs === 'formEdit') {
+      const pt = st.patients.find((x) => x.id === rp.patientId);
+      if (!pt) return goneOut('Patient not found');
+      out.isForm = true;
+      const key = rp.id || ('new:' + pt.id + ':' + (rp.apptId || ''));
+      const existing = rp.id ? (st.forms || []).find((f) => f.id === rp.id) : null;
+      const prevForm = (st.forms || []).filter((f) => f.patientId === pt.id && f.id !== rp.id).sort((a, b) => b.day.localeCompare(a.day))[0];
+      const F = S.fe[key] || this.initForm(existing, pt, st);
+      const setF = (p, dirty) => this.setState({ fe: Object.assign({}, this.state.fe, { [key]: Object.assign({}, F, p, dirty === false ? {} : { dirty: true }) }) });
+      const canEngine = lib.can(st, 'intel');
+      const ICD = [['K02.1', 'Caries of dentine', 'Dental caries'], ['K02.0', 'Caries limited to enamel', 'Dental caries'], ['K04.0', 'Pulpitis', 'Diseases of pulp'], ['K04.5', 'Chronic apical periodontitis', 'Diseases of pulp'], ['K05.1', 'Chronic gingivitis', 'Gingivitis and periodontal diseases'], ['K05.3', 'Chronic periodontitis', 'Gingivitis and periodontal diseases'], ['K08.1', 'Loss of teeth due to accident, extraction or local periodontal disease', 'Other disorders of teeth'], ['K07.3', 'Anomalies of tooth position', 'Dentofacial anomalies'], ['K03.6', 'Deposits on teeth', 'Other diseases of hard tissues'], ['K12.0', 'Recurrent oral aphthae', 'Stomatitis']];
+      const q = F.icdQ.trim().toLowerCase();
+      const res = q ? ICD.filter((c) => (c[0] + ' ' + c[1]).toLowerCase().indexOf(q) >= 0).slice(0, 20) : [];
+      const field = (k, label, rows) => ({ label, v: F.f[k] || '', rows: String(rows), border: (k === 'diagnosis' || k === 'complaints') && F.tried && !F.f.diagnosis && !F.f.complaints ? 'var(--border-error)' : 'var(--border-default)', on: (e) => setF({ f: Object.assign({}, F.f, { [k]: e.target.value }) }) });
+      const engine = [['caries', 'Caries of dentine', 'K02.1'], ['pulpitis', 'Acute pulpitis', 'K04.0'], ['perio', 'Chronic periodontitis', 'K05.3'], ['ging', 'Chronic gingivitis', 'K05.1']];
+      const adult = F.dent === 'adult';
+      const upperT = adult ? [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28] : [55, 54, 53, 52, 51, 61, 62, 63, 64, 65];
+      const lowerT = adult ? [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38] : [85, 84, 83, 82, 81, 71, 72, 73, 74, 75];
+      const jaw = (name, teeth, label) => {
+        const rows = F.rows[name];
+        const painted = {}; rows.forEach((r) => Object.keys(r).forEach((t) => { if (r[t]) painted[t] = true; }));
+        const hist = adult && prevForm ? [{ caption: lib.fmtDate(prevForm.day) + ' · ' + st.me.last, cells: teeth.map((t) => ({ '26': 'C', '36': 'П', '46': 'K', '48': 'O' }[String(t)] || '')) }] : [];
+        return {
+          label, history: hist,
+          teeth: teeth.map((t) => ({ n: String(t), bg: painted[t] ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', border: painted[t] ? 'var(--border-brand)' : 'var(--border-default)' })),
+          rows: rows.map((r, ri) => ({ caption: ri === 0 ? 'Today' : 'Row ' + (ri + 1), cells: teeth.map((t) => ({ v: r[t] || '', aria: 'Tooth ' + t + ' code, row ' + (ri + 1), cls: 'dr-codecell' + (r[t] ? ' is-filled' : ''), on: (e) => { const nr = JSON.parse(JSON.stringify(F.rows)); nr[name][ri][t] = e.target.value; setF({ rows: nr }); } })) })),
+          addRow: () => { const nr = JSON.parse(JSON.stringify(F.rows)); nr[name].push({}); setF({ rows: nr }); },
+          canRemove: rows.length > 1, removeRow: () => { const nr = JSON.parse(JSON.stringify(F.rows)); nr[name].pop(); setF({ rows: nr }); }
+        };
+      };
+      const save = (silent, after) => {
+        if (F.busy) return;
+        if (!F.f.diagnosis.trim() && !F.f.complaints.trim()) { setF({ tried: true }, false); this.banner('error', 'Add at least a diagnosis or complaints before saving'); return; }
+        if (offline) { this.banner('error', 'You are offline. Your form is kept; save when connected.'); return; }
+        setF({ busy: true }, false);
+        this.later('fe', 900, () => {
+          const cur = this.state.fe[key] || F;
+          let fid = cur.savedId || rp.id;
+          if (!fid) { fid = lib.uid('F'); act('set', (s) => ({ forms: [{ id: fid, patientId: pt.id, day: st.today, title: 'Dental outpatient card 025-2', signed: false, pdf: true, data: cur }].concat(s.forms || []), docs: s.docs.concat([{ id: lib.uid('D'), patientId: pt.id, title: '025-2 form, ' + lib.fmtDay(st.today), cat: 'FORM_025_2', day: st.today, by: s.me.name, locked: false, kind: 'pdf' }]) })); }
+          else act('set', (s) => ({ forms: (s.forms || []).map((f) => (f.id === fid ? Object.assign({}, f, { data: cur, pdf: true }) : f)) }));
+          this.setState({ fe: Object.assign({}, this.state.fe, { [key]: Object.assign({}, cur, { busy: false, dirty: false, savedId: fid }) }) });
+          if (after) after(fid); else if (!silent) { this.banner('success', 'Form saved successfully'); act('back'); }
+        });
+      };
+      const sig = existing && existing.signed ? 'signed' : (F.sig || 'none');
+      out.fe = {
+        back: () => { if (F.dirty) this.setState({ sheet: { kind: 'feDiscard', key } }); else act('back'); },
+        openMenu: () => this.setState({ sheet: { kind: 'feMenu', key, fid: F.savedId || rp.id } }),
+        chips: ['General', 'ICD-10', 'Anamnesis', 'Dental chart', 'Treatment', 'Return visits', 'Signature'],
+        headCols: phone ? 2 : 5,
+        head: [['Patient ID', pt.id], ['Date', (existing ? existing.day : st.today).split('-').reverse().join('.')], ['Full Name', pt.name], ['Gender', pt.gender || '—']].concat(pt.dob ? [['Age', String(lib.age(pt.dob, st.today))]] : []).map(([l, v]) => ({ label: l, value: v })),
+        general: [field('address', 'Address', 2), field('job', 'Job', 1), field('diagnosis', 'Diagnosis', 3)],
+        hasIcd: !!F.icd, icdLabel: F.icd ? F.icd.code + ' — ' + F.icd.title : '', clearIcd: () => setF({ icd: null }),
+        icdQ: F.icdQ, onIcdQ: (e) => { const v = e.target.value; setF({ icdQ: v, icdBusy: !!v.trim() }, false); this.later('icd', 250, () => { const c2 = this.state.fe[key]; if (c2) this.setState({ fe: Object.assign({}, this.state.fe, { [key]: Object.assign({}, c2, { icdBusy: false }) }) }); }); },
+        icdBusy: !!F.icdBusy, icdPanel: !!q && !F.icdBusy, icdNone: offline || !res.length, icdNoneText: offline ? 'You’re offline' : 'No matches',
+        icdRes: offline ? [] : res.map((c) => ({ code: c[0], title: c[1], group: c[2], pick: () => setF({ icd: { code: c[0], title: c[1] }, icdQ: '' }) })),
+        engineLocked: !canEngine, engineOpen: canEngine,
+        engine: engine.map(([k, l]) => ({ label: l, selStr: F.engine === k ? 'true' : 'false', bg: F.engine === k ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)', ring: F.engine === k ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => setF({ engine: k }, false) })),
+        engineOffStr: F.engine ? 'false' : 'true', engineBg: F.engine ? 'var(--interactive-primary)' : 'var(--bg-disabled)', engineInk: F.engine ? 'var(--text-inverse)' : 'var(--text-tertiary)',
+        applyEngine: () => {
+          if (!F.engine) return; const e2 = engine.find((x) => x[0] === F.engine);
+          const fill = { caries: { complaints: 'Short pain from cold and sweet food, stops when the stimulus is removed.', visual: 'Carious cavity within dentine, probing painful along the enamel-dentine border.', treatment: 'Removal of carious tissue, composite filling.' }, pulpitis: { complaints: 'Spontaneous pain, worse at night, radiating along the jaw.', visual: 'Deep carious cavity communicating with the pulp chamber, percussion slightly painful.', treatment: 'Pulp extirpation under anaesthesia, canal treatment, temporary filling.' }, perio: { complaints: 'Bleeding gums, bad breath, loose teeth.', visual: 'Periodontal pockets 4–6 mm, subgingival calculus.', treatment: 'Scaling and root planing, chlorhexidine rinse.' }, ging: { complaints: 'Bleeding when brushing.', visual: 'Hyperaemia and swelling of the marginal gingiva, plaque.', treatment: 'Professional cleaning, hygiene instruction.' } }[F.engine];
+          setF({ f: Object.assign({}, F.f, { diagnosis: F.f.diagnosis || e2[1], complaints: fill.complaints, visual: fill.visual, treatment: fill.treatment }), icd: { code: e2[2], title: e2[1] } });
+          this.banner('success', 'Form prefilled from the clinical engine. Review before saving.');
+        },
+        anam: [field('complaints', 'Complaints', 3), field('other', 'Other illnesses and complications', 3), field('details', 'More details on above', 4), field('visual', 'Visual checkup', 3)],
+        showErr: F.tried && !F.f.diagnosis.trim() && !F.f.complaints.trim(),
+        dentition: [['adult', 'Adult teeth'], ['primary', 'Primary (child) teeth']].map(([k, l]) => ({ label: l, selStr: F.dent === k ? 'true' : 'false', bg: F.dent === k ? 'var(--bg-surface)' : 'transparent', shadow: F.dent === k ? 'var(--shadow-dropdown)' : 'none', pick: () => { if (F.dent !== k) setF({ dent: k, rows: { upper: [{}], lower: [{}] } }); } })),
+        jaws: [jaw('upper', upperT, 'Upper jaw'), jaw('lower', lowerT, 'Lower jaw')],
+        exam: [['bite', 'Occlusion (bite type)', 1], ['oral', 'Oral cavity condition', 2], ['xray', 'X-ray and lab examination data', 2], ['treatment', 'Treatment', 3], ['result', 'Treatment result and progress', 2], ['recs', 'Recommendations and instructions', 2]].map(([k, l, r]) => field(k, l, r)),
+        doctor: st.me.name + ' · set on save',
+        addReturn: () => this.setState({ sheet: { kind: 'return', key, idx: -1, date: st.today, text: '' } }),
+        noReturns: !F.returns.length,
+        returns: F.returns.map((r, i) => ({ date: r.date.split('-').reverse().join('.'), text: r.text || 'Tap to add findings', ink: r.text ? 'var(--text-primary)' : 'var(--text-tertiary)', edit: () => this.setState({ sheet: { kind: 'return', key, idx: i, date: r.date, text: r.text } }), remove: () => { const prev = F.returns; setF({ returns: F.returns.filter((_, j) => j !== i) }); this.banner('info', 'Return visit removed', { action: () => { const c3 = this.state.fe[key]; this.setState({ fe: Object.assign({}, this.state.fe, { [key]: Object.assign({}, c3, { returns: prev }) }) }); }, actionLabel: 'Undo' }); } })),
+        sigText: sig === 'signed' ? 'Patient Signed ✓ · Signed at ' + lib.fmtDate(existing ? existing.day : st.today) : (sig === 'requested' ? 'Signature requested. Waiting for the patient…' : 'Not signed yet'),
+        sigInk: sig === 'signed' ? 'var(--text-brand-strong)' : 'var(--text-primary)', sigHint: sig === 'none' && !F.savedId && !rp.id, canReqSig: sig === 'none',
+        reqSig: () => {
+          if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; }
+          const send = (fid) => { const c4 = this.state.fe[key]; this.setState({ fe: Object.assign({}, this.state.fe, { [key]: Object.assign({}, c4, { sig: 'requested' }) }) }); act('set', (s) => ({ forms: (s.forms || []).map((f) => (f.id === fid ? Object.assign({}, f, { sigRequested: true }) : f)) })); this.banner('success', 'Signature request sent to the patient app.'); this.later('sig', 6000, () => { act('set', (s) => ({ forms: (s.forms || []).map((f) => (f.id === fid ? Object.assign({}, f, { signed: true }) : f)) })); const c5 = this.state.fe[key]; if (c5) this.setState({ fe: Object.assign({}, this.state.fe, { [key]: Object.assign({}, c5, { sig: 'signed' }) }) }); }); };
+          if (F.savedId || rp.id) { if (F.dirty) save(true, send); else send(F.savedId || rp.id); } else save(true, send);
+        },
+        save: () => save(false), busy: !!F.busy, busyStr: F.busy ? 'true' : 'false'
+      };
+    }
+
+    // ======================= FIND PARTNER =======================
+    if (rs === 'partnerFind') {
+      const pt = st.patients.find((x) => x.id === rp.patientId);
+      if (!pt) return goneOut('Patient not found');
+      out.isFind = true;
+      const P = S.pf || { q: '', spec: '', sel: null, msg: '', reason: '', busy: false, searching: false };
+      const setP = (p) => this.setState({ pf: Object.assign({}, P, p) });
+      const dir = [['DR-1', 'Dr. Aziz Umarov', 'Endocrinologist', 'Tashkent Endocrine Centre', 'Tashkent'], ['DR-2', 'Dr. Madina Rasulova', 'Cardiologist', 'Republican Cardiology Centre', 'Tashkent'], ['DR-3', 'Dr. Kamola Yuldasheva', 'Periodontist', 'Smile Clinic', 'Samarkand'], ['DR-4', 'Dr. Javlon Ismoilov', 'Oral surgeon', 'MedLine', 'Tashkent'], ['DR-5', 'Dr. Zarina Hakimova', 'Endocrinologist', 'Akfa Medline', 'Tashkent'], ['DR-6', 'Dr. Behzod Normatov', 'Orthodontist', 'Dentmaster', 'Bukhara'], ['DR-7', 'Dr. Lola Sharipova', 'Allergist', 'Shox Med', 'Andijan'], ['DR-8', 'Dr. Ulugbek Rahmonov', 'Cardiologist', 'Medion', 'Tashkent']];
+      const specs = Array.from(new Set(dir.map((d) => d[2]))).sort();
+      const q = P.q.trim().toLowerCase();
+      const list = offline ? [] : dir.filter((d) => (!q || d[1].toLowerCase().indexOf(q) >= 0) && (!P.spec || d[2] === P.spec));
+      const sel = P.sel ? dir.find((d) => d[0] === P.sel && list.indexOf(d) >= 0) : null;
+      const partners = (st.partnerships || []).filter((c) => c.patientId === pt.id).map((c) => c.partner);
+      const leave = () => { if (P.msg.trim()) this.setState({ sheet: { kind: 'confirm', title: 'Discard invite?', body: 'Your message will be lost.', label: 'Discard', red: true, go: () => act('back') } }); else act('back'); };
+      out.pf = {
+        back: leave, context: 'Find a partner doctor in Uzbekistan for ' + pt.name,
+        q: P.q, onQ: (e) => { setP({ q: e.target.value, searching: true }); this.later('pf', 300, () => this.setState({ pf: Object.assign({}, this.state.pf, { searching: false }) })); },
+        spec: P.spec, specs: [{ v: '', label: 'All specialties' }].concat(specs.map((s) => ({ v: s, label: s }))), onSpec: (e) => setP({ spec: e.target.value, reason: e.target.value || P.reason }),
+        searching: !!P.searching, offline, none: !offline && !P.searching && !list.length,
+        results: P.searching ? [] : list.map((d) => ({ ini: lib.initials(d[1]), name: d[1], sub: d[2] + ' · ' + d[3] + ' · ' + d[4], already: partners.indexOf(d[1]) >= 0, selStr: sel && sel[0] === d[0] ? 'true' : 'false', bg: sel && sel[0] === d[0] ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', ring: sel && sel[0] === d[0] ? 'inset 0 0 0 2px var(--border-focus)' : 'none', icon: sel && sel[0] === d[0] ? ic.check : ic.chevR, checkInk: sel && sel[0] === d[0] ? 'var(--text-brand-strong)' : 'var(--text-secondary)', pick: () => setP({ sel: sel && sel[0] === d[0] ? null : d[0], reason: P.reason || d[2] }) })),
+        hasSel: !!sel, selName: sel ? sel[1] : '', reason: P.reason, onReason: (e) => setP({ reason: e.target.value }), msg: P.msg, onMsg: (e) => setP({ msg: e.target.value }), busy: P.busy, busyStr: P.busy ? 'true' : 'false',
+        send: () => {
+          if (!sel || P.busy) return; if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; }
+          setP({ busy: true });
+          this.later('pfs', 900, () => { const id = lib.uid('CP'); act('set', (s) => ({ partnerships: [{ id, patientId: pt.id, partner: sel[1], partnerSpec: sel[2], role: 'OWNER', status: 'PENDING', since: s.today, reason: P.reason || sel[2], message: P.msg.trim(), updates: [] }].concat(s.partnerships || []) })); this.setState({ pf: null }); act('replace', { s: 'partnerDetail', p: { id } }); this.banner('success', 'Invite sent to ' + sel[1]); });
+        }
+      };
+    }
+
+    // ======================= PARTNERSHIPS =======================
+    if (rs === 'partnerships') {
+      out.isPartners = true;
+      const pid = S.plShowAll ? null : rp.patientId;
+      const chip = (c) => { const me = c.role === 'OWNER'; if (c.status === 'PENDING') return me ? ['Pending — waiting for ' + c.partner, 'var(--bg-info-subtle)'] : ['Pending — needs your answer', 'var(--bg-warning-subtle)']; return [{ ACTIVE: 'Active', DECLINED: 'Declined', CANCELLED: 'Cancelled', COMPLETED: 'Completed' }[c.status] || 'Unknown', c.status === 'ACTIVE' ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)']; };
+      const F = S.plFilter;
+      let rows = (st.partnerships || []).filter((c) => !pid || c.patientId === pid);
+      rows = rows.filter((c) => F === 'All' || (F === 'Needs my answer' && c.status === 'PENDING' && c.role !== 'OWNER') || (F === 'Active' && c.status === 'ACTIVE') || (F === 'Sent' && c.status === 'PENDING' && c.role === 'OWNER') || (F === 'Finished' && ['DECLINED', 'CANCELLED', 'COMPLETED'].indexOf(c.status) >= 0));
+      rows.sort((a, b) => ((a.status === 'PENDING' && a.role !== 'OWNER') ? 0 : 1) - ((b.status === 'PENDING' && b.role !== 'OWNER') ? 0 : 1));
+      const pt = rp.patientId ? lib.patient(st, rp.patientId) : null;
+      out.pl = {
+        filtered: !!pid, filterLabel: pt ? 'For ' + pt.name : '', showAll: () => this.setState({ plShowAll: true }),
+        chips: ['All', 'Needs my answer', 'Active', 'Sent', 'Finished'].map((c) => ({ label: c, selStr: F === c ? 'true' : 'false', bg: F === c ? 'var(--bg-success-subtle)' : 'var(--bg-surface)', ring: F === c ? 'inset 0 0 0 1px var(--border-focus)' : 'none', pick: () => this.setState({ plFilter: c }) })),
+        empty: !rows.length, canFind: !!rp.patientId, find: () => act('push', { s: 'partnerFind', p: { patientId: rp.patientId } }),
+        rows: rows.map((c) => { const [l, bg] = chip(c); return { ini: lib.initials(c.partner.replace('Dr. ', '')), needs: c.status === 'PENDING' && c.role !== 'OWNER', patient: lib.patient(st, c.patientId).name || 'Patient', with: 'with ' + c.partner + ' · ' + c.partnerSpec, chip: l, chipBg: bg, when: lib.fmtDate(c.since), open: () => act('push', { s: 'partnerDetail', p: { id: c.id } }) }; })
+      };
+    }
+
+    // ======================= PARTNERSHIP DETAIL =======================
+    if (rs === 'partnerDetail') {
+      const c = (st.partnerships || []).find((x) => x.id === rp.id);
+      if (!c) return goneOut('This partnership no longer exists');
+      out.isPartner = true;
+      const me = c.role === 'OWNER'; const pt = lib.patient(st, c.patientId);
+      const draft = S.pd[c.id] || '';
+      const setStatus = (status, msg) => { if (offline) { this.banner('error', 'Couldn’t update the partnership. You are offline.'); return; } act('set', (s) => ({ partnerships: s.partnerships.map((x) => (x.id === c.id ? Object.assign({}, x, { status, ended: status === 'ACTIVE' ? null : s.today }) : x)) })); this.banner('success', msg); };
+      const confirm = (title, body, label, red, go) => this.setState({ sheet: { kind: 'confirm', title, body, label, red, go } });
+      const actions = [];
+      if (c.status === 'PENDING' && !me) { actions.push({ label: 'Accept', cls: 'sh-btn sh-btn--primary', go: () => confirm('Accept this invite?', 'You will see ' + pt.name + '’s record and can post progress updates.', 'Accept', false, () => setStatus('ACTIVE', 'Partnership accepted')) }); actions.push({ label: 'Decline', cls: 'sh-btn sh-btn--secondary is-destructive', go: () => confirm('Decline this invite?', c.partner + ' will be told you declined.', 'Decline', true, () => { setStatus('DECLINED', 'Invite declined'); act('back'); }) }); }
+      if (c.status === 'PENDING' && me) actions.push({ label: 'Cancel invite', cls: 'sh-btn sh-btn--secondary is-destructive', go: () => confirm('Cancel this invite?', c.partner + ' will no longer see it.', 'Cancel invite', true, () => setStatus('CANCELLED', 'Invite cancelled')) });
+      if (c.status === 'ACTIVE') actions.push({ label: 'Mark completed', cls: 'sh-btn sh-btn--secondary', go: () => confirm('Mark this partnership as completed?', 'Progress updates will be closed.', 'Mark completed', false, () => setStatus('COMPLETED', 'Partnership completed')) });
+      const chipMap = c.status === 'PENDING' ? (me ? ['Pending — waiting for ' + c.partner, 'var(--bg-info-subtle)'] : ['Pending — needs your answer', 'var(--bg-warning-subtle)']) : [{ ACTIVE: 'Active', DECLINED: 'Declined', CANCELLED: 'Cancelled', COMPLETED: 'Completed' }[c.status] + (c.ended ? ' · ' + lib.fmtDate(c.ended) : ''), c.status === 'ACTIVE' ? 'var(--bg-success-subtle)' : 'var(--bg-canvas)'];
+      out.cp = {
+        back: () => { if (draft.trim()) this.setState({ sheet: { kind: 'confirm', title: 'Discard update?', body: 'Your progress update has not been sent.', label: 'Discard', red: true, keepLabel: 'Keep', go: () => { this.setState({ pd: Object.assign({}, S.pd, { [c.id]: '' }) }); act('back'); } } }); else act('back'); },
+        patient: pt.name || 'Patient', openPatient: () => act('push', { s: 'patDetail', p: { id: c.patientId } }),
+        chip: chipMap[0], chipBg: chipMap[1],
+        people: [{ role: 'Invited by', name: me ? st.me.name : c.partner }, { role: 'Partner', name: me ? c.partner : st.me.name }].map((d) => Object.assign(d, { ini: lib.initials(d.name.replace('Dr. ', '')) })),
+        spec: c.partnerSpec + (c.reason ? ' · ' + c.reason : ''), hasMsg: !!c.message, msg: c.message || '',
+        hasHint: c.status === 'PENDING', hint: me ? 'Invite sent. Waiting for ' + c.partner + ' to accept.' : c.partner + ' invited you to co-treat this patient.',
+        hasActions: actions.length > 0, actions,
+        noUpdates: !(c.updates || []).length,
+        updates: (c.updates || []).map((u) => ({ by: u.by, when: lib.fmtDate(u.at.slice(0, 10)) + (u.at.length > 10 ? ', ' + u.at.slice(11, 16) : ''), text: u.text, align: u.by === st.me.name ? 'flex-end' : 'flex-start', bg: u.by === st.me.name ? 'var(--bg-success-subtle)' : 'var(--bg-surface)' })),
+        canPost: c.status === 'ACTIVE', draft, onDraft: (e) => this.setState({ pd: Object.assign({}, S.pd, { [c.id]: e.target.value }) }), postOffStr: draft.trim() ? 'false' : 'true',
+        post: () => { const t = draft.trim(); if (!t) return; if (offline) { this.banner('error', 'Couldn’t post the update. You are offline.'); return; } act('set', (s) => ({ partnerships: s.partnerships.map((x) => (x.id === c.id ? Object.assign({}, x, { updates: (x.updates || []).concat([{ at: s.today + 'T' + lib.hm(s.nowMin), by: s.me.name, text: t }]) }) : x)) })); this.setState({ pd: Object.assign({}, S.pd, { [c.id]: '' }) }); }
+      };
+    }
+    return this.sheets(out);
+  }
+  initForm(existing, pt, st) {
+    if (existing && existing.data) return Object.assign({}, existing.data, { busy: false, dirty: false, savedId: existing.id });
+    const seedF = existing ? { diagnosis: 'Caries of dentine, tooth 36', complaints: 'Pain in 36 when chewing.', treatment: 'Composite filling of 36.' } : {};
+    return { f: Object.assign({ address: pt.address || '', job: '', diagnosis: '', complaints: '', other: pt.chronic || '', details: '', visual: '', bite: '', oral: '', xray: '', treatment: '', result: '', recs: '' }, seedF), icd: existing ? { code: 'K02.1', title: 'Caries of dentine' } : null, icdQ: '', icdBusy: false, engine: '', dent: 'adult', rows: { upper: [{}], lower: [existing ? { 36: 'П' } : {}] }, returns: [], sig: existing && existing.sigRequested ? 'requested' : 'none', dirty: false, busy: false, tried: false, savedId: existing ? existing.id : null };
+  }
+  briefing(pt) {
+    if (this.state.aiBusy) return;
+    if (this.props.store.online === false) { this.banner('error', 'You are offline. Try again when connected.'); return; }
+    this.setState({ aiBusy: true, sheet: null });
+    this.later('ai', 1800, () => {
+      const st = this.props.store, lib = this.props.lib;
+      const lines = [];
+      if (pt.chronic) lines.push(pt.chronic + ' recorded. Check the latest results before invasive treatment.');
+      if (pt.allergies) lines.push('Allergy: ' + pt.allergies + '.');
+      const docs = st.docs.filter((d) => d.patientId === pt.id && !d.locked).slice(0, 3); docs.forEach((d) => lines.push(lib.catLabel(d.cat) + ': ' + d.title + ' (' + lib.fmtDate(d.day) + ').'));
+      const next = st.appointments.filter((a) => a.patientId === pt.id && a.day >= st.today && (a.status === 'CONFIRMED' || a.status === 'REQUESTED')).sort((a, b) => (a.day + a.start).localeCompare(b.day + b.start))[0];
+      lines.push(next ? 'Next visit: ' + lib.fmtDay(next.day) + ' ' + next.start + ' — ' + next.reason + '.' : 'No upcoming visit booked.');
+      this.setState({ aiBusy: false, sheet: { kind: 'brief', lines, name: pt.name } });
+    });
+  }
+  startUpload(pid, title, cat, pages) {
+    const lib = this.props.lib, act = this.props.act;
+    this.setState({ upload: { pid, title, pct: 0 } });
+    const step = (pct) => {
+      if (!this.state.upload) return;
+      if (pct >= 100) {
+        if (this.props.store.online === false) { this.setState({ upload: null }); this.banner('error', 'Upload failed. You are offline.', { action: () => this.startUpload(pid, title, cat, pages), actionLabel: 'Retry' }); return; }
+        act('set', (s) => ({ docs: [{ id: lib.uid('D'), patientId: pid, title, cat, day: s.today, by: s.me.name, locked: false, kind: pages ? 'pdf' : 'pdf' }].concat(s.docs) }));
+        this.setState({ upload: null }); this.banner('success', 'Document “' + title + '” uploaded'); return;
+      }
+      this.setState({ upload: Object.assign({}, this.state.upload, { pct }) });
+      this.t.up = setTimeout(() => step(pct + 25), 400);
+    };
+    step(0);
+  }
+  sheets(out) {
+    const S = this.state; const sh = S.sheet; if (!sh) return out;
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const offline = st.online === false;
+    const close = () => this.setState({ sheet: null });
+    const set = (p) => this.setState({ sheet: Object.assign({}, sh, p) });
+    const base = { title: '', titleInk: 'var(--text-primary)', hasSub: false, sub: '', max: '480px', align: 'left', hasX: true, close, scrim: close, isText: false, body: '', hasIcon: false, icon: '', iconBg: '', iconInk: '', hasActions: true, hasPrimary: true, primaryLabel: 'OK', primary: close, primaryBg: 'var(--interactive-primary)', primaryInk: 'var(--text-inverse)', primaryOffStr: 'false', busy: false, busyStr: 'false', hasSecondary: false, secondaryLabel: 'Cancel', secondary: close, hasErr: false, err: '', isMenu: false, isAdd: false, isCreds: false, isBook: false, isMeta: false, isReturn: false, isBrief: false }; this.props.lib.popify(base, !!this.props.phone);
+    out.hasSheet = true; out.sheet = base;
+    const k = sh.kind;
+    const item = (label, d, go, extra) => Object.assign({ label, d, go, hasIcon: !!d, ink: 'var(--text-primary)', weight: 600, bg: 'transparent', sel: false, hasSub: false, sub: '' }, extra || {});
+    const menu = (title, items, sub) => { Object.assign(base, { title, isMenu: true, hasActions: false, max: '420px', hasSub: !!sub, sub: sub || '' }); out.mn = { items }; };
+    if (k === 'filter') { const cur = S.ls.status; menu('Filter by status', [['', 'All statuses'], ['ACTIVE', 'Active'], ['AT_RISK', 'At risk'], ['FOLLOW_UP', 'Follow-up']].map(([v, l]) => item(l, null, () => { this.setState({ sheet: null, ls: Object.assign({}, S.ls, { status: v, page: 1 }) }); }, { sel: cur === v, weight: cur === v ? 700 : 600 }))); }
+    if (k === 'sort') { const cur = S.ls.sort; menu('Sort', [['az', 'Name (A–Z)'], ['za', 'Name (Z–A)'], ['recent', 'Recent activity'], ['created', 'Newest first']].map(([v, l]) => item(l, null, () => this.setState({ sheet: null, ls: Object.assign({}, S.ls, { sort: v, page: 1, tab: S.ls.tab === 'recent' ? 'all' : S.ls.tab }) }), { sel: cur === v, weight: cur === v ? 700 : 600 }))); }
+    if (k === 'more') {
+      const pt = lib.patient(st, sh.pid); const canAi = lib.can(st, 'briefing') || lib.can(st, 'intel');
+      const items = [
+        item('Make appointment', ic.calPlus, () => { if (offline) { this.banner('error', 'You are offline. Try again when connected.'); close(); return; } this.setState({ sheet: { kind: 'book', pid: pt.id, base: st.today, day: st.today, sel: null, kind2: 'clinic', reason: '' } }); }),
+        item('Upload Document', ic.upload, () => this.setState({ sheet: { kind: 'upOpts', pid: pt.id } })),
+        item('Create Form', ic.clipboard, () => this.setState({ sheet: { kind: 'template', pid: pt.id } })),
+        item('Create treatment plan', ic.layers, () => { close(); act('go', { tab: 'clinic', s: 'planWizard', p: { patientId: pt.id } }); }, { hasSub: true, sub: 'Clinic' })
+      ].concat(canAi ? [item('Generate briefing', ic.sparkles, () => this.briefing(pt))] : []).concat([
+        item('Find therapy partner', ic.handshake, () => { close(); act('push', { s: 'partnerFind', p: { patientId: pt.id } }); }),
+        item('Care partnerships', ic.users, () => { close(); this.setState({ plShowAll: false }); act('push', { s: 'partnerships', p: { patientId: pt.id } }); })
+      ]);
+      menu(pt.name, items);
+    }
+    if (k === 'docMenu') menu('Documents', [item('Upload Document', ic.upload, () => this.setState({ sheet: { kind: 'upOpts', pid: sh.pid } })), item('Create Form', ic.clipboard, () => this.setState({ sheet: { kind: 'template', pid: sh.pid } })), item('Create Task', ic.tasks, () => { close(); if (!lib.can(st, 'tasks')) { this.banner('info', 'Remote care tasks need the Premium plan.', { action: () => act('go', { tab: 'profile', s: 'subscription' }), actionLabel: 'See plans' }); return; } act('go', { tab: 'tasks', s: 'taskCreate', p: { patientId: sh.pid } }); })]);
+    if (k === 'upOpts') menu('Upload Document', [
+      item('Upload PDF', ic.file, () => this.setState({ sheet: { kind: 'meta', pid: sh.pid, title: 'Lab_results_Oct', cat: '', pages: 0 } }), { hasSub: true, sub: '[Prototype: picks “Lab_results_Oct.pdf”]' }),
+      item('Take Photo', ic.camera, () => this.setState({ sheet: { kind: 'meta', pid: sh.pid, title: 'Photo ' + lib.fmtDate(st.today), cat: '', pages: 1 } })),
+      item('Scan (multi-page)', ic.layers, () => this.setState({ sheet: { kind: 'scan', pid: sh.pid, n: 1 } })),
+      item('Choose from gallery', ic.image, () => this.setState({ sheet: { kind: 'meta', pid: sh.pid, title: 'IMG_2041', cat: '', pages: 1 } }))
+    ]);
+    if (k === 'scan') Object.assign(base, { title: 'Add another page?', isText: true, body: 'Pages scanned: ' + sh.n, hasX: false, scrim: () => this.setState({ sheet: { kind: 'meta', pid: sh.pid, title: 'Scanned document (' + sh.n + ' pages)', cat: '', pages: sh.n } }), hasSecondary: true, secondaryLabel: 'Finish', secondary: () => this.setState({ sheet: { kind: 'meta', pid: sh.pid, title: 'Scanned document (' + sh.n + (sh.n === 1 ? ' page)' : ' pages)'), cat: '', pages: sh.n } }), primaryLabel: 'Add page', primary: () => set({ n: sh.n + 1 }) });
+    if (k === 'meta') {
+      const cats = ['BLOOD_TEST', 'URINE_TEST', 'STOOL_TEST', 'LAB_RESULT', 'MRI', 'CT_SCAN', 'XRAY', 'ULTRASOUND', 'MAMMOGRAPHY', 'ECG', 'EEG', 'ENDOSCOPY', 'BIOPSY', 'PATHOLOGY', 'IMAGING_OTHER', 'PRESCRIPTION', 'VACCINATION_RECORD', 'DISCHARGE_SUMMARY', 'REFERRAL', 'HOSPITAL_REPORT', 'ALLERGY_REPORT', 'OTHER_MEDICAL'];
+      const priv = ['APPOINTMENT_NOTE', 'REMOTE_TASK_DOCUMENT', 'INTERNAL_NOTE', 'OTHER_PRIVATE'];
+      const ok = !!sh.cat && !!sh.title.trim();
+      const cancel = () => { if (sh.pages > 1) this.setState({ sheet: { kind: 'confirm', title: 'Discard ' + sh.pages + ' scanned pages?', body: 'The scanned pages will be lost.', label: 'Discard', red: true, prev: sh, go: () => {} } }); else close(); };
+      Object.assign(base, { title: 'Upload Document', isMeta: true, max: '520px', scrim: cancel, close: cancel, hasSecondary: true, secondaryLabel: 'Cancel', secondary: cancel, primaryLabel: 'Add', primaryBg: ok ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: ok ? 'var(--text-inverse)' : 'var(--text-tertiary)', primaryOffStr: ok ? 'false' : 'true',
+        primary: () => { if (!ok) { if (!sh.cat) this.banner('error', 'Select a document type'); return; } if (offline) { this.banner('error', 'You are offline. Your file is kept; try again when connected.'); return; } close(); this.startUpload(sh.pid, sh.title.trim(), sh.cat, sh.pages); } });
+      out.um = { hasPages: sh.pages > 1, pages: Array.from({ length: sh.pages }, (_, i) => 'p. ' + (i + 1)), title: sh.title, onTitle: (e) => set({ title: e.target.value }), cat: sh.cat, onCat: (e) => set({ cat: e.target.value }), medical: cats.map((c) => ({ v: c, label: lib.catLabel(c) })), private: priv.map((c) => ({ v: c, label: lib.catLabel(c) })) };
+    }
+    if (k === 'template') menu('Select Form Template', [item('Form 025-2', ic.clipboard, () => { close(); act('push', { s: 'formEdit', p: { patientId: sh.pid } }); }, { hasSub: true, sub: 'Dental outpatient card (Uzbekistan form 025-2)' })]);
+    if (k === 'chronic') Object.assign(base, { title: 'Patient with Chronic Disease', titleInk: 'var(--text-error)', isText: true, body: 'You are dealing with a patient who has a chronic disease:\nPatient: ' + sh.name + '\nChronic Disease: ' + sh.disease + '\n\nPlease be careful and double-check all procedures, medications, and treatments you are planning for this patient.', hasIcon: true, icon: ic.alert, iconBg: 'var(--bg-error-subtle)', iconInk: 'var(--text-error)', align: 'center', hasX: false, scrim: () => {}, primaryLabel: 'I Understand', primaryBg: 'var(--interactive-destructive)', primary: close });
+    if (k === 'creds') {
+      const copy = (l) => () => this.banner('success', l + ' copied to clipboard');
+      Object.assign(base, { title: 'Account Created', isText: true, body: 'Please share these credentials with the patient. They will be required to change their password on first login.', isCreds: true, hasIcon: true, icon: ic.shield, iconBg: 'var(--bg-success-subtle)', iconInk: 'var(--text-brand-strong)', hasX: false, scrim: () => {}, primaryLabel: 'Close', primary: close });
+      out.cr = { rows: [{ label: 'Username', value: sh.user, aria: 'Copy username', copy: copy('Username') }, { label: 'One-time Password', value: sh.pass, aria: 'Copy password', copy: copy('Password') }] };
+    }
+    if (k === 'brief') { Object.assign(base, { title: 'Patient briefing', hasSub: true, sub: sh.name, isBrief: true, max: '560px', hasSecondary: true, secondaryLabel: 'Copy', secondary: () => this.banner('success', 'Copied'), primaryLabel: 'Done' }); out.brief = sh.lines; }
+    if (k === 'confirm') Object.assign(base, { title: sh.title, isText: true, body: sh.body, hasSecondary: true, secondaryLabel: sh.keepLabel || 'Cancel', secondary: () => this.setState({ sheet: sh.prev || null }), close: () => this.setState({ sheet: sh.prev || null }), scrim: () => this.setState({ sheet: sh.prev || null }), primaryLabel: sh.label, primaryBg: sh.red ? 'var(--interactive-destructive)' : 'var(--interactive-primary)', primary: () => { this.setState({ sheet: null }); sh.go(); } });
+    if (k === 'feDiscard') Object.assign(base, { title: 'Discard changes?', isText: true, body: 'Your changes to this form will be lost.', hasSecondary: true, secondaryLabel: 'Keep editing', primaryLabel: 'Discard', primaryBg: 'var(--interactive-destructive)', primary: () => { const f2 = Object.assign({}, S.fe); delete f2[sh.key]; this.setState({ sheet: null, fe: f2 }); act('back'); } });
+    if (k === 'feMenu') menu('Form 025-2', [item('Open PDF', ic.fileText, () => { close(); const d = st.docs.find((x) => x.cat === 'FORM_025_2' && x.patientId === ((this.props.route || {}).p || {}).patientId); if (!sh.fid || !d) { this.banner('info', 'Save the form first to create its PDF.'); return; } act('push', { s: 'docView', p: { id: d.id } }); }), item('Print', ic.printer, () => { close(); this.banner('info', sh.fid ? '[Prototype: opens the PDF in the viewer, where Print lives.]' : 'Save the form first to create its PDF.'); })]);
+    if (k === 'return') {
+      Object.assign(base, { title: sh.idx < 0 ? 'Add return visit' : 'Edit row', isReturn: true, hasSecondary: true, secondaryLabel: 'Cancel', primaryLabel: 'Save',
+        primary: () => { const F = S.fe[sh.key]; if (!F) { close(); return; } const ret = F.returns.slice(); const row = { date: sh.date || st.today, text: sh.text.trim() }; if (sh.idx < 0) ret.push(row); else ret[sh.idx] = row; this.setState({ sheet: null, fe: Object.assign({}, S.fe, { [sh.key]: Object.assign({}, F, { returns: ret, dirty: true }) }) }); } });
+      out.rv = { date: sh.date, onDate: (e) => set({ date: e.target.value }), text: sh.text, onText: (e) => set({ text: e.target.value }) };
+    }
+    if (k === 'share') Object.assign(base, { title: 'Share this patient document outside Shifa?', isText: true, body: 'The file leaves the app. Only share it with people who are allowed to see it.', hasSecondary: true, secondaryLabel: 'Cancel', primaryLabel: 'Share', primary: () => { close(); this.banner('info', '[Prototype: opens the system share sheet.]'); } });
+    if (k === 'info') { const d = st.docs.find((x) => x.id === sh.did) || {}; Object.assign(base, { title: 'Document info', isText: true, body: 'Title: ' + d.title + '\nType: ' + lib.catLabel(d.cat) + '\nDate: ' + lib.fmtDate(d.day) + '\nUploaded by: ' + d.by + '\nVisibility: ' + (lib.catGroup(d.cat) === 'medical' ? 'All doctors of this patient' : 'Only you'), primaryLabel: 'Close' }); }
+    if (k === 'add') {
+      const f = sh.f; const edit = !!sh.editId;
+      const setF = (p) => set({ f: Object.assign({}, f, p) });
+      const phoneBad = f.phones.some((v) => !this.phoneOk(v));
+      const emailBad = !!f.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email);
+      const digits = (v) => String(v || '').replace(/[^\d]/g, '').slice(-9);
+      const dupe = !edit ? st.patients.find((p) => f.phones.some((v) => v && digits(v).length === 9 && (p.phones || []).some((x) => digits(x) === digits(v)))) : null;
+      const dirty = !!(f.name || f.phones.join('') || f.email || f.address || f.allergies || f.dob || f.gender || f.blood);
+      const tryClose = () => { if (sh.busy) return; if (dirty && !edit) this.setState({ sheet: { kind: 'confirm', title: 'Discard new patient?', body: 'What you entered will be lost.', label: 'Discard', red: true, prev: sh, go: () => {} } }); else close(); };
+      const can = !!f.name.trim() && !sh.busy;
+      Object.assign(base, { title: edit ? 'Edit details' : 'Create New Patient', isAdd: true, max: '560px', scrim: tryClose, close: tryClose, primaryLabel: edit ? 'Save' : 'Create Patient', primaryBg: can ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: can ? 'var(--text-inverse)' : 'var(--text-tertiary)', primaryOffStr: can ? 'false' : 'true', busy: sh.busy, busyStr: sh.busy ? 'true' : 'false',
+        primary: () => {
+          if (sh.busy) return;
+          if (!f.name.trim() || phoneBad || emailBad) { set({ tried: true }); return; }
+          if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; }
+          set({ busy: true });
+          this.later('add', 900, () => {
+            const clean = { name: f.name.trim().replace(/\s+/g, ' '), phones: f.phones.filter(Boolean), email: f.email.trim(), address: f.address.trim(), lang: f.lang, gender: f.gender, blood: f.blood, allergies: f.allergies.trim(), dob: f.dob };
+            if (edit) { this.patchPatient(sh.editId, clean); this.setState({ sheet: null }); this.banner('success', 'Saved'); return; }
+            const n = st.patients.reduce((m, p) => Math.max(m, Number(p.id.replace('P-', ''))), 100) + 1; const id = 'P-' + String(n).padStart(5, '0');
+            act('set', (s) => ({ patients: s.patients.concat([Object.assign({ id, chronic: '', status: 'ACTIVE', createdBy: 'me', portal: false, createdOn: s.today }, clean)]) }));
+            this.setState({ sheet: null }); this.banner('success', 'Patient created'); act('push', { s: 'patDetail', p: { id } });
+          });
+        } });
+      out.ad = {
+        name: f.name, onName: (e) => setF({ name: e.target.value }), nameErr: sh.tried && !f.name.trim(), nameBorder: sh.tried && !f.name.trim() ? 'var(--border-error)' : 'var(--border-default)',
+        phones: f.phones.map((v, i) => ({ v, aria: 'Phone number ' + (i + 1), border: sh.tried && !this.phoneOk(v) ? 'var(--border-error)' : 'var(--border-default)', on: (e) => { const ph = f.phones.slice(); ph[i] = e.target.value; setF({ phones: ph }); }, remove: () => setF({ phones: f.phones.length > 1 ? f.phones.filter((_, j) => j !== i) : [''] }) })),
+        phoneErr: sh.tried && phoneBad, addPhone: () => setF({ phones: f.phones.concat(['']) }),
+        dupe: !!dupe, dupeText: dupe ? dupe.name + ' already uses this phone number.' : '', openDupe: () => { close(); act('push', { s: 'patDetail', p: { id: dupe.id } }); },
+        email: f.email, onEmail: (e) => setF({ email: e.target.value }), emailErr: sh.tried && emailBad, emailBorder: sh.tried && emailBad ? 'var(--border-error)' : 'var(--border-default)',
+        address: f.address, onAddress: (e) => setF({ address: e.target.value }), lang: f.lang, onLang: (e) => setF({ lang: e.target.value }), gender: f.gender, onGender: (e) => setF({ gender: e.target.value }), blood: f.blood, onBlood: (e) => setF({ blood: e.target.value }),
+        dob: f.dob, max: st.today, onDob: (e) => setF({ dob: e.target.value }), allergies: f.allergies, onAllergies: (e) => setF({ allergies: e.target.value })
+      };
+    }
+    if (k === 'book') {
+      const pt = lib.patient(st, sh.pid);
+      const freeOf = (d) => lib.agenda(st, d).rows.filter((r) => r.type === 'free' && (d > st.today || r.min >= st.nowMin));
+      const days = Array.from({ length: 7 }, (_, i) => lib.addDays(sh.base, i));
+      const slots = freeOf(sh.day);
+      let next = null; if (!slots.length) { for (let i = 1; i < 45; i++) { const d = lib.addDays(sh.day, i); if (freeOf(d).length) { next = d; break; } } }
+      const ok = !!sh.sel;
+      Object.assign(base, { title: 'Make appointment', hasSub: true, sub: pt.name, isBook: true, max: '560px', hasSecondary: true, secondaryLabel: 'Cancel', primaryLabel: 'Confirm', primaryBg: ok ? 'var(--interactive-primary)' : 'var(--bg-disabled)', primaryInk: ok ? 'var(--text-inverse)' : 'var(--text-tertiary)', primaryOffStr: ok ? 'false' : 'true', busy: !!sh.busy, busyStr: sh.busy ? 'true' : 'false',
+        primary: () => {
+          if (!ok || sh.busy) return; if (offline) { this.banner('error', 'You are offline. Try again when connected.'); return; }
+          const s0 = slots.find((x) => x.start === sh.sel); if (!s0) return;
+          const go = () => { set({ busy: true }); this.later('book', 800, () => { const a = { id: lib.uid('A'), day: sh.day, start: s0.start, end: s0.end, patientId: pt.id, kind: sh.kind2 === 'video' ? 'video' : 'clinic', status: 'CONFIRMED', reason: sh.reason.trim() || 'Consultation', location: sh.kind2 === 'video' ? 'Video Call' : s0.location, payment: sh.kind2 === 'video' ? 'PENDING' : null, doctorId: 'me', notes: '', soap: { s: '', o: '', a: '', p: '' }, briefing: 'none', docsAttached: 0 }; act('set', (s) => ({ appointments: s.appointments.concat([a]) })); this.setState({ sheet: null }); this.banner('success', 'Patient assigned: ' + pt.name + ', ' + lib.fmtDay(a.day) + ' ' + a.start + '.'); }); };
+          go();
+        } });
+      out.bk = {
+        prev: () => { const nb = lib.addDays(sh.base, -7); set({ base: nb < st.today ? st.today : nb }); }, next: () => set({ base: lib.addDays(sh.base, 7) }),
+        days: days.map((d) => { const s2 = d === sh.day; const has = freeOf(d).length > 0; return { dow: lib.DN[lib.dow(d)], num: String(Number(d.slice(8))), aria: lib.fmtLong(d), selStr: s2 ? 'true' : 'false', bg: s2 ? 'var(--interactive-primary)' : 'var(--bg-canvas)', ink: s2 ? 'var(--text-inverse)' : 'var(--text-primary)', dot: has ? (s2 ? 'var(--icon-inverse)' : 'var(--icon-brand)') : 'transparent', pick: () => set({ day: d, sel: null }) }; }),
+        dayLabel: lib.fmtDay(sh.day), none: !slots.length, hasNext: !!next, nextLabel: next ? 'Next available: ' + lib.fmtDay(next) : '', goNext: () => set({ day: next, base: next, sel: null }),
+        cols: phone ? 4 : 6, slots: slots.map((s2) => ({ label: s2.start, selStr: sh.sel === s2.start ? 'true' : 'false', bg: sh.sel === s2.start ? 'var(--interactive-primary)' : 'var(--bg-canvas)', ink: sh.sel === s2.start ? 'var(--text-inverse)' : 'var(--text-primary)', pick: () => set({ sel: s2.start }) })),
+        kinds: [['clinic', 'In Clinic'], ['video', 'Video Call']].map(([kk, l]) => ({ label: l, selStr: sh.kind2 === kk ? 'true' : 'false', bg: sh.kind2 === kk ? 'var(--bg-surface)' : 'transparent', shadow: sh.kind2 === kk ? 'var(--shadow-dropdown)' : 'none', pick: () => set({ kind2: kk }) })),
+        reason: sh.reason, onReason: (e) => set({ reason: e.target.value })
+      };
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

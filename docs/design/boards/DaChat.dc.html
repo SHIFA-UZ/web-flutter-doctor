@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doctor App — Chat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes ch-spin{to{transform:rotate(360deg)}}
+@keyframes ch-up{from{transform:translateY(var(--size-30));opacity:0}to{transform:none;opacity:1}}
+@keyframes ch-wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+@keyframes ch-bar{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+@keyframes ch-dots{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.ch-b:focus-visible{outline:var(--size-2) solid var(--border-focus);outline-offset:var(--size-2)}
+.ch-row:hover{background:var(--bg-hover) !important}
+.ch-in input,.ch-in textarea{font: 500 var(--font-size-16)/var(--line-height-20) Manrope,system-ui,sans-serif;color:var(--text-primary)}
+.ch-in input::placeholder,.ch-in textarea::placeholder{color:var(--text-tertiary)}
+</style>
+</helmet>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{ false }}"><div style="padding: var(--size-24); font: 500 var(--font-size-14)/var(--size-20) var(--font-sans); color: var(--text-secondary)">Module of the Doctor App prototype. It renders inside “Doctor App — Web” and “Doctor App — Phone”.</div></sc-if>
+<sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+<div class="ch-in" style="position: {{rootPos}}; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: {{rootH}}; min-height: 100%; box-sizing: border-box; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans); display: flex">
+
+  <!-- LIST PANE -->
+  <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+  <section aria-label="Conversations" style="flex: {{listFlex}}; min-width: 0; height: 100%; overflow-y: auto; box-sizing: border-box; padding: {{listPad}}; display: flex; flex-direction: column; gap: var(--size-12); border-right: {{listBorder}}">
+    <h1 style="margin: 0; font-size: {{h1Size}}; line-height: 1.25; font-weight: 700; letter-spacing: var(--letter-spacing-tight)">Chat</h1>
+    <div style="display: flex; gap: var(--size-8); align-items: center">
+      <label style="flex: 1 1 auto; position: relative; display: block"><span style="position: absolute; left: var(--size-12); top: var(--size-12); color: var(--text-secondary); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.search}}"></path></svg></span><input class="sh-input" value="{{q}}" onChange="{{onQ}}" placeholder="Search doctors and patients" aria-label="Search doctors and patients" style="width: 100%; border-radius: var(--radius-full); padding: 0 var(--size-40) 0 var(--size-40)"><sc-if value="{{hasQ}}" hint-placeholder-val="{{ false }}"><button class="ch-b sh-icon-btn sh-icon-btn--secondary no-shadow sh-icon-btn--sm" onClick="{{clearQ}}" aria-label="Clear search" style="position: absolute; right: var(--size-6); top: var(--size-6)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button></sc-if></label>
+      <button aria-pressed="{{sortOn}}" class="ch-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{openSort}}" aria-label="Filter conversations" aria-haspopup="menu" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.filter}}"></path></svg></button>
+    </div>
+    <sc-if value="{{offline}}" hint-placeholder-val="{{ false }}"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">You're offline. Showing saved conversations.</span></sc-if>
+    <sc-if value="{{searching}}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: var(--size-16); text-align: center; font-size: var(--font-size-14); color: var(--text-secondary)">No users found</p></sc-if>
+      <sc-for list="{{results}}" as="r" hint-placeholder-count="3"><button class="ch-b ch-row sh-press sh-press--card" onClick="{{r.open}}" style="padding: var(--size-10) var(--size-12); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: {{r.avBg}}; font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{r.ini}}</span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); font-weight: 700">{{r.name}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{r.role}}</span></span><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chat}}"></path></svg></span></button></sc-for>
+    </sc-if>
+    <sc-if value="{{showConvs}}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div style="background: var(--bg-surface); border-radius: var(--radius-control-lg); padding: var(--size-28) var(--size-20); text-align: center; display: flex; flex-direction: column; gap: var(--size-6)"><b style="font-size: var(--font-size-16)">{{emptyTitle}}</b><span style="font-size: var(--font-size-14); color: var(--text-secondary)">{{emptyHint}}</span></div></sc-if>
+      <sc-for list="{{convs}}" as="c" hint-placeholder-count="4">
+        <button class="ch-b ch-row sh-press sh-press--card" onClick="{{c.open}}" aria-current="{{c.cur}}" style="box-shadow: {{c.ring}}; padding: var(--size-12); display: flex; align-items: center; gap: var(--size-12); color: var(--text-primary)">
+          <span aria-hidden="true" style="width: var(--size-touch); height: var(--size-touch); border-radius: var(--radius-full); background: {{c.avBg}}; font-size: var(--font-size-16); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{c.ini}}</span>
+          <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.name}}</span><span style="font-size: var(--font-size-12); line-height: var(--line-height-18); color: {{c.prevInk}}; font-weight: {{c.prevWeight}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.preview}}</span></span>
+          <span style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: var(--size-4)"><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{c.time}}</span><sc-if value="{{c.hasUnread}}" hint-placeholder-val="{{ false }}"><span aria-label="{{c.unreadAria}}" style="min-width: var(--size-20); height: var(--size-20); padding: 0 var(--size-6); box-sizing: border-box; border-radius: var(--radius-full); background: var(--interactive-primary); color: var(--text-inverse); font-size: var(--font-size-12); line-height: var(--line-height-20); font-weight: 700; text-align: center">{{c.unread}}</span></sc-if></span>
+        </button>
+      </sc-for>
+    </sc-if>
+    <div style="height: {{bottomClear}}; flex: none"></div>
+  </section>
+  </sc-if>
+
+  <!-- THREAD PANE -->
+  <sc-if value="{{showThread}}" hint-placeholder-val="{{ true }}">
+  <section aria-label="Conversation" style="flex: 1 1 auto; min-width: 0; height: 100%; display: flex; flex-direction: column; background: var(--bg-surface)">
+    <sc-if value="{{noSel}}" hint-placeholder-val="{{ false }}"><div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: var(--font-size-14); font-weight: 600">Select a conversation</div></sc-if>
+    <sc-if value="{{hasSel}}" hint-placeholder-val="{{ true }}">
+      <header style="flex: none; padding: {{headPad}}; display: flex; align-items: center; gap: var(--size-10); box-shadow: 0 var(--size-1) 0 var(--border-default)">
+        <sc-if value="{{stack}}" hint-placeholder-val="{{ false }}"><button class="ch-b sh-icon-btn sh-icon-btn--secondary no-shadow" onClick="{{back}}" aria-label="Back" style="flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button></sc-if>
+        <button class="ch-b sh-press" onClick="{{th.openProfile}}" aria-disabled="{{th.headOffStr}}" style="flex: 1 1 auto; min-width: 0; padding: 0; display: flex; align-items: center; gap: var(--size-10); color: var(--text-primary)">
+          <span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-full); background: {{th.avBg}}; font-size: var(--font-size-14); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">{{th.ini}}</span>
+          <span style="min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-16); line-height: var(--line-height-20); font-weight: 700; color: {{th.nameInk}}; text-decoration: {{th.nameDeco}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{th.name}}</span><span style="font-size: var(--font-size-12); color: var(--text-secondary)">{{th.role}}</span></span>
+        </button>
+      </header>
+      <div role="log" aria-live="polite" style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--size-12); display: flex; flex-direction: column; gap: var(--size-8); background: var(--bg-surface)">
+        <sc-if value="{{th.isEmpty}}" hint-placeholder-val="{{ false }}"><div style="margin: auto; text-align: center; color: var(--text-secondary); font-size: var(--font-size-14); display: flex; flex-direction: column; gap: var(--size-4); align-items: center"><span aria-hidden="true" style="width: var(--size-48); height: var(--size-48); border-radius: var(--radius-full); background: var(--bg-success-subtle); color: var(--text-brand-strong); display: inline-flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.chat}}"></path></svg></span><b style="color: var(--text-primary)">Say hello to {{th.first}}</b><span>Messages are end-to-end between you and {{th.first}}.</span></div></sc-if>
+        <sc-for list="{{th.items}}" as="m" hint-placeholder-count="5">
+          <sc-if value="{{m.isDay}}" hint-placeholder-val="{{ false }}"><span style="align-self: center; height: var(--size-24); padding: 0 var(--size-10); border-radius: var(--radius-full); background: var(--bg-surface); font-size: var(--font-size-12); line-height: var(--line-height-24); font-weight: 700; color: var(--text-secondary)">{{m.label}}</span></sc-if>
+          <sc-if value="{{m.isSystem}}" hint-placeholder-val="{{ false }}"><span style="align-self: center; font-size: var(--font-size-12); font-style: italic; color: var(--text-secondary)">{{m.text}}</span></sc-if>
+          <sc-if value="{{m.isMsg}}" hint-placeholder-val="{{ true }}">
+            <div style="align-self: {{m.align}}; max-width: {{bubbleMax}}; display: flex; flex-direction: column; gap: var(--size-2); align-items: {{m.align}}">
+              <sc-if value="{{m.isText}}" hint-placeholder-val="{{ true }}"><div style="padding: var(--size-8) var(--size-12) var(--size-6); border-radius: {{m.radius}}; background: {{m.bg}}; color: {{m.ink}}; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-22); white-space: pre-wrap; overflow-wrap: anywhere">{{m.text}}</span><span style="align-self: flex-end; font-size: var(--font-size-12); opacity: .8; display: inline-flex; gap: var(--size-4); align-items: center">{{m.time}}<sc-if value="{{m.mine}}" hint-placeholder-val="{{ true }}"><span aria-label="{{m.statusAria}}">{{m.tick}}</span></sc-if></span></div></sc-if>
+              <sc-if value="{{m.isImage}}" hint-placeholder-val="{{ false }}"><button class="ch-b sh-press" onClick="{{m.view}}" aria-label="{{m.imgAria}}" style="position: relative; width: {{imgSize}}; height: {{imgSize}}; overflow: hidden; background: var(--bg-media)"><span style="position: absolute; left: var(--size-8); bottom: var(--size-8); right: var(--size-72); color: var(--text-inverse); font-size: var(--font-size-12); text-align: left; text-shadow: 0 var(--size-1) var(--size-2) var(--alpha-black-50)">{{m.caption}}</span><span style="position: absolute; right: var(--size-6); bottom: var(--size-6); height: var(--size-20); padding: 0 var(--size-6); border-radius: var(--radius-full); background: var(--bg-overlay); color: var(--text-inverse); font-size: var(--font-size-12); line-height: var(--line-height-20)">{{m.time}} {{m.tick}}</span><sc-if value="{{m.sending}}" hint-placeholder-val="{{ false }}"><span class="sh-spinner sh-spinner--lg" aria-hidden="true" style="position: absolute; left: 50%; top: 50%; margin: calc(-1 * var(--size-14)) 0 0 calc(-1 * var(--size-14))"></span></sc-if></button></sc-if>
+              <sc-if value="{{m.isVoice}}" hint-placeholder-val="{{ false }}"><div style="width: var(--size-240); max-width: 100%; box-sizing: border-box; padding: var(--size-8) var(--size-10); border-radius: {{m.radius}}; background: {{m.bg}}; color: {{m.ink}}; display: flex; align-items: center; gap: var(--size-10)"><button class="ch-b sh-icon-btn sh-icon-btn--surface no-shadow" onClick="{{m.play}}" aria-label="{{m.playAria}}" style="flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="{{m.playIcon}}"></path></svg></button><span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--size-4)"><span aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: {{m.track}}; overflow: hidden"><span style="display: block; height: var(--size-3); width: {{m.pct}}; background: {{m.ink}}"></span></span><span style="display: flex; justify-content: space-between; font-size: var(--font-size-12); opacity: .85"><span>{{m.pos}}</span><span>{{m.dur}}</span></span></span><span style="font-size: var(--font-size-12); opacity: .8; white-space: nowrap">{{m.time}} {{m.tick}}</span></div></sc-if>
+              <sc-if value="{{m.isDoc}}" hint-placeholder-val="{{ false }}"><button class="ch-b sh-press sh-press--row" onClick="{{m.openDoc}}" style="width: var(--size-280); max-width: 100%; box-sizing: border-box; padding: var(--size-10) var(--size-12); display: flex; align-items: center; gap: var(--size-10); background: {{m.bg}}; border-radius: {{m.radius}}"><span aria-hidden="true" style="width: var(--size-40); height: var(--size-40); border-radius: var(--radius-sm); background: {{m.tile}}; display: inline-flex; align-items: center; justify-content: center; flex: none; font-size: var(--font-size-10); font-weight: 700">{{m.ext}}</span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--size-2)"><span style="font-size: var(--font-size-14); line-height: var(--line-height-18); font-weight: 600; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">{{m.caption}}</span><span style="font-size: var(--font-size-12); opacity: .8">{{m.size}}</span></span><span style="font-size: var(--font-size-12); opacity: .8; white-space: nowrap; align-self: flex-end">{{m.time}} {{m.tick}}</span></button></sc-if>
+              <sc-if value="{{m.failed}}" hint-placeholder-val="{{ false }}"><button class="ch-b sh-press" onClick="{{m.retry}}" style="padding: 0; color: var(--text-error); font: 700 var(--font-size-12)/var(--size-16) var(--font-sans); display: inline-flex; align-items: center; gap: var(--size-4)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.alertCircle}}"></path></svg>Not sent. Tap to retry</button></sc-if>
+            </div>
+          </sc-if>
+        </sc-for>
+        <sc-if value="{{th.typing}}" hint-placeholder-val="{{ false }}"><span role="status" aria-label="{{th.typingAria}}" style="align-self: flex-start; padding: var(--size-10) var(--size-14); border-radius: var(--radius-control-lg) var(--radius-control-lg) var(--radius-control-lg) var(--radius-xs); background: var(--bg-surface); display: inline-flex; gap: var(--size-4)"><span style="width: var(--size-6); height: var(--size-6); border-radius: var(--radius-full); background: var(--grey-600); animation: ch-dots 1.2s infinite"></span><span style="width: var(--size-6); height: var(--size-6); border-radius: var(--radius-full); background: var(--grey-600); animation: ch-dots 1.2s .2s infinite"></span><span style="width: var(--size-6); height: var(--size-6); border-radius: var(--radius-full); background: var(--grey-600); animation: ch-dots 1.2s .4s infinite"></span></span></sc-if>
+      </div>
+      <sc-if value="{{th.hasProgress}}" hint-placeholder-val="{{ false }}"><div role="status" style="flex: none; padding: var(--size-6) var(--size-12); background: var(--bg-surface); display: flex; flex-direction: column; gap: var(--size-4); box-shadow: 0 calc(-1 * var(--size-1)) 0 var(--border-default)"><span style="font-size: var(--font-size-12); font-weight: 700; color: var(--text-secondary)">{{th.progress}}</span><span aria-hidden="true" style="height: var(--size-3); border-radius: var(--radius-xs); background: var(--bg-success-subtle); overflow: hidden"><span style="display: block; width: 30%; height: var(--size-3); background: var(--interactive-primary); animation: ch-bar 1s linear infinite"></span></span></div></sc-if>
+      <footer style="flex: none; padding: var(--size-8) var(--size-10) {{composerPadB}}; background: var(--bg-surface); box-shadow: 0 calc(-1 * var(--size-1)) 0 var(--border-default)">
+        <sc-if value="{{th.recording}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: var(--size-4)">
+            <div style="height: var(--size-48); border-radius: var(--radius-full); background: var(--bg-media); display: flex; align-items: center; gap: var(--size-8); padding: 0 var(--size-8) 0 var(--size-14); color: var(--text-inverse)">
+              <span style="font-size: var(--font-size-12); font-weight: 700; font-variant-numeric: tabular-nums">{{th.recTime}}</span>
+              <span aria-hidden="true" style="flex: 1 1 auto; height: var(--size-28); display: flex; align-items: center; gap: var(--size-2); overflow: hidden"><sc-for list="{{wave}}" as="w" hint-placeholder-count="30"><span style="flex: 1 1 0; height: var(--size-28); border-radius: var(--radius-xs); background: var(--interactive-primary); animation: ch-wave {{w.dur}} ease-in-out infinite"></span></sc-for></span>
+              <button class="ch-b sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" onClick="{{th.recCancel}}" aria-label="Cancel" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.x}}"></path></svg></button>
+              <button class="ch-b sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" onClick="{{th.recSend}}" aria-label="Send recording" ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></button>
+            </div>
+            <span style="font-size: var(--font-size-12); color: var(--text-secondary); padding-left: var(--size-8)">Stop when you are done — pauses and filler words are fine.</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{th.composing}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; align-items: flex-end; gap: var(--size-8)">
+            <button class="ch-b sh-icon-btn sh-icon-btn--ghost" onClick="{{th.attach}}" aria-label="Attach file" title="Attach file" style="flex: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clip}}"></path></svg></button>
+            <textarea value="{{th.draft}}" onChange="{{th.onDraft}}" rows="{{th.rows}}" placeholder="Type a message..." aria-label="Type a message" class="sh-chatbar__input"></textarea>
+            <button class="ch-b sh-icon-btn" onClick="{{th.send}}" aria-label="Send" aria-disabled="{{th.sendOffStr}}" style="flex: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.send}}"></path></svg></button>
+          </div>
+        </sc-if>
+      </footer>
+    </sc-if>
+  </section>
+  </sc-if>
+
+  <!-- IMAGE VIEWER -->
+  <sc-if value="{{viewerOpen}}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-modal="true" aria-label="Image" style="position: fixed; inset: 0; z-index: 70; background: var(--bg-media); display: flex; flex-direction: column; animation: ch-up .15s ease-out">
+      <div style="padding: {{viewerPad}}; display: flex; align-items: center; gap: var(--size-8)"><button class="ch-b sh-icon-btn sh-icon-btn--on-dark" onClick="{{closeViewer}}" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.arrowL}}"></path></svg></button></div>
+      <div style="flex: 1 1 auto; overflow: auto; display: flex; align-items: center; justify-content: center"><div role="img" aria-label="{{viewer.caption}}" style="width: {{viewer.w}}; aspect-ratio: 1 / 1; background: var(--bg-media); flex: none"></div></div>
+      <div style="align-self: center; margin-bottom: var(--size-24); display: flex; align-items: center; gap: var(--size-6); padding: var(--size-6); border-radius: var(--radius-full); background: var(--alpha-white-15); color: var(--text-inverse)"><button class="ch-b sh-icon-btn sh-icon-btn--on-dark sh-icon-btn--sm" onClick="{{viewer.out}}" aria-label="Zoom out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.minus}}"></path></svg></button><span style="min-width: var(--size-52); text-align: center; font-size: var(--font-size-12); font-weight: 700">{{viewer.label}}</span><button class="ch-b sh-icon-btn sh-icon-btn--on-dark sh-icon-btn--sm" onClick="{{viewer.in}}" aria-label="Zoom in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plus}}"></path></svg></button></div>
+    </div>
+  </sc-if>
+
+  <!-- SHEETS -->
+  <sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: {{dlgAlign}}; justify-content: center; padding: {{dlgPad}}; box-sizing: border-box">
+      <button class="sh-scrim--fill" aria-label="Close" onClick="{{closeSheet}}"></button>
+      <div class="sh-sheet" role="dialog" aria-modal="true" aria-labelledby="ch-sh-t" data-pop="{{sheet.pop}}" style="--pop-top: {{sheet.popTop}}; --pop-left: {{sheet.popLeft}}; max-width: var(--layout-dialog-md); border-radius: {{dlgR}}; padding-bottom: {{sheetPadB}}">
+        <sc-if value="{{phone}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: var(--size-36); height: var(--size-4); border-radius: var(--radius-full); background: var(--bg-disabled); margin: calc(-1 * var(--size-8)) auto var(--size-6)"></span></sc-if>
+        <h2 id="ch-sh-t" style="margin: 0 var(--size-4) var(--size-6); font-size: var(--font-size-18); line-height: var(--line-height-22); font-weight: 700">{{sheet.title}}</h2>
+        <sc-if value="{{sheet.hasBody}}" hint-placeholder-val="{{ false }}"><p style="margin: 0 var(--size-4) var(--size-8); font-size: var(--font-size-14); line-height: var(--line-height-20); color: var(--text-secondary)">{{sheet.body}}</p></sc-if>
+        <div role="menu" style="display: flex; flex-direction: column"><sc-for list="{{sheet.items}}" as="m" hint-placeholder-count="4"><sc-if value="{{m.isDiv}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="height: var(--size-1); background: var(--bg-disabled); margin: var(--size-4) 0"></span></sc-if><sc-if value="{{m.isItem}}" hint-placeholder-val="{{ true }}"><button role="menuitem" class="ch-b ch-row sh-press sh-press--row" onClick="{{m.go}}" style="min-height: var(--size-52); padding: 0 var(--size-10); display: flex; align-items: center; gap: var(--size-12); font: {{m.weight}} var(--font-size-16)/var(--size-20) var(--font-sans); color: {{m.ink}}"><sc-if value="{{m.hasIcon}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; color: {{m.iconInk}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg></span></sc-if><span style="flex: 1 1 auto">{{m.label}}</span><sc-if value="{{m.sel}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; color: var(--text-brand-strong)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.check}}"></path></svg></span></sc-if></button></sc-if></sc-for></div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phone":{"editor":null},"store":{"editor":null},"route":{"editor":null},"act":{"editor":null},"lib":{"editor":null},"$preview":{"width":1180,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { q: '', sort: 'newest', sel: null, drafts: {}, rec: null, tick: 0, progress: null, playing: null, playPos: 0, viewer: null, sheet: null, typing: null };
+    this.t = {};
+  }
+  componentDidMount() { this.iv = setInterval(() => { if (this.state.rec || this.state.playing) this.setState({ tick: this.state.tick + 1 }); }, 1000); this.markRead(); }
+  componentDidUpdate(prev) { const a = prev.route || {}, b = this.props.route || {}; if (a.s !== b.s || JSON.stringify(a.p) !== JSON.stringify(b.p)) { if (this.state.rec) this.setState({ rec: null }); this.setState({ sheet: null, viewer: null, playing: null }); this.markRead(); } }
+  componentWillUnmount() { clearInterval(this.iv); Object.keys(this.t).forEach((k) => clearTimeout(this.t[k])); }
+  later(k, ms, fn) { clearTimeout(this.t[k]); this.t[k] = setTimeout(fn, ms); }
+  banner(kind, text, extra) { this.props.act('banner', Object.assign({ kind, text }, extra || {})); }
+  selId() { const r = this.props.route || {}; if (r.s === 'chatThread') return (r.p || {}).id; return this.state.sel; }
+  markRead(id) {
+    const st = this.props.store; if (!st) return; const cid = id || this.selId(); if (!cid) return;
+    const c = st.chats.find((x) => x.id === cid); if (c && c.unread) this.props.act('set', (s) => ({ chats: s.chats.map((x) => (x.id === cid ? Object.assign({}, x, { unread: 0 }) : x)), notifs: s.notifs.map((n) => (n.link && n.link.kind === 'chat' && n.link.id === cid ? Object.assign({}, n, { read: true }) : n)) }));
+  }
+  who(st, lib, c) { if (c.doctorId) { const d = (st.clinic.doctors || []).find((x) => x.id === c.doctorId) || { name: c.doctorName || 'Doctor' }; return { name: d.name, role: 'Doctor', patient: false }; } const p = lib.patient(st, c.patientId); return { name: p.name || 'Patient', role: 'Patient', patient: true, id: p.id }; }
+  addMsg(cid, m) { this.props.act('set', (s) => ({ chats: s.chats.map((x) => (x.id === cid ? Object.assign({}, x, { messages: x.messages.concat([m]) }) : x)) })); }
+  patchMsg(cid, mid, p) { this.props.act('set', (s) => ({ chats: s.chats.map((x) => (x.id === cid ? Object.assign({}, x, { messages: x.messages.map((m) => (m.id === mid ? Object.assign({}, m, p) : m)) }) : x)) })); }
+  deliver(cid, mid) {
+    const st = this.props.store;
+    if (st.online === false) { this.later('fail' + mid, 600, () => this.patchMsg(cid, mid, { status: 'failed' })); return; }
+    this.later('d' + mid, 500, () => this.patchMsg(cid, mid, { status: 'sent' }));
+    this.later('r' + mid, 2200, () => this.patchMsg(cid, mid, { status: 'read' }));
+  }
+  maybeReply(cid) {
+    const st = this.props.store; const c = st.chats.find((x) => x.id === cid); if (!c || c.doctorId || this.replied) return;
+    this.replied = true;
+    this.later('ty1', 2600, () => this.setState({ typing: cid }));
+    this.later('ty2', 5200, () => { this.setState({ typing: null }); const now = this.props.store; this.addMsg(cid, { id: this.props.lib.uid('M'), from: 'them', text: 'Thank you, doctor. Understood.', at: now.today + 'T' + this.props.lib.hm(now.nowMin), kind: 'text', status: 'read' }); });
+  }
+  sendMedia(cid, kind, extra) {
+    const lib = this.props.lib; const st = this.props.store;
+    if (st.online === false) { this.banner('error', 'You’re offline. Try again when connected.'); return; }
+    const steps = kind === 'image' ? ['Compressing image...', 'Uploading file...'] : ['Uploading file...'];
+    this.setState({ progress: steps[0] });
+    const finish = () => { this.setState({ progress: null }); const id = lib.uid('M'); this.addMsg(cid, Object.assign({ id, from: 'me', text: '', at: st.today + 'T' + lib.hm(st.nowMin), kind, status: 'sending' }, extra)); this.deliver(cid, id); };
+    if (steps.length === 2) this.later('pg', 700, () => { this.setState({ progress: steps[1] }); this.later('pg2', 900, finish); }); else this.later('pg', 900, finish);
+  }
+  renderVals() {
+    if (!this.props.lib || !this.props.act || !this.props.store) return { ready: false, notReady: true };
+    const lib = this.props.lib, ic = lib.ic, st = this.props.store, act = this.props.act, phone = !!this.props.phone;
+    const route = this.props.route || { s: 'chats', p: {} }; const S = this.state; const offline = st.online === false;
+    const isThread = route.s === 'chatThread';
+    const stack = phone || !!(this.props.store && this.props.store.compact);
+    const selId = this.selId();
+    const out = {
+      ready: true, notReady: false, ic, phone, back: () => act('back'), offline,
+      rootH: phone ? '100%' : '100%', rootPos: 'absolute', h1Size: lib.h1(phone, st), listPad: phone ? 'var(--size-48) var(--size-12) 0' : 'var(--size-24) var(--size-16) 0', bottomClear: phone ? '120px' : '24px',
+      stack, showList: !stack || !isThread, showThread: !stack ? true : isThread, listFlex: stack ? '1 1 auto' : '0 0 360px', listBorder: stack ? '0' : '1px solid var(--border-default)',
+      headPad: phone ? 'var(--size-48) var(--size-12) var(--size-10)' : 'var(--size-14) var(--size-18)', composerPadB: phone ? 'var(--size-24)' : 'var(--size-10)', bubbleMax: phone ? '82%' : '70%', imgSize: phone ? '220px' : '260px', viewerPad: phone ? 'var(--size-48) var(--size-12) var(--size-8)' : 'var(--size-16)',
+      dlgAlign: phone ? 'flex-end' : 'center', dlgPad: phone ? '0' : 'var(--size-24)', dlgR: phone ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', sheetPadB: phone ? 'var(--size-28)' : 'var(--size-16)',
+      wave: Array.from({ length: 36 }, (_, i) => ({ dur: (0.45 + ((i * 29) % 50) / 100).toFixed(2) + 's' })),
+      hasSheet: false, sheet: {}, closeSheet: () => this.setState({ sheet: null }), viewerOpen: false, viewer: {}, closeViewer: () => this.setState({ viewer: null }), th: {}
+    };
+    // list
+    const q = S.q.trim().toLowerCase();
+    const last = (c) => c.messages[c.messages.length - 1];
+    const previewOf = (m) => !m ? 'No messages' : (m.kind === 'image' ? (m.from === 'me' ? 'You: ' : '') + 'Photo' : m.kind === 'voice' ? (m.from === 'me' ? 'You: ' : '') + 'Voice message' : m.kind === 'doc' ? (m.from === 'me' ? 'You: ' : '') + (m.caption || 'Document') : (m.from === 'me' ? 'You: ' : '') + m.text);
+    let convs = st.chats.slice();
+    if (S.sort.indexOf('unread') === 0) convs = convs.filter((c) => c.unread > 0);
+    const at = (c) => (last(c) || { at: '0000' }).at;
+    convs.sort((a, b) => (S.sort.indexOf('Old') > 0 || S.sort === 'oldest' ? at(a).localeCompare(at(b)) : at(b).localeCompare(at(a))));
+    const pick = (cid) => { this.markRead(cid); if (phone) act('push', { s: 'chatThread', p: { id: cid } }); else { this.setState({ sel: cid }); if (isThread) act('replace', { s: 'chatThread', p: { id: cid } }); } };
+    const startWith = (kind, id) => {
+      this.setState({ q: '' });
+      const ex = st.chats.find((c) => (kind === 'patient' ? c.patientId === id && !c.doctorId : c.doctorId === id));
+      if (ex) { pick(ex.id); return; }
+      if (offline) { this.banner('error', 'Failed to start conversation. You’re offline.'); return; }
+      const cid = lib.uid('C');
+      act('set', (s) => ({ chats: [Object.assign({ id: cid, unread: 0, messages: [] }, kind === 'patient' ? { patientId: id } : { doctorId: id })].concat(s.chats) }));
+      if (phone) act('push', { s: 'chatThread', p: { id: cid } }); else this.setState({ sel: cid });
+    };
+    const results = q ? st.patients.filter((p) => p.name.toLowerCase().indexOf(q) >= 0).map((p) => ({ name: p.name, role: 'Patient', ini: lib.initials(p.name), avBg: 'var(--alpha-teal-15)', open: () => startWith('patient', p.id) })).concat((st.clinic.doctors || []).filter((d) => d.id !== 'me' && d.name.toLowerCase().indexOf(q) >= 0).map((d) => ({ name: d.name, role: 'Doctor', ini: lib.initials(d.name.replace('Dr. ', '')), avBg: 'var(--bg-info-subtle)', open: () => startWith('doctor', d.id) }))) : [];
+    const curSel = selId && st.chats.some((c) => c.id === selId) ? selId : (!phone && convs[0] ? convs[0].id : null);
+    Object.assign(out, {
+      q: S.q, hasQ: !!S.q, onQ: (e) => this.setState({ q: e.target.value }), clearQ: () => this.setState({ q: '' }),
+      openSort: () => this.setState({ sheet: 'sort' }), sortOn: S.sort === 'newest' ? 'false' : 'true',
+      searching: !!q, noResults: !!q && !results.length, results, showConvs: !q,
+      empty: !convs.length, emptyTitle: S.sort.indexOf('unread') === 0 ? 'No unread conversations' : 'No conversations yet', emptyHint: S.sort.indexOf('unread') === 0 ? 'Switch the filter to see all conversations.' : 'Search for a patient or doctor above to start one.',
+      convs: convs.map((c) => { const w = this.who(st, lib, c); const m = last(c); const sel = !phone && c.id === curSel; const t = m ? (m.at.slice(0, 10) === st.today ? m.at.slice(11, 16) : (m.at.slice(0, 10) === lib.addDays(st.today, -1) ? 'Yesterday' : lib.fmtDate(m.at.slice(0, 10)).replace(/ \d{4}$/, ''))) : ''; return { ini: lib.initials(w.name.replace('Dr. ', '')), avBg: w.patient ? 'var(--alpha-teal-15)' : 'var(--bg-info-subtle)', name: w.name, preview: previewOf(m), prevInk: c.unread ? 'var(--text-primary)' : 'var(--text-secondary)', prevWeight: c.unread ? 700 : 500, time: t, hasUnread: c.unread > 0, unread: c.unread > 99 ? '99+' : String(c.unread), unreadAria: c.unread + ' unread', cur: sel ? 'true' : 'false', ring: sel ? 'inset 0 0 0 2px var(--border-focus)' : 'none', open: () => pick(c.id) }; })
+    });
+    // thread
+    const c = curSel ? st.chats.find((x) => x.id === curSel) : null;
+    out.noSel = !c; out.hasSel = !!c;
+    if (isThread && !c) { out.noSel = false; out.hasSel = false; out.showThread = true; }
+    if (c) {
+      const w = this.who(st, lib, c);
+      const draft = S.drafts[c.id] || '';
+      const items = []; let lastDay = '';
+      c.messages.forEach((m) => {
+        const d = m.at.slice(0, 10);
+        if (d !== lastDay) { lastDay = d; items.push({ isDay: true, isMsg: false, isSystem: false, label: d === st.today ? 'Today' : (d === lib.addDays(st.today, -1) ? 'Yesterday' : lib.fmtDate(d)) }); }
+        if (m.kind === 'system') { items.push({ isSystem: true, isDay: false, isMsg: false, text: m.text }); return; }
+        const mine = m.from === 'me';
+        const tick = !mine ? '' : (m.status === 'sending' ? '◷' : (m.status === 'failed' ? '!' : (m.status === 'read' ? '✓✓' : '✓')));
+        const playing = S.playing === m.id; const durS = (() => { const p2 = String(m.dur || '0:10').split(':'); return Number(p2[0]) * 60 + Number(p2[1]); })(); const pos = playing ? Math.min(durS, S.tick - S.playPos) : 0;
+        if (playing && pos >= durS) this.later('pl', 0, () => this.setState({ playing: null }));
+        const ext = (m.caption || '').split('.').pop().toUpperCase();
+        items.push({
+          isMsg: true, isDay: false, isSystem: false, mine, align: mine ? 'flex-end' : 'flex-start', bg: mine ? 'var(--alpha-black-5)' : 'var(--alpha-teal-25)', ink: 'var(--text-primary)', radius: mine ? 'var(--radius-control-lg) var(--radius-xs) var(--radius-control-lg) var(--radius-control-lg)' : 'var(--radius-xs) var(--radius-control-lg) var(--radius-control-lg) var(--radius-control-lg)',
+          isText: m.kind === 'text', isImage: m.kind === 'image', isVoice: m.kind === 'voice', isDoc: m.kind === 'doc',
+          text: m.text, time: m.at.slice(11, 16), tick, statusAria: { sending: 'Sending', failed: 'Not sent', sent: 'Sent', read: 'Read' }[m.status] || 'Sent', sending: m.status === 'sending',
+          caption: m.caption || '', imgAria: 'Photo' + (m.caption ? ': ' + m.caption : '') + '. Open full screen', view: () => this.setState({ viewer: { caption: m.caption || 'Photo', zoom: 1 } }),
+          playAria: playing ? 'Pause voice message' : 'Play voice message', playIcon: playing ? 'M7 5h3v14H7zM14 5h3v14h-3z' : 'M7 4l13 8-13 8z', playBg: 'var(--bg-surface)', track: 'var(--alpha-black-50)',
+          pct: Math.round(100 * pos / durS) + '%', pos: '00:' + lib.pad(pos), dur: '00:' + lib.pad(durS % 60),
+          play: () => (playing ? this.setState({ playing: null }) : this.setState({ playing: m.id, playPos: S.tick })),
+          ext: ext === 'PDF' ? 'PDF' : (ext === 'DOC' || ext === 'DOCX' ? 'DOC' : 'FILE'), tile: 'var(--bg-surface)', size: m.size || '812.0 KB',
+          openDoc: () => this.banner('info', '[Prototype: opens “' + (m.caption || 'Document') + '” in the system viewer.]'),
+          failed: m.status === 'failed', retry: () => { if (st.online === false) { this.banner('error', 'Still offline. Try again when connected.'); return; } this.patchMsg(c.id, m.id, { status: 'sending' }); this.deliver(c.id, m.id); }
+        });
+      });
+      const recSec = S.rec ? S.tick - S.rec.t0 : 0;
+      const send = () => {
+        const text = draft.trim(); if (!text) return;
+        const id = lib.uid('M'); this.addMsg(c.id, { id, from: 'me', text, at: st.today + 'T' + lib.hm(st.nowMin), kind: 'text', status: 'sending' });
+        this.setState({ drafts: Object.assign({}, S.drafts, { [c.id]: '' }) }); this.deliver(c.id, id); if (!offline) this.maybeReply(c.id);
+      };
+      out.th = {
+        ini: lib.initials(w.name.replace('Dr. ', '')), avBg: w.patient ? 'var(--alpha-teal-15)' : 'var(--bg-info-subtle)', name: w.name, role: w.role, first: w.name.replace('Dr. ', '').split(' ')[0],
+        nameInk: w.patient ? 'var(--text-brand-strong)' : 'var(--text-primary)', nameDeco: w.patient ? 'underline' : 'none', headCursor: w.patient ? 'pointer' : 'default', headOffStr: w.patient ? 'false' : 'true',
+        openProfile: () => { if (w.patient) act('go', { tab: 'patients', s: 'patDetail', p: { id: w.id } }); },
+        isEmpty: !c.messages.length, items, typing: S.typing === c.id, typingAria: w.name + ' is typing',
+        hasProgress: !!S.progress, progress: S.progress || '',
+        recording: !!S.rec, composing: !S.rec, recTime: Math.floor(recSec / 60) + ':' + lib.pad(recSec % 60),
+        recCancel: () => this.setState({ rec: null }),
+        recSend: () => { if (recSec < 1) { this.banner('info', 'Recording too short'); this.setState({ rec: null }); return; } const dur = '0:' + lib.pad(Math.min(59, recSec)); this.setState({ rec: null }); this.sendMedia(c.id, 'voice', { dur }); },
+        draft, onDraft: (e) => this.setState({ drafts: Object.assign({}, S.drafts, { [c.id]: e.target.value }) }), rows: String(Math.min(4, Math.max(1, draft.split('\n').length))),
+        sendBg: draft.trim() ? 'var(--interactive-primary)' : 'var(--grey-400)', sendOffStr: draft.trim() ? 'false' : 'true', send,
+        attach: () => this.setState({ sheet: 'attach' })
+      };
+      if (S.sheet === 'attach') {
+        const it = (label, d, go) => ({ isItem: true, isDiv: false, hasIcon: true, label, d, go, weight: 600, ink: 'var(--text-primary)', iconInk: 'var(--text-brand-strong)', sel: false });
+        out.hasSheet = true;
+        out.sheet = lib.popify({ title: 'Attach', hasBody: false, isMenu: true, items: [
+          it('Select Image', ic.image, () => { this.setState({ sheet: null }); this.sendMedia(c.id, 'image', { caption: 'IMG_2041.jpg' }); }),
+          it('Take Photo', ic.camera, () => { this.setState({ sheet: null }); this.sendMedia(c.id, 'image', { caption: 'Photo' }); }),
+          it('Select Document', ic.file, () => { this.setState({ sheet: null }); this.sendMedia(c.id, 'doc', { caption: 'Post-op instructions.pdf', size: '214.6 KB' }); }),
+          it('Record Voice Message', ic.mic, () => { if (offline) { this.setState({ sheet: null }); this.banner('error', 'You’re offline. Try again when connected.'); return; } this.setState({ sheet: null, rec: { t0: S.tick } }); }),
+          { isDiv: true, isItem: false },
+          Object.assign(it('Cancel', null, () => this.setState({ sheet: null })), { hasIcon: false, weight: 700 })
+        ] }, phone);
+      }
+    }
+    if (S.sheet === 'sort') {
+      const it = (k, label) => ({ isItem: true, isDiv: false, hasIcon: false, label, d: '', weight: S.sort === k ? 700 : 600, ink: 'var(--text-primary)', iconInk: 'var(--text-primary)', sel: S.sort === k, go: () => this.setState({ sort: k, sheet: null }) });
+      out.hasSheet = true;
+      out.sheet = lib.popify({ title: 'Filter conversations', hasBody: false, isMenu: true, items: [it('newest', 'Newest first'), it('oldest', 'Oldest first'), { isDiv: true, isItem: false }, it('unreadNew', 'Unread only (newest first)'), it('unreadOld', 'Unread only (oldest first)')] }, phone);
+    }
+    if (S.viewer) { const z = S.viewer.zoom; out.viewerOpen = true; out.viewer = { caption: S.viewer.caption, w: Math.round((phone ? 360 : 640) * z) + 'px', label: Math.round(z * 100) + '%', in: () => this.setState({ viewer: Object.assign({}, S.viewer, { zoom: Math.min(4, z + 0.5) }) }), out: () => this.setState({ viewer: Object.assign({}, S.viewer, { zoom: Math.max(0.5, z - 0.5) }) }) }; }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

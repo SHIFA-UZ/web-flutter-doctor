@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AiInsightCard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes ins-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes ins-pulse{0%,100%{box-shadow:0 0 0 12px #00bbb040,0 0 0 26px #00bbb026}50%{box-shadow:0 0 0 16px #00bbb040,0 0 0 32px #00bbb026}}
+.ins-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+.ins-btn--danger:focus-visible{outline-color:#dc2f2f}
+.ins-skel{background:linear-gradient(90deg,#e8e8e8 0%,#f2f3f2 50%,#e8e8e8 100%);background-size:800px 100%;animation:ins-shimmer 1.4s linear infinite;border-radius:6px}
+</style>
+</helmet>
+<div style="width: 100%; box-sizing: border-box; color: #272727; font-family: Manrope, system-ui, sans-serif">
+
+  <sc-if value="{{showDone}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="background: #e5f8f7; border: 1px solid #00bbb0; border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 20px; font-weight: 500">
+      <span style="display: inline-flex; color: #00bbb0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+      <span style="flex: 1 1 auto">{{doneText}}</span>
+      <button class="ins-btn" onClick="{{undo}}" style="border: 0; background: transparent; color: #00bbb0; font: 700 14px/16px Manrope, system-ui, sans-serif; padding: 6px 8px; cursor: pointer">Undo</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showSuggestion}}" hint-placeholder-val="{{ true }}">
+    <article aria-label="Shifa AI suggestion" style="background: #00bbb026; border: 1px solid #00bbb0; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 12px">
+      <header style="display: flex; align-items: center; gap: 8px">
+        <span style="display: inline-flex; color: #00bbb0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg></span>
+        <h3 style="margin: 0; flex: 1 1 auto; font-size: 14px; line-height: 16px; font-weight: 700">Follow-up due for Bekzod Rahimov</h3>
+        <span style="font-size: 10px; line-height: 14px; color: #494d4c">Shifa AI</span>
+      </header>
+      <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 500">His HbA1c result arrived this morning and is higher than his last one. A follow-up within two weeks would let you review his treatment.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <button class="ins-btn" onClick="{{accept}}" style="height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #00bbb0; color: #ffffff; box-shadow: 0 0 16px #00000026; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer">Schedule Follow-up</button>
+        <button class="ins-btn" style="height: 36px; padding: 0 14px; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer">Review Result</button>
+        <button class="ins-btn" onClick="{{dismiss}}" style="margin-left: auto; height: 36px; padding: 0 8px; border: 0; background: transparent; color: #494d4c; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer">Dismiss</button>
+      </div>
+    </article>
+  </sc-if>
+
+  <sc-if value="{{showRisk}}" hint-placeholder-val="{{ false }}">
+    <article aria-label="Shifa AI risk alert" style="background: #f9ebeb; border: 1px solid #dc2f2f; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 12px">
+      <header style="display: flex; align-items: center; gap: 8px">
+        <span style="display: inline-flex; color: #dc2f2f"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4M12 17h.01"></path></svg></span>
+        <h3 style="margin: 0; flex: 1 1 auto; font-size: 14px; line-height: 16px; font-weight: 700">Possible drug interaction</h3>
+        <span style="font-size: 10px; line-height: 14px; color: #494d4c">from 3 documents</span>
+      </header>
+      <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 500">Jasur Tursunov's new clarithromycin prescription can raise simvastatin levels. Review his medications before the 11:00 visit.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <button class="ins-btn ins-btn--danger" onClick="{{accept}}" style="height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #dc2f2f; color: #ffffff; box-shadow: 0 0 16px #00000026; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer">Review Medications</button>
+        <button class="ins-btn" onClick="{{dismiss}}" style="margin-left: auto; height: 36px; padding: 0 8px; border: 0; background: transparent; color: #494d4c; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer">Dismiss</button>
+      </div>
+    </article>
+  </sc-if>
+
+  <sc-if value="{{showBriefing}}" hint-placeholder-val="{{ false }}">
+    <article aria-label="Visit briefing" style="background: #00bbb026; border: 1px solid #00bbb0; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 12px">
+      <header style="display: flex; align-items: center; gap: 8px">
+        <span style="display: inline-flex; color: #00bbb0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8"></path></svg></span>
+        <h3 style="margin: 0; flex: 1 1 auto; font-size: 14px; line-height: 16px; font-weight: 700">Visit briefing · Dilnoza Yusupova</h3>
+        <span style="font-size: 10px; line-height: 14px; color: #494d4c">from 3 documents</span>
+      </header>
+      <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 20px; font-weight: 500">
+        <li>Penicillin allergy recorded in her 2023 discharge letter.</li>
+        <li>Home blood pressure readings have trended up over the last two weeks.</li>
+        <li>She asked in chat whether her amlodipine dose should change.</li>
+      </ul>
+      <p style="margin: 0; font-size: 10px; line-height: 14px; color: #494d4c">Shifa AI provides general information only. It is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+    </article>
+  </sc-if>
+
+  <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+    <div role="status" aria-label="Analyzing patient documents" style="background: #ffffff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span class="ins-skel" style="width: 16px; height: 16px; border-radius: 999px"></span>
+        <span class="ins-skel" style="width: 55%; height: 14px"></span>
+      </div>
+      <span class="ins-skel" style="width: 100%; height: 12px"></span>
+      <span class="ins-skel" style="width: 80%; height: 12px"></span>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <span class="ins-skel" style="width: 140px; height: 36px; border-radius: 10px"></span>
+        <span style="margin-left: auto; font-size: 10px; line-height: 14px; color: #494d4c">Analyzing patient documents…</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{showVoice}}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Shifa AI voice session" style="background: #ffffff; border-radius: 24px; box-shadow: 0 0 26px #00000066; padding: 40px 24px 24px; display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center">
+      <span aria-hidden="true" style="width: 88px; height: 88px; border-radius: 999px; background: #00bbb0; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; margin: 24px 0 8px; animation: ins-pulse 2.4s ease-in-out infinite">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"></path></svg>
+      </span>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <p aria-live="polite" style="margin: 0; font-size: 18px; line-height: 28px; font-weight: 700; letter-spacing: -1px">{{phaseLabel}}</p>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; color: #494d4c; max-width: 300px">“Which of today's patients still have lab results pending?”</p>
+      </div>
+      <div style="display: flex; gap: 12px; width: 100%">
+        <button class="ins-btn" onClick="{{cancelVoice}}" style="flex: 1 1 0; height: 48px; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; font: 700 16px/22px Manrope, system-ui, sans-serif; cursor: pointer">Cancel</button>
+        <button class="ins-btn" onClick="{{nextPhase}}" style="flex: 1 1 0; height: 48px; border: 0; border-radius: 10px; background: #00bbb0; color: #ffffff; box-shadow: 0 0 16px #00000026; font: 700 16px/22px Manrope, system-ui, sans-serif; cursor: pointer">{{voiceAction}}</button>
+      </div>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["suggestion","risk","briefing","loading","voice"],"default":"suggestion"},"$preview":{"width":480,"height":340}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { outcome: null, phase: 0 }; }
+  renderVals() {
+    const kind = this.props.kind ?? 'suggestion';
+    const o = this.state.outcome;
+    const live = !o;
+    const phases = ['Listening…', 'Thinking…', 'Speaking…'];
+    const p = this.state.phase;
+    return {
+      showDone: !!o,
+      doneText: o === 'dismissed' ? 'Insight dismissed.' : (kind === 'risk' ? 'Medication review added to the 11:00 visit.' : 'Follow-up request sent to Bekzod Rahimov.'),
+      showSuggestion: live && kind === 'suggestion',
+      showRisk: live && kind === 'risk',
+      showBriefing: kind === 'briefing',
+      showLoading: kind === 'loading',
+      showVoice: kind === 'voice',
+      phaseLabel: phases[p],
+      voiceAction: p === 0 ? 'Send' : (p === 1 ? 'Stop' : 'Done'),
+      accept: () => this.setState({ outcome: 'accepted' }),
+      dismiss: () => this.setState({ outcome: 'dismissed' }),
+      undo: () => this.setState({ outcome: null }),
+      nextPhase: () => this.setState({ phase: (p + 1) % 3 }),
+      cancelVoice: () => this.setState({ phase: 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>

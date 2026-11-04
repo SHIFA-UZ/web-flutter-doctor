@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Patient Record — Web</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#00bbb0}a:hover{color:#009a91}
+.pw-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+.pw-doc:hover{background:#0000000d !important}
+.pw-del:hover{background:#f9ebeb !important;color:#dc2f2f !important}
+</style>
+</helmet>
+<div style="min-height: 1240px; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif; display: flex; flex-wrap: wrap; align-items: stretch">
+  <div style="flex: 1 1 260px; background: #ffffff; border-right: 1px solid #e8e8e8; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="patients" mode="full" hint-size="260px,1000px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 24px">
+    <nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 16px; font-weight: 500; color: #494d4c">
+      <a href="PatientsWeb.dc.html" style="font-weight: 700; text-decoration: none">Patients</a>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+      <span aria-current="page">Jasur Tursunov</span>
+    </nav>
+    <dc-import name="PatientHeader" layout="web" on-delete="{{askDeletePatient}}" on-tab="{{pickTab}}" hint-size="100%,380px"></dc-import>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+        <sc-if value="{{isOverview}}" hint-placeholder-val="{{ true }}">
+          <section style="display: flex; flex-direction: column; gap: 12px">
+            <h2 style="margin: 0; font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">Needs Attention</h2>
+            <dc-import name="Insight" kind="risk" hint-size="100%,170px"></dc-import>
+          </section>
+          <section aria-labelledby="docs" style="background: #ffffff; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px 4px">
+              <h2 id="docs" style="margin: 0; font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">Recent Documents</h2>
+              <button class="pw-btn" style="height: 36px; padding: 0 14px; border: 2px solid #00bbb0; border-radius: 10px; background: #ffffff; color: #00bbb0; font: 700 14px/16px Manrope, system-ui, sans-serif; cursor: pointer">Upload Document</button>
+            </div>
+            <sc-if value="{{noDocs}}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; padding: 24px; text-align: center; font-size: 14px; line-height: 20px; color: #494d4c">No documents yet</p>
+            </sc-if>
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px">
+              <sc-for list="{{docs}}" as="d" hint-placeholder-count="3">
+                <li class="pw-doc" style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 10px; background: transparent">
+                  <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 10px; background: #f2f3f2; color: #494d4c; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></span>
+                  <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                    <span style="font-size: 14px; line-height: 16px; font-weight: 700">{{d.title}}</span>
+                    <span style="font-size: 12px; line-height: 12px; font-weight: 500; color: #7d8282">{{d.meta}}</span>
+                  </span>
+                  <button class="pw-del pw-btn" onClick="{{d.del}}" aria-label="Delete {{d.title}}" style="width: 36px; height: 36px; border: 0; border-radius: 999px; background: transparent; color: #494d4c; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>
+                </li>
+              </sc-for>
+            </ul>
+          </section>
+        </sc-if>
+        <sc-if value="{{notOverview}}" hint-placeholder-val="{{ false }}">
+          <section style="background: #ffffff; border-radius: 16px; padding: 48px 24px; text-align: center; font-size: 14px; line-height: 20px; color: #494d4c">[{{tab}} tab — not part of this review]</section>
+        </sc-if>
+      </div>
+      <aside style="flex: 1 1 360px; min-width: 0">
+        <dc-import name="Copilot" layout="docked" scope="Jasur Tursunov" hint-size="100%,560px"></dc-import>
+      </aside>
+    </div>
+  </main>
+
+  <sc-if value="{{showDialog}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px">
+      <button aria-label="Cancel" onClick="{{closeDialog}}" style="position: absolute; inset: 0; border: 0; background: #00000080; cursor: pointer"></button>
+      <div style="position: relative; width: 100%; max-width: 480px">
+        <sc-if value="{{dlgDoc}}" hint-placeholder-val="{{ true }}">
+          <dc-import name="Dialog" layout="web" kind="destructive" title="Delete this document?" body="{{docBody}}" confirm-label="Delete" on-close="{{closeDialog}}" on-confirm="{{confirmDelete}}" hint-size="100%,300px"></dc-import>
+        </sc-if>
+        <sc-if value="{{dlgPatient}}" hint-placeholder-val="{{ false }}">
+          <dc-import name="Dialog" layout="web" kind="destructive" title="Delete Jasur Tursunov?" body="His record, visits and documents will be removed from your clinic. This can’t be undone." confirm-label="Delete Patient" on-close="{{closeDialog}}" on-confirm="{{confirmDelete}}" hint-size="100%,300px"></dc-import>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 60; background: #ffffff; border-radius: 10px; box-shadow: 0 0 6px #00000026; padding: 12px 12px 12px 16px; display: flex; align-items: center; gap: 12px; font-size: 14px; line-height: 20px; font-weight: 500">
+      <span style="display: inline-flex; color: #00bbb0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>
+      {{toast}}
+      <button class="pw-btn" onClick="{{undo}}" style="border: 0; background: transparent; color: #00bbb0; font: 700 14px/16px Manrope, system-ui, sans-serif; padding: 6px 8px; cursor: pointer">Undo</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.all = [
+      { id: 'a', title: 'Blood test results, 18 October', meta: 'PDF · Uploaded by the clinic lab · 18 Oct 2026' },
+      { id: 'b', title: 'Chest X-ray report', meta: 'PDF · 18 Oct 2026' },
+      { id: 'c', title: 'Prescription: clarithromycin 500 mg', meta: 'Created by Dr. Karimova · 18 Oct 2026' }
+    ];
+    this.state = { tab: 'Overview', dialog: null, target: null, removed: [], toast: null, last: null };
+  }
+  componentWillUnmount() { clearTimeout(this.tt); }
+  renderVals() {
+    const s = this.state;
+    const docs = this.all.filter((d) => s.removed.indexOf(d.id) < 0).map((d) => Object.assign({}, d, {
+      del: () => this.setState({ dialog: 'doc', target: d.id })
+    }));
+    const target = this.all.find((d) => d.id === s.target);
+    return {
+      tab: s.tab, isOverview: s.tab === 'Overview', notOverview: s.tab !== 'Overview',
+      docs, noDocs: docs.length === 0,
+      showDialog: !!s.dialog, dlgDoc: s.dialog === 'doc', dlgPatient: s.dialog === 'patient',
+      docBody: target ? '“' + target.title + '” will be removed from Jasur Tursunov’s record. This can’t be undone.' : '',
+      hasToast: !!s.toast, toast: s.toast,
+      pickTab: (t) => this.setState({ tab: t }),
+      askDeletePatient: () => this.setState({ dialog: 'patient' }),
+      closeDialog: () => this.setState({ dialog: null }),
+      confirmDelete: () => {
+        if (s.dialog === 'doc') this.setState({ dialog: null, removed: s.removed.concat([s.target]), last: s.target, toast: 'Document deleted' });
+        else this.setState({ dialog: null, toast: 'Jasur Tursunov was deleted', last: null });
+        clearTimeout(this.tt);
+        this.tt = setTimeout(() => this.setState({ toast: null }), 5000);
+      },
+      undo: () => this.setState({ toast: null, removed: this.state.removed.filter((id) => id !== this.state.last) })
+    };
+  }
+}
+</script>
+</body>
+</html>

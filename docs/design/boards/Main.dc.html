@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home — Web</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#00bbb0}a:hover{color:#009a91}
+</style>
+</helmet>
+<div style="min-height: 1180px; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif; display: flex; flex-wrap: wrap; align-items: stretch">
+  <div style="flex: 1 1 260px; background: #ffffff; border-right: 1px solid #e8e8e8; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="home" mode="full" hint-size="260px,1000px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 24px">
+    <header style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: #494d4c">Sunday, 25 October · 10:27</p>
+        <h1 style="margin: 0; font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: -1px">Good morning, Dr. Karimova</h1>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center">
+        <button aria-label="Notifications, 2 unread" style="position: relative; width: 44px; height: 44px; border: 0; border-radius: 999px; background: #ffffff; box-shadow: 0 0 16px #00000026; color: #272727; display: inline-flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span style="position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; border-radius: 999px; background: #00bbb0; color: #ffffff; font-size: 10px; line-height: 16px; font-weight: 700">2</span>
+        </button>
+      </div>
+    </header>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+        <dc-import name="Hero" layout="auto" briefing="{{briefing}}" started="{{started}}" on-briefing="{{openBriefing}}" on-start="{{start}}" hint-size="100%,250px"></dc-import>
+        <section aria-labelledby="sched" style="display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between">
+            <h2 id="sched" style="margin: 0; font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">Today's Schedule</h2>
+            <div style="display: flex; gap: 16px; align-items: baseline">
+              <span style="font-size: 12px; line-height: 16px; font-weight: 500; color: #494d4c">5 appointments · 1 free slot</span>
+              <a href="ShellTablet.dc.html" style="font-size: 14px; line-height: 16px; font-weight: 700; text-decoration: none">Open Calendar</a>
+            </div>
+          </div>
+          <dc-import name="Timeline" layout="web" started="{{started}}" on-start="{{start}}" hint-size="100%,640px"></dc-import>
+        </section>
+      </div>
+      <aside style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-size: 20px; line-height: 22px; font-weight: 700; letter-spacing: -1px">Needs Attention</h2>
+        <dc-import name="Insight" kind="suggestion" layout="web" hint-size="100%,190px"></dc-import>
+        <dc-import name="Insight" kind="risk" layout="web" hint-size="100%,170px"></dc-import>
+        <dc-import name="Copilot" layout="docked" scope="All patients" hint-size="100%,560px"></dc-import>
+      </aside>
+    </div>
+  </main>
+  <sc-if value="{{showDialog}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px">
+      <button aria-label="Close briefing" onClick="{{closeDialog}}" style="position: absolute; inset: 0; border: 0; background: #00000080; cursor: pointer"></button>
+      <div style="position: relative; width: 100%; max-width: 480px">
+        <dc-import name="Dialog" layout="web" kind="briefing" on-close="{{closeDialog}}" on-confirm="{{start}}" hint-size="100%,440px"></dc-import>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { briefing: 'idle', dialog: false, started: false };
+  }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    return {
+      briefing: this.state.briefing,
+      started: this.state.started,
+      showDialog: this.state.dialog,
+      openBriefing: () => {
+        if (this.state.briefing === 'ready') { this.setState({ dialog: true }); return; }
+        if (this.state.briefing === 'loading') return;
+        this.setState({ briefing: 'loading' });
+        this.t = setTimeout(() => this.setState({ briefing: 'ready', dialog: true }), 1400);
+      },
+      closeDialog: () => this.setState({ dialog: false }),
+      start: () => this.setState({ started: true, dialog: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

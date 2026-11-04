@@ -13,13 +13,17 @@ against the backend or the new Figma file yet. Anything the code could not confi
 >   area changed; see doc 02 "Delta since baseline" and the refreshed `strings/` (export bug fixed: English is
 >   complete, the "280 missing" claim is withdrawn). Design-facing per-screen flows now
 >   live in [`docs/ux-flows/`](../ux-flows/00-README.md).
+> - 2026-11-04 (rev 2): [`17-master-plan.md`](17-master-plan.md) unites this spec, the flows and the live backend
+>   contract. **Design no longer comes from Figma**: the Claude Design canvas is vendored in
+>   [`docs/design/`](../design/README.md). Every "Figma" instruction in docs 00–16 means `docs/design/`.
 
 1. The rewrite happens on branch `doc-app2.0` of this repo. `CLAUDE.kmp.md` becomes the branch's `CLAUDE.md`
    (ticket CORE-01); it fixes stack, architecture and workflow, identical to the patient app.
 2. Read this file, then `01` (core rules every feature relies on), `04` (design-system structure) and `16` (the
    build order). Each feature is one doc; implement one ticket group at a time with the feature doc, `15` and `04`.
-3. For **API contract questions** `15` is the source of truth; for **UI and behaviour** the feature doc; for **looks**
-   Figma only (the Flutter look is never ported). If they disagree, trust `15` for payloads and flag it.
+3. For **API contract questions** `15` is the source of truth; for **UI and behaviour** the flow file, then the
+   feature doc; for **looks** `docs/design/` only (the Flutter look is never ported). If they disagree, trust `15`
+   for payloads and flag it.
 4. Every feature doc ends with **Quirks / tech debt** and **Proposed tickets**. Decide per quirk: replicate (backend
    compatibility) or fix (bug). Never port the bugs in §"Verified bugs" below.
 5. Design: the first Figma deliverable is the token set + component library (§4 of `04`). Tokens land in

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AppShell — Tablet rail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.st-btn:focus-visible{outline:2px solid #00bbb0;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1024px; height: 768px; overflow: hidden; display: flex; background: #f2f3f2; color: #272727; font-family: Manrope, system-ui, sans-serif">
+  <div style="flex: none; width: 72px; background: #ffffff; border-right: 1px solid #e8e8e8; display: flex; flex-direction: column; position: relative; z-index: 2">
+    <dc-import name="Sidebar" mode="rail" active="calendar" hint-size="72px,768px"></dc-import>
+  </div>
+  <main style="flex: 1 1 auto; min-width: 0; overflow-y: auto; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+    <header style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+      <h1 style="margin: 0; font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: -1px">Calendar</h1>
+      <div role="group" aria-label="Calendar view" style="display: flex; gap: 4px; background: #ffffff; border-radius: 999px; padding: 4px">
+        <button class="st-btn" aria-pressed="true" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: #e5f8f7; box-shadow: inset 0 0 0 1px #00bbb0; color: #272727; font: 700 12px/18px Manrope, system-ui, sans-serif; cursor: pointer">Day</button>
+        <button class="st-btn" aria-pressed="false" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #272727; font: 500 12px/18px Manrope, system-ui, sans-serif; cursor: pointer">Week</button>
+        <button class="st-btn" aria-pressed="false" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #272727; font: 500 12px/18px Manrope, system-ui, sans-serif; cursor: pointer">Month</button>
+      </div>
+    </header>
+    <p style="margin: 0; font-size: 14px; line-height: 16px; font-weight: 700">Sunday, 25 October</p>
+    <dc-import name="Timeline" layout="web" hint-size="100%,640px"></dc-import>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":768}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
