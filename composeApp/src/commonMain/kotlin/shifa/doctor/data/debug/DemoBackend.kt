@@ -157,6 +157,10 @@ class DemoBackend(
                 )
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
             get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
+            // Fixed counts so the badges show; the lists behind them come with their features.
+            get && path == Endpoints.CHAT_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":3}"""))
+            get && path == Endpoints.NOTIFICATIONS_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":12}"""))
+            get && path == Endpoints.TASKS -> ok(apiJson.parseToJsonElement("[]"))
             get -> null
             else -> refused()
         }

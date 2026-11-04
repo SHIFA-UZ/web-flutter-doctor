@@ -1753,6 +1753,7 @@
   "requirementMet": "met",
   "requirementNotMet": "not met",
   "errorRequestId": "Request ID: {id}",
+  "unreadBadge": "{count} unread",
   "talkWithAi": "Talk with AI",
   "needsProPlan": "Needs the Pro plan",
   "planPro": "Pro",

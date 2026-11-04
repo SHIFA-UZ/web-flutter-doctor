@@ -1753,6 +1753,7 @@
   "requirementMet": "выполнено",
   "requirementNotMet": "не выполнено",
   "errorRequestId": "ID запроса: {id}",
+  "unreadBadge": "Непрочитанных: {count}",
   "talkWithAi": "Разговор с ИИ",
   "needsProPlan": "Нужен тариф Pro",
   "planPro": "Pro",

@@ -127,7 +127,7 @@ fun ShifaNavBar(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            item.badge.toString(),
+                            countLabel(item.badge),
                             style = ShifaTextStyles.badgeCount(),
                             color = ShifaColors.Interactive.OnPrimary,
                         )

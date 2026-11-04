@@ -13,7 +13,7 @@ import shifa.doctor.ui.theme.PreviewTheme
 @Composable
 internal fun ShellHomePreview() =
     PreviewTheme {
-        MainScreenContent(ShellUiState(plan = Plan.Premium, hasClinic = true), ShellActions())
+        MainScreenContent(ShellUiState(plan = Plan.Premium, hasClinic = true, chatUnread = 3), ShellActions())
     }
 
 @Preview(widthDp = 402, heightDp = 874)
@@ -27,7 +27,13 @@ internal fun MoreSheetPremiumPreview() =
     PreviewTheme {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             MoreSheetContent(
-                ShellUiState(tab = ShellTab.Notifications, plan = Plan.Premium, hasClinic = true),
+                ShellUiState(
+                    tab = ShellTab.Notifications,
+                    plan = Plan.Premium,
+                    hasClinic = true,
+                    notificationsUnread = 140,
+                    activeTasks = 4,
+                ),
                 ShellActions(),
             )
         }
@@ -45,4 +51,7 @@ internal fun MoreSheetBasicPreview() =
 // Flow 01/18: the clinic-staff shell (DaApp `phoneTabs` for staff).
 @Preview(widthDp = 402, heightDp = 874)
 @Composable
-internal fun ShellStaffPreview() = PreviewTheme { MainScreenContent(ShellUiState(staff = true), ShellActions()) }
+internal fun ShellStaffPreview() =
+    PreviewTheme {
+        MainScreenContent(ShellUiState(staff = true, chatUnread = 2, notificationsUnread = 7), ShellActions())
+    }

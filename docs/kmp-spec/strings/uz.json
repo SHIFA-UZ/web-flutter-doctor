@@ -1753,6 +1753,7 @@
   "requirementMet": "bajarildi",
   "requirementNotMet": "bajarilmadi",
   "errorRequestId": "So'rov ID: {id}",
+  "unreadBadge": "{count} ta o'qilmagan",
   "talkWithAi": "AI bilan suhbat",
   "needsProPlan": "Pro tarifi kerak",
   "planPro": "Pro",

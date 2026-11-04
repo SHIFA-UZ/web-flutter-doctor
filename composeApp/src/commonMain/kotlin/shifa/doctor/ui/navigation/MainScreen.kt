@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.resources.DrawableResource
@@ -73,6 +75,8 @@ import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.signOut
 import shifa.doctor.generated.resources.talkWithAi
 import shifa.doctor.generated.resources.tasks
+import shifa.doctor.generated.resources.unreadBadge
+import shifa.doctor.generated.resources.unreadCountCap
 import shifa.doctor.ui.applock.AppLockSection
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
@@ -142,6 +146,9 @@ fun MainScreen(
     val question by signOut.state.collectAsStateWithLifecycle()
     // Home's root lets the system close the app; everything else is handled here (flow 01/16 §7).
     BackHandler(enabled = state.moreOpen || state.stack.size > 1 || state.tab != state.home) { viewModel.back() }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshNotifications() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     MainScreenContent(
         state,
         ShellActions(
@@ -192,7 +199,18 @@ fun MainScreenContent(
             val items =
                 barTabs.map {
                     val avatar = state.staff && it == ShellTab.Profile
-                    NavBarItem(tr(it.label), it.icon, it.selectedIcon, avatar = avatar, avatarUrl = state.avatarUrl)
+                    val count = state.count(it)
+                    val label = tr(it.label)
+                    NavBarItem(
+                        label,
+                        it.icon,
+                        it.selectedIcon,
+                        badge = count,
+                        // "Chat, 3 unread" (flow 01/16 §8); the badge itself is hidden from screen readers.
+                        description = if (count > 0) "$label, ${tr(Res.string.unreadBadge, count)}" else label,
+                        avatar = avatar,
+                        avatarUrl = state.avatarUrl,
+                    )
                 }
             ShifaNavBar(
                 if (state.staff) {
@@ -343,7 +361,13 @@ internal fun MoreSheetContent(
                     if (state.plan != Plan.Unknown) {
                         MoreRow(tab.label, tab.icon, badge = tr(Res.string.planPremium), enabled = false) {}
                     }
-                else -> MoreRow(tab.label, tab.icon, selected = state.tab == tab) { actions.select(tab) }
+                else ->
+                    MoreRow(
+                        tab.label,
+                        tab.icon,
+                        selected = state.tab == tab,
+                        count = state.count(tab),
+                    ) { actions.select(tab) }
             }
         }
         MoreRow(Res.string.language, Res.drawable.ic_globe_22, sub = LocalLanguageSwitch.current.current.short) {
@@ -363,6 +387,7 @@ private fun MoreRow(
     danger: Boolean = false,
     ai: Boolean = false,
     enabled: Boolean = true,
+    count: Int = 0,
     onClick: () -> Unit,
 ) = Row(
     Modifier
@@ -400,6 +425,16 @@ private fun MoreRow(
         )
         sub?.let { Text(it, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary) }
     }
+    if (count > 0) {
+        // DaApp's count pill: teal, white, at least 22 round.
+        Box(
+            Modifier
+                .defaultMinSize(minWidth = ShifaSize.S22, minHeight = ShifaSize.S22)
+                .background(ShifaColors.Interactive.Primary, ShifaRadius.Full)
+                .padding(horizontal = ShifaSize.S6),
+            contentAlignment = Alignment.Center,
+        ) { Text(countLabel(count), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Interactive.OnPrimary) }
+    }
     badge?.let {
         Text(
             it,
@@ -411,3 +446,18 @@ private fun MoreRow(
         )
     }
 }
+
+/** The count a tab shows: chat in the bar, notifications (bar for staff, More for doctors), active tasks in More. */
+internal fun ShellUiState.count(tab: ShellTab): Int =
+    when (tab) {
+        ShellTab.Chat -> chatUnread
+        ShellTab.Notifications -> notificationsUnread
+        ShellTab.Tasks -> if (canTasks) activeTasks else 0
+        else -> 0
+    }
+
+/** "99+" past 99 (flow 01/16 §8). */
+@Composable
+internal fun countLabel(count: Int): String = if (count > MAX_COUNT) tr(Res.string.unreadCountCap) else count.toString()
+
+private const val MAX_COUNT = 99

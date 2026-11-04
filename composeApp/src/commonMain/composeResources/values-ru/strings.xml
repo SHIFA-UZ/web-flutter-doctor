@@ -2138,6 +2138,7 @@
     <string name="unlockReason">Разблокируйте Shifa Doctor</string>
     <string name="unlockShifaDoctor">Разблокировать Shifa Doctor</string>
     <string name="unmuteMic">Включить микрофон</string>
+    <string name="unreadBadge">Непрочитанных: %1$s</string>
     <string name="unreadCountCap">99+</string>
     <string name="unreadCountLabel">непрочитанных</string>
     <string name="unreadOnlyNewest">Только Непрочитанные (Сначала Новые)</string>

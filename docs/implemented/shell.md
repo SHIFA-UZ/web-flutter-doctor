@@ -55,3 +55,21 @@ staff use the mobile app (Flutter showed a "web only" block screen).
 - **Tests:** `ShellViewModelTest` (+1), `ShellScreenshotTest` (+1: the staff bar). The staff Profile placeholder has
   no screenshot: it hosts the real app-lock section, whose secure store Robolectric can't open.
 
+## SHELL-03 · Badges
+
+Built 2026-11-04. Flow `01/16` §4, §8; spec `01` §6.3; board `DaApp.dc.html` (bar `count`, More `hasCount`).
+
+- **Data** (`data/badges/BadgesRepository.kt`): `GET /messages/unread-count` and `GET /notifications/unread/count`
+  (both `{count}` on dev, 2026-11-04); active tasks = `GET /tasks?status=ACTIVE` counted (there is no count endpoint).
+- **When** (`ShellViewModel`): chat polled every 10 s **only while the app is in front** (`onForeground` /
+  `onBackground` from the screen's lifecycle; Flutter polled always); notifications refreshed on every `ON_RESUME`
+  (also a pause that never stopped the app), a newer refresh cancelling an older one still out (on a foreground push
+  with PUSH-03); active tasks once per shell after the start tab, PREMIUM
+  only. A failed refresh keeps the last value (flow §6: badges freeze offline).
+- **Where:** bar badge on Chat (doctors) and on Chat and Notifications (staff), teal; the More sheet shows
+  Notifications and Tasks counts in DaApp's teal pill. Past 99: "99+" (flow §8). Screen readers hear "Chat, 3
+  unread"; the badge itself is hidden from them.
+- **Demo data:** fixed counts (chat 3, notifications 12), no tasks.
+- **Tests:** `ShellViewModelTest` (+1: polling only in front on a test clock, notifications on return, tasks once),
+  screenshots re-recorded with counts (Home, More PREMIUM, staff).
+

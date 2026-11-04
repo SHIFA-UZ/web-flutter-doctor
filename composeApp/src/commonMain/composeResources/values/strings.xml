@@ -2138,6 +2138,7 @@
     <string name="unlockReason">Unlock Shifa Doctor</string>
     <string name="unlockShifaDoctor">Unlock Shifa Doctor</string>
     <string name="unmuteMic">Unmute microphone</string>
+    <string name="unreadBadge">%1$s unread</string>
     <string name="unreadCountCap">99+</string>
     <string name="unreadCountLabel">unread</string>
     <string name="unreadOnlyNewest">Unread Only (Newest First)</string>

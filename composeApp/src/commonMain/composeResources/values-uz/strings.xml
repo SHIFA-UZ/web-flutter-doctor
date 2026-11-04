@@ -2138,6 +2138,7 @@
     <string name="unlockReason">Shifa Doctor qulfini ochish</string>
     <string name="unlockShifaDoctor">Shifa Doctor'ni ochish</string>
     <string name="unmuteMic">Mikrofonni yoqish</string>
+    <string name="unreadBadge">%1$s ta o'qilmagan</string>
     <string name="unreadCountCap">99+</string>
     <string name="unreadCountLabel">o'qilmagan</string>
     <string name="unreadOnlyNewest">Faqat O'qilmaganlar (Avval Yangilari)</string>

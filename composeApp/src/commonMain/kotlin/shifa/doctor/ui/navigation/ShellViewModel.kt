@@ -2,14 +2,19 @@ package shifa.doctor.ui.navigation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The doctor's destinations (01 §6, flow 01/16): four in the bar, five more behind "More". [key] is the backend's
@@ -65,6 +70,10 @@ data class ShellUiState(
     val plan: Plan = Plan.Unknown,
     // The staff bar's Profile slot shows the person's photo (`GET /me/profile`).
     val avatarUrl: String? = null,
+    // SHELL-03 counts; a failed refresh keeps the last value (flow 01/16 §6: badges freeze offline).
+    val chatUnread: Int = 0,
+    val notificationsUnread: Int = 0,
+    val activeTasks: Int = 0,
 ) {
     val home: ShellTab get() = if (staff) ShellTab.Clinic else ShellTab.Home
 
@@ -94,7 +103,11 @@ class ShellViewModel(
     staff: Boolean = false,
     private val profile: ProfileRepository = profileRepository,
     private val clinics: ClinicsRepository = ClinicsRepository(),
+    private val badges: BadgesRepository = BadgesRepository(),
 ) : ViewModel() {
+    private var chatPolling: Job? = null
+    private var notificationsRefresh: Job? = null
+
     private val _state = MutableStateFlow(ShellUiState(staff = staff))
     val state: StateFlow<ShellUiState> = _state.asStateFlow()
 
@@ -122,6 +135,10 @@ class ShellViewModel(
                     val start = ShellTab.fromKey(me?.settings?.defaultStartTab) ?: ShellTab.Home
                     _state.update { it.copy(tab = clamp(start, it)) }
                 }
+            }
+            // Loaded once per shell (01 §6.3), for doctors whose plan has Tasks.
+            if (_state.value.canTasks) {
+                badges.activeTasks().onSuccess { n -> _state.update { it.copy(activeTasks = n) } }
             }
         }
     }
@@ -156,6 +173,38 @@ class ShellViewModel(
         _state.update { s -> s.copy(stacks = s.stacks + (s.tab to s.stack + route), moreOpen = false) }
     }
 
+    /**
+     * The app is in front (SHELL-03, 01 §6.3): the chat count is polled every 10 seconds until [onBackground]; nothing
+     * is polled behind the app's back.
+     */
+    fun onForeground() {
+        chatPolling?.cancel()
+        chatPolling =
+            viewModelScope.launch {
+                while (isActive) {
+                    badges.chatUnread().onSuccess { n -> _state.update { it.copy(chatUnread = n) } }
+                    delay(CHAT_POLL)
+                }
+            }
+    }
+
+    fun onBackground() {
+        chatPolling?.cancel()
+        chatPolling = null
+    }
+
+    /**
+     * Each return to the app, including a pause that never stopped it (`ON_RESUME`): the notifications count. A newer
+     * refresh cancels an older one still out, so a late answer can't put an old count back.
+     */
+    fun refreshNotifications() {
+        notificationsRefresh?.cancel()
+        notificationsRefresh =
+            viewModelScope.launch {
+                badges.notificationsUnread().onSuccess { n -> _state.update { it.copy(notificationsUnread = n) } }
+            }
+    }
+
     fun openMore() = _state.update { it.copy(moreOpen = true) }
 
     fun closeMore() = _state.update { it.copy(moreOpen = false) }
@@ -185,6 +234,10 @@ class ShellViewModel(
             tab == ShellTab.Clinic && s.hasClinic != true -> ShellTab.Home
             else -> tab
         }
+
+    private companion object {
+        val CHAT_POLL = 10.seconds
+    }
 
     private fun planOf(tier: String?) =
         when (tier?.uppercase()) {

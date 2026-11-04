@@ -18,6 +18,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
+import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.profile.ProfileRepository
 
@@ -28,6 +29,7 @@ class ShellViewModelTest {
     private var clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic"}]"""
     private var hold = CompletableDeferred(Unit)
     private val paths = mutableListOf<String>()
+    private var chat = 1
     private val client by lazy {
         createHttpClient(
             { null },
@@ -36,6 +38,12 @@ class ShellViewModelTest {
                 val body =
                     if (req.url.encodedPath.endsWith("me/clinics")) {
                         clinics
+                    } else if (req.url.encodedPath.endsWith("messages/unread-count")) {
+                        """{"count":${chat++}}"""
+                    } else if (req.url.encodedPath.endsWith("unread/count")) {
+                        """{"count":140}"""
+                    } else if (req.url.encodedPath.endsWith("/tasks")) {
+                        """[{"id":1},{"id":2}]"""
                     } else if (req.url.encodedPath.endsWith("me/profile")) {
                         """{"id":5,"role":"CLINIC_STAFF","firstName":"Dilfuza","lastName":"Y","photoUrl":"https://x/p.jpg"}"""
                     } else {
@@ -47,18 +55,14 @@ class ShellViewModelTest {
         )
     }
 
-    @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    private val main = UnconfinedTestDispatcher()
+
+    @Before fun setUp() = Dispatchers.setMain(main)
 
     @After fun tearDown() = Dispatchers.resetMain()
 
     private fun vm(staff: Boolean = false) =
-        ShellViewModel(
-            staff,
-            ProfileRepository {
-                client
-            },
-            ClinicsRepository { client },
-        )
+        ShellViewModel(staff, ProfileRepository { client }, ClinicsRepository { client }, BadgesRepository { client })
 
     private fun ShellViewModel.settle() {
         repeat(200) {
@@ -162,5 +166,31 @@ class ShellViewModelTest {
         assertThat(classToTest.back()).isTrue()
         assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Clinic)
         assertThat(classToTest.back()).isFalse()
+    }
+
+    private fun waitFor(check: () -> Boolean) {
+        repeat(200) {
+            if (check()) return
+            Thread.sleep(10)
+        }
+    }
+
+    @Test
+    fun `chat is polled every 10 s only in front, notifications on each return, active tasks once`() {
+        val classToTest = vm()
+        classToTest.settle()
+        waitFor { classToTest.state.value.activeTasks == 2 }
+        assertThat(classToTest.state.value.activeTasks).isEqualTo(2)
+        classToTest.onForeground()
+        classToTest.refreshNotifications()
+        waitFor { classToTest.state.value.chatUnread == 1 && classToTest.state.value.notificationsUnread == 140 }
+        assertThat(classToTest.state.value.notificationsUnread).isEqualTo(140)
+        main.scheduler.advanceTimeBy(10_001)
+        waitFor { classToTest.state.value.chatUnread == 2 }
+        assertThat(classToTest.state.value.chatUnread).isEqualTo(2)
+        classToTest.onBackground()
+        main.scheduler.advanceTimeBy(60_000)
+        Thread.sleep(100)
+        assertThat(classToTest.state.value.chatUnread).isEqualTo(2) // nothing polled in the background
     }
 }
