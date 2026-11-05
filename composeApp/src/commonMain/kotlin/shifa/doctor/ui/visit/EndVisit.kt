@@ -18,6 +18,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appointmentEndedDocumentationSaved
 import shifa.doctor.generated.resources.appointmentEndedShort
 import shifa.doctor.generated.resources.backToNotes
+import shifa.doctor.generated.resources.bookFollowUp
 import shifa.doctor.generated.resources.clinicPaymentMethodCash
 import shifa.doctor.generated.resources.clinicPaymentMethodTransfer
 import shifa.doctor.generated.resources.close
@@ -78,6 +79,8 @@ class EndActions(
     // Done: back to the caller with the result as a notice.
     val finish: () -> Unit = {},
     val openSummary: () -> Unit = {},
+    // Flow 05/14: the next visit, from a free slot (null: not offered, e.g. no patient id).
+    val followUp: (() -> Unit)? = null,
 )
 
 /**
@@ -326,6 +329,7 @@ internal fun EndProgress(
                     style = ShifaTextStyles.metaSmall(),
                     color = ShifaColors.Text.Brand,
                 )
+                actions.followUp?.let { ShifaLink(tr(Res.string.bookFollowUp), it) }
             }
             codeBanner(end.error) {}?.invoke()
         }

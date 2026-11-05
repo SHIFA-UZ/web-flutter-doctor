@@ -658,3 +658,19 @@ plan section).
   everything).
 - The real renderers (Android `PdfDocument`, iOS `UIGraphicsPDFRenderer`) were checked by eye on the emulator in
   PDF-01, DENTAL-02, APPT-05 and DENTAL-03.
+
+## Follow-up booking (flow 05/14)
+
+Built 2026-11-05. Flow 05/14, master plan M5 "(new) follow-up booking": reuse the calendar's booking with the patient
+pre-filled (D-14: booking is slot-first).
+
+- When End has finished, its done step offers **Book follow-up** next to Done and Open Summary. It is shown only when
+  the visit has a patient id.
+- It opens the existing "New appointment" slot picker (`SlotPickSheet`, as from a patient's record) over the visit,
+  with the End sheet stepped aside. The picked slot opens the booking screen with the patient pre-filled. Closing the
+  picker, or coming back from the booking, shows the done step again (Done, Open Summary, Book follow-up).
+- **Not built (the flow's target):** quick picks ("In 2 weeks"), the visit kind preset, "Just flag for follow-up", a
+  link to the previous visit (backend field unverified, BE-20), and the banner action on Home.
+- **Emulator (demo):** End visit 102 → Book follow-up → the picker → 20 November 11:00 → Next → "Slot Details… Selected:
+  Jasur Karimov". Back returned to the completed visit; nothing booked. Demo mode is off again.
+- **Screenshot:** `End_done`.

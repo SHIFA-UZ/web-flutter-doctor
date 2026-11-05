@@ -52,10 +52,12 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.consultation.VisitSummaryLabels
 import shifa.doctor.data.forms.Icd10Hit
+import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.DocumentCategory
 import shifa.doctor.data.model.IcdSuggestion
 import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
+import shifa.doctor.data.model.PatientOption
 import shifa.doctor.data.model.SignatureState
 import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.model.stripScribeTranscript
@@ -202,6 +204,7 @@ import shifa.doctor.generated.resources.videoCall
 import shifa.doctor.generated.resources.visitTime
 import shifa.doctor.generated.resources.voiceRecordingFinishHint
 import shifa.doctor.generated.resources.waitingForPatientSignature
+import shifa.doctor.ui.calendar.SlotPickSheet
 import shifa.doctor.ui.calendar.status
 import shifa.doctor.ui.documents.DocumentCard
 import shifa.doctor.ui.documents.DocumentUploadViewModel
@@ -355,6 +358,8 @@ fun VisitScreen(
     onOpenDocument: (Long, PatientDocument, String) -> Unit = { _, _, _ -> },
     // The 025-2 editor for a new form: the patient, and the ICD code applied in the visit (APPT-08).
     onOpenForm: (Long, Icd10Hit?) -> Unit = { _, _ -> },
+    // Flow 05/14: Book follow-up opens the booking of the picked free slot for this patient.
+    onBook: (CalendarEntry.FreeSlot, PatientOption) -> Unit = { _, _ -> },
     // VIDEO-02: a video visit, with its call.
     video: Boolean = false,
     viewModel: VisitViewModel =
@@ -369,6 +374,8 @@ fun VisitScreen(
     val notes by viewModel.notes.state.collectAsStateWithLifecycle()
     val dental by viewModel.dentalRecord.state.collectAsStateWithLifecycle()
     val planState by viewModel.plan.state.collectAsStateWithLifecycle()
+    // Flow 05/14: the slot picker for a follow-up, its open stamp; null when closed.
+    var followUp by remember { mutableStateOf<Long?>(null) }
     val videoState = viewModel.video?.state?.collectAsStateWithLifecycle()?.value
     val callPart = viewModel.video?.let { v -> videoState?.let { VideoPart(it, v.call) } }
     viewModel.video?.let { v ->
@@ -579,9 +586,31 @@ fun VisitScreen(
                     viewModel.leave(force = true)
                 },
                 openSummary = { end.summary?.let { d -> patientId?.let { onOpenDocument(it, d, title.orEmpty()) } } },
+                // The slot picker over the visit (the End sheet steps aside; its notice is posted with Done).
+                followUp =
+                    patientId?.let {
+                        {
+                            viewModel.ui { s -> s.copy(end = s.end.copy(hidden = true)) }
+                            followUp = currentInstant().toEpochMilliseconds()
+                        }
+                    },
             ),
             planState,
         )
+    }
+    followUp?.let { opened ->
+        val visit = state.visit
+        val patientId = visit?.patientId
+        // The done step comes back when the picker closes, and is there on return from the booking (Done, Open
+        // Summary, Book follow-up again).
+        val back = {
+            followUp = null
+            viewModel.ui { s -> s.copy(end = s.end.copy(hidden = false)) }
+        }
+        SlotPickSheet(opened, { slot ->
+            back()
+            if (patientId != null) onBook(slot, PatientOption(patientId, visit.patientName, state.patient?.photoUrl))
+        }, back)
     }
     state.patient?.chronic?.takeIf { state.chronicWarning }?.let {
         ChronicWarning(chronicLabel(it)) { viewModel.ui { s -> s.copy(chronicWarning = false) } }

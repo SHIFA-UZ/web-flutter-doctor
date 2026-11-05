@@ -401,6 +401,9 @@ private fun RouteContent(
                 onOpenForm = { patientId, icd ->
                     actions.push(ShellRoute.Form(patientId, null, currentInstant().toEpochMilliseconds(), icd))
                 },
+                onBook = { slot, patient ->
+                    actions.push(ShellRoute.Booking(slot, currentInstant().toEpochMilliseconds(), patient))
+                },
                 video = route.kind == shifa.doctor.data.model.VisitKind.Video,
             )
         ShellRoute.Locations -> LocationsScreen(onClose = actions.back)

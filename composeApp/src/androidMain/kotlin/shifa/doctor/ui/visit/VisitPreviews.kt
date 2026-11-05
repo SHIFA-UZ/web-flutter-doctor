@@ -489,6 +489,21 @@ internal fun EndProgressPreview() =
         )
     }
 
+// Flow 05/14: the visit ended, its summary saved: Done, Open Summary and Book follow-up.
+@Composable
+internal fun EndDonePreview() =
+    PreviewTheme {
+        EndProgress(
+            EndUiState(
+                steps = listOf(EndStep.Notes, EndStep.Complete, EndStep.Summary),
+                completed = true,
+                done = true,
+                summary = PatientDocument(300, "Appointment documentation 06.11.2026 10:31", "2026-11-06", url = "f"),
+            ),
+            EndActions(followUp = {}),
+        )
+    }
+
 // DENTAL-01: the tooth map, free mode (teeth with services and their counts) and plan mode (planned, partly done,
 // completed), adult and child teeth.
 @Composable
