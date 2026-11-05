@@ -1227,6 +1227,8 @@
     <string name="holdToCollapseAnswer">Javobni yig'ish uchun bosib turing</string>
     <string name="holdToExpandAnswer">Javobni kattalashtirish uchun bosib turing</string>
     <string name="home">Bosh sahifa</string>
+    <string name="homeLoadFailed">Bugungi jadvalni yuklab bo'lmadi</string>
+    <string name="homeTimesInPracticeTime">Vaqtlar amaliyot vaqtida (%1$s). Telefoningiz %2$s vaqtida.</string>
     <string name="hourAgo">1 soat oldin</string>
     <string name="hypertension">Gipertoniya</string>
     <string name="iUnderstand">Tushundim</string>

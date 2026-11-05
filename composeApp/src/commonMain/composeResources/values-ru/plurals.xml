@@ -34,6 +34,12 @@
     <plurals name="discardTicks">
         <item quantity="other">Снять отметки с пунктов (%1$s)?</item>
     </plurals>
+    <plurals name="followUpTasksCount">
+        <item quantity="few">%1$s задачи на контроль</item>
+        <item quantity="many">%1$s задач на контроль</item>
+        <item quantity="one">%1$s задача на контроль</item>
+        <item quantity="other">%1$s задачи на контроль</item>
+    </plurals>
     <plurals name="formsCount">
         <item quantity="few">%1$s формы</item>
         <item quantity="many">%1$s форм</item>

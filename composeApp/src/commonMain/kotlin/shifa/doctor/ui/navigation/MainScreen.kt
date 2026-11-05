@@ -43,12 +43,14 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.chat
 import shifa.doctor.generated.resources.clinicNavClinic
 import shifa.doctor.generated.resources.contactAndClinicAddress
+import shifa.doctor.generated.resources.drMedPrefix
 import shifa.doctor.generated.resources.extendedProfile
 import shifa.doctor.generated.resources.home
 import shifa.doctor.generated.resources.ic_bell_22
@@ -102,6 +104,9 @@ import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.documents.DocumentViewerScreen
 import shifa.doctor.ui.forms.FormEditorScreen
+import shifa.doctor.ui.home.HomeActions
+import shifa.doctor.ui.home.HomeScreen
+import shifa.doctor.ui.home.HomeShell
 import shifa.doctor.ui.patients.PatientDetailScreen
 import shifa.doctor.ui.patients.PatientsScreen
 import shifa.doctor.ui.profile.BillingScreen
@@ -129,6 +134,7 @@ import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.currentInstant
+import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.isDebugBuild
 import shifa.doctor.utils.tr
 
@@ -192,6 +198,7 @@ fun MainScreen(
         state,
         ShellActions(
             select = viewModel::select,
+            refreshHomeCounts = viewModel::refreshHomeCounts,
             push = viewModel::push,
             back = { viewModel.back() },
             openMore = viewModel::openMore,
@@ -208,6 +215,8 @@ fun MainScreen(
 
 class ShellActions(
     val select: (ShellTab) -> Unit = {},
+    // HOME-02: Home's notification and follow-up counts read again.
+    val refreshHomeCounts: () -> Unit = {},
     val push: (ShellRoute) -> Unit = {},
     val back: () -> Unit = {},
     val openMore: () -> Unit = {},
@@ -233,7 +242,7 @@ fun MainScreenContent(
                     TabPlaceholder(Res.string.shifaIntelligence, Res.drawable.ic_sparkles_18)
                 } else {
                     saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
-                        RouteContent(state.route, actions, state.staff)
+                        RouteContent(state.route, actions, state.staff, state)
                     }
                 }
             }
@@ -297,6 +306,7 @@ private fun RouteContent(
     route: ShellRoute,
     actions: ShellActions,
     staff: Boolean,
+    shell: ShellUiState = ShellUiState(),
 ) {
     when (route) {
         is ShellRoute.Root ->
@@ -322,6 +332,33 @@ private fun RouteContent(
                     ),
                 )
                 if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
+            } else if (route.tab == ShellTab.Home && !staff) {
+                // HOME-02: the doctor and the counts the shell keeps.
+                val me by profileRepository.me.collectAsStateWithLifecycle()
+                val p = me?.profile
+                HomeScreen(
+                    HomeShell(
+                        name = doctorDisplayName(p?.firstName, p?.lastName, tr(Res.string.drMedPrefix)),
+                        photoUrl = p?.photoUrl,
+                        unread = shell.notificationsUnread.takeIf { shell.notificationsKnown },
+                        unreadFailed = shell.notificationsFailed,
+                        followUps = shell.followUps,
+                        followUpsFailed = shell.followUpsFailed,
+                        profileFailed = shell.profileFailed && me == null,
+                        showFollowUps = shell.canTasks,
+                        profileLoaded = me != null,
+                        zone = p?.timeZone,
+                    ),
+                    HomeActions(
+                        openProfile = { actions.select(ShellTab.Profile) },
+                        refreshCounts = actions.refreshHomeCounts,
+                        // The search overlay joins with HOME-05; until then the Patients tab has the search.
+                        search = { actions.select(ShellTab.Patients) },
+                        notifications = { actions.select(ShellTab.Notifications) },
+                        calendar = { actions.select(ShellTab.Calendar) },
+                        tasks = { actions.select(ShellTab.Tasks) },
+                    ),
+                )
             } else if (route.tab == ShellTab.Patients && !staff) {
                 PatientsScreen(onOpen = { actions.push(ShellRoute.Patient(it.id)) })
             } else if (route.tab == ShellTab.Calendar && !staff) {

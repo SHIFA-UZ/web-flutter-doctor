@@ -2626,5 +2626,7 @@
   "leaveUnsavedTitle": "Not saved yet",
   "leaveUnsavedBody": "Photos, ticked plan items and the payment are saved when you end the appointment. If you leave now, they are lost.",
   "youLeftTheCall": "You left the call",
-  "micDeniedPatientCantHear": "Microphone permission denied. The patient cannot hear you without it."
+  "micDeniedPatientCantHear": "Microphone permission denied. The patient cannot hear you without it.",
+  "homeTimesInPracticeTime": "Times are in practice time ({zone}). Your phone is set to {device}.",
+  "homeLoadFailed": "Could not load today's schedule"
 }

@@ -105,8 +105,9 @@ class HomeRepository(
 val homeRepository = HomeRepository()
 
 /**
- * Home's refresh when its tab comes back (02 §1.10): skipped while one runs and within a [cooldown] of the last;
- * pull-to-refresh ([force]) always runs. Not module globals as in Flutter: one gate per Home.
+ * Home's refresh when its tab comes back (02 §1.10): skipped within a [cooldown] of the last unless [force]d
+ * (pull-to-refresh), and never while one runs, forced or not, so an older answer can't overwrite a newer one. Not
+ * module globals as in Flutter: one gate per Home.
  */
 class RefreshGate(
     private val cooldown: Duration = 60.seconds,
@@ -121,7 +122,7 @@ class RefreshGate(
         refresh: suspend () -> Unit,
     ): Boolean {
         val l = last
-        if (!force && (running || (l != null && l.elapsedNow() < cooldown))) return false
+        if (running || (!force && l != null && l.elapsedNow() < cooldown)) return false
         last = time.markNow()
         running = true
         try {

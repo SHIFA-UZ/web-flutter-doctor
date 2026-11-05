@@ -1227,6 +1227,8 @@
     <string name="holdToCollapseAnswer">Hold to collapse answer</string>
     <string name="holdToExpandAnswer">Hold to expand answer</string>
     <string name="home">Home</string>
+    <string name="homeLoadFailed">Could not load today's schedule</string>
+    <string name="homeTimesInPracticeTime">Times are in practice time (%1$s). Your phone is set to %2$s.</string>
     <string name="hourAgo">1 hour ago</string>
     <string name="hypertension">Hypertension</string>
     <string name="iUnderstand">I Understand</string>

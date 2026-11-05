@@ -1227,6 +1227,8 @@
     <string name="holdToCollapseAnswer">Удерживайте, чтобы свернуть ответ</string>
     <string name="holdToExpandAnswer">Удерживайте, чтобы увеличить ответ</string>
     <string name="home">Главная</string>
+    <string name="homeLoadFailed">Не удалось загрузить расписание на сегодня</string>
+    <string name="homeTimesInPracticeTime">Время указано по часовому поясу практики (%1$s). На телефоне — %2$s.</string>
     <string name="hourAgo">1 час назад</string>
     <string name="hypertension">Гипертония</string>
     <string name="iUnderstand">Я понимаю</string>

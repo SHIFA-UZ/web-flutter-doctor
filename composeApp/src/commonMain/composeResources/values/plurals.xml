@@ -29,6 +29,10 @@
         <item quantity="one">Discard %1$s ticked item?</item>
         <item quantity="other">Discard %1$s ticked items?</item>
     </plurals>
+    <plurals name="followUpTasksCount">
+        <item quantity="one">%1$s follow-up task</item>
+        <item quantity="other">%1$s follow-up tasks</item>
+    </plurals>
     <plurals name="formsCount">
         <item quantity="one">%1$s form</item>
         <item quantity="other">%1$s forms</item>

@@ -147,6 +147,14 @@ data class ShellUiState(
     val chatUnread: Int = 0,
     val notificationsUnread: Int = 0,
     val activeTasks: Int = 0,
+    // HOME-02: the unread count has been read at least once (until then Home shows a skeleton, not 0).
+    val notificationsKnown: Boolean = false,
+    // HOME-02: active and draft tasks for Home's Follow-up card; null until read.
+    val followUps: Int? = null,
+    // HOME-02: the last read of each failed (Home shows "—" for a count never read, an error for the profile).
+    val notificationsFailed: Boolean = false,
+    val followUpsFailed: Boolean = false,
+    val profileFailed: Boolean = false,
 ) {
     val home: ShellTab get() = if (staff) ShellTab.Clinic else ShellTab.Home
 
@@ -179,6 +187,7 @@ class ShellViewModel(
     private val badges: BadgesRepository = BadgesRepository(),
 ) : ViewModel() {
     private var chatPolling: Job? = null
+    private var followUpsRefresh: Job? = null
     private var notificationsRefresh: Job? = null
     private var resumeRefresh: Job? = null
 
@@ -199,7 +208,7 @@ class ShellViewModel(
             }
             val clinicResult = clinics.mine()
             _state.update { it.copy(hasClinic = clinicResult.getOrNull()?.isNotEmpty() ?: false) }
-            val me = profile.refresh().getOrNull()
+            val me = readProfile()
             _state.update { it.copy(gate = FeatureGate.of(me?.subscription)) }
             val waiting = pending
             pending = null
@@ -214,10 +223,18 @@ class ShellViewModel(
             if (_state.value.canTasks) {
                 badges.activeTasks().onSuccess { n -> _state.update { it.copy(activeTasks = n) } }
             }
+            // Home's first focus may come before the plan is known.
+            refreshFollowUps()
             // Any later profile read (a resume refresh, a Profile save) may bring a new plan.
             profile.me.collect { me -> if (me != null) onPlan(FeatureGate.of(me.subscription)) }
         }
     }
+
+    /** `GET /doctors/me`; failed only while no profile is known at all (Home can't pick its day without one). */
+    private suspend fun readProfile() =
+        profile.refresh().getOrNull().also { me ->
+            _state.update { it.copy(profileFailed = me == null && profile.me.value == null) }
+        }
 
     /**
      * A new plan seen after the start: gated entries follow it, and a doctor on Tasks without Tasks any more goes Home
@@ -225,12 +242,15 @@ class ShellViewModel(
      */
     private fun onPlan(gate: FeatureGate) {
         if (gate == _state.value.gate) return
+        val gainedTasks = !_state.value.canTasks && gate.allows(DoctorFeature.RemoteCareTasks)
         val lostTasks = _state.value.tab == ShellTab.Tasks && !gate.allows(DoctorFeature.RemoteCareTasks)
         val lostAi = !gate.allows(DoctorFeature.AskShifaAi)
         _state.update {
             it.copy(gate = gate, tab = if (lostTasks) it.home else it.tab, intelligence = it.intelligence && !lostAi)
         }
         if (lostTasks) ShellNotice.pending.value = Notice(Res.string.tasksNotOnPlan)
+        // Home's Follow-up card appears with the plan: its count is read then.
+        if (gainedTasks) refreshFollowUps()
     }
 
     /**
@@ -303,7 +323,37 @@ class ShellViewModel(
         notificationsRefresh?.cancel()
         notificationsRefresh =
             viewModelScope.launch {
-                badges.notificationsUnread().onSuccess { n -> _state.update { it.copy(notificationsUnread = n) } }
+                badges
+                    .notificationsUnread()
+                    .onSuccess { n ->
+                        _state.update {
+                            it.copy(
+                                notificationsUnread = n,
+                                notificationsKnown = true,
+                                notificationsFailed = false,
+                            )
+                        }
+                    }.onFailure { _state.update { it.copy(notificationsFailed = true) } }
+            }
+    }
+
+    /** Home's pull-to-refresh and focus (HOME-02): its two counts read again with its schedule. */
+    fun refreshHomeCounts() {
+        refreshNotifications()
+        // Home's schedule waits for the practice zone: a profile that failed to load is read again here.
+        if (!_state.value.staff && profile.me.value == null) viewModelScope.launch { readProfile() }
+        refreshFollowUps()
+    }
+
+    private fun refreshFollowUps() {
+        if (!_state.value.canTasks) return
+        followUpsRefresh?.cancel()
+        followUpsRefresh =
+            viewModelScope.launch {
+                badges.followUps().fold(
+                    { n -> _state.update { it.copy(followUps = n, followUpsFailed = false) } },
+                    { _state.update { it.copy(followUpsFailed = true) } },
+                )
             }
     }
 
@@ -336,7 +386,7 @@ class ShellViewModel(
         resumeRefresh =
             viewModelScope.launch {
                 clinics.mine().onSuccess { list -> _state.update { it.copy(hasClinic = list.isNotEmpty()) } }
-                profile.refresh()
+                readProfile()
             }
     }
 

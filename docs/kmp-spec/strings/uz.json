@@ -2626,5 +2626,7 @@
   "leaveUnsavedTitle": "Hali saqlanmagan",
   "leaveUnsavedBody": "Rasmlar, belgilangan reja bandlari va to'lov qabulni yakunlaganingizda saqlanadi. Hozir chiqsangiz, ular yo'qoladi.",
   "youLeftTheCall": "Siz qo'ng'iroqdan chiqdingiz",
-  "micDeniedPatientCantHear": "Mikrofonga ruxsat berilmagan. Usiz bemor sizni eshitmaydi."
+  "micDeniedPatientCantHear": "Mikrofonga ruxsat berilmagan. Usiz bemor sizni eshitmaydi.",
+  "homeTimesInPracticeTime": "Vaqtlar amaliyot vaqtida ({zone}). Telefoningiz {device} vaqtida.",
+  "homeLoadFailed": "Bugungi jadvalni yuklab bo'lmadi"
 }

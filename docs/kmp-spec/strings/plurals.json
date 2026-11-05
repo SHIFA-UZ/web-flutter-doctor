@@ -105,6 +105,21 @@
       "other": "Belgilangan {count} ta band bekor qilinsinmi?"
     }
   },
+  "followUpTasksCount": {
+    "en": {
+      "one": "{count} follow-up task",
+      "other": "{count} follow-up tasks"
+    },
+    "ru": {
+      "few": "{count} задачи на контроль",
+      "many": "{count} задач на контроль",
+      "one": "{count} задача на контроль",
+      "other": "{count} задачи на контроль"
+    },
+    "uz": {
+      "other": "{count} kuzatuv vazifasi"
+    }
+  },
   "hoursAgo": {
     "en": {
       "one": "{count} hour ago",

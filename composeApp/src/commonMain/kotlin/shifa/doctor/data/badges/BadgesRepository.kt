@@ -5,6 +5,9 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
@@ -31,4 +34,16 @@ class BadgesRepository(
         apiCall<List<JsonElement>> {
             client().get(ApiConfig.Endpoints.TASKS) { parameter("status", "ACTIVE") }
         }.map { it.size }
+
+    /**
+     * Home's follow-up count (flow 02/02 §4): active and draft remote-care tasks, from one `GET /tasks` (no count
+     * endpoint, and the status filter takes one value).
+     */
+    suspend fun followUps(): Result<Int> =
+        apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.TASKS) }.map { rows ->
+            rows.count { row ->
+                val status = ((row as? JsonObject)?.get("status") as? JsonPrimitive)?.contentOrNull?.uppercase()
+                status == "ACTIVE" || status == "DRAFT"
+            }
+        }
 }
