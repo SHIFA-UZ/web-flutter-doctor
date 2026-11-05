@@ -10,6 +10,7 @@ import platform.AVFAudio.setActive
 import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItem
 import platform.AVFoundation.AVPlayerItemDidPlayToEndTimeNotification
+import platform.AVFoundation.AVPlayerItemStatusFailed
 import platform.AVFoundation.currentItem
 import platform.AVFoundation.currentTime
 import platform.AVFoundation.duration
@@ -19,9 +20,12 @@ import platform.CoreMedia.CMTimeGetSeconds
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
+import shifa.doctor.data.api.httpLogger
 
 @OptIn(ExperimentalForeignApi::class)
-private class IosAudioPlayer : AudioPlayer {
+private class IosAudioPlayer(
+    private val onError: () -> Unit,
+) : AudioPlayer {
     override var playback: Playback? by mutableStateOf(null)
         private set
 
@@ -37,7 +41,7 @@ private class IosAudioPlayer : AudioPlayer {
             return
         }
         release()
-        val nsUrl = NSURL.URLWithString(url) ?: return
+        val nsUrl = NSURL.URLWithString(url) ?: return onError()
         // The recorder leaves the session on PlayAndRecord, which plays through the earpiece.
         AVAudioSession.sharedInstance().apply {
             setCategory(AVAudioSessionCategoryPlayback, error = null)
@@ -56,6 +60,12 @@ private class IosAudioPlayer : AudioPlayer {
 
     override fun tick() {
         val p = player ?: return
+        // AVPlayer reports a stream it couldn't load only through the item's status.
+        if (p.currentItem?.status == AVPlayerItemStatusFailed) {
+            httpLogger.log("FAILED to play audio")
+            release()
+            return onError()
+        }
         val duration = p.currentItem?.duration?.let { CMTimeGetSeconds(it) }?.takeIf { !it.isNaN() } ?: 0.0
         playback = playback?.copy(position = CMTimeGetSeconds(p.currentTime()).toInt(), duration = duration.toInt())
     }
@@ -69,4 +79,4 @@ private class IosAudioPlayer : AudioPlayer {
     }
 }
 
-actual fun createAudioPlayer(): AudioPlayer = IosAudioPlayer()
+actual fun createAudioPlayer(onError: () -> Unit): AudioPlayer = IosAudioPlayer(onError)

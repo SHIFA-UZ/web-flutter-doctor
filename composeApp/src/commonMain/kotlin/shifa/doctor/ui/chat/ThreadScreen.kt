@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -51,11 +52,15 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.minus
+import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.chat.ThreadRow
 import shifa.doctor.data.chat.threadRows
 import shifa.doctor.data.model.Conversation
@@ -71,17 +76,22 @@ import shifa.doctor.generated.resources.cannotOpenDocumentUrl
 import shifa.doctor.generated.resources.chatNewMessage
 import shifa.doctor.generated.resources.chatNotSent
 import shifa.doctor.generated.resources.chatPhoto
+import shifa.doctor.generated.resources.chatRecordingInterrupted
 import shifa.doctor.generated.resources.chatSayHello
 import shifa.doctor.generated.resources.chatStatusDelivered
 import shifa.doctor.generated.resources.chatStatusRead
 import shifa.doctor.generated.resources.chatStatusSending
 import shifa.doctor.generated.resources.chatStatusSent
+import shifa.doctor.generated.resources.chatVoicePlayFailed
 import shifa.doctor.generated.resources.close
+import shifa.doctor.generated.resources.discard
 import shifa.doctor.generated.resources.doctor
 import shifa.doctor.generated.resources.document
+import shifa.doctor.generated.resources.errorRecordingVoice
 import shifa.doctor.generated.resources.ic_chev_l_16
 import shifa.doctor.generated.resources.ic_clip_22
 import shifa.doctor.generated.resources.ic_send_18
+import shifa.doctor.generated.resources.microphonePermissionDenied
 import shifa.doctor.generated.resources.openSettings
 import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.retry
@@ -90,11 +100,13 @@ import shifa.doctor.generated.resources.today
 import shifa.doctor.generated.resources.typeMessage
 import shifa.doctor.generated.resources.uploadingFile
 import shifa.doctor.generated.resources.voiceMessage
+import shifa.doctor.generated.resources.voiceRecordingFinishHint
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.analytics.shortMonth
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.ui.speech.RecordingPill
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -102,17 +114,23 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ReceivedShape
 import shifa.doctor.ui.widgets.SentShape
 import shifa.doctor.ui.widgets.ShifaAvatar
+import shifa.doctor.ui.widgets.ShifaChatVoiceBubble
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.utils.DocumentKinds
+import shifa.doctor.utils.Playback
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.openAppSettings
+import shifa.doctor.utils.rememberAudioPlayer
 import shifa.doctor.utils.rememberCameraLauncher
 import shifa.doctor.utils.rememberDocumentPickerLauncher
 import shifa.doctor.utils.rememberImagePickerLauncher
 import shifa.doctor.utils.rememberInAppBrowser
+import shifa.doctor.utils.rememberMicPermission
+import shifa.doctor.utils.rememberVoiceRecorder
 import shifa.doctor.utils.tr
 
 class ThreadActions(
@@ -132,13 +150,28 @@ class ThreadActions(
     val attach: (Boolean) -> Unit = {},
     val view: (String?) -> Unit = {},
     val dismissCamera: () -> Unit = {},
+    // CHAT-06: "Record Voice Message", the bar's ✕ and ✓, and play/pause on a voice note.
+    val recordVoice: () -> Unit = {},
+    val cancelVoice: () -> Unit = {},
+    val sendVoice: () -> Unit = {},
+    val togglePlay: (String) -> Unit = {},
+    // A recording the app's going to the background stopped (flow 07/04 §7–8): send it or drop it.
+    val sendHeld: () -> Unit = {},
+    val discardHeld: () -> Unit = {},
 )
 
 /** What the thread's host keeps besides the ViewModel's state: the attach sheet, the photo viewed, a refused camera. */
 data class ThreadOverlays(
     val attaching: Boolean = false,
     val viewing: String? = null,
-    val cameraDenied: Boolean = false,
+    // A refused permission (the camera, the microphone): its strip with Open settings.
+    val denied: StringResource? = null,
+    // CHAT-06: the recorder bar in place of the composer, its level and seconds; what the player is playing.
+    val recording: Boolean = false,
+    val level: Float = 0f,
+    val seconds: Int = 0,
+    val playback: Playback? = null,
+    val held: Boolean = false,
 )
 
 /**
@@ -161,14 +194,54 @@ fun ThreadScreen(
     }
     var attaching by rememberSaveable { mutableStateOf(false) }
     var viewing by rememberSaveable { mutableStateOf<String?>(null) }
-    var cameraDenied by rememberSaveable { mutableStateOf(false) }
+    var denied by remember { mutableStateOf<StringResource?>(null) }
+    // CHAT-06: one recording at a time, dropped when the thread closes; one voice note playing at a time.
+    val recorder = rememberVoiceRecorder()
+    val player = rememberAudioPlayer { ShellNotice.pending.value = Notice(Res.string.chatVoicePlayFailed) }
+    var recording by remember { mutableStateOf(false) }
+    var level by remember { mutableStateOf(0f) }
+    var seconds by remember { mutableStateOf(0) }
+    // Going to the background (Home, the lock, a call) stops the microphone and keeps the clip to send or drop.
+    var held by remember { mutableStateOf<Pair<ByteArray, Int>?>(null) }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (!recording) return@LifecycleEventEffect
+        recording = false
+        val audio = recorder.stop()
+        val length = recorder.lastDurationSeconds
+        when {
+            length < 1 -> Unit
+            audio == null -> ShellNotice.pending.value = Notice(Res.string.errorRecordingVoice)
+            else -> held = audio to length
+        }
+    }
+    LaunchedEffect(recording) {
+        val started = currentInstant()
+        while (recording) {
+            level = recorder.level()
+            seconds = ((currentInstant() - started).inWholeSeconds).toInt()
+            delay(RECORDER_TICK)
+        }
+    }
+    val mic =
+        rememberMicPermission { granted ->
+            if (!granted) {
+                denied = Res.string.microphonePermissionDenied
+            } else if (recorder.start()) {
+                denied = null
+                player.playback?.takeIf { it.playing }?.let { player.toggle(it.url) }
+                seconds = 0
+                recording = true
+            } else {
+                ShellNotice.pending.value = Notice(Res.string.errorRecordingVoice)
+            }
+        }
     // CHAT-04: the library and the camera (asking for the camera permission first; refused → a strip with Open settings).
     val pickImage = rememberImagePickerLauncher { it?.let(viewModel::sendImage) }
     val takePhoto =
         rememberCameraLauncher({
-            cameraDenied = false
+            denied = null
             it?.let(viewModel::sendImage)
-        }, { cameraDenied = true })
+        }, { denied = Res.string.cameraPermissionDenied })
     // CHAT-05: pdf, doc, docx, jpg, png; a document message opens in the browser (the system shows or hands it on).
     val pickDocument = rememberDocumentPickerLauncher(DocumentKinds.ChatAttachment) { it?.let(viewModel::sendDocument) }
     val browser = rememberInAppBrowser()
@@ -191,10 +264,27 @@ fun ThreadScreen(
             openFile = { if (!browser(it)) ShellNotice.pending.value = Notice(Res.string.cannotOpenDocumentUrl) },
             attach = { attaching = it },
             view = { viewing = it },
-            dismissCamera = { cameraDenied = false },
+            dismissCamera = { denied = null },
+            recordVoice = mic,
+            cancelVoice = {
+                recording = false
+                recorder.stop()
+            },
+            sendVoice = {
+                recording = false
+                val audio = recorder.stop()
+                viewModel.sendVoice(audio, recorder.lastDurationSeconds)
+            },
+            // While recording the microphone has the audio session (iOS: playing would switch it to playback only).
+            togglePlay = { if (!recording) player.toggle(it) },
+            sendHeld = {
+                held?.let { (audio, length) -> viewModel.sendVoice(audio, length) }
+                held = null
+            },
+            discardHeld = { held = null },
         ),
         clock,
-        ThreadOverlays(attaching, viewing, cameraDenied),
+        ThreadOverlays(attaching, viewing, denied, recording, level, seconds, player.playback, held != null),
     )
 }
 
@@ -223,7 +313,7 @@ internal fun ThreadContent(
                     ShifaLink(tr(Res.string.retry), actions.reload)
                 }
             messages.isEmpty() && state.pending.isEmpty() -> Empty(state.conversation)
-            else -> Messages(state, messages, actions, clock) { actions.view(it) }
+            else -> Messages(state, messages, actions, clock, overlays.playback) { actions.view(it) }
         }
     }
     // An attachment on its way (flow 07/03 §3: a strip above the composer, Flutter's SnackBars).
@@ -238,26 +328,42 @@ internal fun ThreadContent(
         )
     }
     // The camera was refused (now or for good): say so, with the way to the OS settings (flow 07/05 §6).
-    if (overlays.cameraDenied) {
-        Row(
-            Modifier.fillMaxWidth().background(
-                ShifaColors.Bg.WarningSubtle,
-            ).padding(horizontal = ShifaSize.S12, vertical = ShifaSize.S6),
-            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                tr(Res.string.cameraPermissionDenied),
-                Modifier.weight(1f),
-                style = ShifaTextStyles.tag(),
-                color = ShifaColors.Text.Primary,
-            )
+    overlays.denied?.let { refused ->
+        WarningStrip(tr(refused)) {
             ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
             ShifaLink(tr(Res.string.close), actions.dismissCamera)
         }
     }
-    Composer(state, actions) { actions.attach(true) }
-    if (overlays.attaching) AttachSheet(actions) { actions.attach(false) }
+    if (overlays.held) {
+        WarningStrip(tr(Res.string.chatRecordingInterrupted)) {
+            ShifaLink(tr(Res.string.send), actions.sendHeld)
+            ShifaLink(tr(Res.string.discard), actions.discardHeld)
+        }
+    }
+    if (overlays.recording) {
+        // The recorder bar in place of the composer (flow 07/04 §3): the dark pill, then the hint.
+        Column(
+            Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface).navigationBarsPadding().padding(ShifaSize.S10),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
+        ) {
+            RecordingPill(
+                overlays.level,
+                overlays.seconds,
+                false,
+                actions.cancelVoice,
+                actions.sendVoice,
+                tr(Res.string.send),
+            )
+            Text(
+                tr(Res.string.voiceRecordingFinishHint),
+                style = ShifaTextStyles.caption(),
+                color = ShifaColors.Text.Secondary,
+            )
+        }
+    } else {
+        Composer(state, actions) { actions.attach(true) }
+    }
+    if (overlays.attaching) AttachSheet(actions, !overlays.held) { actions.attach(false) }
     overlays.viewing?.let { url -> ImageViewer(url) { actions.view(null) } }
 }
 
@@ -338,6 +444,7 @@ private fun Messages(
     messages: List<Message>,
     actions: ThreadActions,
     clock: PracticeClock,
+    playback: Playback?,
     onView: (String) -> Unit,
 ) = BoxWithConstraints(Modifier.fillMaxSize()) {
     val rows =
@@ -345,16 +452,14 @@ private fun Messages(
             messages,
             state.pending.map {
                 ThreadRow.Pending(
-                    it.localId,
-                    it.text,
-                    it.at,
-                    it.failed,
-                    it.image,
-                    it.fileName.takeIf {
-                            _ ->
-                        it.document != null
-                    },
-                    it.document?.size?.toLong(),
+                    localId = it.localId,
+                    text = it.text,
+                    at = it.at,
+                    failed = it.failed,
+                    image = it.image,
+                    documentName = if (it.document != null) it.fileName else null,
+                    documentSize = it.document?.size?.toLong(),
+                    voiceSeconds = if (it.voice != null) it.durationSeconds else null,
                 )
             },
             clock,
@@ -388,7 +493,16 @@ private fun Messages(
         ) { row ->
             when (row) {
                 is ThreadRow.Day -> DayDivider(row, clock)
-                is ThreadRow.Sent -> MessageRow(row.message, maxBubble, clock, onView, actions.openFile)
+                is ThreadRow.Sent ->
+                    MessageRow(
+                        row.message,
+                        maxBubble,
+                        clock,
+                        onView,
+                        actions.openFile,
+                        playback,
+                        actions.togglePlay,
+                    )
                 is ThreadRow.Pending -> PendingRow(row, maxBubble, clock) { actions.retry(row.localId) }
             }
         }
@@ -450,6 +564,8 @@ private fun MessageRow(
     clock: PracticeClock,
     onView: (String) -> Unit,
     onOpenFile: (String) -> Unit,
+    playback: Playback?,
+    onTogglePlay: (String) -> Unit,
 ) {
     val time = hm(m.sentAt, clock)
     if (m.type == MessageType.System) {
@@ -509,6 +625,18 @@ private fun MessageRow(
                 m.fileUrl?.let(onView)
             }
         }
+        if (m.type == MessageType.Voice) {
+            // One voice note plays at a time (the shared player); the length from the message until the player knows it.
+            val mine = playback?.takeIf { it.url == m.fileUrl }
+            return@Column ShifaChatVoiceBubble(
+                playing = mine?.playing == true,
+                position = mine?.position ?: 0,
+                duration = mine?.duration?.takeIf { it > 0 } ?: (m.durationSeconds ?: 0),
+                onToggle = { m.fileUrl?.let(onTogglePlay) },
+                received = !m.isMine,
+                time = listOfNotNull(time, if (m.isMine) tick(m.status) else null).joinToString(" "),
+            )
+        }
         if (m.type == MessageType.Document) {
             return@Column DocumentTile(
                 m.fileName,
@@ -550,10 +678,19 @@ private fun PendingRow(
 ) {
     val time = hm(p.at, clock)
     val status = tr(if (p.failed) Res.string.chatNotSent else Res.string.chatStatusSending)
-    val label = if (p.image != null) tr(Res.string.chatPhoto) else p.text
+    val label =
+        when {
+            p.image != null -> tr(Res.string.chatPhoto)
+            p.voiceSeconds != null -> tr(Res.string.voiceMessage)
+            else -> p.text
+        }
     if (p.image != null) {
         Box(Modifier.clearAndSetSemantics { contentDescription = "$time, $label, $status" }) {
             ImageTile(null, p.image, true, time, if (p.failed) "!" else "◷") {}
+        }
+    } else if (p.voiceSeconds != null) {
+        Box(Modifier.clearAndSetSemantics { contentDescription = "$time, $label, $status" }) {
+            ShifaChatVoiceBubble(false, 0, p.voiceSeconds, {}, time = "$time ${if (p.failed) "!" else "◷"}")
         }
     } else if (p.documentName != null || p.documentSize != null) {
         val doc = tr(Res.string.document)
@@ -708,3 +845,25 @@ private fun Composer(
         enabled = state.canSend,
     )
 }
+
+// The recorder bar's level and timer refresh (the shared wave reads 60–100 ms steps).
+
+/** A strip above the composer saying what needs the doctor (a refused permission, an interrupted recording). */
+@Composable
+private fun WarningStrip(
+    text: String,
+    links: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().background(
+            ShifaColors.Bg.WarningSubtle,
+        ).padding(horizontal = ShifaSize.S12, vertical = ShifaSize.S6),
+        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, Modifier.weight(1f), style = ShifaTextStyles.tag(), color = ShifaColors.Text.Primary)
+        links()
+    }
+}
+
+private val RECORDER_TICK = kotlin.time.Duration.parse("100ms")

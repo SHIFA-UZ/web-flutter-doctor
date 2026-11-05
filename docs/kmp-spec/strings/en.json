@@ -2664,5 +2664,8 @@
   "chatStatusRead": "Read",
   "chatLoadFailed": "Couldn't load messages",
   "chatFileTypeNotAllowed": "Only PDF, Word and photo files can be sent.",
-  "chatFileUnavailable": "File unavailable"
+  "chatFileUnavailable": "File unavailable",
+  "chatRecordingTooShort": "Recording too short",
+  "chatVoicePlayFailed": "Couldn't play the voice message",
+  "chatRecordingInterrupted": "Recording interrupted — send or discard?"
 }

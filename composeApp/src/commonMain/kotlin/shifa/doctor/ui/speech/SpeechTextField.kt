@@ -171,12 +171,26 @@ fun SpeechTextField(
     if (state.reportable == field) ShifaLink(tr(Res.string.transcriptionReportAction), dictation::report)
 }
 
-/** The dark pill: ✕, the live wave, the time, ✓ (a spinner while transcribing). */
+/** The dark pill for dictation and the scribe: ✕, the live wave, the time, ✓ (a spinner while transcribing). */
 @Composable
 fun RecordingPill(
     state: DictationState,
     cancel: () -> Unit,
     done: () -> Unit,
+) = RecordingPill(state.level, state.seconds, state.transcribing, cancel, done)
+
+/**
+ * The dark recording pill (AI-03, also CHAT-06's voice notes): ✕, the live wave of [level], the time in m:ss, ✓ (a
+ * spinner while [busy]); [doneLabel] reads out ✓.
+ */
+@Composable
+fun RecordingPill(
+    level: Float,
+    seconds: Int,
+    busy: Boolean,
+    cancel: () -> Unit,
+    done: () -> Unit,
+    doneLabel: String = tr(Res.string.processRecording),
 ) = Row(
     Modifier
         .fillMaxWidth()
@@ -190,15 +204,15 @@ fun RecordingPill(
         tr(Res.string.cancelRecording),
         cancel,
         variant = ShifaIconButtonVariant.Secondary,
-        enabled = !state.transcribing,
+        enabled = !busy,
     )
-    Wave(state.level, Modifier.weight(1f).height(ShifaSize.S28))
+    Wave(level, Modifier.weight(1f).height(ShifaSize.S28))
     Text(
-        "${state.seconds / 60}:${(state.seconds % 60).toString().padStart(2, '0')}",
+        "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}",
         style = ShifaTextStyles.metaSmall(),
         color = ShifaColors.Text.Inverse,
     )
-    if (state.transcribing) {
+    if (busy) {
         Box(Modifier.size(ShifaSize.S40), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
                 Modifier.size(ShifaSize.S20),
@@ -207,7 +221,7 @@ fun RecordingPill(
             )
         }
     } else {
-        ShifaIconButton(Res.drawable.ic_check_16, tr(Res.string.processRecording), done)
+        ShifaIconButton(Res.drawable.ic_check_16, doneLabel, done)
     }
 }
 

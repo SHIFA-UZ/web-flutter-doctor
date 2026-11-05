@@ -2664,5 +2664,8 @@
   "chatStatusRead": "O'qildi",
   "chatLoadFailed": "Xabarlarni yuklab bo'lmadi",
   "chatFileTypeNotAllowed": "Faqat PDF, Word va rasm fayllarini yuborish mumkin.",
-  "chatFileUnavailable": "Fayl mavjud emas"
+  "chatFileUnavailable": "Fayl mavjud emas",
+  "chatRecordingTooShort": "Yozuv juda qisqa",
+  "chatVoicePlayFailed": "Ovozli xabarni ijro etib bo'lmadi",
+  "chatRecordingInterrupted": "Yozuv to'xtatildi — yuborilsinmi yoki o'chirilsinmi?"
 }

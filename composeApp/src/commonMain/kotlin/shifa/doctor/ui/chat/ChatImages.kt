@@ -43,8 +43,10 @@ import shifa.doctor.generated.resources.ic_file_20
 import shifa.doctor.generated.resources.ic_file_text_20
 import shifa.doctor.generated.resources.ic_image_20
 import shifa.doctor.generated.resources.ic_image_24
+import shifa.doctor.generated.resources.ic_mic_20
 import shifa.doctor.generated.resources.ic_x_22
 import shifa.doctor.generated.resources.imageNotAvailable
+import shifa.doctor.generated.resources.recordVoice
 import shifa.doctor.generated.resources.selectDocument
 import shifa.doctor.generated.resources.selectImage
 import shifa.doctor.generated.resources.takePhoto
@@ -131,10 +133,12 @@ private fun Missing(text: String) =
         )
     }
 
-/** The attach sheet (flow 07/03 §3): Select Image, Take Photo, Select Document; voice notes join with CHAT-06. */
+/** The attach sheet (flow 07/03 §3): Select Image, Take Photo, Select Document, Record Voice Message. */
 @Composable
 internal fun AttachSheet(
     actions: ThreadActions,
+    // False while an interrupted recording waits for Send or Discard: a new one would drop it.
+    canRecord: Boolean,
     onClose: () -> Unit,
 ) = ProfileSheet(onClose) {
     ShifaTray(tr(Res.string.attachFile), onClose) {
@@ -143,7 +147,8 @@ internal fun AttachSheet(
                 OptionItem(tr(Res.string.selectImage), Res.drawable.ic_image_20) to actions.pickImage,
                 OptionItem(tr(Res.string.takePhoto), Res.drawable.ic_camera_20) to actions.takePhoto,
                 OptionItem(tr(Res.string.selectDocument), Res.drawable.ic_file_20) to actions.pickDocument,
-            )
+                OptionItem(tr(Res.string.recordVoice), Res.drawable.ic_mic_20) to actions.recordVoice,
+            ).let { if (canRecord) it else it.dropLast(1) }
         ShifaOptionList(rows.map { it.first }, { i ->
             onClose()
             rows[i].second()

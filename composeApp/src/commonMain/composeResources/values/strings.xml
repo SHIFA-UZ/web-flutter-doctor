@@ -346,12 +346,15 @@
     <string name="chatNewMessage">New message</string>
     <string name="chatNotSent">Not sent. Tap to retry</string>
     <string name="chatPhoto">Photo</string>
+    <string name="chatRecordingInterrupted">Recording interrupted — send or discard?</string>
+    <string name="chatRecordingTooShort">Recording too short</string>
     <string name="chatSayHello">Say hello to %1$s</string>
     <string name="chatStatusDelivered">Delivered</string>
     <string name="chatStatusRead">Read</string>
     <string name="chatStatusSending">Sending</string>
     <string name="chatStatusSent">Sent</string>
     <string name="chatUnreadEmptyHint">Switch the filter to see all conversations.</string>
+    <string name="chatVoicePlayFailed">Couldn't play the voice message</string>
     <string name="checkInCompleted">Completed</string>
     <string name="checkInDetails">Check-in Details</string>
     <string name="checkIns">Check-ins</string>

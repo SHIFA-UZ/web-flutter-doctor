@@ -346,12 +346,15 @@
     <string name="chatNewMessage">Yangi xabar</string>
     <string name="chatNotSent">Yuborilmadi. Qayta urinish uchun bosing</string>
     <string name="chatPhoto">Rasm</string>
+    <string name="chatRecordingInterrupted">Yozuv to'xtatildi — yuborilsinmi yoki o'chirilsinmi?</string>
+    <string name="chatRecordingTooShort">Yozuv juda qisqa</string>
     <string name="chatSayHello">%1$s bilan suhbatni boshlang</string>
     <string name="chatStatusDelivered">Yetkazildi</string>
     <string name="chatStatusRead">O'qildi</string>
     <string name="chatStatusSending">Yuborilmoqda</string>
     <string name="chatStatusSent">Yuborildi</string>
     <string name="chatUnreadEmptyHint">Barcha suhbatlarni ko'rish uchun filtrni o'zgartiring.</string>
+    <string name="chatVoicePlayFailed">Ovozli xabarni ijro etib bo'lmadi</string>
     <string name="checkInCompleted">Bajarildi</string>
     <string name="checkInDetails">Tekshiruv tafsilotlari</string>
     <string name="checkIns">Tekshiruvlar</string>

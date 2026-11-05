@@ -7,7 +7,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import shifa.doctor.data.api.httpLogger
 
-private class AndroidAudioPlayer : AudioPlayer {
+private class AndroidAudioPlayer(
+    private val onError: () -> Unit,
+) : AudioPlayer {
     override var playback: Playback? by mutableStateOf(null)
         private set
 
@@ -49,6 +51,7 @@ private class AndroidAudioPlayer : AudioPlayer {
         mp.setOnErrorListener { _, what, extra ->
             httpLogger.log("FAILED to play audio: $what/$extra")
             release()
+            onError()
             true
         }
         runCatching {
@@ -57,6 +60,7 @@ private class AndroidAudioPlayer : AudioPlayer {
         }.onFailure {
             httpLogger.log("FAILED to play audio: ${it::class.simpleName}")
             release()
+            onError()
         }
     }
 
@@ -74,4 +78,4 @@ private class AndroidAudioPlayer : AudioPlayer {
     }
 }
 
-actual fun createAudioPlayer(): AudioPlayer = AndroidAudioPlayer()
+actual fun createAudioPlayer(onError: () -> Unit): AudioPlayer = AndroidAudioPlayer(onError)

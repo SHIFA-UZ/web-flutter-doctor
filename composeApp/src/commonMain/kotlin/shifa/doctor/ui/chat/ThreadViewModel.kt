@@ -23,6 +23,8 @@ import shifa.doctor.data.model.SendMessageRequest
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chatFileTypeNotAllowed
 import shifa.doctor.generated.resources.chatLoadFailed
+import shifa.doctor.generated.resources.chatRecordingTooShort
+import shifa.doctor.generated.resources.errorRecordingVoice
 import shifa.doctor.generated.resources.errorUploadingFile
 import shifa.doctor.generated.resources.fileTooLarge
 import shifa.doctor.ui.emailcode.CodeBanner
@@ -48,8 +50,11 @@ data class PendingMessage(
     val uploadedUrl: String? = null,
     // CHAT-05: a document on its way (pdf, doc, docx).
     val document: ByteArray? = null,
+    // CHAT-06: a voice note on its way (AAC .m4a) and its length in seconds.
+    val voice: ByteArray? = null,
+    val durationSeconds: Int? = null,
 ) {
-    val file: ByteArray? get() = image ?: document
+    val file: ByteArray? get() = image ?: document ?: voice
 }
 
 data class ThreadUiState(
@@ -197,6 +202,37 @@ class ThreadViewModel(
         }
     }
 
+    /**
+     * A voice note from the recorder bar (CHAT-06, flow 07/04): AAC .m4a at 16 kHz mono 32 kbps (the shared recorder),
+     * `voice_<epoch ms>.m4a`, sent with its length; under a second it isn't sent ("Recording too short", flow §6). A
+     * recorder that couldn't finish the file ([audio] null or empty) says so (flow §9), never a silent drop.
+     */
+    fun sendVoice(
+        audio: ByteArray?,
+        seconds: Int,
+    ) {
+        if (_state.value.messages == null) return
+        when {
+            seconds < 1 -> ShellNotice.pending.value = Notice(Res.string.chatRecordingTooShort)
+            audio == null || audio.isEmpty() -> ShellNotice.pending.value = Notice(Res.string.errorRecordingVoice)
+            audio.size > MAX_ATTACHMENT_BYTES ->
+                ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            else -> {
+                val at = now()
+                enqueue(
+                    PendingMessage(
+                        ++lastLocalId,
+                        "",
+                        at,
+                        fileName = "voice_${at.toEpochMilliseconds()}.m4a",
+                        voice = audio,
+                        durationSeconds = seconds,
+                    ),
+                )
+            }
+        }
+    }
+
     private fun enqueue(p: PendingMessage) {
         _state.update { it.copy(pending = it.pending + p) }
         deliver(p)
@@ -216,7 +252,12 @@ class ThreadViewModel(
     private suspend fun request(p: PendingMessage): Result<SendMessageRequest> {
         val bytes = p.file ?: return Result.success(SendMessageRequest(id, "text", text = p.text))
         val name = p.fileName ?: "photo.jpg"
-        val type = if (p.image != null) "image" else "document"
+        val type =
+            when {
+                p.image != null -> "image"
+                p.voice != null -> "voice"
+                else -> "document"
+            }
         val url =
             p.uploadedUrl ?: repo.upload(bytes, name, mimeOf(name)).getOrElse { return Result.failure(it) }.also {
                     url ->
@@ -226,7 +267,14 @@ class ThreadViewModel(
                 }
             }
         return Result.success(
-            SendMessageRequest(id, type, attachmentUrl = url, attachmentName = name, fileSize = bytes.size.toLong()),
+            SendMessageRequest(
+                id,
+                type,
+                attachmentUrl = url,
+                attachmentName = name,
+                fileSize = bytes.size.toLong(),
+                duration = p.durationSeconds,
+            ),
         )
     }
 
@@ -270,5 +318,6 @@ internal fun mimeOf(fileName: String) =
         "doc" -> "application/msword"
         "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         "png" -> "image/png"
+        "m4a" -> "audio/mp4"
         else -> "image/jpeg"
     }

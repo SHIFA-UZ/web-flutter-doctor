@@ -147,3 +147,32 @@ Built 2026-11-05. Spec 07 §1.3–1.4, ticket CHAT-05, flow 07/06, board `DaChat
   "Document, Uchrashuv hujjatlari - 2026-07-21 00_00.pdf". Opening it needs a real URL (demo files stay on the phone).
   Demo mode is off again.
 
+
+## CHAT-06 · Voice messages
+
+Built 2026-11-05. Spec 07 §1.3–1.4 and §7, ticket CHAT-06, flow 07/04, board `DaChat` (voice bubble) and the recorder
+pill from the visit dictation (`RecordingPill`, now shared: level, seconds, busy, Cancel, a confirm label).
+
+- **Record:** "Record Voice Message" in the attach sheet asks for the microphone (refused → the permission strip with
+  Open settings, as for the camera) and starts at once; the pill replaces the composer (the draft stays), with the
+  live level, an elapsed counter (flow §12: Flutter had none) and the flow's hint. Cancel stops and drops the file;
+  Send (read out "Send", not "Process") stops and sends. A playing note pauses first, and notes
+  don't play while recording (on iOS that would take the audio session from the microphone). Leaving the thread drops
+  the recording (the recorder is the screen's). Going to the background (Home, the lock, a call) stops the microphone
+  and keeps the clip: "Recording interrupted — send or discard?" with Send and Discard (flow §7–8 target). Until answered, the attach sheet has no "Record Voice Message" (a new one would drop the clip).
+- **Send:** under 1 s "Recording too short" (flow §6 target); a recorder that couldn't finish the file "Error recording
+  voice" (never a silent drop); otherwise `voice_<epochMs>.m4a` (`audio/mp4`) shows at
+  once as a pending voice bubble, uploads, then sends as `voice` with `duration` in seconds; a failed send keeps the
+  uploaded URL, so Retry only sends (as for photos and documents).
+- **Play:** `ShifaChatVoiceBubble` with play/pause, the progress line, position and total (the message's `duration`
+  until the player knows it). One note at a time (the shared `AudioPlayer`); finishing resets it. A stream that fails
+  ("Couldn't play the voice message", flow §9 NEW): Android's `MediaPlayer` error, iOS's item status `failed`. No
+  seeking, speed or 5-minute cap (flow open questions).
+- **Tests:** `ThreadViewModelTest` (a voice note goes out as `voice` with its seconds and an m4a name; < 1 s and a
+  failed stop are refused without uploading, each with its banner). Screenshots `Chat_threadVoice` (received playing, sent, pending) and `Chat_threadRecording`.
+- **Emulator (demo):** recorded 12 s, sent ("Voice Message, Read", 0:12); Cancel returns the composer; playing a demo
+  note (its URL is fake) showed the banner after about 40 s, when `MediaPlayer` gave up; Home while recording, back:
+  the interrupted strip, Send sent the 3 s clip. The < 1 s path is too quick
+  for uiautomator (unit-tested). Demo mode is off again.
+- **Not built:** a loading state while a stream prepares (the icon shows pause at 0:00 until it plays or fails), the
+  list preview for voice (the backend's `lastMessage` text, shown as sent; CHAT-02).

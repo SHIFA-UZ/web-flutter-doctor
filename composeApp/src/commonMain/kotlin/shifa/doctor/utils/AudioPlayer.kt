@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -31,12 +33,14 @@ interface AudioPlayer {
     fun release()
 }
 
-expect fun createAudioPlayer(): AudioPlayer
+/** [onError]: a voice note that couldn't load or play (the player has already stopped). */
+expect fun createAudioPlayer(onError: () -> Unit): AudioPlayer
 
 /** A player for this screen; leaving the screen stops it. */
 @Composable
-fun rememberAudioPlayer(): AudioPlayer {
-    val player = remember { createAudioPlayer() }
+fun rememberAudioPlayer(onError: () -> Unit = {}): AudioPlayer {
+    val failed by rememberUpdatedState(onError)
+    val player = remember { createAudioPlayer { failed() } }
     val playing = player.playback?.playing == true
     LaunchedEffect(playing) {
         while (playing) {

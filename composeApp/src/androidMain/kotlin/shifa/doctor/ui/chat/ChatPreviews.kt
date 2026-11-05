@@ -175,3 +175,62 @@ internal fun ThreadImagesPreview() =
             clock,
         )
     }
+
+private val voices =
+    listOf(
+        msg(
+            20,
+            "2026-11-05T03:30:00Z",
+            "",
+            false,
+            type = shifa.doctor.data.model.MessageType.Voice,
+            url = "https://x/v1.m4a",
+        ).copy(durationSeconds = 14),
+        msg(
+            21,
+            "2026-11-05T03:35:00Z",
+            "",
+            true,
+            shifa.doctor.data.model.MessageStatus.Read,
+            shifa.doctor.data.model.MessageType.Voice,
+            url = "https://x/v2.m4a",
+        ).copy(durationSeconds = 73),
+    )
+
+// CHAT-06: a voice note from the patient playing (0:05 of 0:14) and one of mine, then a voice note of mine on its way.
+@Composable
+internal fun ThreadVoicePreview() =
+    PreviewTheme {
+        ThreadContent(
+            ThreadUiState(
+                conversations[0],
+                voices,
+                listOf(
+                    PendingMessage(
+                        5,
+                        "",
+                        Instant.parse("2026-11-05T09:10:00Z"),
+                        voice = ByteArray(1),
+                        durationSeconds = 9,
+                    ),
+                ),
+            ),
+            ThreadActions(),
+            clock,
+            ThreadOverlays(
+                playback = shifa.doctor.utils.Playback("https://x/v1.m4a", playing = true, position = 5, duration = 14),
+            ),
+        )
+    }
+
+// CHAT-06: recording: the dark pill (0:07) and the hint in place of the composer.
+@Composable
+internal fun ThreadRecordingPreview() =
+    PreviewTheme {
+        ThreadContent(
+            ThreadUiState(conversations[0], voices),
+            ThreadActions(),
+            clock,
+            ThreadOverlays(recording = true, level = 0.6f, seconds = 7),
+        )
+    }

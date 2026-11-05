@@ -2664,5 +2664,8 @@
   "chatStatusRead": "Прочитано",
   "chatLoadFailed": "Не удалось загрузить сообщения",
   "chatFileTypeNotAllowed": "Можно отправлять только PDF, Word и фото.",
-  "chatFileUnavailable": "Файл недоступен"
+  "chatFileUnavailable": "Файл недоступен",
+  "chatRecordingTooShort": "Слишком короткая запись",
+  "chatVoicePlayFailed": "Не удалось воспроизвести голосовое сообщение",
+  "chatRecordingInterrupted": "Запись прервана — отправить или удалить?"
 }

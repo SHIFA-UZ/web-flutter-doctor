@@ -78,6 +78,8 @@ sealed interface ThreadRow {
         // A document on its way (CHAT-05): its name and size.
         val documentName: String? = null,
         val documentSize: Long? = null,
+        // A voice note on its way (CHAT-06): its length.
+        val voiceSeconds: Int? = null,
     ) : ThreadRow
 }
 

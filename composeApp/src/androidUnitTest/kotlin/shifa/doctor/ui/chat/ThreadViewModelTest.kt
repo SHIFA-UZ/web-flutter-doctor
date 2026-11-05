@@ -18,6 +18,8 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.chatRecordingTooShort
+import shifa.doctor.generated.resources.errorRecordingVoice
 import shifa.doctor.generated.resources.errorUploadingFile
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -286,6 +288,36 @@ class ThreadViewModelTest {
         assertThat(
             shifa.doctor.ui.navigation.ShellNotice.pending.value?.text,
         ).isEqualTo(Res.string.errorUploadingFile)
+        shifa.doctor.ui.navigation.ShellNotice.pending.value = null
+    }
+
+    @Test
+    fun `a voice note is uploaded as an m4a and sent with its length, under a second it isn't sent`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        classToTest.sendVoice(ByteArray(4_000), 14)
+        assertThat(classToTest.state.value.pending.single().durationSeconds).isEqualTo(14)
+        settle { classToTest.state.value.pending.isEmpty() }
+        val body = bodies.last()
+        assertThat(body).contains("\"type\":\"voice\"")
+        assertThat(body).contains("\"duration\":14")
+        assertThat(body).containsMatch("\"attachmentName\":\"voice_\\d+\\.m4a\"")
+        assertThat(mimeOf("voice_1.m4a")).isEqualTo("audio/mp4")
+        val before = uploads.size
+        classToTest.sendVoice(ByteArray(100), 0)
+        assertThat(uploads).hasSize(before)
+        assertThat(
+            shifa.doctor.ui.navigation.ShellNotice.pending.value
+                ?.text,
+        ).isEqualTo(Res.string.chatRecordingTooShort)
+        // A recorder that couldn't finish the file: said, not dropped.
+        classToTest.sendVoice(null, 5)
+        assertThat(uploads).hasSize(before)
+        assertThat(
+            shifa.doctor.ui.navigation.ShellNotice.pending.value
+                ?.text,
+        ).isEqualTo(Res.string.errorRecordingVoice)
         shifa.doctor.ui.navigation.ShellNotice.pending.value = null
     }
 }
