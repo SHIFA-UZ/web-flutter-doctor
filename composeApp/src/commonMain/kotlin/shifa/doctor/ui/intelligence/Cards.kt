@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.heading
@@ -21,9 +24,12 @@ import androidx.compose.ui.text.font.FontWeight
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.JsonObject
 import org.jetbrains.compose.resources.StringResource
+import shifa.doctor.data.intelligence.CardText
 import shifa.doctor.data.intelligence.CardVisit
 import shifa.doctor.data.intelligence.IntelCard
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.allPluralStringResources
+import shifa.doctor.generated.resources.allStringResources
 import shifa.doctor.generated.resources.intelAppointmentsCount
 import shifa.doctor.generated.resources.intelCardBrief
 import shifa.doctor.generated.resources.intelCardFreeSlots
@@ -40,11 +46,9 @@ import shifa.doctor.generated.resources.intelNoPatientAppointmentsInRange
 import shifa.doctor.generated.resources.intelNoPatientsMatched
 import shifa.doctor.generated.resources.intelOpenCalendar
 import shifa.doctor.generated.resources.moreCount
-import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.ui.analytics.shortMonth
 import shifa.doctor.ui.calendar.longDate
-import shifa.doctor.ui.calendar.status
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -52,7 +56,10 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.visit.Patterns
 import shifa.doctor.ui.widgets.AiResponseText
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.utils.LocalAppLocale
+import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.tr
+import shifa.doctor.utils.trPlural
 
 /**
  * A tool card in the thread (INTEL-05, 02 §4.4, flows 03/07–03/13, board `DaIntel` card): a bordered box with the
@@ -66,6 +73,15 @@ internal fun ToolCard(
     onOpenCalendar: (LocalDate?) -> Unit = {},
 ) {
     val card = IntelCard.of(toolName, payload)
+    CompositionLocalProvider(LocalCardText provides rememberCardText()) { CardBox(card, onOpenCalendar) }
+}
+
+@Composable
+private fun CardBox(
+    card: IntelCard,
+    onOpenCalendar: (LocalDate?) -> Unit,
+) {
+    val ct = LocalCardText.current
     Column(
         Modifier
             .fillMaxWidth()
@@ -90,12 +106,12 @@ internal fun ToolCard(
             is IntelCard.PatientSearch -> SearchBody(card)
             is IntelCard.MostVisited ->
                 if (card.patients.isEmpty()) {
-                    Line(card.hint ?: DASH)
+                    Line(card.hint?.let(ct::localizeHint) ?: DASH)
                 } else {
                     card.patients.forEach { (name, count) ->
                         Line(
                             listOfNotNull(
-                                name.ifBlank { tr(Res.string.patient) },
+                                ct.patientLabel(name),
                                 count?.toString(),
                             ).joinToString(" · "),
                         )
@@ -104,14 +120,14 @@ internal fun ToolCard(
             is IntelCard.Patterns ->
                 if (card.patterns.isEmpty()) {
                     Line(
-                        card.hint ?: DASH,
+                        card.hint?.let(ct::localizeHint) ?: DASH,
                     )
                 } else {
                     Patterns(card.patterns, caption = false)
                 }
             is IntelCard.Brief -> AiResponseText(card.text)
-            is IntelCard.Other -> card.line?.let { Line(it) }
-            is IntelCard.Failed -> Line(card.line)
+            is IntelCard.Other -> card.line?.let { Line(ct.localizeHint(it)) }
+            is IntelCard.Failed -> Line(ct.localizeHint(card.line))
         }
     }
 }
@@ -155,7 +171,7 @@ private fun ColumnScope.ScheduleBody(
                 style = ShifaTextStyles.aiText().copy(fontWeight = FontWeight.SemiBold),
             )
             Text(
-                listOfNotNull(v.patientName ?: tr(Res.string.patient), statusText(v)).joinToString(" · "),
+                listOfNotNull(LocalCardText.current.patientLabel(v.patientName), statusText(v)).joinToString(" · "),
                 Modifier.weight(1f),
                 style = ShifaTextStyles.aiText(),
                 color = ShifaColors.Text.Primary,
@@ -173,7 +189,7 @@ private fun ColumnScope.PatientAppointmentsBody(
     openCalendar: () -> Unit,
 ) {
     card.patientName?.let { Line(it, bold = true) }
-    card.rangeLabel?.let { Line(it, secondary = true) }
+    card.rangeLabel?.let { Line(LocalCardText.current.rangeLabel(it), secondary = true) }
     Line("${tr(Res.string.intelAppointmentsCount)}: ${card.count}")
     if (card.visits.isEmpty()) Line(tr(Res.string.intelNoPatientAppointmentsInRange), secondary = true)
     card.visits.forEach { v ->
@@ -184,7 +200,7 @@ private fun ColumnScope.PatientAppointmentsBody(
                     "${it.dayOfMonth} ${tr(
                         shortMonth(it.monthNumber),
                     )} ${it.year}"
-                } ?: v.dateLabel.orEmpty(),
+                } ?: LocalCardText.current.dateLabel(fallback = v.dateLabel),
                 Modifier.width(ShifaSize.S112),
                 style = ShifaTextStyles.aiText().copy(fontWeight = FontWeight.SemiBold),
             )
@@ -192,7 +208,12 @@ private fun ColumnScope.PatientAppointmentsBody(
             // Without a patient in the header, each row says whose visit it is.
             val status = statusText(v)
             Text(
-                listOfNotNull(v.patientName?.takeIf { card.patientName == null }, status).joinToString(" · "),
+                listOfNotNull(
+                    v.patientName?.takeIf {
+                        card.patientName == null
+                    }?.let(LocalCardText.current::patientLabel),
+                    status,
+                ).joinToString(" · "),
                 Modifier.weight(1f),
                 style = ShifaTextStyles.aiText(),
                 color = ShifaColors.Text.Secondary,
@@ -210,9 +231,13 @@ private fun ColumnScope.FreeSlotsBody(
     card: IntelCard.FreeSlots,
     openCalendar: () -> Unit,
 ) {
-    (card.date?.let { longDate(it) } ?: card.dateLabel)?.let { Line(it, bold = true) }
+    (
+        card.date?.let {
+            longDate(it)
+        } ?: card.dateLabel?.let { LocalCardText.current.fieldLabel(fallback = it) }
+    )?.let { Line(it, bold = true) }
     if (card.slots.isEmpty()) {
-        Line(card.hint ?: tr(Res.string.intelNoFreeSlots))
+        Line(card.hint?.let(LocalCardText.current::localizeHint) ?: tr(Res.string.intelNoFreeSlots))
     } else {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
@@ -237,17 +262,21 @@ private fun ColumnScope.FreeSlotsBody(
 /** Flow 03/10: "Did you mean…?" for a fuzzy search, the matches with their phone; none → the hint. */
 @Composable
 private fun ColumnScope.SearchBody(card: IntelCard.PatientSearch) {
-    if (card.matches.isEmpty()) return Line(card.hint ?: tr(Res.string.intelNoPatientsMatched))
+    if (card.matches.isEmpty()) {
+        return Line(
+            card.hint?.let(LocalCardText.current::localizeHint) ?: tr(Res.string.intelNoPatientsMatched),
+        )
+    }
     if (card.fuzzy) {
         Line(card.query?.let { tr(Res.string.intelNoExactMatchFor, it) } ?: tr(Res.string.intelDidYouMean), bold = true)
     }
     card.matches.forEach { m ->
-        Line(listOfNotNull(m.name ?: tr(Res.string.patient), m.phone).joinToString(" · "))
+        Line(listOfNotNull(LocalCardText.current.patientLabel(m.name), m.phone).joinToString(" · "))
     }
 }
 
 @Composable
-private fun statusText(v: CardVisit): String? = v.status?.let { status(it)?.first ?: it }
+private fun statusText(v: CardVisit): String? = v.status?.let { LocalCardText.current.statusLabel(it) }
 
 // Cancelled visits are muted (flows 03/07–08 target).
 private fun Modifier.muted(v: CardVisit) = if (v.status.equals("CANCELLED", ignoreCase = true)) alpha(MUTED) else this
@@ -270,3 +299,36 @@ private fun Line(
 
 private const val MUTED = 0.55f
 private const val DASH = "—"
+
+private val LocalCardText = staticCompositionLocalOf { CardText("en", { it }, { "$it" }) }
+
+/**
+ * The card-text localiser (INTEL-10) in the app's language: the keys it looks up resolved with `tr()` (Cyrillic
+ * Uzbek included) and the short month names; its own Uzbek templates turn Cyrillic the same way.
+ */
+@Composable
+internal fun rememberCardText(): CardText {
+    val lang = LocalAppLocale.current.ifEmpty { "en" }
+    val cyrillic = LocalUzbekCyrillic.current
+    // Templated keys come back with their {name} placeholders (the resources number them %1$s…).
+    val strings =
+        CardText.KEYS.associateWith { key ->
+            val names = CardText.PLACEHOLDERS[key].orEmpty().map { "{$it}" }.toTypedArray()
+            Res.allStringResources[key]?.let { tr(it, *names) } ?: key
+        }
+    // Plurals for the three counts that stand for every CLDR form (CardText.pluralSample).
+    val plurals =
+        CardText.PLURAL_KEYS.mapValues { (key, names) ->
+            val args = names.map { "{$it}" }.toTypedArray()
+            listOf(1, 2, 5).associateWith {
+                    n ->
+                Res.allPluralStringResources[key]?.let { trPlural(it, n, *args) } ?: key
+            }
+        }
+    val months = (1..12).map { tr(shortMonth(it)) }
+    return remember(lang, cyrillic, strings, plurals, months) {
+        CardText(lang, { strings[it] ?: it }, { months[it - 1] }, cyrillic) { key, count ->
+            plurals[key]?.get(CardText.pluralSample(lang, count)) ?: key
+        }
+    }
+}

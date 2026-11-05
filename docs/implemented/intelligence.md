@@ -289,3 +289,28 @@ rows, chips, body).
   dates, fuzzy search, decimal counts, the brief, unknown cards' line), `ShellViewModelTest` (Open calendar leaves
   Intelligence); screenshot `Intelligence_cards` (every card), thread screenshots re-recorded (their search card is
   now drawn).
+
+## INTEL-10 · Card text localiser
+
+Built 2026-11-05 (before INTEL-06, which needs it). Spec 02 §0, ticket INTEL-10. A stop-gap: the backend is asked for
+codes and ISO values instead of English sentences (doc 15 §4); until then this must match Flutter's patterns exactly.
+
+- **Port** (`data/intelligence/CardText.kt`, about 1,750 lines): Flutter's `intelligence_card_text.dart`, its two big
+  tables (exact sentences, ~100 sentence patterns with their en / uz / ru templates) converted mechanically from Dart
+  and the procedural helpers ported by hand: status labels, ISO and English dates ("20 Okt 2026"), period labels ("Shu
+  hafta", "the next 3 weeks", "from … until …"), placeholder names ("Patient" → the app's word), document and fact
+  types, and `localizeHint` (exact keys, the cancellation preview, then the patterns, then sentence by sentence, then
+  calendar words inside the text). English stays as sent.
+- **No platform code:** `CardText(lang, strings, monthShort, cyrillic)`; the screen builds it with `rememberCardText()`
+  from the keys it needs (`CardText.KEYS`, resolved through `tr()`, so Cyrillic Uzbek works) and the short month names.
+  Its own Uzbek templates are transliterated before the names go in, as `tr()` does: a Latin patient name stays Latin.
+  Templated keys are resolved with their placeholder names as arguments (the resources number them `%1$s`…), and the
+  cancellation preview is a plural resource, resolved for 1, 2 and 5 and picked by the count's CLDR form (Codex review:
+  it showed its key and `%1$s` before).
+- **Used by** the read-only cards (statuses, names, periods, English date labels, hint and error lines) and by a
+  card's reply line in the thread (a booked card's English status, a spoken hint). INTEL-06…08 use it for their cards.
+- **Not ported:** `intelligenceChatTimestamp` (the thread's own `stamp()` already does "Today · 09:41").
+- **Checked:** the ported golden test; emulator, demo mode, app in Uzbek: "Bugungi jadval" sent the Uzbek prompt and
+  the card read "Bugungi jadval · Uchrashuvlar: 0 · Bugun uchrashuv yo‘q · Kalendarni ochish". iOS compiled, not run.
+- **Tests:** `CardTextTest`, built from the generated resources the screen reads: Flutter's golden tests verbatim (labels, cancellation, reschedule, search and booking
+  sentences, other hints, Today) minus the timestamp one, the resource placeholders and ru plural forms, and Cyrillic Uzbek keeping names Latin.

@@ -95,6 +95,7 @@ internal fun ThreadList(
     card: @Composable (toolName: String?, payload: JsonObject) -> Unit = { _, _ -> },
 ) {
     val messages = chat?.messages.orEmpty()
+    val cardText = rememberCardText()
     val extra = if (state.asking != null) 1 else 0
     // Follow the newest content while the doctor is at the very bottom (flow 03/03 §3): a scroll the doctor ends above
     // the bottom stops it, one back to the bottom starts it again; a new question always jumps down.
@@ -126,7 +127,13 @@ internal fun ThreadList(
                     now,
                 )
             } else {
-                AssistantBlock(m.content, m.at, now, streaming = false) {
+                // A card's reply line may be the backend's English status or hint (INTEL-10 localises those).
+                AssistantBlock(
+                    if (m.cardPayload != null) cardText.localizeHint(m.content) else m.content,
+                    m.at,
+                    now,
+                    streaming = false,
+                ) {
                     m.cardPayload?.let { card(m.toolName, it) }
                 }
             }
