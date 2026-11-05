@@ -925,6 +925,7 @@
     <string name="discardRegistrationBody">Your entries will be lost.</string>
     <string name="discardRegistrationTitle">Discard registration?</string>
     <string name="discardScannedPages">Discard the scanned pages?</string>
+    <string name="discardTaskTitle">Discard this task?</string>
     <string name="discountOutOfRange">Enter a discount between 0 and 100.</string>
     <string name="discountRange">0–100</string>
     <string name="diseaseDevelopment">Disease development</string>
@@ -1027,6 +1028,7 @@
     <string name="duration">Duration</string>
     <string name="durationChanged">Duration changed</string>
     <string name="durationDays">Duration (days)</string>
+    <string name="durationDaysInvalid">Enter a number of days (at least 1)</string>
     <string name="durationHours">%1$s h</string>
     <string name="durationHoursMinutes">%1$s h %2$s min</string>
     <string name="durationLabelShort">Duration</string>
@@ -1063,6 +1065,7 @@
     <string name="endChecklistSigned">Signed</string>
     <string name="endChecklistTicks">%1$s to mark completed</string>
     <string name="endDate">End Date</string>
+    <string name="endDateBeforeStart">End date must be after the start date</string>
     <string name="endFailed">Couldn't end the appointment. It is still open: try again.</string>
     <string name="endOffline">You are offline. End the visit when connected.</string>
     <string name="endTimeMustBeAfterStartTime">End time must be after start time.</string>
@@ -1225,6 +1228,7 @@
     <string name="fromDate">From date</string>
     <string name="fromLast0252Form">From last 025-2 form</string>
     <string name="fromShifaAi">From Shifa AI</string>
+    <string name="fromTemplate">From template: %1$s</string>
     <string name="fulfilLineError">%1$s could not be marked as completed</string>
     <string name="fullName">Full Name</string>
     <string name="fullNameRequired">Full name is required</string>
@@ -1467,6 +1471,7 @@
     <string name="intelWelcomeScheduleDesc">Ask about your day</string>
     <string name="intelWhenAt">%1$s %2$s %3$s at %4$s</string>
     <string name="intelligenceEmptyHint">Your AI assistant for clinical workflows.</string>
+    <string name="intervalAdjusted">Interval adjusted to %1$s h</string>
     <string name="intervalBetweenTasks">Interval between tasks</string>
     <string name="invalidCoordinates">Please enter valid coordinates</string>
     <string name="invalidCredentials">Incorrect email or password.</string>
@@ -2165,6 +2170,7 @@
     <string name="selectDatesToSeeSchedule">Select dates to see your schedule</string>
     <string name="selectDocument">Select Document</string>
     <string name="selectDocumentType">Select a document type</string>
+    <string name="selectEndDate">Pick an end date</string>
     <string name="selectFile">Select File</string>
     <string name="selectFormTemplate">Select Form Template</string>
     <string name="selectImage">Select Image</string>
@@ -2391,6 +2397,7 @@
     <string name="thisTimeOverlapsExistingSlot">This time overlaps an existing slot.</string>
     <string name="thursday">Thursday</string>
     <string name="time">Time</string>
+    <string name="timeAlreadyInList">That time is already in the list</string>
     <string name="timeJustNow">Just now</string>
     <string name="timeMinAgo">%1$s min ago</string>
     <string name="timePeriod">Time Period</string>

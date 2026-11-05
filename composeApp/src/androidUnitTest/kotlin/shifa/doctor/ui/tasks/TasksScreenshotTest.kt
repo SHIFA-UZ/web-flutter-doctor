@@ -37,4 +37,13 @@ class TasksScreenshotTest {
 
     @Test
     fun notFound() = captureRoboImage("screenshots/Task_notFound.png") { TaskNotFoundPreview() }
+
+    @Test
+    fun createErrors() = captureRoboImage("screenshots/TaskCreate_errors.png") { CreateTaskErrorsPreview() }
+
+    @Test
+    fun createEven() = captureRoboImage("screenshots/TaskCreate_even.png") { CreateTaskEvenPreview() }
+
+    @Test
+    fun createCustom() = captureRoboImage("screenshots/TaskCreate_custom.png") { CreateTaskCustomPreview() }
 }

@@ -2685,5 +2685,12 @@
   "patientNoSubmissionsYet": "The patient hasn't submitted anything yet",
   "submission": "Submission",
   "checkInsLoadFailed": "Couldn't load check-ins",
-  "taskZoneUnknown": "The patient's time zone isn't known: times follow the practice time zone."
+  "taskZoneUnknown": "The patient's time zone isn't known: times follow the practice time zone.",
+  "discardTaskTitle": "Discard this task?",
+  "durationDaysInvalid": "Enter a number of days (at least 1)",
+  "endDateBeforeStart": "End date must be after the start date",
+  "timeAlreadyInList": "That time is already in the list",
+  "intervalAdjusted": "Interval adjusted to {hours} h",
+  "fromTemplate": "From template: {name}",
+  "selectEndDate": "Pick an end date"
 }

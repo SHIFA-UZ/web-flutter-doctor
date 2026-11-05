@@ -925,6 +925,7 @@
     <string name="discardRegistrationBody">Kiritgan ma'lumotlaringiz yo'qoladi.</string>
     <string name="discardRegistrationTitle">Ro'yxatdan o'tish bekor qilinsinmi?</string>
     <string name="discardScannedPages">Skanerlangan sahifalar o'chirilsinmi?</string>
+    <string name="discardTaskTitle">Vazifa bekor qilinsinmi?</string>
     <string name="discountOutOfRange">Chegirmani 0 dan 100 gacha kiriting.</string>
     <string name="discountRange">0–100</string>
     <string name="diseaseDevelopment">Kasallik rivojlanishi</string>
@@ -1027,6 +1028,7 @@
     <string name="duration">Davomiylik</string>
     <string name="durationChanged">Davomiylik o'zgartirildi</string>
     <string name="durationDays">Davomiylik (kunlar)</string>
+    <string name="durationDaysInvalid">Kunlar sonini kiriting (kamida 1)</string>
     <string name="durationHours">%1$s soat</string>
     <string name="durationHoursMinutes">%1$s soat %2$s daq</string>
     <string name="durationLabelShort">Davomiyligi</string>
@@ -1063,6 +1065,7 @@
     <string name="endChecklistSigned">Imzolangan</string>
     <string name="endChecklistTicks">%1$s ta bajarilgan deb belgilanadi</string>
     <string name="endDate">Tugash sanasi</string>
+    <string name="endDateBeforeStart">Tugash sanasi boshlanish sanasidan keyin bo'lishi kerak</string>
     <string name="endFailed">Qabulni yakunlab bo'lmadi. U ochiq qoldi: qayta urinib ko'ring.</string>
     <string name="endOffline">Internetga ulanmagansiz. Ulanganingizda tashrifni yakunlang.</string>
     <string name="endTimeMustBeAfterStartTime">Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak.</string>
@@ -1225,6 +1228,7 @@
     <string name="fromDate">Boshlanish sanasi</string>
     <string name="fromLast0252Form">Oxirgi 025-2 shaklidan</string>
     <string name="fromShifaAi">Shifa AI dan</string>
+    <string name="fromTemplate">Shablondan: %1$s</string>
     <string name="fulfilLineError">%1$s ni bajarilgan deb belgilab bo'lmadi</string>
     <string name="fullName">F.I.O</string>
     <string name="fullNameRequired">To'liq ism majburiy</string>
@@ -1467,6 +1471,7 @@
     <string name="intelWelcomeScheduleDesc">Kuningiz haqida so‘rang</string>
     <string name="intelWhenAt">%1$s %2$s-%3$s soat %4$s da</string>
     <string name="intelligenceEmptyHint">Klinik ish jarayonlari uchun AI yordamchingiz.</string>
+    <string name="intervalAdjusted">Interval %1$s soatga o'zgartirildi</string>
     <string name="intervalBetweenTasks">Vazifalar orasidagi interval</string>
     <string name="invalidCoordinates">Iltimos, to'g'ri koordinatalarni kiriting</string>
     <string name="invalidCredentials">Email yoki parol noto'g'ri.</string>
@@ -2165,6 +2170,7 @@
     <string name="selectDatesToSeeSchedule">Jadvalni ko'rish uchun sanalarni tanlang</string>
     <string name="selectDocument">Hujjat tanlash</string>
     <string name="selectDocumentType">Hujjat turini tanlang</string>
+    <string name="selectEndDate">Tugash sanasini tanlang</string>
     <string name="selectFile">Faylni tanlash</string>
     <string name="selectFormTemplate">Forma shablonini tanlang</string>
     <string name="selectImage">Rasm tanlash</string>
@@ -2391,6 +2397,7 @@
     <string name="thisTimeOverlapsExistingSlot">Bu vaqt mavjud vaqt bilan mos keladi.</string>
     <string name="thursday">Payshanba</string>
     <string name="time">Vaqt</string>
+    <string name="timeAlreadyInList">Bu vaqt ro'yxatda allaqachon bor</string>
     <string name="timeJustNow">Hozir</string>
     <string name="timeMinAgo">%1$s daqiya oldin</string>
     <string name="timePeriod">Vaqt oralig'i</string>

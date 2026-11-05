@@ -2685,5 +2685,12 @@
   "patientNoSubmissionsYet": "Пациент пока ничего не отправил",
   "submission": "Отправка",
   "checkInsLoadFailed": "Не удалось загрузить отметки",
-  "taskZoneUnknown": "Часовой пояс пациента неизвестен: время указано по часовому поясу практики."
+  "taskZoneUnknown": "Часовой пояс пациента неизвестен: время указано по часовому поясу практики.",
+  "discardTaskTitle": "Отменить создание задачи?",
+  "durationDaysInvalid": "Введите число дней (не меньше 1)",
+  "endDateBeforeStart": "Дата окончания должна быть позже даты начала",
+  "timeAlreadyInList": "Это время уже есть в списке",
+  "intervalAdjusted": "Интервал изменён на {hours} ч",
+  "fromTemplate": "Из шаблона: {name}",
+  "selectEndDate": "Выберите дату окончания"
 }

@@ -39,7 +39,6 @@ import shifa.doctor.data.model.RemoteCareTask
 import shifa.doctor.data.model.TaskCheckIn
 import shifa.doctor.data.model.TaskInputType
 import shifa.doctor.data.profile.profileRepository
-import shifa.doctor.data.schedule.hhmm
 import shifa.doctor.data.tasks.effectiveStatus
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.awaitingSubmission
@@ -106,6 +105,7 @@ import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.currentInstant
+import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
 
 class TaskDetailActions(
@@ -471,7 +471,7 @@ internal fun CheckInTray(
                 CheckInStatus.Completed -> {
                     c.completedAt?.let { at ->
                         val local = at.toLocalDateTime(zone ?: TimeZone.UTC)
-                        val at = "${taskDate(local.date)} ${minutes(local.time)}"
+                        val at = "${taskDate(local.date)} ${displayTime(local.time)}"
                         // "(patient time)" only when it is (the practice zone stands in otherwise, said above).
                         InfoRow(
                             tr(Res.string.submittedAt),
@@ -498,7 +498,10 @@ internal fun CheckInTray(
 private fun scheduledLabel(
     date: LocalDate,
     time: LocalTime?,
-) = listOfNotNull("${date.dayOfMonth} ${tr(shortMonth(date.monthNumber))}", time?.let(::minutes)).joinToString(" · ")
+) = listOfNotNull(
+    "${date.dayOfMonth} ${tr(shortMonth(date.monthNumber))}",
+    time?.let(::displayTime),
+).joinToString(" · ")
 
 @Composable
 private fun valueLabel(t: RemoteCareTask) = t.inputLabel ?: tr(Res.string.value)
@@ -546,6 +549,3 @@ internal fun CancelTaskDialog(
     onCancel = { actions.askCancel(false) },
     confirmLoading = cancelling,
 )
-
-/** "02:39" for display: `hhmm` keeps seconds on purpose (schedule round trips); a person reads minutes. */
-private fun minutes(t: LocalTime) = hhmm(LocalTime(t.hour, t.minute))

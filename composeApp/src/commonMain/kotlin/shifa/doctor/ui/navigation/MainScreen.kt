@@ -51,7 +51,6 @@ import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.chat
 import shifa.doctor.generated.resources.clinicNavClinic
 import shifa.doctor.generated.resources.contactAndClinicAddress
-import shifa.doctor.generated.resources.createTask
 import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.drMedPrefix
 import shifa.doctor.generated.resources.extendedProfile
@@ -135,6 +134,7 @@ import shifa.doctor.ui.profile.SettingsActions
 import shifa.doctor.ui.profile.SettingsScreen
 import shifa.doctor.ui.schedule.LocationsScreen
 import shifa.doctor.ui.schedule.ScheduleScreen
+import shifa.doctor.ui.tasks.CreateTaskScreen
 import shifa.doctor.ui.tasks.TaskDetailScreen
 import shifa.doctor.ui.tasks.TasksScreen
 import shifa.doctor.ui.theme.ShifaColors
@@ -521,13 +521,12 @@ private fun RouteContent(
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
-        // TASK-04…05 build these.
+        // TASK-05 builds this.
         is ShellRoute.Task ->
             TaskDetailScreen(route.id, route.opened, onBack = actions.back, onOpenPatient = {
                 actions.push(ShellRoute.Patient(it))
             })
-        is ShellRoute.TaskCreate ->
-            Pushed(Res.string.createTask, actions) { TabPlaceholder(Res.string.createTask, Res.drawable.ic_tasks_22) }
+        is ShellRoute.TaskCreate -> CreateTaskScreen(route.opened, route.template, onClose = actions.back)
         is ShellRoute.TaskTemplates ->
             Pushed(Res.string.useTemplate, actions) { TabPlaceholder(Res.string.useTemplate, Res.drawable.ic_tasks_22) }
         is ShellRoute.Block -> BlockPanelScreen(route.entry, route.opened, onClose = actions.back)

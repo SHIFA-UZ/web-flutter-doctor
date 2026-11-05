@@ -56,7 +56,7 @@ Built 2026-11-05. Spec 07 §3.1, ticket TASK-02, flow 07/11, board `DaInbox` ("t
 - **Kept as is:** the patient shows the brand picture, not initials (project rule for avatars without a photo);
   Create and Use Templates stay on after a failed read (the app has no connectivity state, and those screens say
   so themselves when offline).
-- **Until TASK-04…05:** Create Task and Use Templates open placeholder pages (a card opens its details, TASK-03).
+- **Until TASK-05:** Use Templates opens a placeholder page (a card opens its details, Create Task the form).
 - **Tests:** `TasksViewModelTest` (counts, combined filters, the card toggle, clear; a failed refresh keeps the list).
   Screenshots `Tasks_list`, `_loading`, `_empty`, `_filterEmpty`, `_failed`.
 - **Emulator (dev, reads only):** the seed doctor's 3 tasks (cancelled, active, completed) with their progress, "1 day"
@@ -98,3 +98,38 @@ Built 2026-11-05. Spec 07 §3.2, ticket TASK-03, flow 07/12, board `DaInbox` ("t
   off again.
 - **Backend note:** a one-day task on dev has check-ins on two days (the backend's end date is start + duration,
   inclusive); the app shows what the backend sends.
+
+## TASK-04 · Create task
+
+Built 2026-11-05. Spec 07 §3.3, ticket TASK-04, flow 07/13, board `DaInbox` ("taskCreate").
+
+- **Form** (board's cards): Patient * from the picker over the doctor's own patients (the Patients tab's directory;
+  search by name or id, the current one ticked; the sheet is now shared with booking, which keeps its directory of
+  everyone: `ui/patients/PatientPickerSheet.kt`), Task Name *, Description, Category *
+  and Input Type *, Input Label; Schedule; dates; Notes Required and Notes Label. Create sits in a sticky bar (flow §12:
+  Flutter's scrolled away).
+- **Schedule:** even spacing (times per day 1–15, start time, the interval when twice or more) with the day's slots
+  live, orange with "n slot(s) won't fit before midnight"; or custom times (switching seeds one slot from the start;
+  each a time to the minute, delete never below one, "Add time slot" an hour after the last, off at 15, a repeat
+  says "That time is already in the list"). Times are picked to the minute in a sheet with the 24-hour
+  time entry (a template's 07:10 stays 07:10).
+- **Dates:** start date (practice today … a year ahead) and the end date in the app's inline month (default start + 30
+  days, never before the start; a later start clears an end before it, flow §8; required, or the backend would pick
+  31 days itself), or the duration (whole days ≥ 1, kept as typed: "1.5" is an error, not 15).
+- **Create:** inline "Please select a patient" (also a banner), "Task name is required", "Add at least one time slot"
+  (banner), "End date must be after the start date", "Enter a number of days (at least 1)"; one request; done → back
+  with "Task created successfully" (the list reads again); refused → "Failed to create task" with the request id (a 403
+  reads the profile again). Back with changes asks "Discard this task?".
+- **Payload** (`data/tasks/TaskForm.kt`, pure): upper-case codes, "HH:mm", "yyyy-MM-dd"; custom → its slots and the
+  first as the start; even → the interval only with two or more, and the **count that fits** (Flutter sent 15 when 8
+  fit, flow §8); the end date or the duration, never both; empty texts left out.
+- **Template prefill:** every field but the patient and dates; times per day 1–15; the interval snapped up to the next
+  choice with "Interval adjusted to n h" (flow §6 NEW); custom times → custom mode. Opening from a template is TASK-05.
+- **Not built:** a patient preset from the patient's record (flow §2's overflow entry; the ⋮ sheet isn't built), the
+  patient-app hint (no backend field), "Add a patient first" in an empty picker.
+- **Tests:** `TaskFormTest` (slots and clipping, every payload rule, problems, template prefill and snapping, slot
+  list), `CreateTaskViewModelTest` (checks before sending, one request, success banner, refused create, repeat slot,
+  back asks, a later start clears the end, the picker). Screenshots `TaskCreate_errors`, `_even`, `_custom`.
+- **Emulator (demo):** picked Malika, "Weight", custom times 08:00 and 09:00, end 20 Dec → the list with "Task created
+  successfully" and "Weight · 2× per day · 5 Nov – 20 Dec 2026"; Back after typing asked to discard. Booking's
+  screenshots are unchanged by the picker move. Demo mode is off again.

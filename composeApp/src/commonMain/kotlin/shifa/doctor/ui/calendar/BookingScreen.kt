@@ -1,7 +1,6 @@
 package shifa.doctor.ui.calendar
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,8 +10,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -22,9 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -68,17 +63,12 @@ import shifa.doctor.generated.resources.defaultVisitReason
 import shifa.doctor.generated.resources.durationLabelShort
 import shifa.doctor.generated.resources.failedToLoadPatients
 import shifa.doctor.generated.resources.ic_alert_circle_16
-import shifa.doctor.generated.resources.newPatient
-import shifa.doctor.generated.resources.noPatientsFound
 import shifa.doctor.generated.resources.pastSlotCannotAssign
 import shifa.doctor.generated.resources.patientAssignedName
-import shifa.doctor.generated.resources.patientIdLabel
 import shifa.doctor.generated.resources.patientNumber
 import shifa.doctor.generated.resources.place
 import shifa.doctor.generated.resources.pleaseSelectPatient
 import shifa.doctor.generated.resources.reason
-import shifa.doctor.generated.resources.retry
-import shifa.doctor.generated.resources.searchByNameOrId
 import shifa.doctor.generated.resources.selected
 import shifa.doctor.generated.resources.slotDetails
 import shifa.doctor.generated.resources.startTime
@@ -90,30 +80,26 @@ import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.ui.patients.PatientPickerSheet
+import shifa.doctor.ui.patients.matching
 import shifa.doctor.ui.profile.BackStep
 import shifa.doctor.ui.profile.DiscardChangesSheet
 import shifa.doctor.ui.profile.FormExitEffects
 import shifa.doctor.ui.profile.ProfileChip
-import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.profile.backStep
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
-import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaInputField
-import shifa.doctor.ui.widgets.ShifaLink
-import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
-import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
-import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
@@ -204,18 +190,7 @@ data class BookingUiState(
                 start.start != slot.start ||
                 end != slot.end
 
-    val shown: List<PatientOption>
-        get() {
-            val q = query.trim().lowercase()
-            val all = patients.orEmpty()
-            return if (q.isEmpty()) {
-                all
-            } else {
-                all.filter {
-                    it.name.orEmpty().lowercase().contains(q) || it.id.toString().contains(q)
-                }
-            }
-        }
+    val shown: List<PatientOption> get() = patients.orEmpty().matching(query)
 }
 
 /**
@@ -647,66 +622,19 @@ private fun TimeCard(
 private const val START = "start"
 private const val END = "end"
 
-/** Flow 04/06 §3b: search by name or id over everyone bookable; a tap picks and closes. ("New patient" comes with PAT.) */
+/** Flow 04/06 §3b: the shared picker, with "New patient" (PAT-04) opening its sheet over it. */
 @Composable
 private fun PatientPicker(
     state: BookingUiState,
     actions: BookingActions,
-) = ProfileSheet({ actions.ui { it.copy(picking = false) } }) {
-    ShifaTray(tr(Res.string.assignPatient), { actions.ui { it.copy(picking = false) } }) {
-        // "New patient" (PAT-04): the sheet opens over the picker and returns the patient picked.
-        ShifaLink(tr(Res.string.newPatient), {
-            actions.ui { it.copy(creating = shifa.doctor.utils.currentInstant().toEpochMilliseconds()) }
-        })
-        ShifaSearchField(
-            state.query,
-            { q -> actions.ui { it.copy(query = q) } },
-            tr(Res.string.searchByNameOrId),
-            Modifier.fillMaxWidth(),
-        )
-        val error = state.patientsError
-        when {
-            error != null -> {
-                codeBanner(error) {}?.invoke()
-                ShifaLink(tr(Res.string.retry), actions.retryPatients)
-            }
-            state.patients == null -> ShifaListSkeleton(count = 4)
-            state.shown.isEmpty() ->
-                Text(
-                    tr(Res.string.noPatientsFound),
-                    style = ShifaTextStyles.dialogBody(),
-                    color = ShifaColors.Text.Secondary,
-                )
-            else ->
-                LazyColumn(
-                    Modifier.weight(1f, fill = false),
-                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
-                ) {
-                    items(state.shown, key = { it.id ?: 0L }) { p ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable(role = Role.Button) { actions.pickPatient(p) }
-                                .padding(vertical = ShifaSpacing.Inset.Xs),
-                            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            ShifaAvatar(p.photoUrl, ShifaSize.S40)
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    patientName(p),
-                                    style = ShifaTextStyles.dialogBody(),
-                                    color = ShifaColors.Text.Primary,
-                                )
-                                Text(
-                                    tr(Res.string.patientIdLabel, p.id.toString()),
-                                    style = ShifaTextStyles.metaSmall(),
-                                    color = ShifaColors.Text.Secondary,
-                                )
-                            }
-                        }
-                    }
-                }
-        }
-    }
-}
+) = PatientPickerSheet(
+    tr(Res.string.assignPatient),
+    state.patients?.let { state.shown },
+    state.patientsError,
+    state.query,
+    { q -> actions.ui { it.copy(query = q) } },
+    actions.pickPatient,
+    actions.retryPatients,
+    { actions.ui { it.copy(picking = false) } },
+    onNew = { actions.ui { it.copy(creating = shifa.doctor.utils.currentInstant().toEpochMilliseconds()) } },
+)

@@ -925,6 +925,7 @@
     <string name="discardRegistrationBody">Введённые данные будут потеряны.</string>
     <string name="discardRegistrationTitle">Отменить регистрацию?</string>
     <string name="discardScannedPages">Удалить отсканированные страницы?</string>
+    <string name="discardTaskTitle">Отменить создание задачи?</string>
     <string name="discountOutOfRange">Введите скидку от 0 до 100.</string>
     <string name="discountRange">0–100</string>
     <string name="diseaseDevelopment">Развитие заболевания</string>
@@ -1027,6 +1028,7 @@
     <string name="duration">Продолжительность</string>
     <string name="durationChanged">Длительность изменена</string>
     <string name="durationDays">Продолжительность (дни)</string>
+    <string name="durationDaysInvalid">Введите число дней (не меньше 1)</string>
     <string name="durationHours">%1$s ч</string>
     <string name="durationHoursMinutes">%1$s ч %2$s мин</string>
     <string name="durationLabelShort">Длительность</string>
@@ -1063,6 +1065,7 @@
     <string name="endChecklistSigned">Подписано</string>
     <string name="endChecklistTicks">%1$s отметить выполненными</string>
     <string name="endDate">Дата окончания</string>
+    <string name="endDateBeforeStart">Дата окончания должна быть позже даты начала</string>
     <string name="endFailed">Не удалось завершить приём. Он остаётся открытым: попробуйте ещё раз.</string>
     <string name="endOffline">Нет подключения к интернету. Завершите визит, когда подключитесь.</string>
     <string name="endTimeMustBeAfterStartTime">Время окончания должно быть после времени начала.</string>
@@ -1225,6 +1228,7 @@
     <string name="fromDate">Дата начала</string>
     <string name="fromLast0252Form">Из последней формы 025-2</string>
     <string name="fromShifaAi">Из Shifa AI</string>
+    <string name="fromTemplate">Из шаблона: %1$s</string>
     <string name="fulfilLineError">Не удалось отметить «%1$s» как выполненное</string>
     <string name="fullName">Полное имя</string>
     <string name="fullNameRequired">Укажите полное имя</string>
@@ -1467,6 +1471,7 @@
     <string name="intelWelcomeScheduleDesc">Спросите о вашем дне</string>
     <string name="intelWhenAt">%1$s, %2$s %3$s, %4$s</string>
     <string name="intelligenceEmptyHint">Ваш ИИ-помощник для клинических процессов.</string>
+    <string name="intervalAdjusted">Интервал изменён на %1$s ч</string>
     <string name="intervalBetweenTasks">Интервал между заданиями</string>
     <string name="invalidCoordinates">Пожалуйста, введите действительные координаты</string>
     <string name="invalidCredentials">Неверный email или пароль.</string>
@@ -2165,6 +2170,7 @@
     <string name="selectDatesToSeeSchedule">Выберите даты для просмотра расписания</string>
     <string name="selectDocument">Выбрать документ</string>
     <string name="selectDocumentType">Выберите тип документа</string>
+    <string name="selectEndDate">Выберите дату окончания</string>
     <string name="selectFile">Выбрать файл</string>
     <string name="selectFormTemplate">Выберите шаблон формы</string>
     <string name="selectImage">Выбрать изображение</string>
@@ -2391,6 +2397,7 @@
     <string name="thisTimeOverlapsExistingSlot">Это время пересекается с существующим слотом.</string>
     <string name="thursday">Четверг</string>
     <string name="time">Время</string>
+    <string name="timeAlreadyInList">Это время уже есть в списке</string>
     <string name="timeJustNow">Только что</string>
     <string name="timeMinAgo">%1$s мин назад</string>
     <string name="timePeriod">Временной период</string>

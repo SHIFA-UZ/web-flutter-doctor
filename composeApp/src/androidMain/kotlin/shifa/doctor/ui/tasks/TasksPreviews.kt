@@ -236,3 +236,76 @@ internal fun TaskNotFoundPreview() =
             previewNow,
         )
     }
+
+private val createToday = LocalDate(2026, 11, 5)
+
+private fun createState(
+    form: shifa.doctor.data.tasks.TaskForm,
+    tried: Boolean = false,
+    template: String? = null,
+    adjusted: Int? = null,
+) = CreateTaskUiState(form, form, templateName = template, intervalAdjustedTo = adjusted, tried = tried)
+
+// TASK-04: a blank form tried: patient and name required.
+@Composable
+internal fun CreateTaskErrorsPreview() =
+    PreviewTheme {
+        CreateTaskContent(
+            createState(shifa.doctor.data.tasks.TaskForm.blank(createToday), tried = true),
+            createToday,
+            CreateTaskActions(),
+        )
+    }
+
+// TASK-04: from a template, even spacing 15 × every 2 h: 7 slots won't fit before midnight.
+@Composable
+internal fun CreateTaskEvenPreview() =
+    PreviewTheme {
+        CreateTaskContent(
+            createState(
+                shifa.doctor.data.tasks.TaskForm.blank(
+                    createToday,
+                    shifa.doctor.data.model.PatientOption(14, "Bekzod Aliyev", null),
+                ).copy(
+                    name = "Blood pressure diary",
+                    inputLabel = "Systolic (mmHg)",
+                    timesPerDay = 15,
+                    intervalHours = 2,
+                    endDate = LocalDate(2026, 11, 30),
+                ),
+                template = "Blood pressure diary",
+                adjusted = 2,
+            ),
+            createToday,
+            CreateTaskActions(),
+        )
+    }
+
+// TASK-04: custom times, three slots, duration instead of an end date.
+@Composable
+internal fun CreateTaskCustomPreview() =
+    PreviewTheme {
+        CreateTaskContent(
+            createState(
+                shifa.doctor.data.tasks.TaskForm.blank(
+                    createToday,
+                    shifa.doctor.data.model.PatientOption(11, "Dilnoza Rahimova", null),
+                ).copy(
+                    name = "Medication",
+                    category = shifa.doctor.data.model.TaskCategory.Medication,
+                    inputType = shifa.doctor.data.model.TaskInputType.Boolean,
+                    mode = shifa.doctor.data.tasks.ScheduleMode.Custom,
+                    customTimes =
+                        listOf(
+                            kotlinx.datetime.LocalTime(8, 0),
+                            kotlinx.datetime.LocalTime(13, 30),
+                            kotlinx.datetime.LocalTime(21, 0),
+                        ),
+                    useEndDate = false,
+                    durationText = "14",
+                ),
+            ),
+            createToday,
+            CreateTaskActions(),
+        )
+    }

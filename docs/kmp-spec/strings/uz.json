@@ -2685,5 +2685,12 @@
   "patientNoSubmissionsYet": "Bemor hali hech narsa yubormadi",
   "submission": "Yuborish",
   "checkInsLoadFailed": "Belgilashlarni yuklab bo'lmadi",
-  "taskZoneUnknown": "Bemorning vaqt mintaqasi noma'lum: vaqtlar klinika vaqt mintaqasi bo'yicha."
+  "taskZoneUnknown": "Bemorning vaqt mintaqasi noma'lum: vaqtlar klinika vaqt mintaqasi bo'yicha.",
+  "discardTaskTitle": "Vazifa bekor qilinsinmi?",
+  "durationDaysInvalid": "Kunlar sonini kiriting (kamida 1)",
+  "endDateBeforeStart": "Tugash sanasi boshlanish sanasidan keyin bo'lishi kerak",
+  "timeAlreadyInList": "Bu vaqt ro'yxatda allaqachon bor",
+  "intervalAdjusted": "Interval {hours} soatga o'zgartirildi",
+  "fromTemplate": "Shablondan: {name}",
+  "selectEndDate": "Tugash sanasini tanlang"
 }
