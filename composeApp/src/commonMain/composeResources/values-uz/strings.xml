@@ -338,7 +338,9 @@
     <string name="changeTimezoneSameOffset">Bugun vaqtlar bir xil ko'rinadi, lekin yozgi vaqt qoidalari farq qilishi mumkin.</string>
     <string name="changeTimezoneTitle">Amaliyot vaqt mintaqasini o'zgartirasizmi?</string>
     <string name="chat">Suhbat</string>
+    <string name="chatEmptyHint">Suhbatni boshlash uchun yuqoridagi qidiruvda bemor yoki shifokorni toping.</string>
     <string name="chatHistory">Chat tarixi</string>
+    <string name="chatUnreadEmptyHint">Barcha suhbatlarni ko'rish uchun filtrni o'zgartiring.</string>
     <string name="checkInCompleted">Bajarildi</string>
     <string name="checkInDetails">Tekshiruv tafsilotlari</string>
     <string name="checkIns">Tekshiruvlar</string>
@@ -784,6 +786,7 @@
     <string name="couldNotChangeMic">Mikrofonni almashtirib bo'lmadi</string>
     <string name="couldNotGetAddressDetails">Manzil tafsilotlarini olish mumkin emas. Iltimos, boshqa joylashuvni tanlang.</string>
     <string name="couldNotLoad">Yuklab bo'lmadi</string>
+    <string name="couldNotLoadConversations">Suhbatlarni yuklab bo'lmadi</string>
     <string name="couldNotLoadDocument">Hujjatni yuklab bo'lmadi</string>
     <string name="couldNotLoadEarlierNotes">Oldingi qaydlarni yuklab bo'lmadi</string>
     <string name="couldNotLoadRetry">Yuklab bo'lmadi. Qayta urinish</string>

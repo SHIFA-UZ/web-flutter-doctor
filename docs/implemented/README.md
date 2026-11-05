@@ -153,6 +153,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | ANALYTICS-02 Clinic performance card | Done | Last on Home: range button (localised "30 Oct – 5 Nov, 2026", picker with 7/30/90-day presets, a year back to 30 days ahead) and Export (CSV through the share sheet), today's four KPI tiles, PREMIUM engagement or a Premium teaser, per-block "Could not load" + Retry. Charts: ANALYTICS-03. See home.md. |
 | ANALYTICS-03 Trend and visit types | Done | PREMIUM: Canvas trend line for the range (title names the days, ~7 date labels, tap a dot for "2 Nov · 3 visits") and the visit-type ring (shares adding up to 100, legend with counts), "No data yet", per-block Retry, spoken summaries. See home.md. |
 | CHAT-01 Chat data | Done | `ChatRepository` (conversations, thread, start, read, send, search, upload), models tolerant of case and unknown types, every attachment URL absolute (`absoluteFileUrl`), in-memory demo chat. See chat.md. |
+| CHAT-02 Conversation list | Done | Chat tab root (doctors and staff): cards with photo, name, preview (bold while unread), today/yesterday/date in practice time, 99+ pill; filter sheet (newest/oldest, unread only); people search after 300 ms; a result opens its conversation or starts one; read every 5 s only in front, on coming back and on pull. The thread is CHAT-03. See chat.md. |
 
 ## Log
 
@@ -257,3 +258,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · ANALYTICS-02 · Home's Clinic performance card: range, export, KPIs, engagement.
 - 2026-11-05 · ANALYTICS-03 · The trend line and visit-type ring on Clinic performance.
 - 2026-11-05 · CHAT-01 · Chat models, repository, upload and file URLs.
+- 2026-11-05 · CHAT-02 · The Chat tab's conversation list and people search.

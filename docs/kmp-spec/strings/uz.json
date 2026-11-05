@@ -2650,5 +2650,8 @@
   "seePlans": "Tariflarni ko'rish",
   "appointmentsInRange": "Qabullar ({range})",
   "trendSummary": "Kunlik qabullar, {range}. Eng ko'pi {max}.",
-  "donutSummary": "Klinikada {inPerson}, video {video}"
+  "donutSummary": "Klinikada {inPerson}, video {video}",
+  "chatEmptyHint": "Suhbatni boshlash uchun yuqoridagi qidiruvda bemor yoki shifokorni toping.",
+  "chatUnreadEmptyHint": "Barcha suhbatlarni ko'rish uchun filtrni o'zgartiring.",
+  "couldNotLoadConversations": "Suhbatlarni yuklab bo'lmadi"
 }

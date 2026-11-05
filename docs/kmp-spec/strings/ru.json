@@ -2650,5 +2650,8 @@
   "seePlans": "Смотреть тарифы",
   "appointmentsInRange": "Записи ({range})",
   "trendSummary": "Записи по дням, {range}. Максимум {max}.",
-  "donutSummary": "Очно {inPerson}, видео {video}"
+  "donutSummary": "Очно {inPerson}, видео {video}",
+  "chatEmptyHint": "Найдите пациента или врача в поиске выше, чтобы начать переписку.",
+  "chatUnreadEmptyHint": "Смените фильтр, чтобы увидеть все переписки.",
+  "couldNotLoadConversations": "Не удалось загрузить переписки"
 }

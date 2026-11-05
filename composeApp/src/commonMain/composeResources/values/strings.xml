@@ -338,7 +338,9 @@
     <string name="changeTimezoneSameOffset">Times will look the same today, but daylight-saving rules may differ.</string>
     <string name="changeTimezoneTitle">Change practice timezone?</string>
     <string name="chat">Chat</string>
+    <string name="chatEmptyHint">Search for a patient or doctor above to start one.</string>
     <string name="chatHistory">Chat history</string>
+    <string name="chatUnreadEmptyHint">Switch the filter to see all conversations.</string>
     <string name="checkInCompleted">Completed</string>
     <string name="checkInDetails">Check-in Details</string>
     <string name="checkIns">Check-ins</string>
@@ -784,6 +786,7 @@
     <string name="couldNotChangeMic">Could not change microphone</string>
     <string name="couldNotGetAddressDetails">Could not get address details. Please try selecting a different location.</string>
     <string name="couldNotLoad">Could not load</string>
+    <string name="couldNotLoadConversations">Couldn't load conversations</string>
     <string name="couldNotLoadDocument">Could not load document</string>
     <string name="couldNotLoadEarlierNotes">Could not load earlier notes</string>
     <string name="couldNotLoadRetry">Couldn't load. Retry</string>
@@ -1615,7 +1618,7 @@
     <string name="newScheduleMustStartAfter">New schedule must start after</string>
     <string name="newService">New Service</string>
     <string name="newSession">New Session</string>
-    <string name="newestFirst">Newest First</string>
+    <string name="newestFirst">Newest first</string>
     <string name="next">Next</string>
     <string name="nextAppointment">Next appointment</string>
     <string name="nextAppointmentInMinutes">Next appointment starts in %1$s minutes.</string>
@@ -1761,7 +1764,7 @@
     <string name="offlineActionUnavailable">You are offline. Try again when connected.</string>
     <string name="offlineBanner">You're offline. Showing saved data.</string>
     <string name="ok">OK</string>
-    <string name="oldestFirst">Oldest First</string>
+    <string name="oldestFirst">Oldest first</string>
     <string name="on">On</string>
     <string name="oneTimeKey">One-time key</string>
     <string name="oneTimePassword">One-time Password</string>
@@ -2507,8 +2510,8 @@
     <string name="unreadBadge">%1$s unread</string>
     <string name="unreadCountCap">99+</string>
     <string name="unreadCountLabel">unread</string>
-    <string name="unreadOnlyNewest">Unread Only (Newest First)</string>
-    <string name="unreadOnlyOldest">Unread Only (Oldest First)</string>
+    <string name="unreadOnlyNewest">Unread only (newest first)</string>
+    <string name="unreadOnlyOldest">Unread only (oldest first)</string>
     <string name="unsavedChangesMessage">You have unsaved changes. Discard them?</string>
     <string name="unsavedChangesSwitch">You have unsaved changes. Save before switching?</string>
     <string name="unsavedMayBeLost">Some unsaved changes may be lost.</string>

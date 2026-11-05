@@ -57,6 +57,12 @@ sealed interface ShellRoute {
     /** More → Language (SET-02 builds the screen). */
     data object Language : ShellRoute
 
+    /** Chat → one conversation (CHAT-03 builds the thread); [opened] as for [Appointment]. */
+    data class Conversation(
+        val id: Long,
+        val opened: Long,
+    ) : ShellRoute
+
     /** Home → patient search (HOME-05); [opened] makes each open a fresh search (an empty query, a staleness check). */
     data class Search(
         val opened: Long,

@@ -338,7 +338,9 @@
     <string name="changeTimezoneSameOffset">Сегодня время будет выглядеть так же, но правила перехода на летнее время могут отличаться.</string>
     <string name="changeTimezoneTitle">Изменить часовой пояс практики?</string>
     <string name="chat">Чат</string>
+    <string name="chatEmptyHint">Найдите пациента или врача в поиске выше, чтобы начать переписку.</string>
     <string name="chatHistory">История чатов</string>
+    <string name="chatUnreadEmptyHint">Смените фильтр, чтобы увидеть все переписки.</string>
     <string name="checkInCompleted">Выполнено</string>
     <string name="checkInDetails">Детали отметки</string>
     <string name="checkIns">Отметки</string>
@@ -784,6 +786,7 @@
     <string name="couldNotChangeMic">Не удалось сменить микрофон</string>
     <string name="couldNotGetAddressDetails">Не удалось получить данные адреса. Пожалуйста, попробуйте выбрать другое местоположение.</string>
     <string name="couldNotLoad">Не удалось загрузить</string>
+    <string name="couldNotLoadConversations">Не удалось загрузить переписки</string>
     <string name="couldNotLoadDocument">Не удалось загрузить документ</string>
     <string name="couldNotLoadEarlierNotes">Не удалось загрузить предыдущие заметки</string>
     <string name="couldNotLoadRetry">Не удалось загрузить. Повторить</string>

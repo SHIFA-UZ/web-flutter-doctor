@@ -1390,7 +1390,7 @@
   "newScheduleMustStartAfter": "New schedule must start after",
   "newService": "New Service",
   "newSession": "New Session",
-  "newestFirst": "Newest First",
+  "newestFirst": "Newest first",
   "next": "Next",
   "nextAppointmentInMinutes": "Next appointment starts in {minutes} minutes.",
   "nextAvailable": "Next available: {date}",
@@ -1515,7 +1515,7 @@
   "offlineActionUnavailable": "You are offline. Try again when connected.",
   "offlineBanner": "You're offline. Showing saved data.",
   "ok": "OK",
-  "oldestFirst": "Oldest First",
+  "oldestFirst": "Oldest first",
   "on": "On",
   "oneTimeKey": "One-time key",
   "oneTimePassword": "One-time Password",
@@ -2176,8 +2176,8 @@
   "unmuteMic": "Unmute microphone",
   "unreadCountCap": "99+",
   "unreadCountLabel": "unread",
-  "unreadOnlyNewest": "Unread Only (Newest First)",
-  "unreadOnlyOldest": "Unread Only (Oldest First)",
+  "unreadOnlyNewest": "Unread only (newest first)",
+  "unreadOnlyOldest": "Unread only (oldest first)",
   "unsavedChangesMessage": "You have unsaved changes. Discard them?",
   "unsavedChangesSwitch": "You have unsaved changes. Save before switching?",
   "unsavedMayBeLost": "Some unsaved changes may be lost.",
@@ -2650,5 +2650,8 @@
   "seePlans": "See plans",
   "appointmentsInRange": "Appointments ({range})",
   "trendSummary": "Appointments per day, {range}. Highest {max}.",
-  "donutSummary": "In-person {inPerson}, video {video}"
+  "donutSummary": "In-person {inPerson}, video {video}",
+  "chatEmptyHint": "Search for a patient or doctor above to start one.",
+  "chatUnreadEmptyHint": "Switch the filter to see all conversations.",
+  "couldNotLoadConversations": "Couldn't load conversations"
 }

@@ -28,3 +28,38 @@ Built 2026-11-05. Spec 07 §1.1, §1.4–1.5, ticket CHAT-01, 15 §2.8.
   (no delete), so writes were checked in demo only.
 - **Tests:** `ChatRepositoryTest` (URLs, a row skipped, a thread's order and types in any case, unknown type,
   upload's multipart and send's body).
+
+## CHAT-02 · Conversation list
+
+Built 2026-11-05. Spec 07 §1.1, ticket CHAT-02, flow 07/01, board `DaChat` (list pane).
+
+- **Where:** the Chat tab's root (`ui/chat/ChatListScreen`), for doctors and clinic staff alike (no tier gate). A card
+  or a search result opens `ShellRoute.Conversation(id)`, a placeholder until CHAT-03.
+- **Cards:** photo (the brand fallback without one), name ("Patient"/"Doctor" when blank, flow §8), last message or "No
+  messages" (bold and dark while unread), the last activity in the **practice** zone: "08:24" today, "Yesterday",
+  else "3 Nov" (Flutter: the phone's "HH:mm" even for old chats), and the unread pill capped at "99+". Read out as
+  "Name, last message, time, N unread".
+- **Order and filter:** a sheet "Filter conversations" from the sliders button (Newest first by default, Oldest
+  first, Unread only newest/oldest; sentence case now); the button turns brand while a non-default choice is on.
+  The choice lasts the session.
+- **Search:** "Search doctors and patients" asks the server 300 ms after typing stops (Flutter: each keystroke);
+  results show photo, name and "Doctor"/"Patient". A result opens the existing conversation with that person and
+  role, else starts one (no message is sent); the search clears. "Failed to start conversation" on failure.
+- **Freshness:** read on coming back, on pull-to-refresh, and 5 s after each answer **only while the app is in front**
+  (BE-14: no push-driven refresh yet; nothing polls behind the app's back). A read already out is never cancelled by
+  the next one, so a slow backend still loads. Opening a card marks it read on the server and
+  drops its pill at once; the tab badge follows at the shell's next count.
+- **States:** skeleton cards on the first read; "No conversations yet" with "Search for a patient or doctor above to
+  start one."; with the unread filter "No unread conversations" with "Switch the filter to see all conversations.";
+  a failed read keeps the cards and shows "Couldn't load conversations" with Retry; "No users found"; a failed search
+  "Could not load" with Retry.
+- **Not built:** the tablet two-pane layout (phone app); the offline banner (flow §6 target; the error banner covers a
+  failed read).
+- **Tests:** `ChatRulesTest` (order and filter, today/yesterday/date on the practice's day, 99+),
+  `ChatListViewModelTest` (reads only in front, search after typing stops, a known person opens their conversation and
+  marks it read, a new one starts, the unread filter). Screenshots `Chat_list`, `Chat_loading`, `Chat_empty`,
+  `Chat_search`.
+- **Emulator:** dev: "No conversations yet", "Ja" found a patient (not tapped: starting can't be undone). Demo: three
+  cards ("Dilnoza Rahimova, blood_test_results.pdf, 08:24, 2 unread" …), opening Jasur's cleared its pill and the tab
+  badge went from 3 to 2. Demo mode is off again.
+
