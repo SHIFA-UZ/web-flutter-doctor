@@ -444,6 +444,34 @@ Not built in M7:
 - Seeking, speed and a 5-minute cap for voice notes; a loading state while a voice stream prepares; the list's
   preview of an attachment shows the backend's `lastMessage` text (flow 07/01 open question).
 
+## M8 · Notifications (done except push)
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| NOTIF-01 | `83ccaac` | The paged inbox data, every backend type (35 on dev) mapped to a kind with its chip, tap target, board look and a body in the app's language from the structured fields (the backend keeps rows English); a demo inbox |
+| NOTIF-02 | `1eb8a6e` | The inbox: chips, practice-day sections, board cards, paging, read on tap (rolled back if refused) opening the appointment's Calendar panel, the patient, the approved document or Chat; Open Calendar on the appointment's day |
+| NOTIF-03 | `9270ddb` | The bell's count read again on every trigger (inbox open/refresh, a read, resume, Home), never polled |
+
+Not built: NOTIF-04 (approve/decline access inline, D-07), the push trigger and the chat thread target (no
+conversation id in a row, BE-06): with push at the end (D-15).
+
+## M9 · Remote-care tasks (done)
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| TASK-01 | `7f1e929` | Task data and rules: filters, check-ins, templates, create, cancel; the day's times in the backend's order (legacy times included); missed by the patient's clock; unusable 200s typed; the in-memory demos answer 404 for ids they never made instead of reaching the real backend |
+| TASK-02 | `a78776a` | The Tasks tab: summary cards that filter, search and localised dropdowns, board cards, the docked Create Task |
+| TASK-03 | `388f7e7` | Details: the info card and progress, check-ins newest first with values as written, the check-in sheet in patient time, Cancel; task notifications and View Result open it in the Tasks tab |
+| TASK-04 | `39e5571` | The create form: the doctor's own patients (the picker now shared with booking), even spacing with the day's slots or custom times to the minute, an end date or whole days, the payload with the count that fits, Back asks |
+| TASK-05 | `6ec7331` | Templates (the doctor's earlier tasks' settings) opening the form pre-filled; one labelled switch row for the form, Settings and Services |
+
+Every ticket had a Codex review, most two rounds; all findings were fixed or answered in `docs/implemented/codex/`.
+Reads were checked against dev (46 notifications, 3 tasks, 6 check-ins, 3 templates); every write (mark read,
+create, cancel) only in demo mode, since none can be undone on dev. iOS: compiles and links, nothing run.
+
+Not built in M9: a task started from the patient record (the record's ⋮ sheet isn't built), the patient-app hint (no
+backend field), template editing (no endpoint exists).
+
 ## Decisions
 
 - **D-00:** one branch, `doc-app2.0`.
