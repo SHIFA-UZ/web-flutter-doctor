@@ -361,6 +361,9 @@ Your calls / open points from M4:
 | APPT-08 | `cca43a4` | Apply on an AI ICD suggestion carries the code into a new 025-2 |
 | DENTAL-01 | `816e0a3` | The FDI tooth map and the dental record codec (legacy keys, totals per currency) |
 | DENTAL-02 | `8727e58` | The dental visit record: services per tooth and general, discount, notes, totals per currency, 1200 ms autosave; End reads and saves it first, the summary lists it by tooth |
+| APPT-05 | `7f3d2e0` | Before/after treatment photos: camera or gallery, chips, kept until End (leaving asks), a page each in the summary |
+| TP-01 | `abc90d8` | Treatment plan data the visit needs (plans, detail with teeth, candidates, fulfil); a demo plan |
+| DENTAL-03 + TP-06 | `0e275e3` | The plan in the visit: picker, plan-mode chart and ticks, Plan finances; End applies ticks, then records the payment (never twice, lost answers checked in the ledger), then completes; the summary's plan section |
 
 Checked on the Android emulator in demo mode: start a visit from the calendar, type and dictate notes (the emulator's
 microphone records silence; the demo answers with a fixed sentence), ask for the signature (signed 15 s later), record
@@ -383,8 +386,10 @@ Notes from M5:
 - **Backend facts:** the doctor's appointment detail has no video flag (only the patient side has it); notes are one
   manual note per visit, updated, and blank text is ignored, so notes can't be emptied; a second scribe recording for a
   visit is accepted and ignored.
-- **Left for their tickets:** dental plan mode and the plan editor (DENTAL-03/04), treatment plan and payment steps at
-  End (TP-01, TP-06), before/after photos (APPT-05), video (VIDEO-*), the PDF goldens (PDF-02), follow-up booking.
+- **Left for their tickets:** the plan editor and read-only plan chart (DENTAL-04), video (VIDEO-*), the PDF goldens
+  (PDF-02), follow-up booking.
+- **Backend:** dev has no treatment plans, so plan ticks and payments ran in demo mode only. A plan payment has no
+  idempotency key (BE-13); the app looks for a lost payment in the ledger before sending it again.
 
 ## Decisions
 
