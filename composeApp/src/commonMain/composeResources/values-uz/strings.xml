@@ -340,6 +340,15 @@
     <string name="chat">Suhbat</string>
     <string name="chatEmptyHint">Suhbatni boshlash uchun yuqoridagi qidiruvda bemor yoki shifokorni toping.</string>
     <string name="chatHistory">Chat tarixi</string>
+    <string name="chatLoadFailed">Xabarlarni yuklab bo'lmadi</string>
+    <string name="chatNewMessage">Yangi xabar</string>
+    <string name="chatNotSent">Yuborilmadi. Qayta urinish uchun bosing</string>
+    <string name="chatPhoto">Rasm</string>
+    <string name="chatSayHello">%1$s bilan suhbatni boshlang</string>
+    <string name="chatStatusDelivered">Yetkazildi</string>
+    <string name="chatStatusRead">O'qildi</string>
+    <string name="chatStatusSending">Yuborilmoqda</string>
+    <string name="chatStatusSent">Yuborildi</string>
     <string name="chatUnreadEmptyHint">Barcha suhbatlarni ko'rish uchun filtrni o'zgartiring.</string>
     <string name="checkInCompleted">Bajarildi</string>
     <string name="checkInDetails">Tekshiruv tafsilotlari</string>

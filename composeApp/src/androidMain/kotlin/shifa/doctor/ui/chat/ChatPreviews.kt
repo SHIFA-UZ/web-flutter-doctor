@@ -75,3 +75,72 @@ internal fun ChatListSearchPreview() =
             clock,
         )
     }
+
+private fun msg(
+    id: Long,
+    at: String,
+    text: String,
+    mine: Boolean,
+    status: shifa.doctor.data.model.MessageStatus = shifa.doctor.data.model.MessageStatus.Sent,
+    type: shifa.doctor.data.model.MessageType = shifa.doctor.data.model.MessageType.Text,
+    file: String? = null,
+) = shifa.doctor.data.model.Message(
+    id, 1, if (mine) 1 else 2, !mine, type, text, null, file, null, null, status, mine,
+    Instant.parse(
+        at,
+    ),
+)
+
+private val thread =
+    listOf(
+        msg(
+            1,
+            "2026-11-04T10:00:00Z",
+            "Good morning! How are you feeling after the new dose?",
+            true,
+            shifa.doctor.data.model.MessageStatus.Read,
+        ),
+        msg(2, "2026-11-05T03:30:00Z", "Much better, thank you. The headaches are gone.", false),
+        msg(
+            3,
+            "2026-11-05T03:31:00Z",
+            "",
+            false,
+            type = shifa.doctor.data.model.MessageType.Document,
+            file = "blood_test_results.pdf",
+        ),
+        msg(4, "2026-11-05T03:40:00Z", "Great. Please read this before Friday: https://shifa.uz/guide", true),
+    )
+
+// CHAT-03: yesterday and today, theirs and mine with ticks, a link, a document (its bubble comes with CHAT-05), a text on its way and one that failed.
+@Composable
+internal fun ThreadPreview() =
+    PreviewTheme {
+        ThreadContent(
+            ThreadUiState(
+                conversations[0],
+                thread,
+                listOf(
+                    PendingMessage(1, "See you on Friday.", Instant.parse("2026-11-05T09:10:00Z")),
+                    PendingMessage(2, "Can you send the X-ray?", Instant.parse("2026-11-05T09:11:00Z"), failed = true),
+                ),
+                draft = "Thank",
+            ),
+            ThreadActions(),
+            clock,
+        )
+    }
+
+// CHAT-03: a new conversation.
+@Composable
+internal fun ThreadEmptyPreview() =
+    PreviewTheme {
+        ThreadContent(ThreadUiState(conversations[0], emptyList()), ThreadActions(), clock)
+    }
+
+// CHAT-03: the first read.
+@Composable
+internal fun ThreadLoadingPreview() =
+    PreviewTheme {
+        ThreadContent(ThreadUiState(conversations[2]), ThreadActions(), clock)
+    }

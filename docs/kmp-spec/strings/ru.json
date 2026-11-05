@@ -2653,5 +2653,14 @@
   "donutSummary": "Очно {inPerson}, видео {video}",
   "chatEmptyHint": "Найдите пациента или врача в поиске выше, чтобы начать переписку.",
   "chatUnreadEmptyHint": "Смените фильтр, чтобы увидеть все переписки.",
-  "couldNotLoadConversations": "Не удалось загрузить переписки"
+  "couldNotLoadConversations": "Не удалось загрузить переписки",
+  "chatSayHello": "Напишите {name} первым",
+  "chatNotSent": "Не отправлено. Нажмите, чтобы повторить",
+  "chatNewMessage": "Новое сообщение",
+  "chatPhoto": "Фото",
+  "chatStatusSending": "Отправляется",
+  "chatStatusSent": "Отправлено",
+  "chatStatusDelivered": "Доставлено",
+  "chatStatusRead": "Прочитано",
+  "chatLoadFailed": "Не удалось загрузить сообщения"
 }

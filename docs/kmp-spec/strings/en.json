@@ -2653,5 +2653,14 @@
   "donutSummary": "In-person {inPerson}, video {video}",
   "chatEmptyHint": "Search for a patient or doctor above to start one.",
   "chatUnreadEmptyHint": "Switch the filter to see all conversations.",
-  "couldNotLoadConversations": "Couldn't load conversations"
+  "couldNotLoadConversations": "Couldn't load conversations",
+  "chatSayHello": "Say hello to {name}",
+  "chatNotSent": "Not sent. Tap to retry",
+  "chatNewMessage": "New message",
+  "chatPhoto": "Photo",
+  "chatStatusSending": "Sending",
+  "chatStatusSent": "Sent",
+  "chatStatusDelivered": "Delivered",
+  "chatStatusRead": "Read",
+  "chatLoadFailed": "Couldn't load messages"
 }

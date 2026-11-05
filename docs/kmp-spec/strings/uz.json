@@ -2653,5 +2653,14 @@
   "donutSummary": "Klinikada {inPerson}, video {video}",
   "chatEmptyHint": "Suhbatni boshlash uchun yuqoridagi qidiruvda bemor yoki shifokorni toping.",
   "chatUnreadEmptyHint": "Barcha suhbatlarni ko'rish uchun filtrni o'zgartiring.",
-  "couldNotLoadConversations": "Suhbatlarni yuklab bo'lmadi"
+  "couldNotLoadConversations": "Suhbatlarni yuklab bo'lmadi",
+  "chatSayHello": "{name} bilan suhbatni boshlang",
+  "chatNotSent": "Yuborilmadi. Qayta urinish uchun bosing",
+  "chatNewMessage": "Yangi xabar",
+  "chatPhoto": "Rasm",
+  "chatStatusSending": "Yuborilmoqda",
+  "chatStatusSent": "Yuborildi",
+  "chatStatusDelivered": "Yetkazildi",
+  "chatStatusRead": "O'qildi",
+  "chatLoadFailed": "Xabarlarni yuklab bo'lmadi"
 }

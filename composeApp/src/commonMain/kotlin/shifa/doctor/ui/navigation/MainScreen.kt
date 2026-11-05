@@ -103,6 +103,7 @@ import shifa.doctor.ui.calendar.BlockPanelScreen
 import shifa.doctor.ui.calendar.BookingScreen
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.chat.ChatListScreen
+import shifa.doctor.ui.chat.ThreadScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.documents.DocumentViewerScreen
 import shifa.doctor.ui.forms.FormEditorScreen
@@ -396,7 +397,11 @@ private fun RouteContent(
             } else if (route.tab == ShellTab.Chat) {
                 // CHAT-02: doctors and clinic staff alike (chat has no tier gate).
                 ChatListScreen(
-                    onOpen = { actions.push(ShellRoute.Conversation(it, currentInstant().toEpochMilliseconds())) },
+                    onOpen = {
+                        actions.push(
+                            ShellRoute.Conversation(it.id, currentInstant().toEpochMilliseconds(), it),
+                        )
+                    },
                 )
             } else if (route.tab == ShellTab.Patients && !staff) {
                 PatientsScreen(onOpen = { actions.push(ShellRoute.Patient(it.id)) })
@@ -445,9 +450,12 @@ private fun RouteContent(
             })
         // CHAT-03 builds the thread.
         is ShellRoute.Conversation ->
-            Pushed(Res.string.chat, actions) {
-                TabPlaceholder(Res.string.chat, Res.drawable.ic_chat_22)
-            }
+            ThreadScreen(
+                route.id,
+                route.known,
+                onBack = actions.back,
+                onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
+            )
         ShellRoute.Reports ->
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)

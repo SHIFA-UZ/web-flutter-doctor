@@ -340,6 +340,15 @@
     <string name="chat">Chat</string>
     <string name="chatEmptyHint">Search for a patient or doctor above to start one.</string>
     <string name="chatHistory">Chat history</string>
+    <string name="chatLoadFailed">Couldn't load messages</string>
+    <string name="chatNewMessage">New message</string>
+    <string name="chatNotSent">Not sent. Tap to retry</string>
+    <string name="chatPhoto">Photo</string>
+    <string name="chatSayHello">Say hello to %1$s</string>
+    <string name="chatStatusDelivered">Delivered</string>
+    <string name="chatStatusRead">Read</string>
+    <string name="chatStatusSending">Sending</string>
+    <string name="chatStatusSent">Sent</string>
     <string name="chatUnreadEmptyHint">Switch the filter to see all conversations.</string>
     <string name="checkInCompleted">Completed</string>
     <string name="checkInDetails">Check-in Details</string>

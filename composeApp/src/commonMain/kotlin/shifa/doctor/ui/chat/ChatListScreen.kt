@@ -102,7 +102,7 @@ class ChatListActions(
  */
 @Composable
 fun ChatListScreen(
-    onOpen: (Long) -> Unit,
+    onOpen: (Conversation) -> Unit,
     viewModel: ChatListViewModel = viewModel { ChatListViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()

@@ -55,3 +55,53 @@ fun activityTime(
 
 /** The unread pill: capped at "99+" (flow 07/01 §4). */
 fun unreadLabel(n: Int) = if (n > 99) "99+" else n.toString()
+
+/** A row of the thread: a day divider, or a message (sent or still on its way). */
+sealed interface ThreadRow {
+    data class Day(
+        val date: kotlinx.datetime.LocalDate,
+        // Which divider this is, top down: the same day can come twice (an old failed text after today's messages).
+        val ordinal: Int = 0,
+    ) : ThreadRow
+
+    data class Sent(
+        val message: shifa.doctor.data.model.Message,
+    ) : ThreadRow
+
+    data class Pending(
+        val localId: Long,
+        val text: String,
+        val at: Instant,
+        val failed: Boolean,
+    ) : ThreadRow
+}
+
+/**
+ * The thread oldest first with a divider before each new practice day (flow 07/02 §3 target: Flutter had none), the
+ * texts still on their way last.
+ */
+fun threadRows(
+    messages: List<shifa.doctor.data.model.Message>,
+    pending: List<ThreadRow.Pending>,
+    clock: PracticeClock,
+): List<ThreadRow> {
+    val rows = mutableListOf<ThreadRow>()
+    var day: kotlinx.datetime.LocalDate? = null
+
+    fun dayOf(at: Instant) {
+        val d = clock.local(at).date
+        if (d != day) {
+            rows += ThreadRow.Day(d, rows.count { it is ThreadRow.Day })
+            day = d
+        }
+    }
+    messages.forEach {
+        dayOf(it.sentAt)
+        rows += ThreadRow.Sent(it)
+    }
+    pending.forEach {
+        dayOf(it.at)
+        rows += it
+    }
+    return rows
+}

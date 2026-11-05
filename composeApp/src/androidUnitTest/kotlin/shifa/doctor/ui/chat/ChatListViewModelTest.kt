@@ -86,7 +86,7 @@ class ChatListViewModelTest {
         assertThat(asked.filter { it.startsWith("GET messages/search") }).containsExactly("GET messages/search?q=Dil")
         classToTest.startWith(UserSearchResult(11, "Dilnoza"))
         settle { classToTest.state.value.open != null }
-        assertThat(classToTest.state.value.open).isEqualTo(7L)
+        assertThat(classToTest.state.value.open?.id).isEqualTo(7L)
         assertThat(classToTest.state.value.typed).isEmpty()
         // Opening reads it on the server and drops its pill at once.
         assertThat(classToTest.state.value.conversations!!.first { it.id == 7L }.unread).isEqualTo(0)
@@ -94,7 +94,7 @@ class ChatListViewModelTest {
         assertThat(asked).doesNotContain("POST messages/conversations/start")
         classToTest.opened()
         classToTest.startWith(UserSearchResult(13, "Malika"))
-        settle { classToTest.state.value.open == 9L }
+        settle { classToTest.state.value.open?.id == 9L }
         assertThat(asked).contains("POST messages/conversations/start")
         assertThat(classToTest.state.value.conversations!!.map { it.id }).contains(9L)
     }

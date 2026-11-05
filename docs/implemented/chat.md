@@ -63,3 +63,37 @@ Built 2026-11-05. Spec 07 §1.1, ticket CHAT-02, flow 07/01, board `DaChat` (lis
   cards ("Dilnoza Rahimova, blood_test_results.pdf, 08:24, 2 unread" …), opening Jasur's cleared its pill and the tab
   badge went from 3 to 2. Demo mode is off again.
 
+## CHAT-03 · Conversation thread
+
+Built 2026-11-05. Spec 07 §1.2–1.3, ticket CHAT-03, flow 07/02, board `DaChat` (thread pane).
+
+- **Where:** `ShellRoute.Conversation(id, opened, known)` pushed over the list (the tab bar hides); `known` is the
+  list's card, so the header shows before the read. `ui/chat/ThreadScreen` + `ThreadViewModel`, one per conversation
+  for the session, so a draft and a failed text survive going back to the list.
+- **Header:** back, photo, the name and "Patient"/"Doctor"; a patient's name is brand, underlined and opens their
+  record (Back returns to the thread); a colleague's is plain.
+- **Messages:** every message, oldest at the top, opened at the **newest** (Flutter opened at the oldest), with a
+  divider per practice day ("Yesterday", "Today", "3 Nov"). The board's bubbles: mine right on a light grey, theirs
+  left on light teal with "Patient"/"Doctor" above, at most 82 % wide; the time (practice time, Flutter: the phone's)
+  and on mine the board's ticks (✓ sent, ✓✓ delivered/read) inside. Links (`http(s)://`, `www.`) are underlined and
+  open in the browser; long-press selects and copies. System lines are centred italic. Images, voice notes and documents show as a labelled bubble
+  ("📄 blood_test_results.pdf") until CHAT-04…06 give them their own. Screen readers hear "Patient, 08:37" and then
+  the text as its own node (so its links work), or the attachment's type and name in words.
+- **Sending:** Send is off while the trimmed text is empty (Flutter sent empty texts); the text shows at once with ◷
+  and the field clears (a second tap has nothing to send); texts go one at a time, in order; the server's message
+  takes its place. A failure keeps it with "!" and "Not sent. Tap to retry" in red (Flutter: a SnackBar with the raw
+  error); a tap sends it again once.
+- **Freshness and read:** read on open and 5 s after each answer **only while in front** (BE-14); marked read on open
+  and again whenever something new comes from the other side (Flutter: only on open); a failed acknowledgement is
+  tried again at the next answer. A sent message stays even if a read that started before it answered lacks it. A new message from them while
+  scrolled up shows "↓ New message" instead of jumping; own sends scroll to the bottom.
+- **States:** skeleton bubbles on the first read; "Say hello to {name}" for a new conversation; "Couldn't load
+  messages" with Retry (a failed refresh keeps the messages and shows the banner).
+- **Not built:** typing indicator (no transport), offline banner, "This conversation is no longer available", long-text
+  "Show more" (open question), suppressing the push for the open conversation (PUSH tickets).
+- **Tests:** `ThreadViewModelTest` (read on open and on a new incoming only, optimistic send in order with the field
+  cleared and blanks refused, a failure kept and retried), `ChatRulesTest` (a divider per practice day across
+  midnight, pending last). Screenshots `Chat_thread`, `Chat_threadEmpty`, `Chat_threadLoading`.
+- **Emulator (demo):** opened Dilnoza's thread at the newest, sent "Thanks Dilnoza, see you on Friday" (appeared at the
+  bottom, ticked), the header opened her record and Back returned. Demo mode is off again. Dev has no conversations.
+

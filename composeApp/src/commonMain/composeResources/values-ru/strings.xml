@@ -340,6 +340,15 @@
     <string name="chat">Чат</string>
     <string name="chatEmptyHint">Найдите пациента или врача в поиске выше, чтобы начать переписку.</string>
     <string name="chatHistory">История чатов</string>
+    <string name="chatLoadFailed">Не удалось загрузить сообщения</string>
+    <string name="chatNewMessage">Новое сообщение</string>
+    <string name="chatNotSent">Не отправлено. Нажмите, чтобы повторить</string>
+    <string name="chatPhoto">Фото</string>
+    <string name="chatSayHello">Напишите %1$s первым</string>
+    <string name="chatStatusDelivered">Доставлено</string>
+    <string name="chatStatusRead">Прочитано</string>
+    <string name="chatStatusSending">Отправляется</string>
+    <string name="chatStatusSent">Отправлено</string>
     <string name="chatUnreadEmptyHint">Смените фильтр, чтобы увидеть все переписки.</string>
     <string name="checkInCompleted">Выполнено</string>
     <string name="checkInDetails">Детали отметки</string>

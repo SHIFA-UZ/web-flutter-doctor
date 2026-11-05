@@ -41,7 +41,7 @@ data class ChatListUiState(
     val searchFailed: Boolean = false,
     val starting: Boolean = false,
     // A conversation to open (the screen opens it, once).
-    val open: Long? = null,
+    val open: Conversation? = null,
 ) {
     val searching: Boolean get() = typed.isNotBlank()
     val shown: List<Conversation> get() = conversations.orEmpty().sortedFor(sort)
@@ -134,7 +134,7 @@ class ChatListViewModel(
     /** A card: read on the server (failures ignored), its pill gone at once, then the thread. */
     fun open(c: Conversation) {
         _state.update { s ->
-            s.copy(open = c.id, conversations = s.conversations?.map { if (it.id == c.id) it.copy(unread = 0) else it })
+            s.copy(open = c, conversations = s.conversations?.map { if (it.id == c.id) it.copy(unread = 0) else it })
         }
         viewModelScope.launch { repo.markRead(c.id) }
     }

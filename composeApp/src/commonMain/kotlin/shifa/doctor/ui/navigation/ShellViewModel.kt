@@ -61,6 +61,8 @@ sealed interface ShellRoute {
     data class Conversation(
         val id: Long,
         val opened: Long,
+        // The list's card, so the header shows before the thread is read.
+        val known: shifa.doctor.data.model.Conversation? = null,
     ) : ShellRoute
 
     /** Home → patient search (HOME-05); [opened] makes each open a fresh search (an empty query, a staleness check). */

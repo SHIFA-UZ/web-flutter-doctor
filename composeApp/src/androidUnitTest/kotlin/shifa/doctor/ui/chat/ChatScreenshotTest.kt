@@ -22,4 +22,13 @@ class ChatScreenshotTest {
 
     @Test
     fun search() = captureRoboImage("screenshots/Chat_search.png") { ChatListSearchPreview() }
+
+    @Test
+    fun thread() = captureRoboImage("screenshots/Chat_thread.png") { ThreadPreview() }
+
+    @Test
+    fun threadEmpty() = captureRoboImage("screenshots/Chat_threadEmpty.png") { ThreadEmptyPreview() }
+
+    @Test
+    fun threadLoading() = captureRoboImage("screenshots/Chat_threadLoading.png") { ThreadLoadingPreview() }
 }
