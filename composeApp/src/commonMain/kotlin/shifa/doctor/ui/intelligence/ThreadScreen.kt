@@ -45,7 +45,6 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.intelligence.ChatSession
 import shifa.doctor.generated.resources.Res
@@ -59,7 +58,6 @@ import shifa.doctor.generated.resources.intelPatient
 import shifa.doctor.generated.resources.intelReviewing
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.send
-import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.today
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.calendar.longDate
@@ -311,39 +309,6 @@ internal fun Composer(
         color = ShifaColors.Text.Tertiary,
         textAlign = TextAlign.Center,
     )
-}
-
-/**
- * A tool card (spec 02 §4.4). Until the typed cards (INTEL-05…08), every card is Flutter's default one: "Shifa
- * Intelligence" and the card's spoken line, its error, or its status.
- */
-@Composable
-internal fun ToolCard(
-    toolName: String?,
-    payload: JsonObject,
-) {
-    val line =
-        listOf("spokenHint", "error", "statusMessage").firstNotNullOfOrNull { key ->
-            (payload[key] as? JsonPrimitive)
-                ?.takeIf { it.isString }
-                ?.content
-                ?.takeIf { it.isNotBlank() }
-        }
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(ShifaColors.Bg.Surface, ShifaRadius.ControlMd)
-            .border(ShifaSize.S1, ShifaColors.Border.Default, ShifaRadius.ControlMd)
-            .padding(ShifaSize.S14),
-        verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-    ) {
-        Text(
-            tr(Res.string.shifaIntelligence),
-            style = ShifaTextStyles.contextName(),
-            color = ShifaColors.Text.BrandStrong,
-        )
-        line?.let { Text(it, style = ShifaTextStyles.aiText(), color = ShifaColors.Text.Primary) }
-    }
 }
 
 /** "Today · 09:41", "Yesterday · 18:02", "24 October 2026 · 08:15": the doctor's own clock (flow 03/03 §4). */

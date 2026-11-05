@@ -256,3 +256,36 @@ Built 2026-11-05 (after INTEL-04). Spec 02 §4.6–4.7, flow 03/01, ticket INTEL
   schedule" sent "Summarize my schedule for today." and the demo reply came back in the thread. iOS compiled, not run.
 - **Tests:** `WelcomeTest` (greeting hours, the starters' prompts, every starter prompt in en / ru / uz shortening to
   its starter title, the five newest non-empty chats); screenshots `Intelligence_welcome`, `Intelligence_welcomeFirst`.
+
+## INTEL-05 · Read-only action cards
+
+Built 2026-11-05. Spec 02 §4.4, flows 03/07–03/13, ticket INTEL-05. Board `DaIntel` card (bordered box, brand title,
+rows, chips, body).
+
+- **Model** (`data/intelligence/IntelCards.kt`): `IntelCard.of(toolName, payload)` reads the type from `cardType`,
+  else the tool's name (`get_today_schedule`, `list_patient_appointments`, `list_free_slots`, `search_patients`,
+  `get_most_visited_patients`, `get_clinic_patterns`, `brief_patient`), tolerant of missing fields and numbers sent as
+  decimals. Cards INTEL-06…08 draw (propose, cancel, visit facts, documents, dental) and unknown ones are `Other`:
+  "Shifa Intelligence" and the spoken line, else the error, else the status.
+- **Cards** (`ui/intelligence/Cards.kt`): **Schedule** "Appointments: N", up to 8 rows (time · patient · status),
+  "No appointments today."; **Patient appointments** the patient, the period, the count, up to 12 rows (6 Nov 2026 · time
+  · status, the row's patient when the header has none), "No appointments in this period."; **Free slots** the day
+  and up to 24 time chips (not tappable yet), the hint or "No free slots for this day."; **Patient matches** "Did you
+  mean…?" / "No exact match for “query”. Did you mean…?" for a fuzzy search, rows "name · phone", none → the hint or
+  "No patients matched."; **Most visited** "name · count"; **Clinic patterns** the shared pattern rows from AI-10
+  (flow 03/12: one row component in all three places); **Patient briefing** rendered with `AiResponseText` (Fix:
+  Flutter showed it plain). A known card that came back with an `error` (an unknown patient, no briefing)
+  shows the spoken hint or the error under its own title, never an empty list (Codex review).
+- **Small targets taken:** "+N more" under capped lists (flows 03/07–09), cancelled visits muted (03/07–08),
+  statuses through the calendar's status labels (raw for unknown ones). **Open calendar** leaves Intelligence for the
+  Calendar tab on the card's day (`CalendarFocus`; Flutter only switched the tab), and the shell reads the schedule
+  again as on any exit.
+- **Not yet:** backend hint sentences, range labels ("Upcoming") and English date labels show as sent: INTEL-10 ports
+  Flutter's card-text localiser. Row taps (open a visit, choose a patient, book a slot), rank numbers and "{n} visits"
+  plurals are flow targets left for later.
+- **Checked:** emulator, demo mode: "Today's schedule" → the schedule card (no visits on the demo's odd day), Open
+  calendar → the Calendar tab. iOS compiled, not run.
+- **Tests:** `IntelCardsTest` (each card from backend-shaped fixtures: type from the tool name, caps and "+N more",
+  dates, fuzzy search, decimal counts, the brief, unknown cards' line), `ShellViewModelTest` (Open calendar leaves
+  Intelligence); screenshot `Intelligence_cards` (every card), thread screenshots re-recorded (their search card is
+  now drawn).

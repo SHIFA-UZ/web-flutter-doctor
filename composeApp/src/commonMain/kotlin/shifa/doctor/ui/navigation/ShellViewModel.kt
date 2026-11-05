@@ -400,7 +400,13 @@ class ShellViewModel(
         ShellNotice.dismissSuccess()
         _state.update {
                 s ->
-            s.copy(stacks = s.stacks - ShellTab.Calendar, tab = clamp(ShellTab.Calendar, s), moreOpen = false)
+            // From a Shifa Intelligence card too: the calendar replaces Intelligence.
+            s.copy(
+                stacks = s.stacks - ShellTab.Calendar,
+                tab = clamp(ShellTab.Calendar, s),
+                moreOpen = false,
+                intelligence = false,
+            )
         }
     }
 

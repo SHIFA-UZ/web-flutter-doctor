@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
@@ -135,6 +136,8 @@ fun IntelligenceScreen(
     onLeave: () -> Unit,
     // Room for the shell's floating tab bar under the composer.
     bottomInset: Dp? = null,
+    // A card's "Open calendar": the clinic's calendar, on the card's day when it has one.
+    onOpenCalendar: (LocalDate?) -> Unit = {},
     viewModel: IntelligenceViewModel = viewModel { IntelligenceViewModel() },
     thread: ThreadViewModel = viewModel { ThreadViewModel() },
 ) {
@@ -205,7 +208,7 @@ fun IntelligenceScreen(
                     threadActions,
                     Modifier.fillMaxSize(),
                     currentInstant(),
-                ) { tool, card -> ToolCard(tool, card) }
+                ) { tool, card -> ToolCard(tool, card, onOpenCalendar) }
             } else {
                 // INTEL-03: the welcome; a starter card sends its prompt as if typed.
                 var options by remember { mutableStateOf<ChatSession?>(null) }

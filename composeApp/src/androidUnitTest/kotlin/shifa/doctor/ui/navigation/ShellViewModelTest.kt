@@ -345,11 +345,16 @@ class ShellViewModelTest {
         classToTest.select(ShellTab.Chat)
         assertThat(classToTest.state.value.intelligence).isFalse()
         assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Chat)
+        // A card's "Open calendar" leaves Intelligence for the calendar.
+        classToTest.openIntelligence()
+        classToTest.openCalendar()
+        assertThat(classToTest.state.value.intelligence).isFalse()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Calendar)
         // Every way out reads the schedule again (Back, a tab tap, the screen's own back from the welcome).
         classToTest.openIntelligence()
         classToTest.leaveIntelligence()
-        waitFor { scheduleReads == 3 }
-        assertThat(scheduleReads).isEqualTo(3)
+        waitFor { scheduleReads == 4 }
+        assertThat(scheduleReads).isEqualTo(4)
         tier = "BASIC"
         val basic = vm()
         basic.settle()

@@ -247,3 +247,39 @@ internal fun WelcomeFirstPreview() =
             }, {}, {}, kotlinx.datetime.TimeZone.of("Asia/Tashkent"))
         }
     }
+
+private fun cardJson(json: String) = shifa.doctor.data.api.apiJson.parseToJsonElement(json) as JsonObject
+
+private val previewCards =
+    listOf(
+        "get_today_schedule" to
+            """{"cardType":"schedule","date":"2026-11-05","count":3,"appointments":[{"appointmentId":101,"patientName":"Dilnoza Rahimova","startLocal":"09:00","status":"COMPLETED"},{"appointmentId":102,"patientName":"Jasur Karimov","startLocal":"10:30","status":"CONFIRMED"},{"appointmentId":103,"patientName":"Malika Tursunova","startLocal":"14:00","status":"CANCELLED"}]}""",
+        "list_patient_appointments" to
+            """{"cardType":"patient_appointments","patientName":"Jasur Karimov","rangeLabel":"Upcoming","count":2,"appointments":[{"date":"2026-11-06","startLocal":"10:00","status":"CONFIRMED"},{"date":"2026-11-20","startLocal":"15:30","status":"REQUESTED"}]}""",
+        "list_free_slots" to
+            """{"cardType":"free_slots","date":"2026-11-06","slots":[{"startLocal":"09:00"},{"startLocal":"09:30"},{"startLocal":"11:00"},{"startLocal":"14:30"},{"startLocal":"16:00"}]}""",
+        "search_patients" to
+            """{"cardType":"patient_search","fuzzy":true,"query":"Karimv","matches":[{"patientId":7,"patientName":"Jasur Karimov","phone":"+998 93 555 12 34"},{"patientId":8,"patientName":"Malika Karimova"}]}""",
+        "get_most_visited_patients" to """{"cardType":"most_visited","patients":[{"patientName":"Dilnoza Rahimova","visitCount":12},{"patientName":"Jasur Karimov","visitCount":7}]}""",
+        "get_clinic_patterns" to """{"cardType":"clinic_patterns","patterns":[{"key":"m","label":"Spoken medication followed by a remote-care task","factType":"MEDICATION","count":14}]}""",
+        "brief_patient" to """{"cardType":"patient_brief","briefing":"## Snapshot\nFollow-up after **pulpitis** treatment.\n- Allergy: penicillin"}""",
+        "propose_appointment" to """{"cardType":"propose_appointment","spokenHint":"Tomorrow at 10:00 is free. Shall I book it?"}""",
+        "list_patient_appointments" to """{"cardType":"patient_appointments","error":"Patient not found","spokenHint":"I could not find that patient.","appointments":[]}""",
+    )
+
+// INTEL-05: every read-only card (a cancelled visit muted), and a card INTEL-06 will draw, showing its spoken line.
+@Composable
+internal fun CardsPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier
+                .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
+                .padding(shifa.doctor.ui.theme.ShifaSize.S16),
+            verticalArrangement =
+                androidx.compose.foundation.layout.Arrangement.spacedBy(
+                    shifa.doctor.ui.theme.ShifaSize.S12,
+                ),
+        ) {
+            previewCards.forEach { (tool, json) -> ToolCard(tool, cardJson(json)) }
+        }
+    }

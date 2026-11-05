@@ -34,4 +34,8 @@ class IntelligenceScreenshotTest {
 
     @Test
     fun welcomeFirst() = captureRoboImage("screenshots/Intelligence_welcomeFirst.png") { WelcomeFirstPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h2400dp-xhdpi")
+    fun cards() = captureRoboImage("screenshots/Intelligence_cards.png") { CardsPreview() }
 }

@@ -416,9 +416,19 @@ private fun FactRow(
 
 /** "Clinic patterns": "Label · 14×" rows (labels as the backend sends them, flow 03/12). */
 @Composable
-internal fun Patterns(patterns: List<ClinicPattern>) {
+internal fun Patterns(
+    patterns: List<ClinicPattern>,
+    // The chat's patterns card has its own title (flow 03/12: one shared row component in all three places).
+    caption: Boolean = true,
+) {
     if (patterns.isEmpty()) return
-    Text(tr(Res.string.intelCardPatterns), style = ShifaTextStyles.legend(), color = ShifaColors.Text.Secondary)
+    if (caption) {
+        Text(
+            tr(Res.string.intelCardPatterns),
+            style = ShifaTextStyles.legend(),
+            color = ShifaColors.Text.Secondary,
+        )
+    }
     patterns.forEach { p ->
         Text(
             "${p.label.ifBlank { p.key }} · ${tr(Res.string.intelPatternCount, p.count.toString())}",

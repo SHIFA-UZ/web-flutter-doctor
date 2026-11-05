@@ -264,6 +264,10 @@ fun MainScreenContent(
         IntelligenceScreen(
             onLeave = actions.leaveIntelligence,
             bottomInset = ShifaSpacing.Inset.Md + ShifaDimens.FabDockedClear,
+            onOpenCalendar = { day ->
+                day?.let { CalendarFocus.day.value = it }
+                actions.openCalendar()
+            },
         )
     },
 ) {
