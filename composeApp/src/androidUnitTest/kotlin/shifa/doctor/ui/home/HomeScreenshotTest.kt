@@ -34,4 +34,10 @@ class HomeScreenshotTest {
 
     @Test
     fun searchEmpty() = captureRoboImage("screenshots/Home_searchEmpty.png") { PatientSearchEmptyPreview() }
+
+    @Test
+    fun attention() = captureRoboImage("screenshots/Home_attention.png") { HomeAttentionPreview() }
+
+    @Test
+    fun attentionEmpty() = captureRoboImage("screenshots/Home_attentionEmpty.png") { HomeAttentionEmptyPreview() }
 }

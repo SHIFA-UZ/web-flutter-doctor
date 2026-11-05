@@ -2696,5 +2696,9 @@
   "noTemplatesTitle": "Hozircha shablonlar yo'q",
   "noTemplatesBody": "Avval vazifa yarating, keyin u shu yerda paydo bo'ladi.",
   "templatesLoadFailed": "Shablonlarni yuklab bo'lmadi",
-  "moreCount": "yana {count} ta"
+  "moreCount": "yana {count} ta",
+  "markAsRead": "O'qilgan deb belgilash",
+  "allNotifications": "Barcha bildirishnomalar",
+  "checkInsOf": "{total} tadan {done} ta belgilash",
+  "moreUnreadInInbox": "Boshqa o'qilmagan bildirishnomalar kiruvchilarda."
 }

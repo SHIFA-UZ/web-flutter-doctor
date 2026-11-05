@@ -2696,5 +2696,9 @@
   "noTemplatesTitle": "Шаблонов пока нет",
   "noTemplatesBody": "Сначала создайте задачу, и она появится здесь.",
   "templatesLoadFailed": "Не удалось загрузить шаблоны",
-  "moreCount": "ещё {count}"
+  "moreCount": "ещё {count}",
+  "markAsRead": "Отметить как прочитанное",
+  "allNotifications": "Все уведомления",
+  "checkInsOf": "{done} из {total} отметок",
+  "moreUnreadInInbox": "Ещё непрочитанные уведомления — во входящих."
 }

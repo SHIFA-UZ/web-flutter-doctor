@@ -118,8 +118,7 @@ class NotificationsViewModelTest {
     private fun vm() =
         NotificationsViewModel(
             NotificationsRepository({ client }),
-            AppointmentsRepository({ client }),
-            CalendarRepository({ client }),
+            NotificationOpener(AppointmentsRepository({ client }), CalendarRepository({ client })),
         )
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())

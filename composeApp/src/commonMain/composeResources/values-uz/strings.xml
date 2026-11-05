@@ -125,6 +125,7 @@
     <string name="allCategories">Barcha toifalar</string>
     <string name="allCaughtUp">Hammasi joyida!</string>
     <string name="allDay">Kun bo'yi</string>
+    <string name="allNotifications">Barcha bildirishnomalar</string>
     <string name="allPatients">Barcha bemorlar</string>
     <string name="allRoles">Barcha rollar</string>
     <string name="allStatuses">Barcha holatlar</string>
@@ -361,6 +362,7 @@
     <string name="checkInDetails">Tekshiruv tafsilotlari</string>
     <string name="checkIns">Tekshiruvlar</string>
     <string name="checkInsLoadFailed">Belgilashlarni yuklab bo'lmadi</string>
+    <string name="checkInsOf">%2$s tadan %1$s ta belgilash</string>
     <string name="checkingCall">Tekshirilmoqda…</string>
     <string name="checkoutFailed">To'lov sahifasini ochib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="chooseAClinic">Klinikani tanlang</string>
@@ -1563,6 +1565,7 @@
     <string name="manage">Boshqarish</string>
     <string name="manageLocations">Joylashuvlarni boshqarish</string>
     <string name="markAllAsRead">Barchasini o'qilgan deb belgilash</string>
+    <string name="markAsRead">O'qilgan deb belgilash</string>
     <string name="markNoShow">Kelmadi deb belgilash</string>
     <string name="markedForFollowUp">Takroriy qabul uchun belgilandi</string>
     <string name="medicalInfo">Tibbiy ma'lumot</string>
@@ -1610,6 +1613,7 @@
     <string name="moreDetailsOnAbove">Aynan shu kasalliklarning rivojlanishi</string>
     <string name="moreDocumentationOptions">Hujjatlashtirishning boshqa usullari</string>
     <string name="moreOptions">Boshqa bo'limlar</string>
+    <string name="moreUnreadInInbox">Boshqa o'qilmagan bildirishnomalar kiruvchilarda.</string>
     <string name="morningTime">Ertalabki vaqt</string>
     <string name="moveDown">%1$s ni pastga</string>
     <string name="moveTo">%1$s ga ko'chirish</string>

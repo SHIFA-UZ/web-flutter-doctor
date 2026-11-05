@@ -9,22 +9,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
-import shifa.doctor.data.appointments.AppointmentsRepository
-import shifa.doctor.data.calendar.CalendarRepository
-import shifa.doctor.data.calendar.DayKey
-import shifa.doctor.data.calendar.calendarRepository
-import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.notifications.NotificationFilter
 import shifa.doctor.data.notifications.NotificationReads
-import shifa.doctor.data.notifications.NotificationTarget
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.notifications.shows
-import shifa.doctor.data.notifications.target
 import shifa.doctor.generated.resources.Res
-import shifa.doctor.generated.resources.appointmentGone
-import shifa.doctor.generated.resources.couldNotLoad
 import shifa.doctor.generated.resources.notificationsLoadFailed
 import shifa.doctor.generated.resources.notificationsMarkFailed
 import shifa.doctor.ui.emailcode.CodeBanner
@@ -53,6 +44,9 @@ sealed interface NotificationGo {
     data class Task(
         val id: Long,
     ) : NotificationGo
+
+    /** Home only: nothing else to open, so the inbox (flow 02/03 §5). */
+    data object Inbox : NotificationGo
 }
 
 data class NotificationsUiState(
@@ -81,8 +75,7 @@ data class NotificationsUiState(
  */
 class NotificationsViewModel(
     private val repo: NotificationsRepository = NotificationsRepository(),
-    private val appointments: AppointmentsRepository = AppointmentsRepository(),
-    private val calendar: CalendarRepository = calendarRepository,
+    private val opener: NotificationOpener = NotificationOpener(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(NotificationsUiState())
     val state: StateFlow<NotificationsUiState> = _state.asStateFlow()
@@ -165,20 +158,11 @@ class NotificationsViewModel(
     ) {
         if (_state.value.opening != null) return
         if (!n.read) markRead(n)
-        when (val target = n.target(staff)) {
-            is NotificationTarget.Appointment -> openAppointment(n.id, target, clock)
-            is NotificationTarget.Patient ->
-                go(
-                    if (target.openDocument && target.documentId != null) {
-                        NotificationGo.Document(target.id, target.documentId, n.documentTitle)
-                    } else {
-                        NotificationGo.Patient(target.id)
-                    },
-                )
-            NotificationTarget.Chat -> go(NotificationGo.Chat)
-            is NotificationTarget.Task -> go(NotificationGo.Task(target.id))
-            // Partnerships (CARE) have no screens yet: the tap only reads it.
-            NotificationTarget.Partnerships, NotificationTarget.Inbox -> Unit
+        // An appointment is looked up first (its row shows a spinner, taps wait); the rest go at once.
+        if (opener.slow(n, staff)) _state.update { it.copy(opening = n.id) }
+        viewModelScope.launch {
+            val to = opener.go(n, staff, clock)
+            _state.update { it.copy(opening = null, go = to ?: it.go) }
         }
     }
 
@@ -244,49 +228,4 @@ class NotificationsViewModel(
         id: Long,
         read: Boolean,
     ) = _state.update { s -> s.copy(items = s.items?.map { if (it.id == id) it.copy(read = read) else it }) }
-
-    private fun go(to: NotificationGo) = _state.update { it.copy(go = to) }
-
-    private fun openAppointment(
-        id: Long,
-        target: NotificationTarget.Appointment,
-        clock: PracticeClock,
-    ) {
-        _state.update { it.copy(opening = id) }
-        viewModelScope.launch {
-            val found =
-                runCatching {
-                    val start =
-                        target.startAt
-                            ?: appointments.detail(target.id).getOrThrow().startAt.let(PracticeClock::parseInstant)
-                    start?.let { at ->
-                        calendar
-                            .day(DayKey(clock.local(at).date))
-                            .getOrThrow()
-                            .filterIsInstance<CalendarEntry.Appointment>()
-                            .firstOrNull { it.appointmentId == target.id }
-                    }
-                }
-            _state.update { it.copy(opening = null) }
-            found.fold(
-                { entry ->
-                    if (entry != null) {
-                        go(NotificationGo.Appointment(entry))
-                    } else {
-                        ShellNotice.pending.value = Notice(Res.string.appointmentGone)
-                    }
-                },
-                { e ->
-                    // A 404 from the appointment means it's gone; anything else is a failed read.
-                    val gone = e is ApiException.NotFound
-                    ShellNotice.pending.value =
-                        if (gone) {
-                            Notice(Res.string.appointmentGone)
-                        } else {
-                            Notice(e.toUserMessage(Res.string.couldNotLoad), requestId = e.requestId)
-                        }
-                },
-            )
-        }
-    }
 }

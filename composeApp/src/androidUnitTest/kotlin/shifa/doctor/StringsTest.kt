@@ -35,6 +35,14 @@ class StringsTest {
     }
 
     @Test
+    fun `no key is both generated and in the kit file`() {
+        // CMP refuses a key in two files at runtime ("has more than one file"); catch it here instead.
+        val generated = entries("values", "strings.xml", "string").keys
+        val kit = entries("values", "strings_kit.xml", "string").keys
+        assertWithMessage("keys in both strings.xml and strings_kit.xml").that(generated intersect kit).isEmpty()
+    }
+
+    @Test
     fun `every locale uses the English placeholders`() {
         listOf("strings.xml", "strings_kit.xml").forEach { file ->
             val en = entries("values", file, "string")

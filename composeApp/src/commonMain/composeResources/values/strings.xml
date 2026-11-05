@@ -125,6 +125,7 @@
     <string name="allCategories">All categories</string>
     <string name="allCaughtUp">All caught up!</string>
     <string name="allDay">All day</string>
+    <string name="allNotifications">All notifications</string>
     <string name="allPatients">All patients</string>
     <string name="allRoles">All Roles</string>
     <string name="allStatuses">All statuses</string>
@@ -361,6 +362,7 @@
     <string name="checkInDetails">Check-in Details</string>
     <string name="checkIns">Check-ins</string>
     <string name="checkInsLoadFailed">Couldn't load check-ins</string>
+    <string name="checkInsOf">%1$s of %2$s check-ins</string>
     <string name="checkingCall">Checking…</string>
     <string name="checkoutFailed">Couldn't open the payment page. Try again.</string>
     <string name="chooseAClinic">Choose a clinic</string>
@@ -1563,6 +1565,7 @@
     <string name="manage">Manage</string>
     <string name="manageLocations">Manage locations</string>
     <string name="markAllAsRead">Mark all as read</string>
+    <string name="markAsRead">Mark as read</string>
     <string name="markNoShow">Mark as no-show</string>
     <string name="markedForFollowUp">Marked for follow-up</string>
     <string name="medicalInfo">Medical info</string>
@@ -1610,6 +1613,7 @@
     <string name="moreDetailsOnAbove">More details on above</string>
     <string name="moreDocumentationOptions">More documentation options</string>
     <string name="moreOptions">More options</string>
+    <string name="moreUnreadInInbox">More unread notifications are in the inbox.</string>
     <string name="morningTime">Morning Time</string>
     <string name="moveDown">Move %1$s down</string>
     <string name="moveTo">Move to %1$s</string>

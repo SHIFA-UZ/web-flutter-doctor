@@ -2696,5 +2696,9 @@
   "noTemplatesTitle": "No templates yet",
   "noTemplatesBody": "Create a task first, then it will appear here.",
   "templatesLoadFailed": "Couldn't load templates",
-  "moreCount": "+{count} more"
+  "moreCount": "+{count} more",
+  "markAsRead": "Mark as read",
+  "allNotifications": "All notifications",
+  "checkInsOf": "{done} of {total} check-ins",
+  "moreUnreadInInbox": "More unread notifications are in the inbox."
 }

@@ -125,6 +125,7 @@
     <string name="allCategories">Все категории</string>
     <string name="allCaughtUp">Всё выполнено!</string>
     <string name="allDay">Весь день</string>
+    <string name="allNotifications">Все уведомления</string>
     <string name="allPatients">Все пациенты</string>
     <string name="allRoles">Все роли</string>
     <string name="allStatuses">Все статусы</string>
@@ -361,6 +362,7 @@
     <string name="checkInDetails">Детали отметки</string>
     <string name="checkIns">Отметки</string>
     <string name="checkInsLoadFailed">Не удалось загрузить отметки</string>
+    <string name="checkInsOf">%1$s из %2$s отметок</string>
     <string name="checkingCall">Проверяем…</string>
     <string name="checkoutFailed">Не удалось открыть страницу оплаты. Попробуйте ещё раз.</string>
     <string name="chooseAClinic">Выберите клинику</string>
@@ -1563,6 +1565,7 @@
     <string name="manage">Управлять</string>
     <string name="manageLocations">Управление местоположениями</string>
     <string name="markAllAsRead">Отметить все как прочитанные</string>
+    <string name="markAsRead">Отметить как прочитанное</string>
     <string name="markNoShow">Отметить неявку</string>
     <string name="markedForFollowUp">Отмечено для повторного приёма</string>
     <string name="medicalInfo">Мед. информация</string>
@@ -1610,6 +1613,7 @@
     <string name="moreDetailsOnAbove">Подробнее о вышеизложенном</string>
     <string name="moreDocumentationOptions">Другие варианты документирования</string>
     <string name="moreOptions">Другие разделы</string>
+    <string name="moreUnreadInInbox">Ещё непрочитанные уведомления — во входящих.</string>
     <string name="morningTime">Утреннее время</string>
     <string name="moveDown">Переместить %1$s ниже</string>
     <string name="moveTo">Перенести на %1$s</string>

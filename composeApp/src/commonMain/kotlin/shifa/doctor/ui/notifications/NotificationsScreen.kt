@@ -486,7 +486,7 @@ private fun CardActions(
 }
 
 /** The icon's colour and the label's (board `typeOf` and its `labelInk`). */
-private fun NotificationTone.colors(): Pair<Color, Color> =
+internal fun NotificationTone.colors(): Pair<Color, Color> =
     when (this) {
         NotificationTone.Brand -> ShifaColors.Icon.Brand to ShifaColors.Text.BrandStrong
         NotificationTone.Info -> ShifaColors.Icon.Info to ShifaColors.Text.Info

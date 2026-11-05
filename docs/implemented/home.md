@@ -226,3 +226,33 @@ Built 2026-11-05. Spec 02 §2.4, ticket ANALYTICS-03, flow 02/05 §3–§8, boar
 - **Emulator (dev):** trend 4, 1, 1, 3, 0, 0, 1 for 30 Oct – 5 Nov as dev answers; ring 73 % / 27 % (11 in person,
   4 video); tapping 2 Nov showed "2 Nov · 3 visits".
 
+
+## HOME-04 · Attention centre and activity feed
+
+Built 2026-11-05 (it waited for NOTIF-01 and TASK-01). Spec 02 §1.5–1.6, ticket HOME-04, flows 02/03 and 02/04, board
+`DaHome` (the right column; on phones after today's schedule, before "Clinic performance").
+
+- **Data:** the inbox's pages, newest first, until four unread are found or the list ends (ten pages at most; short
+  of that, "More unread notifications are in the inbox." instead of "All caught up!"), feed both cards; the active tasks
+  are read once with it, only for plans with remote-care tasks (02 §1.5 fix: not per widget). Read with every read of
+  Home's schedule (coming back, a hero leaving its slot, a new day), at most once a minute and one at a time; a pull, Retry, the plan
+  changing or a mark that leaves fewer than four unread read at once (an ask during a read runs once more after it); a failed
+  read keeps what was shown, a first failure says "Couldn't load notifications" with Retry (flow §6 target).
+- **"Attention required":** up to 4 unread notifications, then up to 3 active tasks, 6 in all (flow §8: 4 + 2 at most).
+  A notification tile: the board's tinted icon (its colour role), the label, the body in the app's language, the time
+  (practice zone, flow §12), a chevron, and a Mark as read button (the row leaves at once, comes back if refused; the
+  bell's count follows). A task tile: its name, "Bekzod Aliyev · Follow-up task", "3 of 6 check-ins". "All caught up!"
+  when nothing waits; "All notifications" opens the inbox.
+- **"Patient activity":** the 8 newest notifications, read or not: the time (the day alone for older ones, "Yesterday",
+  so the column doesn't wrap), the type's dot, the label and 2 lines of body; "See all"; "No recent activity".
+- **Taps:** a tile reads the notification and opens its target over Home (Back returns): the appointment's Calendar
+  panel, the patient or the approved document, Chat, a task's details; a feed row opens without reading it (the
+  board; Flutter's rows didn't open). The inbox's target logic moved into `NotificationOpener`, used by both. One at
+  a time; an appointment shows a spinner while it's looked up.
+- **Strings:** `seeAll` was already a kit string: the JSON copy was dropped, and `StringsTest` now fails on a key in
+  both `strings.xml` and `strings_kit.xml` (CMP refuses it at runtime).
+- **Tests:** `HomeAttentionViewModelTest` (4 + 2 cap, the 8 for the feed, tasks only with the plan, a first failure,
+  Mark as read rolled back, a feed row opens without reading), `StringsTest` (the clash), `NotificationsViewModelTest`
+  (unchanged on the shared opener). Screenshots `Home_attention`, `Home_attentionEmpty`.
+- **Emulator:** on dev (reads only) the seed doctor's notifications in both cards; in demo Mark as read took the bell
+  from 5 to 4, a task tile opened its details and Back returned to Home. Demo mode is off again.

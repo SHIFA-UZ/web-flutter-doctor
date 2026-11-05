@@ -75,6 +75,7 @@ import shifa.doctor.ui.analytics.AnalyticsSection
 import shifa.doctor.ui.analytics.AnalyticsViewModel
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaShadow
@@ -111,6 +112,8 @@ class HomeActions(
     // ANALYTICS-02: the card's taps (Calendar, Patients, the plans) and its refresh with Home's.
     val patients: () -> Unit = {},
     val seePlans: () -> Unit = {},
+    // HOME-04: a notification's or a follow-up's target.
+    val openNotification: (NotificationGo) -> Unit = {},
 )
 
 /** What Home shows from the shell: the doctor, and the counts the shell keeps (02 §1.3–1.4). */
@@ -186,6 +189,16 @@ fun HomeScreen(
         if (state.reads > readsSeen) analytics?.refreshToday(clock.local(clock.nowInstant()).date)
         readsSeen = state.reads
     }
+    // HOME-04: the attention centre and activity feed read with each read of the schedule (gated there), and on pull.
+    val attention: HomeAttentionViewModel = viewModel { HomeAttentionViewModel() }
+    val inbox by attention.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.reads, shell.showFollowUps) { attention.refresh(withTasks = shell.showFollowUps) }
+    LaunchedEffect(inbox.go) {
+        inbox.go?.let {
+            attention.opened()
+            actions.openNotification(it)
+        }
+    }
     // The Video Call chip found its slot: open it as a video booking, once.
     LaunchedEffect(state.videoSlot) {
         state.videoSlot?.let {
@@ -201,6 +214,7 @@ fun HomeScreen(
             refresh = {
                 viewModel.refresh(actions.refreshCounts)
                 analytics?.refresh()
+                attention.refresh(withTasks = shell.showFollowUps, force = true)
             },
             search = actions.search,
             notifications = actions.notifications,
@@ -214,6 +228,19 @@ fun HomeScreen(
         ),
         clock,
         now,
+        attention = {
+            val inboxActions =
+                HomeAttentionActions(
+                    open = { attention.open(it, staff = false, clock) },
+                    openActivity = { attention.open(it, staff = false, clock, read = false) },
+                    markRead = attention::markRead,
+                    openTask = attention::openTask,
+                    all = actions.notifications,
+                    retry = { attention.refresh(withTasks = shell.showFollowUps, force = true) },
+                )
+            AttentionCard(inbox, clock, inboxActions)
+            ActivityCard(inbox, clock, inboxActions)
+        },
     ) {
         analytics?.let {
             AnalyticsSection(
@@ -236,6 +263,8 @@ internal fun HomeContent(
     actions: HomeActions,
     clock: PracticeClock = PracticeClock(shell.zone),
     now: Instant = clock.nowInstant(),
+    // HOME-04: the attention centre and activity feed, after today's schedule (a slot, as analytics).
+    attention: @Composable () -> Unit = {},
     // ANALYTICS-02: "Clinic performance", last on Home (a slot, so previews draw Home without its reads).
     analytics: @Composable () -> Unit = {},
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
@@ -295,6 +324,7 @@ internal fun HomeContent(
             }
             item { QuickActions(!state.findingSlot && shell.profileLoaded && !clock.zoneMissing, actions) }
             if (schedule != null && !zoneMissing) item { Timeline(schedule, now, clock, actions) }
+            item { Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S16)) { attention() } }
             item { analytics() }
         }
     }

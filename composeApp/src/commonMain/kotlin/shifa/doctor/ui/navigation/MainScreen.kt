@@ -359,6 +359,7 @@ private fun RouteContent(
                 if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
             } else if (route.tab == ShellTab.Home && !staff) {
                 // HOME-02: the doctor and the counts the shell keeps.
+                val documentTitle = tr(Res.string.document)
                 val me by profileRepository.me.collectAsStateWithLifecycle()
                 val p = me?.profile
                 var timezone by rememberSaveable { mutableStateOf(false) }
@@ -410,6 +411,21 @@ private fun RouteContent(
                         setTimezone = { timezone = true },
                         patients = { actions.select(ShellTab.Patients) },
                         seePlans = { actions.push(ShellRoute.Profile(ProfileSection.Subscription)) },
+                        // HOME-04: a target opens over Home (Back returns to it); chat is its tab.
+                        openNotification = { go ->
+                            val opened = currentInstant().toEpochMilliseconds()
+                            when (go) {
+                                is NotificationGo.Appointment -> actions.push(ShellRoute.Appointment(go.entry, opened))
+                                is NotificationGo.Patient -> actions.push(ShellRoute.Patient(go.id))
+                                is NotificationGo.Document ->
+                                    actions.push(
+                                        ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
+                                    )
+                                NotificationGo.Chat -> actions.select(ShellTab.Chat)
+                                is NotificationGo.Task -> actions.push(ShellRoute.Task(go.id, opened))
+                                NotificationGo.Inbox -> actions.select(ShellTab.Notifications)
+                            }
+                        },
                     ),
                 )
             } else if (route.tab == ShellTab.Tasks && !staff) {
@@ -438,6 +454,8 @@ private fun RouteContent(
                                 )
                             NotificationGo.Chat -> actions.select(ShellTab.Chat)
                             is NotificationGo.Task -> actions.openTask(go.id, opened)
+                            // Never from the inbox itself.
+                            NotificationGo.Inbox -> Unit
                         }
                     },
                     onSettings = { actions.push(ShellRoute.Profile(ProfileSection.Settings)) },

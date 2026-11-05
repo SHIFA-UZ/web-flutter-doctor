@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:max-line-length")
+
 package shifa.doctor.ui.home
 
 import androidx.compose.foundation.background
@@ -175,4 +177,102 @@ internal fun PatientSearchPreview() =
 internal fun PatientSearchEmptyPreview() =
     PreviewTheme {
         PatientSearchContent(PatientSearchUiState(searchPeople, query = "zz", today = day), {}, {}, {}, {})
+    }
+
+private val inboxClock =
+    PracticeClock("Asia/Tashkent", { Instant.parse("2026-11-05T09:12:00Z") }, { TimeZone.of("Asia/Tashkent") })
+
+private fun note(
+    id: Long,
+    type: String,
+    at: String,
+    read: Boolean = false,
+    name: String? = null,
+    message: String = "",
+) = shifa.doctor.data.model.AppNotification(
+    id,
+    type,
+    shifa.doctor.data.notifications.NotificationKind.of(type),
+    "",
+    message,
+    Instant.parse(at),
+    read,
+    patientName = name,
+)
+
+private val inboxNotes =
+    listOf(
+        note(1, "APPOINTMENT_BOOKED_BY_PATIENT", "2026-11-05T09:08:00Z", name = "Malika Tursunova"),
+        note(2, "CHAT_MESSAGE", "2026-11-05T08:30:00Z"),
+        note(3, "APPOINTMENT_CANCELLED_BY_PATIENT", "2026-11-05T05:10:00Z", name = "Jasur Karimov"),
+        note(
+            4,
+            "TASK_COMPLETED",
+            "2026-11-04T07:00:00Z",
+            read = true,
+            message = "Bekzod Aliyev completed \"Blood pressure diary\".",
+        ),
+        note(
+            5,
+            "AI_SCRIBE_READY",
+            "2026-11-01T06:00:00Z",
+            read = true,
+            message = "AI scribe notes are ready for review.",
+        ),
+    )
+
+private val inboxTask =
+    shifa.doctor.data.model.RemoteCareTask(
+        501, 14, "Bekzod Aliyev", "Asia/Tashkent", "Blood pressure diary", null, shifa.doctor.data.model.TaskCategory.Vital,
+        shifa.doctor.data.model.TaskStatus.Active,
+        shifa.doctor.data.model.TaskSchedule.of(
+            3,
+            "08:00",
+            null,
+            null,
+            emptyList(),
+        ),
+        kotlinx.datetime.LocalDate(
+            2026,
+            11,
+            4,
+        ),
+        null, 14, shifa.doctor.data.model.TaskInputType.Numeric, null, false, null, null,
+        shifa.doctor.data.model.TaskProgress(6, 3, 2, 1), null, null,
+    )
+
+// HOME-04: three unread (with Mark as read) and a follow-up, then the activity feed.
+@Composable
+internal fun HomeAttentionPreview() =
+    PreviewTheme {
+        Column(
+            Modifier.background(ShifaColors.Bg.Canvas).padding(ShifaSize.S16),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S16),
+        ) {
+            val s = HomeAttentionUiState(inboxNotes, listOf(inboxTask))
+            AttentionCard(s, inboxClock, HomeAttentionActions())
+            ActivityCard(s, inboxClock, HomeAttentionActions())
+        }
+    }
+
+// HOME-04: nothing waiting; the activity read failed elsewhere.
+@Composable
+internal fun HomeAttentionEmptyPreview() =
+    PreviewTheme {
+        Column(
+            Modifier.background(ShifaColors.Bg.Canvas).padding(ShifaSize.S16),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S16),
+        ) {
+            AttentionCard(
+                HomeAttentionUiState(
+                    inboxNotes.map {
+                        it.copy(read = true)
+                    },
+                    emptyList(),
+                ),
+                inboxClock,
+                HomeAttentionActions(),
+            )
+            ActivityCard(HomeAttentionUiState(failed = true), inboxClock, HomeAttentionActions())
+        }
     }
