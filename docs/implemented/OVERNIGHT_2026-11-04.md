@@ -399,7 +399,7 @@ Notes from M5:
 - **Backend:** dev has no treatment plans, so plan ticks and payments ran in demo mode only. A plan payment has no
   idempotency key (BE-13); the app looks for a lost payment in the ledger before sending it again.
 
-## M6 · Home & analytics (done except HOME-04)
+## M6 · Home & analytics (done)
 
 | Ticket | Commit | What it is |
 |---|---|---|
@@ -407,6 +407,7 @@ Notes from M5:
 | HOME-02 | `069ebdd` | The Home tab: header (photo, Refresh, Search, bell), practice-time note, "Today at a glance"; nothing read before the practice zone; skeletons, never a false 0 |
 | HOME-03 | `d6da7da` | The next patient (Start 15 min before, 5 for video; Continue; Open chart; age), empty / done / no-timezone cards, New appointment and Video Call (first free slot booked as video), today's timeline opening the Calendar panels; the visit screen now waits up to 3 s for the patient so the chronic warning always comes first |
 | HOME-05 | `abb9005` | Patient search from Home's header (Flutter: keyboard shortcut only): the Patients tab's matcher, a result opens in the Patients tab |
+| HOME-04 | `90fb903` | The attention centre (unread with Mark as read, then follow-ups) and the activity feed, after the M8/M9 data they needed; targets through the inbox's shared opener |
 | ANALYTICS-01 | `14570e1` | The five analytics reads, the range (last 7 practice days, trend 1–90), one refresh entry point; demo answers |
 | ANALYTICS-02 | `62ca057` | "Clinic performance": range picker with presets, CSV export through the share sheet, today's KPIs, PREMIUM engagement or a teaser; each block loads and fails on its own |
 | ANALYTICS-03 | `5686100` | PREMIUM trend line and visit-type ring (Canvas), titled by the days drawn, tap a day for its visits, large-text safe |
@@ -416,7 +417,6 @@ doctor is PREMIUM and has no appointments for 30 days, only free slots: the hero
 mode) and offline (the offline start shows "—" and Retry). iOS: everything compiles and links, nothing run.
 
 Not built in M6:
-- **HOME-04** (attention centre, activity feed): needs NOTIF-01 and TASK-01 (M8 and the tasks milestone).
 - The "Prescription" quick action (opens the task form, TASK tickets; its label and destination disagree, flow 02/02
   §13) and the board's "Medical record" flags on the hero (not in the spec).
 - SMS usage and one range shared with Reports: with REPORT-01.
