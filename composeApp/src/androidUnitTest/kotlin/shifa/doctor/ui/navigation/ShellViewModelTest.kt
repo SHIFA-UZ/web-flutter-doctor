@@ -77,8 +77,10 @@ class ShellViewModelTest {
 
     private val profile by lazy { ProfileRepository { client } }
 
+    private var scheduleReads = 0
+
     private fun vm(staff: Boolean = false) =
-        ShellViewModel(staff, profile, ClinicsRepository { client }, BadgesRepository { client })
+        ShellViewModel(staff, profile, ClinicsRepository { client }, BadgesRepository { client }) { scheduleReads++ }
 
     private fun ShellViewModel.settle() {
         repeat(200) {
@@ -343,6 +345,11 @@ class ShellViewModelTest {
         classToTest.select(ShellTab.Chat)
         assertThat(classToTest.state.value.intelligence).isFalse()
         assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Chat)
+        // Every way out reads the schedule again (Back, a tab tap, the screen's own back from the welcome).
+        classToTest.openIntelligence()
+        classToTest.leaveIntelligence()
+        waitFor { scheduleReads == 3 }
+        assertThat(scheduleReads).isEqualTo(3)
         tier = "BASIC"
         val basic = vm()
         basic.settle()

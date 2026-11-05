@@ -77,5 +77,10 @@ internal fun ShellIntelligencePreview() =
         MainScreenContent(
             ShellUiState(gate = FeatureGate.forTier(DoctorTier.Premium), intelligence = true, tab = ShellTab.Calendar),
             ShellActions(),
-        )
+        ) {
+            shifa.doctor.ui.intelligence.IntelligenceContent(
+                shifa.doctor.ui.intelligence.IntelligenceUiState(),
+                shifa.doctor.ui.intelligence.IntelligenceActions(),
+            )
+        }
     }

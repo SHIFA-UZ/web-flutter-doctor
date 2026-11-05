@@ -114,6 +114,7 @@ import shifa.doctor.ui.home.HomeActions
 import shifa.doctor.ui.home.HomeScreen
 import shifa.doctor.ui.home.HomeShell
 import shifa.doctor.ui.home.PatientSearchScreen
+import shifa.doctor.ui.intelligence.IntelligenceScreen
 import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationsScreen
 import shifa.doctor.ui.patients.PatientDetailScreen
@@ -220,6 +221,7 @@ fun MainScreen(
             back = { viewModel.back() },
             openMore = viewModel::openMore,
             openIntelligence = viewModel::openIntelligence,
+            leaveIntelligence = viewModel::leaveIntelligence,
             closeMore = viewModel::closeMore,
             signOut = {
                 viewModel.closeMore()
@@ -246,6 +248,7 @@ class ShellActions(
     val back: () -> Unit = {},
     val openMore: () -> Unit = {},
     val openIntelligence: () -> Unit = {},
+    val leaveIntelligence: () -> Unit = {},
     val closeMore: () -> Unit = {},
     val signOut: () -> Unit = {},
 )
@@ -255,6 +258,8 @@ class ShellActions(
 fun MainScreenContent(
     state: ShellUiState,
     actions: ShellActions,
+    // Shifa Intelligence over the tab (INTEL-02); previews pass its stateless content (its chats are in secure storage).
+    intelligence: @Composable () -> Unit = { IntelligenceScreen(onLeave = actions.leaveIntelligence) },
 ) {
     Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
         Column(Modifier.fillMaxSize()) {
@@ -263,8 +268,9 @@ fun MainScreenContent(
             val saved = rememberSaveableStateHolder()
             Box(Modifier.weight(1f)) {
                 if (state.intelligence) {
-                    // Area 03 builds the surface; the tab underneath keeps its stack and state.
-                    TabPlaceholder(Res.string.shifaIntelligence, Res.drawable.ic_sparkles_18)
+                    // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
+                    // welcome returns to it.
+                    intelligence()
                 } else {
                     saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
                         RouteContent(state.route, actions, state.staff, state)

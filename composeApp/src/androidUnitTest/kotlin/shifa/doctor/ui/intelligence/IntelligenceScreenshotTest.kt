@@ -1,0 +1,22 @@
+package shifa.doctor.ui.intelligence
+
+import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [33], qualifiers = "w402dp-h1000dp-xhdpi")
+class IntelligenceScreenshotTest {
+    @Test
+    fun history() = captureRoboImage("screenshots/Intelligence_history.png") { IntelligenceHistoryPreview() }
+
+    @Test
+    fun historyEmpty() =
+        captureRoboImage(
+            "screenshots/Intelligence_historyEmpty.png",
+        ) { IntelligenceHistoryEmptyPreview() }
+}

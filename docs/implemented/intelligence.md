@@ -163,3 +163,36 @@ on screen.
 - **Tests:** `IntelligenceChatTest`: Flutter's seven tests (reply language, wake phrases, starter titles, long titles
   and previews, renamed titles kept, patient link, legacy JSON) plus Russian / Uzbek-Cyrillic detection, skipped bad
   rows, the store's semantics per doctor and the cap.
+
+## INTEL-02 · Intelligence screen shell
+
+Built 2026-11-05. Spec 02 §4.1, §3.1, flows 03/01 §2 and 03/02, ticket INTEL-02. Board `DaIntel` (header, history
+sheet, options menu, rename and delete dialogs).
+
+- **Entry:** More → Shifa Intelligence (SHELL-05 already gates it on `ASK_SHIFA_AI` and hides it for clinic staff);
+  `MainScreen` now shows `IntelligenceScreen` instead of the placeholder, over the tab, which keeps its stack. Back
+  (app bar or system): from a conversation to the welcome, from the welcome to the clinic. However Intelligence is left (back,
+  a tab tap), the shell reads today's schedule again (bookings made in the chat change it; Codex review).
+- **App bar:** back ("Back" / "Back to clinic"), "Shifa Intelligence" with "Your AI assistant for clinical
+  workflows.", History, New conversation, and the conversation's options (Download, Rename, Delete) only while one is
+  open (flow 03/02 §12: Flutter showed them on an empty chat and did nothing).
+- **History sheet** (`ui/intelligence/IntelligenceScreen.kt`): New conversation, a search over titles, previews and
+  every message, the chats newest first; a tile has the chat icon, a person icon for a patient chat, the title (bold
+  when open, the open one tinted), how long ago ("Just now", minutes, hours, "Yesterday", "{n}d ago", else the date;
+  the phone's clock), the preview unless it equals the title, and its options. Empty: "No conversations yet" / "No
+  matching conversations". Screen reader: one button "Title" (+ "Patient conversation").
+- **New conversation** opens the empty chat when there is one (Flutter piled up empty "New chat"s); a new one is made
+  only when none is empty.
+- **Rename:** the field starts with the shown title; Save is off for a blank or unchanged title; the time is kept.
+  **Delete:** the destructive dialog; if a reply is streaming in that chat it asks "Stop the current reply and delete
+  this conversation?" (INTEL-04 sets the busy flag). Deleting the open chat opens the newest left.
+- **Download:** the `.txt` in Flutter's format (header, each message with role, time, tool and pretty card, then the
+  chat as JSON; for support, not translated) through the system share sheet (`rememberFileShare`); an empty chat
+  says "Nothing to download yet…", a share that can't open says "Could not download conversation" (Flutter's mobile
+  build called a stub).
+- **Body:** the welcome (INTEL-03) and the thread (INTEL-04) go in the body slot.
+- **Checked:** emulator, demo mode: More → Shifa Intelligence, History (the welcome's empty chat listed), back to the
+  clinic. iOS compiled, not run.
+- **Tests:** `IntelligenceViewModelTest` (welcome on cold start, back to the welcome then the clinic, New conversation
+  reusing the empty chat, search over messages, select, rename rules keeping the time, delete of the open chat, export
+  name and format, the empty export); screenshots `Intelligence_history`, `Intelligence_historyEmpty`.

@@ -7,10 +7,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shifa.doctor.data.badges.BadgesRepository
+import shifa.doctor.data.calendar.calendarRepository
+import shifa.doctor.data.calendar.changed
 import shifa.doctor.data.chat.ChatReads
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.forms.Icd10Hit
@@ -24,6 +30,7 @@ import shifa.doctor.data.subscription.FeatureGate
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
 import shifa.doctor.ui.profile.ProfileSection
+import shifa.doctor.utils.PracticeClock
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -232,6 +239,11 @@ class ShellViewModel(
     private val profile: ProfileRepository = profileRepository,
     private val clinics: ClinicsRepository = ClinicsRepository(),
     private val badges: BadgesRepository = BadgesRepository(),
+    // Leaving Shifa Intelligence: bookings, moves and cancellations made in the chat change the schedule, so today's
+    // calendar reads again and every screen showing visits hears of it (flow 03 README §4).
+    private val scheduleRefresh: suspend () -> Unit = {
+        calendarRepository.changed(PracticeClock(profileRepository.me.value?.profile?.timeZone))
+    },
 ) : ViewModel() {
     private var chatPolling: Job? = null
     private var followUpsRefresh: Job? = null
@@ -240,6 +252,14 @@ class ShellViewModel(
 
     private val _state = MutableStateFlow(ShellUiState(staff = staff))
     val state: StateFlow<ShellUiState> = _state.asStateFlow()
+
+    init {
+        // However Shifa Intelligence is left (its back, a tab tap, a route), the schedule it may have changed is read
+        // again once.
+        viewModelScope.launch {
+            _state.map { it.intelligence }.distinctUntilChanged().drop(1).filter { !it }.collect { scheduleRefresh() }
+        }
+    }
 
     private var switched = false
 
@@ -513,6 +533,9 @@ class ShellViewModel(
                 it.copy(moreOpen = false)
             }
         }
+
+    /** Back from Shifa Intelligence's welcome: the clinic again (its appointments are read again on any exit). */
+    fun leaveIntelligence() = _state.update { it.copy(intelligence = false) }
 
     /**
      * Back in front (01 §6.6): the profile (a changed plan reaches the gates), clinic membership and the

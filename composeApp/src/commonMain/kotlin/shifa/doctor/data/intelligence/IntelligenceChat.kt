@@ -73,6 +73,39 @@ data class ChatSession(
             messages.any { it.content.lowercase().contains(q) }
     }
 
+    /**
+     * "Download conversation" (flow 03/02 §4, Flutter `_formatConversationExport`): a header, each message with its
+     * role, time, tool and pretty card, then the whole chat as JSON. For support, so not translated.
+     */
+    fun exportText(exportedAt: Instant): String =
+        buildString {
+            appendLine("Shifa Intelligence conversation export")
+            appendLine("=====================================")
+            appendLine("sessionId: $id")
+            appendLine("title: $displayTitle")
+            appendLine("createdAt: $createdAt")
+            appendLine("updatedAt: $updatedAt")
+            appendLine("messageCount: ${messages.size}")
+            appendLine("exportedAt: $exportedAt")
+            appendLine()
+            messages.forEachIndexed { i, m ->
+                appendLine("--- [$i] ${m.role.uppercase()} @ ${m.at} ---")
+                appendLine(m.content.ifBlank { "(empty)" })
+                m.toolName?.takeIf { it.isNotBlank() }?.let {
+                    appendLine()
+                    appendLine("toolName: $it")
+                }
+                m.cardPayload?.takeIf { it.isNotEmpty() }?.let {
+                    appendLine()
+                    appendLine("cardPayload:")
+                    appendLine(prettyJson.encodeToString(JsonObject.serializer(), it))
+                }
+                appendLine()
+            }
+            appendLine("--- JSON (machine-readable) ---")
+            appendLine(prettyJson.encodeToString(SessionWire.serializer(), SessionWire.of(this@ChatSession)))
+        }
+
     companion object {
         // Flutter's stored marker for "no title yet"; the screen shows the localised "New chat".
         const val UNTITLED = "New chat"
@@ -155,6 +188,14 @@ private data class SessionWire(
             )
     }
 }
+
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+private val prettyJson =
+    kotlinx.serialization.json.Json {
+        prettyPrint = true
+        prettyPrintIndent = "  "
+        explicitNulls = false
+    }
 
 private fun String?.toInstant(): Instant? = this?.let { runCatching { Instant.parse(it) }.getOrNull() }
 
