@@ -138,6 +138,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | DENTAL-02 Dental visit record | Done | Free mode: tooth map, services sheet, general services, dentition, discount, clinical notes, totals per currency; 1200 ms autosave and flush (nothing edited before the record is read); End saves it, its checklist row and the summary's dental section. Plan mode is DENTAL-03. See visits.md. |
 | APPT-05 Before/after photos | Done | Before / After Treatment from the notes menu (camera or gallery, compressed), removable chips, kept until End (leaving asks), Photos row in the End checklist, one summary PDF page each. See visits.md. |
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
+| DENTAL-03 + TP-06 Treatment plan in the visit | Done | Plan panel (linked/only plan chosen, progress), plan-mode chart and fulfil sheet, Plan finances with this visit's payment; End applies ticks then records the payment before completing (once each); checklist rows; one plan section in the summary; leaving asks. Demo only (no dev plans). See visits.md. |
 
 ## Log
 
@@ -228,3 +229,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-04 · DENTAL-02 · The dental visit record in free mode, autosaved, in the End checklist and the summary.
 - 2026-11-05 · APPT-05 · Before/after treatment photos in the visit and its summary.
 - 2026-11-05 · TP-01 · Treatment plan data the visit needs, with a demo plan.
+- 2026-11-05 · DENTAL-03, TP-06 · The treatment plan in the visit: ticks, payment, End and summary.

@@ -99,6 +99,45 @@ class VisitSummaryPdfTest {
     }
 
     @Test
+    fun `the plan section shows the totals, the lines completed this visit and its payment`() {
+        val plan =
+            VisitSummaryPlan(
+                title = "Upper jaw",
+                totalMinor = 30_000_000,
+                paidMinor = 10_000_000,
+                owedMinor = 20_000_000,
+                currency = "UZS",
+                lines =
+                    listOf(
+                        PlanSummaryLine("16", "Filling", 6_000_000, "UZS"),
+                        PlanSummaryLine(null, "Cleaning", 1_000_000, "UZS"),
+                    ),
+                payment = 5_000_000L to "Cash",
+            )
+        val all = texts(classToTest.pages(summary.copy(plan = plan), VisitSummaryLabels()))
+        val money = shifa.doctor.utils.Money::format
+        val order =
+            listOf(
+                "Treatment plan", "Upper jaw",
+                "Plan total: ${money(
+                    30_000_000,
+                    "UZS",
+                )}",
+                "Outstanding: ${money(
+                    20_000_000,
+                    "UZS",
+                )}",
+                "Completed this visit", "16", "Filling", "General", "Cleaning",
+                "Payment this visit (Cash): ${money(
+                    5_000_000,
+                    "UZS",
+                )}",
+                "Signatures",
+            )
+        assertThat(order.map { t -> all.indexOfFirst { it == t } }).isInStrictOrder()
+    }
+
+    @Test
     fun `before and after photos follow the summary, one page each with its label`() {
         val pages =
             classToTest.pages(

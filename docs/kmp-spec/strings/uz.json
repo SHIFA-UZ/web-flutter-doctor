@@ -2614,7 +2614,15 @@
   "discountOutOfRange": "Chegirmani 0 dan 100 gacha kiriting.",
   "photoSummaryHint": "Tashrif xulosasiga alohida sahifa sifatida qo'shiladi.",
   "removePhoto": "Rasmni olib tashlash",
-  "leavePhotosTitle": "Rasmlar hali saqlanmagan",
-  "leavePhotosBody": "Rasmlar qabulni yakunlaganingizda tashrif xulosasiga qo'shiladi. Hozir chiqsangiz, ular yo'qoladi.",
-  "photoLimit": "Bir tashrifga 20 tagacha rasm."
+  "photoLimit": "Bir tashrifga 20 tagacha rasm.",
+  "openDentalToTick": "Belgilash uchun stomatologik yozuvni oching",
+  "dentalPlanLegendNone": "Ish yo'q",
+  "recordedAtEnd": "Qabulni yakunlaganingizda qayd etiladi.",
+  "endChecklistTicks": "{count} ta bajarilgan deb belgilanadi",
+  "endChecklistNoneTicked": "Hech biri belgilanmagan",
+  "endChecklistNoPlan": "Reja bog'lanmagan",
+  "paymentMethodCardTerminal": "Karta (terminal)",
+  "summaryPlanDoneThisVisit": "Ushbu tashrifda bajarildi",
+  "leaveUnsavedTitle": "Hali saqlanmagan",
+  "leaveUnsavedBody": "Rasmlar, belgilangan reja bandlari va to'lov qabulni yakunlaganingizda saqlanadi. Hozir chiqsangiz, ular yo'qoladi."
 }

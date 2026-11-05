@@ -109,8 +109,14 @@ internal fun ColumnScope.DentalPanel(
     state: DentalNotesState,
     selected: String?,
     actions: DentalActions,
+    // DENTAL-03: with a treatment plan chosen, the chart shows the plan (ticks) and the finances replace the totals.
+    plan: VisitPlanState = VisitPlanState(),
+    planActions: PlanActions = PlanActions(),
 ) {
-    Text(tr(Res.string.dentalDocIntroFree), style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
+    val planMode = plan.selectedId != null
+    if (!planMode) {
+        Text(tr(Res.string.dentalDocIntroFree), style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
+    }
     state.loadError?.let {
         codeBanner(it) {}?.invoke()
         ShifaLink(tr(Res.string.retry), actions.retry)
@@ -120,6 +126,28 @@ internal fun ColumnScope.DentalPanel(
         ShifaSkeleton(Modifier.fillMaxWidth().heightIn(min = ShifaSize.S160))
         return
     }
+    if (planMode) PlanChart(plan, planActions) else FreeChart(state, selected, actions)
+    SpeechOrPlainField(
+        state.record.notes,
+        { v -> actions.edit { it.copy(notes = v) } },
+        tr(Res.string.dentalClinicalNotes),
+        "dental-notes",
+        { t -> actions.edit { it.copy(notes = appendTranscript(it.notes, t)) } },
+        Modifier.fillMaxWidth(),
+        multiline = true,
+        areaMinHeight = ShifaSize.S56,
+    )
+    if (planMode) PlanFinance(plan, planActions) else Totals(state.record)
+    state.saveError?.let { codeBanner(it) {}?.invoke() }
+}
+
+/** Free mode (no plan): dentition, the chart with service counts, its legend, the general services, the discount. */
+@Composable
+private fun ColumnScope.FreeChart(
+    state: DentalNotesState,
+    selected: String?,
+    actions: DentalActions,
+) {
     val record = state.record
     val kind = record.dentitionKind
     SegmentedTabs(
@@ -178,16 +206,11 @@ internal fun ColumnScope.DentalPanel(
         isError = state.discountInvalid,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
     )
-    SpeechOrPlainField(
-        record.notes,
-        { v -> actions.edit { it.copy(notes = v) } },
-        tr(Res.string.dentalClinicalNotes),
-        "dental-notes",
-        { t -> actions.edit { it.copy(notes = appendTranscript(it.notes, t)) } },
-        Modifier.fillMaxWidth(),
-        multiline = true,
-        areaMinHeight = ShifaSize.S56,
-    )
+}
+
+/** Free mode's totals per currency: subtotal and lines, the discount, the total due. */
+@Composable
+private fun Totals(record: DentalRecord) =
     Column(
         Modifier.fillMaxWidth().background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd).padding(ShifaSize.S12),
         verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
@@ -210,11 +233,9 @@ internal fun ColumnScope.DentalPanel(
             color = ShifaColors.Text.Primary,
         )
     }
-    state.saveError?.let { codeBanner(it) {}?.invoke() }
-}
 
 @Composable
-private fun Legend(
+internal fun Legend(
     fill: androidx.compose.ui.graphics.Color,
     edge: androidx.compose.ui.graphics.Color,
     label: String,

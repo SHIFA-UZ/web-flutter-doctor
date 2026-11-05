@@ -34,6 +34,12 @@ class VisitScreenshotTest {
     fun endProgress() = captureRoboImage("screenshots/End_progress.png") { EndProgressPreview() }
 
     @Test
+    fun dentalPlan() = captureRoboImage("screenshots/Visit_dentalPlan.png") { VisitDentalPlanPreview() }
+
+    @Test
+    fun planFulfil() = captureRoboImage("screenshots/Plan_fulfil.png") { PlanFulfilSheetPreview() }
+
+    @Test
     fun photoSource() = captureRoboImage("screenshots/Visit_photoSource.png") { PhotoSourcePreview() }
 
     @Test

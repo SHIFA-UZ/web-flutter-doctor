@@ -2614,7 +2614,15 @@
   "discountOutOfRange": "Enter a discount between 0 and 100.",
   "photoSummaryHint": "Added to the visit summary as a separate page.",
   "removePhoto": "Remove photo",
-  "leavePhotosTitle": "Photos not saved yet",
-  "leavePhotosBody": "Photos go into the visit summary when you end the appointment. If you leave now, they are lost.",
-  "photoLimit": "Up to 20 photos per visit."
+  "photoLimit": "Up to 20 photos per visit.",
+  "openDentalToTick": "Open the dental record to tick items",
+  "dentalPlanLegendNone": "No work",
+  "recordedAtEnd": "Recorded when you end the appointment.",
+  "endChecklistTicks": "{count} to mark completed",
+  "endChecklistNoneTicked": "None ticked",
+  "endChecklistNoPlan": "No plan linked",
+  "paymentMethodCardTerminal": "Card (terminal)",
+  "summaryPlanDoneThisVisit": "Completed this visit",
+  "leaveUnsavedTitle": "Not saved yet",
+  "leaveUnsavedBody": "Photos, ticked plan items and the payment are saved when you end the appointment. If you leave now, they are lost."
 }

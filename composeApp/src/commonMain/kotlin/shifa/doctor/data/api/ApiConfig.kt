@@ -101,6 +101,8 @@ object ApiConfig {
 
         const val TREATMENT_PLANS = "treatment-plans"
 
+        fun clinicPayments(clinicId: Long) = "clinics/$clinicId/finance/payments"
+
         fun treatmentPlanDetail(id: Long) = "treatment-plans/$id/detail"
 
         fun fulfillmentCandidates(id: Long) = "treatment-plans/$id/fulfillment-candidates"

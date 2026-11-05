@@ -23,16 +23,22 @@ import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
 import shifa.doctor.data.catalog.DocumentationTemplate
 import shifa.doctor.data.catalog.documentationTemplateFor
+import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.clinics.clinicsRepository
 import shifa.doctor.data.consultation.ConsultationRepository
+import shifa.doctor.data.consultation.PlanSummaryLine
 import shifa.doctor.data.consultation.VisitSummary
 import shifa.doctor.data.consultation.VisitSummaryLabels
 import shifa.doctor.data.consultation.VisitSummaryPdf
+import shifa.doctor.data.consultation.VisitSummaryPlan
 import shifa.doctor.data.consultation.consultationRepository
 import shifa.doctor.data.dental.DentalRepository
 import shifa.doctor.data.dental.dentalRepository
 import shifa.doctor.data.documents.DocumentsRepository
 import shifa.doctor.data.documents.UploadFile
 import shifa.doctor.data.documents.documentsRepository
+import shifa.doctor.data.finance.FinanceRepository
+import shifa.doctor.data.finance.financeRepository
 import shifa.doctor.data.forms.FormsRepository
 import shifa.doctor.data.forms.formsRepository
 import shifa.doctor.data.model.ApiException
@@ -53,6 +59,8 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.services.ServicesRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
+import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
+import shifa.doctor.data.treatmentplans.treatmentPlansRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
@@ -60,6 +68,7 @@ import shifa.doctor.generated.resources.aiNotesNeedPro
 import shifa.doctor.generated.resources.aiNotesNotReadyTryLater
 import shifa.doctor.generated.resources.aiNotesUploaded
 import shifa.doctor.generated.resources.appointmentLoadFailed
+import shifa.doctor.generated.resources.appointmentPlanNoLinesOnTooth
 import shifa.doctor.generated.resources.dentalDocSaveFailed
 import shifa.doctor.generated.resources.dentalLoadFailed
 import shifa.doctor.generated.resources.endFailed
@@ -86,7 +95,7 @@ import kotlin.time.Duration.Companion.seconds
 enum class VisitMode { General, Dental, Form0252 }
 
 /** The End pipeline's steps (flow 05/12 §3), as the progress list shows them. Plan and payment join with DENTAL-03. */
-enum class EndStep { Notes, Complete, Scribe, Summary }
+enum class EndStep { Notes, Plan, Payment, Complete, Scribe, Summary }
 
 /** The End sheet and its progress (APPT-07). */
 data class EndUiState(
@@ -120,6 +129,8 @@ class EndLabels(
     val visitType: (VisitKind) -> String = { it.name },
     val gender: (String) -> String? = { it },
     val photo: (PhotoKind) -> String = { if (it == PhotoKind.Before) "Before Treatment" else "After Treatment" },
+    val method: (PayMethod) -> String = { it.name },
+    val untitledPlan: String = "(untitled plan)",
 )
 
 /** Where the doctor goes from the visit: back, the patient's record, the 025-2 editor (the notes are saved first). */
@@ -214,6 +225,9 @@ class VisitViewModel(
     private val warned: MutableSet<Long> = chronicWarned,
     private val dentalRepo: DentalRepository = dentalRepository,
     private val services: ServicesRepository = ServicesRepository(),
+    private val plans: TreatmentPlansRepository = treatmentPlansRepository,
+    private val finance: FinanceRepository = financeRepository,
+    private val clinics: ClinicsRepository = clinicsRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(VisitUiState())
     val state: StateFlow<VisitUiState> = _state.asStateFlow()
@@ -222,6 +236,12 @@ class VisitViewModel(
 
     // DENTAL-02: read for a dental doctor only.
     val dentalRecord = DentalNotes(appointmentId, viewModelScope, dentalRepo, services)
+
+    // DENTAL-03: the patient's treatment plan in this visit.
+    val plan =
+        VisitPlan(appointmentId, viewModelScope, plans, finance, clinics) {
+            appointments.detail(appointmentId).map { it.fulfilledLineIds }
+        }
 
     private var watching: Job? = null
 
@@ -256,6 +276,10 @@ class VisitViewModel(
             if (dental) dentalRecord.load()
             if (visit.signature == SignatureState.Waiting) watchSignature()
             val patientId = visit.patientId ?: return@launch
+            // An open visit only: a completed one has nothing left to tick or pay (flow 05/08 §2).
+            if (!visit.completed && _state.value.end == EndUiState()) {
+                plan.load(patientId, visit.linkedPlanId, visit.fulfilledLineIds)
+            }
             // The patient's facts are extras: a failure leaves them out, the visit still works.
             val visits = async { patients.appointments(patientId) }
             val formList = async { forms.list(patientId) }
@@ -398,8 +422,16 @@ class VisitViewModel(
     fun end() {
         val s = _state.value
         if (s.end.running || s.visit == null) return
+        val p = plan.state.value
         val steps =
-            listOfNotNull(EndStep.Notes, EndStep.Complete, EndStep.Scribe.takeIf { s.awaitingScribe }, EndStep.Summary)
+            listOfNotNull(
+                EndStep.Notes,
+                EndStep.Plan.takeIf { p.ticks.isNotEmpty() },
+                EndStep.Payment.takeIf { p.pendingPayment },
+                EndStep.Complete,
+                EndStep.Scribe.takeIf { s.awaitingScribe },
+                EndStep.Summary,
+            )
         _state.update { it.copy(end = EndUiState(running = true, steps = steps, at = EndStep.Notes)) }
         ending =
             viewModelScope.launch {
@@ -407,6 +439,15 @@ class VisitViewModel(
                 // A dental record that couldn't be read would be left out of the summary: read it first (or stop).
                 if (s.dental && !dentalRecord.loaded()) return@launch fail(CodeBanner(Res.string.dentalLoadFailed))
                 if (!dentalRecord.flush()) return@launch fail(CodeBanner(Res.string.dentalDocSaveFailed))
+                // DENTAL-03: the ticked plan lines, then the payment; either failing leaves the visit open.
+                if (EndStep.Plan in steps) {
+                    step(EndStep.Plan)
+                    plan.applyTicks()?.let { return@launch fail(CodeBanner(it)) }
+                }
+                if (EndStep.Payment in steps) {
+                    step(EndStep.Payment)
+                    plan.recordPayment()?.let { return@launch fail(CodeBanner(it)) }
+                }
                 step(EndStep.Complete)
                 val body = notes.state.value.text.body(notes.labels)
                 val done =
@@ -511,7 +552,8 @@ class VisitViewModel(
         // As saved: the discount clamped, the notes trimmed.
         val dental = dentalRecord.state.value.takeIf { it.loaded && it.hasContent }?.record?.payload()
         val photos = _state.value.photos.map { labels.photo(it.kind) to it.bytes }
-        if (text.isBlank() && dental == null && photos.isEmpty()) {
+        val planPart = planSummary(labels)
+        if (text.isBlank() && dental == null && photos.isEmpty() && planPart == null) {
             val pending = _state.value.awaitingScribe
             return _state.update {
                 it.copy(
@@ -554,6 +596,7 @@ class VisitViewModel(
                         }?.let { "${displayDate(it.date)} ${displayTime(it.time)}" },
                     dental = dental,
                     photos = photos,
+                    plan = planPart,
                 ),
                 labels.summary,
             )
@@ -657,6 +700,30 @@ class VisitViewModel(
 
     fun ui(change: (VisitUiState) -> VisitUiState) = _state.update(change)
 
+    /** DENTAL-03: the plan's part of the summary: lines completed and the payment in this visit; null when neither. */
+    private fun planSummary(labels: EndLabels): VisitSummaryPlan? {
+        val p = plan.state.value
+        val d = p.detail?.takeIf { p.selectedId != null && it.summary.id == p.selectedId } ?: return null
+        val done = d.lines.filter { it.id in p.fulfilled }
+        if (done.isEmpty() && p.recorded == null) return null
+        return VisitSummaryPlan(
+            title = d.summary.title?.takeIf { it.isNotBlank() } ?: "${labels.untitledPlan} #${d.summary.id}",
+            totalMinor = d.summary.totalMinor,
+            paidMinor = d.summary.paidMinor,
+            owedMinor = d.summary.owedMinor,
+            currency = d.summary.currency,
+            lines = done.map { PlanSummaryLine(it.tooth, it.title, it.lineTotalMinor, it.currency) },
+            payment = p.recorded?.let { it to labels.method(p.method) },
+        )
+    }
+
+    /** A tooth's (or the general) plan lines; says so when there are none (board `DaVisit`). */
+    fun openPlanTooth(key: String) {
+        if (!plan.open(key)) {
+            _state.update { it.copy(banner = CodeBanner(Res.string.appointmentPlanNoLinesOnTooth, error = false)) }
+        }
+    }
+
     /** APPT-05: Camera / Gallery for [kind]; at most [MAX_PHOTOS] (flow 05/04 §8), one picker at a time. */
     fun photo(kind: PhotoKind) =
         _state.update {
@@ -701,8 +768,9 @@ class VisitViewModel(
             val saved = notes.flush() and dentalRecord.flush()
             // Photos live only here until a summary holds them: going back without one asks first (the patient's record
             // and the 025-2 come back to this visit).
-            val photos = to == VisitExit.Back && _state.value.photos.isNotEmpty() && !_state.value.end.done
-            if (saved && !photos) go(to) else _state.update { it.copy(askLeave = to) }
+            val pending = _state.value.photos.isNotEmpty() || plan.state.value.hasPending
+            val lose = to == VisitExit.Back && pending && !_state.value.end.done
+            if (saved && !lose) go(to) else _state.update { it.copy(askLeave = to) }
         }
     }
 

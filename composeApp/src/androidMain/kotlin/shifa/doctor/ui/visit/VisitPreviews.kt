@@ -196,6 +196,79 @@ internal fun VisitDentalPreview() =
         )
     }
 
+private val planSummary =
+    shifa.doctor.data.model.TreatmentPlanSummary(
+        id = 501,
+        clinicId = 1,
+        patientId = 12,
+        title = "Treatment of 36 and 46",
+        statusRaw = "ACTIVE",
+        kindRaw = "COMPREHENSIVE",
+        totalMinor = 330_000_000,
+        paidMinor = 100_000_000,
+        owedMinor = 230_000_000,
+        linesCompletedCount = 1,
+        linesTotalCount = 4,
+    )
+
+private fun planLine(
+    id: Long,
+    title: String,
+    price: Long,
+    fdi: String?,
+    status: String = "PLANNED",
+) = shifa.doctor.data.model.PlanLine(
+    id,
+    title = title,
+    unitPriceMinor = price,
+    lineTotalMinor = price,
+    statusRaw = status,
+    specialtyMetadata = fdi?.let { "{\"fdi\":\"$it\"}" },
+)
+
+private val plan =
+    VisitPlanState(
+        clinicId = 1,
+        plans = listOf(planSummary),
+        linkedId = 501,
+        selectedId = 501,
+        detail =
+            shifa.doctor.data.model.TreatmentPlanDetail(
+                planSummary,
+                listOf(
+                    planLine(11, "Root canal treatment", 80_000_000, "36"),
+                    planLine(12, "Ceramic crown", 150_000_000, "36"),
+                    planLine(13, "Composite filling", 60_000_000, "46", "COMPLETED"),
+                    planLine(14, "Professional cleaning", 40_000_000, null),
+                ),
+            ),
+        candidates =
+            listOf(11L, 12L, 14L).map { shifa.doctor.data.model.FulfillmentCandidate(it) },
+        ticks = setOf(11L),
+        amount = "500 000",
+    )
+
+// DENTAL-03: a visit with the patient's plan: the panel (linked, progress), the plan-mode chart (36 partly done with a
+// tick, 46 completed), the general lines and Plan finances with a payment typed.
+@Composable
+internal fun VisitDentalPlanPreview() =
+    PreviewTheme {
+        VisitContent(
+            state.copy(mode = VisitMode.Dental, dental = true, helper = null, soapOpen = false, photos = emptyList()),
+            notes,
+            VisitActions(),
+            documents,
+            clock = clock,
+            now = { now },
+            dental = dental,
+            plan = plan,
+        )
+    }
+
+// DENTAL-03: tooth 36's planned lines, the root canal ticked.
+@Composable
+internal fun PlanFulfilSheetPreview() = PreviewTheme { PlanFulfilSheet("36", plan, PlanActions()) }
+
 // APPT-05: Camera or Gallery for an after-treatment photo.
 @Composable
 internal fun PhotoSourcePreview() = PreviewTheme { PhotoSource(PhotoKind.After, VisitActions()) {} }

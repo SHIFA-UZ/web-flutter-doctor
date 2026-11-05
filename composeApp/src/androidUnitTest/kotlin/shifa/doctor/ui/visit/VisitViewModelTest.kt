@@ -28,6 +28,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
 import shifa.doctor.generated.resources.aiNotesUploaded
+import shifa.doctor.generated.resources.appointmentPlanPaymentFailed
 import shifa.doctor.generated.resources.dentalLoadFailed
 import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.noForm0252Yet
@@ -53,6 +54,12 @@ class VisitViewModelTest {
     private val summaries = mutableListOf<shifa.doctor.data.consultation.VisitSummary>()
     private var notesReadFails = false
     private var dentalReadFails = false
+    private var planOn = false
+    private var payStatus = HttpStatusCode.OK
+    private val planSummary =
+        """{"id":5,"clinicId":2,"patientId":14,"title":"Upper jaw","status":"ACTIVE","planKind":"COMPREHENSIVE","totalMinor":30000000,"paidMinor":0,"owedMinor":30000000,"currency":"UZS","linesCompletedCount":0,"linesTotalCount":1}"""
+    private val planDetail =
+        """{"summary":$planSummary,"lines":[{"id":1,"title":"Filling","status":"PLANNED","unitPriceMinor":30000000,"lineTotalMinor":30000000,"currency":"UZS","specialtyMetadata":"{\"fdi\":\"16\"}"}],"installmentPlans":[]}"""
     private var forms = """[{"id":3,"patientId":14,"templateId":"025-2","date":"2026-10-20","complaints":"Pain","diagnosis":"Caries"}]"""
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val engine =
@@ -85,6 +92,16 @@ class VisitViewModelTest {
                     respond("""{"status":500}""", HttpStatusCode.InternalServerError, json)
                 path == "appointments/7/consultation-notes" -> ok(notesList)
                 path == "appointments/7/draft-notes" -> ok(drafts)
+                path == "me/clinics" && planOn -> ok("""[{"clinicId":2,"name":"Clinic"}]""")
+                path == "treatment-plans" && planOn -> ok("[$planSummary]")
+                path == "treatment-plans/5/detail" -> ok(planDetail)
+                path == "treatment-plans/5/fulfillment-candidates" ->
+                    ok(
+                        """[{"lineId":1,"title":"Filling","fdi":"16"}]""",
+                    )
+                path == "treatment-plans/5/appointments/7/fulfill" -> ok(planDetail)
+                path == "clinics/2/finance/payments" && method == "GET" -> ok("[]")
+                path == "clinics/2/finance/payments" -> respond("{}", payStatus, json)
                 path == "appointments/7/dental-documentation" && method == "GET" && dentalReadFails ->
                     respond("""{"status":500}""", HttpStatusCode.InternalServerError, json)
                 path == "appointments/7/dental-documentation" && method == "GET" -> ok("{}")
@@ -152,6 +169,9 @@ class VisitViewModelTest {
             completedOn = { _, day -> completedDays += day },
             dentalRepo = shifa.doctor.data.dental.DentalRepository(client),
             services = shifa.doctor.data.services.ServicesRepository(client),
+            plans = shifa.doctor.data.treatmentplans.TreatmentPlansRepository(client),
+            finance = shifa.doctor.data.finance.FinanceRepository(client),
+            clinics = shifa.doctor.data.clinics.ClinicsRepository(client),
         ).also {
             created += it
             it.load()
@@ -408,6 +428,40 @@ class VisitViewModelTest {
         settle { classToTest.state.value.left != null }
         assertThat(classToTest.state.value.left).isEqualTo(VisitExit.Patient)
         assertThat(classToTest.state.value.photos).hasSize(MAX_PHOTOS)
+    }
+
+    @Test
+    fun `End applies the ticked plan lines, then the payment, before completing, and the summary shows both`() {
+        planOn = true
+        val classToTest = opened(profession = "Dentist")
+        settle { classToTest.plan.state.value.candidates != null }
+        classToTest.plan.toggle(1)
+        classToTest.plan.amount("100 000")
+        // The ticks and the payment live only here: going back asks.
+        classToTest.leave()
+        settle { classToTest.state.value.askLeave != null }
+        classToTest.ui { it.copy(askLeave = null) }
+        // A failed payment stops End before completion, the ticks already applied stay applied.
+        payStatus = HttpStatusCode.InternalServerError
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.error?.text).isEqualTo(Res.string.appointmentPlanPaymentFailed)
+        assertThat(calls.none { it.startsWith("PUT appointments/7/complete") }).isTrue()
+        payStatus = HttpStatusCode.OK
+        classToTest.end()
+        ended(classToTest)
+        assertThat(classToTest.state.value.end.done).isTrue()
+        val writes = calls.filter { !it.startsWith("GET") }.map { it.substringBefore(" {").substringBefore(" --") }
+        assertThat(writes).containsExactly(
+            "POST treatment-plans/5/appointments/7/fulfill",
+            "POST clinics/2/finance/payments",
+            "POST clinics/2/finance/payments",
+            "PUT appointments/7/complete",
+            "POST patients/14/documents",
+        ).inOrder()
+        val plan = summaries.single().plan!!
+        assertThat(plan.lines.single().tooth).isEqualTo("16")
+        assertThat(plan.payment?.first).isEqualTo(10_000_000L)
     }
 
     @Test

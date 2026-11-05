@@ -870,6 +870,7 @@
     <string name="dentalPlanEditorNotes">Reja izohlari</string>
     <string name="dentalPlanEditorTotal">Reja jami</string>
     <string name="dentalPlanLegendCompleted">Bajarilgan</string>
+    <string name="dentalPlanLegendNone">Ish yo'q</string>
     <string name="dentalPlanLegendPartial">Qisman bajarilgan</string>
     <string name="dentalPlanLegendPlanned">Rejalashtirilgan</string>
     <string name="dentalPlanProgress">%1$s/%2$s reja bandi bajarildi</string>
@@ -1022,12 +1023,15 @@
     <string name="endAnyway">Baribir yakunlash</string>
     <string name="endAppointment">Uchrashuvni yakunlash</string>
     <string name="endChecklistChars">%1$s belgi</string>
+    <string name="endChecklistNoPlan">Reja bog'lanmagan</string>
     <string name="endChecklistNone">Yo'q</string>
+    <string name="endChecklistNoneTicked">Hech biri belgilanmagan</string>
     <string name="endChecklistNotRequested">So'ralmagan</string>
     <string name="endChecklistProcessing">Hali tayyorlanmoqda — 2 daqiqagacha</string>
     <string name="endChecklistReady">Tayyor</string>
     <string name="endChecklistRequested">So'ralgan, imzolanmagan</string>
     <string name="endChecklistSigned">Imzolangan</string>
+    <string name="endChecklistTicks">%1$s ta bajarilgan deb belgilanadi</string>
     <string name="endDate">Tugash sanasi</string>
     <string name="endFailed">Qabulni yakunlab bo'lmadi. U ochiq qoldi: qayta urinib ko'ring.</string>
     <string name="endOffline">Internetga ulanmagansiz. Ulanganingizda tashrifni yakunlang.</string>
@@ -1482,8 +1486,8 @@
     <string name="leaveCall">Qo'ng'iroqdan chiqish</string>
     <string name="leaveCallBody">Tashrif siz uni yakunlamaguningizcha ochiq qoladi.</string>
     <string name="leaveCallTitle">Qo'ng'iroqdan chiqilsinmi?</string>
-    <string name="leavePhotosBody">Rasmlar qabulni yakunlaganingizda tashrif xulosasiga qo'shiladi. Hozir chiqsangiz, ular yo'qoladi.</string>
-    <string name="leavePhotosTitle">Rasmlar hali saqlanmagan</string>
+    <string name="leaveUnsavedBody">Rasmlar, belgilangan reja bandlari va to'lov qabulni yakunlaganingizda saqlanadi. Hozir chiqsangiz, ular yo'qoladi.</string>
+    <string name="leaveUnsavedTitle">Hali saqlanmagan</string>
     <string name="leaveWhileRecordingBody">Yozuv qayta ishlanadi.</string>
     <string name="leaveWhileRecordingTitle">Yozuv to'xtatilib, chiqilsinmi?</string>
     <string name="legalAndSupport">Huquqiy ma'lumot va yordam</string>
@@ -1745,6 +1749,7 @@
     <string name="onlyPdfOrImages">Faqat PDF va rasm fayllarini yuklash mumkin.</string>
     <string name="openAfterCall">Qo'ng'iroqdan keyin ochish</string>
     <string name="openChart">Kartani ochish</string>
+    <string name="openDentalToTick">Belgilash uchun stomatologik yozuvni oching</string>
     <string name="openDocument">Hujjatni ochish</string>
     <string name="openDocuments">Hujjatlar</string>
     <string name="openForm0252">025-2 shaklini to'ldirish</string>
@@ -1864,6 +1869,7 @@
     <string name="paymentAndInvoicingSaved">To'lov va hisob-faktura saqlandi</string>
     <string name="paymentFailed">Xato</string>
     <string name="paymentLabel">TO'LOV: %1$s</string>
+    <string name="paymentMethodCardTerminal">Karta (terminal)</string>
     <string name="paymentNotRequired">Talab qilinmaydi</string>
     <string name="paymentPaid">To'langan</string>
     <string name="paymentPending">Kutilmoqda</string>
@@ -1972,6 +1978,7 @@
     <string name="reconnecting">Qayta ulanmoqda…</string>
     <string name="recordNow">Hozir qayd etish</string>
     <string name="recordVoice">Ovozli xabar yozish</string>
+    <string name="recordedAtEnd">Qabulni yakunlaganingizda qayd etiladi.</string>
     <string name="recordingAlreadyProcessing">Yozuv allaqachon qayta ishlanmoqda</string>
     <string name="recordingForAiNotes">AI yozuvlar uchun yozuv</string>
     <string name="recordingInterrupted">Yozuv uzildi</string>
@@ -2286,6 +2293,7 @@
     <string name="summaryPatientSignature">Bemor imzosi</string>
     <string name="summaryPdf">Xulosa PDF</string>
     <string name="summaryPending">Xulosa tayyorlanmoqda</string>
+    <string name="summaryPlanDoneThisVisit">Ushbu tashrifda bajarildi</string>
     <string name="summarySaveFailed">Tashrif yakunlandi. Xulosani saqlab bo'lmadi.</string>
     <string name="summarySignatures">Imzolar</string>
     <string name="summarySignedElectronically">%1$s da SHIFA Patient ilovasi orqali elektron imzolangan</string>

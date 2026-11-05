@@ -514,6 +514,14 @@ class DemoBackendTest {
             val after = repo.fulfill(plan.id, 102, listOf(open.first().lineId)).getOrThrow()
             assertThat(after.summary.linesCompletedCount).isEqualTo(2)
             assertThat(repo.candidates(plan.id, 102).getOrThrow()).hasSize(open.size - 1)
+            // A payment moves paid and appears in the ledger with its visit.
+            val finance = shifa.doctor.data.finance.FinanceRepository({ client })
+            finance.recordPayment(
+                1,
+                shifa.doctor.data.finance.RecordPayment(plan.id, 5_000_000, "UZS", "CASH", 102),
+            ).getOrThrow()
+            assertThat(repo.detail(plan.id).getOrThrow().summary.paidMinor).isEqualTo(plan.paidMinor + 5_000_000)
+            assertThat(finance.payments(1).getOrThrow().single().linkedAppointmentId).isEqualTo(102L)
             // Every line done: the plan is completed, no longer among the active ones.
             repo.fulfill(plan.id, 102, open.drop(1).map { it.lineId }).getOrThrow()
             assertThat(

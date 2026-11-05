@@ -35,6 +35,28 @@ data class VisitSummary(
     val dental: DentalRecord? = null,
     // APPT-05: before/after photos, each on a page of its own after the summary: its label and JPEG bytes.
     val photos: List<Pair<String, ByteArray>> = emptyList(),
+    // DENTAL-03: the treatment plan's lines completed and the payment recorded in this visit.
+    val plan: VisitSummaryPlan? = null,
+)
+
+/** A plan line completed in the visit; [tooth] null for a general one. */
+data class PlanSummaryLine(
+    val tooth: String?,
+    val title: String,
+    val amountMinor: Long,
+    val currency: String,
+)
+
+/** The plan section (05 §5, Flutter's `buildPlanPdfSection`, kept once): totals, this visit's lines, its payment. */
+data class VisitSummaryPlan(
+    val title: String,
+    val totalMinor: Long,
+    val paidMinor: Long,
+    val owedMinor: Long,
+    val currency: String,
+    val lines: List<PlanSummaryLine>,
+    // The amount and the method's label.
+    val payment: Pair<Long, String>?,
 )
 
 /** The summary's fixed words, in the app's language (the screen resolves them). */
@@ -64,6 +86,12 @@ data class VisitSummaryLabels(
     val subtotal: String = "Subtotal",
     val discount: String = "Discount",
     val total: String = "Total due",
+    val plan: String = "Treatment plan",
+    val planTotal: String = "Plan total",
+    val planPaid: String = "Paid",
+    val planOutstanding: String = "Outstanding",
+    val doneThisVisit: String = "Completed this visit",
+    val paymentThisVisit: String = "Payment this visit",
 )
 
 /**
@@ -72,7 +100,8 @@ data class VisitSummaryLabels(
  * the patient and visit block, the clinical notes (flowing across pages), the signatures (the patient's image and when
  * they signed, or an empty line) and a footer with the page on every page. Flutter's never-filled sections (diagnosis,
  * prescriptions, recommendations, follow-up) are left out. A dental visit adds its services by tooth with the totals
- * per currency (DENTAL-02); before/after photos follow, one per page (APPT-05). The plan joins with DENTAL-03.
+ * per currency (DENTAL-02), then the treatment plan's part (DENTAL-03); before/after photos follow, one per page
+ * (APPT-05).
  * Labels come in the app's language (Flutter: en and uz only).
  */
 class VisitSummaryPdf(
@@ -102,6 +131,7 @@ class VisitSummaryPdf(
                 s.notes.trim().split('\n').forEach { line -> if (line.isBlank()) y += 6 else paragraph(line) }
             }
             s.dental?.takeIf { it.lineCount > 0 || it.notes.isNotBlank() }?.let(::dental)
+            s.plan?.let(::plan)
             signatures()
             s.photos.forEach { (label, bytes) ->
                 newPage()
@@ -156,37 +186,48 @@ class VisitSummaryPdf(
             }
         }
 
+        /** A table row: tooth, service (wraps), amount (right-aligned). */
+        private fun row(
+            tooth: String,
+            service: String,
+            amount: String,
+            bold: Boolean = false,
+        ) {
+            val amountW = 110f
+            val serviceW = contentW - TOOTH_W - amountW
+            val h = maxOf(measure(service, 10f, bold, serviceW), measure(amount, 10f, bold, amountW)) + 4
+            need(h)
+            ops += PdfOp.Text(margin, y, TOOTH_W, tooth, 10f, bold = bold)
+            ops += PdfOp.Text(margin + TOOTH_W, y, serviceW, service, 10f, bold = bold)
+            ops += PdfOp.Text(margin + TOOTH_W + serviceW, y, amountW, amount, 10f, bold = bold, align = PdfAlign.End)
+            y += h
+        }
+
+        /** The plan, its totals, the lines this visit completed and the payment it recorded. */
+        private fun plan(p: VisitSummaryPlan) {
+            sectionHeader(l.plan)
+            paragraph(p.title, bold = true)
+            paragraph("${l.planTotal}: ${Money.format(p.totalMinor, p.currency)}")
+            paragraph("${l.planPaid}: ${Money.format(p.paidMinor, p.currency)}")
+            paragraph("${l.planOutstanding}: ${Money.format(p.owedMinor, p.currency)}")
+            if (p.lines.isNotEmpty()) {
+                y += 4
+                paragraph(l.doneThisVisit, bold = true)
+                row(l.tooth, l.service, l.amount, bold = true)
+                p.lines.forEach { row(it.tooth ?: l.general, it.title, Money.format(it.amountMinor, it.currency)) }
+            }
+            p.payment?.let { (minor, method) ->
+                y += 4
+                paragraph("${l.paymentThisVisit} ($method): ${Money.format(minor, p.currency)}")
+            }
+        }
+
         /**
          * Tooth, service and amount per line (teeth in chart order, general last), the totals per currency, then the
          * dental clinical notes.
          */
         private fun dental(record: DentalRecord) {
             sectionHeader(l.dental)
-            val amountW = 110f
-            val serviceW = contentW - TOOTH_W - amountW
-
-            fun row(
-                tooth: String,
-                service: String,
-                amount: String,
-                bold: Boolean = false,
-            ) {
-                val h = maxOf(measure(service, 10f, bold, serviceW), measure(amount, 10f, bold, amountW)) + 4
-                need(h)
-                ops += PdfOp.Text(margin, y, TOOTH_W, tooth, 10f, bold = bold)
-                ops += PdfOp.Text(margin + TOOTH_W, y, serviceW, service, 10f, bold = bold)
-                ops +=
-                    PdfOp.Text(
-                        margin + TOOTH_W + serviceW,
-                        y,
-                        amountW,
-                        amount,
-                        10f,
-                        bold = bold,
-                        align = PdfAlign.End,
-                    )
-                y += h
-            }
             if (record.lineCount > 0) row(l.tooth, l.service, l.amount, bold = true)
             val order = DentalChartCodec.teeth(record.dentitionKind) + DentalChartCodec.GENERAL_KEY
             val keys = order.filter { it in record.teeth } + record.teeth.keys.filter { it !in order }

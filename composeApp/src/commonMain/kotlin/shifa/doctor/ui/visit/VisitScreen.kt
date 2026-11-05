@@ -72,10 +72,16 @@ import shifa.doctor.generated.resources.apply
 import shifa.doctor.generated.resources.appointmentEndedDocumentationSaved
 import shifa.doctor.generated.resources.appointmentGone
 import shifa.doctor.generated.resources.appointmentLoadFailed
+import shifa.doctor.generated.resources.appointmentPlanFinanceOutstanding
+import shifa.doctor.generated.resources.appointmentPlanFinancePaid
+import shifa.doctor.generated.resources.appointmentPlanFinanceSessionPayment
+import shifa.doctor.generated.resources.appointmentPlanFinanceTotal
+import shifa.doctor.generated.resources.appointmentTreatmentPlanTitle
 import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.beforeTreatment
 import shifa.doctor.generated.resources.chooseFromGallery
 import shifa.doctor.generated.resources.clinicPaymentsColAmount
+import shifa.doctor.generated.resources.clinicTreatmentPlansUntitled
 import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.complaints
 import shifa.doctor.generated.resources.consultationFocusModeTitle
@@ -140,8 +146,8 @@ import shifa.doctor.generated.resources.intelService
 import shifa.doctor.generated.resources.lastForm0252
 import shifa.doctor.generated.resources.lastVisitOn
 import shifa.doctor.generated.resources.leaveAnyway
-import shifa.doctor.generated.resources.leavePhotosBody
-import shifa.doctor.generated.resources.leavePhotosTitle
+import shifa.doctor.generated.resources.leaveUnsavedBody
+import shifa.doctor.generated.resources.leaveUnsavedTitle
 import shifa.doctor.generated.resources.noDocumentsYet
 import shifa.doctor.generated.resources.notes
 import shifa.doctor.generated.resources.notesNotSavedBody
@@ -181,6 +187,7 @@ import shifa.doctor.generated.resources.summaryMinutes
 import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.generated.resources.summaryPage
 import shifa.doctor.generated.resources.summaryPatientSignature
+import shifa.doctor.generated.resources.summaryPlanDoneThisVisit
 import shifa.doctor.generated.resources.summarySignatures
 import shifa.doctor.generated.resources.summarySignedElectronically
 import shifa.doctor.generated.resources.summaryTitle
@@ -316,6 +323,8 @@ class VisitActions(
     val clearIcd: () -> Unit = {},
     // DENTAL-02: the dental record's changes and its services sheet.
     val dental: DentalActions = DentalActions(),
+    // DENTAL-03: the treatment plan: choosing it, its lines, ticks and the payment.
+    val plan: PlanActions = PlanActions(),
     // APPT-05: a photo kind's Camera / Gallery sheet, its sources, a photo removed.
     val photo: (PhotoKind) -> Unit = {},
     val takePhoto: () -> Unit = {},
@@ -346,6 +355,7 @@ fun VisitScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notes by viewModel.notes.state.collectAsStateWithLifecycle()
     val dental by viewModel.dentalRecord.state.collectAsStateWithLifecycle()
+    val planState by viewModel.plan.state.collectAsStateWithLifecycle()
     viewModel.notes.labels =
         SoapLabels(
             tr(Res.string.soapSubjective),
@@ -421,6 +431,16 @@ fun VisitScreen(
                     remove = viewModel.dentalRecord::remove,
                     retryServices = viewModel.dentalRecord::loadServices,
                 ),
+            plan =
+                PlanActions(
+                    select = viewModel.plan::select,
+                    retry = viewModel.plan::retry,
+                    open = { k -> if (k == null) viewModel.plan.open(null) else viewModel.openPlanTooth(k) },
+                    toggle = viewModel.plan::toggle,
+                    amount = viewModel.plan::amount,
+                    method = viewModel.plan::method,
+                    toDental = { viewModel.mode(VisitMode.Dental) },
+                ),
             photo = viewModel::photo,
             takePhoto = { pick(camera) },
             choosePhoto = { pick(gallery) },
@@ -429,24 +449,46 @@ fun VisitScreen(
     // Dictation for the notes fields (AI-06); the AI scribe (SCRIBE-01) has its own recorder, its state passed down.
     CompositionLocalProvider(LocalDictation provides rememberDictation()) {
         if (patientId == null) {
-            VisitContent(state, notes, actions, scribe = scribeState, scribeAllowed = scribeAllowed, dental = dental)
+            VisitContent(
+                state,
+                notes,
+                actions,
+                scribe = scribeState,
+                scribeAllowed = scribeAllowed,
+                dental = dental,
+                plan = planState,
+            )
         } else {
             // The documents and uploads need the patient: they start once the visit says who it is.
-            PatientParts(patientId, state, notes, dental, actions, onOpenDocument, scribeState, scribeAllowed)
+            PatientParts(
+                patientId,
+                state,
+                notes,
+                dental,
+                planState,
+                actions,
+                onOpenDocument,
+                scribeState,
+                scribeAllowed,
+            )
         }
         state.dentalTooth?.let { tooth ->
             ProfileSheet({ actions.dental.open(null) }) { DentalServicesSheet(tooth, dental, actions.dental) }
         }
+        planState.sheet?.let {
+                key ->
+            ProfileSheet({ actions.plan.open(null) }) { PlanFulfilSheet(key, planState, actions.plan) }
+        }
     }
     state.askLeave?.let { to ->
-        // Photos would be lost (APPT-05); otherwise the notes couldn't be saved.
-        val photos = state.photos.isNotEmpty()
+        // Photos, ticks or a payment would be lost (APPT-05, DENTAL-03); otherwise the notes couldn't be saved.
+        val photos = state.photos.isNotEmpty() || planState.hasPending
         ProfileSheet({ viewModel.ui { it.copy(askLeave = null) } }) {
             ShifaDialogSheet(
-                tr(if (photos) Res.string.leavePhotosTitle else Res.string.notesNotSavedTitle),
+                tr(if (photos) Res.string.leaveUnsavedTitle else Res.string.notesNotSavedTitle),
                 tr(Res.string.leaveAnyway),
                 { viewModel.leave(to, force = true) },
-                body = tr(if (photos) Res.string.leavePhotosBody else Res.string.notesNotSavedBody),
+                body = tr(if (photos) Res.string.leaveUnsavedBody else Res.string.notesNotSavedBody),
                 cancelText = tr(Res.string.stay),
                 onCancel = { viewModel.ui { it.copy(askLeave = null) } },
             )
@@ -488,6 +530,7 @@ fun VisitScreen(
                 },
                 openSummary = { end.summary?.let { d -> patientId?.let { onOpenDocument(it, d, title.orEmpty()) } } },
             ),
+            planState,
         )
     }
     state.patient?.chronic?.takeIf { state.chronicWarning }?.let {
@@ -501,6 +544,7 @@ private fun PatientParts(
     state: VisitUiState,
     notes: VisitNotesState,
     dental: DentalNotesState,
+    plan: VisitPlanState,
     actions: VisitActions,
     onOpenDocument: (Long, PatientDocument, String) -> Unit,
     scribe: DictationState,
@@ -551,6 +595,7 @@ private fun PatientParts(
             applyIcd = actions.applyIcd,
             clearIcd = actions.clearIcd,
             dental = actions.dental,
+            plan = actions.plan,
             photo = actions.photo,
             takePhoto = actions.takePhoto,
             choosePhoto = actions.choosePhoto,
@@ -572,6 +617,7 @@ private fun PatientParts(
         scribe = scribe,
         scribeAllowed = scribeAllowed,
         dental = dental,
+        plan = plan,
     )
     UploadSheets(upload, uploads, sources)
 }
@@ -589,6 +635,7 @@ internal fun VisitContent(
     scribe: DictationState? = null,
     scribeAllowed: Boolean = false,
     dental: DentalNotesState = DentalNotesState(),
+    plan: VisitPlanState = VisitPlanState(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     val visit = state.visit
     when {
@@ -630,7 +677,7 @@ internal fun VisitContent(
                         }
                     }
                 }
-                item { Box(gap) { NotesCard(state, notes, dental, actions, scribe, scribeAllowed) } }
+                item { Box(gap) { NotesCard(state, notes, dental, plan, actions, scribe, scribeAllowed) } }
                 documentRows(documents, upload, actions.documents, gap, hasPatient = visit.patientId != null)
             }
             Footer(state, actions)
@@ -787,6 +834,7 @@ private fun NotesCard(
     state: VisitUiState,
     notes: VisitNotesState,
     dental: DentalNotesState,
+    plan: VisitPlanState,
     actions: VisitActions,
     scribe: DictationState?,
     scribeAllowed: Boolean,
@@ -826,6 +874,8 @@ private fun NotesCard(
         { actions.mode(modes[it]) },
         block = true,
     )
+    // DENTAL-03: the patient's treatment plan, while the visit is open.
+    if (state.visit?.completed != true) PlanPanel(plan, state.mode == VisitMode.Dental, state.dental, actions.plan)
     when (state.helper) {
         VisitHelper.Ai -> AiHelper(state, notes, actions)
         VisitHelper.Form -> FormHelper(state.forms.firstOrNull(), actions)
@@ -833,7 +883,7 @@ private fun NotesCard(
     }
     when (state.mode) {
         VisitMode.General -> General(state, notes, actions, scribe, scribeAllowed)
-        VisitMode.Dental -> DentalPanel(dental, state.dentalTooth, actions.dental)
+        VisitMode.Dental -> DentalPanel(dental, state.dentalTooth, actions.dental, plan, actions.plan)
         VisitMode.Form0252 -> Form0252(state.forms, state.visit?.patientId != null, state.icd, actions)
     }
     if (state.cameraDenied) CameraDeniedBanner { actions.ui { it.copy(cameraDenied = false) } }
@@ -1496,6 +1546,12 @@ private fun rememberEndLabels(): EndLabels {
             subtotal = tr(Res.string.dentalSubtotal),
             discount = tr(Res.string.dentalDiscount),
             total = tr(Res.string.dentalTotal),
+            plan = tr(Res.string.appointmentTreatmentPlanTitle),
+            planTotal = tr(Res.string.appointmentPlanFinanceTotal),
+            planPaid = tr(Res.string.appointmentPlanFinancePaid),
+            planOutstanding = tr(Res.string.appointmentPlanFinanceOutstanding),
+            doneThisVisit = tr(Res.string.summaryPlanDoneThisVisit),
+            paymentThisVisit = tr(Res.string.appointmentPlanFinanceSessionPayment),
         )
     val inPerson = tr(Res.string.inPerson)
     val video = tr(Res.string.summaryVideoVisit)
@@ -1504,8 +1560,12 @@ private fun rememberEndLabels(): EndLabels {
     val female = tr(Res.string.genderFemale)
     val before = tr(Res.string.beforeTreatment)
     val after = tr(Res.string.afterTreatment)
+    val methods = PayMethod.entries.associateWith { tr(methodLabel(it)) }
+    val untitled = tr(Res.string.clinicTreatmentPlansUntitled)
     return EndLabels(
         photo = { if (it == PhotoKind.Before) before else after },
+        method = { methods.getValue(it) },
+        untitledPlan = untitled,
         summary = summary,
         aiHeading = tr(Res.string.aiNotesHeading),
         doctorHeading = tr(Res.string.doctorNotesSection),

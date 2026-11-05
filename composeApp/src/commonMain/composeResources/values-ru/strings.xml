@@ -870,6 +870,7 @@
     <string name="dentalPlanEditorNotes">Примечания к плану</string>
     <string name="dentalPlanEditorTotal">Сумма плана</string>
     <string name="dentalPlanLegendCompleted">Выполнено</string>
+    <string name="dentalPlanLegendNone">Нет работ</string>
     <string name="dentalPlanLegendPartial">Частично выполнено</string>
     <string name="dentalPlanLegendPlanned">Запланировано</string>
     <string name="dentalPlanProgress">%1$s/%2$s пунктов плана выполнено</string>
@@ -1022,12 +1023,15 @@
     <string name="endAnyway">Всё равно завершить</string>
     <string name="endAppointment">Завершить прием</string>
     <string name="endChecklistChars">%1$s символов</string>
+    <string name="endChecklistNoPlan">План не привязан</string>
     <string name="endChecklistNone">Нет</string>
+    <string name="endChecklistNoneTicked">Ничего не отмечено</string>
     <string name="endChecklistNotRequested">Не запрошено</string>
     <string name="endChecklistProcessing">Ещё готовятся — до 2 мин</string>
     <string name="endChecklistReady">Готово</string>
     <string name="endChecklistRequested">Запрошено, не подписано</string>
     <string name="endChecklistSigned">Подписано</string>
+    <string name="endChecklistTicks">%1$s отметить выполненными</string>
     <string name="endDate">Дата окончания</string>
     <string name="endFailed">Не удалось завершить приём. Он остаётся открытым: попробуйте ещё раз.</string>
     <string name="endOffline">Нет подключения к интернету. Завершите визит, когда подключитесь.</string>
@@ -1482,8 +1486,8 @@
     <string name="leaveCall">Выйти из звонка</string>
     <string name="leaveCallBody">Визит останется открытым, пока вы его не завершите.</string>
     <string name="leaveCallTitle">Выйти из звонка?</string>
-    <string name="leavePhotosBody">Фото попадают в итог визита, когда вы завершаете приём. Если уйти сейчас, они пропадут.</string>
-    <string name="leavePhotosTitle">Фото ещё не сохранены</string>
+    <string name="leaveUnsavedBody">Фото, отмеченные пункты плана и оплата сохраняются при завершении приёма. Если уйти сейчас, они пропадут.</string>
+    <string name="leaveUnsavedTitle">Ещё не сохранено</string>
     <string name="leaveWhileRecordingBody">Запись будет обработана.</string>
     <string name="leaveWhileRecordingTitle">Остановить запись и выйти?</string>
     <string name="legalAndSupport">Правовая информация и поддержка</string>
@@ -1745,6 +1749,7 @@
     <string name="onlyPdfOrImages">Можно загружать только PDF и изображения.</string>
     <string name="openAfterCall">Открыть после звонка</string>
     <string name="openChart">Карта</string>
+    <string name="openDentalToTick">Откройте стоматологическую запись, чтобы отметить пункты</string>
     <string name="openDocument">Открыть документ</string>
     <string name="openDocuments">Документы</string>
     <string name="openForm0252">Открыть форму 025-2</string>
@@ -1864,6 +1869,7 @@
     <string name="paymentAndInvoicingSaved">Оплата и выставление счетов сохранены</string>
     <string name="paymentFailed">Ошибка</string>
     <string name="paymentLabel">ОПЛАТА: %1$s</string>
+    <string name="paymentMethodCardTerminal">Карта (терминал)</string>
     <string name="paymentNotRequired">Не требуется</string>
     <string name="paymentPaid">Оплачено</string>
     <string name="paymentPending">Ожидает оплату</string>
@@ -1972,6 +1978,7 @@
     <string name="reconnecting">Переподключение…</string>
     <string name="recordNow">Внести сейчас</string>
     <string name="recordVoice">Записать голосовое сообщение</string>
+    <string name="recordedAtEnd">Записывается при завершении приёма.</string>
     <string name="recordingAlreadyProcessing">Запись уже обрабатывается</string>
     <string name="recordingForAiNotes">Запись для AI заметок</string>
     <string name="recordingInterrupted">Запись прервана</string>
@@ -2286,6 +2293,7 @@
     <string name="summaryPatientSignature">Подпись пациента</string>
     <string name="summaryPdf">PDF сводка</string>
     <string name="summaryPending">Резюме готовится</string>
+    <string name="summaryPlanDoneThisVisit">Выполнено в этот визит</string>
     <string name="summarySaveFailed">Визит завершён. Резюме не удалось сохранить.</string>
     <string name="summarySignatures">Подписи</string>
     <string name="summarySignedElectronically">Подписано электронно %1$s в приложении SHIFA для пациентов</string>

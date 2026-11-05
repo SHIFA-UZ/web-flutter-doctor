@@ -870,6 +870,7 @@
     <string name="dentalPlanEditorNotes">Plan notes</string>
     <string name="dentalPlanEditorTotal">Planned total</string>
     <string name="dentalPlanLegendCompleted">Completed</string>
+    <string name="dentalPlanLegendNone">No work</string>
     <string name="dentalPlanLegendPartial">Partially completed</string>
     <string name="dentalPlanLegendPlanned">Planned</string>
     <string name="dentalPlanProgress">%1$s/%2$s planned items completed</string>
@@ -1022,12 +1023,15 @@
     <string name="endAnyway">End anyway</string>
     <string name="endAppointment">End Appointment</string>
     <string name="endChecklistChars">%1$s characters</string>
+    <string name="endChecklistNoPlan">No plan linked</string>
     <string name="endChecklistNone">None</string>
+    <string name="endChecklistNoneTicked">None ticked</string>
     <string name="endChecklistNotRequested">Not requested</string>
     <string name="endChecklistProcessing">Still processing — up to 2 min</string>
     <string name="endChecklistReady">Ready</string>
     <string name="endChecklistRequested">Requested, not signed</string>
     <string name="endChecklistSigned">Signed</string>
+    <string name="endChecklistTicks">%1$s to mark completed</string>
     <string name="endDate">End Date</string>
     <string name="endFailed">Couldn't end the appointment. It is still open: try again.</string>
     <string name="endOffline">You are offline. End the visit when connected.</string>
@@ -1482,8 +1486,8 @@
     <string name="leaveCall">Leave call</string>
     <string name="leaveCallBody">The visit stays open until you end it.</string>
     <string name="leaveCallTitle">Leave the call?</string>
-    <string name="leavePhotosBody">Photos go into the visit summary when you end the appointment. If you leave now, they are lost.</string>
-    <string name="leavePhotosTitle">Photos not saved yet</string>
+    <string name="leaveUnsavedBody">Photos, ticked plan items and the payment are saved when you end the appointment. If you leave now, they are lost.</string>
+    <string name="leaveUnsavedTitle">Not saved yet</string>
     <string name="leaveWhileRecordingBody">The recording will be processed.</string>
     <string name="leaveWhileRecordingTitle">Stop recording and leave?</string>
     <string name="legalAndSupport">Legal and support</string>
@@ -1745,6 +1749,7 @@
     <string name="onlyPdfOrImages">Only PDF and image files can be uploaded.</string>
     <string name="openAfterCall">Open after the call</string>
     <string name="openChart">Open chart</string>
+    <string name="openDentalToTick">Open the dental record to tick items</string>
     <string name="openDocument">Open Document</string>
     <string name="openDocuments">Documents</string>
     <string name="openForm0252">Open Form 025-2</string>
@@ -1864,6 +1869,7 @@
     <string name="paymentAndInvoicingSaved">Payment &amp; invoicing saved</string>
     <string name="paymentFailed">Failed</string>
     <string name="paymentLabel">PAYMENT: %1$s</string>
+    <string name="paymentMethodCardTerminal">Card (terminal)</string>
     <string name="paymentNotRequired">Not required</string>
     <string name="paymentPaid">Paid</string>
     <string name="paymentPending">Pending</string>
@@ -1972,6 +1978,7 @@
     <string name="reconnecting">Reconnecting…</string>
     <string name="recordNow">Record now</string>
     <string name="recordVoice">Record Voice Message</string>
+    <string name="recordedAtEnd">Recorded when you end the appointment.</string>
     <string name="recordingAlreadyProcessing">A recording is already processing</string>
     <string name="recordingForAiNotes">Recording for AI Notes</string>
     <string name="recordingInterrupted">Recording interrupted</string>
@@ -2286,6 +2293,7 @@
     <string name="summaryPatientSignature">Patient's signature</string>
     <string name="summaryPdf">Summary PDF</string>
     <string name="summaryPending">Summary pending</string>
+    <string name="summaryPlanDoneThisVisit">Completed this visit</string>
     <string name="summarySaveFailed">Visit completed. Summary could not be saved.</string>
     <string name="summarySignatures">Signatures</string>
     <string name="summarySignedElectronically">Signed electronically on %1$s via the SHIFA Patient App</string>

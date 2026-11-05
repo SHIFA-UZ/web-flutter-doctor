@@ -436,3 +436,82 @@ can't be deleted once made, so the shapes are tested with fixtures and the demo 
   - `TreatmentPlansRepositoryTest`: the query, an odd plan or doctor skipped, a failure not empty; the detail nested
     and flat, line teeth and unknown statuses; candidates and the fulfil body.
   - `DemoBackendTest`: the demo plan in its clinic only, candidates, fulfil, completion.
+
+## DENTAL-03 + TP-06 · The treatment plan in the visit
+
+Built 2026-11-05. Spec 05 §4.3 plan mode and §5, tickets DENTAL-03 and TP-06; flows 05/08 and 05/09; board
+`DaVisit` (treatment plan panel, dental plan mode, "plan fulfil", "Plan finances", End checklist). Endpoints checked
+against dev's OpenAPI: `GET /treatment-plans…`, `…/detail`, `…/fulfillment-candidates`, `POST …/fulfill`, and
+`POST /clinics/{id}/finance/payments`. Dev has no plans, so this ran in demo mode only (TP-01).
+
+- **Panel** (`PlanPanel`, under the mode tabs, while the visit is open and the patient has active plans in the
+  doctor's clinic):
+  - "Part of plan #501 — …" when the visit is already linked to a plan.
+  - "Treatment plan for this visit" with a picker: None / bill separately, then the plans. Untitled plans show as
+    "(untitled plan) #id".
+  - The progress "1/4 planned items completed".
+  - In Dental mode, "Tick planned items on the teeth chart below."; in other modes a dentist gets **Open the dental
+    record to tick items**.
+  - The linked plan, else the only one, is chosen at open. Two or more without a link: none is chosen.
+  - A failed read shows "Could not load treatment plans · Retry". Flutter showed "None" silently.
+- **Plan mode** (Dental mode with a plan, `PlanChart`):
+  - The chart is coloured by the plan's lines: planned, partly done, completed. A tick counts as done.
+  - Cancelled lines are left out. Flutter coloured them "partly done".
+  - No count badges (the board's). The screen-reader text says the count and the state.
+  - The legend, and General / non-tooth services "(done/total)".
+  - Banners: all items done; no open lines; lines failed to load with Retry.
+  - The free-mode services, discount and totals are hidden. The clinical notes stay.
+  - A tooth with no lines says "No open planned lines for this tooth."
+- **Fulfil sheet** (`PlanFulfilSheet`): the tooth's lines with "1 × 800 000 UZS · Planned".
+  - A line completed earlier shows checked and greyed and can't be changed.
+  - Only the visit's open lines (the candidates) can be ticked.
+  - Save closes the sheet; nothing is sent until End.
+- **Plan finances** (`PlanFinance`):
+  - Plan total, Paid and Outstanding, formatted with `Money`. Flutter showed "500000.00 UZS".
+  - The payment for this visit: an "Amount (UZS)" field and a Method choice (Cash / Card (terminal) / Transfer).
+    Amounts like "500 000" are parsed; Flutter silently recorded nothing for them.
+  - "Enter an amount greater than 0" and a "More than the outstanding balance" warning.
+  - "Recorded when you end the appointment.", then "Recorded: …" once End has recorded it.
+- **End:**
+  - Order: Saving notes → **Applying treatment plan…** (the ticks; a failure stops before completion: "Could not
+    apply treatment plan changes. Appointment was not completed.") → **Recording payment…** (once per visit; a
+    failure stops the same way) → Completing visit → ….
+  - A second End sends neither the applied ticks nor a recorded payment again.
+  - A failure whose answer may have been lost is checked first:
+    - Ticks count as applied only if the appointment now lists them as fulfilled; lines another visit completed are
+      dropped.
+    - A payment counts as recorded only if a new ledger row (this visit, plan, amount, method) appeared since the
+      attempt. Until then its amount and method are held.
+    - A clear refusal (4xx) releases the payment.
+  - Once ticks were applied or a payment was sent, the plan can't be swapped for another.
+  - The checklist shows "Treatment plan items: 2 to mark completed / None ticked / No plan linked" and "Payment:
+    500 000 UZS · Cash".
+  - The summary PDF gets a "Treatment plan" section: the title, total / paid / outstanding (read again after the
+    payment), the lines completed this visit by tooth, and the payment with its method. Ticks or a payment alone are
+    enough for a summary. Flutter's builder existed three times; this is the one section (TP-06).
+- **Leaving:** ticks and a typed payment, like photos, live only in the open visit. Going back with any of them asks
+  ("Not saved yet… Photos, ticked plan items and the payment are saved when you end the appointment.").
+- **Decisions:**
+  - Ticks and the payment are sent at End, as on the board ("Recorded when you end the appointment."), not when they
+    are made as 17-master-plan suggested. Duplicate payments are guarded per visit; the backend's idempotency key
+    (BE-13) is still wanted for retries after a crash.
+  - Choosing another plan drops the ticks and amount typed for the first, as the board does (no confirm).
+- **Not built:** a "Record now" button; extra lines not in the plan; a checklist for non-dental plan visits; the
+  "Summary pending" retry in the appointment details; installments.
+- **Tests:**
+  - `VisitPlanTest`: auto-choice (only, linked, none); a failed read; tickable lines and tooth states; ticks applied
+    once with the failure kept; payment parsing ("-100" invalid), over outstanding, recorded once with the failure
+    kept; a lost payment answer found in the ledger, not posted twice, the plan and method held; a 4xx releases it;
+    lost fulfil answers reconciled with the appointment's lines; switching plans drops ticks.
+  - `VisitViewModelTest`: End order fulfil → payment → complete; a failed payment stops before completion and the
+    retry doesn't re-apply ticks; leaving asks; the summary's plan part.
+  - `VisitSummaryPdfTest`: the plan section.
+  - `DemoBackendTest`: plan payments and the ledger.
+  - Screenshots: `Visit_dentalPlan`, `Plan_fulfil`.
+  - **Emulator (demo, the demo doctor as Dentist):**
+    - The plan was chosen at open, with 46 completed.
+    - 36 → Root canal ticked → 36 partly done. 21 → "No open planned lines". General → cleaning ticked.
+    - 500 000 Cash typed. The checklist showed "2 to mark completed" and "500 000 UZS · Cash".
+    - End ran Applying treatment plan → Recording payment → Completing → Saving summary.
+    - The summary showed the plan (paid 1 000 000 → 1 500 000), the two lines and the payment.
+    - Demo mode is off again.

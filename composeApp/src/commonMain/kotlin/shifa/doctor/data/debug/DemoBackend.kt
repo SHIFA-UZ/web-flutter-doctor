@@ -124,6 +124,8 @@ class DemoBackend(
 
     // TP-01: the demo patient's one active dental plan; the lines completed so far.
     private val planLinesDone = mutableSetOf(DEMO_PLAN_DONE_LINE)
+    private var planPaid = 100_000_000L
+    private val planPayments = mutableListOf<JsonObject>()
     private var visitDrafts = mapOf(DEMO_DRAFT_ID to 101L)
 
     /** The visit's manual note replaced (the backend keeps one per visit and updates it), else added. */
@@ -563,6 +565,29 @@ class DemoBackend(
                 planLinesDone += ids
                 ok(demoPlanDetail())
             }
+            get && path == Endpoints.clinicPayments(1) -> ok(JsonArray(planPayments))
+            // A payment on the demo plan (DENTAL-03): it moves the plan's paid and outstanding.
+            request.method == HttpMethod.Post && path == Endpoints.clinicPayments(1) -> {
+                val o = runCatching { apiJson.parseToJsonElement(body).jsonObject }.getOrNull()
+                val amount = o?.get("amountMinor")?.jsonPrimitive?.content?.toLongOrNull() ?: 0
+                if (o?.get("treatmentPlanId")?.jsonPrimitive?.content != "$DEMO_PLAN_ID" || amount <= 0) {
+                    Reply(HttpStatusCode.BadRequest, """{"status":400,"code":"VALIDATION_ERROR"}""")
+                } else {
+                    planPaid += amount
+                    val row =
+                        buildJsonObject {
+                            put("id", 900 + planPayments.size)
+                            put("treatmentPlanId", DEMO_PLAN_ID)
+                            put("amountMinor", amount)
+                            put("currency", "UZS")
+                            put("method", o["method"]?.jsonPrimitive?.content)
+                            put("linkedAppointmentId", o["linkedAppointmentId"]?.jsonPrimitive?.content?.toLongOrNull())
+                            put("recordedAt", currentInstant().toString())
+                        }
+                    planPayments.add(0, row)
+                    ok(row)
+                }
+            }
             // A visit's dental record (DENTAL-02): stored as given, `{}` until the first save.
             path.matches(Regex("appointments/\\d+/dental-documentation")) -> {
                 val id = path.split('/')[1].toLong()
@@ -768,8 +793,8 @@ class DemoBackend(
             put("status", if (lines.all { it.id in planLinesDone }) "COMPLETED" else "ACTIVE")
             put("planKind", "COMPREHENSIVE")
             put("totalMinor", total)
-            put("paidMinor", DEMO_PLAN_PAID)
-            put("owedMinor", total - DEMO_PLAN_PAID)
+            put("paidMinor", planPaid)
+            put("owedMinor", total - planPaid)
             put("currency", "UZS")
             put("planPaymentStatus", "PARTIAL")
             put("visitCount", 2)
@@ -1142,7 +1167,6 @@ class DemoBackend(
 
         private const val DEMO_PLAN_ID = 501L
         private const val DEMO_PLAN_DONE_LINE = 13L
-        private const val DEMO_PLAN_PAID = 100_000_000L
 
         // The plan's dental record (a JSON string): services planned on 36, 46 and one general.
         private const val DEMO_PLAN_DENTAL =

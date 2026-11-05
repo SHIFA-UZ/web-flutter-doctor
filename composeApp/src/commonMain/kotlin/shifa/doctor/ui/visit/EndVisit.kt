@@ -18,22 +18,29 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appointmentEndedDocumentationSaved
 import shifa.doctor.generated.resources.appointmentEndedShort
 import shifa.doctor.generated.resources.backToNotes
+import shifa.doctor.generated.resources.clinicPaymentMethodCash
+import shifa.doctor.generated.resources.clinicPaymentMethodTransfer
 import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.continueWithoutWaiting
 import shifa.doctor.generated.resources.dentalLineItems
 import shifa.doctor.generated.resources.done
 import shifa.doctor.generated.resources.endAnyway
 import shifa.doctor.generated.resources.endChecklistChars
+import shifa.doctor.generated.resources.endChecklistNoPlan
 import shifa.doctor.generated.resources.endChecklistNone
+import shifa.doctor.generated.resources.endChecklistNoneTicked
 import shifa.doctor.generated.resources.endChecklistNotRequested
 import shifa.doctor.generated.resources.endChecklistProcessing
 import shifa.doctor.generated.resources.endChecklistReady
 import shifa.doctor.generated.resources.endChecklistRequested
 import shifa.doctor.generated.resources.endChecklistSigned
+import shifa.doctor.generated.resources.endChecklistTicks
 import shifa.doctor.generated.resources.endVisitChecklistAi
 import shifa.doctor.generated.resources.endVisitChecklistDental
 import shifa.doctor.generated.resources.endVisitChecklistNotes
+import shifa.doctor.generated.resources.endVisitChecklistPayment
 import shifa.doctor.generated.resources.endVisitChecklistPhotos
+import shifa.doctor.generated.resources.endVisitChecklistPlan
 import shifa.doctor.generated.resources.endVisitChecklistSignature
 import shifa.doctor.generated.resources.endVisitNothingToSave
 import shifa.doctor.generated.resources.endVisitSub
@@ -41,9 +48,12 @@ import shifa.doctor.generated.resources.endVisitTitle
 import shifa.doctor.generated.resources.endingAppointment
 import shifa.doctor.generated.resources.ic_check_16
 import shifa.doctor.generated.resources.openSummary
+import shifa.doctor.generated.resources.paymentMethodCardTerminal
 import shifa.doctor.generated.resources.retrySummary
 import shifa.doctor.generated.resources.signatureNotYet
+import shifa.doctor.generated.resources.stepApplyingPlan
 import shifa.doctor.generated.resources.stepCompleting
+import shifa.doctor.generated.resources.stepRecordingPayment
 import shifa.doctor.generated.resources.stepSavingNotes
 import shifa.doctor.generated.resources.stepSavingSummary
 import shifa.doctor.generated.resources.stepWaitingAi
@@ -56,6 +66,7 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.utils.Money
 import shifa.doctor.utils.tr
 import kotlin.time.Duration.Companion.seconds
 
@@ -83,11 +94,13 @@ internal fun EndSheet(
     schedule: String,
     minutes: Int,
     actions: EndActions,
+    // DENTAL-03: the treatment plan's ticks and payment.
+    plan: VisitPlanState = VisitPlanState(),
 ) {
     val end = state.end
     ProfileSheet(actions.close, confirmHide = { !end.running && !end.completed }) {
         if (end.confirm && !end.running && !end.completed) {
-            EndConfirm(state, notes, dental, schedule, minutes, actions)
+            EndConfirm(state, notes, dental, schedule, minutes, actions, plan)
         } else {
             EndProgress(end, actions)
         }
@@ -102,12 +115,14 @@ internal fun EndConfirm(
     schedule: String,
     minutes: Int,
     actions: EndActions,
+    plan: VisitPlanState = VisitPlanState(),
 ) {
     val chars = notes.text.body(SoapLabels()).length
     val aiReady = notes.notes.orEmpty().any { it.fromAi } || notes.drafts.orEmpty().isNotEmpty()
     val sig = state.signature
     val nothing =
-        chars == 0 && !aiReady && !state.awaitingScribe && dental?.hasContent != true && state.photos.isEmpty()
+        chars == 0 && !aiReady && !state.awaitingScribe && dental?.hasContent != true && state.photos.isEmpty() &&
+            !plan.hasPending
     val waiting = sig == SignatureState.Waiting
     ShifaDialogSheet(
         tr(Res.string.endVisitTitle),
@@ -144,6 +159,28 @@ internal fun EndConfirm(
                         tr(Res.string.endChecklistNone)
                     },
                     r.lineCount > 0,
+                )
+            }
+            // The board's plan and payment rows, for a patient with a plan.
+            if (plan.plans?.isNotEmpty() == true) {
+                Row(
+                    Res.string.endVisitChecklistPlan,
+                    when {
+                        plan.selectedId == null -> tr(Res.string.endChecklistNoPlan)
+                        plan.ticks.isNotEmpty() -> tr(Res.string.endChecklistTicks, plan.ticks.size)
+                        else -> tr(Res.string.endChecklistNoneTicked)
+                    },
+                    plan.ticks.isNotEmpty(),
+                )
+                val minor = plan.amountMinor?.takeIf { plan.pendingPayment && it > 0 }
+                Row(
+                    Res.string.endVisitChecklistPayment,
+                    if (minor != null) {
+                        "${Money.format(minor, plan.currency.orEmpty())} · ${tr(methodLabel(plan.method))}"
+                    } else {
+                        tr(Res.string.endChecklistNone)
+                    },
+                    minor != null,
                 )
             }
             Row(
@@ -256,6 +293,8 @@ internal fun EndProgress(
                         tr(
                             when (step) {
                                 EndStep.Notes -> Res.string.stepSavingNotes
+                                EndStep.Plan -> Res.string.stepApplyingPlan
+                                EndStep.Payment -> Res.string.stepRecordingPayment
                                 EndStep.Complete -> Res.string.stepCompleting
                                 EndStep.Scribe -> Res.string.stepWaitingAi
                                 EndStep.Summary -> Res.string.stepSavingSummary
@@ -292,3 +331,10 @@ internal fun EndProgress(
         }
     }
 }
+
+internal fun methodLabel(m: PayMethod) =
+    when (m) {
+        PayMethod.Cash -> Res.string.clinicPaymentMethodCash
+        PayMethod.Card -> Res.string.paymentMethodCardTerminal
+        PayMethod.Transfer -> Res.string.clinicPaymentMethodTransfer
+    }

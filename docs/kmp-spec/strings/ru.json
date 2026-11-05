@@ -2614,7 +2614,15 @@
   "discountOutOfRange": "Введите скидку от 0 до 100.",
   "photoSummaryHint": "Добавляется в итог визита отдельной страницей.",
   "removePhoto": "Удалить фото",
-  "leavePhotosTitle": "Фото ещё не сохранены",
-  "leavePhotosBody": "Фото попадают в итог визита, когда вы завершаете приём. Если уйти сейчас, они пропадут.",
-  "photoLimit": "До 20 фото на визит."
+  "photoLimit": "До 20 фото на визит.",
+  "openDentalToTick": "Откройте стоматологическую запись, чтобы отметить пункты",
+  "dentalPlanLegendNone": "Нет работ",
+  "recordedAtEnd": "Записывается при завершении приёма.",
+  "endChecklistTicks": "{count} отметить выполненными",
+  "endChecklistNoneTicked": "Ничего не отмечено",
+  "endChecklistNoPlan": "План не привязан",
+  "paymentMethodCardTerminal": "Карта (терминал)",
+  "summaryPlanDoneThisVisit": "Выполнено в этот визит",
+  "leaveUnsavedTitle": "Ещё не сохранено",
+  "leaveUnsavedBody": "Фото, отмеченные пункты плана и оплата сохраняются при завершении приёма. Если уйти сейчас, они пропадут."
 }
