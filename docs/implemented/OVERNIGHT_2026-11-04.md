@@ -364,6 +364,9 @@ Your calls / open points from M4:
 | APPT-05 | `7f3d2e0` | Before/after treatment photos: camera or gallery, chips, kept until End (leaving asks), a page each in the summary |
 | TP-01 | `abc90d8` | Treatment plan data the visit needs (plans, detail with teeth, candidates, fulfil); a demo plan |
 | DENTAL-03 + TP-06 | `0e275e3` | The plan in the visit: picker, plan-mode chart and ticks, Plan finances; End applies ticks, then records the payment (never twice, lost answers checked in the ledger), then completes; the summary's plan section |
+| DENTAL-04 | `642cedc` | The dental plan editor (the visit's record UI and draft reused) and plan lines with the discount spread per currency; read-only plan chart (hosts in M11) |
+| VIDEO-01 | `e210617` | The Daily room token and the call client on both platforms (the patient app's, copied; the iOS app builds with Daily's Swift package) |
+| VIDEO-02 + VIDEO-03 | `3ef8cfe` | The video visit: pre-join page, the call on top of the workspace, leave/rejoin, End leaves the call first; no waiting room (D-07) |
 
 Checked on the Android emulator in demo mode: start a visit from the calendar, type and dictate notes (the emulator's
 microphone records silence; the demo answers with a fixed sentence), ask for the signature (signed 15 s later), record
@@ -386,8 +389,9 @@ Notes from M5:
 - **Backend facts:** the doctor's appointment detail has no video flag (only the patient side has it); notes are one
   manual note per visit, updated, and blank text is ignored, so notes can't be emptied; a second scribe recording for a
   visit is accepted and ignored.
-- **Left for their tickets:** the plan editor and read-only plan chart (DENTAL-04), video (VIDEO-*), the PDF goldens
-  (PDF-02), follow-up booking.
+- **Left for their tickets:** the PDF goldens (PDF-02), follow-up booking.
+- **Video not run live:** a real call needs a dev video visit inside its window (minting a token creates a Daily room,
+  which can't be undone there). Everything builds on both platforms, including the whole iOS app with Daily.
 - **Backend:** dev has no treatment plans, so plan ticks and payments ran in demo mode only. A plan payment has no
   idempotency key (BE-13); the app looks for a lost payment in the ledger before sending it again.
 
