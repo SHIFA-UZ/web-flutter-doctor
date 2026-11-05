@@ -85,6 +85,7 @@ import shifa.doctor.generated.resources.save
 import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.navigation.ShellRoute
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
@@ -138,6 +139,8 @@ fun IntelligenceScreen(
     bottomInset: Dp? = null,
     // A card's "Open calendar": the clinic's calendar, on the card's day when it has one.
     onOpenCalendar: (LocalDate?) -> Unit = {},
+    // A visit or a document opened from a card (INTEL-07/08), over Intelligence: Back returns to the thread.
+    onOpen: (ShellRoute) -> Unit = {},
     viewModel: IntelligenceViewModel = viewModel { IntelligenceViewModel() },
     thread: ThreadViewModel = viewModel { ThreadViewModel() },
 ) {
@@ -221,8 +224,21 @@ fun IntelligenceScreen(
                                 toggleOther = { thread.toggleOtherTimes(it.index) },
                                 dismiss = { thread.dismiss(it.index) },
                                 answerCancel = thread::answerCancel,
+                                documentFacts = { thread.documentFacts(it.index) },
+                                openVisit = { id ->
+                                    thread.openVisit(id) { kind ->
+                                        onOpen(ShellRoute.Visit(id, kind, currentInstant().toEpochMilliseconds()))
+                                    }
+                                },
+                                openDocument = { patient, document, title ->
+                                    onOpen(ShellRoute.Document(patient, document, title))
+                                },
                             )
                         } ?: CardActions(),
+                        // One download per card (two cards of one document don't share or cancel each other's).
+                        documentView = { patient, document, title ->
+                            DownloadedDocument(patient, document, title, owner = at?.index?.toString() ?: "live")
+                        },
                     )
                 }
             } else {

@@ -745,6 +745,9 @@ class DemoBackendTest {
                 "Move Jasur" to "propose_reschedule",
                 "Cancel Friday" to "cancel_preview",
                 "да" to "cancel_result",
+                "Document everything from the visit" to "draft_visit_facts",
+                "Show his documents" to "patient_documents",
+                "Open the dental chart" to "dental_chart",
             )) {
                 val events = mutableListOf<shifa.doctor.data.model.AiStreamEvent>()
                 repo.stream(

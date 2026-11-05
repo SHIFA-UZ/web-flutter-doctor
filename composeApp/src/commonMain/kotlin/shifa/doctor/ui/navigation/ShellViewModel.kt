@@ -191,6 +191,8 @@ data class ShellUiState(
     val moreOpen: Boolean = false,
     // SHELL-05: Shifa Intelligence replaces the tab's content while the bar stays (01 §5.4, §6.6).
     val intelligence: Boolean = false,
+    // Screens opened from Shifa Intelligence (a visit, a document; INTEL-07/08), over it: Back returns to the thread.
+    val overIntelligence: List<ShellRoute> = emptyList(),
     // Null until `GET /me/clinics` answers; a failure counts as no clinic for this session (flow 01/16 §6).
     val hasClinic: Boolean? = null,
     // SHELL-04: what the plan allows; unknown until the profile answers (D-03).
@@ -219,7 +221,7 @@ data class ShellUiState(
     val route: ShellRoute get() = stack.last()
 
     // Pushed screens hide the bar (flow 01/16 §3 target).
-    val barVisible: Boolean get() = stack.size == 1
+    val barVisible: Boolean get() = stack.size == 1 && (!intelligence || overIntelligence.isEmpty())
 
     val canTasks: Boolean get() = gate.allows(DoctorFeature.RemoteCareTasks)
     val canIntelligence: Boolean get() = gate.allows(DoctorFeature.AskShifaAi)
@@ -449,7 +451,13 @@ class ShellViewModel(
     fun push(route: ShellRoute) {
         switched = true
         ShellNotice.dismissSuccess()
-        _state.update { s -> s.copy(stacks = s.stacks + (s.tab to s.stack + route), moreOpen = false) }
+        _state.update { s ->
+            if (s.intelligence) {
+                s.copy(overIntelligence = s.overIntelligence + route, moreOpen = false)
+            } else {
+                s.copy(stacks = s.stacks + (s.tab to s.stack + route), moreOpen = false)
+            }
+        }
     }
 
     /**
@@ -533,6 +541,7 @@ class ShellViewModel(
             if (it.canIntelligence) {
                 it.copy(
                     intelligence = true,
+                    overIntelligence = emptyList(),
                     moreOpen = false,
                 )
             } else {
@@ -567,6 +576,8 @@ class ShellViewModel(
         val s = _state.value
         when {
             s.moreOpen -> closeMore()
+            s.intelligence && s.overIntelligence.isNotEmpty() ->
+                _state.update { it.copy(overIntelligence = it.overIntelligence.dropLast(1)) }
             s.intelligence -> _state.update { it.copy(intelligence = false) }
             s.stack.size > 1 -> _state.update { it.copy(stacks = it.stacks + (it.tab to it.stack.dropLast(1))) }
             s.tab != s.home -> _state.update { it.copy(tab = it.home) }

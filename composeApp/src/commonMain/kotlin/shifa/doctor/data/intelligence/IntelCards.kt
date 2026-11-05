@@ -9,6 +9,8 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
+import shifa.doctor.data.forms.DentalChartCodec
+import shifa.doctor.data.forms.Dentition
 import shifa.doctor.data.model.ClinicPattern
 
 /** One appointment row of a schedule or patient-appointments card. */
@@ -35,6 +37,21 @@ data class CancelRow(
     val patientName: String?,
     val whenLabel: String?,
     val status: String?,
+)
+
+/** A drafted visit fact (`draft_visit_facts`): its id, type (SYMPTOM, DIAGNOSIS…) and what was said. */
+data class CardFact(
+    val id: Long?,
+    val type: String,
+    val text: String,
+)
+
+/** A row of `patient_documents`: the document's id, title and day (ISO, else as sent). */
+data class CardDocument(
+    val id: Long?,
+    val title: String?,
+    val date: LocalDate?,
+    val dateLabel: String?,
 )
 
 data class CardPatient(
@@ -131,6 +148,49 @@ sealed interface IntelCard {
         val hint: String?,
     ) : IntelCard
 
+    /**
+     * The facts drafted from a recorded visit (flow 03/17): "Document everything" commits them all. [documented] once
+     * done (saved into the card by the app: how many the backend committed).
+     */
+    data class DraftFacts(
+        val appointmentId: Long?,
+        val patientName: String?,
+        val facts: List<CardFact>,
+        val hint: String?,
+        val documented: Int?,
+        val dismissed: Boolean,
+    ) : IntelCard
+
+    /** A patient's documents (flow 03/18), up to [DOCUMENT_ROWS]; [autoOpen] is opened in the card at once. */
+    data class Documents(
+        val patientId: Long?,
+        val documents: List<CardDocument>,
+        val more: Int,
+        val autoOpen: Long?,
+        val hint: String?,
+    ) : IntelCard
+
+    /** One document to view in the card (`document_viewer`). */
+    data class Document(
+        val patientId: Long,
+        val documentId: Long,
+        val title: String?,
+    ) : IntelCard
+
+    /**
+     * A visit's dental diagram (`dental_chart`, flow 03/18): service names per FDI tooth (the counts come from the
+     * same entries, so a tooth with services always shows its badge), the dentition and the notes.
+     */
+    data class DentalChart(
+        val patientName: String?,
+        val dateLabel: String?,
+        val primary: Boolean,
+        val teeth: Map<String, List<String>>,
+        val counts: Map<String, Int>,
+        val notes: String?,
+        val hint: String?,
+    ) : IntelCard
+
     data class Brief(
         val text: String,
     ) : IntelCard
@@ -154,6 +214,7 @@ sealed interface IntelCard {
         const val SCHEDULE_ROWS = 8
         const val PATIENT_ROWS = 12
         const val SLOT_CHIPS = 24
+        const val DOCUMENT_ROWS = 12
 
         // The cards this ticket draws, by card type and tool name.
         private val READ_ONLY =
@@ -161,6 +222,8 @@ sealed interface IntelCard {
                 "schedule", "get_today_schedule", "patient_appointments", "list_patient_appointments", "free_slots",
                 "list_free_slots", "patient_search", "search_patients", "most_visited", "get_most_visited_patients",
                 "clinic_patterns", "get_clinic_patterns", "patient_brief", "brief_patient",
+                "draft_visit_facts", "list_draft_visit_facts", "patient_documents", "list_patient_documents",
+                "document_viewer", "open_patient_document", "dental_chart", "open_dental_chart",
             )
 
         val PROPOSALS = setOf("propose_appointment", "propose_reschedule")
@@ -170,6 +233,7 @@ sealed interface IntelCard {
         const val KEY_MOVED = "moved"
         const val KEY_DISMISSED = "dismissed"
         const val KEY_BOOKED_TIME = "bookedTime"
+        const val KEY_DOCUMENTED = "documented"
 
         fun typeOf(
             toolName: String?,
@@ -261,6 +325,40 @@ sealed interface IntelCard {
                         },
                         hint,
                     )
+                "draft_visit_facts", "list_draft_visit_facts" ->
+                    DraftFacts(
+                        payload.long("appointmentId"),
+                        payload.text("patientName"),
+                        payload.rows("facts").mapNotNull { r ->
+                            r.text("text")?.let { CardFact(r.long("factId"), r.text("factType").orEmpty(), it) }
+                        },
+                        hint,
+                        payload.int(KEY_DOCUMENTED),
+                        payload.flag(KEY_DISMISSED),
+                    )
+                "patient_documents", "list_patient_documents" -> {
+                    val docs =
+                        payload.rows("documents").map {
+                            CardDocument(it.long("documentId"), it.text("title"), it.date("date"), it.text("date"))
+                        }
+                    Documents(
+                        payload.long("patientId"),
+                        docs.take(DOCUMENT_ROWS),
+                        (docs.size - DOCUMENT_ROWS).coerceAtLeast(0),
+                        payload.long("autoOpenDocumentId"),
+                        hint,
+                    )
+                }
+                "document_viewer", "open_patient_document" -> {
+                    val patient = payload.long("patientId")
+                    val document = payload.long("documentId")
+                    if (patient == null || document == null) {
+                        Failed(type, hint.orEmpty())
+                    } else {
+                        Document(patient, document, payload.text("title"))
+                    }
+                }
+                "dental_chart", "open_dental_chart" -> dental(payload, hint)
                 // Fix (ticket): rendered as a briefing (headings, bullets, bold), not plain text.
                 "patient_brief", "brief_patient" -> Brief(payload.text("briefing") ?: hint.orEmpty())
                 else -> Other(type, hint ?: payload.text("error") ?: payload.text("statusMessage"))
@@ -309,6 +407,52 @@ sealed interface IntelCard {
                 dismissed = p.flag(KEY_DISMISSED),
             )
         }
+
+        private fun dental(
+            p: JsonObject,
+            hint: String?,
+        ): IntelCard {
+            val dentition = if (p.text("dentition").equals("primary", true)) Dentition.Primary else Dentition.Permanent
+
+            // "36", "FDI-36", legacy "UR8" → the FDI key; the visit's general entry and anything else is no tooth.
+            fun tooth(raw: String) =
+                DentalChartCodec.normalizeToothKey(raw.removePrefix("FDI-").removePrefix("fdi-"), dentition)
+                    .takeIf { Regex("""\d{2}""").matches(it) }
+            val teeth =
+                (p["documentation"] as? JsonObject)?.get("teeth").let { it as? JsonObject }.orEmpty()
+                    .mapNotNull { (raw, value) ->
+                        val names =
+                            when (value) {
+                                is JsonArray -> value.map { (it as? JsonObject)?.serviceName().orEmpty() }
+                                is JsonObject -> listOf(value.serviceName().orEmpty())
+                                else -> emptyList()
+                            }
+                        tooth(raw)?.takeIf { names.isNotEmpty() }?.let { it to names }
+                    }.toMap()
+            // The backend's counts, else the entries' (Flutter showed no badge without counts; flow 03/18 §8).
+            val given = p["toothServiceCounts"] as? JsonObject
+            val counts =
+                given.orEmpty().keys.mapNotNull {
+                        raw ->
+                    tooth(raw)?.let { key -> given!!.int(raw)?.let { key to it } }
+                }
+                    .toMap().filterValues { it > 0 }
+                    .ifEmpty { teeth.mapValues { it.value.size } }
+            return DentalChart(
+                p.text("patientName"),
+                p.text("date"),
+                dentition == Dentition.Primary,
+                teeth,
+                counts,
+                p.text("notes"),
+                hint,
+            )
+        }
+
+        private fun JsonObject.serviceName(): String? =
+            text(
+                "name",
+            ) ?: text("serviceName") ?: text("label") ?: text("title")
 
         private fun slot(r: JsonObject): CardSlot? =
             r.text("startLocal")?.let {

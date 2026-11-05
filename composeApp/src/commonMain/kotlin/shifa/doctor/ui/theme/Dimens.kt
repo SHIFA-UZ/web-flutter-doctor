@@ -105,6 +105,9 @@ object ShifaDimens {
     // `.sh-fab--docked`: the floating tab bar's height, which a docked create button sits above (bottom 16 + 82).
     val FabDockedClear = 82.dp
 
+    // Shifa Intelligence's inline document viewer (flow 03/18 §3; not in the design: Flutter's 360).
+    val IntelDocumentHeight = 360.dp
+
     object Layout {
         val Sidebar = 260.dp
         val SidebarCompact = 72.dp

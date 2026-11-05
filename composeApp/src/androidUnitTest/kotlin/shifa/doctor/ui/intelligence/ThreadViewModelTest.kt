@@ -30,6 +30,7 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.intelligence.CardSlot
 import shifa.doctor.data.intelligence.ChatSessionStore
+import shifa.doctor.data.model.VisitKind
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiRateLimit
 import shifa.doctor.generated.resources.aiUnavailable
@@ -54,10 +55,25 @@ class ThreadViewModelTest {
             { null },
             MockEngine { req ->
                 val path = req.url.encodedPath.removePrefix("/api/")
+                if (req.method.value == "GET" && path.matches(Regex("appointments/\\d+"))) {
+                    val video = path.endsWith("/103")
+                    return@MockEngine respond(
+                        """{"id":${path.substringAfter('/')},"isVideoConsultation":$video}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
                 if (!path.startsWith("ai/")) {
                     calls += "${req.method.value} $path" to req.body.toByteArray().decodeToString()
                     gate?.await()
                     return@MockEngine respond("", callAnswers.removeFirstOrNull() ?: HttpStatusCode.OK)
+                }
+                if (path == "ai/visit-facts/commit") {
+                    calls += "${req.method.value} $path" to req.body.toByteArray().decodeToString()
+                    gate?.await()
+                    val status = callAnswers.removeFirstOrNull() ?: HttpStatusCode.OK
+                    val json = if (status == HttpStatusCode.OK) """{"committedFacts":[$COMMITTED_1021,$COMMITTED_1022],"createdTaskIds":[5]}""" else "{}"
+                    return@MockEngine respond(json, status, headersOf(HttpHeaders.ContentType, "application/json"))
                 }
                 bodies += req.body.toByteArray().decodeToString()
                 val (status, body) = answers.removeFirst()
@@ -357,4 +373,60 @@ class ThreadViewModelTest {
         settle { touched.size == 1 }
         assertThat(touched.single().second).containsExactly(Instant.parse("2026-11-07T05:00:00Z"))
     }
+
+    @Test
+    fun `Document everything commits every listed fact once and saves the count, a failure says so`() {
+        val classToTest = vm()
+        withCard(
+            classToTest,
+            """{"cardType":"draft_visit_facts","appointmentId":102,"facts":[{"factId":1021,"factType":"MEDICATION","text":"Ibuprofen"},{"factId":1022,"factType":"SYMPTOM","text":"Pain"}]}""",
+        )
+        callAnswers += HttpStatusCode.InternalServerError
+        classToTest.documentFacts(1)
+        settle { classToTest.state.value.cards[1]?.error != null }
+        assertThat(classToTest.state.value.cards[1]!!.error!!.text).isNotNull()
+        assertThat(savedCard()["documented"]).isNull()
+
+        classToTest.documentFacts(1)
+        settle { savedCard()["documented"] != null }
+        assertThat(savedCard()["documented"]!!.jsonPrimitive.content).isEqualTo("2")
+        val sent = apiJson.parseToJsonElement(calls.last().second).jsonObject
+        assertThat(sent["appointmentId"]!!.jsonPrimitive.content).isEqualTo("102")
+        assertThat(sent["acceptFactIds"]!!.jsonArray.map { it.jsonPrimitive.content }).containsExactly("1021", "1022")
+        // Documented: nothing is sent again.
+        classToTest.documentFacts(1)
+        assertThat(calls).hasSize(2)
+    }
+
+    @Test
+    fun `a commit still running after leaving and coming back is not sent again`() {
+        val classToTest = vm()
+        withCard(
+            classToTest,
+            """{"cardType":"draft_visit_facts","appointmentId":102,"facts":[{"factId":1021,"factType":"MEDICATION","text":"Ibuprofen"}]}""",
+        )
+        gate = CompletableDeferred()
+        classToTest.documentFacts(1)
+        settle { calls.size == 1 }
+        classToTest.stop()
+        assertThat(classToTest.state.value.cards[1]!!.busy).isTrue()
+        classToTest.documentFacts(1)
+        gate!!.complete(Unit)
+        settle { savedCard()["documented"] != null }
+        assertThat(calls).hasSize(1)
+    }
+
+    @Test
+    fun `Review on the visit opens a video visit as video, others in the clinic`() {
+        val classToTest = vm()
+        val kinds = mutableListOf<VisitKind>()
+        classToTest.openVisit(103) { kinds += it }
+        settle { kinds.size == 1 }
+        classToTest.openVisit(102) { kinds += it }
+        settle { kinds.size == 2 }
+        assertThat(kinds).containsExactly(VisitKind.Video, VisitKind.InPerson).inOrder()
+    }
 }
+
+private const val COMMITTED_1021 = """{"id":1021,"patientId":12,"factType":"MEDICATION","text":"Ibuprofen","status":"COMMITTED"}"""
+private const val COMMITTED_1022 = """{"id":1022,"patientId":12,"factType":"SYMPTOM","text":"Pain","status":"COMMITTED"}"""

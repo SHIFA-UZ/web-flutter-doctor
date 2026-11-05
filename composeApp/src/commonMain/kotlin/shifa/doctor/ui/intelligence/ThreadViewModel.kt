@@ -20,6 +20,7 @@ import shifa.doctor.data.ai.aiCode
 import shifa.doctor.data.ai.aiRepository
 import shifa.doctor.data.ai.toAiMessage
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.appointments.AppointmentsRepository
 import shifa.doctor.data.appointments.BookRequest
 import shifa.doctor.data.appointments.appointmentsRepository
@@ -35,11 +36,14 @@ import shifa.doctor.data.intelligence.chatSessionStore
 import shifa.doctor.data.model.AiRequest
 import shifa.doctor.data.model.AiStreamEvent
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.model.CommitVisitFactsRequest
+import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelBookingFailed
 import shifa.doctor.generated.resources.intelBookingFailedNetwork
+import shifa.doctor.generated.resources.intelDocumentFailed
 import shifa.doctor.generated.resources.intelEmptyReply
 import shifa.doctor.generated.resources.intelMissingAppointmentOrSlot
 import shifa.doctor.generated.resources.intelMissingPatientOrSlot
@@ -108,6 +112,9 @@ class ThreadViewModel(
 
     // The card each chat is booking from, kept when the doctor leaves and comes back: one booking per chat at a time.
     private val bookings = mutableMapOf<String, Int>()
+
+    // Draft-fact cards being documented ("chat id" to index), kept the same way: one commit per card.
+    private val committing = mutableSetOf<Pair<String, Int>>()
 
     fun draft(text: String) = _state.update { it.copy(draft = text) }
 
@@ -187,6 +194,57 @@ class ThreadViewModel(
         }
     }
 
+    /**
+     * The draft-facts card's "Document everything" (INTEL-07, flow 03/17): every listed fact committed to the patient's
+     * timeline (`POST /ai/visit-facts/commit`); the count is saved into the card so a reopened chat doesn't offer it
+     * again.
+     */
+    fun documentFacts(index: Int) {
+        val chat = store.state.value.active ?: return
+        val message = chat.messages.getOrNull(index) ?: return
+        val card = message.cardPayload?.let { IntelCard.of(message.toolName, it) } as? IntelCard.DraftFacts ?: return
+        val appointment = card.appointmentId ?: return
+        val ids = card.facts.mapNotNull { it.id }
+        val key = chat.id to index
+        if (card.documented != null || ids.isEmpty() || key in committing) return
+        committing += key
+        cardUi(index) { it.copy(busy = true, error = null) }
+        viewModelScope.launch {
+            val result = ai.commit(CommitVisitFactsRequest(appointment, acceptFactIds = ids))
+            committing -= key
+            result.fold(
+                { done ->
+                    store.updateCard(chat.id, index) {
+                        JsonObject(it + (IntelCard.KEY_DOCUMENTED to JsonPrimitive(done.committedFacts.size)))
+                    }
+                    cardUi(index, chat.id) { CardUi() }
+                },
+                { e ->
+                    val error =
+                        if (e is ApiException && e !is ApiException.NetworkError) {
+                            CodeBanner(e.toUserMessage(Res.string.intelDocumentFailed), requestId = e.requestId)
+                        } else {
+                            CodeBanner(Res.string.intelDocumentFailed)
+                        }
+                    cardUi(index, chat.id) { it.copy(busy = false, error = error) }
+                },
+            )
+        }
+    }
+
+    /**
+     * The draft-facts card's "Review on the visit": the visit opens as what it is (a video visit with its call), read
+     * from the appointment since the card doesn't say; in the clinic if that can't be read (the screen reads it again).
+     */
+    fun openVisit(
+        appointmentId: Long,
+        open: (VisitKind) -> Unit,
+    ) {
+        viewModelScope.launch {
+            open(appointments.detail(appointmentId).getOrNull()?.kind ?: VisitKind.InPerson)
+        }
+    }
+
     /** "Other times" / "Hide other times" under a proposal's Confirm. */
     fun toggleOtherTimes(index: Int) = cardUi(index) { it.copy(showOther = !it.showOther) }
 
@@ -236,12 +294,14 @@ class ThreadViewModel(
     fun stop() {
         turn?.cancel()
         turn = null
-        // A card booking runs on (it can't be taken back halfway); back in its chat, the card shows it still running.
-        val booking = bookings[store.state.value.activeId]
+        // A card's booking or commit runs on (it can't be taken back halfway); back in its chat, the card shows it.
+        val active = store.state.value.activeId
+        val booking = bookings[active]
+        val running = listOfNotNull(booking) + committing.filter { it.first == active }.map { it.second }
         _state.update {
             ThreadUiState(
                 draft = it.draft,
-                cards = booking?.let { i -> mapOf(i to CardUi(busy = true)) }.orEmpty(),
+                cards = running.associateWith { CardUi(busy = true) },
                 booking = booking != null,
             )
         }

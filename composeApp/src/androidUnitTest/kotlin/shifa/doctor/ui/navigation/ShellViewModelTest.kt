@@ -21,6 +21,7 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.chat.ChatReads
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.subscription.DoctorFeature
@@ -360,6 +361,30 @@ class ShellViewModelTest {
         basic.settle()
         basic.openIntelligence()
         assertThat(basic.state.value.intelligence).isFalse()
+    }
+
+    @Test
+    fun `a visit or document opened from Intelligence sits over it, Back returns to the thread`() {
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.select(ShellTab.Patients)
+        val before = classToTest.state.value.stack
+        classToTest.openIntelligence()
+        classToTest.push(ShellRoute.Document(12, 901, "CBC"))
+        classToTest.push(ShellRoute.Visit(102, VisitKind.InPerson, 1))
+        assertThat(classToTest.state.value.overIntelligence).hasSize(2)
+        assertThat(classToTest.state.value.barVisible).isFalse()
+        assertThat(classToTest.state.value.stack).isEqualTo(before) // the tab's own stack is untouched
+        assertThat(classToTest.back()).isTrue()
+        assertThat(classToTest.back()).isTrue()
+        assertThat(classToTest.state.value.intelligence).isTrue()
+        assertThat(classToTest.state.value.overIntelligence).isEmpty()
+        assertThat(classToTest.state.value.barVisible).isTrue()
+        // Leaving with a screen still over Intelligence: the next opening starts at the thread.
+        classToTest.push(ShellRoute.Document(12, 901, "CBC"))
+        classToTest.select(ShellTab.Home)
+        classToTest.openIntelligence()
+        assertThat(classToTest.state.value.overIntelligence).isEmpty()
     }
 
     @Test

@@ -268,6 +268,7 @@ fun MainScreenContent(
                 day?.let { CalendarFocus.day.value = it }
                 actions.openCalendar()
             },
+            onOpen = actions.push,
         )
     },
 ) {
@@ -277,10 +278,17 @@ fun MainScreenContent(
             // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
             val saved = rememberSaveableStateHolder()
             Box(Modifier.weight(1f)) {
-                if (state.intelligence) {
+                val overIntelligence = state.overIntelligence.lastOrNull()
+                if (state.intelligence && overIntelligence != null) {
+                    // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
+                    saved.SaveableStateProvider("intelligence/${state.overIntelligence.size}/$overIntelligence") {
+                        RouteContent(overIntelligence, actions, state.staff, state)
+                    }
+                } else if (state.intelligence) {
                     // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
-                    // welcome returns to it.
-                    intelligence()
+                    // welcome returns to it. Its own state (the thread's scroll, an opened document) is kept while a
+                    // screen opened from it is on top.
+                    saved.SaveableStateProvider("intelligence") { intelligence() }
                 } else {
                     saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
                         RouteContent(state.route, actions, state.staff, state)

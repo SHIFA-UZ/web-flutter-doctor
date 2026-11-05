@@ -361,3 +361,52 @@ Board `DaIntel` card (the same bordered box; buttons from the kit). The cancella
   next turn, cancellation answers per language, a result refreshes the calendar), `CardTextTest` (visit times, status
   lines), `DemoBackendTest` (demo cards); screenshots `Intelligence_bookingCards`, `Intelligence_cancelCards`,
   `Intelligence_cards` re-recorded (the placeholder proposal is gone).
+
+## INTEL-07 · Clinical cards: draft facts, documents, dental diagram
+
+Built 2026-11-06. Spec 02 §4.4–4.5, flows 03/17 (draft visit facts) and 03/18 (documents, inline viewer, dental),
+ticket INTEL-07. Board `DaIntel` card; the inline viewer box and the documents rows are "not in the design" (built in
+the card's style).
+
+- **Model** (`IntelCards.kt`): `DraftFacts` (`draft_visit_facts`: appointment, facts {id, type, text}), `Documents`
+  (`patient_documents`: up to 12 rows, "+N more", `autoOpenDocumentId`), `Document` (`document_viewer`; missing ids →
+  its line), `DentalChart` (`dental_chart`: service names per FDI tooth from `documentation.teeth`, the dentition,
+  counts, notes). Error turns (no appointment, no documents, unknown patient) show their spoken line under the card's
+  title. Tooth keys "36", "FDI-36" and legacy "UR8" go through `DentalChartCodec.normalizeToothKey`.
+- **Fixes:** the dental record names its services under `title` (payload v2), which Flutter's card never read (it
+  looked for name / serviceName / label only); without `toothServiceCounts` the entries are counted (Flutter showed no
+  badge); fact types come from the string keys (Flutter had an inline table); the documented state is saved into the
+  card (`documented`), so a reopened chat can't commit again; a failure says "Could not document the facts…" (no raw
+  exception); 0 committed says the facts are already in the timeline.
+- **Draft facts** (flow 03/17): rows "Medication: …", "Document everything" commits every listed fact
+  (`POST /ai/visit-facts/commit`, `acceptFactIds`) from `ThreadViewModel.documentFacts`, Cancel hides the card for
+  good; target taken: "Review on the visit" opens the visit (with its facts panel, where single facts can be kept or
+  rejected).
+- **Documents** (flow 03/18): rows with the file icon, title (the "Document" placeholder localised) and day; a tap (or
+  the backend's pick) opens the file in the card: a grey 360 box with the authenticated download of the documents
+  viewer (DOCS-05's ViewModel reused): skeleton while loading (target), the PDF's pages or the image fitted, failed +
+  Retry, no access ("You don't have access to this document…"), gone, or a type it can't draw. No zoom inside the
+  thread (the gesture conflict of §7); "Open full screen" opens the zoomable viewer, with save and request access.
+- **Over Intelligence** (shell): a visit or document opened from a card is pushed onto a small stack over Intelligence
+  (`ShellUiState.overIntelligence`); the bar hides, Back returns to the thread as it was, and the next opening of
+  Intelligence starts at the thread. INTEL-08's open-visit uses the same path.
+- **Dental** (flow 03/18): "Jasur Karimov · 6 Nov 2026", the visit's read-only tooth map (the shared `ToothMap`, adult
+  or primary as recorded; no toggle: the chart is the one recorded), a tapped tooth lists up to 6 services, then the
+  notes; a chart without services shows the hint.
+- **Also fixed (INTEL-04):** the thread didn't jump to a new question when the answer came at once (the demo): the
+  jump was decided after a suspension that the next state change cancelled. The follow flag is now set first.
+- **Codex review:** a commit or booking still running when the doctor leaves and comes back can't be sent again; each
+  card owns its document download; Intelligence keeps its state (scroll, opened document) under a screen opened from
+  it; "Review on the visit" opens a video visit as video (the appointment is read first); dental notes show even
+  without tooth services.
+- **Not built:** "All documents" (opening the patient's documents tab) and per-fact keep/reject in the card (the visit
+  panel has it); restored cards download their file again when shown (the file is released when the card leaves the
+  screen, to keep memory down).
+- **Checked:** emulator, demo mode: "Show Jasur documents" → the list with the CBC opened inline (the demo PDF drawn),
+  Open full screen → the viewer, Back → the thread; "Document everything from the visit" → "Documented 2 facts.",
+  Review on the visit → the visit with its facts panel, Back → the thread; "Open the dental chart" → tooth 46 →
+  "Services for tooth 46 · Cleaning" (the second service below the fold); a question after scrolling up jumps to the bottom. iOS compiled, not run.
+- **Tests:** `IntelCardsTest` (facts, documents cap and auto-open, document ids, dental titles and tooth keys, derived
+  counts, error turns), `ThreadViewModelTest` (Document everything: one commit with every id, the count saved, a
+  failure, no second commit), `ShellViewModelTest` (screens over Intelligence and Back), `DemoBackendTest` (demo
+  cards); screenshot `Intelligence_clinicalCards`.

@@ -367,3 +367,34 @@ private fun CardColumn(content: @Composable () -> Unit) =
                 ),
         ) { content() }
     }
+
+// INTEL-07 (flows 03/17–18): drafted facts with Document everything, documents with the backend's pick opened (a
+// placeholder for the download), and a dental diagram.
+@Composable
+internal fun ClinicalCardsPreview() =
+    CardColumn {
+        ToolCard(
+            "list_draft_visit_facts",
+            cardJson(
+                """{"cardType":"draft_visit_facts","appointmentId":102,"patientName":"Jasur Karimov","facts":[""" +
+                    """{"factId":1,"factType":"MEDICATION","text":"Ibuprofen 400 mg after meals"},""" +
+                    """{"factId":2,"factType":"SYMPTOM","text":"Pain in the lower left molar for three days"}]}""",
+            ),
+        )
+        ToolCard(
+            "list_patient_documents",
+            cardJson(
+                """{"cardType":"patient_documents","patientId":12,"autoOpenDocumentId":901,"documents":[""" +
+                    """{"documentId":901,"title":"Complete blood count","date":"2026-10-22"},""" +
+                    """{"documentId":903,"title":"Document","date":"2026-09-29"}]}""",
+            ),
+        )
+        ToolCard(
+            "open_dental_chart",
+            cardJson(
+                """{"cardType":"dental_chart","patientName":"Jasur Karimov","date":"6 Nov 2026","dentition":"permanent",""" +
+                    """"documentation":{"teeth":{"36":[{"title":"Filling"}],"46":[{"title":"Cleaning"},{"title":"X-ray"}]}},""" +
+                    """"toothServiceCounts":{"36":1,"46":2},"notes":"Recheck 36 in a month."}""",
+            ),
+        )
+    }

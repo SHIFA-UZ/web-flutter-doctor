@@ -265,6 +265,97 @@ internal class DemoAi {
                                 "Nothing has been cancelled yet.",
                         )
                     }
+            // INTEL-07: visit 102's drafted facts, the patient's viewable document (opened at once, as the backend does
+            // for a single match) and a dental diagram.
+            listOf("facts", "document everything", "clinical notes").any(text::contains) ->
+                "list_draft_visit_facts" to
+                    buildJsonObject {
+                        val drafts =
+                            factsOf(
+                                DEMO_VISIT,
+                                DEMO_PATIENT,
+                            ).filter { it.str("status") == "DRAFT" && it.bool("reflectionKept") }
+                        put("cardType", "draft_visit_facts")
+                        put("appointmentId", DEMO_VISIT)
+                        put("patientId", DEMO_PATIENT)
+                        put("patientName", "Jasur Karimov")
+                        put(
+                            "facts",
+                            JsonArray(
+                                drafts.map {
+                                    buildJsonObject {
+                                        put("factId", it.long("id"))
+                                        put("factType", it.str("factType"))
+                                        put("text", it.str("text"))
+                                    }
+                                },
+                            ),
+                        )
+                        put(
+                            "spokenHint",
+                            if (drafts.isEmpty()) {
+                                "There are no draft visit facts ready to document for this visit."
+                            } else {
+                                "There are ${drafts.size} draft facts. Confirm to document them."
+                            },
+                        )
+                    }
+            listOf("documents", "x-ray", "analysis").any(text::contains) ->
+                "list_patient_documents" to
+                    buildJsonObject {
+                        put("cardType", "patient_documents")
+                        put("patientId", DEMO_PATIENT)
+                        put("patientName", "Jasur Karimov")
+                        put(
+                            "documents",
+                            JsonArray(
+                                listOf(
+                                    buildJsonObject {
+                                        put("documentId", 901)
+                                        put("title", "Complete blood count")
+                                        put("date", "2026-10-22")
+                                        put("category", "BLOOD_TEST")
+                                    },
+                                ),
+                            ),
+                        )
+                        put("autoOpenDocumentId", 901)
+                        put(
+                            "spokenHint",
+                            "I found 1 document for Jasur Karimov: Complete blood count. Opening it in chat.",
+                        )
+                    }
+            listOf("dental", "tooth", "teeth").any(text::contains) ->
+                "open_dental_chart" to
+                    buildJsonObject {
+                        put("cardType", "dental_chart")
+                        put("patientId", DEMO_PATIENT)
+                        put("patientName", "Jasur Karimov")
+                        put("appointmentId", DEMO_VISIT)
+                        put("date", "6 Nov 2026")
+                        put("dentition", "permanent")
+                        put(
+                            "documentation",
+                            apiJson.parseToJsonElement(
+                                """{"version":2,"dentition":"permanent","teeth":{"36":[{"title":"Filling"}],""" +
+                                    """"46":[{"title":"Cleaning"},{"title":"X-ray"}]},""" +
+                                    """"notes":"Recheck 36 in a month."}""",
+                            ),
+                        )
+                        put(
+                            "toothServiceCounts",
+                            buildJsonObject {
+                                put("36", 1)
+                                put("46", 2)
+                            },
+                        )
+                        put("notes", "Recheck 36 in a month.")
+                        put(
+                            "spokenHint",
+                            "Here is the dental diagram for Jasur Karimov from Friday, 6 November — " +
+                                "2 teeth have recorded services.",
+                        )
+                    }
             listOf("move", "перенес", "ko'chir", "ko‘chir").any(text::contains) ->
                 "propose_reschedule" to
                     buildJsonObject {
@@ -314,6 +405,8 @@ internal class DemoAi {
     private fun JsonObject.bool(key: String) = get(key)?.jsonPrimitive?.content == "true"
 
     private companion object {
+        const val DEMO_VISIT = 102L
+        const val DEMO_PATIENT = 12L
         val MORNING =
             mapOf(
                 "EN" to "Good morning. You have %d visits today.",

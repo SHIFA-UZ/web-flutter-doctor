@@ -26,7 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -124,18 +124,21 @@ internal fun ThreadList(
     val extra = if (state.asking != null) 1 else 0
     // Follow the newest content while the doctor is at the very bottom (flow 03/03 §3): a scroll the doctor ends above
     // the bottom stops it, one back to the bottom starts it again; a new question always jumps down.
-    var follow by remember(listState) { mutableStateOf(true) }
+    // Saveable: back from a screen opened over Intelligence, the thread is where the doctor left it.
+    var follow by rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
             if (!scrolling) follow = !listState.canScrollForward
         }
     }
     LaunchedEffect(messages.size, state.asking, state.streaming.length, state.card, state.error) {
+        // Before any suspension: a quick answer changes these keys again and cancels this run, and the next run must
+        // still follow (it didn't when the demo answered at once).
+        if (state.asking != null && state.streaming.isEmpty()) follow = true
         val total = messages.size + extra
-        if (total > 0 && (follow || state.asking != null && state.streaming.isEmpty())) {
+        if (total > 0 && follow) {
             // To the end of the last item, not its start: one long reply is a single item.
             listState.scrollToItem(total - 1, Int.MAX_VALUE)
-            follow = true
         }
     }
     LazyColumn(

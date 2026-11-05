@@ -111,9 +111,9 @@ class IntelCardsTest {
     @Test
     fun `a card the app doesn't draw yet shows its spoken line, else its error`() {
         assertThat(
-            card("open_dental_chart", """{"cardType":"dental_chart","spokenHint":"Here is the chart."}"""),
+            card("show_lab_trend", """{"cardType":"lab_trend","spokenHint":"Here is the chart."}"""),
         )
-            .isEqualTo(IntelCard.Other("dental_chart", "Here is the chart."))
+            .isEqualTo(IntelCard.Other("lab_trend", "Here is the chart."))
         assertThat(
             (card(null, """{"cardType":"something_new","error":"Not available."}""") as IntelCard.Other).line,
         ).isEqualTo("Not available.")
@@ -231,5 +231,86 @@ class IntelCardsTest {
         assertThat(result.result).isTrue()
         assertThat(result.awaiting).isFalse()
         assertThat(result.rows.map { it.status }).containsExactly("CANCELLED", "IN_PROGRESS").inOrder()
+    }
+
+    // INTEL-07: as DoctorMorningToolService's listDraftVisitFacts / listPatientDocuments / openPatientDocument /
+    // openDentalChart send them.
+    @Test
+    fun `draft facts, documents and a document read their rows, error turns are their line`() {
+        val facts =
+            card(
+                "list_draft_visit_facts",
+                """{"cardType":"draft_visit_facts","appointmentId":102,"patientName":"Jasur Karimov","facts":[{"factId":1021,"factType":"MEDICATION","text":"Ibuprofen 400 mg"},{"factId":1022,"factType":"SYMPTOM"}],"spokenHint":"There are 2 draft facts."}""",
+            ) as IntelCard.DraftFacts
+        assertThat(facts.appointmentId).isEqualTo(102)
+        assertThat(facts.facts).containsExactly(CardFact(1021, "MEDICATION", "Ibuprofen 400 mg")) // no text, no row
+        assertThat(facts.documented).isNull()
+        assertThat(
+            (
+                card(
+                    null,
+                    """{"cardType":"draft_visit_facts","facts":[],"documented":3}""",
+                ) as IntelCard.DraftFacts
+            ).documented,
+        )
+            .isEqualTo(3)
+        assertThat(
+            card(
+                null,
+                """{"cardType":"draft_visit_facts","error":"Forbidden","spokenHint":"That appointment is not on your calendar."}""",
+            ),
+        )
+            .isEqualTo(IntelCard.Failed("draft_visit_facts", "That appointment is not on your calendar."))
+
+        val rows = (1..14).joinToString(",") { """{"documentId":$it,"title":"Doc $it","date":"2026-03-12"}""" }
+        val docs =
+            card(
+                "list_patient_documents",
+                """{"cardType":"patient_documents","patientId":12,"documents":[$rows],"autoOpenDocumentId":3}""",
+            ) as IntelCard.Documents
+        assertThat(docs.documents).hasSize(IntelCard.DOCUMENT_ROWS)
+        assertThat(docs.more).isEqualTo(2)
+        assertThat(docs.autoOpen).isEqualTo(3)
+        assertThat(docs.documents[0]).isEqualTo(CardDocument(1, "Doc 1", LocalDate(2026, 3, 12), "2026-03-12"))
+
+        assertThat(card(null, """{"cardType":"document_viewer","patientId":12,"documentId":901,"title":"CBC"}"""))
+            .isEqualTo(IntelCard.Document(12, 901, "CBC"))
+        assertThat(
+            card(
+                null,
+                """{"cardType":"document_viewer","patientId":12,"error":"No documents","spokenHint":"Jasur has no viewable documents yet."}""",
+            ),
+        )
+            .isEqualTo(IntelCard.Failed("document_viewer", "Jasur has no viewable documents yet."))
+    }
+
+    @Test
+    fun `a dental diagram reads service titles by FDI tooth, counts from the backend or the entries`() {
+        val chart =
+            card(
+                "open_dental_chart",
+                """{"cardType":"dental_chart","patientName":"Jasur Karimov","date":"6 Nov 2026","dentition":"permanent","documentation":{"version":2,"teeth":{"36":[{"title":"Filling"}],"FDI-46":[{"serviceName":"Cleaning"},{}],"__general__":[{"title":"Consultation"}],"UR8":{"name":"Extraction"}}},"toothServiceCounts":{"36":1,"46":2},"notes":"Recheck"}""",
+            ) as IntelCard.DentalChart
+        assertThat(
+            chart.teeth,
+        ).containsExactly("36", listOf("Filling"), "46", listOf("Cleaning", ""), "18", listOf("Extraction"))
+        assertThat(chart.counts).containsExactly("36", 1, "46", 2)
+        assertThat(chart.primary).isFalse()
+        assertThat(chart.notes).isEqualTo("Recheck")
+        // No counts sent: the entries count (Flutter showed no badge).
+        val derived =
+            card(
+                null,
+                """{"cardType":"dental_chart","dentition":"primary","documentation":{"teeth":{"55":[{"title":"Sealant"}]}}}""",
+            ) as IntelCard.DentalChart
+        assertThat(derived.counts).containsExactly("55", 1)
+        assertThat(derived.primary).isTrue()
+        val empty =
+            card(
+                null,
+                """{"cardType":"dental_chart","documentation":{},"toothServiceCounts":{},"spokenHint":"There is no dental diagram saved."}""",
+            ) as IntelCard.DentalChart
+        assertThat(empty.counts).isEmpty()
+        assertThat(empty.hint).isEqualTo("There is no dental diagram saved.")
     }
 }
