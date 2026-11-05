@@ -1,7 +1,13 @@
 package shifa.doctor.data.notifications
 
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import shifa.doctor.data.model.AppNotification
+import shifa.doctor.utils.PracticeClock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 /** The inbox's chips (flow 07/08 §3): client-side, by kind. AI and unknown kinds show only under [All]. */
 enum class NotificationFilter { All, Appointments, Tasks, Messages }
@@ -123,3 +129,53 @@ fun AppNotification.target(staff: Boolean): NotificationTarget {
         else -> NotificationTarget.Inbox
     }
 }
+
+/**
+ * A row's time (flow 07/08 §4) in the practice zone (Flutter used the phone's): under a minute "Just now", under an
+ * hour "{n} min ago", today "14:32", yesterday "Yesterday 09:10", else the day and the time. A time ahead of the clock
+ * (a skewed phone) counts as just now.
+ */
+sealed interface NotificationTime {
+    data object JustNow : NotificationTime
+
+    data class MinutesAgo(
+        val minutes: Int,
+    ) : NotificationTime
+
+    data class Today(
+        val time: String,
+    ) : NotificationTime
+
+    data class Yesterday(
+        val time: String,
+    ) : NotificationTime
+
+    data class Day(
+        val date: LocalDate,
+        val time: String,
+    ) : NotificationTime
+}
+
+fun notificationTime(
+    at: Instant,
+    clock: PracticeClock,
+): NotificationTime {
+    val now = clock.nowInstant()
+    val ago = now - at
+    val local = clock.local(at)
+    val today = clock.local(now).date
+    val time = "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+    return when {
+        ago < 1.minutes -> NotificationTime.JustNow
+        ago < 1.hours -> NotificationTime.MinutesAgo(ago.inWholeMinutes.toInt())
+        local.date == today -> NotificationTime.Today(time)
+        local.date == today.minus(DatePeriod(days = 1)) -> NotificationTime.Yesterday(time)
+        else -> NotificationTime.Day(local.date, time)
+    }
+}
+
+/** The list's sections (flow §3): rows by practice day, in the order they came (newest first). */
+fun notificationDays(
+    items: List<AppNotification>,
+    clock: PracticeClock,
+): List<Pair<LocalDate, List<AppNotification>>> = items.groupBy { clock.local(it.createdAt).date }.toList()

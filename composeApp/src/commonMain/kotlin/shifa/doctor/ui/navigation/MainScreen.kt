@@ -51,6 +51,7 @@ import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.chat
 import shifa.doctor.generated.resources.clinicNavClinic
 import shifa.doctor.generated.resources.contactAndClinicAddress
+import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.drMedPrefix
 import shifa.doctor.generated.resources.extendedProfile
 import shifa.doctor.generated.resources.home
@@ -101,6 +102,7 @@ import shifa.doctor.ui.auth.short
 import shifa.doctor.ui.calendar.AppointmentPanelScreen
 import shifa.doctor.ui.calendar.BlockPanelScreen
 import shifa.doctor.ui.calendar.BookingScreen
+import shifa.doctor.ui.calendar.CalendarFocus
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.chat.ChatListScreen
 import shifa.doctor.ui.chat.PatientChatScreen
@@ -112,6 +114,8 @@ import shifa.doctor.ui.home.HomeActions
 import shifa.doctor.ui.home.HomeScreen
 import shifa.doctor.ui.home.HomeShell
 import shifa.doctor.ui.home.PatientSearchScreen
+import shifa.doctor.ui.notifications.NotificationGo
+import shifa.doctor.ui.notifications.NotificationsScreen
 import shifa.doctor.ui.patients.PatientDetailScreen
 import shifa.doctor.ui.patients.PatientsScreen
 import shifa.doctor.ui.profile.BillingScreen
@@ -205,6 +209,7 @@ fun MainScreen(
             select = viewModel::select,
             openPatientFromSearch = viewModel::openPatientFromSearch,
             openChatWithPatient = viewModel::openChatWithPatient,
+            openCalendar = viewModel::openCalendar,
             refreshHomeCounts = viewModel::refreshHomeCounts,
             push = viewModel::push,
             back = { viewModel.back() },
@@ -228,6 +233,8 @@ class ShellActions(
     val openPatientFromSearch: (Long) -> Unit = {},
     // CHAT-07: "Send message" on a patient opens the Chat tab on their thread.
     val openChatWithPatient: (ShellRoute.PatientChat) -> Unit = {},
+    // NOTIF-02: the Calendar tab at its root (the day comes through `CalendarFocus`).
+    val openCalendar: () -> Unit = {},
     val push: (ShellRoute) -> Unit = {},
     val back: () -> Unit = {},
     val openMore: () -> Unit = {},
@@ -397,6 +404,32 @@ private fun RouteContent(
                         patients = { actions.select(ShellTab.Patients) },
                         seePlans = { actions.push(ShellRoute.Profile(ProfileSection.Subscription)) },
                     ),
+                )
+            } else if (route.tab == ShellTab.Notifications) {
+                // NOTIF-02: doctors (More, the bell) and clinic staff (their third tab); a target opens over the inbox.
+                val documentTitle = tr(Res.string.document)
+                NotificationsScreen(
+                    // A count that failed its last read is unknown (Mark all stays on).
+                    unread =
+                        shell.notificationsUnread.takeIf { shell.notificationsKnown && !shell.notificationsFailed },
+                    staff = staff,
+                    onOpen = { go ->
+                        val opened = currentInstant().toEpochMilliseconds()
+                        when (go) {
+                            is NotificationGo.Appointment -> actions.push(ShellRoute.Appointment(go.entry, opened))
+                            is NotificationGo.Patient -> actions.push(ShellRoute.Patient(go.id))
+                            is NotificationGo.Document ->
+                                actions.push(
+                                    ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
+                                )
+                            NotificationGo.Chat -> actions.select(ShellTab.Chat)
+                        }
+                    },
+                    onSettings = { actions.push(ShellRoute.Profile(ProfileSection.Settings)) },
+                    onCalendar = { day ->
+                        CalendarFocus.day.value = day
+                        actions.openCalendar()
+                    },
                 )
             } else if (route.tab == ShellTab.Chat) {
                 // CHAT-02: doctors and clinic staff alike (chat has no tier gate).

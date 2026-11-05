@@ -2671,5 +2671,8 @@
   "notificationTypeAppointmentReminder": "Uchrashuv eslatmasi",
   "notificationTypeAiVisitSummaryReady": "AI tashrif xulosasi tayyor",
   "notificationTypeAiBriefingReady": "AI brifing tayyor",
-  "notificationTypeTaskUpdate": "Vazifa yangilandi"
+  "notificationTypeTaskUpdate": "Vazifa yangilandi",
+  "notificationsLoadFailed": "Bildirishnomalarni yuklab bo'lmadi",
+  "notificationsMarkFailed": "O'qilgan deb belgilab bo'lmadi. Qayta urinib ko'ring.",
+  "notificationUnread": "O'qilmagan"
 }

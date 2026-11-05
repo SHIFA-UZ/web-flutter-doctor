@@ -237,6 +237,18 @@ class ShellViewModelTest {
     }
 
     @Test
+    fun `Open Calendar shows the Calendar's root, not what it had open`() {
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.select(ShellTab.Calendar)
+        classToTest.push(ShellRoute.Reports)
+        classToTest.select(ShellTab.Notifications)
+        classToTest.openCalendar()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Calendar)
+        assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Root(ShellTab.Calendar))
+    }
+
+    @Test
     fun `a conversation read drops the chat badge at once, not on the next poll`() {
         val classToTest = vm()
         classToTest.settle()

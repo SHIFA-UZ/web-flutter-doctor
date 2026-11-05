@@ -1768,9 +1768,12 @@
     <string name="notificationTypeTaskAssigned">Task assigned</string>
     <string name="notificationTypeTaskCompleted">Task completed</string>
     <string name="notificationTypeTaskUpdate">Task update</string>
+    <string name="notificationUnread">Unread</string>
     <string name="notificationViewAppointment">View Appointment</string>
     <string name="notificationViewResult">View Result</string>
     <string name="notifications">Notifications</string>
+    <string name="notificationsLoadFailed">Couldn't load notifications</string>
+    <string name="notificationsMarkFailed">Couldn't mark as read. Try again.</string>
     <string name="notificationsSystemSettings">Manage in system settings</string>
     <string name="notifyPatient">Notify patient</string>
     <string name="now">Now</string>

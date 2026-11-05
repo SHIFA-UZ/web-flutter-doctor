@@ -2671,5 +2671,8 @@
   "notificationTypeAppointmentReminder": "Appointment reminder",
   "notificationTypeAiVisitSummaryReady": "AI visit summary ready",
   "notificationTypeAiBriefingReady": "AI briefing ready",
-  "notificationTypeTaskUpdate": "Task update"
+  "notificationTypeTaskUpdate": "Task update",
+  "notificationsLoadFailed": "Couldn't load notifications",
+  "notificationsMarkFailed": "Couldn't mark as read. Try again.",
+  "notificationUnread": "Unread"
 }

@@ -160,6 +160,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CHAT-06 Voice messages | Done | "Record Voice Message" replaces the composer with the dark recorder pill (live level, 0:07 counter, Cancel, Send); < 1 s "Recording too short"; the `.m4a` uploads and sends as `voice` with its seconds, retry only re-sends once uploaded; voice bubbles play one at a time with position and total, "Couldn't play the voice message" when a stream fails. See chat.md. |
 | CHAT-07 Unread badge + open chat with a patient | Done | Patient Overview "Quick Actions" (New appointment, Send message, Create document; More actions waits for the ⋮ sheet): Send message opens the Chat tab on the patient's thread over the list, the header filled at once while `start` (find-or-create on the backend) resolves; failure says so and stays on the list. A conversation read drops the Chat badge at once. No Home "Message" (not on the board; Flutter's caller is dead code). See chat.md. |
 | NOTIF-01 Notification data + type catalogue | Done | `NotificationsRepository` (the paged list newest first, read one, read all; the count stays the shell's), `AppNotification` tolerant of case and bad rows, every backend type (35 on dev) mapped to a kind with its chip, tap target, board look and a body template from the structured fields (never the English text); in-memory demo inbox. See notifications.md. |
+| NOTIF-02 Inbox screen | Done | The Notifications tab (doctors: More / the bell; staff: their tab): "Notifications (n)" from the shell's count (99+), Mark all as read, Refresh, Settings, chips (no Tasks for staff), practice-day sections, board cards (tint + blue dot while unread, icon, label, relative time, 3-line body) with the board's actions; pages as you scroll; skeletons, empty states, banner + Retry keeping the old list. A tap reads the row (back on failure) and opens its target over the inbox: an appointment's Calendar panel (found on its practice day), the patient, the document viewer, Chat; gone → "This appointment no longer exists". See notifications.md. |
 
 ## Log
 
@@ -271,3 +272,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · CHAT-06 · Voice messages in chat: record, send and play.
 - 2026-11-05 · CHAT-07 · Send message from a patient, and the Chat badge drops on read.
 - 2026-11-05 · NOTIF-01 · Notification data, the type catalogue and the demo inbox.
+- 2026-11-05 · NOTIF-02 · The notifications inbox.

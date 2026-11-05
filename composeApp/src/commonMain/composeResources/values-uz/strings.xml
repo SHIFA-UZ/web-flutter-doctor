@@ -1768,9 +1768,12 @@
     <string name="notificationTypeTaskAssigned">Vazifa berildi</string>
     <string name="notificationTypeTaskCompleted">Vazifa bajarildi</string>
     <string name="notificationTypeTaskUpdate">Vazifa yangilandi</string>
+    <string name="notificationUnread">O'qilmagan</string>
     <string name="notificationViewAppointment">Uchrashuvni ko'rish</string>
     <string name="notificationViewResult">Natijani ko'rish</string>
     <string name="notifications">Bildirishnomalar</string>
+    <string name="notificationsLoadFailed">Bildirishnomalarni yuklab bo'lmadi</string>
+    <string name="notificationsMarkFailed">O'qilgan deb belgilab bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="notificationsSystemSettings">Tizim sozlamalarida boshqarish</string>
     <string name="notifyPatient">Bemorga xabar berish</string>
     <string name="now">Hozir</string>

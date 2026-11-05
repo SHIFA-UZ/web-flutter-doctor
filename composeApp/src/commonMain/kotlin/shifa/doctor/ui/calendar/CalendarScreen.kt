@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -263,12 +264,24 @@ class CalendarViewModel(
     }
 }
 
+/** A day another screen sends the Calendar to (the inbox's "Open Calendar"); taken once by [CalendarScreen]. */
+object CalendarFocus {
+    val day = MutableStateFlow<LocalDate?>(null)
+}
+
 @Composable
 fun CalendarScreen(
     onOpen: (CalendarEntry) -> Unit,
     viewModel: CalendarViewModel = viewModel { CalendarViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val focus by CalendarFocus.day.collectAsStateWithLifecycle()
+    LaunchedEffect(focus) {
+        focus?.let {
+            CalendarFocus.day.value = null
+            viewModel.select(it)
+        }
+    }
     // The block sheet's open stamp (a fresh form each time), null when closed.
     var blocking by rememberSaveable { mutableStateOf<Long?>(null) }
     // Back in the app (or the tab): the day again, within the throttle; the mismatch is re-evaluated by recomposition.

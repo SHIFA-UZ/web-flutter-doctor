@@ -16,6 +16,7 @@ import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.VisitKind
+import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.subscription.DoctorFeature
@@ -228,6 +229,8 @@ class ShellViewModel(
 
     init {
         // CHAT-07: a conversation read in the thread or the list drops the Chat badge at once.
+        // NOTIF-02: read in the inbox, the bell's count again.
+        viewModelScope.launch { NotificationReads.changed.collect { refreshNotifications() } }
         viewModelScope.launch {
             ChatReads.changed.collect {
                 readChatUnread()
@@ -318,6 +321,16 @@ class ShellViewModel(
             } else {
                 s.copy(tab = target, moreOpen = false)
             }
+        }
+    }
+
+    /** The Calendar tab at its root, whatever it had open (the inbox's "Open Calendar", flow 07/08 §7). */
+    fun openCalendar() {
+        switched = true
+        ShellNotice.dismissSuccess()
+        _state.update {
+                s ->
+            s.copy(stacks = s.stacks - ShellTab.Calendar, tab = clamp(ShellTab.Calendar, s), moreOpen = false)
         }
     }
 

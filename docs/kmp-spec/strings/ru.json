@@ -2671,5 +2671,8 @@
   "notificationTypeAppointmentReminder": "Напоминание о приёме",
   "notificationTypeAiVisitSummaryReady": "Готово AI-резюме визита",
   "notificationTypeAiBriefingReady": "Готов AI-брифинг",
-  "notificationTypeTaskUpdate": "Обновление задачи"
+  "notificationTypeTaskUpdate": "Обновление задачи",
+  "notificationsLoadFailed": "Не удалось загрузить уведомления",
+  "notificationsMarkFailed": "Не удалось отметить как прочитанное. Попробуйте ещё раз.",
+  "notificationUnread": "Не прочитано"
 }
