@@ -38,4 +38,11 @@ class IntelligenceScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h2400dp-xhdpi")
     fun cards() = captureRoboImage("screenshots/Intelligence_cards.png") { CardsPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1400dp-xhdpi")
+    fun bookingCards() = captureRoboImage("screenshots/Intelligence_bookingCards.png") { BookingCardsPreview() }
+
+    @Test
+    fun cancelCards() = captureRoboImage("screenshots/Intelligence_cancelCards.png") { CancelCardsPreview() }
 }

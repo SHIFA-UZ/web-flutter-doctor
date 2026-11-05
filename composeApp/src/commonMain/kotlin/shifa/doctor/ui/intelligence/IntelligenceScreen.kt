@@ -208,7 +208,23 @@ fun IntelligenceScreen(
                     threadActions,
                     Modifier.fillMaxSize(),
                     currentInstant(),
-                ) { tool, card -> ToolCard(tool, card, onOpenCalendar) }
+                ) { tool, card, at ->
+                    ToolCard(
+                        tool,
+                        card,
+                        onOpenCalendar,
+                        at?.let { turn.cards[it.index] } ?: CardUi(),
+                        at?.live == true,
+                        at?.let {
+                            CardActions(
+                                book = { slot -> thread.book(it.index, slot) },
+                                toggleOther = { thread.toggleOtherTimes(it.index) },
+                                dismiss = { thread.dismiss(it.index) },
+                                answerCancel = thread::answerCancel,
+                            )
+                        } ?: CardActions(),
+                    )
+                }
             } else {
                 // INTEL-03: the welcome; a starter card sends its prompt as if typed.
                 var options by remember { mutableStateOf<ChatSession?>(null) }

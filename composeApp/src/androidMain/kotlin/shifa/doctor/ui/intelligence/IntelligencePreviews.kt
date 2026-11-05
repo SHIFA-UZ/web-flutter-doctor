@@ -14,6 +14,7 @@ import shifa.doctor.data.intelligence.ChatMessage
 import shifa.doctor.data.intelligence.ChatSession
 import shifa.doctor.data.intelligence.ChatStoreState
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.intelSlotConflict
 import shifa.doctor.generated.resources.intelTookTooLong
 import shifa.doctor.ui.theme.PreviewTheme
 
@@ -173,7 +174,7 @@ private fun ThreadFrame(turn: ThreadUiState) =
                 ThreadActions(),
                 androidx.compose.ui.Modifier,
                 previewNow,
-            ) { tool, card -> ToolCard(tool, card) }
+            ) { tool, card, at -> ToolCard(tool, card, live = at?.live == true) }
         }
         Composer(threadChat, turn, ThreadActions())
     }
@@ -263,11 +264,10 @@ private val previewCards =
         "get_most_visited_patients" to """{"cardType":"most_visited","patients":[{"patientName":"Dilnoza Rahimova","visitCount":12},{"patientName":"Jasur Karimov","visitCount":7}]}""",
         "get_clinic_patterns" to """{"cardType":"clinic_patterns","patterns":[{"key":"m","label":"Spoken medication followed by a remote-care task","factType":"MEDICATION","count":14}]}""",
         "brief_patient" to """{"cardType":"patient_brief","briefing":"## Snapshot\nFollow-up after **pulpitis** treatment.\n- Allergy: penicillin"}""",
-        "propose_appointment" to """{"cardType":"propose_appointment","spokenHint":"Tomorrow at 10:00 is free. Shall I book it?"}""",
         "list_patient_appointments" to """{"cardType":"patient_appointments","error":"Patient not found","spokenHint":"I could not find that patient.","appointments":[]}""",
     )
 
-// INTEL-05: every read-only card (a cancelled visit muted), and a card INTEL-06 will draw, showing its spoken line.
+// INTEL-05: every read-only card (a cancelled visit muted), and one that failed, showing its spoken line.
 @Composable
 internal fun CardsPreview() =
     PreviewTheme {
@@ -282,4 +282,88 @@ internal fun CardsPreview() =
         ) {
             previewCards.forEach { (tool, json) -> ToolCard(tool, cardJson(json)) }
         }
+    }
+
+private const val SLOTS =
+    """"slots":[{"startAt":"2026-11-06T05:00:00Z","startLocal":"10:00","slotMinutes":30,"locationId":1},""" +
+        """{"startAt":"2026-11-06T05:30:00Z","startLocal":"10:30","slotMinutes":30,"locationId":1},""" +
+        """{"startAt":"2026-11-06T09:00:00Z","startLocal":"14:00","slotMinutes":30,"locationId":1}]"""
+
+// INTEL-06 (flows 03/14–15): the app books (Confirm, other times open), the backend's workflow waits for "yes", a
+// move whose slot was taken (409), and a booking Shifa made.
+@Composable
+internal fun BookingCardsPreview() =
+    CardColumn {
+        ToolCard(
+            "propose_appointment",
+            cardJson(
+                """{"cardType":"propose_appointment","patientId":12,"patientName":"Jasur Karimov","date":"2026-11-06",""" +
+                    """"preferredSlot":{"startAt":"2026-11-06T05:00:00Z","startLocal":"10:00","slotMinutes":30},$SLOTS}""",
+            ),
+            ui = CardUi(showOther = true),
+            live = true,
+        )
+        ToolCard(
+            "manage_booking_workflow",
+            cardJson(
+                """{"cardType":"propose_appointment","workflowId":"w1","patientId":12,"patientName":"Jasur Karimov",""" +
+                    """"date":"2026-11-06","preferredSlot":{"startAt":"2026-11-06T05:30:00Z","startLocal":"10:30"},$SLOTS}""",
+            ),
+            live = true,
+        )
+        ToolCard(
+            "propose_reschedule",
+            cardJson(
+                """{"cardType":"propose_reschedule","appointmentId":102,"patientName":"Jasur Karimov",""" +
+                    """"currentDateLabel":"5 Nov 2026","currentStartLocal":"10:30","date":"2026-11-06",$SLOTS}""",
+            ),
+            ui = CardUi(error = shifa.doctor.ui.emailcode.CodeBanner(Res.string.intelSlotConflict)),
+            live = true,
+        )
+        ToolCard(
+            "manage_booking_workflow",
+            cardJson(
+                """{"cardType":"propose_appointment","workflowId":"w1","workflowStatus":"COMPLETED","booked":true,""" +
+                    """"patientName":"Jasur Karimov","date":"2026-11-06","requestedTime":"10:30",""" +
+                    """"spokenHint":"Booked Jasur Karimov at 10:30 on 2026-11-06."}""",
+            ),
+        )
+    }
+
+// INTEL-06 (flow 03/16 target card): a cancellation waiting for the doctor's answer, then what it cancelled.
+@Composable
+internal fun CancelCardsPreview() =
+    CardColumn {
+        ToolCard(
+            "cancel_appointments",
+            cardJson(
+                """{"cardType":"cancel_preview","status":"AWAITING_CONFIRMATION","actionContext":{"type":"CANCEL","token":"t"},""" +
+                    """"count":2,"skipped":[{"appointmentId":101}],"appointments":[""" +
+                    """{"patientName":"Jasur Karimov","whenLabel":"Friday 6 November at 10:30"},""" +
+                    """{"patientName":"Malika Tursunova","whenLabel":"Friday 6 November at 14:00"}]}""",
+            ),
+            live = true,
+        )
+        ToolCard(
+            "cancel_appointments",
+            cardJson(
+                """{"cardType":"cancel_result","status":"PARTIAL_SUCCESS","cancelled":[""" +
+                    """{"patientName":"Jasur Karimov","whenLabel":"Friday 6 November at 10:30","status":"CANCELLED"}],""" +
+                    """"failed":[{"patientName":"Malika Tursunova","whenLabel":"Friday 6 November at 14:00","status":"IN_PROGRESS"}]}""",
+            ),
+        )
+    }
+
+@Composable
+private fun CardColumn(content: @Composable () -> Unit) =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier
+                .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
+                .padding(shifa.doctor.ui.theme.ShifaSize.S16),
+            verticalArrangement =
+                androidx.compose.foundation.layout.Arrangement.spacedBy(
+                    shifa.doctor.ui.theme.ShifaSize.S12,
+                ),
+        ) { content() }
     }

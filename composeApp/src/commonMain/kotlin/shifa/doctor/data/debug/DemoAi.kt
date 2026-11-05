@@ -1,5 +1,12 @@
 package shifa.doctor.data.debug
 
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -17,7 +24,8 @@ import shifa.doctor.utils.currentInstant
 /**
  * The demo Shifa AI (AI-01), in memory and free: canned streams in the request's language (the morning one with a
  * schedule card, the patient one ending in a draft; a question containing "fail" ends in an `error` event), a short
- * silent clip for speech, a briefing, and three facts per demo visit that documenting commits, as the backend does.
+ * silent clip for speech, a briefing, and three facts per demo visit that documenting commits, as the backend does;
+ * booking, moving and cancelling words get those cards (INTEL-06).
  */
 internal class DemoAi {
     private val facts = mutableMapOf<Long, List<JsonObject>>()
@@ -37,7 +45,10 @@ internal class DemoAi {
             request?.get("messages")?.jsonArray?.lastOrNull()?.jsonObject?.get("content")?.jsonPrimitive?.content
                 ?: request?.get("question")?.jsonPrimitive?.content.orEmpty()
         val out = StringBuilder()
-        if (morning) {
+        val action = if (morning) action(asked) else null
+        if (action != null) {
+            out.event("tool", JsonObject(mapOf("name" to JsonPrimitive(action.first), "payload" to action.second)))
+        } else if (morning) {
             val card =
                 buildJsonObject {
                     put("cardType", "schedule")
@@ -47,7 +58,9 @@ internal class DemoAi {
                 }
             out.event("tool", JsonObject(mapOf("name" to JsonPrimitive("get_today_schedule"), "payload" to card)))
         }
-        val words = (if (morning) MORNING else PATIENT).getValue(language).replace("%d", schedule.size.toString())
+        val words =
+            action?.second?.str("spokenHint")
+                ?: (if (morning) MORNING else PATIENT).getValue(language).replace("%d", schedule.size.toString())
         words.split(' ').forEachIndexed { i, w -> out.append("data:").append(if (i == 0) w else " $w").append("\n\n") }
         if (asked.contains("fail", ignoreCase = true)) {
             out.event("error", JsonObject(mapOf("code" to JsonPrimitive("AI_UNAVAILABLE"))))
@@ -190,6 +203,99 @@ internal class DemoAi {
                 }
             },
         )
+
+    /**
+     * INTEL-06: booking words get a proposal the app books from its buttons (tomorrow, Jasur Karimov), moving words a
+     * move of visit 102, cancelling words a cancellation waiting for "yes", and a confirmation its result, in English
+     * as the backend sends them.
+     */
+    private fun action(asked: String): Pair<String, JsonObject>? {
+        val text = asked.trim().lowercase()
+        val zone = TimeZone.of("Asia/Tashkent")
+        val tomorrow = currentInstant().plus(1, DateTimeUnit.DAY, zone).toLocalDateTime(zone).date
+
+        fun slot(
+            hour: Int,
+            minute: Int = 0,
+        ) = buildJsonObject {
+            put("startAt", LocalDateTime(tomorrow, LocalTime(hour, minute)).toInstant(zone).toString())
+            put("startLocal", LocalTime(hour, minute).toString())
+            put("slotMinutes", 30)
+            put("locationId", 1)
+        }
+        val slots = JsonArray(listOf(slot(10), slot(10, 30), slot(11), slot(14)))
+        val visits =
+            JsonArray(
+                listOf("Jasur Karimov" to "10:30", "Malika Tursunova" to "14:00").map { (name, time) ->
+                    buildJsonObject {
+                        put("patientName", name)
+                        put("whenLabel", "Friday 6 November at $time")
+                    }
+                },
+            )
+        return when {
+            text in setOf("yes", "ha", "да") ->
+                "cancel_appointments" to
+                    buildJsonObject {
+                        put("cardType", "cancel_result")
+                        put("status", "SUCCESS")
+                        put("cancelled", visits)
+                        put("failed", JsonArray(emptyList()))
+                        put("spokenHint", "Cancelled 2. The patients were notified in the app.")
+                    }
+            listOf("cancel", "отмен", "bekor").any(text::contains) ->
+                "cancel_appointments" to
+                    buildJsonObject {
+                        put("cardType", "cancel_preview")
+                        put("status", "AWAITING_CONFIRMATION")
+                        put(
+                            "actionContext",
+                            buildJsonObject {
+                                put("type", "CANCEL")
+                                put("token", "00000000-0000-0000-0000-000000000001")
+                            },
+                        )
+                        put("appointments", visits)
+                        put("skipped", JsonArray(emptyList()))
+                        put("count", 2)
+                        put(
+                            "spokenHint",
+                            "I can cancel 2 upcoming visits: Jasur Karimov Friday 6 November at 10:30; " +
+                                "Malika Tursunova Friday 6 November at 14:00. Say yes to cancel them. " +
+                                "Nothing has been cancelled yet.",
+                        )
+                    }
+            listOf("move", "перенес", "ko'chir", "ko‘chir").any(text::contains) ->
+                "propose_reschedule" to
+                    buildJsonObject {
+                        put("cardType", "propose_reschedule")
+                        put("appointmentId", 102)
+                        put("patientId", 12)
+                        put("patientName", "Jasur Karimov")
+                        put("currentDateLabel", "6 Nov 2026")
+                        put("currentStartLocal", "10:30")
+                        put("date", tomorrow.toString())
+                        put("slots", slots)
+                        put(
+                            "spokenHint",
+                            "I found 4 free slots on Friday, 6 November for Jasur Karimov. Which time works?",
+                        )
+                    }
+            listOf("book", "запиш", "yoz").any(text::contains) ->
+                "propose_appointment" to
+                    buildJsonObject {
+                        put("cardType", "propose_appointment")
+                        put("patientId", 12)
+                        put("patientName", "Jasur Karimov")
+                        put("date", tomorrow.toString())
+                        put("isVideo", false)
+                        put("preferredSlot", slot(10))
+                        put("slots", slots)
+                        put("spokenHint", "Booking Jasur Karimov at 10:00.")
+                    }
+            else -> null
+        }
+    }
 
     private fun StringBuilder.event(
         name: String,

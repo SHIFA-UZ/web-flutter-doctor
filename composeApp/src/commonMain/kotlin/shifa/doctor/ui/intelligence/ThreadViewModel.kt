@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -18,19 +20,32 @@ import shifa.doctor.data.ai.aiCode
 import shifa.doctor.data.ai.aiRepository
 import shifa.doctor.data.ai.toAiMessage
 import shifa.doctor.data.api.requestId
+import shifa.doctor.data.appointments.AppointmentsRepository
+import shifa.doctor.data.appointments.BookRequest
+import shifa.doctor.data.appointments.appointmentsRepository
 import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
+import shifa.doctor.data.intelligence.CardSlot
 import shifa.doctor.data.intelligence.ChatHistory
 import shifa.doctor.data.intelligence.ChatMessage
 import shifa.doctor.data.intelligence.ChatSessionStore
 import shifa.doctor.data.intelligence.ChatTitles
+import shifa.doctor.data.intelligence.IntelCard
 import shifa.doctor.data.intelligence.chatSessionStore
 import shifa.doctor.data.model.AiRequest
 import shifa.doctor.data.model.AiStreamEvent
+import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.intelBookingFailed
+import shifa.doctor.generated.resources.intelBookingFailedNetwork
 import shifa.doctor.generated.resources.intelEmptyReply
+import shifa.doctor.generated.resources.intelMissingAppointmentOrSlot
+import shifa.doctor.generated.resources.intelMissingPatientOrSlot
+import shifa.doctor.generated.resources.intelRescheduleFailed
+import shifa.doctor.generated.resources.intelRescheduleFailedNetwork
+import shifa.doctor.generated.resources.intelSlotConflict
 import shifa.doctor.generated.resources.somethingWentWrong
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.utils.PracticeClock
@@ -46,10 +61,21 @@ data class ThreadUiState(
     val card: JsonObject? = null,
     val error: CodeBanner? = null,
     val draft: String = "",
+    // The booking cards' passing state, by message index in the open chat (INTEL-06); outcomes are saved in the card.
+    val cards: Map<Int, CardUi> = emptyMap(),
+    // A card's booking is running in this chat: no new question until it ends (its history would be stale).
+    val booking: Boolean = false,
 ) {
     val busy: Boolean get() = asking != null && error == null
-    val canSend: Boolean get() = draft.isNotBlank() && !busy
+    val canSend: Boolean get() = draft.isNotBlank() && !busy && !booking
 }
+
+/** A booking card while the doctor works it: the call running, its failure, the other times shown. */
+data class CardUi(
+    val busy: Boolean = false,
+    val error: CodeBanner? = null,
+    val showOther: Boolean = false,
+)
 
 /**
  * One conversation's turns (INTEL-04, 02 §3.3, flow 03/03): a typed question goes to the morning stream with the
@@ -63,10 +89,13 @@ class ThreadViewModel(
     private val ai: AiRepository = aiRepository,
     private val appLanguage: () -> String = { languageStorage.language.value.aiCode },
     private val now: () -> Instant = ::currentInstant,
-    // A booking or change made by Shifa: today's calendar reads again and every screen showing visits hears of it.
-    private val scheduleChanged: suspend () -> Unit = {
-        calendarRepository.changed(PracticeClock(profileRepository.me.value?.profile?.timeZone))
+    // A booking, move or cancellation made in Intelligence: today and the touched days (given as practice dates or as
+    // instants) are read again, and every screen showing visits hears of it.
+    private val scheduleChanged: suspend (dates: List<LocalDate>, starts: List<Instant>) -> Unit = { dates, starts ->
+        val clock = PracticeClock(profileRepository.me.value?.profile?.timeZone)
+        calendarRepository.changed(clock, *(dates + starts.map { clock.local(it).date }).distinct().toTypedArray())
     },
+    private val appointments: AppointmentsRepository = appointmentsRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ThreadUiState())
     val state: StateFlow<ThreadUiState> = _state.asStateFlow()
@@ -77,11 +106,14 @@ class ThreadViewModel(
     private val languages = mutableMapOf<String, String>()
     private var lastQuestion: String? = null
 
+    // The card each chat is booking from, kept when the doctor leaves and comes back: one booking per chat at a time.
+    private val bookings = mutableMapOf<String, Int>()
+
     fun draft(text: String) = _state.update { it.copy(draft = text) }
 
     /** The composer's Send (or a starter prompt): the text as typed. */
     fun send(text: String = _state.value.draft) {
-        if (_state.value.busy) return
+        if (_state.value.busy || store.state.value.activeId in bookings) return
         val question = ChatTitles.stripWakePhrase(text).ifBlank { return }
         _state.update { it.copy(draft = "") }
         ask(question)
@@ -94,11 +126,125 @@ class ThreadViewModel(
         ask(q)
     }
 
+    /**
+     * A booking card's Confirm or slot button (INTEL-06, flows 03/14–15; cards without the backend's workflow only):
+     * `POST /schedule/book` or `PUT /appointments/{id}/change`. Success is saved into the card (so a reopened chat
+     * shows it booked, not bookable) and the calendar hears of it.
+     */
+    fun book(
+        index: Int,
+        slot: CardSlot,
+    ) {
+        val chat = store.state.value.active ?: return
+        val message = chat.messages.getOrNull(index) ?: return
+        val card = message.cardPayload?.let { IntelCard.of(message.toolName, it) } as? IntelCard.Proposal ?: return
+        // Not while Shifa answers (the reply may book too), nor while this chat books from a card.
+        if (card.done || card.workflow || _state.value.busy || chat.id in bookings) return
+        val start = slot.startAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        val target = if (card.move) card.appointmentId else card.patientId
+        if (start == null || target == null) {
+            val missing =
+                if (card.move) Res.string.intelMissingAppointmentOrSlot else Res.string.intelMissingPatientOrSlot
+            return cardUi(index) { it.copy(error = CodeBanner(missing)) }
+        }
+        bookings[chat.id] = index
+        cardUi(index) { it.copy(busy = true, error = null) }
+        _state.update { it.copy(booking = true) }
+        viewModelScope.launch {
+            // Video visits and known locations are labelled by the backend: no English "Video Consultation" sent.
+            val location = slot.locationId.takeUnless { card.isVideo }
+            val result =
+                if (card.move) {
+                    appointments.change(target, start, slot.minutes, location)
+                } else {
+                    appointments.book(
+                        BookRequest(
+                            start.toString(),
+                            slot.minutes,
+                            target,
+                            card.isVideo,
+                            card.reason,
+                            slot.locationLabel.takeUnless { card.isVideo },
+                            location,
+                        ),
+                    )
+                }
+            bookings.remove(chat.id)
+            if (store.state.value.activeId == chat.id) _state.update { it.copy(booking = false) }
+            result.fold(
+                {
+                    val key = if (card.move) IntelCard.KEY_MOVED else IntelCard.KEY_BOOKED
+                    store.updateCard(chat.id, index) {
+                        JsonObject(
+                            it + (key to JsonPrimitive(true)) + (IntelCard.KEY_BOOKED_TIME to JsonPrimitive(slot.time)),
+                        )
+                    }
+                    cardUi(index, chat.id) { CardUi() }
+                    scheduleChanged(listOfNotNull(card.currentDate), listOf(start))
+                },
+                { e -> cardUi(index, chat.id) { it.copy(busy = false, error = bookingError(e, card.move)) } },
+            )
+        }
+    }
+
+    /** "Other times" / "Hide other times" under a proposal's Confirm. */
+    fun toggleOtherTimes(index: Int) = cardUi(index) { it.copy(showOther = !it.showOther) }
+
+    /** A proposal's Cancel: the card goes (nothing is cancelled; saying "no" to Shifa does the same), and stays gone. */
+    fun dismiss(index: Int) {
+        val chat = store.state.value.active ?: return
+        store.updateCard(chat.id, index) { JsonObject(it + (IntelCard.KEY_DISMISSED to JsonPrimitive(true))) }
+    }
+
+    /**
+     * The cancellation card's "Yes, cancel N" / "Keep them" (flow 03/16 target): the doctor's answer sent as if typed,
+     * in the conversation's language, with words the backend takes as a confirmation (or not). The app never cancels.
+     */
+    fun answerCancel(yes: Boolean) {
+        val chat = store.state.value.active ?: return
+        val language = languages[chat.id] ?: appLanguage()
+        send((if (yes) CONFIRM else DECLINE)[language] ?: if (yes) "yes" else "no")
+    }
+
+    private fun cardUi(
+        index: Int,
+        chatId: String? = null,
+        change: (CardUi) -> CardUi,
+    ) {
+        // A call that ends after the doctor opened another chat leaves that chat's cards alone.
+        if (chatId != null && store.state.value.activeId != chatId) return
+        _state.update { it.copy(cards = it.cards + (index to change(it.cards[index] ?: CardUi()))) }
+    }
+
+    private fun bookingError(
+        e: Throwable,
+        move: Boolean,
+    ): CodeBanner =
+        when {
+            e is ApiException.NetworkError || e !is ApiException ->
+                CodeBanner(if (move) Res.string.intelRescheduleFailedNetwork else Res.string.intelBookingFailedNetwork)
+            e.status == HTTP_CONFLICT -> CodeBanner(Res.string.intelSlotConflict, requestId = e.requestId)
+            else ->
+                CodeBanner(
+                    if (move) Res.string.intelRescheduleFailed else Res.string.intelBookingFailed,
+                    requestId = e.requestId,
+                    args = listOf(e.status.toString()),
+                )
+        }
+
     /** Leaving the chat (back, another chat, deleting it): the running turn stops and its question goes. */
     fun stop() {
         turn?.cancel()
         turn = null
-        _state.update { ThreadUiState(draft = it.draft) }
+        // A card booking runs on (it can't be taken back halfway); back in its chat, the card shows it still running.
+        val booking = bookings[store.state.value.activeId]
+        _state.update {
+            ThreadUiState(
+                draft = it.draft,
+                cards = booking?.let { i -> mapOf(i to CardUi(busy = true)) }.orEmpty(),
+                booking = booking != null,
+            )
+        }
     }
 
     private fun ask(question: String) {
@@ -131,19 +277,21 @@ class ThreadViewModel(
                                 _state.update { it.copy(streaming = text.toString()) }
                             }
                             is AiStreamEvent.Tool -> {
-                                if (e.payload.flag("booked")) viewModelScope.launch { scheduleChanged() }
+                                if (e.payload.changesSchedule()) {
+                                    val (dates, starts) = e.payload.touchedDays()
+                                    viewModelScope.launch { scheduleChanged(dates, starts) }
+                                }
                                 _state.update { it.copy(toolName = e.name, card = e.payload) }
                             }
                             is AiStreamEvent.Draft -> Unit
                         }
                     }
-                result.fold({ finish(chat.id, stored, question, askedAt, text.toString().trim()) }, ::fail)
+                result.fold({ finish(chat.id, question, askedAt, text.toString().trim()) }, ::fail)
             }
     }
 
     private fun finish(
         chatId: String,
-        stored: List<ChatMessage>,
         question: String,
         askedAt: Instant,
         reply: String,
@@ -162,17 +310,20 @@ class ThreadViewModel(
         // A booking Shifa made says so; a reply without words falls back to the card's spoken line (02 §3.3 step 8).
         val said =
             when {
-                card?.flag("booked") == true -> card.text("statusMessage") ?: reply
+                card?.flag(IntelCard.KEY_BOOKED) == true || card?.flag(IntelCard.KEY_MOVED) == true ->
+                    card.text("statusMessage") ?: reply.ifEmpty { card.text("spokenHint").orEmpty() }
                 reply.isEmpty() -> card?.text("spokenHint").orEmpty()
                 else -> reply
             }
+        // Onto the chat as it is now: a card booked or dismissed during the turn keeps that.
+        val current = store.state.value.active?.messages.orEmpty()
         store.replaceMessages(
             chatId,
-            stored +
+            current +
                 ChatMessage(ChatMessage.ROLE_USER, question, askedAt) +
                 ChatMessage(ChatMessage.ROLE_ASSISTANT, said, now(), s.toolName, card),
         )
-        _state.update { ThreadUiState(draft = it.draft) }
+        _state.update { ThreadUiState(draft = it.draft, cards = it.cards) }
     }
 
     private fun fail(e: Throwable) =
@@ -182,6 +333,26 @@ class ThreadViewModel(
             )
         }
 }
+
+private const val HTTP_CONFLICT = 409
+
+// Words the backend's `AppointmentActionPhrases` takes as a confirmation, by reply language; the "no"s are anything else.
+private val CONFIRM = mapOf("EN" to "yes", "UZ" to "ha", "RU" to "да")
+private val DECLINE = mapOf("EN" to "no", "UZ" to "yo'q", "RU" to "нет")
+
+// Shifa booked, moved or cancelled visits (02 §3.3 step 8; flow 03/16 target: refresh at once, not on leaving).
+private fun JsonObject.changesSchedule(): Boolean =
+    flag(IntelCard.KEY_BOOKED) || flag(IntelCard.KEY_MOVED) ||
+        text("cardType") == "cancel_result" && (get("cancelled") as? JsonArray)?.isNotEmpty() == true
+
+// The days a booking, move or cancellation touched: the new date, and the cancelled visits' starts.
+private fun JsonObject.touchedDays(): Pair<List<LocalDate>, List<Instant>> =
+    listOfNotNull(text("date")?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() }) to
+        (get("cancelled") as? JsonArray).orEmpty().mapNotNull { row ->
+            ((row as? JsonObject)?.get("startAt") as? JsonPrimitive)?.contentOrNull?.let {
+                runCatching { Instant.parse(it) }.getOrNull()
+            }
+        }
 
 private fun JsonObject.flag(key: String): Boolean = (get(key) as? JsonPrimitive)?.booleanOrNull == true
 

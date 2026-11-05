@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.datetime.Instant
+import kotlinx.serialization.json.JsonObject
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.secureSettings
 import shifa.doctor.utils.currentInstant
@@ -128,6 +129,33 @@ class ChatSessionStore(
                 .map { if (it.id == id) it.copy(messages = copy, updatedAt = at) else it }
                 .sortedByDescending { it.updatedAt }
         save(_state.value.copy(sessions = sessions, activeId = id))
+    }
+
+    /**
+     * One card's payload changed in place (INTEL-06: the app's own booking, the doctor's Cancel): the chat keeps its
+     * place and the open chat stays open, even when this lands after the doctor moved on.
+     */
+    fun updateCard(
+        id: String,
+        index: Int,
+        change: (JsonObject) -> JsonObject,
+    ) {
+        ensureLoaded()
+        val sessions =
+            _state.value.sessions.map { chat ->
+                val message = chat.messages.getOrNull(index)?.takeIf { chat.id == id }
+                val payload = message?.cardPayload ?: return@map chat
+                chat.copy(
+                    messages =
+                        chat.messages.toMutableList().apply {
+                            set(
+                                index,
+                                message.copy(cardPayload = change(payload)),
+                            )
+                        },
+                )
+            }
+        save(_state.value.copy(sessions = sessions))
     }
 
     private fun newSession(): ChatSession {

@@ -46,7 +46,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.JsonObject
 import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.intelligence.ChatMessage
 import shifa.doctor.data.intelligence.ChatSession
+import shifa.doctor.data.intelligence.IntelCard
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.ic_send_18
 import shifa.doctor.generated.resources.ic_sparkles_16
@@ -79,6 +81,12 @@ class ThreadActions(
     val retry: () -> Unit = {},
 )
 
+/** Where a saved card sits in the chat, and whether its buttons work (see [ToolCard]). */
+data class CardAt(
+    val index: Int,
+    val live: Boolean,
+)
+
 /**
  * The conversation (flow 03/03, board `DaIntel` thread): the doctor's bubbles on the right, Shifa's answers with the
  * sparkle, rendered text and the card slot, "Reviewing…" until the first token, the growing reply, an error with
@@ -92,9 +100,26 @@ internal fun ThreadList(
     modifier: Modifier = Modifier,
     now: Instant,
     listState: LazyListState = rememberLazyListState(),
-    card: @Composable (toolName: String?, payload: JsonObject) -> Unit = { _, _ -> },
+    card: @Composable (toolName: String?, payload: JsonObject, at: CardAt?) -> Unit = { _, _, _ -> },
 ) {
     val messages = chat?.messages.orEmpty()
+    // Live cards (INTEL-06), none while a turn runs: the newest proposal, and a cancellation the last answer waits on.
+    val lastProposal =
+        messages.indexOfLast {
+                m ->
+            m.cardPayload?.let { IntelCard.typeOf(m.toolName, it) in IntelCard.PROPOSALS } == true
+        }
+
+    fun live(
+        i: Int,
+        m: ChatMessage,
+    ) = state.asking == null &&
+        (
+            i == lastProposal || i == messages.lastIndex && IntelCard.typeOf(
+                m.toolName,
+                m.cardPayload!!,
+            ) == "cancel_preview"
+        )
     val cardText = rememberCardText()
     val extra = if (state.asking != null) 1 else 0
     // Follow the newest content while the doctor is at the very bottom (flow 03/03 §3): a scroll the doctor ends above
@@ -119,7 +144,7 @@ internal fun ThreadList(
         contentPadding = PaddingValues(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSize.S16),
         verticalArrangement = Arrangement.spacedBy(ShifaSize.S16),
     ) {
-        itemsIndexed(messages, key = { i, _ -> i }) { _, m ->
+        itemsIndexed(messages, key = { i, _ -> i }) { i, m ->
             if (m.isUser) {
                 UserBubble(
                     m.content,
@@ -134,7 +159,7 @@ internal fun ThreadList(
                     now,
                     streaming = false,
                 ) {
-                    m.cardPayload?.let { card(m.toolName, it) }
+                    m.cardPayload?.let { card(m.toolName, it, CardAt(i, live(i, m))) }
                 }
             }
         }
@@ -166,7 +191,7 @@ internal fun ThreadList(
                             )
                         else ->
                             AssistantBlock(state.streaming, null, now, streaming = true) {
-                                state.card?.let { card(state.toolName, it) }
+                                state.card?.let { card(state.toolName, it, null) }
                             }
                     }
                 }

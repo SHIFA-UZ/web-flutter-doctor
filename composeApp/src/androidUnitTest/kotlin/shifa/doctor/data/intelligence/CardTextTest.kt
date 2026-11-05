@@ -214,4 +214,15 @@ class CardTextTest {
         assertThat(booked).contains("Botir Muzrabov")
         assertThat(booked).contains("банд қилинди")
     }
+
+    @Test
+    fun `booking card lines - a visit's time, a known status line, an unknown one left to the app's own`() {
+        val visit = uz.localizeHint("Friday 6 November at 10:30")
+        assertThat(visit).contains("Juma")
+        assertThat(visit).contains("10:30")
+        assertThat(visit).doesNotContain("November")
+        assertThat(uz.localizedOrNull("Booked Botir Muzrabov at 09:00 on 2026-10-22.")).contains("band qilindi")
+        assertThat(uz.localizedOrNull("The visit was moved by someone.")).isNull()
+        assertThat(en.localizedOrNull("The visit was moved by someone.")).isEqualTo("The visit was moved by someone.")
+    }
 }

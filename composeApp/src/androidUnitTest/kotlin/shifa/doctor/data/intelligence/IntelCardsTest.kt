@@ -111,12 +111,125 @@ class IntelCardsTest {
     @Test
     fun `a card the app doesn't draw yet shows its spoken line, else its error`() {
         assertThat(
-            card("propose_appointment", """{"cardType":"propose_appointment","spokenHint":"Shall I book 10:00?"}"""),
+            card("open_dental_chart", """{"cardType":"dental_chart","spokenHint":"Here is the chart."}"""),
         )
-            .isEqualTo(IntelCard.Other("propose_appointment", "Shall I book 10:00?"))
+            .isEqualTo(IntelCard.Other("dental_chart", "Here is the chart."))
         assertThat(
             (card(null, """{"cardType":"something_new","error":"Not available."}""") as IntelCard.Other).line,
         ).isEqualTo("Not available.")
         assertThat((card(null, "{}") as IntelCard.Other).line).isNull()
+    }
+
+    // INTEL-06: payloads as DoctorMorningToolService / IntelligenceBookingWorkflowService / AppointmentActionService send them.
+    @Test
+    fun `a proposal reads its slots, the preferred one, the workflow and the app's own outcome`() {
+        val slots =
+            """"slots":[{"startAt":"2026-11-06T05:00:00Z","startLocal":"10:00","slotMinutes":30,"locationId":3,"locationLabel":"Chilonzor"},{"startLocal":"11:00"},{"startAt":"x"}]"""
+        val book =
+            card(
+                "propose_appointment",
+                """{"patientId":12,"patientName":"Jasur Karimov","date":"2026-11-06","dateLabel":"6 Nov 2026","isVideo":false,"reason":null,"preferredSlot":{"startAt":"2026-11-06T05:00:00Z","startLocal":"10:00","slotMinutes":30},$slots,"spokenHint":"Booking Jasur Karimov at 10:00 on Friday, 6 November."}""",
+            ) as IntelCard.Proposal
+        assertThat(book.move).isFalse()
+        assertThat(book.slots.map { it.time }).containsExactly("10:00", "11:00").inOrder()
+        assertThat(book.slots[0]).isEqualTo(CardSlot("2026-11-06T05:00:00Z", "10:00", 30, 3, "Chilonzor"))
+        assertThat(book.preferred!!.time).isEqualTo("10:00")
+        assertThat(book.time).isEqualTo("10:00")
+        assertThat(book.workflow).isFalse()
+        assertThat(book.done).isFalse()
+        assertThat(book.reason).isNull()
+        // The app's own booking and the doctor's Cancel, saved into the card.
+        val saved =
+            card(
+                "propose_appointment",
+                """{"patientId":12,$slots,"booked":true,"dismissed":true,"spokenHint":"Booking …"}""",
+            ) as IntelCard.Proposal
+        assertThat(saved.done).isTrue()
+        assertThat(saved.dismissed).isTrue()
+        assertThat(saved.status).isNull()
+        assertThat(
+            (
+                card(
+                    "propose_appointment",
+                    """{"preferredSlot":{"startLocal":"10:00"},$slots,"booked":true,"bookedTime":"11:00"}""",
+                ) as IntelCard.Proposal
+            ).time,
+        )
+            .isEqualTo("11:00")
+
+        val move =
+            card(
+                null,
+                """{"cardType":"propose_reschedule","workflowId":"w2","appointmentId":102,"currentDateLabel":"5 Nov 2026","currentStartLocal":"10:30","date":"2026-11-06",$slots}""",
+            ) as IntelCard.Proposal
+        assertThat(move.move).isTrue()
+        assertThat(move.workflow).isTrue()
+        assertThat(move.current).isEqualTo("5 Nov 2026 10:30")
+        assertThat(move.time).isNull()
+    }
+
+    @Test
+    fun `the workflow's finished booking has its line, a turn without a proposal is its line only`() {
+        val done =
+            card(
+                "manage_booking_workflow",
+                """{"cardType":"propose_appointment","workflowId":"w1","workflowStatus":"COMPLETED","booked":true,"patientName":"Jasur Karimov","date":"2026-11-06","requestedTime":"10:30","spokenHint":"Booked Jasur Karimov at 10:30 on 2026-11-06."}""",
+            ) as IntelCard.Proposal
+        assertThat(done.done).isTrue()
+        assertThat(done.time).isEqualTo("10:30")
+        assertThat(done.status).isEqualTo("Booked Jasur Karimov at 10:30 on 2026-11-06.")
+        val moved =
+            card(
+                "propose_reschedule",
+                """{"cardType":"propose_reschedule","workflowStatus":"COMPLETED","moved":true,"spokenHint":"Moved the appointment to 10:30 on 2026-11-06."}""",
+            ) as IntelCard.Proposal
+        assertThat(moved.done).isTrue()
+        assertThat(moved.move).isTrue()
+        // "Moved the appointment to…" says no more than the app's own "Appointment moved." (and reads half English).
+        assertThat(moved.status).isNull()
+
+        assertThat(
+            card(
+                "manage_booking_workflow",
+                """{"cardType":"propose_appointment","workflowStatus":"NONE","error":"No active booking workflow","spokenHint":"There is no booking waiting for confirmation."}""",
+            ),
+        ).isEqualTo(IntelCard.Failed("propose_appointment", "There is no booking waiting for confirmation."))
+        assertThat(
+            card(
+                "manage_booking_workflow",
+                """{"cardType":"propose_appointment","workflowStatus":"COLLECTING_DETAILS","spokenHint":"Okay. Which patient should I book instead?"}""",
+            ),
+        )
+            .isInstanceOf(IntelCard.Failed::class.java)
+    }
+
+    @Test
+    fun `a cancellation waits only with its token, a result lists what was and wasn't cancelled`() {
+        val rows = """"appointments":[{"appointmentId":5,"patientName":"Jasur Karimov","whenLabel":"Friday 6 November at 10:30","status":"CONFIRMED"}]"""
+        val preview =
+            card(
+                "cancel_appointments",
+                """{"cardType":"cancel_preview","status":"AWAITING_CONFIRMATION","actionContext":{"type":"CANCEL","token":"t"},$rows,"skipped":[{"appointmentId":6}],"count":1}""",
+            ) as IntelCard.Cancel
+        assertThat(preview.awaiting).isTrue()
+        assertThat(preview.count).isEqualTo(1)
+        assertThat(preview.skipped).isEqualTo(1)
+        assertThat(
+            preview.rows.single(),
+        ).isEqualTo(CancelRow("Jasur Karimov", "Friday 6 November at 10:30", "CONFIRMED"))
+        val clarify =
+            card(
+                null,
+                """{"cardType":"cancel_preview","status":"AWAITING_CLARIFICATION",$rows}""",
+            ) as IntelCard.Cancel
+        assertThat(clarify.awaiting).isFalse()
+        val result =
+            card(
+                null,
+                """{"cardType":"cancel_result","status":"PARTIAL_SUCCESS","cancelled":[{"patientName":"A","status":"CANCELLED"}],"failed":[{"patientName":"B","status":"IN_PROGRESS"}]}""",
+            ) as IntelCard.Cancel
+        assertThat(result.result).isTrue()
+        assertThat(result.awaiting).isFalse()
+        assertThat(result.rows.map { it.status }).containsExactly("CANCELLED", "IN_PROGRESS").inOrder()
     }
 }

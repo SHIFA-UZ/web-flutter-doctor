@@ -178,6 +178,9 @@ class CardText(
         return localizeEmbeddedCalendar(text)
     }
 
+    /** [localizeHint], or null when a uz/ru line came back unchanged (a sentence this file doesn't know: English). */
+    fun localizedOrNull(hint: String): String? = localizeHint(hint).takeIf { lang == "en" || it != hint.trim() }
+
     private val exactTable: Map<String, String> by lazy { exactSentences() }
 
     private fun matchToolSentence(text: String): String? {
@@ -1678,19 +1681,20 @@ class CardText(
         return runCatching { LocalDate(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt()) }.getOrNull()
     }
 
-    private fun parseEnglishDate(raw: String?): LocalDate? {
-        val m = Regex("""^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$""").find(raw?.trim() ?: return null) ?: return null
-        val token = m.groupValues[2].lowercase()
-        val month = FULL_MONTHS[token] ?: SHORT_MONTHS[token] ?: return null
-        return runCatching { LocalDate(m.groupValues[3].toInt(), month, m.groupValues[1].toInt()) }.getOrNull()
-    }
-
     private fun fullMonthKey(english: String): String {
         val lower = english.lowercase()
         return "month${lower[0].uppercase()}${lower.substring(1)}"
     }
 
     companion object {
+        /** "6 Nov 2026" / "6 November 2026" (the backend's English date labels). */
+        fun parseEnglishDate(raw: String?): LocalDate? {
+            val m = Regex("""^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$""").find(raw?.trim() ?: return null) ?: return null
+            val token = m.groupValues[2].lowercase()
+            val month = FULL_MONTHS[token] ?: SHORT_MONTHS[token] ?: return null
+            return runCatching { LocalDate(m.groupValues[3].toInt(), month, m.groupValues[1].toInt()) }.getOrNull()
+        }
+
         /** Every string key this class looks up; the screen resolves them in the app's language. */
         val KEYS: List<String> =
             listOf(

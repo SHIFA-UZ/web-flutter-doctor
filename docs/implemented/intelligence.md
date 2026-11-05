@@ -314,3 +314,50 @@ codes and ISO values instead of English sentences (doc 15 §4); until then this 
   the card read "Bugungi jadval · Uchrashuvlar: 0 · Bugun uchrashuv yo‘q · Kalendarni ochish". iOS compiled, not run.
 - **Tests:** `CardTextTest`, built from the generated resources the screen reads: Flutter's golden tests verbatim (labels, cancellation, reschedule, search and booking
   sentences, other hints, Today) minus the timestamp one, the resource placeholders and ru plural forms, and Cyrillic Uzbek keeping names Latin.
+
+## INTEL-06 · Booking and cancellation cards
+
+Built 2026-11-05. Spec 02 §0 and §4.4, flows 03/14 (book), 03/15 (move), 03/16 (cancel by voice), ticket INTEL-06.
+Board `DaIntel` card (the same bordered box; buttons from the kit). The cancellation card is the flow's target card
+("not in the design").
+
+- **Model** (`IntelCards.kt`): `Proposal` for `propose_appointment` / `propose_reschedule` (patient, current slot, new
+  date, slots with their UTC `startAt`, the preferred one, `workflowId`, `booked` / `moved`, the backend's status line)
+  and `Cancel` for `cancel_preview` / `cancel_result` (rows "when · patient", skipped count, count, whether the backend
+  waits for a "yes": `AWAITING_CONFIRMATION` with an `actionContext`). A booking-conversation turn without a proposal
+  (no booking waiting, "which patient?") shows its line only.
+- **Two modes, chosen by the payload (no client intent):** with `workflowId` the card only shows and says "Confirm this
+  exact booking with Shifa — say or type “yes”." (new key; Flutter fell back to English); the backend books and its
+  next payload (`booked` / `moved`, `workflowStatus: COMPLETED`) shows the green line. Without it the app books:
+  "Confirm 10:00", "Other times" / "Hide other times", slot buttons → `POST /schedule/book` or
+  `PUT /appointments/{id}/change` through `AppointmentsRepository` (calls from `ThreadViewModel`, never the UI).
+- **Fixes from the flows' "do not carry over" lists:** no English location strings sent (video sends none; the slot's
+  `locationId` / label otherwise), the move sends the new slot's `locationId` (the backend's `ChangeSlotReq` takes it;
+  checked in dev's OpenAPI), network failures say "Booking/Reschedule failed. Check your connection and try again."
+  (no exception text), the move card gets "Other times" too, superseded proposals are inactive (only the newest
+  proposal is live; nothing is live while a turn runs), and a cancellation done refreshes the calendar at once, like
+  a booking.
+- **Saved outcomes:** the app's own booking is saved into the card (`booked`/`moved` plus the booked time), so a
+  reopened chat shows it booked, not bookable; Cancel saves `dismissed` and the card stays hidden (Flutter showed it
+  again). `ChatSessionStore.updateCard` changes the one message in place; a turn finishing meanwhile appends to the
+  chat as it is now. The backend's "Moved the appointment to…" line (no name) shows as "Appointment moved.".
+- **One change at a time** (Codex review): a chat books from one card at a time, also across leaving and coming back
+  (the call isn't stopped halfway), and no question is sent while it runs; afterwards the calendar reads the touched
+  days again (the visit's old day, the new slot's day, the cancelled visits' days), not only today.
+- **Cancellation** (flow 03/16): the app never cancels. The card lists the visits; while the last answer waits, "Yes,
+  cancel N" (destructive) and "Keep them" send the doctor's answer as if typed, in the conversation's language with
+  words the backend's `AppointmentActionPhrases` takes ("yes" / "ha" / "да"; "no" / "yo'q" / "нет"). The token
+  travels in the history as before (INTEL-04). A result lists what was cancelled and what could not be.
+- **Demo:** the demo stream answers booking, moving and cancelling words with these cards and "yes" / "ha" / "да"
+  with a result; `schedule/book` and `…/change` already succeed without storing.
+- **Open (flows' design questions, the defaults taken):** the workflow card has no tappable "Yes, book" (the doctor
+  says or types it); the cancel card has buttons (the flow's target) but no per-visit untick (needs the backend).
+- **Checked:** emulator, demo mode: "Book Jasur tomorrow" → the proposal, Other times → 11:00 → "Appointment booked."
+  with Time 11:00 (that check found the booked time missing; fixed); "Cancel Friday" → the card, "Yes, cancel 2" sent
+  "yes", the result followed and the old buttons went; app in Uzbek, "Move Jasur" → "Ko‘chirish taklifi", 11:00 →
+  "Uchrashuv ko‘chirildi.". Dev not used (bookings can't be undone there). iOS compiled, not run.
+- **Tests:** `IntelCardsTest` (proposal, workflow, finished, no-proposal turns, cancellation shapes), `ThreadViewModelTest`
+  (book body and saved card, video/move bodies, 409 / 400 / missing slot, workflow books nothing, dismiss survives the
+  next turn, cancellation answers per language, a result refreshes the calendar), `CardTextTest` (visit times, status
+  lines), `DemoBackendTest` (demo cards); screenshots `Intelligence_bookingCards`, `Intelligence_cancelCards`,
+  `Intelligence_cards` re-recorded (the placeholder proposal is gone).

@@ -30,6 +30,7 @@ import kotlin.time.TimeSource
 private data class ChangeSlot(
     val startAt: String,
     val slotMinutes: Int,
+    val locationId: Long? = null,
 )
 
 /** `POST /schedule/book` (03 §6). [location] only for older backends: the backend labels video and known locations. */
@@ -39,7 +40,7 @@ data class BookRequest(
     val slotMinutes: Int,
     val patientId: Long,
     val isVideo: Boolean,
-    val reason: String,
+    val reason: String?,
     val location: String?,
     val locationId: Long? = null,
     val resourceDoctorId: Long? = null,
@@ -64,16 +65,20 @@ class AppointmentsRepository(
     /** `DELETE /appointments/{id}` (no reason yet: BE-10). */
     suspend fun cancel(id: Long): Result<Unit> = apiCall<Unit> { client().delete(ApiConfig.Endpoints.appointment(id)) }
 
-    /** `PUT /appointments/{id}/change {startAt, slotMinutes}`: a new start, or the same start with a new length. */
+    /**
+     * `PUT /appointments/{id}/change {startAt, slotMinutes, locationId?}`: a new start, or the same start with a new
+     * length; [locationId] when the new slot is at another clinic (Shifa's reschedule card, flow 03/15).
+     */
     suspend fun change(
         id: Long,
         start: Instant,
         minutes: Int,
+        locationId: Long? = null,
     ): Result<Unit> =
         apiCall<Unit> {
             client().put(ApiConfig.Endpoints.appointmentChange(id)) {
                 contentType(ContentType.Application.Json)
-                setBody(ChangeSlot(start.toString(), minutes))
+                setBody(ChangeSlot(start.toString(), minutes, locationId))
             }
         }
 

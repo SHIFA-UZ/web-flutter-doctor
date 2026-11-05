@@ -10,12 +10,14 @@ import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -25,20 +27,38 @@ import org.junit.Test
 import shifa.doctor.data.ai.AiRepository
 import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.createHttpClient
+import shifa.doctor.data.appointments.AppointmentsRepository
+import shifa.doctor.data.intelligence.CardSlot
 import shifa.doctor.data.intelligence.ChatSessionStore
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiRateLimit
 import shifa.doctor.generated.resources.aiUnavailable
+import shifa.doctor.generated.resources.intelBookingFailed
 import shifa.doctor.generated.resources.intelEmptyReply
+import shifa.doctor.generated.resources.intelMissingPatientOrSlot
+import shifa.doctor.generated.resources.intelSlotConflict
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ThreadViewModelTest {
     private val answers = ArrayDeque<Pair<HttpStatusCode, String>>()
     private val bodies = mutableListOf<String>()
+
+    // Booking calls (INTEL-06), apart from the streams: "PUT appointments/102/change" → its body; the next status.
+    private val calls = mutableListOf<Pair<String, String>>()
+    private val callAnswers = ArrayDeque<HttpStatusCode>()
+
+    // Holds booking calls until completed, to look at the state while one runs.
+    private var gate: CompletableDeferred<Unit>? = null
     private val client =
         createHttpClient(
             { null },
             MockEngine { req ->
+                val path = req.url.encodedPath.removePrefix("/api/")
+                if (!path.startsWith("ai/")) {
+                    calls += "${req.method.value} $path" to req.body.toByteArray().decodeToString()
+                    gate?.await()
+                    return@MockEngine respond("", callAnswers.removeFirstOrNull() ?: HttpStatusCode.OK)
+                }
                 bodies += req.body.toByteArray().decodeToString()
                 val (status, body) = answers.removeFirst()
                 val type = if (status == HttpStatusCode.OK) "text/event-stream" else "application/json"
@@ -48,9 +68,37 @@ class ThreadViewModelTest {
     private val at = Instant.parse("2026-11-05T05:00:00Z")
     private val store = ChatSessionStore(MapSettings(), { "1" }, { at })
     private var changed = 0
+    private val touched = mutableListOf<Pair<List<LocalDate>, List<Instant>>>()
 
     private fun vm(language: String = "UZ") =
-        ThreadViewModel(store, AiRepository { client }, { language }, { at }, { changed++ })
+        ThreadViewModel(
+            store,
+            AiRepository { client },
+            { language },
+            { at },
+            { dates, starts ->
+                touched += dates to starts
+                changed++
+            },
+            AppointmentsRepository { client },
+        )
+
+    // One answered turn whose card is [payload] (the second saved message).
+    private fun withCard(
+        classToTest: ThreadViewModel,
+        payload: String,
+    ) {
+        answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"propose_appointment\",\"payload\":$payload}\n\ndata:Here.\n\n"
+        classToTest.send("Book Jasur tomorrow")
+        settle { store.state.value.active!!.messages.size == 2 }
+    }
+
+    private fun savedCard() = store.state.value.active!!.messages[1].cardPayload!!
+
+    private val slots =
+        """"slots":[{"startAt":"2026-11-06T05:00:00Z","startLocal":"10:00","slotMinutes":45,"locationId":3,"locationLabel":"Chilonzor"},""" +
+            """{"startAt":"2026-11-06T09:00:00Z","startLocal":"14:00"}]"""
+    private val slot = CardSlot("2026-11-06T05:00:00Z", "10:00", 45, 3, "Chilonzor")
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -156,5 +204,157 @@ class ThreadViewModelTest {
         assertThat(classToTest.state.value.asking).isNull()
         classToTest.stop()
         assertThat(classToTest.state.value.busy).isFalse()
+    }
+
+    @Test
+    fun `a card's Confirm books the slot, saves the card booked and refreshes the calendar`() {
+        val classToTest = vm()
+        withCard(
+            classToTest,
+            """{"cardType":"propose_appointment","patientId":12,"patientName":"Jasur Karimov","reason":"Check-up",$slots}""",
+        )
+        classToTest.book(1, slot)
+        settle { changed == 1 }
+        val (call, body) = calls.single()
+        assertThat(call).isEqualTo("POST schedule/book")
+        val sent = apiJson.parseToJsonElement(body).jsonObject
+        assertThat(sent["startAt"]!!.jsonPrimitive.content).isEqualTo("2026-11-06T05:00:00Z")
+        assertThat(sent["slotMinutes"]!!.jsonPrimitive.content).isEqualTo("45")
+        assertThat(sent["patientId"]!!.jsonPrimitive.content).isEqualTo("12")
+        assertThat(sent["locationId"]!!.jsonPrimitive.content).isEqualTo("3")
+        assertThat(sent["location"]!!.jsonPrimitive.content).isEqualTo("Chilonzor")
+        assertThat(sent["reason"]!!.jsonPrimitive.content).isEqualTo("Check-up")
+        assertThat(savedCard()["booked"]!!.jsonPrimitive.content).isEqualTo("true")
+        assertThat(savedCard()["bookedTime"]!!.jsonPrimitive.content).isEqualTo("10:00")
+        assertThat(classToTest.state.value.cards[1]).isEqualTo(CardUi())
+        assertThat(touched.single()).isEqualTo(emptyList<LocalDate>() to listOf(Instant.parse("2026-11-06T05:00:00Z")))
+        // Booked: a second tap books nothing.
+        classToTest.book(1, slot)
+        assertThat(calls).hasSize(1)
+    }
+
+    @Test
+    fun `a video booking sends no location, a move sends the new slot's location`() {
+        val classToTest = vm()
+        withCard(classToTest, """{"cardType":"propose_appointment","patientId":12,"isVideo":true,$slots}""")
+        classToTest.book(1, slot)
+        settle { calls.size == 1 }
+        val video = apiJson.parseToJsonElement(calls[0].second).jsonObject
+        assertThat(video["isVideo"]!!.jsonPrimitive.content).isEqualTo("true")
+        assertThat(video.keys).containsNoneOf("location", "locationId", "reason")
+
+        classToTest.stop()
+        answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"propose_reschedule\",\"payload\":{\"cardType\":\"propose_reschedule\",\"appointmentId\":102,$slots}}\n\n"
+        classToTest.send("Move Jasur")
+        settle { store.state.value.active!!.messages.size == 4 }
+        classToTest.book(3, slot)
+        settle { calls.size == 2 }
+        assertThat(calls[1].first).isEqualTo("PUT appointments/102/change")
+        assertThat(
+            apiJson.parseToJsonElement(calls[1].second).jsonObject["locationId"]!!.jsonPrimitive.content,
+        ).isEqualTo("3")
+        settle { store.state.value.active!!.messages[3].cardPayload!!["moved"] != null }
+        assertThat(
+            store.state.value.active!!.messages[3].cardPayload!!["moved"]!!.jsonPrimitive.content,
+        ).isEqualTo("true")
+        // The video booking was the first change; the move the second.
+        settle { touched.size == 2 }
+        assertThat(touched.last().second).containsExactly(Instant.parse("2026-11-06T05:00:00Z"))
+    }
+
+    @Test
+    fun `a taken slot, a failure and no connection each say so, nothing is saved`() {
+        callAnswers += HttpStatusCode.Conflict
+        callAnswers += HttpStatusCode.BadRequest
+        val classToTest = vm()
+        withCard(classToTest, """{"cardType":"propose_appointment","patientId":12,$slots}""")
+        classToTest.book(1, slot)
+        settle { classToTest.state.value.cards[1]?.error != null }
+        assertThat(classToTest.state.value.cards[1]!!.error!!.text).isEqualTo(Res.string.intelSlotConflict)
+        assertThat(classToTest.state.value.cards[1]!!.busy).isFalse()
+        classToTest.book(1, slot)
+        settle { classToTest.state.value.cards[1]?.error?.text == Res.string.intelBookingFailed }
+        assertThat(classToTest.state.value.cards[1]!!.error!!.args).containsExactly("400")
+        assertThat(savedCard()["booked"]).isNull()
+        assertThat(changed).isEqualTo(0)
+        // A slot without its instant can't be booked.
+        classToTest.book(1, slot.copy(startAt = null))
+        assertThat(classToTest.state.value.cards[1]!!.error!!.text).isEqualTo(Res.string.intelMissingPatientOrSlot)
+        assertThat(calls).hasSize(2)
+    }
+
+    @Test
+    fun `the backend's workflow card books nothing from the app, Cancel hides the card for good`() {
+        val classToTest = vm()
+        withCard(classToTest, """{"cardType":"propose_appointment","workflowId":"w1","patientId":12,$slots}""")
+        classToTest.book(1, slot)
+        assertThat(calls).isEmpty()
+        classToTest.toggleOtherTimes(1)
+        assertThat(classToTest.state.value.cards[1]!!.showOther).isTrue()
+        classToTest.dismiss(1)
+        assertThat(savedCard()["dismissed"]!!.jsonPrimitive.content).isEqualTo("true")
+        // The next turn is added onto the chat as it is now: the card stays dismissed.
+        answers += HttpStatusCode.OK to "data:Ok\n\n"
+        classToTest.send("thanks")
+        settle { store.state.value.active!!.messages.size == 4 }
+        assertThat(savedCard()["dismissed"]!!.jsonPrimitive.content).isEqualTo("true")
+    }
+
+    @Test
+    fun `the cancellation buttons answer in the chat's language, a cancellation done refreshes the calendar`() {
+        val classToTest = vm("RU")
+        answers += HttpStatusCode.OK to "data:Могу\n\n"
+        classToTest.send("Отмени пятницу")
+        settle { store.state.value.active!!.messages.size == 2 }
+        answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"cancel_appointments\",\"payload\":{\"cardType\":\"cancel_result\",\"cancelled\":[{\"appointmentId\":5}],\"failed\":[]}}\n\ndata:Отменено\n\n"
+        classToTest.answerCancel(true)
+        settle { store.state.value.active!!.messages.size == 4 }
+        assertThat(store.state.value.active!!.messages[2].content).isEqualTo("да")
+        settle { changed == 1 }
+        assertThat(changed).isEqualTo(1)
+
+        val uz = vm("UZ")
+        store.create()
+        answers += HttpStatusCode.OK to "data:Hech narsa\n\n"
+        uz.answerCancel(false)
+        settle { store.state.value.active!!.messages.size == 2 }
+        assertThat(store.state.value.active!!.messages[0].content).isEqualTo("yo'q")
+    }
+
+    @Test
+    fun `while a card books, leaving and coming back neither books again nor lets a question through`() {
+        val classToTest = vm()
+        withCard(
+            classToTest,
+            """{"cardType":"propose_reschedule","appointmentId":102,"currentDateLabel":"5 Nov 2026","currentStartLocal":"10:30",$slots}""",
+        )
+        gate = CompletableDeferred()
+        classToTest.book(1, slot)
+        settle { calls.size == 1 }
+        assertThat(classToTest.state.value.booking).isTrue()
+        classToTest.stop()
+        assertThat(classToTest.state.value.cards[1]!!.busy).isTrue()
+        classToTest.book(1, slot.copy(startAt = "2026-11-06T09:00:00Z", time = "14:00"))
+        classToTest.draft("use 14:00 instead")
+        assertThat(classToTest.state.value.canSend).isFalse()
+        classToTest.send()
+        assertThat(calls).hasSize(1)
+        assertThat(bodies).hasSize(1)
+
+        gate!!.complete(Unit)
+        settle { touched.size == 1 }
+        assertThat(classToTest.state.value.booking).isFalse()
+        // The visit's old day and the new slot's start are both read again.
+        assertThat(
+            touched.single(),
+        ).isEqualTo(listOf(LocalDate(2026, 11, 5)) to listOf(Instant.parse("2026-11-06T05:00:00Z")))
+    }
+
+    @Test
+    fun `a cancellation's result reads the cancelled visits' days again`() {
+        answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"cancel_appointments\",\"payload\":{\"cardType\":\"cancel_result\",\"cancelled\":[{\"startAt\":\"2026-11-07T05:00:00Z\"}]}}\n\ndata:Cancelled 1.\n\n"
+        vm().send("yes")
+        settle { touched.size == 1 }
+        assertThat(touched.single().second).containsExactly(Instant.parse("2026-11-07T05:00:00Z"))
     }
 }

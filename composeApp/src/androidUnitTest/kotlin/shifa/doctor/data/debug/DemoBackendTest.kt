@@ -739,6 +739,21 @@ class DemoBackendTest {
                     "",
                 ) { it.text }
             assertThat(text).startsWith("Доброе утро. Сегодня у вас ")
+            // INTEL-06: booking, moving, cancelling and "yes" get their cards.
+            for ((asked, type) in listOf(
+                "Book Jasur" to "propose_appointment",
+                "Move Jasur" to "propose_reschedule",
+                "Cancel Friday" to "cancel_preview",
+                "да" to "cancel_result",
+            )) {
+                val events = mutableListOf<shifa.doctor.data.model.AiStreamEvent>()
+                repo.stream(
+                    ask.copy(messages = listOf(shifa.doctor.data.model.AiMessage("user", asked))),
+                    true,
+                ) { events += it }
+                val tool = events.first() as shifa.doctor.data.model.AiStreamEvent.Tool
+                assertThat(tool.payload["cardType"]!!.jsonPrimitive.content).isEqualTo(type)
+            }
             // The patient stream ends in a draft that the visit's notes can confirm.
             val patient = mutableListOf<shifa.doctor.data.model.AiStreamEvent>()
             repo.stream(
