@@ -3,6 +3,8 @@ package shifa.doctor.ui.patients
 import androidx.compose.runtime.Composable
 import kotlinx.datetime.LocalDate
 import shifa.doctor.data.model.Patient
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.aiRateLimit
 import shifa.doctor.ui.forms.FormTemplateTray
 import shifa.doctor.ui.forms.PatientFormsUiState
 import shifa.doctor.ui.theme.PreviewTheme
@@ -92,7 +94,8 @@ internal fun PatientDetailPreview() =
                 smsAllowed = true,
                 visits = visits,
             ),
-            PatientDetailActions(),
+            // A PRO doctor: "AI summary" under the star (AI-09).
+            PatientDetailActions(briefing = {}),
         )
     }
 
@@ -294,3 +297,48 @@ internal fun PatientFormsEmptyPreview() =
 // FORM-05: the template sheet.
 @Composable
 internal fun FormTemplatePreview() = PreviewTheme { FormTemplateTray({}, {}) }
+
+private val briefingText =
+    "## Snapshot\nType 2 diabetes; HbA1c **7.4 %** in October.\n\n" +
+        "## Dental\n- Pain in **26** when chewing, sensitive to cold\n- Last cleaning: March 2026\n\n" +
+        "## Watch\n- Penicillin allergy"
+
+// AI-09: the briefing being made: the caption and a skeleton.
+@Composable
+internal fun PatientBriefingLoadingPreview() =
+    PreviewTheme { PatientBriefingTray(PatientBriefingUiState(loading = true), "Dilnoza Rahimova", {}, {}, {}) }
+
+// AI-09: ready: sources, the text with headings, bullets and bold, the disclaimer, Copy and Regenerate.
+@Composable
+internal fun PatientBriefingReadyPreview() =
+    PreviewTheme {
+        PatientBriefingTray(
+            PatientBriefingUiState(briefing = shifa.doctor.data.model.PatientBriefing(briefingText, 2, 3)),
+            "Dilnoza Rahimova",
+            {},
+            {},
+            {},
+        )
+    }
+
+// AI-09: nothing to brief on (the backend's 400), and the daily limit.
+@Composable
+internal fun PatientBriefingEmptyPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column {
+            PatientBriefingTray(PatientBriefingUiState(empty = true), "Dilnoza Rahimova", {}, {}, {})
+            PatientBriefingTray(
+                PatientBriefingUiState(
+                    error =
+                        shifa.doctor.ui.emailcode.CodeBanner(
+                            Res.string.aiRateLimit,
+                            requestId = "7f3c-91",
+                        ),
+                ),
+                "Dilnoza Rahimova",
+                {},
+                {},
+                {},
+            )
+        }
+    }

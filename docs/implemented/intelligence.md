@@ -60,3 +60,35 @@ Flutter's in the design's tokens: not in the design).
 - **Tests:** `AiResponseTextTest` (Flutter's two tests plus wrapped headings, numbered and star bullets, blank runs,
   `**Reason:** text` staying a paragraph, the sentence split and line endings); screenshots `Display_ai_text`,
   `Briefing_ready` re-recorded.
+
+## AI-09 · Patient briefing
+
+Built 2026-11-05. Spec 02 §6, flow 03/20, ticket AI-09. Board `DaPatients` (the header's "AI summary" and the
+"brief" sheet: title "Patient briefing", the patient's name under it, the text, "AI summary — verify against the
+originals.", Copy). Flutter never showed this on Android or iOS.
+
+- **Trigger:** a sparkles icon button "AI summary" under the favourite star in the patient header (the board's
+  labelled button doesn't fit beside the name on a phone; the flow asks for an icon button). Shown only when the plan
+  includes `PATIENT_BRIEFING` and the user isn't clinic staff; hidden until the plan is known. The board's
+  more-actions sheet doesn't exist in the app yet, so the header is the only entry.
+- **Sheet** (`ui/patients/PatientBriefing.kt`): loading = "Reading documents and generating briefing..." (a polite
+  live region) over a heading + 6 line skeleton; ready = sources line (hidden when both counts are 0), the text through
+  `AiResponseText`, the disclaimer, Copy (→ "Copied") and Regenerate; empty = "No information to brief on yet." with
+  Retry briefing; failure = an error banner with the request id and Retry briefing; a failed Regenerate keeps the
+  last text under the banner.
+- **Rules:** the request goes in the app language at the time of the tap. The ViewModel is kept per patient in the
+  shell store, so the briefing stays for the session and reopening shows it at once; a request still running when
+  the sheet closes finishes and shows on reopen (Flutter dropped it and paid twice). One request at a time (Flutter
+  restarted on a second tap). 60 s timeout (flow target). The backend's 400 means "no documents, visits, forms or
+  notes" (`PatientBriefingService`), shown as the empty state, not an error (it replaces an older text, Codex
+  review); 429 → "daily AI usage limit"; the 60 s running out → "Shifa took too long to reply"; 403
+  refreshes the profile so the button goes if the plan changed. No server text is shown.
+- **Kept:** the sources line uses the existing translated keys with "document(s)" (proper plurals would need new
+  ru/uz forms; D-17).
+- **Shared fix:** `codeBanner`'s dismiss is optional now; without one the banner has no ✕. 24 other screens still
+  pass a no-op, fixed separately.
+- **Checked:** emulator, demo mode: the button, the sheet with the demo briefing, Copy → Copied, close and reopen
+  without a new request. Not run on dev (a briefing is a paid model call). iOS compiled, not run.
+- **Tests:** `PatientBriefingViewModelTest` (first open in the app language, reopen without a request, one request at
+  a time, 400 and blank → empty, 429 message and request id, a failed Regenerate keeps the text); screenshots
+  `PatientBriefing_loading`, `_ready`, `_empty` (with the limit error), `PatientDetail_overview` (button shown).

@@ -46,10 +46,11 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.utils.tr
 
+/** [banner] as a [ShifaBanner]; without [onDismiss] it has no ✕ (one that does nothing would mislead). */
 @Composable
 internal fun codeBanner(
     banner: CodeBanner?,
-    onDismiss: () -> Unit,
+    onDismiss: (() -> Unit)? = null,
 ): (@Composable () -> Unit)? =
     banner?.let { b ->
         {

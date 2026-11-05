@@ -68,4 +68,16 @@ class PatientsScreenshotTest {
 
     @Test
     fun formTemplate() = captureRoboImage("screenshots/FormTemplate.png") { FormTemplatePreview() }
+
+    @Test
+    fun briefingLoading() =
+        captureRoboImage(
+            "screenshots/PatientBriefing_loading.png",
+        ) { PatientBriefingLoadingPreview() }
+
+    @Test
+    fun briefingReady() = captureRoboImage("screenshots/PatientBriefing_ready.png") { PatientBriefingReadyPreview() }
+
+    @Test
+    fun briefingEmpty() = captureRoboImage("screenshots/PatientBriefing_empty.png") { PatientBriefingEmptyPreview() }
 }

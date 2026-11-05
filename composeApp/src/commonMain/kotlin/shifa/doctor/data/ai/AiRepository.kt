@@ -107,7 +107,10 @@ class AiRepository(
         }.map { SpokenAudio(it, type?.withoutParameters()?.toString() ?: "audio/mpeg") }
     }
 
-    /** A briefing on [patientId] in the app's [language]; 400/403/404/429 stay typed failures with their codes. */
+    /**
+     * A briefing on [patientId] in the app's [language], within 60 s (flow 03/20 §4); 400 (nothing to brief on), 403,
+     * 404 and 429 stay typed failures with their codes.
+     */
     suspend fun patientBriefing(
         patientId: Long,
         language: AppLanguage,
@@ -116,6 +119,10 @@ class AiRepository(
             client().post(Endpoints.patientBriefing(patientId)) {
                 contentType(ContentType.Application.Json)
                 setBody(BriefingBody(language.backendCode))
+                timeout {
+                    requestTimeoutMillis = BRIEFING_TIMEOUT_MS
+                    socketTimeoutMillis = BRIEFING_TIMEOUT_MS
+                }
             }
         }
 
@@ -140,6 +147,7 @@ class AiRepository(
     private companion object {
         const val STREAM_TIMEOUT_MS = 75_000L
         const val SPEAK_TIMEOUT_MS = 25_000L
+        const val BRIEFING_TIMEOUT_MS = 60_000L
     }
 }
 

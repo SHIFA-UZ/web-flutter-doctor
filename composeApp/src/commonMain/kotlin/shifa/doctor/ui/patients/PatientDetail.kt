@@ -30,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -72,6 +73,8 @@ import shifa.doctor.data.patients.favoritesRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.Gender
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.session.sessionRepository
+import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accountActive
 import shifa.doctor.generated.resources.accountCreateFailed
@@ -81,6 +84,7 @@ import shifa.doctor.generated.resources.activityTab
 import shifa.doctor.generated.resources.addToFavorites
 import shifa.doctor.generated.resources.age
 import shifa.doctor.generated.resources.aiRiskDetected
+import shifa.doctor.generated.resources.aiSummary
 import shifa.doctor.generated.resources.allergies
 import shifa.doctor.generated.resources.appointments
 import shifa.doctor.generated.resources.appointmentsLoadFailed
@@ -110,6 +114,7 @@ import shifa.doctor.generated.resources.ic_check_circle_20
 import shifa.doctor.generated.resources.ic_copy_16
 import shifa.doctor.generated.resources.ic_file_plus_18
 import shifa.doctor.generated.resources.ic_sparkles_16
+import shifa.doctor.generated.resources.ic_sparkles_22
 import shifa.doctor.generated.resources.ic_star_24
 import shifa.doctor.generated.resources.ic_star_filled_24
 import shifa.doctor.generated.resources.ic_users_22
@@ -177,6 +182,7 @@ import shifa.doctor.ui.forms.formRows
 import shifa.doctor.ui.profile.DiscardChangesSheet
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
+import shifa.doctor.ui.speech.rememberAllowed
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -691,6 +697,8 @@ data class PatientDetailActions(
     val book: () -> Unit = {},
     // CHAT-07: Quick actions → "Send message" (the Chat tab on this patient's thread).
     val message: () -> Unit = {},
+    // AI-09: "AI summary" in the header; null hides it (below PRO, or clinic staff).
+    val briefing: (() -> Unit)? = null,
     val retryVisits: () -> Unit = {},
     val documents: DocumentsActions = DocumentsActions(),
     val forms: FormsActions = FormsActions(),
@@ -731,6 +739,10 @@ fun PatientDetailScreen(
     val titleOf = @Composable { d: PatientDocument -> documentTitle(d) }
     val back = { if (viewModel.back()) onBack() }
     BackHandler(onBack = back)
+    // AI-09: the patient briefing (PRO, doctors only; hidden until the plan is known).
+    val session by sessionRepository.session.collectAsStateWithLifecycle()
+    val briefingAllowed = rememberAllowed(DoctorFeature.PatientBriefing) && session?.isClinicStaff == false
+    var briefingOpen by rememberSaveable { mutableStateOf(false) }
     // The viewer's title is resolved here, in the app's language, as the card shows it.
     var opening by remember { mutableStateOf<PatientDocument?>(null) }
     opening?.let { d ->
@@ -758,6 +770,7 @@ fun PatientDetailScreen(
             createAccount = viewModel::createAccount,
             book = viewModel::openBooking,
             message = { state.patient?.let(onMessage) },
+            briefing = { briefingOpen = true }.takeIf { briefingAllowed },
             retryVisits = viewModel::retryVisits,
             documents =
                 DocumentsActions(
@@ -796,6 +809,9 @@ fun PatientDetailScreen(
         formsState,
     )
     UploadSheets(upload, uploads, sources)
+    if (briefingOpen && briefingAllowed) {
+        PatientBriefingSheet(id, state.patient?.name.orEmpty(), onClose = { briefingOpen = false })
+    }
     if (formsState.picking) {
         val close = { forms.ui { it.copy(picking = false) } }
         ProfileSheet(close) {
@@ -968,13 +984,23 @@ private fun Header(
             color = ShifaColors.Text.Secondary,
         )
     }
-    ShifaIconButton(
-        if (state.favorite) Res.drawable.ic_star_filled_24 else Res.drawable.ic_star_24,
-        tr(if (state.favorite) Res.string.removeFromFavorites else Res.string.addToFavorites),
-        actions.favorite,
-        variant = ShifaIconButtonVariant.Secondary,
-        selected = state.favorite,
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+        ShifaIconButton(
+            if (state.favorite) Res.drawable.ic_star_filled_24 else Res.drawable.ic_star_24,
+            tr(if (state.favorite) Res.string.removeFromFavorites else Res.string.addToFavorites),
+            actions.favorite,
+            variant = ShifaIconButtonVariant.Secondary,
+            selected = state.favorite,
+        )
+        actions.briefing?.let {
+            ShifaIconButton(
+                Res.drawable.ic_sparkles_22,
+                tr(Res.string.aiSummary),
+                it,
+                variant = ShifaIconButtonVariant.Secondary,
+            )
+        }
+    }
 }
 
 @Composable
