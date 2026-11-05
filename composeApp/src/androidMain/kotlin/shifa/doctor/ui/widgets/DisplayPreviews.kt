@@ -239,3 +239,19 @@ internal fun NavBarPreview() =
         ShifaNavBar(items, 0, {})
         ShifaNavBar(items, 3, {})
     }
+
+// AI-02: an AI answer's markdown subset: headings with the brand bar, bullets, bold, a split long paragraph.
+@Preview
+@Composable
+internal fun AiTextPreview() =
+    Gallery {
+        AiResponseText(
+            "## Snapshot\nAdult with recurrent caries, last visit on **22 October**.\n\n" +
+                "## Plan\n- Pain on **14**, plan restoration\n- Follow-up in **1 week**\n1. X-ray first",
+        )
+        AiResponseText(
+            "The patient reports pain in the lower left molar for three days. Cold makes it worse and it wakes " +
+                "her at night. Is it pulpitis? An X-ray and a pulp test should settle it before any treatment " +
+                "is planned for the coming week.",
+        )
+    }

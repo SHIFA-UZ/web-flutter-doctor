@@ -41,3 +41,22 @@ Built 2026-11-05. Spec 02 §3.2, §8, §9, ticket AI-01. Data only; INTEL-04, AI
   cancel closes the connection; speak type and cut; briefing; facts, timeline, commit), `SseTest` updated,
   `DemoBackendTest` (the demo AI end to end, nothing forwarded).
 - **Not checked on a phone:** there is no screen yet; the emulator check comes with INTEL-04.
+
+## AI-02 · AI text renderer
+
+Built 2026-11-05. Spec 02 §3.2 helpers, Flutter `core/widgets/ai_response_text.dart`, ticket AI-02. Board `DaIntel`
+(an answer is plain 14/22 text there; headings and bullets are not drawn on the boards, so their look follows
+Flutter's in the design's tokens: not in the design).
+
+- **Widget** (`ui/widgets/AiResponseText.kt`): `#`–`###` headings and a line that is only `**…**` → a heading
+  (`panelTitle`, `Text.BrandStrong`, a 3 dp `Border.Brand` bar on the left); `-`, `*`, `•` or `1.` → a bullet row
+  (numbers become a dot, as in Flutter); `**bold**` inside lines (non-greedy; a lone `**` stays as typed); a run of
+  blank lines → one 10 dp gap; anything else a paragraph. One line over 220 characters with 3+ sentences is split
+  into a paragraph per sentence. Whitespace in these patterns is Dart's (no-break spaces count; Kotlin's `\s` is
+  ASCII-only: Codex review). The whole answer is one `SelectionContainer`. Text style `aiText` (14/22, new in
+  `ShifaTextStyles`, from DaIntel); callers can pass another (the visit briefing keeps `bodyText`).
+- **Used by:** the visit briefing sheet (APPT-06), whose `ponytail:` plain-text stand-in is gone; next the
+  Intelligence thread (INTEL-04) and the patient briefing (AI-09).
+- **Tests:** `AiResponseTextTest` (Flutter's two tests plus wrapped headings, numbered and star bullets, blank runs,
+  `**Reason:** text` staying a paragraph, the sentence split and line endings); screenshots `Display_ai_text`,
+  `Briefing_ready` re-recorded.

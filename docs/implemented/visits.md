@@ -130,7 +130,7 @@ briefing" row) and the "briefing" overlay.
   · Retry". Home's button joins with HOME-03.
 - **Sheet** (`ui/visit/Briefing.kt`): the subtitle; then a 3-line skeleton, "Generating briefing from attached
   documents…" (with "Still generating — you can close this and check back." after a minute), the briefing text
-  (selectable; the markdown subset shows as plain text until the shared AI text renderer, `ponytail:`), the failed
+  (selectable; headings, bullets and bold through `AiResponseText` since AI-02), the failed
   text, or the empty text; the meta line "{n} documents · generated {date time}" (practice time zone, new); the
   **attached documents** (this visit's, from the patient's list, whatever the briefing's state; tap opens the viewer); "AI summary — verify against
   the originals."; Copy (ready); Retry briefing (failed or pending, not after the visit; one at a time).

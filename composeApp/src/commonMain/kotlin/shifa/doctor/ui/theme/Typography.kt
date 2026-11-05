@@ -212,9 +212,13 @@ object ShifaTextStyles {
     @Composable
     fun navItem() = manrope(manropeFontFamily(), FontWeight.Medium, 14, 20)
 
-    // running text: notes, AI answers, legal pages
+    // running text: notes, legal pages
     @Composable
     fun bodyText() = manrope(manropeFontFamily(), FontWeight.Normal, 14, 20)
+
+    // DaIntel: an AI answer in the thread (14/22, pre-wrap)
+    @Composable
+    fun aiText() = manrope(manropeFontFamily(), FontWeight.Normal, 14, 22)
 }
 
 // The stylesheet's raw type scale (`--font-size-*`, `--line-height-*`, `--letter-spacing-*`), for the few places a

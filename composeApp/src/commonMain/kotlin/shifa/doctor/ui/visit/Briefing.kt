@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,6 +51,7 @@ import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.AiResponseText
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
@@ -211,15 +211,7 @@ internal fun BriefingTray(
                 }
             }
             BriefingStatus.Ready ->
-                SelectionContainer {
-                    // ponytail: the AI text's markdown subset shows as plain text (bold markers dropped) until the
-                    // shared AI text renderer lands with the Intelligence screens (M10).
-                    Text(
-                        b?.briefingText.orEmpty().replace("**", ""),
-                        style = ShifaTextStyles.bodyText(),
-                        color = ShifaColors.Text.Primary,
-                    )
-                }
+                AiResponseText(b?.briefingText.orEmpty(), style = ShifaTextStyles.bodyText())
             BriefingStatus.Failed ->
                 Text(
                     b?.error?.takeIf { !state.failed && it.isNotBlank() } ?: tr(Res.string.visitBriefingFailed),

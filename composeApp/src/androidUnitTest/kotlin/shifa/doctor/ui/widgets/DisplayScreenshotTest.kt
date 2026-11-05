@@ -38,4 +38,7 @@ class DisplayScreenshotTest {
 
     @Test
     fun nav_bar() = captureRoboImage("screenshots/Display_nav_bar.png") { NavBarPreview() }
+
+    @Test
+    fun ai_text() = captureRoboImage("screenshots/Display_ai_text.png") { AiTextPreview() }
 }
