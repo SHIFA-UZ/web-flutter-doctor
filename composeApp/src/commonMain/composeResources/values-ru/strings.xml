@@ -122,10 +122,12 @@
     <string name="aiWillRespondHere">AI ответит здесь…</string>
     <string name="aids">СПИД</string>
     <string name="all">Все</string>
+    <string name="allCategories">Все категории</string>
     <string name="allCaughtUp">Всё выполнено!</string>
     <string name="allDay">Весь день</string>
     <string name="allPatients">Все пациенты</string>
     <string name="allRoles">Все роли</string>
+    <string name="allStatuses">Все статусы</string>
     <string name="allergies">Аллергии</string>
     <string name="allergyChip">Аллергия: %1$s</string>
     <string name="allow">Разрешить</string>
@@ -1703,6 +1705,7 @@
     <string name="noSubmissionReceived">Отправка не получена</string>
     <string name="noSummaryYet">Сохранённая документация приёма не найдена.</string>
     <string name="noTasksFound">Задачи не найдены</string>
+    <string name="noTasksMatchFilters">Нет задач по этим фильтрам</string>
     <string name="noTemplatesYet">Шаблонов пока нет. Сначала создайте задачу — после этого она появится здесь.</string>
     <string name="noTimezoneFound">Часовой пояс не найден. Введите название города на английском.</string>
     <string name="noTokensFound">Токены не найдены</string>
@@ -2372,6 +2375,7 @@
     <string name="taskTemplates">Шаблоны задач</string>
     <string name="taskUpdated">Задача успешно обновлена</string>
     <string name="tasks">Задачи</string>
+    <string name="tasksLoadFailed">Не удалось загрузить задачи</string>
     <string name="tasksNotOnPlan">Задачи недоступны на вашем тарифе.</string>
     <string name="taxIdVatId">ИНН / ИНН НДС</string>
     <string name="telegram">Telegram</string>

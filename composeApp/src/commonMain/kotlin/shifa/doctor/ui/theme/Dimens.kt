@@ -102,6 +102,9 @@ object ShifaBlur {
 // Sizes the design sets per component, named <Component><Part>; `Layout` and `Basis` are the stylesheet's
 // `--layout-*` and `--basis-*` (pane widths, dialog widths, flex bases).
 object ShifaDimens {
+    // `.sh-fab--docked`: the floating tab bar's height, which a docked create button sits above (bottom 16 + 82).
+    val FabDockedClear = 82.dp
+
     object Layout {
         val Sidebar = 260.dp
         val SidebarCompact = 72.dp

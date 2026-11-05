@@ -122,10 +122,12 @@
     <string name="aiWillRespondHere">AI bu yerda javob beradi…</string>
     <string name="aids">OITS</string>
     <string name="all">Barchasi</string>
+    <string name="allCategories">Barcha toifalar</string>
     <string name="allCaughtUp">Hammasi joyida!</string>
     <string name="allDay">Kun bo'yi</string>
     <string name="allPatients">Barcha bemorlar</string>
     <string name="allRoles">Barcha rollar</string>
+    <string name="allStatuses">Barcha holatlar</string>
     <string name="allergies">Allergiyalar</string>
     <string name="allergyChip">Allergiya: %1$s</string>
     <string name="allow">Ruxsat berish</string>
@@ -1703,6 +1705,7 @@
     <string name="noSubmissionReceived">Yuborish qabul qilinmadi</string>
     <string name="noSummaryYet">Saqlangan uchrashuv hujjati topilmadi.</string>
     <string name="noTasksFound">Vazifalar topilmadi</string>
+    <string name="noTasksMatchFilters">Filtrlarga mos vazifa yo'q</string>
     <string name="noTemplatesYet">Hali shablonlar yo'q. Avval vazifa yarating, keyin u shu yerda paydo bo'ladi.</string>
     <string name="noTimezoneFound">Vaqt mintaqasi topilmadi. Shahar nomini ingliz tilida yozing.</string>
     <string name="noTokensFound">Tokenlar topilmadi</string>
@@ -2372,6 +2375,7 @@
     <string name="taskTemplates">Vazifa shablonlari</string>
     <string name="taskUpdated">Vazifa muvaffaqiyatli yangilandi</string>
     <string name="tasks">Vazifalar</string>
+    <string name="tasksLoadFailed">Vazifalarni yuklab bo'lmadi</string>
     <string name="tasksNotOnPlan">Vazifalar sizning tarifingizda mavjud emas.</string>
     <string name="taxIdVatId">Soliq ID / QQS ID</string>
     <string name="telegram">Telegram</string>

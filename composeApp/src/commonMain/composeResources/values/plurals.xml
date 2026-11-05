@@ -73,6 +73,14 @@
         <item quantity="one">Show %1$s earlier</item>
         <item quantity="other">Show %1$s earlier</item>
     </plurals>
+    <plurals name="taskDaysCount">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <plurals name="taskTimesPerDay">
+        <item quantity="one">%1$s× per day</item>
+        <item quantity="other">%1$s× per day</item>
+    </plurals>
     <plurals name="toothA11y">
         <item quantity="one">Tooth %1$s, %2$s service</item>
         <item quantity="other">Tooth %1$s, %2$s services</item>

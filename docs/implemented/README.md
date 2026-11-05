@@ -163,6 +163,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | NOTIF-02 Inbox screen | Done | The Notifications tab (doctors: More / the bell; staff: their tab): "Notifications (n)" from the shell's count (99+), Mark all as read, Refresh, Settings, chips (no Tasks for staff), practice-day sections, board cards (tint + blue dot while unread, icon, label, relative time, 3-line body) with the board's actions; pages as you scroll; skeletons, empty states, banner + Retry keeping the old list. A tap reads the row (back on failure) and opens its target over the inbox: an appointment's Calendar panel (found on its practice day), the patient, the document viewer, Chat; gone → "This appointment no longer exists". See notifications.md. |
 | NOTIF-03 Unread badge refresh | Done (push trigger with PUSH-02) | One count in the shell (Home bell, More tile, staff tab, inbox title), never polled, read again on: opening or refreshing the inbox, a read or mark-all (`NotificationReads`), app resume, Home refresh. A foreground push comes with PUSH-02 (D-15). See notifications.md. |
 | TASK-01 Task data + gate | Done | `TasksRepository` (list with patient/status filters, one, check-ins, templates, create, cancel; typed errors, a 403 is `Forbidden`), models tolerant of case, unknown values and bad rows (legacy morning/afternoon/evening times still read: dev uses them), the day's times, a pending check-in shown missed once its time passed in the **patient's** zone; the PREMIUM gate is the existing `DoctorFeature.RemoteCareTasks`; in-memory demo tasks. See tasks.md. |
+| TASK-02 Tasks list | Done | The Tasks tab (PREMIUM doctors): title and subtitle (once, not twice), Refresh, Use Templates, the docked Create Task button; Active / Completed / Overdue cards over every task that also filter; search plus localised status and category dropdowns; board cards (category tile, name in 2 lines, patient, status pill, progress, "3× per day", "4 Nov – 17 Nov 2026", "14 days"); skeletons, "No tasks found" + Create, "No tasks match your filters" + Clear filters, banner + Retry keeping the list; read on every return. Details, create and templates are TASK-03…05. See tasks.md. |
 
 ## Log
 
@@ -277,3 +278,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · NOTIF-02 · The notifications inbox.
 - 2026-11-05 · NOTIF-03 · The bell's count read again on every trigger but push.
 - 2026-11-05 · TASK-01 · Remote-care task data, rules and demo tasks.
+- 2026-11-05 · TASK-02 · The remote-care tasks list.

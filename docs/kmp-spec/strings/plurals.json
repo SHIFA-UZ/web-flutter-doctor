@@ -365,5 +365,35 @@
     "uz": {
       "other": "{count} ta biriktirilgan hujjat bo'yicha AI xulosasi"
     }
+  },
+  "taskTimesPerDay": {
+    "en": {
+      "one": "{count}× per day",
+      "other": "{count}× per day"
+    },
+    "ru": {
+      "one": "{count} раз в день",
+      "few": "{count} раза в день",
+      "many": "{count} раз в день",
+      "other": "{count} раза в день"
+    },
+    "uz": {
+      "other": "Kuniga {count} marta"
+    }
+  },
+  "taskDaysCount": {
+    "en": {
+      "one": "{count} day",
+      "other": "{count} days"
+    },
+    "ru": {
+      "one": "{count} день",
+      "few": "{count} дня",
+      "many": "{count} дней",
+      "other": "{count} дня"
+    },
+    "uz": {
+      "other": "{count} kun"
+    }
   }
 }

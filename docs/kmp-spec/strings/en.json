@@ -2674,5 +2674,9 @@
   "notificationTypeTaskUpdate": "Task update",
   "notificationsLoadFailed": "Couldn't load notifications",
   "notificationsMarkFailed": "Couldn't mark as read. Try again.",
-  "notificationUnread": "Unread"
+  "notificationUnread": "Unread",
+  "tasksLoadFailed": "Couldn't load tasks",
+  "noTasksMatchFilters": "No tasks match your filters",
+  "allStatuses": "All statuses",
+  "allCategories": "All categories"
 }

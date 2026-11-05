@@ -51,6 +51,7 @@ import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.chat
 import shifa.doctor.generated.resources.clinicNavClinic
 import shifa.doctor.generated.resources.contactAndClinicAddress
+import shifa.doctor.generated.resources.createTask
 import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.drMedPrefix
 import shifa.doctor.generated.resources.extendedProfile
@@ -92,9 +93,11 @@ import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.signOut
 import shifa.doctor.generated.resources.subscriptionAndBilling
 import shifa.doctor.generated.resources.talkWithAi
+import shifa.doctor.generated.resources.taskDetails
 import shifa.doctor.generated.resources.tasks
 import shifa.doctor.generated.resources.unreadBadge
 import shifa.doctor.generated.resources.unreadCountCap
+import shifa.doctor.generated.resources.useTemplate
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
@@ -133,6 +136,7 @@ import shifa.doctor.ui.profile.SettingsActions
 import shifa.doctor.ui.profile.SettingsScreen
 import shifa.doctor.ui.schedule.LocationsScreen
 import shifa.doctor.ui.schedule.ScheduleScreen
+import shifa.doctor.ui.tasks.TasksScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -405,6 +409,13 @@ private fun RouteContent(
                         seePlans = { actions.push(ShellRoute.Profile(ProfileSection.Subscription)) },
                     ),
                 )
+            } else if (route.tab == ShellTab.Tasks && !staff) {
+                // TASK-02: PREMIUM doctors (the shell keeps the tab closed for other plans and for staff).
+                TasksScreen(
+                    onOpen = { actions.push(ShellRoute.Task(it.id, currentInstant().toEpochMilliseconds())) },
+                    onCreate = { actions.push(ShellRoute.TaskCreate(currentInstant().toEpochMilliseconds())) },
+                    onTemplates = { actions.push(ShellRoute.TaskTemplates(currentInstant().toEpochMilliseconds())) },
+                )
             } else if (route.tab == ShellTab.Notifications) {
                 // NOTIF-02: doctors (More, the bell) and clinic staff (their third tab); a target opens over the inbox.
                 val documentTitle = tr(Res.string.document)
@@ -506,6 +517,13 @@ private fun RouteContent(
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
+        // TASK-03…05 build these.
+        is ShellRoute.Task ->
+            Pushed(Res.string.taskDetails, actions) { TabPlaceholder(Res.string.taskDetails, Res.drawable.ic_tasks_22) }
+        is ShellRoute.TaskCreate ->
+            Pushed(Res.string.createTask, actions) { TabPlaceholder(Res.string.createTask, Res.drawable.ic_tasks_22) }
+        is ShellRoute.TaskTemplates ->
+            Pushed(Res.string.useTemplate, actions) { TabPlaceholder(Res.string.useTemplate, Res.drawable.ic_tasks_22) }
         is ShellRoute.Block -> BlockPanelScreen(route.entry, route.opened, onClose = actions.back)
         is ShellRoute.Booking ->
             BookingScreen(

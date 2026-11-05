@@ -83,6 +83,23 @@ sealed interface ShellRoute {
         val opened: Long,
     ) : ShellRoute
 
+    /** Tasks → one task (TASK-03); [opened] as for [Appointment]. */
+    data class Task(
+        val id: Long,
+        val opened: Long,
+    ) : ShellRoute
+
+    /** Tasks → a new task (TASK-04), from a template (TASK-05) when [template] is set. */
+    data class TaskCreate(
+        val opened: Long,
+        val template: shifa.doctor.data.model.TaskTemplate? = null,
+    ) : ShellRoute
+
+    /** Tasks → "Use Templates" (TASK-05). */
+    data class TaskTemplates(
+        val opened: Long,
+    ) : ShellRoute
+
     /** Profile → Debug menu, debug builds only. */
     data object Debug : ShellRoute
 

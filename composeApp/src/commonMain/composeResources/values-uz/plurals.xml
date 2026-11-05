@@ -55,6 +55,12 @@
     <plurals name="showEarlierCount">
         <item quantity="other">Oldingi %1$s tasini ko'rsatish</item>
     </plurals>
+    <plurals name="taskDaysCount">
+        <item quantity="other">%1$s kun</item>
+    </plurals>
+    <plurals name="taskTimesPerDay">
+        <item quantity="other">Kuniga %1$s marta</item>
+    </plurals>
     <plurals name="toothA11y">
         <item quantity="other">%1$s-tish, %2$s ta xizmat</item>
     </plurals>

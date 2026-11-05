@@ -2674,5 +2674,9 @@
   "notificationTypeTaskUpdate": "Vazifa yangilandi",
   "notificationsLoadFailed": "Bildirishnomalarni yuklab bo'lmadi",
   "notificationsMarkFailed": "O'qilgan deb belgilab bo'lmadi. Qayta urinib ko'ring.",
-  "notificationUnread": "O'qilmagan"
+  "notificationUnread": "O'qilmagan",
+  "tasksLoadFailed": "Vazifalarni yuklab bo'lmadi",
+  "noTasksMatchFilters": "Filtrlarga mos vazifa yo'q",
+  "allStatuses": "Barcha holatlar",
+  "allCategories": "Barcha toifalar"
 }

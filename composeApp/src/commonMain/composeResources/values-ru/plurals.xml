@@ -100,6 +100,18 @@
         <item quantity="one">Показать %1$s прошедший</item>
         <item quantity="other">Показать %1$s прошедших</item>
     </plurals>
+    <plurals name="taskDaysCount">
+        <item quantity="one">%1$s день</item>
+        <item quantity="few">%1$s дня</item>
+        <item quantity="many">%1$s дней</item>
+        <item quantity="other">%1$s дня</item>
+    </plurals>
+    <plurals name="taskTimesPerDay">
+        <item quantity="one">%1$s раз в день</item>
+        <item quantity="few">%1$s раза в день</item>
+        <item quantity="many">%1$s раз в день</item>
+        <item quantity="other">%1$s раза в день</item>
+    </plurals>
     <plurals name="toothA11y">
         <item quantity="other">Зуб %1$s, услуг: %2$s</item>
     </plurals>

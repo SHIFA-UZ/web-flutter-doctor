@@ -2674,5 +2674,9 @@
   "notificationTypeTaskUpdate": "Обновление задачи",
   "notificationsLoadFailed": "Не удалось загрузить уведомления",
   "notificationsMarkFailed": "Не удалось отметить как прочитанное. Попробуйте ещё раз.",
-  "notificationUnread": "Не прочитано"
+  "notificationUnread": "Не прочитано",
+  "tasksLoadFailed": "Не удалось загрузить задачи",
+  "noTasksMatchFilters": "Нет задач по этим фильтрам",
+  "allStatuses": "Все статусы",
+  "allCategories": "Все категории"
 }

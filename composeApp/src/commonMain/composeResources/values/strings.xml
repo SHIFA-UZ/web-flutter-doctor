@@ -122,10 +122,12 @@
     <string name="aiWillRespondHere">AI will respond here…</string>
     <string name="aids">AIDS</string>
     <string name="all">All</string>
+    <string name="allCategories">All categories</string>
     <string name="allCaughtUp">All caught up!</string>
     <string name="allDay">All day</string>
     <string name="allPatients">All patients</string>
     <string name="allRoles">All Roles</string>
+    <string name="allStatuses">All statuses</string>
     <string name="allergies">Allergies</string>
     <string name="allergyChip">Allergy: %1$s</string>
     <string name="allow">Allow</string>
@@ -1703,6 +1705,7 @@
     <string name="noSubmissionReceived">No submission received</string>
     <string name="noSummaryYet">No saved appointment documentation found.</string>
     <string name="noTasksFound">No tasks found</string>
+    <string name="noTasksMatchFilters">No tasks match your filters</string>
     <string name="noTemplatesYet">No templates yet. Create a task first, then it will appear here.</string>
     <string name="noTimezoneFound">No timezone found. Try the city name in English.</string>
     <string name="noTokensFound">No tokens found</string>
@@ -2372,6 +2375,7 @@
     <string name="taskTemplates">Task Templates</string>
     <string name="taskUpdated">Task updated successfully</string>
     <string name="tasks">Tasks</string>
+    <string name="tasksLoadFailed">Couldn't load tasks</string>
     <string name="tasksNotOnPlan">Tasks are not available on your plan.</string>
     <string name="taxIdVatId">Tax ID / VAT ID</string>
     <string name="telegram">Telegram</string>
