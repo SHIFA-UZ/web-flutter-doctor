@@ -147,6 +147,8 @@ class DemoBackend(
     private var lastDateId = 0L
     private var places: List<JsonElement> = apiJson.parseToJsonElement(DEMO_LOCATIONS).jsonArray.toList()
 
+    private val chat = DemoChat()
+
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
 
     fun engine(): HttpClientEngine =
@@ -215,6 +217,16 @@ class DemoBackend(
         // Only signing in reaches the real backend (it returns the token the real GETs need). Every other auth call
         // writes (register, OTP, password reset), so it is refused like any other write.
         if (path == Endpoints.LOGIN) return null
+        // CHAT-01: the demo chat answers its own paths (the unread count included).
+        chat.handle(
+            request.method.value,
+            path,
+            request.url.parameters.names().associateWith {
+                request.url.parameters[it].orEmpty()
+            },
+            body,
+        )
+            ?.let { return ok(it) }
         return when {
             get && path == Endpoints.DOCTOR_ME -> ok(doctorMe())
             get && path == Endpoints.PUBLIC_CONFIG -> ok(publicConfig(bootGate()))
@@ -255,7 +267,6 @@ class DemoBackend(
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
             get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
             // Fixed counts so the badges show; the lists behind them come with their features.
-            get && path == Endpoints.CHAT_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":3}"""))
             get && path == Endpoints.NOTIFICATIONS_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":12}"""))
             get && path == Endpoints.TASKS -> ok(apiJson.parseToJsonElement("[]"))
             // Services kept in memory (SVC-01); the location list until LOC-1.

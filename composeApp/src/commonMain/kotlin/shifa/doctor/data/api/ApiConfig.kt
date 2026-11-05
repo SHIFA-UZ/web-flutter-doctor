@@ -145,6 +145,17 @@ object ApiConfig {
         const val NOTIFICATIONS_UNREAD = "notifications/unread/count"
         const val TASKS = "tasks"
 
+        // CHAT-01 (15 §2.8).
+        const val CONVERSATIONS = "messages/conversations"
+        const val CONVERSATION_START = "messages/conversations/start"
+        const val MESSAGE_SEND = "messages/send"
+        const val CHAT_SEARCH = "messages/search"
+        const val CHAT_UPLOAD = "messages/upload-attachment"
+
+        fun conversation(id: Long) = "messages/conversations/$id"
+
+        fun conversationRead(id: Long) = "messages/conversations/$id/read"
+
         // ANALYTICS-01 (15 §2.3).
         const val ANALYTICS_OVERVIEW = "doctor/analytics/overview"
         const val ANALYTICS_TREND = "doctor/analytics/appointments-trend"

@@ -152,6 +152,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | ANALYTICS-01 Analytics data | Done | `AnalyticsRepository` (overview, trend with days 1–90, consultation types, engagement, SMS usage from/to), `AnalyticsRange` (inclusive, default last 7 practice days), demo handlers from the demo calendar. Verified on dev. See home.md. |
 | ANALYTICS-02 Clinic performance card | Done | Last on Home: range button (localised "30 Oct – 5 Nov, 2026", picker with 7/30/90-day presets, a year back to 30 days ahead) and Export (CSV through the share sheet), today's four KPI tiles, PREMIUM engagement or a Premium teaser, per-block "Could not load" + Retry. Charts: ANALYTICS-03. See home.md. |
 | ANALYTICS-03 Trend and visit types | Done | PREMIUM: Canvas trend line for the range (title names the days, ~7 date labels, tap a dot for "2 Nov · 3 visits") and the visit-type ring (shares adding up to 100, legend with counts), "No data yet", per-block Retry, spoken summaries. See home.md. |
+| CHAT-01 Chat data | Done | `ChatRepository` (conversations, thread, start, read, send, search, upload), models tolerant of case and unknown types, every attachment URL absolute (`absoluteFileUrl`), in-memory demo chat. See chat.md. |
 
 ## Log
 
@@ -255,3 +256,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · ANALYTICS-01 · Analytics models, range and repository.
 - 2026-11-05 · ANALYTICS-02 · Home's Clinic performance card: range, export, KPIs, engagement.
 - 2026-11-05 · ANALYTICS-03 · The trend line and visit-type ring on Clinic performance.
+- 2026-11-05 · CHAT-01 · Chat models, repository, upload and file URLs.

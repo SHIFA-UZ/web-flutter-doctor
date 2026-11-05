@@ -626,4 +626,34 @@ class DemoBackendTest {
             }
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the demo chat lists, opens, sends, reads and counts locally`() =
+        runTest {
+            val repo = shifa.doctor.data.chat.ChatRepository({ client }, { ApiConfig.BASE_URL })
+            val list = repo.conversations().getOrThrow()
+            assertThat(
+                list.map { it.name },
+            ).containsExactly("Dilnoza Rahimova", "Jasur Karimov", "Bekzod Aliyev").inOrder()
+            val unread = apiCall<JsonObject> { client.get(ApiConfig.Endpoints.CHAT_UNREAD) }.getOrThrow()
+            assertThat(unread["count"]!!.jsonPrimitive.content).isEqualTo("3")
+            assertThat(repo.thread(801).getOrThrow().messages).hasSize(3)
+            repo.send(shifa.doctor.data.model.SendMessageRequest(803, "text", text = "Got it")).getOrThrow()
+            assertThat(repo.conversations().getOrThrow().first().id).isEqualTo(803L)
+            repo.markRead(801).getOrThrow()
+            assertThat(
+                apiCall<JsonObject> {
+                    client.get(ApiConfig.Endpoints.CHAT_UNREAD)
+                }.getOrThrow()["count"]!!.jsonPrimitive.content,
+            ).isEqualTo("1")
+            assertThat(repo.start(patientId = 13).getOrThrow().name).isEqualTo("Malika Tursunova")
+            assertThat(repo.search("jas").getOrThrow().map { it.id }).containsExactly(12L)
+            // A colleague gets their own conversation, not a patient's.
+            val colleague = repo.start(doctorId = 21).getOrThrow()
+            assertThat(colleague.isDoctor).isTrue()
+            assertThat(repo.start(doctorId = 21).getOrThrow().id).isEqualTo(colleague.id)
+            assertThat(repo.start(patientId = 13).getOrThrow().id).isNotEqualTo(colleague.id)
+            assertThat(repo.upload(byteArrayOf(1), "a.jpg", "image/jpeg").getOrThrow()).contains("/demo/")
+            assertThat(forwarded).isEmpty()
+        }
 }
