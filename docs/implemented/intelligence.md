@@ -92,3 +92,43 @@ originals.", Copy). Flutter never showed this on Android or iOS.
 - **Tests:** `PatientBriefingViewModelTest` (first open in the app language, reopen without a request, one request at
   a time, 400 and blank → empty, 429 message and request id, a failed Regenerate keeps the text); screenshots
   `PatientBriefing_loading`, `_ready`, `_empty` (with the limit error), `PatientDetail_overview` (button shown).
+
+## AI-10 · Visit facts panel and clinical timeline
+
+Built 2026-11-05. Spec 02 §3.2 and §9, flow 03/21, ticket AI-10. Boards `DaVisit` (video room "Visit facts from the
+call": kind pill, text, Keep / Reject chips, rejected at 55 % and struck through, "Document everything",
+"already in the patient timeline") and `DaPatients` ("Clinical timeline": dot and line per fact, when).
+
+- **Panel** (`ui/visit/VisitFacts.kt`, `VisitFactsViewModel` per visit): in the visit workspace above the notes, for
+  in-person and video visits (Flutter had it only in the video call). Read on open and on every return (the scribe may
+  have finished meanwhile), plus a refresh icon (flow §3). Kept drafts with the quote (italic) and schedule hint;
+  Keep / Reject are local until committed and survive a reload (Flutter lost them). "Dropped (not said)" lists what
+  the model dropped, with its reason as sent. Top 3 clinic patterns. "Document everything" sends the kept ids as
+  `acceptFactIds` and the rejected ones as `rejectFactIds` (the backend rejects the rest of the drafts when an accept
+  list is sent), is disabled while documenting or with nothing kept (Flutter documented 0), then reads again; the
+  result reads "Documented {n} facts." (plural) or "Facts documented: n. Medication tasks drafted: m." in a polite
+  live region. A failed commit says so with the board's copy.
+- **Notes in step (Codex review):** the backend also appends the documented facts to the visit's manual note. The
+  notes are saved before the commit (no commit if they can't be), and the same text is added to the open editor as
+  already saved (`VisitNotes.appendSaved`), so the next autosave keeps it. The commit's answer is applied at once, so
+  the drafts can't be documented twice. While the scribe is working and no facts have come, the panel reads again
+  every 10 s while on screen.
+- **When it shows:** only while there are facts (kept, dropped or documented), a first read in flight, or a failed
+  first read (an error row with Retry; Flutter hid failures). Without the AI notes plan the panel isn't there (the
+  board's "Visit facts need the Pro plan." line is left out: it would show in every visit for BASIC doctors, and the
+  in-person boards have no panel at all).
+- **Timeline** (`ui/patients/ClinicalTimeline.kt`, `ClinicalTimelineViewModel` per patient): on the overview under
+  the clinical summary, read on every return to the chart. "Medication · text", the quote, and when it was
+  documented as "22 October 2026 · 10:42" in practice time (Flutter showed the raw ISO string), then the top 4
+  patterns. "No documented visit facts yet." when empty; an error row with Retry on a first failure; a failed re-read
+  keeps what is shown. AI notes plan, doctors only.
+- **Shared:** `factTypeLabel` (Symptom / Diagnosis / Therapy / Medication, others as sent) and `Patterns` live in
+  `VisitFacts.kt` and are used by both.
+- **Checked:** emulator, demo mode, visit 102 (6 Nov): three facts (one dropped), Reject the symptom, Document
+  everything → "Facts documented: 1. Medication tasks drafted: 1.", the dropped one stays, then Patients → Jasur
+  Karimov → the timeline lists the medication at 13:45 with the pattern. Dev has no visits, so no dev read of an
+  appointment's facts (the timeline read was checked in AI-01). iOS compiled, not run.
+- **Not built:** tapping a timeline row to its visit, per-fact edit.
+- **Tests:** `VisitFactsViewModelTest` (read, a rejection surviving a reload, commit body and the read after, nothing
+  kept can't commit, a failed commit, a failed first read, empty, the timeline keeping its rows on a failed re-read);
+  screenshots `VisitFacts_ready`, `VisitFacts_done` (message, already documented, error row), `ClinicalTimeline`.

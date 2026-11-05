@@ -155,4 +155,20 @@ class VisitNotesTest {
         ).inOrder()
         assertThat(classToTest.state.value.saving).isFalse()
     }
+
+    @Test
+    fun `text the server already appended is held, not unsaved, and the next save keeps it`() {
+        val classToTest = opened()
+        classToTest.appendSaved(" Ibuprofen 400 mg\nPain in 36 ")
+        assertThat(classToTest.state.value.text.free).isEqualTo("Earlier notes\n\nIbuprofen 400 mg\nPain in 36")
+        assertThat(classToTest.state.value.dirty).isFalse()
+        // A later read doesn't put the old note back over it.
+        classToTest.load()
+        settle { calls.count { it.startsWith("GET") && it.contains("consultation-notes") } == 2 }
+        assertThat(classToTest.state.value.text.free).contains("Ibuprofen")
+        classToTest.edit { it.copy(subjective = "Better today") }
+        scheduler.advanceTimeBy(2_100)
+        settle { puts().isNotEmpty() }
+        assertThat(puts().single()).contains("Ibuprofen 400 mg")
+    }
 }

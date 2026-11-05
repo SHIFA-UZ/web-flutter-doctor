@@ -743,6 +743,7 @@ fun PatientDetailScreen(
     val session by sessionRepository.session.collectAsStateWithLifecycle()
     val briefingAllowed = rememberAllowed(DoctorFeature.PatientBriefing) && session?.isClinicStaff == false
     var briefingOpen by rememberSaveable { mutableStateOf(false) }
+    val timelineAllowed = rememberAllowed(DoctorFeature.AiNotes) && session?.isClinicStaff == false
     // The viewer's title is resolved here, in the app's language, as the card shows it.
     var opening by remember { mutableStateOf<PatientDocument?>(null) }
     opening?.let { d ->
@@ -807,6 +808,7 @@ fun PatientDetailScreen(
         docs,
         upload,
         formsState,
+        timeline = if (timelineAllowed) ({ ClinicalTimeline(id) }) else null,
     )
     UploadSheets(upload, uploads, sources)
     if (briefingOpen && briefingAllowed) {
@@ -864,6 +866,8 @@ fun PatientDetailContent(
     documents: PatientDocumentsUiState = PatientDocumentsUiState(),
     upload: UploadUiState = UploadUiState(),
     forms: PatientFormsUiState = PatientFormsUiState(),
+    // AI-10: the clinical timeline card on the overview; null without the AI notes plan (or for clinic staff).
+    timeline: (@Composable () -> Unit)? = null,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     // No title: the header below names the patient (flow 06/03 §3.1).
     ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
@@ -914,7 +918,7 @@ fun PatientDetailContent(
                             item {
                                 Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {
                                     when (state.tab) {
-                                        RecordTab.Overview -> Overview(patient, state, actions)
+                                        RecordTab.Overview -> Overview(patient, state, actions, timeline)
                                         RecordTab.Medical -> MedicalInfo(patient, state, actions.medical)
                                         else -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_users_22)
                                     }
@@ -1072,6 +1076,7 @@ private fun Overview(
     p: Patient,
     state: PatientDetailUiState,
     actions: PatientDetailActions,
+    timeline: (@Composable () -> Unit)?,
 ) {
     Card(tr(Res.string.clinicalSummary)) {
         SummaryRow(
@@ -1088,6 +1093,7 @@ private fun Overview(
         )
         SummaryRow(tr(Res.string.language), languageLabel(p.language) ?: tr(Res.string.notSpecified), false)
     }
+    timeline?.invoke()
     RecentActivity(state, actions)
     QuickActions(actions)
     Card(tr(Res.string.patientAppAccess)) {

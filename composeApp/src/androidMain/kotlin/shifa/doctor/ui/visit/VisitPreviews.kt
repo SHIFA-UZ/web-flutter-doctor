@@ -5,6 +5,7 @@ package shifa.doctor.ui.visit
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import shifa.doctor.data.model.AppointmentDetail
@@ -20,8 +21,11 @@ import shifa.doctor.data.model.ServicePrice
 import shifa.doctor.data.model.ToothServiceLine
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.videoCallNotYetAvailableMessage
+import shifa.doctor.generated.resources.visitFactsLoadFailed
 import shifa.doctor.ui.documents.PatientDocumentsUiState
 import shifa.doctor.ui.theme.PreviewTheme
+import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.utils.PracticeClock
 
 private val now = Instant.parse("2026-11-04T05:12:30Z")
@@ -538,5 +542,133 @@ internal fun ToothMapPreview() =
                     ),
             )
             ToothMap(shifa.doctor.data.forms.Dentition.Primary, mapOf("54" to 1), onTap = {})
+        }
+    }
+
+private fun vf(
+    id: Long,
+    type: String,
+    text: String,
+    status: String = "DRAFT",
+    kept: Boolean = true,
+    quote: String? = null,
+    hint: String? = null,
+    reason: String? = null,
+    at: String = "2026-11-04T06:42:00Z",
+) = shifa.doctor.data.model.VisitFact(
+    id, 11, type, text, status, 101, quote, hint, kept, reason,
+    committedAt =
+        at.takeIf {
+            status == "COMMITTED"
+        },
+    createdAt = at,
+)
+
+private val factPatterns =
+    listOf(
+        shifa.doctor.data.model.ClinicPattern(
+            "med",
+            "Spoken medication followed by a remote-care task",
+            "MEDICATION",
+            14,
+        ),
+        shifa.doctor.data.model.ClinicPattern("sym", "Symptom recorded on patient timeline", "SYMPTOM", 6),
+    )
+
+private val visitFacts =
+    shifa.doctor.data.model.VisitFacts(
+        listOf(
+            vf(
+                1,
+                "MEDICATION",
+                "Chlorhexidine 0.12 % rinse",
+                quote = "rinse with chlorhexidine twice a day",
+                hint = "twice a day for 7 days",
+            ),
+            vf(2, "SYMPTOM", "Mild swelling on the lower left jaw", quote = "a bit swollen, less than yesterday"),
+            vf(3, "THERAPY", "Soft food for 3 more days"),
+            vf(4, "DIAGNOSIS", "Dry socket", kept = false, reason = "Not said in the visit"),
+        ),
+        factPatterns,
+    )
+
+// AI-10: the scribe's facts: one rejected (struck through), one dropped by the model, patterns, Document everything.
+@Composable
+internal fun VisitFactsPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Box(Modifier.background(ShifaColors.Bg.Canvas).padding(ShifaSize.S16)) {
+            VisitFactsCard(VisitFactsUiState(visitFacts, rejected = setOf(3)), VisitFactsActions())
+        }
+    }
+
+// AI-10: documented (the message), a visit already documented, and a first read that failed.
+@Composable
+internal fun VisitFactsDonePreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            Modifier.background(ShifaColors.Bg.Canvas).padding(ShifaSize.S16),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(ShifaSize.S16),
+        ) {
+            val committed =
+                shifa.doctor.data.model.VisitFacts(
+                    listOf(
+                        vf(1, "MEDICATION", "Chlorhexidine 0.12 % rinse", "COMMITTED"),
+                        vf(2, "SYMPTOM", "Mild swelling", "COMMITTED"),
+                    ),
+                )
+            VisitFactsCard(VisitFactsUiState(committed, done = 2 to 1), VisitFactsActions())
+            VisitFactsCard(VisitFactsUiState(committed), VisitFactsActions())
+            VisitFactsCard(
+                VisitFactsUiState(
+                    loadError =
+                        shifa.doctor.ui.emailcode.CodeBanner(
+                            Res.string.visitFactsLoadFailed,
+                            requestId = "r-1",
+                        ),
+                ),
+                VisitFactsActions(),
+            )
+        }
+    }
+
+// AI-10: the patient's clinical timeline in practice time, the patterns; then the empty card.
+@Composable
+internal fun ClinicalTimelinePreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            Modifier.background(ShifaColors.Bg.Canvas).padding(ShifaSize.S16),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(ShifaSize.S16),
+        ) {
+            shifa.doctor.ui.patients.ClinicalTimelineCard(
+                shifa.doctor.ui.patients.ClinicalTimelineUiState(
+                    shifa.doctor.data.model.VisitFacts(
+                        listOf(
+                            vf(
+                                1,
+                                "DIAGNOSIS",
+                                "K02.1 caries on 26",
+                                "COMMITTED",
+                                quote = "deep caries on the upper left six",
+                                at = "2026-10-22T05:42:00Z",
+                            ),
+                            vf(
+                                2,
+                                "MEDICATION",
+                                "Ibuprofen 400 mg after meals",
+                                "COMMITTED",
+                                at = "2026-10-20T09:10:00Z",
+                            ),
+                        ),
+                        factPatterns,
+                    ),
+                ),
+                clock,
+                {},
+            )
+            shifa.doctor.ui.patients.ClinicalTimelineCard(
+                shifa.doctor.ui.patients.ClinicalTimelineUiState(shifa.doctor.data.model.VisitFacts()),
+                clock,
+                {},
+            )
         }
     }

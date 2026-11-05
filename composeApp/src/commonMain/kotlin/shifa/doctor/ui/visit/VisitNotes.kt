@@ -146,6 +146,23 @@ class VisitNotes(
     }
 
     /**
+     * Text the server already added to the visit's note (documented visit facts, AI-10), mirrored here as
+     * [append] would add it, but not unsaved: the next save then sends a body that still holds it.
+     */
+    fun appendSaved(text: String) {
+        val add = text.trim().ifEmpty { return }
+        hydrated = true
+        _state.update { s ->
+            s.copy(
+                text =
+                    s.text.copy(
+                        free = listOf(s.text.free.trimEnd(), add).filter(String::isNotEmpty).joinToString("\n\n"),
+                    ),
+            )
+        }
+    }
+
+    /**
      * Saves now what's unsaved (leaving the screen, switching mode, ending the visit), after a save already running;
      * true when nothing is left.
      */

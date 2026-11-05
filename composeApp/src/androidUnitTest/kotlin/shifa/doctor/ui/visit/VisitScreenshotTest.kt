@@ -72,4 +72,15 @@ class VisitScreenshotTest {
     @Test
     @Config(qualifiers = "w720dp-h874dp-xhdpi")
     fun toothMapWide() = captureRoboImage("screenshots/ToothMap_wide.png") { ToothMapPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1600dp-xhdpi")
+    fun visitFacts() = captureRoboImage("screenshots/VisitFacts_ready.png") { VisitFactsPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1600dp-xhdpi")
+    fun visitFactsDone() = captureRoboImage("screenshots/VisitFacts_done.png") { VisitFactsDonePreview() }
+
+    @Test
+    fun clinicalTimeline() = captureRoboImage("screenshots/ClinicalTimeline.png") { ClinicalTimelinePreview() }
 }

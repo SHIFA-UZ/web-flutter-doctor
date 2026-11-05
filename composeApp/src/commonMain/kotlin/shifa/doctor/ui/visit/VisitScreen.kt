@@ -422,6 +422,20 @@ fun VisitScreen(
     val scribe = rememberDictation()
     val scribeState by scribe.state.collectAsStateWithLifecycle()
     val scribeAllowed = rememberAllowed(DoctorFeature.AiNotes)
+    // AI-10: the scribe's facts, with the AI notes plan (the scribe makes them).
+    val facts: (@Composable () -> Unit)? =
+        if (scribeAllowed) {
+            {
+                VisitFactsPanel(
+                    appointmentId,
+                    state.awaitingScribe,
+                    viewModel.notes::flush,
+                    viewModel.notes::appendSaved,
+                )
+            }
+        } else {
+            null
+        }
     val askScribe = rememberMicPermission { granted -> if (granted) scribe.start(SCRIBE) else scribe.denied() }
     // APPT-05: the answer goes to the kind the picker was opened for (VisitViewModel.pickingPhoto).
     val gallery = rememberImagePickerLauncher(viewModel::addPhoto)
@@ -513,6 +527,7 @@ fun VisitScreen(
                 dental = dental,
                 plan = planState,
                 video = callPart,
+                facts = facts,
             )
         } else {
             // The documents and uploads need the patient: they start once the visit says who it is.
@@ -527,6 +542,7 @@ fun VisitScreen(
                 scribeState,
                 scribeAllowed,
                 callPart,
+                facts,
             )
         }
         if (videoState?.confirmLeave == true) {
@@ -629,6 +645,7 @@ private fun PatientParts(
     scribe: DictationState,
     scribeAllowed: Boolean,
     video: VideoPart?,
+    facts: (@Composable () -> Unit)?,
     documents: PatientDocumentsViewModel =
         viewModel(key = "visit-documents-$patientId") { PatientDocumentsViewModel(patientId) },
     uploads: DocumentUploadViewModel =
@@ -700,6 +717,7 @@ private fun PatientParts(
         dental = dental,
         plan = plan,
         video = video,
+        facts = facts,
     )
     UploadSheets(upload, uploads, sources)
 }
@@ -720,6 +738,8 @@ internal fun VisitContent(
     plan: VisitPlanState = VisitPlanState(),
     // VIDEO-02: the call's state and the call (for its video tiles); null for a visit in person.
     video: VideoPart? = null,
+    // AI-10: the visit facts panel (draws nothing until the scribe made facts); null without the AI notes plan.
+    facts: (@Composable () -> Unit)? = null,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     val visit = state.visit
     when {
@@ -764,6 +784,7 @@ internal fun VisitContent(
                         }
                     }
                 }
+                facts?.let { panel -> item { Box(gap) { panel() } } }
                 item { Box(gap) { NotesCard(state, notes, dental, plan, actions, scribe, scribeAllowed) } }
                 documentRows(documents, upload, actions.documents, gap, hasPatient = visit.patientId != null)
             }

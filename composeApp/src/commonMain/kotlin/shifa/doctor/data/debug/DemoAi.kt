@@ -173,7 +173,7 @@ internal class DemoAi {
         put("scheduleHint", hint)
         put("status", "DRAFT")
         put("reflectionKept", kept)
-        put("dropReason", if (kept) null else "NOT_SAID")
+        put("dropReason", if (kept) null else "Not said in the visit recording")
         put("remoteTaskId", JsonNull)
         put("createdAt", currentInstant().toString())
         put("committedAt", JsonNull)
