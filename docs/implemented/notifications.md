@@ -73,3 +73,15 @@ Built 2026-11-05. Spec 07 §2.1, ticket NOTIF-02, flow 07/08, board `DaInbox` ("
   the panel and the count went 5 → 4; the cancellation said the appointment no longer exists; the access request
   opened the patient; the chat row opened the Chat tab; Mark all as read cleared every row and the count. Demo mode is
   off again.
+
+## NOTIF-03 · Unread badge refresh
+
+Built 2026-11-05 (with NOTIF-02). Spec 07 §2.4, ticket NOTIF-03.
+
+- One count, the shell's (`GET /notifications/unread/count` through `BadgesRepository`), shown on the Home bell, the
+  More tile, clinic staff's tab and the inbox title. Never polled. Read again on: opening the inbox and every refresh
+  of it (pull, Refresh, coming back), a read or "Mark all as read" (`NotificationReads`, emitted by the repository and
+  the inbox), app resume (`ShellViewModel.onResume`), and Home's refresh. A newer read cancels an older one, so a late
+  answer can't put an old count back. No "token hack" (Flutter retried every 5 s without a token, fix #19).
+- **Left for PUSH-02:** a foreground push reading it again (push is at the very end, D-15).
+- **Tests:** `ShellViewModelTest` (a read signal reads the count again; the resume read in the polling test).

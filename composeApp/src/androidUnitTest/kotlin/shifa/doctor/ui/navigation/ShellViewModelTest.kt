@@ -21,6 +21,7 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.chat.ChatReads
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.DoctorTier
@@ -42,6 +43,7 @@ class ShellViewModelTest {
     private var hold = CompletableDeferred(Unit)
     private val paths = mutableListOf<String>()
     private var chat = 1
+    private var notifications = 140
     private val client by lazy {
         createHttpClient(
             { null },
@@ -53,7 +55,7 @@ class ShellViewModelTest {
                     } else if (req.url.encodedPath.endsWith("messages/unread-count")) {
                         """{"count":${chat++}}"""
                     } else if (req.url.encodedPath.endsWith("unread/count")) {
-                        """{"count":140}"""
+                        """{"count":${notifications++}}"""
                     } else if (req.url.encodedPath.endsWith("/tasks")) {
                         """[{"id":1},{"id":2}]"""
                     } else if (req.url.encodedPath.endsWith("me/profile")) {
@@ -246,6 +248,18 @@ class ShellViewModelTest {
         classToTest.openCalendar()
         assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Calendar)
         assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Root(ShellTab.Calendar))
+    }
+
+    @Test
+    fun `the bell's count is read again on a read in the inbox, never polled`() {
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.refreshNotifications()
+        waitFor { classToTest.state.value.notificationsKnown }
+        val first = classToTest.state.value.notificationsUnread
+        NotificationReads.changed.tryEmit(Unit)
+        waitFor { classToTest.state.value.notificationsUnread == first + 1 }
+        assertThat(classToTest.state.value.notificationsUnread).isEqualTo(first + 1)
     }
 
     @Test
