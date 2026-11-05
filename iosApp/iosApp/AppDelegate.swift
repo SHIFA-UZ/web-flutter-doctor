@@ -11,6 +11,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         FirebaseApp.configure()
+        // VIDEO-01: the shared video visit makes its Daily calls through this.
+        VideoCalls.shared.factory = { DailyVideoCall() }
         return true
     }
 

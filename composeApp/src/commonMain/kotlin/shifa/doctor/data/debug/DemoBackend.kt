@@ -540,6 +540,25 @@ class DemoBackend(
                 briefingRetried[id] = currentInstant()
                 ok(demoBriefing(id, briefingRetried[id]))
             }
+            // A video visit's room (VIDEO-01): the demo has no Daily room, so joining fails as a real call error would;
+            // a visit outside its window is refused like the backend's bare 403.
+            request.method == HttpMethod.Post && path == Endpoints.VIDEO_TOKEN -> {
+                val id =
+                    runCatching {
+                        apiJson.parseToJsonElement(body).jsonObject["appointmentId"]?.jsonPrimitive?.content?.toLong()
+                    }.getOrNull()
+                if (id == 101L) {
+                    ok(
+                        buildJsonObject {
+                            put("token", "demo-token")
+                            put("roomUrl", "https://demo.daily.co/shifa-demo")
+                            put("roomName", "shifa-demo")
+                        },
+                    )
+                } else {
+                    Reply(HttpStatusCode.Forbidden, """{"error":403,"status":403,"code":"FORBIDDEN"}""")
+                }
+            }
             // Treatment plans (TP-01): Jasur Karimov (12) has one active dental plan in the demo clinic.
             get && path == Endpoints.TREATMENT_PLANS -> {
                 val q = request.url.parameters

@@ -1,5 +1,5 @@
 {
-  "originHash" : "194c468578843c9c1f7b6a13953eecc486cbfce7cba7de0916714ed92fe0be50",
+  "originHash" : "1c839438f363284fc0158d55845de2b94dc3d493277ab73c5642207efa7287f7",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "97f7d74dd0e8f3d0fe5fc75cc8957aa73bdc948a",
         "version" : "11.3.2"
+      }
+    },
+    {
+      "identity" : "daily-client-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/daily-co/daily-client-ios",
+      "state" : {
+        "revision" : "738c3a7f677d768f4b7561b910d2d5573356e7fd",
+        "version" : "0.40.0"
       }
     },
     {

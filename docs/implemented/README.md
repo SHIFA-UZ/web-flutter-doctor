@@ -140,6 +140,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
 | DENTAL-03 + TP-06 Treatment plan in the visit | Done | Plan panel (linked/only plan chosen, progress), plan-mode chart and fulfil sheet, Plan finances with this visit's payment; End applies ticks then records the payment before completing (once each); checklist rows; one plan section in the summary; leaving asks. Demo only (no dev plans). See visits.md. |
 | DENTAL-04 Plan editor + read-only plan chart | Done (hosts in M11) | The visit's dental record UI and draft reused with plan services; plan lines with the discount spread per currency (Flutter's fixture ported); read-only plan chart. Wizard (TP-04) and plan detail (TP-03) host them. See visits.md. |
+| VIDEO-01 Daily token + call client | Done (no live join) | `POST /video/token`; refusals explained by the visit's window and payment (backend sends a bare 403, BE-28); the patient app's Daily client copied (Android SDK, iOS Swift package + bridge; the iOS app builds). A real join needs a dev video visit in its window. See visits.md. |
 
 ## Log
 
@@ -232,3 +233,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · TP-01 · Treatment plan data the visit needs, with a demo plan.
 - 2026-11-05 · DENTAL-03, TP-06 · The treatment plan in the visit: ticks, payment, End and summary.
 - 2026-11-05 · DENTAL-04 · The dental plan editor and read-only plan chart.
+- 2026-11-05 · VIDEO-01 · The Daily room token and the call client on both platforms.

@@ -406,6 +406,8 @@ Notes from M5:
 2. **Daily:** VIDEO-01 needs a dev video appointment to take a room token from. Check the seed data or add one to the backend's dev seed.
 3. **Translations:** a native-speaker pass over the uz and ru texts for the about 300 new keys, especially medical terms in the visit flows.
 4. **Patient app follow-up:** the player, recorder and PDF view defects listed under CORE-07 are still in that repo.
+   Also its Daily call logs the SDK's error text (`VideoCall.android.kt`, `DailyVideoCall.swift`, unguarded on iOS); the
+   doctor app's copy logs a fixed line in debug builds only.
 5. **Workspace notes:** the workspace `CLAUDE.md` says doctor tokens last 12 hours. The backend (and dev) say 30 days. Worth correcting there.
 6. **Web target (D-08):** see above.
 

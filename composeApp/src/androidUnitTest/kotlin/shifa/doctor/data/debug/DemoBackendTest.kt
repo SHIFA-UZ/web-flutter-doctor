@@ -538,6 +538,17 @@ class DemoBackendTest {
         }
 
     @Test
+    fun `the demo video visit has a room, the others are refused like the backend`() =
+        runTest {
+            val repo = shifa.doctor.data.video.VideoRepository({ client })
+            assertThat(repo.token(101).getOrThrow().roomName).isEqualTo("shifa-demo")
+            assertThat(
+                repo.token(102).exceptionOrNull(),
+            ).isInstanceOf(shifa.doctor.data.model.ApiException.Forbidden::class.java)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
     fun `a demo briefing is ready for the video visit, failed for the other until asked again`() =
         runTest {
             val repo = shifa.doctor.data.appointments.AppointmentsRepository({ client })

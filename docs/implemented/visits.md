@@ -556,3 +556,39 @@ holds the editor, and the plan detail (TP-03) shows the read-only chart. Here th
     tooth states.
   - `DemoBackendTest`: plan services.
   - Screenshots: `Plan_editor`, `Plan_readonly`.
+
+## VIDEO-01 · Daily token and call client
+
+Built 2026-11-05. Spec 05 §3.1, ticket VIDEO-01. The call client is the patient app's (`utils/VideoCall*.kt`,
+`iosApp/iosApp/DailyVideoCall.swift`, both on Daily 0.40), copied rather than shared, as the workspace rules require.
+
+- **Token** (`data/video/VideoRepository.kt`): `POST /video/token {appointmentId}` → `{token, roomUrl, roomName}`
+  (checked on dev's OpenAPI). On dev, a refused request answers a bare `403 FORBIDDEN`: two real refusals, for a
+  completed and a cancelled visit, gave the same answer, with the reason only in English text, which the app never
+  shows.
+  - A 403 doesn't end the session (the app-wide rule). A 401 does, unlike Flutter's "no-401" call: a doctor whose
+    token stopped working is signed out everywhere else too.
+- **Why a room can't be joined** (`videoJoinError`, from the backend's `VideoController`):
+  - 402 PAYMENT_REQUIRED: "Payment is required…".
+  - A 403 is explained by the visit's own window, matching the backend's. More than 5 minutes before the start: "Video
+    call is not yet available…". More than 15 minutes after the end: "Video call has ended…".
+  - A 403 inside the window (not this doctor's visit) and anything else: "Call error occurred".
+  - BE-28 still asks for coded refusals.
+- **Call client** (`utils/VideoCall`): join, leave, camera, microphone, flip and its state (phase, camera and mic on,
+  patient joined, failed). `VideoTile` shows the patient's or the doctor's own camera; `rememberCallPermissions`
+  asks for camera and microphone.
+  - Android: `co.daily:client`.
+  - iOS: Daily's Swift package (`daily-client-ios` 0.40, added to the Xcode project) behind `NativeVideoCall`,
+    registered in `AppDelegate`.
+  - The loudspeaker is preferred, as in the patient app. No screen share (Flutter's toggle did nothing).
+  - Logging: a fixed "FAILED Daily call / join" line, in debug builds only, never the SDK's text (it can carry the
+    room or the token). The patient app's copy still logs the SDK text; noted for that repo.
+- **Demo:** the video visit (101) gets a room token. The demo has no Daily room, so a join fails as a real call
+  error would. Other visits are refused with a bare 403.
+- **Not run:** a real join. It needs a video visit inside its window on dev, and minting a token creates a Daily room
+  that can't be undone there (open question 2 in the overnight report). The client is the patient app's, which runs
+  in production. The screen is VIDEO-02.
+- **Builds:** `assembleDebug` with `co.daily:client`; the whole iOS app with `xcodebuild` for the simulator (Daily
+  0.40.0 resolved into `Package.resolved`).
+- **Tests:** `VideoRepositoryTest` (the request, a refusal as Forbidden, 402 as payment, the window messages at
+  their edges, a 403 inside the window, a network error); `DemoBackendTest` (the demo room and refusals).
