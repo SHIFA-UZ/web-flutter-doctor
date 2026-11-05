@@ -67,6 +67,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.attachFile
 import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.cameraPermissionDenied
+import shifa.doctor.generated.resources.cannotOpenDocumentUrl
 import shifa.doctor.generated.resources.chatNewMessage
 import shifa.doctor.generated.resources.chatNotSent
 import shifa.doctor.generated.resources.chatPhoto
@@ -92,6 +93,8 @@ import shifa.doctor.generated.resources.voiceMessage
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.analytics.shortMonth
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.navigation.Notice
+import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -103,10 +106,13 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.utils.DocumentKinds
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.rememberCameraLauncher
+import shifa.doctor.utils.rememberDocumentPickerLauncher
 import shifa.doctor.utils.rememberImagePickerLauncher
+import shifa.doctor.utils.rememberInAppBrowser
 import shifa.doctor.utils.tr
 
 class ThreadActions(
@@ -119,6 +125,9 @@ class ThreadActions(
     // CHAT-04: the attach sheet's photo rows, and a photo to view full screen.
     val pickImage: () -> Unit = {},
     val takePhoto: () -> Unit = {},
+    // CHAT-05: "Select Document", and a document message opened by the system (browser or the app for its type).
+    val pickDocument: () -> Unit = {},
+    val openFile: (String) -> Unit = {},
     // The attach sheet, the photo viewer and the camera-refused strip (their state is the host's).
     val attach: (Boolean) -> Unit = {},
     val view: (String?) -> Unit = {},
@@ -160,23 +169,29 @@ fun ThreadScreen(
             cameraDenied = false
             it?.let(viewModel::sendImage)
         }, { cameraDenied = true })
+    // CHAT-05: pdf, doc, docx, jpg, png; a document message opens in the browser (the system shows or hands it on).
+    val pickDocument = rememberDocumentPickerLauncher(DocumentKinds.ChatAttachment) { it?.let(viewModel::sendDocument) }
+    val browser = rememberInAppBrowser()
     val me by profileRepository.me.collectAsStateWithLifecycle()
     val zone = me?.profile?.timeZone
     val clock = remember(zone) { PracticeClock(zone) }
     ThreadContent(
         state.copy(conversation = state.conversation ?: known),
         ThreadActions(
-            onBack,
-            onOpenPatient,
-            viewModel::draft,
-            viewModel::send,
-            viewModel::retry,
-            viewModel::refresh,
-            pickImage,
-            takePhoto,
-            { attaching = it },
-            { viewing = it },
-            { cameraDenied = false },
+            back = onBack,
+            openPatient = onOpenPatient,
+            draft = viewModel::draft,
+            send = viewModel::send,
+            retry = viewModel::retry,
+            reload = viewModel::refresh,
+            pickImage = pickImage,
+            takePhoto = takePhoto,
+            pickDocument = pickDocument,
+            // Nothing could open it (no browser, a URL it can't take): say so (flow 07/06 §9).
+            openFile = { if (!browser(it)) ShellNotice.pending.value = Notice(Res.string.cannotOpenDocumentUrl) },
+            attach = { attaching = it },
+            view = { viewing = it },
+            dismissCamera = { cameraDenied = false },
         ),
         clock,
         ThreadOverlays(attaching, viewing, cameraDenied),
@@ -328,7 +343,20 @@ private fun Messages(
     val rows =
         threadRows(
             messages,
-            state.pending.map { ThreadRow.Pending(it.localId, it.text, it.at, it.failed, it.image) },
+            state.pending.map {
+                ThreadRow.Pending(
+                    it.localId,
+                    it.text,
+                    it.at,
+                    it.failed,
+                    it.image,
+                    it.fileName.takeIf {
+                            _ ->
+                        it.document != null
+                    },
+                    it.document?.size?.toLong(),
+                )
+            },
             clock,
         ).asReversed()
     val list = rememberLazyListState()
@@ -360,7 +388,7 @@ private fun Messages(
         ) { row ->
             when (row) {
                 is ThreadRow.Day -> DayDivider(row, clock)
-                is ThreadRow.Sent -> MessageRow(row.message, maxBubble, clock, onView)
+                is ThreadRow.Sent -> MessageRow(row.message, maxBubble, clock, onView, actions.openFile)
                 is ThreadRow.Pending -> PendingRow(row, maxBubble, clock) { actions.retry(row.localId) }
             }
         }
@@ -421,6 +449,7 @@ private fun MessageRow(
     max: androidx.compose.ui.unit.Dp,
     clock: PracticeClock,
     onView: (String) -> Unit,
+    onOpenFile: (String) -> Unit,
 ) {
     val time = hm(m.sentAt, clock)
     if (m.type == MessageType.System) {
@@ -480,6 +509,18 @@ private fun MessageRow(
                 m.fileUrl?.let(onView)
             }
         }
+        if (m.type == MessageType.Document) {
+            return@Column DocumentTile(
+                m.fileName,
+                m.fileSize,
+                m.isMine,
+                time,
+                if (m.isMine) tick(m.status) else null,
+                max,
+                // Without a URL the card is there but off, saying "File unavailable" (flow 07/06 §6).
+                m.fileUrl?.let { url -> { onOpenFile(url) } },
+            )
+        }
         Bubble(m.isMine, max) {
             // Long-press selects and copies (flow 07/02 §7).
             SelectionContainer {
@@ -513,6 +554,13 @@ private fun PendingRow(
     if (p.image != null) {
         Box(Modifier.clearAndSetSemantics { contentDescription = "$time, $label, $status" }) {
             ImageTile(null, p.image, true, time, if (p.failed) "!" else "◷") {}
+        }
+    } else if (p.documentName != null || p.documentSize != null) {
+        val doc = tr(Res.string.document)
+        Box(
+            Modifier.clearAndSetSemantics { contentDescription = "$time, $doc, ${p.documentName.orEmpty()}, $status" },
+        ) {
+            DocumentTile(p.documentName, p.documentSize, true, time, if (p.failed) "!" else "◷", max, onOpen = {})
         }
     } else {
         Bubble(true, max, Modifier.clearAndSetSemantics { contentDescription = "$time, $label, $status" }) {

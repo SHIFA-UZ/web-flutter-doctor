@@ -21,11 +21,15 @@ import shifa.doctor.data.model.Conversation
 import shifa.doctor.data.model.Message
 import shifa.doctor.data.model.SendMessageRequest
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.chatFileTypeNotAllowed
 import shifa.doctor.generated.resources.chatLoadFailed
+import shifa.doctor.generated.resources.errorUploadingFile
 import shifa.doctor.generated.resources.fileTooLarge
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.utils.CHAT_DOCUMENT_EXTENSIONS
+import shifa.doctor.utils.DocumentPickerResult
 import shifa.doctor.utils.PickedImage
 import shifa.doctor.utils.currentInstant
 import kotlin.time.Duration
@@ -42,7 +46,11 @@ data class PendingMessage(
     val fileName: String? = null,
     // The photo's URL once uploaded: a retry after a failed send only sends again (flow 07/03 §6), never a second file.
     val uploadedUrl: String? = null,
-)
+    // CHAT-05: a document on its way (pdf, doc, docx).
+    val document: ByteArray? = null,
+) {
+    val file: ByteArray? get() = image ?: document
+}
 
 data class ThreadUiState(
     val conversation: Conversation? = null,
@@ -57,7 +65,7 @@ data class ThreadUiState(
     val canSend: Boolean get() = draft.isNotBlank() && messages != null
 
     // An attachment is uploading (the strip above the composer, flow 07/03 §3).
-    val uploading: Boolean get() = pending.any { it.image != null && !it.failed }
+    val uploading: Boolean get() = pending.any { it.file != null && !it.failed }
 }
 
 /**
@@ -166,6 +174,34 @@ class ThreadViewModel(
         deliver(pending)
     }
 
+    /**
+     * A file from "Select Document" (CHAT-05, flow 07/06): pdf, doc and docx go as a document, jpg/jpeg/png as an image
+     * (07 §1.4); anything else, or over 20 MB, isn't sent and the banner says why.
+     */
+    fun sendDocument(file: DocumentPickerResult) {
+        if (_state.value.messages == null) return
+        val ext = file.fileName.substringAfterLast('.', "").lowercase()
+        when {
+            file.readFailed -> ShellNotice.pending.value = Notice(Res.string.errorUploadingFile)
+            ext !in CHAT_DOCUMENT_EXTENSIONS -> ShellNotice.pending.value = Notice(Res.string.chatFileTypeNotAllowed)
+            file.fileBytes.size > MAX_ATTACHMENT_BYTES ->
+                ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            ext in IMAGE_EXTENSIONS ->
+                enqueue(
+                    PendingMessage(++lastLocalId, "", now(), image = file.fileBytes, fileName = file.fileName),
+                )
+            else ->
+                enqueue(
+                    PendingMessage(++lastLocalId, "", now(), fileName = file.fileName, document = file.fileBytes),
+                )
+        }
+    }
+
+    private fun enqueue(p: PendingMessage) {
+        _state.update { it.copy(pending = it.pending + p) }
+        deliver(p)
+    }
+
     /** A failed text, tapped: sent again, once. */
     fun retry(localId: Long) {
         val p = _state.value.pending.firstOrNull { it.localId == localId && it.failed } ?: return
@@ -178,10 +214,11 @@ class ThreadViewModel(
 
     // A text as it is; a photo uploaded first, then sent with its URL, name and size (07 §1.4).
     private suspend fun request(p: PendingMessage): Result<SendMessageRequest> {
-        val bytes = p.image ?: return Result.success(SendMessageRequest(id, "text", text = p.text))
+        val bytes = p.file ?: return Result.success(SendMessageRequest(id, "text", text = p.text))
         val name = p.fileName ?: "photo.jpg"
+        val type = if (p.image != null) "image" else "document"
         val url =
-            p.uploadedUrl ?: repo.upload(bytes, name, "image/jpeg").getOrElse { return Result.failure(it) }.also {
+            p.uploadedUrl ?: repo.upload(bytes, name, mimeOf(name)).getOrElse { return Result.failure(it) }.also {
                     url ->
                 _state.update {
                         s ->
@@ -189,7 +226,7 @@ class ThreadViewModel(
                 }
             }
         return Result.success(
-            SendMessageRequest(id, "image", attachmentUrl = url, attachmentName = name, fileSize = bytes.size.toLong()),
+            SendMessageRequest(id, type, attachmentUrl = url, attachmentName = name, fileSize = bytes.size.toLong()),
         )
     }
 
@@ -223,3 +260,15 @@ class ThreadViewModel(
 // The attachment cap (flow 07/03 §4 target; the backend takes 25 MB).
 private const val MAX_ATTACHMENT_MB = 20
 private const val MAX_ATTACHMENT_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024
+
+private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png")
+
+/** The upload's content type by extension (the backend checks the extension; a camera photo is a JPEG). */
+internal fun mimeOf(fileName: String) =
+    when (fileName.substringAfterLast('.', "").lowercase()) {
+        "pdf" -> "application/pdf"
+        "doc" -> "application/msword"
+        "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        "png" -> "image/png"
+        else -> "image/jpeg"
+    }

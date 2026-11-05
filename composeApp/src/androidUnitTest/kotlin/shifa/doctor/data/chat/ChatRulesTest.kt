@@ -91,4 +91,11 @@ class ChatRulesTest {
         assertThat(days.map { it.ordinal }).containsExactly(0, 1).inOrder()
         assertThat(days.map { it.ordinal }.toSet()).hasSize(days.size)
     }
+
+    @Test
+    fun `sizes read as B, KB or MB with one decimal`() {
+        assertThat(fileSizeLabel(812)).isEqualTo("812 B")
+        assertThat(fileSizeLabel(831_488)).isEqualTo("812.0 KB")
+        assertThat(fileSizeLabel(2_516_582)).isEqualTo("2.4 MB")
+    }
 }

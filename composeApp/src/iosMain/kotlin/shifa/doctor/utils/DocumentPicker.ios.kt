@@ -10,13 +10,18 @@ import platform.Foundation.dataWithContentsOfURL
 import platform.UIKit.UIApplication
 import platform.UIKit.UIDocumentPickerDelegateProtocol
 import platform.UIKit.UIDocumentPickerViewController
+import platform.UniformTypeIdentifiers.UTType
 import platform.UniformTypeIdentifiers.UTTypePDF
 import platform.darwin.NSObject
 
 // A copy in the app's sandbox, so it's readable without security-scoped access.
 @Composable
-actual fun rememberDocumentPickerLauncher(onDocumentSelected: (DocumentPickerResult?) -> Unit): () -> Unit {
+actual fun rememberDocumentPickerLauncher(
+    kinds: DocumentKinds,
+    onDocumentSelected: (DocumentPickerResult?) -> Unit,
+): () -> Unit {
     val onSelected by rememberUpdatedState(onDocumentSelected)
+    val currentKinds by rememberUpdatedState(kinds)
     val delegate =
         remember {
             object : NSObject(), UIDocumentPickerDelegateProtocol {
@@ -26,13 +31,19 @@ actual fun rememberDocumentPickerLauncher(onDocumentSelected: (DocumentPickerRes
                 ) {
                     val url = didPickDocumentsAtURLs.firstOrNull() as? NSURL ?: return onSelected(null)
                     val bytes = NSData.dataWithContentsOfURL(url)?.toByteArray()
+                    val name = url.lastPathComponent ?: "document.pdf"
                     onSelected(
-                        bytes?.let {
-                            DocumentPickerResult(
-                                url.absoluteString.orEmpty(),
-                                url.lastPathComponent ?: "document.pdf",
-                                it,
-                            )
+                        when {
+                            bytes != null -> DocumentPickerResult(url.absoluteString.orEmpty(), name, bytes)
+                            // A chat attachment that can't be read says so (not a silent cancel).
+                            currentKinds == DocumentKinds.ChatAttachment ->
+                                DocumentPickerResult(
+                                    url.absoluteString.orEmpty(),
+                                    name,
+                                    ByteArray(0),
+                                    readFailed = true,
+                                )
+                            else -> null
                         },
                     )
                 }
@@ -41,7 +52,17 @@ actual fun rememberDocumentPickerLauncher(onDocumentSelected: (DocumentPickerRes
             }
         }
     return {
-        val picker = UIDocumentPickerViewController(forOpeningContentTypes = listOf(UTTypePDF), asCopy = true)
+        val types =
+            when (kinds) {
+                DocumentKinds.Pdf -> listOf(UTTypePDF)
+                DocumentKinds.ChatAttachment ->
+                    CHAT_DOCUMENT_EXTENSIONS.mapNotNull {
+                        UTType.typeWithFilenameExtension(
+                            it,
+                        )
+                    }
+            }
+        val picker = UIDocumentPickerViewController(forOpeningContentTypes = types, asCopy = true)
         picker.delegate = delegate
         UIApplication.sharedApplication.keyWindow?.rootViewController?.presentViewController(
             picker,

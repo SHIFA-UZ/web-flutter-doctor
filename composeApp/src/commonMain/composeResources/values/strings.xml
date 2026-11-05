@@ -339,6 +339,8 @@
     <string name="changeTimezoneTitle">Change practice timezone?</string>
     <string name="chat">Chat</string>
     <string name="chatEmptyHint">Search for a patient or doctor above to start one.</string>
+    <string name="chatFileTypeNotAllowed">Only PDF, Word and photo files can be sent.</string>
+    <string name="chatFileUnavailable">File unavailable</string>
     <string name="chatHistory">Chat history</string>
     <string name="chatLoadFailed">Couldn't load messages</string>
     <string name="chatNewMessage">New message</string>

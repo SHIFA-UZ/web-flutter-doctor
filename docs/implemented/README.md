@@ -156,6 +156,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CHAT-02 Conversation list | Done | Chat tab root (doctors and staff): cards with photo, name, preview (bold while unread), today/yesterday/date in practice time, 99+ pill; filter sheet (newest/oldest, unread only); people search after 300 ms; a result opens its conversation or starts one; read every 5 s only in front, on coming back and on pull. The thread is CHAT-03. See chat.md. |
 | CHAT-03 Conversation thread | Done | Pushed thread: header (a patient's name opens their record), messages oldest→newest opened at the newest with practice-day dividers, board bubbles with role labels, practice-time times, status ticks, tappable links; optimistic send in order with "Not sent. Tap to retry"; read on open and on each new incoming; "New message" pill when scrolled up; 5 s polling in front only. Attachments show as labelled bubbles until CHAT-04…06. See chat.md. |
 | CHAT-04 Image attachments | Done | Paperclip → attach sheet (Select Image, Take Photo); the photo (already a ≤ 1600 px JPEG from the picker) shows at once, uploads, then sends as an image (≤ 20 MB, else a banner); "Uploading file..." strip; image tiles with skeleton / failed / not-available states and the time pill; full-screen viewer with pinch zoom. See chat.md. |
+| CHAT-05 Document attachments | Done | "Select Document" (pdf, doc, docx, jpg, png only; jpg/png go as images), document bubble with type icon, name, size ("242.2 KB") and time, opened outside the app; ≤ 20 MB; the shared document picker now takes a kind. See chat.md. |
 
 ## Log
 
@@ -263,3 +264,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · CHAT-02 · The Chat tab's conversation list and people search.
 - 2026-11-05 · CHAT-03 · The conversation thread with optimistic sending.
 - 2026-11-05 · CHAT-04 · Photos in chat: attach, upload, tiles and the viewer.
+- 2026-11-05 · CHAT-05 · Documents in chat: pick, send and open.

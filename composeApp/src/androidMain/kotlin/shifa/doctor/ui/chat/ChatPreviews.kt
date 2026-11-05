@@ -84,8 +84,10 @@ private fun msg(
     status: shifa.doctor.data.model.MessageStatus = shifa.doctor.data.model.MessageStatus.Sent,
     type: shifa.doctor.data.model.MessageType = shifa.doctor.data.model.MessageType.Text,
     file: String? = null,
+    size: Long? = null,
+    url: String? = null,
 ) = shifa.doctor.data.model.Message(
-    id, 1, if (mine) 1 else 2, !mine, type, text, null, file, null, null, status, mine,
+    id, 1, if (mine) 1 else 2, !mine, type, text, url, file, size, null, status, mine,
     Instant.parse(
         at,
     ),
@@ -108,6 +110,8 @@ private val thread =
             false,
             type = shifa.doctor.data.model.MessageType.Document,
             file = "blood_test_results.pdf",
+            size = 248_000,
+            url = "https://api.shifa.uz/chat-attachments/blood.pdf",
         ),
         msg(4, "2026-11-05T03:40:00Z", "Great. Please read this before Friday: https://shifa.uz/guide", true),
     )

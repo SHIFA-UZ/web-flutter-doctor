@@ -2662,5 +2662,7 @@
   "chatStatusSent": "Sent",
   "chatStatusDelivered": "Delivered",
   "chatStatusRead": "Read",
-  "chatLoadFailed": "Couldn't load messages"
+  "chatLoadFailed": "Couldn't load messages",
+  "chatFileTypeNotAllowed": "Only PDF, Word and photo files can be sent.",
+  "chatFileUnavailable": "File unavailable"
 }

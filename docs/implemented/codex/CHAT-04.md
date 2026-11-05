@@ -12,8 +12,8 @@
 **Answers (round 1; four fixed and tested, one answered; small, so no second round):**
 1. *The size cap runs after compression:* kept as it is, on purpose. The shared picker decodes a large original at a
    sample size near the limit (no memory blow-up) and only the at-most-1600 px JPEG is uploaded, so the cap guards
-   what is actually sent; refusing a 25 MB original that becomes a 400 KB JPEG would only stop the doctor. Flutter's
-   pre-compression check existed because it uploaded the original on the web.
+   what is actually sent; refusing a 25 MB original that becomes a 400 KB JPEG would only stop the doctor. (Flutter had
+   no cap at all; the 20 MB rule is the flow's target.)
 2. *Retry uploaded again:* fixed. The uploaded URL is kept on the pending photo; a retry after a failed send only sends
    again. Tested. (The test also caught that `PendingMessage`'s own `equals` hid the URL from the StateFlow; removed.)
 3. *No way back from a refused camera:* fixed. A strip above the composer says "Camera permission denied" with Open

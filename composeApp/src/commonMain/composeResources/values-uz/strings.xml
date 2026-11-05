@@ -339,6 +339,8 @@
     <string name="changeTimezoneTitle">Amaliyot vaqt mintaqasini o'zgartirasizmi?</string>
     <string name="chat">Suhbat</string>
     <string name="chatEmptyHint">Suhbatni boshlash uchun yuqoridagi qidiruvda bemor yoki shifokorni toping.</string>
+    <string name="chatFileTypeNotAllowed">Faqat PDF, Word va rasm fayllarini yuborish mumkin.</string>
+    <string name="chatFileUnavailable">Fayl mavjud emas</string>
     <string name="chatHistory">Chat tarixi</string>
     <string name="chatLoadFailed">Xabarlarni yuklab bo'lmadi</string>
     <string name="chatNewMessage">Yangi xabar</string>

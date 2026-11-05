@@ -2662,5 +2662,7 @@
   "chatStatusSent": "Отправлено",
   "chatStatusDelivered": "Доставлено",
   "chatStatusRead": "Прочитано",
-  "chatLoadFailed": "Не удалось загрузить сообщения"
+  "chatLoadFailed": "Не удалось загрузить сообщения",
+  "chatFileTypeNotAllowed": "Можно отправлять только PDF, Word и фото.",
+  "chatFileUnavailable": "Файл недоступен"
 }

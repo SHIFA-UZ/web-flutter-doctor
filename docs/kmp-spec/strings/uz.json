@@ -2662,5 +2662,7 @@
   "chatStatusSent": "Yuborildi",
   "chatStatusDelivered": "Yetkazildi",
   "chatStatusRead": "O'qildi",
-  "chatLoadFailed": "Xabarlarni yuklab bo'lmadi"
+  "chatLoadFailed": "Xabarlarni yuklab bo'lmadi",
+  "chatFileTypeNotAllowed": "Faqat PDF, Word va rasm fayllarini yuborish mumkin.",
+  "chatFileUnavailable": "Fayl mavjud emas"
 }

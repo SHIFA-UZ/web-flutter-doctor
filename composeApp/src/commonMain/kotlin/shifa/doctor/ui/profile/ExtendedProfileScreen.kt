@@ -407,8 +407,8 @@ fun ExtendedProfileScreen(
             removeTag = viewModel::removeTag,
             gallery = rememberImagePickerLauncher(viewModel::uploadImage),
             camera = rememberCameraLauncher(viewModel::uploadImage, viewModel::cameraDenied),
-            pdf = rememberDocumentPickerLauncher(viewModel::uploadPdf),
-            open = browser,
+            pdf = rememberDocumentPickerLauncher(onDocumentSelected = viewModel::uploadPdf),
+            open = { browser(it) },
             delete = viewModel::deleteCertificate,
         ),
     )

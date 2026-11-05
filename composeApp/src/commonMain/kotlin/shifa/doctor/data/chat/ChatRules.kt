@@ -75,6 +75,9 @@ sealed interface ThreadRow {
         val failed: Boolean,
         // A photo on its way (CHAT-04).
         val image: ByteArray? = null,
+        // A document on its way (CHAT-05): its name and size.
+        val documentName: String? = null,
+        val documentSize: Long? = null,
     ) : ThreadRow
 }
 
@@ -106,4 +109,17 @@ fun threadRows(
         rows += it
     }
     return rows
+}
+
+/** A file's size (flow 07/06 §4): "812 B", "812.0 KB", "2.4 MB" (one decimal). */
+fun fileSizeLabel(bytes: Long): String {
+    fun oneDecimal(v: Double): String {
+        val tenths = kotlin.math.round(v * 10).toLong()
+        return "${tenths / 10}.${tenths % 10}"
+    }
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${oneDecimal(bytes / 1024.0)} KB"
+        else -> "${oneDecimal(bytes / (1024.0 * 1024.0))} MB"
+    }
 }

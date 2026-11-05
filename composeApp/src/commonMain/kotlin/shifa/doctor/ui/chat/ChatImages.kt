@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -28,16 +30,22 @@ import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.chat.fileSizeLabel
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.attachFile
+import shifa.doctor.generated.resources.chatFileUnavailable
 import shifa.doctor.generated.resources.chatPhoto
 import shifa.doctor.generated.resources.close
+import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.failedToLoadImage
 import shifa.doctor.generated.resources.ic_camera_20
+import shifa.doctor.generated.resources.ic_file_20
+import shifa.doctor.generated.resources.ic_file_text_20
 import shifa.doctor.generated.resources.ic_image_20
 import shifa.doctor.generated.resources.ic_image_24
 import shifa.doctor.generated.resources.ic_x_22
 import shifa.doctor.generated.resources.imageNotAvailable
+import shifa.doctor.generated.resources.selectDocument
 import shifa.doctor.generated.resources.selectImage
 import shifa.doctor.generated.resources.takePhoto
 import shifa.doctor.ui.profile.ProfileSheet
@@ -123,7 +131,7 @@ private fun Missing(text: String) =
         )
     }
 
-/** The attach sheet (flow 07/03 §3): Select Image, Take Photo; documents and voice notes join with CHAT-05 and -06. */
+/** The attach sheet (flow 07/03 §3): Select Image, Take Photo, Select Document; voice notes join with CHAT-06. */
 @Composable
 internal fun AttachSheet(
     actions: ThreadActions,
@@ -134,6 +142,7 @@ internal fun AttachSheet(
             listOf(
                 OptionItem(tr(Res.string.selectImage), Res.drawable.ic_image_20) to actions.pickImage,
                 OptionItem(tr(Res.string.takePhoto), Res.drawable.ic_camera_20) to actions.takePhoto,
+                OptionItem(tr(Res.string.selectDocument), Res.drawable.ic_file_20) to actions.pickDocument,
             )
         ShifaOptionList(rows.map { it.first }, { i ->
             onClose()
@@ -178,3 +187,76 @@ internal fun ImageViewer(
         )
     }
 }
+
+/**
+ * A document message (CHAT-05, flow 07/06 §3, board `DaChat`): an icon tile by its type (PDF, Word, photo, other), the
+ * name (2 lines; "Document" without one), its size, and the time and tick. A tap opens it outside the app (no in-app
+ * preview: an open question).
+ */
+@Composable
+internal fun DocumentTile(
+    name: String?,
+    size: Long?,
+    mine: Boolean,
+    time: String,
+    tick: String?,
+    max: androidx.compose.ui.unit.Dp,
+    // Null: no file to open (the card is off, "File unavailable").
+    onOpen: (() -> Unit)?,
+) = androidx.compose.foundation.layout.Row(
+    Modifier
+        .widthIn(max = minOf(max, ShifaSize.S280))
+        .clip(if (mine) SentShape else ReceivedShape)
+        .background(if (mine) ShifaColors.Alpha.Black5 else ShifaColors.Alpha.Teal25)
+        .then(
+            if (onOpen != null) {
+                Modifier.clickable(
+                    role = Role.Button,
+                    onClick = onOpen,
+                )
+            } else {
+                Modifier.alpha(UNAVAILABLE_ALPHA)
+            },
+        )
+        .padding(horizontal = ShifaSize.S12, vertical = ShifaSize.S10),
+    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10),
+    verticalAlignment = Alignment.CenterVertically,
+) {
+    val ext = name?.substringAfterLast('.', "")?.lowercase()
+    Box(Modifier.size(ShifaSize.S40).background(ShifaColors.Bg.Surface, ShifaRadius.ControlMd), Alignment.Center) {
+        Icon(
+            painterResource(
+                when (ext) {
+                    "pdf", "doc", "docx" -> Res.drawable.ic_file_text_20
+                    "jpg", "jpeg", "png", "gif" -> Res.drawable.ic_image_20
+                    else -> Res.drawable.ic_file_20
+                },
+            ),
+            null,
+            tint = ShifaColors.Text.BrandStrong,
+        )
+    }
+    Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
+        Text(
+            name?.takeIf { it.isNotBlank() } ?: tr(Res.string.document),
+            // Said in the message's own description ("Document, Referral.pdf").
+            Modifier.clearAndSetSemantics {},
+            style = ShifaTextStyles.chatInput(),
+            color = ShifaColors.Text.Primary,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+        Text(
+            listOfNotNull(
+                if (onOpen == null) tr(Res.string.chatFileUnavailable) else size?.let(::fileSizeLabel),
+                listOfNotNull(time, tick).joinToString(" "),
+            ).joinToString(" · "),
+            Modifier.clearAndSetSemantics {},
+            style = ShifaTextStyles.caption(),
+            color = ShifaColors.Text.Secondary,
+        )
+    }
+}
+
+// A document card without a file reads as off (the pressables' disabled look).
+private const val UNAVAILABLE_ALPHA = 0.55f

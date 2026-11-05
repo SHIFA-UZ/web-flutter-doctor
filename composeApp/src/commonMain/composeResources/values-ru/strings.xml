@@ -339,6 +339,8 @@
     <string name="changeTimezoneTitle">Изменить часовой пояс практики?</string>
     <string name="chat">Чат</string>
     <string name="chatEmptyHint">Найдите пациента или врача в поиске выше, чтобы начать переписку.</string>
+    <string name="chatFileTypeNotAllowed">Можно отправлять только PDF, Word и фото.</string>
+    <string name="chatFileUnavailable">Файл недоступен</string>
     <string name="chatHistory">История чатов</string>
     <string name="chatLoadFailed">Не удалось загрузить сообщения</string>
     <string name="chatNewMessage">Новое сообщение</string>

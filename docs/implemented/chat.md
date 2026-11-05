@@ -125,3 +125,25 @@ bubble, viewer).
   ("09:24, Photo, Read"); the demo's upload URL doesn't load (demo files never leave the phone), so the tile says
   "Failed to load image" there. Dev has no conversations to show a real photo. Demo mode is off again.
 
+## CHAT-05 · Document attachments
+
+Built 2026-11-05. Spec 07 §1.3–1.4, ticket CHAT-05, flow 07/06, board `DaChat` (document bubble).
+
+- **Pick:** "Select Document" in the attach sheet. The shared document picker now takes a kind
+  (`DocumentKinds.ChatAttachment`: pdf, doc, docx, jpg, jpeg, png; Android's documents UI with those types, iOS's
+  picker with their `UTType`s); patient documents and certificates keep `Pdf`.
+- **Send:** pdf, doc and docx go as a `document`, jpg/jpeg/png as an `image` (07 §1.4: shown as a photo); anything else
+  "Only PDF, Word and photo files can be sent."; over 20 MB the size banner; a pick that can't be read "Error uploading
+  file". Shown at once, uploaded with its own
+  content type (`mimeOf`), sent with name and size, retry as for photos (only the send once uploaded).
+- **Bubble:** an icon tile by type (PDF/Word, photo, other), the name (2 lines, "Document" without one), "242.2 KB ·
+  08:31" and my tick, in the bubble's colours, at most 280 wide. Read out as "Patient, 08:31, Document,
+  blood_test_results.pdf". A tap opens the URL outside the app (the in-app browser: the system shows the file or hands
+  it on), "Cannot open document URL" when nothing can; without a URL the card is off with "File unavailable". No
+  in-app preview (flow open question).
+- **Tests:** `ThreadViewModelTest` (a PDF goes as a document with name and size, a PNG as an image, an .exe is refused
+  without uploading, an unreadable pick says so), `ChatRulesTest` (B/KB/MB with one decimal). Screenshot `Chat_thread` now shows the PDF bubble.
+- **Emulator (demo):** Select Document showed only pdf/jpg/png (the CSVs in Downloads hidden); the PDF went out as
+  "Document, Uchrashuv hujjatlari - 2026-07-21 00_00.pdf". Opening it needs a real URL (demo files stay on the phone).
+  Demo mode is off again.
+

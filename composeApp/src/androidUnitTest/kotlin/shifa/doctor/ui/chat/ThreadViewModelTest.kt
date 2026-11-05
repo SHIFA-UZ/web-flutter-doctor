@@ -17,6 +17,8 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.chat.ChatRepository
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.errorUploadingFile
 import kotlin.time.Duration.Companion.milliseconds
 
 class ThreadViewModelTest {
@@ -245,5 +247,45 @@ class ThreadViewModelTest {
         settle { classToTest.state.value.pending.isEmpty() }
         assertThat(uploads).hasSize(1)
         assertThat(bodies.last()).contains("\"type\":\"image\"")
+    }
+
+    @Test
+    fun `a PDF goes as a document, a PNG as an image, anything else isn't sent`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        classToTest.sendDocument(shifa.doctor.utils.DocumentPickerResult("u", "Referral.PDF", ByteArray(2_048)))
+        settle { classToTest.state.value.pending.isEmpty() }
+        assertThat(bodies.last()).contains("\"type\":\"document\"")
+        assertThat(bodies.last()).contains("\"attachmentName\":\"Referral.PDF\"")
+        assertThat(bodies.last()).contains("\"fileSize\":2048")
+        classToTest.sendDocument(shifa.doctor.utils.DocumentPickerResult("u", "scan.png", ByteArray(10)))
+        settle { classToTest.state.value.pending.isEmpty() }
+        assertThat(bodies.last()).contains("\"type\":\"image\"")
+        val before = uploads.size
+        classToTest.sendDocument(shifa.doctor.utils.DocumentPickerResult("u", "setup.exe", ByteArray(10)))
+        assertThat(classToTest.state.value.pending).isEmpty()
+        assertThat(uploads).hasSize(before)
+        assertThat(shifa.doctor.ui.navigation.ShellNotice.pending.value).isNotNull()
+        shifa.doctor.ui.navigation.ShellNotice.pending.value = null
+        assertThat(
+            mimeOf("a.docx"),
+        ).isEqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    }
+
+    @Test
+    fun `a picked file that can't be read says so and sends nothing`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        classToTest.sendDocument(
+            shifa.doctor.utils.DocumentPickerResult("u", "Referral.pdf", ByteArray(0), readFailed = true),
+        )
+        assertThat(classToTest.state.value.pending).isEmpty()
+        assertThat(uploads).isEmpty()
+        assertThat(
+            shifa.doctor.ui.navigation.ShellNotice.pending.value?.text,
+        ).isEqualTo(Res.string.errorUploadingFile)
+        shifa.doctor.ui.navigation.ShellNotice.pending.value = null
     }
 }
