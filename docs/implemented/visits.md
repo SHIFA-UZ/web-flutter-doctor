@@ -639,3 +639,22 @@ the call on top.
     - Without the camera the call goes on with it off, and the microphone granted in Settings counts.
     - A dropped call says so; Back while the token is on its way joins nothing.
   - Screenshots: `Video_preJoin`, `Video_inCall`, `Video_left`.
+
+## PDF-02 · Summary PDF content tests and golden
+
+Built 2026-11-05. Spec 05 §6, ticket PDF-02 (the in-app fallback stays while BE-01 is open). Flutter's
+`appointment_pdf_service_test.dart` only checked the byte length of three PDFs (general in uz and en, dental billing,
+plan section).
+
+- Here each section's text is checked in order (`VisitSummaryPdfTest`):
+  - the general summary, the dental billing and the plan section;
+  - photos, pages and signatures;
+  - a Russian summary: its labels and Cyrillic text come through.
+- A golden (`src/androidUnitTest/resources/golden/visit_summary.txt`) lists every drawn piece of the full summary:
+  page, position, size, weight and text, plus the lines, bands and images. Any layout change shows as a diff. When the
+  change is meant, record it with `RECORD_GOLDEN=1 ./gradlew :composeApp:testDebugUnitTest --tests '*VisitSummaryPdfTest*'
+  --rerun`. Recording fails on purpose, so a flag left on can't accept a regression; run again without it to verify.
+- The order checks first assert that every expected text is there (a missing one used to read as index -1, "before"
+  everything).
+- The real renderers (Android `PdfDocument`, iOS `UIGraphicsPDFRenderer`) were checked by eye on the emulator in
+  PDF-01, DENTAL-02, APPT-05 and DENTAL-03.

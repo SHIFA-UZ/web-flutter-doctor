@@ -143,6 +143,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | VIDEO-01 Daily token + call client | Done (no live join) | `POST /video/token`; refusals explained by the visit's window and payment (backend sends a bare 403, BE-28); the patient app's Daily client copied (Android SDK, iOS Swift package + bridge; the iOS app builds). A real join needs a dev video visit in its window. See visits.md. |
 | VIDEO-02 Video call screen | Done (no live call) | Pre-join page (preview, camera/mic switches, explained refusals, mic denied), the call on top of the workspace (waiting, patient + own corner, controls, leave with confirm, Rejoin), screen kept awake; the call lives in the visit's ViewModel; End leaves it first. See visits.md. |
 | VIDEO-03 Waiting room | Not built (D-07) | Decided in D-07: Flutter's page was unreachable and the backend has no presence endpoint. |
+| PDF-02 PDF content tests | Done | Text-in-order tests for the general, dental, plan, photo and Russian summaries, plus a golden of the full summary's layout (`RECORD_GOLDEN=1` re-records and then fails on purpose; run again without it). See visits.md. |
 
 ## Log
 
@@ -237,3 +238,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · DENTAL-04 · The dental plan editor and read-only plan chart.
 - 2026-11-05 · VIDEO-01 · The Daily room token and the call client on both platforms.
 - 2026-11-05 · VIDEO-02, VIDEO-03 · The video visit: pre-join page and the call in the workspace; no waiting room.
+- 2026-11-05 · PDF-02 · Summary PDF content tests and a layout golden.
