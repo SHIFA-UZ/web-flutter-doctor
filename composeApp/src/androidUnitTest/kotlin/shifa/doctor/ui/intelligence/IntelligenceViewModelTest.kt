@@ -2,6 +2,7 @@ package shifa.doctor.ui.intelligence
 
 import com.google.common.truth.Truth.assertThat
 import com.russhwolf.settings.MapSettings
+import io.ktor.client.engine.mock.respond
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -114,5 +115,27 @@ class IntelligenceViewModelTest {
         assertThat(text).contains("--- [0] USER @ ")
         assertThat(text).contains("toolName: search_patients")
         assertThat(text).contains("--- JSON (machine-readable) ---")
+    }
+
+    @Test
+    fun `the greeting's name comes from the profile through the ViewModel`() {
+        val profile =
+            shifa.doctor.data.profile.ProfileRepository {
+                shifa.doctor.data.api.createHttpClient(
+                    { null },
+                    io.ktor.client.engine.mock.MockEngine {
+                        respond(
+                            """{"profile":{"firstName":"Aziza","lastName":"Karimova"}}""",
+                            io.ktor.http.HttpStatusCode.OK,
+                            io.ktor.http.headersOf(io.ktor.http.HttpHeaders.ContentType, "application/json"),
+                        )
+                    },
+                )
+            }
+        val classToTest = IntelligenceViewModel(store, { clock }, profile)
+        assertThat(classToTest.state.value.doctorFirst).isNull()
+        kotlinx.coroutines.runBlocking { profile.refresh() }
+        assertThat(classToTest.state.value.doctorFirst).isEqualTo("Aziza")
+        assertThat(classToTest.state.value.doctorLast).isEqualTo("Karimova")
     }
 }

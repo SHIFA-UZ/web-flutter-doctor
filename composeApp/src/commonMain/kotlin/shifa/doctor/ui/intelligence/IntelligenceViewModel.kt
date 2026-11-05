@@ -12,6 +12,8 @@ import shifa.doctor.data.intelligence.ChatSession
 import shifa.doctor.data.intelligence.ChatSessionStore
 import shifa.doctor.data.intelligence.ChatStoreState
 import shifa.doctor.data.intelligence.chatSessionStore
+import shifa.doctor.data.profile.ProfileRepository
+import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelDownloadEmpty
 import shifa.doctor.generated.resources.intelDownloadFailed
@@ -31,6 +33,9 @@ data class IntelligenceUiState(
     val banner: CodeBanner? = null,
     // A reply is streaming in the open chat (INTEL-04 sets it): deleting that chat asks to stop it first.
     val busy: Boolean = false,
+    // The doctor's first and last name for the welcome's greeting; null until the profile is there.
+    val doctorFirst: String? = null,
+    val doctorLast: String? = null,
 ) {
     val active: ChatSession? get() = store.active
 
@@ -57,12 +62,18 @@ class ChatExport(
 class IntelligenceViewModel(
     private val store: ChatSessionStore = chatSessionStore,
     private val now: () -> Instant = ::currentInstant,
+    profile: ProfileRepository = profileRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(IntelligenceUiState())
     val state: StateFlow<IntelligenceUiState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch { store.state.collect { s -> _state.update { it.copy(store = s) } } }
+        viewModelScope.launch {
+            profile.me.collect { me ->
+                _state.update { it.copy(doctorFirst = me?.profile?.firstName, doctorLast = me?.profile?.lastName) }
+            }
+        }
     }
 
     /** On open (and on every return): the chats of the doctor signed in now. */

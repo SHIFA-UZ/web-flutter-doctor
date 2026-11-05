@@ -2,7 +2,9 @@
 
 package shifa.doctor.ui.intelligence
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonArray
@@ -215,5 +217,33 @@ internal fun ThreadErrorPreview() =
                     draft = "and tomorrow?",
                 ),
             )
+        }
+    }
+
+// INTEL-03: the welcome in the morning: the greeting with the doctor's name, four starters, five recent chats.
+@Composable
+internal fun WelcomePreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier
+                .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
+                .padding(shifa.doctor.ui.theme.ShifaSize.S16),
+        ) {
+            WelcomeBody("Dr. med. Aziza Karimova", previewChats, "a", previewNow, {
+            }, {}, {}, kotlinx.datetime.TimeZone.of("Asia/Tashkent"))
+        }
+    }
+
+// INTEL-03: the first visit (no chats yet) before the profile has loaded: no name, no recent section.
+@Composable
+internal fun WelcomeFirstPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier
+                .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
+                .padding(shifa.doctor.ui.theme.ShifaSize.S16),
+        ) {
+            WelcomeBody(null, emptyList(), null, Instant.parse("2026-11-05T14:00:00Z"), {
+            }, {}, {}, kotlinx.datetime.TimeZone.of("Asia/Tashkent"))
         }
     }

@@ -28,4 +28,10 @@ class IntelligenceScreenshotTest {
 
     @Test
     fun threadError() = captureRoboImage("screenshots/Intelligence_threadError.png") { ThreadErrorPreview() }
+
+    @Test
+    fun welcome() = captureRoboImage("screenshots/Intelligence_welcome.png") { WelcomePreview() }
+
+    @Test
+    fun welcomeFirst() = captureRoboImage("screenshots/Intelligence_welcomeFirst.png") { WelcomeFirstPreview() }
 }

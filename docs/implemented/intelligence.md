@@ -237,3 +237,22 @@ Built 2026-11-05 (before INTEL-03, so the welcome's starter cards send through a
   request; a booking's status line and calendar refresh, the next turn's history and focus patient; empty reply, limit
   and Retry without duplicates; AI down; blank and wake-only send nothing), `ChatHistoryTest` (golden history JSON,
   focus patient rules); screenshots `Intelligence_threadStreaming`, `Intelligence_threadError`.
+
+## INTEL-03 · Welcome
+
+Built 2026-11-05 (after INTEL-04). Spec 02 §4.6–4.7, flow 03/01, ticket INTEL-03. Board `DaIntel` welcome.
+
+- **Shown** in Intelligence's body while the open chat is empty and no question is running (`WelcomeBody`,
+  `ui/intelligence/Welcome.kt`), scrolling between the app bar and the composer.
+- **Greeting:** the 48 dp orb (brand radial gradient, sparkles), "Good morning / afternoon / evening" by the phone's
+  hour (before 12, before 17, else), then ", Dr. med. Name." from the profile (`doctorDisplayName`), or just "Good
+  morning." until the profile is there (Flutter showed "Good morning, ."); "What can I help you with today?".
+- **Starter cards** (title, line, icon): Today's schedule, Find a patient, Manage appointments, Clinical notes; a tap
+  sends the prompt in the app's language as if typed (it becomes the thread's first question). One column on phones,
+  two from 560 dp; titles wrap at large text; each card is one button "Title. Line".
+- **Recent conversations:** the five newest chats that have messages, with the same tile and options (Rename,
+  Delete) as History; a tap opens the chat (a running turn stops first).
+- **Checked:** emulator, demo mode: the greeting with the demo doctor's name, the starters, recent chats; "Today's
+  schedule" sent "Summarize my schedule for today." and the demo reply came back in the thread. iOS compiled, not run.
+- **Tests:** `WelcomeTest` (greeting hours, the starters' prompts, every starter prompt in en / ru / uz shortening to
+  its starter title, the five newest non-empty chats); screenshots `Intelligence_welcome`, `Intelligence_welcomeFirst`.

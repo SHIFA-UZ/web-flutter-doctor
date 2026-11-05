@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +48,7 @@ import shifa.doctor.data.intelligence.ChatSession
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.cancel
 import shifa.doctor.generated.resources.delete
+import shifa.doctor.generated.resources.drMedPrefix
 import shifa.doctor.generated.resources.hoursAgo
 import shifa.doctor.generated.resources.ic_arrow_l_18
 import shifa.doctor.generated.resources.ic_chat_18
@@ -100,6 +103,7 @@ import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
+import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.rememberFileShare
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
@@ -136,6 +140,8 @@ fun IntelligenceScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val turn by thread.state.collectAsStateWithLifecycle()
+    val doctorName =
+        doctorDisplayName(state.doctorFirst, state.doctorLast, tr(Res.string.drMedPrefix)).takeIf { it.isNotEmpty() }
     // A running reply stops when the open chat changes (stopped first, below, so a finishing turn can't reopen the old
     // chat) and when Intelligence leaves the screen (Flutter kept the stream open).
     LaunchedEffect(state.active?.id) { thread.stop() }
@@ -200,6 +206,27 @@ fun IntelligenceScreen(
                     Modifier.fillMaxSize(),
                     currentInstant(),
                 ) { tool, card -> ToolCard(tool, card) }
+            } else {
+                // INTEL-03: the welcome; a starter card sends its prompt as if typed.
+                var options by remember { mutableStateOf<ChatSession?>(null) }
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSize.S16),
+                ) {
+                    WelcomeBody(doctorName, s.store.sessions, s.active?.id, currentInstant(), thread::send, {
+                        thread.stop()
+                        viewModel.select(it)
+                    }, { options = it })
+                }
+                options?.let { o ->
+                    OptionsSheet(
+                        o,
+                        download = false,
+                        IntelligenceActions(askRename = viewModel::askRename, askDelete = viewModel::askDelete),
+                    ) { options = null }
+                }
             }
         }
         Composer(chat, turn, threadActions, bottomInset)
