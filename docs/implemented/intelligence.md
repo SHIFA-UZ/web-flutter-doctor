@@ -132,3 +132,34 @@ call": kind pill, text, Keep / Reject chips, rejected at 55 % and struck through
 - **Tests:** `VisitFactsViewModelTest` (read, a rejection surviving a reload, commit body and the read after, nothing
   kept can't commit, a failed commit, a failed first read, empty, the timeline keeping its rows on a failed re-read);
   screenshots `VisitFacts_ready`, `VisitFacts_done` (message, already documented, error row), `ClinicalTimeline`.
+
+## INTEL-01 · Chat models and session store
+
+Built 2026-11-05. Spec 02 §4.2, §4.3, §3.9, §0 (`detectReplyLanguage`), ticket INTEL-01. Data only; INTEL-02 puts it
+on screen.
+
+- **Models** (`data/intelligence/IntelligenceChat.kt`): `ChatMessage` (role, content, time, the tool name and card
+  payload an assistant turn showed), `ChatSession` (`displayTitle`: the doctor's title when renamed, else the first
+  user message as a short title, else "New chat"; `preview`: the latest message, 90 characters; `matchesQuery`;
+  `patientMark`). Stored as Flutter stored them (ISO times, `titleCustom` optional); a bad chat or message is skipped
+  instead of losing the whole history, a non-object card is dropped, a missing role is the doctor's.
+- **ChatTitles:** the starter-prompt map (EN / UZ / RU), wake phrases ("Hey / Salom / Assalomu alaykum / Привет
+  Shifa" and the name's mishears), `stripWakePhrase`, `shortTitle` (48, cut on a word past 24), `previewLine` (90, past
+  40), and `detectReplyLanguage`: Uzbek Cyrillic letters → UZ, other Cyrillic → RU, Uzbek marker words → UZ, two
+  English function words → EN, else keep the chat's language.
+- **ChatContext:** a chat is about a patient from a patient card; clinic-wide cards (schedule, free slots, patterns,
+  most visited) never link one, a search names the patient only for a single match, and "Patient" isn't a name.
+- **Store** (`ChatSessionStore`, key `shifa_intelligence_chats_v1:<doctorId>`): a cold start opens on an empty chat
+  (made if none), history kept; create, goToWelcome, select, delete (the last one leaves a new empty chat; deleting
+  the open one opens the newest), rename (keeps `updatedAt`; blank ignored), replaceMessages (moves the chat to the
+  top). Another doctor signing in reads their own key. Chat ids get a counter after the time, so two chats in the
+  same millisecond can't share the backend's `conversationId`. A turn finishing after its chat was deleted (or another doctor signed in) changes
+  nothing; stored messages are a copy of the caller's list; a stored chat without an id gets its own (Codex review).
+  Whitespace in the ported patterns is Dart's (`utils/DartWhitespace.kt`, shared with `AiResponseText`).
+- **Fix (ticket):** the chats name patients, so they are stored in the encrypted settings (Keychain /
+  EncryptedSharedPreferences, the token's store) instead of plain preferences, and capped at 50 chats (oldest go
+  first, never the open one; Flutter kept every chat). Flutter's plain-preference history isn't migrated: it was
+  written by the web build, which isn't ported.
+- **Tests:** `IntelligenceChatTest`: Flutter's seven tests (reply language, wake phrases, starter titles, long titles
+  and previews, renamed titles kept, patient link, legacy JSON) plus Russian / Uzbek-Cyrillic detection, skipped bad
+  rows, the store's semantics per doctor and the cap.

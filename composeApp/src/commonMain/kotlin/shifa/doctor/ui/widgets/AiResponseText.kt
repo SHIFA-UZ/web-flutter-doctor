@@ -25,6 +25,7 @@ import androidx.compose.ui.text.withStyle
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.utils.DART_WS
 
 internal enum class AiBlockKind { Heading, Bullet, Paragraph, Spacer }
 
@@ -119,11 +120,8 @@ internal fun boldSpans(text: String): AnnotatedString =
         append(text.substring(cursor))
     }
 
-// Dart's (ECMAScript) `\s`: Kotlin's is ASCII-only on both platforms, so a no-break space after "##" or "-" (models
-// write them) would turn a heading or bullet into a plain line.
-private const val WS = "[\\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]"
-private val SENTENCE_END = Regex("(?<=[.!?])$WS+")
-private val HEADING = Regex("#{1,3}$WS+(.+)")
+private val SENTENCE_END = Regex("(?<=[.!?])$DART_WS+")
+private val HEADING = Regex("#{1,3}$DART_WS+(.+)")
 private val WRAPPED_HEADING = Regex("\\*\\*([^*]+)\\*\\*")
-private val BULLET = Regex("([-*•]|\\d+\\.)$WS+(.*)")
+private val BULLET = Regex("([-*•]|\\d+\\.)$DART_WS+(.*)")
 private val BOLD = Regex("\\*\\*(.+?)\\*\\*")
