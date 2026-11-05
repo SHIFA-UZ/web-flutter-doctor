@@ -34,6 +34,8 @@ data class Notice(
     val success: Boolean = false,
     // Filled into [text] ("Patient assigned: {name}").
     val args: List<String> = emptyList(),
+    // A failed call's request id, shown under the text for support (CLAUDE.md "Data layer").
+    val requestId: String? = null,
 )
 
 /** The pending [ShellNotice] as a closable warning banner at the top of the shell (SHELL-01 moves it under its bar). */
@@ -47,6 +49,7 @@ fun ShellNoticeBanner(modifier: Modifier = Modifier) {
             if (it.success) ShifaBannerType.Success else ShifaBannerType.Warning,
             modifier.statusBarsPadding().padding(ShifaSpacing.Inset.Sm),
             onClose = { ShellNotice.pending.value = null },
+            detail = it.requestId,
         )
     }
 }

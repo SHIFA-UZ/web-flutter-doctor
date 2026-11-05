@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.badges.BadgesRepository
+import shifa.doctor.data.chat.ChatReads
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.subscription.DoctorFeature
@@ -214,6 +215,35 @@ class ShellViewModelTest {
             if (check()) return
             Thread.sleep(10)
         }
+    }
+
+    @Test
+    fun `Send message opens the patient's thread over the chat list, the patient stays in Patients`() {
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.select(ShellTab.Patients)
+        classToTest.push(ShellRoute.Patient(16))
+        classToTest.select(ShellTab.Chat)
+        classToTest.push(ShellRoute.Conversation(3, 1)) // whatever the Chat stack held goes
+        classToTest.select(ShellTab.Patients)
+        val chat = ShellRoute.PatientChat(16, "Dilnoza", null, 2)
+        classToTest.openChatWithPatient(chat)
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Chat)
+        assertThat(classToTest.state.value.stack).containsExactly(ShellRoute.Root(ShellTab.Chat), chat).inOrder()
+        assertThat(classToTest.back()).isTrue() // the list, not the patient
+        assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Root(ShellTab.Chat))
+        classToTest.select(ShellTab.Patients)
+        assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Patient(16))
+    }
+
+    @Test
+    fun `a conversation read drops the chat badge at once, not on the next poll`() {
+        val classToTest = vm()
+        classToTest.settle()
+        assertThat(classToTest.state.value.chatUnread).isEqualTo(0)
+        ChatReads.changed.tryEmit(Unit)
+        waitFor { classToTest.state.value.chatUnread == 1 }
+        assertThat(classToTest.state.value.chatUnread).isEqualTo(1)
     }
 
     @Test

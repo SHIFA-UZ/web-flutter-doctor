@@ -158,6 +158,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CHAT-04 Image attachments | Done | Paperclip → attach sheet (Select Image, Take Photo); the photo (already a ≤ 1600 px JPEG from the picker) shows at once, uploads, then sends as an image (≤ 20 MB, else a banner); "Uploading file..." strip; image tiles with skeleton / failed / not-available states and the time pill; full-screen viewer with pinch zoom. See chat.md. |
 | CHAT-05 Document attachments | Done | "Select Document" (pdf, doc, docx, jpg, png only; jpg/png go as images), document bubble with type icon, name, size ("242.2 KB") and time, opened outside the app; ≤ 20 MB; the shared document picker now takes a kind. See chat.md. |
 | CHAT-06 Voice messages | Done | "Record Voice Message" replaces the composer with the dark recorder pill (live level, 0:07 counter, Cancel, Send); < 1 s "Recording too short"; the `.m4a` uploads and sends as `voice` with its seconds, retry only re-sends once uploaded; voice bubbles play one at a time with position and total, "Couldn't play the voice message" when a stream fails. See chat.md. |
+| CHAT-07 Unread badge + open chat with a patient | Done | Patient Overview "Quick Actions" (New appointment, Send message, Create document; More actions waits for the ⋮ sheet): Send message opens the Chat tab on the patient's thread over the list, the header filled at once while `start` (find-or-create on the backend) resolves; failure says so and stays on the list. A conversation read drops the Chat badge at once. No Home "Message" (not on the board; Flutter's caller is dead code). See chat.md. |
 
 ## Log
 
@@ -267,3 +268,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · CHAT-04 · Photos in chat: attach, upload, tiles and the viewer.
 - 2026-11-05 · CHAT-05 · Documents in chat: pick, send and open.
 - 2026-11-05 · CHAT-06 · Voice messages in chat: record, send and play.
+- 2026-11-05 · CHAT-07 · Send message from a patient, and the Chat badge drops on read.

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import shifa.doctor.data.badges.BadgesRepository
+import shifa.doctor.data.chat.ChatReads
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.CalendarEntry
@@ -63,6 +64,17 @@ sealed interface ShellRoute {
         val opened: Long,
         // The list's card, so the header shows before the thread is read.
         val known: shifa.doctor.data.model.Conversation? = null,
+    ) : ShellRoute
+
+    /**
+     * Patient → "Send message" (CHAT-07, flow 07/07): the conversation with [patientId], found or started by the
+     * backend; [name] and [photoUrl] fill the header while it resolves.
+     */
+    data class PatientChat(
+        val patientId: Long,
+        val name: String,
+        val photoUrl: String?,
+        val opened: Long,
     ) : ShellRoute
 
     /** Home → patient search (HOME-05); [opened] makes each open a fresh search (an empty query, a staleness check). */
@@ -215,6 +227,12 @@ class ShellViewModel(
     private var pending: ShellTab? = null
 
     init {
+        // CHAT-07: a conversation read in the thread or the list drops the Chat badge at once.
+        viewModelScope.launch {
+            ChatReads.changed.collect {
+                readChatUnread()
+            }
+        }
         viewModelScope.launch {
             // Staff never call /doctors/me (it answers 403) and have no saved start tab (flow 01/18 §2, §4).
             if (staff) {
@@ -304,6 +322,23 @@ class ShellViewModel(
     }
 
     /**
+     * CHAT-07 (flow 07/07 §5, §10): the Chat tab with this patient's thread over its list, whatever the Chat stack held;
+     * the patient stays in the Patients tab's stack, and Back from the thread leads to the list.
+     */
+    fun openChatWithPatient(route: ShellRoute.PatientChat) {
+        switched = true
+        ShellNotice.dismissSuccess()
+        _state.update { s ->
+            s.copy(
+                stacks = s.stacks + (ShellTab.Chat to listOf(ShellRoute.Root(ShellTab.Chat), route)),
+                tab = ShellTab.Chat,
+                moreOpen = false,
+                intelligence = false,
+            )
+        }
+    }
+
+    /**
      * HOME-05 (flow 02/07 §10): the search closes and [patientId] opens in the Patients tab over its directory, so Back
      * leads to the directory, not to the search.
      */
@@ -337,10 +372,19 @@ class ShellViewModel(
         chatPolling =
             viewModelScope.launch {
                 while (isActive) {
-                    badges.chatUnread().onSuccess { n -> _state.update { it.copy(chatUnread = n) } }
+                    readChatUnread()
                     delay(CHAT_POLL)
                 }
             }
+    }
+
+    // The poll and a read's refresh both ask: only the newest question's answer is shown, so a slower answer from
+    // before the read can't put the old count back.
+    private var chatAsked = 0
+
+    private suspend fun readChatUnread() {
+        val asked = ++chatAsked
+        badges.chatUnread().onSuccess { n -> if (asked == chatAsked) _state.update { it.copy(chatUnread = n) } }
     }
 
     fun onBackground() {

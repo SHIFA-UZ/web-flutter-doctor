@@ -11,6 +11,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import shifa.doctor.data.api.ApiConfig
@@ -86,8 +88,13 @@ class ChatRepository(
             }
         }.mapCatching { Conversation.from(it, apiBase()) ?: error("conversation without an id") }
 
-    /** `POST /messages/conversations/{id}/read`. */
-    suspend fun markRead(id: Long): Result<Unit> = apiCall { client().post(ApiConfig.Endpoints.conversationRead(id)) }
+    /** `POST /messages/conversations/{id}/read`; on success the shell's Chat badge reads its count again ([ChatReads]). */
+    suspend fun markRead(id: Long): Result<Unit> =
+        apiCall<Unit> {
+            client().post(
+                ApiConfig.Endpoints.conversationRead(id),
+            )
+        }.onSuccess { ChatReads.changed.tryEmit(Unit) }
 
     /** `POST /messages/send`; the sent message as the backend stored it. */
     suspend fun send(request: SendMessageRequest): Result<Message> =
@@ -135,3 +142,11 @@ class ChatRepository(
 }
 
 val chatRepository = ChatRepository()
+
+/**
+ * A conversation was read on the server (CHAT-07, 07 §1.2): the Chat badge drops at once instead of on the next 10 s
+ * poll. Only the shell listens.
+ */
+object ChatReads {
+    val changed = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+}

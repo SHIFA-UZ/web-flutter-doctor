@@ -136,7 +136,8 @@ appointment reminders). Phone layout: a pushed screen from the directory (`Shell
   without a phone the warning shows and nothing is sent; Send test SMS names 403 (not on your plan) and 503 (service
   down).
 - **Chronic-disease warning:** once per patient per session (Flutter showed it on every selection), cleared on sign-out.
-- **Not built here:** Quick actions, the ⋮ sheet and "AI summary" (they open booking from the detail, chat, upload,
+- **Quick actions** came with CHAT-07 (see chat.md).
+- **Not built here:** the ⋮ sheet and "AI summary" (they open booking from the detail, chat, upload,
   forms, briefing and partners, which come with PAT-07, CHAT, DOCS, FORM, AI and CARE tickets; no dead buttons), the AI
   copilot card and the clinical timeline (AI tickets), Recent activity (the activity ticket), the tablet two-pane
   (same call as CAL-5), deep links to a tab (PUSH-03).

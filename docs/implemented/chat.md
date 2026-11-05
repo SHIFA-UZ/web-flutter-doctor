@@ -176,3 +176,30 @@ pill from the visit dictation (`RecordingPill`, now shared: level, seconds, busy
   for uiautomator (unit-tested). Demo mode is off again.
 - **Not built:** a loading state while a stream prepares (the icon shows pause at 0:00 until it plays or fails), the
   list preview for voice (the backend's `lastMessage` text, shown as sent; CHAT-02).
+
+## CHAT-07 · Unread badge and open chat with a patient
+
+Built 2026-11-05. Spec 07 §1.2 (badge), §1.6, ticket CHAT-07, flow 07/07, board `DaPatients` (overview "Quick Actions").
+
+- **Patient → Send message:** the Overview's "Quick Actions" card (two-column tinted tiles as on the board): New
+  appointment (the slot picker), Send message, Create document (the upload options). "More actions" waits for the ⋮
+  sheet (no dead buttons). Send message selects the Chat tab with the thread over the list (whatever the Chat stack
+  held goes); the patient stays in the Patients tab, and Back from the thread is the list (flow §10).
+- **Resolution:** `POST /messages/conversations/start {recipientPatientId}` once. The backend finds the doctor's
+  conversation with the patient or makes one (`findOrCreateConversation`, no message sent), so the app no longer reads
+  the whole list first (flow §12 #1). While it answers, the header shows the patient's name and photo over the
+  thread's skeleton (flow §3 target: no list flash); a new one shows "Say hello to …". Failure: "Failed to start
+  conversation" (or the offline message) and back to the list, said only while that opening is on screen. Each
+  opening asks again. Typing while it resolves goes on to the thread's draft.
+- **Badge:** still polled every 10 s in front (SHELL-03); a successful read (`markRead`, from the list or the thread)
+  now reads the count at once (`ChatReads`), so the pill drops without waiting; only the newest ask's answer is
+  shown, so a slow poll from before the read can't put the old count back.
+- **Not built:** Home's hero "Message" (flow 07/07 §2: not on the `DaHome` hero, and Flutter's caller
+  `home_timeline_section.dart` is dead code, spec 02 §162); "Message patient" on the appointment detail (flow NEW,
+  folder 05); the push entry (PUSH-03); composer focus on a new conversation.
+- **Tests:** `PatientChatViewModelTest` (one start call with the patient; a refused start says so and gives up),
+  `ShellViewModelTest` (the Chat tab on the thread over the list, Back to the list, the patient still in Patients; a
+  read refreshes the badge at once). Screenshots `PatientDetail_overview` and `_sparse` now show Quick Actions.
+- **Emulator (demo):** Jasur (has a conversation) → his thread; Back: the badge 3 → 2 at once, the Patients tab still
+  on Jasur. Malika (none) → "Say hello to Malika Tursunova", then in the list as "No messages". Demo mode is off again.
+  Dev: the start request shape checked against `/v3/api-docs` (no write: a started conversation can't be deleted).

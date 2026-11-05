@@ -103,6 +103,7 @@ import shifa.doctor.ui.calendar.BlockPanelScreen
 import shifa.doctor.ui.calendar.BookingScreen
 import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.chat.ChatListScreen
+import shifa.doctor.ui.chat.PatientChatScreen
 import shifa.doctor.ui.chat.ThreadScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.documents.DocumentViewerScreen
@@ -203,6 +204,7 @@ fun MainScreen(
         ShellActions(
             select = viewModel::select,
             openPatientFromSearch = viewModel::openPatientFromSearch,
+            openChatWithPatient = viewModel::openChatWithPatient,
             refreshHomeCounts = viewModel::refreshHomeCounts,
             push = viewModel::push,
             back = { viewModel.back() },
@@ -224,6 +226,8 @@ class ShellActions(
     val refreshHomeCounts: () -> Unit = {},
     // HOME-05: a search result opens in the Patients tab.
     val openPatientFromSearch: (Long) -> Unit = {},
+    // CHAT-07: "Send message" on a patient opens the Chat tab on their thread.
+    val openChatWithPatient: (ShellRoute.PatientChat) -> Unit = {},
     val push: (ShellRoute) -> Unit = {},
     val back: () -> Unit = {},
     val openMore: () -> Unit = {},
@@ -448,6 +452,15 @@ private fun RouteContent(
             ScheduleScreen(onClose = actions.back, onManageLocations = {
                 actions.push(ShellRoute.Locations)
             })
+        is ShellRoute.PatientChat ->
+            PatientChatScreen(
+                route.patientId,
+                route.name,
+                route.photoUrl,
+                route.opened,
+                onBack = actions.back,
+                onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
+            )
         // CHAT-03 builds the thread.
         is ShellRoute.Conversation ->
             ThreadScreen(
@@ -517,6 +530,11 @@ private fun RouteContent(
                 onOpenDocument = { d, title -> actions.push(ShellRoute.Document(route.id, d.id, title)) },
                 onOpenForm = { formId ->
                     actions.push(ShellRoute.Form(route.id, formId, currentInstant().toEpochMilliseconds()))
+                },
+                onMessage = { p ->
+                    actions.openChatWithPatient(
+                        ShellRoute.PatientChat(p.id, p.name, p.photoUrl, currentInstant().toEpochMilliseconds()),
+                    )
                 },
             )
         is ShellRoute.Form ->

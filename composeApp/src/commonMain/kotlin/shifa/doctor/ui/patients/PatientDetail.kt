@@ -8,10 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -87,6 +92,7 @@ import shifa.doctor.generated.resources.chronicDiseaseUpdated
 import shifa.doctor.generated.resources.clinicalSummary
 import shifa.doctor.generated.resources.copied
 import shifa.doctor.generated.resources.copy
+import shifa.doctor.generated.resources.createDocument
 import shifa.doctor.generated.resources.createPatientAccount
 import shifa.doctor.generated.resources.dealingWithChronicDiseasePatient
 import shifa.doctor.generated.resources.documents
@@ -98,8 +104,11 @@ import shifa.doctor.generated.resources.gender
 import shifa.doctor.generated.resources.iUnderstand
 import shifa.doctor.generated.resources.ic_alert_16
 import shifa.doctor.generated.resources.ic_alert_20
+import shifa.doctor.generated.resources.ic_cal_plus_18
+import shifa.doctor.generated.resources.ic_chat_18
 import shifa.doctor.generated.resources.ic_check_circle_20
 import shifa.doctor.generated.resources.ic_copy_16
+import shifa.doctor.generated.resources.ic_file_plus_18
 import shifa.doctor.generated.resources.ic_sparkles_16
 import shifa.doctor.generated.resources.ic_star_24
 import shifa.doctor.generated.resources.ic_star_filled_24
@@ -107,6 +116,7 @@ import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.language
 import shifa.doctor.generated.resources.lastVisitOn
 import shifa.doctor.generated.resources.medicalInfo
+import shifa.doctor.generated.resources.newAppointment
 import shifa.doctor.generated.resources.noAccountYet
 import shifa.doctor.generated.resources.noKnownAllergies
 import shifa.doctor.generated.resources.noRecentVisit
@@ -124,6 +134,7 @@ import shifa.doctor.generated.resources.patientNotFound
 import shifa.doctor.generated.resources.patientWithChronicDisease
 import shifa.doctor.generated.resources.phone
 import shifa.doctor.generated.resources.phoneUpdated
+import shifa.doctor.generated.resources.quickActions
 import shifa.doctor.generated.resources.reminder1Hour
 import shifa.doctor.generated.resources.reminder24Hours
 import shifa.doctor.generated.resources.reminderTiming
@@ -131,6 +142,7 @@ import shifa.doctor.generated.resources.removeFromFavorites
 import shifa.doctor.generated.resources.reportsSmsNotAllowed
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.saved
+import shifa.doctor.generated.resources.sendMessage
 import shifa.doctor.generated.resources.shareCredentialsWithPatient
 import shifa.doctor.generated.resources.smsReminderDescription
 import shifa.doctor.generated.resources.smsReminderEnabled
@@ -171,6 +183,7 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaCardSkeleton
 import shifa.doctor.ui.widgets.ShifaDialogSheet
@@ -184,6 +197,7 @@ import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.ui.widgets.TabItem
 import shifa.doctor.ui.widgets.UnderlineTabs
+import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
@@ -675,6 +689,8 @@ data class PatientDetailActions(
     val createAccount: () -> Unit = {},
     val medical: MedicalActions = MedicalActions(),
     val book: () -> Unit = {},
+    // CHAT-07: Quick actions → "Send message" (the Chat tab on this patient's thread).
+    val message: () -> Unit = {},
     val retryVisits: () -> Unit = {},
     val documents: DocumentsActions = DocumentsActions(),
     val forms: FormsActions = FormsActions(),
@@ -691,6 +707,8 @@ fun PatientDetailScreen(
     onOpenDocument: (PatientDocument, String) -> Unit = { _, _ -> },
     // A form in the 025-2 editor (FORM-04): its id, or null for a new one.
     onOpenForm: (Long?) -> Unit = {},
+    // "Send message" (CHAT-07): the patient, for the chat header while the conversation resolves.
+    onMessage: (Patient) -> Unit = {},
     viewModel: PatientDetailViewModel = viewModel(key = "patient-$id") { PatientDetailViewModel(id) },
     documents: PatientDocumentsViewModel = viewModel(key = "patient-documents-$id") { PatientDocumentsViewModel(id) },
     uploads: DocumentUploadViewModel = viewModel(key = "patient-upload-$id") { DocumentUploadViewModel(id) },
@@ -739,6 +757,7 @@ fun PatientDetailScreen(
             testSms = viewModel::testSms,
             createAccount = viewModel::createAccount,
             book = viewModel::openBooking,
+            message = { state.patient?.let(onMessage) },
             retryVisits = viewModel::retryVisits,
             documents =
                 DocumentsActions(
@@ -1044,6 +1063,7 @@ private fun Overview(
         SummaryRow(tr(Res.string.language), languageLabel(p.language) ?: tr(Res.string.notSpecified), false)
     }
     RecentActivity(state, actions)
+    QuickActions(actions)
     Card(tr(Res.string.patientAppAccess)) {
         if (p.hasAccount) {
             Row(
@@ -1123,6 +1143,40 @@ private fun Sms(
         Text(tr(Res.string.smsSendTestHint), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
     }
 }
+
+/**
+ * "Quick Actions" (flow 06/03 §7, board `DaPatients` overview): two-column tinted tiles. "More actions" waits for the ⋮
+ * sheet (no dead buttons).
+ */
+@Composable
+private fun QuickActions(actions: PatientDetailActions) =
+    Card(tr(Res.string.quickActions)) {
+        val tiles =
+            listOf(
+                Triple(Res.string.newAppointment, Res.drawable.ic_cal_plus_18, actions.book),
+                Triple(Res.string.sendMessage, Res.drawable.ic_chat_18, actions.message),
+                Triple(Res.string.createDocument, Res.drawable.ic_file_plus_18, actions.documents.upload),
+            )
+        tiles.chunked(2).forEach { row ->
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+                row.forEach { (label, icon, go) ->
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .defaultMinSize(minHeight = ShifaSize.S64)
+                            .pressable(go, PressVariant.Tint)
+                            .padding(ShifaSize.S10),
+                        verticalArrangement = Arrangement.spacedBy(ShifaSize.S6, Alignment.CenterVertically),
+                    ) {
+                        Icon(painterResource(icon), null, tint = ShifaColors.Icon.Brand)
+                        Text(tr(label), style = ShifaTextStyles.buttonCompact(), color = ShifaColors.Text.Primary)
+                    }
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
 
 @Composable
 private fun Card(

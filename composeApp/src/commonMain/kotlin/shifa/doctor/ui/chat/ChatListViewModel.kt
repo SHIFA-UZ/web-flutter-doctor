@@ -162,7 +162,9 @@ class ChatListViewModel(
                     }
                     open(c)
                 },
-                { ShellNotice.pending.value = Notice(Res.string.failedToStartConversation) },
+                { e ->
+                    ShellNotice.pending.value = Notice(Res.string.failedToStartConversation, requestId = e.requestId)
+                },
             )
         }
     }
