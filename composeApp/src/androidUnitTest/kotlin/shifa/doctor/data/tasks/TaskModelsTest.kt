@@ -88,6 +88,10 @@ class TaskModelsTest {
         assertThat(c.effectiveStatus(now, "Asia/Tashkent", berlin)).isEqualTo(CheckInStatus.Missed)
         assertThat(c.effectiveStatus(now, null, berlin)).isEqualTo(CheckInStatus.Pending)
         assertThat(c.effectiveStatus(now, "Not/AZone", berlin)).isEqualTo(CheckInStatus.Pending)
+        // No patient zone and no practice zone: the server's status, never the phone's guess.
+        assertThat(
+            c.effectiveStatus(Instant.parse("2026-11-06T00:00:00Z"), null, null),
+        ).isEqualTo(CheckInStatus.Pending)
         // Without a time, the whole day; a completed one stays completed.
         assertThat(c.copy(time = null).effectiveStatus(now, "Asia/Tashkent", berlin)).isEqualTo(CheckInStatus.Pending)
         assertThat(

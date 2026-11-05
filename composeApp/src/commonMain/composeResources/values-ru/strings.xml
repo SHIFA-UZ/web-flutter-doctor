@@ -360,6 +360,7 @@
     <string name="checkInCompleted">Выполнено</string>
     <string name="checkInDetails">Детали отметки</string>
     <string name="checkIns">Отметки</string>
+    <string name="checkInsLoadFailed">Не удалось загрузить отметки</string>
     <string name="checkingCall">Проверяем…</string>
     <string name="checkoutFailed">Не удалось открыть страницу оплаты. Попробуйте ещё раз.</string>
     <string name="chooseAClinic">Выберите клинику</string>
@@ -806,6 +807,7 @@
     <string name="couldNotLoadDocument">Не удалось загрузить документ</string>
     <string name="couldNotLoadEarlierNotes">Не удалось загрузить предыдущие заметки</string>
     <string name="couldNotLoadRetry">Не удалось загрузить. Повторить</string>
+    <string name="couldNotLoadTask">Не удалось загрузить задачу</string>
     <string name="couldNotLoadThisDay">Не удалось загрузить этот день</string>
     <string name="couldNotOpenAppointment">Не удалось открыть запись.</string>
     <string name="couldNotOpenPdf">Не удалось открыть этот PDF.</string>
@@ -1652,6 +1654,7 @@
     <string name="noCarePartnerships">Партнёрств пока нет</string>
     <string name="noCertificatesYet">Сертификатов пока нет</string>
     <string name="noCheckInsFound">Отметки не найдены</string>
+    <string name="noCheckInsScheduled">Отметок пока не запланировано</string>
     <string name="noChronicDisease">Нет хронических заболеваний</string>
     <string name="noClinic">Без клиники</string>
     <string name="noContact">Нет контакта</string>
@@ -1892,6 +1895,7 @@
     <string name="patientList">Список пациентов</string>
     <string name="patientLoadFailed">Не удалось загрузить пациента.</string>
     <string name="patientName">Имя пациента</string>
+    <string name="patientNoSubmissionsYet">Пациент пока ничего не отправил</string>
     <string name="patientNotArrived">Началось %1$s мин назад — пациент не пришёл</string>
     <string name="patientNotFound">Пациент не найден</string>
     <string name="patientNumber">Пациент №%1$s</string>
@@ -1903,6 +1907,7 @@
     <string name="patientStatusActive">Активный</string>
     <string name="patientStatusAtRisk">В группе риска</string>
     <string name="patientStatusFollowUp">На наблюдении</string>
+    <string name="patientTimeSuffix">%1$s (время пациента)</string>
     <string name="patientWillBeNotified">Пациент получит уведомление.</string>
     <string name="patientWithChronicDisease">Пациент с хроническим заболеванием</string>
     <string name="patients">Пациенты</string>
@@ -2326,6 +2331,7 @@
     <string name="streetAddressHelper">Вы можете отредактировать это поле, чтобы добавить детали здания, этаж, номер комнаты и т.д.</string>
     <string name="stripeConnected">Подключено · %1$s</string>
     <string name="stripeNotConnected">Не подключено</string>
+    <string name="submission">Отправка</string>
     <string name="submit">Отправить</string>
     <string name="submittedAt">Отправлено</string>
     <string name="subscriptionAndBilling">Подписка и оплата</string>
@@ -2374,6 +2380,7 @@
     <string name="taskStatusCancelled">Отменено</string>
     <string name="taskTemplates">Шаблоны задач</string>
     <string name="taskUpdated">Задача успешно обновлена</string>
+    <string name="taskZoneUnknown">Часовой пояс пациента неизвестен: время указано по часовому поясу практики.</string>
     <string name="tasks">Задачи</string>
     <string name="tasksLoadFailed">Не удалось загрузить задачи</string>
     <string name="tasksNotOnPlan">Задачи недоступны на вашем тарифе.</string>

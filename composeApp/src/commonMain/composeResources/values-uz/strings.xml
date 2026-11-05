@@ -360,6 +360,7 @@
     <string name="checkInCompleted">Bajarildi</string>
     <string name="checkInDetails">Tekshiruv tafsilotlari</string>
     <string name="checkIns">Tekshiruvlar</string>
+    <string name="checkInsLoadFailed">Belgilashlarni yuklab bo'lmadi</string>
     <string name="checkingCall">Tekshirilmoqda…</string>
     <string name="checkoutFailed">To'lov sahifasini ochib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="chooseAClinic">Klinikani tanlang</string>
@@ -806,6 +807,7 @@
     <string name="couldNotLoadDocument">Hujjatni yuklab bo'lmadi</string>
     <string name="couldNotLoadEarlierNotes">Oldingi qaydlarni yuklab bo'lmadi</string>
     <string name="couldNotLoadRetry">Yuklab bo'lmadi. Qayta urinish</string>
+    <string name="couldNotLoadTask">Vazifani yuklab bo'lmadi</string>
     <string name="couldNotLoadThisDay">Bu kunni yuklab bo'lmadi</string>
     <string name="couldNotOpenAppointment">Uchrashuvni ochib bo'lmadi.</string>
     <string name="couldNotOpenPdf">Bu PDF-ni ochib bo'lmadi.</string>
@@ -1652,6 +1654,7 @@
     <string name="noCarePartnerships">Hali hamkorlik yo‘q</string>
     <string name="noCertificatesYet">Hali sertifikatlar yo'q</string>
     <string name="noCheckInsFound">Tekshiruvlar topilmadi</string>
+    <string name="noCheckInsScheduled">Hozircha belgilashlar rejalashtirilmagan</string>
     <string name="noChronicDisease">Surunkali kasallik yo'q</string>
     <string name="noClinic">Klinikasiz</string>
     <string name="noContact">Aloqa yo'q</string>
@@ -1892,6 +1895,7 @@
     <string name="patientList">Bemorlar ro'yxati</string>
     <string name="patientLoadFailed">Bemorni yuklab bo'lmadi.</string>
     <string name="patientName">Bemor ismi</string>
+    <string name="patientNoSubmissionsYet">Bemor hali hech narsa yubormadi</string>
     <string name="patientNotArrived">Boshlanganiga %1$s daqiqa bo'ldi — bemor kelmadi</string>
     <string name="patientNotFound">Bemor topilmadi</string>
     <string name="patientNumber">Bemor #%1$s</string>
@@ -1903,6 +1907,7 @@
     <string name="patientStatusActive">Faol</string>
     <string name="patientStatusAtRisk">Xavf ostida</string>
     <string name="patientStatusFollowUp">Kuzatuvda</string>
+    <string name="patientTimeSuffix">%1$s (bemor vaqti)</string>
     <string name="patientWillBeNotified">Bemor xabardor qilinadi.</string>
     <string name="patientWithChronicDisease">Surunkali kasallikka chalingan bemor</string>
     <string name="patients">Bemorlar</string>
@@ -2326,6 +2331,7 @@
     <string name="streetAddressHelper">Siz bu maydonni bino tafsilotlari, qavat, xona raqami va boshqalarni qo'shish uchun tahrirlashingiz mumkin.</string>
     <string name="stripeConnected">Ulangan · %1$s</string>
     <string name="stripeNotConnected">Ulanmagan</string>
+    <string name="submission">Yuborish</string>
     <string name="submit">Yuborish</string>
     <string name="submittedAt">Yuborilgan vaqt</string>
     <string name="subscriptionAndBilling">Obuna va to'lovlar</string>
@@ -2374,6 +2380,7 @@
     <string name="taskStatusCancelled">Bekor qilingan</string>
     <string name="taskTemplates">Vazifa shablonlari</string>
     <string name="taskUpdated">Vazifa muvaffaqiyatli yangilandi</string>
+    <string name="taskZoneUnknown">Bemorning vaqt mintaqasi noma'lum: vaqtlar klinika vaqt mintaqasi bo'yicha.</string>
     <string name="tasks">Vazifalar</string>
     <string name="tasksLoadFailed">Vazifalarni yuklab bo'lmadi</string>
     <string name="tasksNotOnPlan">Vazifalar sizning tarifingizda mavjud emas.</string>

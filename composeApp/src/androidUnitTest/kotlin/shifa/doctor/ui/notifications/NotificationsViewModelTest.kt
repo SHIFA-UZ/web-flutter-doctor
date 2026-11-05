@@ -193,9 +193,10 @@ class NotificationsViewModelTest {
         classToTest.open(chat, staff = true, clock)
         assertThat(classToTest.state.value.go).isEqualTo(NotificationGo.Chat)
         classToTest.opened()
-        // A task (no screen yet) and, for staff, a booking: read, nothing opens.
+        // A completed task opens its details (TASK-03); for staff, a booking: read, nothing opens.
         classToTest.open(classToTest.state.value.items!!.first { it.id == 3L }, staff = false, clock)
-        assertThat(classToTest.state.value.go).isNull()
+        assertThat(classToTest.state.value.go).isEqualTo(NotificationGo.Task(1))
+        classToTest.opened()
         readStatus = HttpStatusCode.InternalServerError
         classToTest.open(classToTest.state.value.items!!.first(), staff = true, clock)
         settle { ShellNotice.pending.value != null }

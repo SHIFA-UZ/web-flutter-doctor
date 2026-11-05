@@ -239,6 +239,28 @@ class ShellViewModelTest {
     }
 
     @Test
+    fun `a task from a notification opens over the Tasks list, without the plan only the note`() {
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.select(ShellTab.Notifications)
+        classToTest.openTask(501, 1)
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Tasks)
+        assertThat(
+            classToTest.state.value.stack,
+        ).containsExactly(ShellRoute.Root(ShellTab.Tasks), ShellRoute.Task(501, 1)).inOrder()
+        assertThat(classToTest.back()).isTrue()
+        assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Root(ShellTab.Tasks))
+        tier = "PRO"
+        val pro = vm()
+        pro.settle()
+        pro.select(ShellTab.Notifications)
+        pro.openTask(501, 1)
+        assertThat(pro.state.value.tab).isEqualTo(ShellTab.Notifications)
+        assertThat(ShellNotice.pending.value?.text).isEqualTo(Res.string.tasksNotOnPlan)
+        ShellNotice.pending.value = null
+    }
+
+    @Test
     fun `Open Calendar shows the Calendar's root, not what it had open`() {
         val classToTest = vm()
         classToTest.settle()

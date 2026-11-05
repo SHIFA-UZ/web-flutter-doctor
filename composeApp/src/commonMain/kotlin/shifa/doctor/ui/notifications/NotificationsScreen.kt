@@ -73,6 +73,7 @@ import shifa.doctor.generated.resources.notificationReschedule
 import shifa.doctor.generated.resources.notificationSettings
 import shifa.doctor.generated.resources.notificationUnread
 import shifa.doctor.generated.resources.notificationViewAppointment
+import shifa.doctor.generated.resources.notificationViewResult
 import shifa.doctor.generated.resources.notifications
 import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.refresh
@@ -437,12 +438,26 @@ private fun NotificationCard(
     }
 }
 
-/** The board's actions: a booking → View Appointment and Reschedule (its panel); a cancellation → Open Calendar. */
+/**
+ * The board's actions: a booking → View Appointment and Reschedule (its panel); a cancellation → Open Calendar; a
+ * completed task → View Result.
+ */
 @Composable
 private fun CardActions(
     n: AppNotification,
     actions: NotificationsActions,
 ) {
+    // A finished task opens its result (TASK-03).
+    if (n.kind == NotificationKind.TaskCompleted && n.taskId != null) {
+        Row(Modifier.padding(start = ShifaSize.S22, end = ShifaSize.S14, bottom = ShifaSize.S12)) {
+            ShifaSecondaryButton(
+                tr(Res.string.notificationViewResult),
+                { actions.open(n) },
+                size = ShifaButtonSize.Compact,
+            )
+        }
+        return
+    }
     if (n.appointmentId == null || (n.kind != NotificationKind.Booked && n.kind != NotificationKind.Cancelled)) return
     FlowRow(
         Modifier.padding(start = ShifaSize.S22, end = ShifaSize.S14, bottom = ShifaSize.S12),

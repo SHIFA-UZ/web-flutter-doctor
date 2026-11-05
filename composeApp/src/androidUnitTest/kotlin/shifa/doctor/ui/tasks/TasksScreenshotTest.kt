@@ -25,4 +25,16 @@ class TasksScreenshotTest {
 
     @Test
     fun failed() = captureRoboImage("screenshots/Tasks_failed.png") { TasksFailedPreview() }
+
+    @Test
+    fun detail() = captureRoboImage("screenshots/Task_detail.png") { TaskDetailPreview() }
+
+    @Test
+    fun checkIn() = captureRoboImage("screenshots/Task_checkIn.png") { TaskCheckInSheetPreview() }
+
+    @Test
+    fun cancel() = captureRoboImage("screenshots/Task_cancel.png") { TaskCancelPreview() }
+
+    @Test
+    fun notFound() = captureRoboImage("screenshots/Task_notFound.png") { TaskNotFoundPreview() }
 }

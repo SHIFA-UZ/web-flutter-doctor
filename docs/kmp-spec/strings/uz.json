@@ -2678,5 +2678,12 @@
   "tasksLoadFailed": "Vazifalarni yuklab bo'lmadi",
   "noTasksMatchFilters": "Filtrlarga mos vazifa yo'q",
   "allStatuses": "Barcha holatlar",
-  "allCategories": "Barcha toifalar"
+  "allCategories": "Barcha toifalar",
+  "couldNotLoadTask": "Vazifani yuklab bo'lmadi",
+  "noCheckInsScheduled": "Hozircha belgilashlar rejalashtirilmagan",
+  "patientTimeSuffix": "{time} (bemor vaqti)",
+  "patientNoSubmissionsYet": "Bemor hali hech narsa yubormadi",
+  "submission": "Yuborish",
+  "checkInsLoadFailed": "Belgilashlarni yuklab bo'lmadi",
+  "taskZoneUnknown": "Bemorning vaqt mintaqasi noma'lum: vaqtlar klinika vaqt mintaqasi bo'yicha."
 }

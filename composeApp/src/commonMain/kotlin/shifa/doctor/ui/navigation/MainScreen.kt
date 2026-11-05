@@ -93,7 +93,6 @@ import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.signOut
 import shifa.doctor.generated.resources.subscriptionAndBilling
 import shifa.doctor.generated.resources.talkWithAi
-import shifa.doctor.generated.resources.taskDetails
 import shifa.doctor.generated.resources.tasks
 import shifa.doctor.generated.resources.unreadBadge
 import shifa.doctor.generated.resources.unreadCountCap
@@ -136,6 +135,7 @@ import shifa.doctor.ui.profile.SettingsActions
 import shifa.doctor.ui.profile.SettingsScreen
 import shifa.doctor.ui.schedule.LocationsScreen
 import shifa.doctor.ui.schedule.ScheduleScreen
+import shifa.doctor.ui.tasks.TaskDetailScreen
 import shifa.doctor.ui.tasks.TasksScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
@@ -214,6 +214,7 @@ fun MainScreen(
             openPatientFromSearch = viewModel::openPatientFromSearch,
             openChatWithPatient = viewModel::openChatWithPatient,
             openCalendar = viewModel::openCalendar,
+            openTask = viewModel::openTask,
             refreshHomeCounts = viewModel::refreshHomeCounts,
             push = viewModel::push,
             back = { viewModel.back() },
@@ -239,6 +240,8 @@ class ShellActions(
     val openChatWithPatient: (ShellRoute.PatientChat) -> Unit = {},
     // NOTIF-02: the Calendar tab at its root (the day comes through `CalendarFocus`).
     val openCalendar: () -> Unit = {},
+    // TASK-03: a task from a notification, in the Tasks tab (or the plan note).
+    val openTask: (Long, Long) -> Unit = { _, _ -> },
     val push: (ShellRoute) -> Unit = {},
     val back: () -> Unit = {},
     val openMore: () -> Unit = {},
@@ -434,6 +437,7 @@ private fun RouteContent(
                                     ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
                                 )
                             NotificationGo.Chat -> actions.select(ShellTab.Chat)
+                            is NotificationGo.Task -> actions.openTask(go.id, opened)
                         }
                     },
                     onSettings = { actions.push(ShellRoute.Profile(ProfileSection.Settings)) },
@@ -517,9 +521,11 @@ private fun RouteContent(
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
-        // TASK-03…05 build these.
+        // TASK-04…05 build these.
         is ShellRoute.Task ->
-            Pushed(Res.string.taskDetails, actions) { TabPlaceholder(Res.string.taskDetails, Res.drawable.ic_tasks_22) }
+            TaskDetailScreen(route.id, route.opened, onBack = actions.back, onOpenPatient = {
+                actions.push(ShellRoute.Patient(it))
+            })
         is ShellRoute.TaskCreate ->
             Pushed(Res.string.createTask, actions) { TabPlaceholder(Res.string.createTask, Res.drawable.ic_tasks_22) }
         is ShellRoute.TaskTemplates ->

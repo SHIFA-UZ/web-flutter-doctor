@@ -360,6 +360,7 @@
     <string name="checkInCompleted">Completed</string>
     <string name="checkInDetails">Check-in Details</string>
     <string name="checkIns">Check-ins</string>
+    <string name="checkInsLoadFailed">Couldn't load check-ins</string>
     <string name="checkingCall">Checking…</string>
     <string name="checkoutFailed">Couldn't open the payment page. Try again.</string>
     <string name="chooseAClinic">Choose a clinic</string>
@@ -806,6 +807,7 @@
     <string name="couldNotLoadDocument">Could not load document</string>
     <string name="couldNotLoadEarlierNotes">Could not load earlier notes</string>
     <string name="couldNotLoadRetry">Couldn't load. Retry</string>
+    <string name="couldNotLoadTask">Couldn't load task</string>
     <string name="couldNotLoadThisDay">Couldn't load this day</string>
     <string name="couldNotOpenAppointment">Couldn't open the appointment.</string>
     <string name="couldNotOpenPdf">Could not open this PDF.</string>
@@ -1652,6 +1654,7 @@
     <string name="noCarePartnerships">No care partnerships yet</string>
     <string name="noCertificatesYet">No certificates yet</string>
     <string name="noCheckInsFound">No check-ins found</string>
+    <string name="noCheckInsScheduled">No check-ins scheduled yet</string>
     <string name="noChronicDisease">No chronic disease</string>
     <string name="noClinic">No clinic</string>
     <string name="noContact">No contact</string>
@@ -1892,6 +1895,7 @@
     <string name="patientList">Patient List</string>
     <string name="patientLoadFailed">Couldn't load this patient.</string>
     <string name="patientName">Patient Name</string>
+    <string name="patientNoSubmissionsYet">The patient hasn't submitted anything yet</string>
     <string name="patientNotArrived">Started %1$s min ago — patient not arrived</string>
     <string name="patientNotFound">Patient not found</string>
     <string name="patientNumber">Patient #%1$s</string>
@@ -1903,6 +1907,7 @@
     <string name="patientStatusActive">Active</string>
     <string name="patientStatusAtRisk">At risk</string>
     <string name="patientStatusFollowUp">Follow-up</string>
+    <string name="patientTimeSuffix">%1$s (patient time)</string>
     <string name="patientWillBeNotified">The patient will be notified.</string>
     <string name="patientWithChronicDisease">Patient with Chronic Disease</string>
     <string name="patients">Patients</string>
@@ -2326,6 +2331,7 @@
     <string name="streetAddressHelper">You can edit this field to add building details, floor, room number, etc.</string>
     <string name="stripeConnected">Connected · %1$s</string>
     <string name="stripeNotConnected">Not connected</string>
+    <string name="submission">Submission</string>
     <string name="submit">Submit</string>
     <string name="submittedAt">Submitted at</string>
     <string name="subscriptionAndBilling">Subscription &amp; billing</string>
@@ -2374,6 +2380,7 @@
     <string name="taskStatusCancelled">Cancelled</string>
     <string name="taskTemplates">Task Templates</string>
     <string name="taskUpdated">Task updated successfully</string>
+    <string name="taskZoneUnknown">The patient's time zone isn't known: times follow the practice time zone.</string>
     <string name="tasks">Tasks</string>
     <string name="tasksLoadFailed">Couldn't load tasks</string>
     <string name="tasksNotOnPlan">Tasks are not available on your plan.</string>

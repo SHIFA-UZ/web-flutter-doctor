@@ -2,7 +2,11 @@
 
 package shifa.doctor.ui.tasks
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import kotlinx.datetime.LocalDate
 import shifa.doctor.data.model.RemoteCareTask
 import shifa.doctor.data.model.TaskCategory
@@ -104,5 +108,131 @@ internal fun TasksFailedPreview() =
                 failed = true,
             ),
             TasksActions(),
+        )
+    }
+
+private val previewNow = kotlinx.datetime.Instant.parse("2026-11-05T09:12:00Z")
+
+private val previewChecks =
+    listOf(
+        shifa.doctor.data.model.TaskCheckIn(
+            6,
+            LocalDate(
+                2026,
+                11,
+                5,
+            ),
+            kotlinx.datetime.LocalTime(
+                20,
+                0,
+            ),
+            shifa.doctor.data.model.CheckInStatus.Pending, null, null, null, null, null,
+        ),
+        shifa.doctor.data.model.TaskCheckIn(
+            5,
+            LocalDate(
+                2026,
+                11,
+                5,
+            ),
+            kotlinx.datetime.LocalTime(
+                13,
+                0,
+            ),
+            shifa.doctor.data.model.CheckInStatus.Pending, null, null, null, null, null,
+        ),
+        shifa.doctor.data.model.TaskCheckIn(
+            4,
+            LocalDate(
+                2026,
+                11,
+                5,
+            ),
+            kotlinx.datetime.LocalTime(
+                8,
+                0,
+            ),
+            shifa.doctor.data.model.CheckInStatus.Completed, 124.0, null, null, null,
+            kotlinx.datetime.Instant.parse(
+                "2026-11-05T03:07:00Z",
+            ),
+        ),
+        shifa.doctor.data.model.TaskCheckIn(
+            3,
+            LocalDate(
+                2026,
+                11,
+                4,
+            ),
+            kotlinx.datetime.LocalTime(
+                20,
+                0,
+            ),
+            shifa.doctor.data.model.CheckInStatus.Completed, 135.0, null, null, "Felt dizzy after dinner",
+            kotlinx.datetime.Instant.parse(
+                "2026-11-04T15:10:00Z",
+            ),
+        ),
+        shifa.doctor.data.model.TaskCheckIn(
+            2,
+            LocalDate(
+                2026,
+                11,
+                4,
+            ),
+            kotlinx.datetime.LocalTime(
+                13,
+                0,
+            ),
+            shifa.doctor.data.model.CheckInStatus.Missed, null, null, null, null, null,
+        ),
+    )
+
+// TASK-03: an active diary: rows, progress, check-ins newest first (13:00 today already missed for the patient), Cancel.
+@Composable
+internal fun TaskDetailPreview() =
+    PreviewTheme {
+        TaskDetailContent(
+            TaskDetailUiState(previewTasks[0], previewChecks),
+            TaskDetailActions(),
+            kotlinx.datetime.TimeZone.of("Asia/Tashkent"),
+            previewNow,
+        )
+    }
+
+// TASK-03: a check-in's sheet (done, with notes, submitted in the patient's time).
+@Composable
+internal fun TaskCheckInSheetPreview() =
+    PreviewTheme {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            CheckInTray(
+                previewTasks[0],
+                previewChecks[3],
+                kotlinx.datetime.TimeZone.of("Asia/Tashkent"),
+                true,
+                previewNow,
+            ) {}
+        }
+    }
+
+// TASK-03: Cancel Task asked.
+@Composable
+internal fun TaskCancelPreview() =
+    PreviewTheme {
+        Box(
+            Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter,
+        ) { CancelTaskDialog(false, TaskDetailActions()) }
+    }
+
+// TASK-03: a task that's gone.
+@Composable
+internal fun TaskNotFoundPreview() =
+    PreviewTheme {
+        TaskDetailContent(
+            TaskDetailUiState(notFound = true, error = CodeBanner(Res.string.tasksLoadFailed)),
+            TaskDetailActions(),
+            kotlinx.datetime.TimeZone.of("Asia/Tashkent"),
+            previewNow,
         )
     }

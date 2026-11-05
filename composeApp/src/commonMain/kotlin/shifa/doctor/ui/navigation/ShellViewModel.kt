@@ -341,6 +341,37 @@ class ShellViewModel(
         }
     }
 
+    /**
+     * A task from a notification (flow 07/12 §2): the Tasks tab with it over the list, so Back and a cancel land on the
+     * list (which reads again). Without the plan (BASIC, PRO) the shell's "not on your plan" note instead.
+     */
+    fun openTask(
+        id: Long,
+        opened: Long,
+    ) {
+        if (!_state.value.canTasks) {
+            ShellNotice.pending.value = Notice(Res.string.tasksNotOnPlan)
+            return
+        }
+        switched = true
+        ShellNotice.dismissSuccess()
+        _state.update { s ->
+            s.copy(
+                stacks =
+                    s.stacks + (
+                        ShellTab.Tasks to
+                            listOf(
+                                ShellRoute.Root(ShellTab.Tasks),
+                                ShellRoute.Task(id, opened),
+                            )
+                    ),
+                tab = ShellTab.Tasks,
+                moreOpen = false,
+                intelligence = false,
+            )
+        }
+    }
+
     /** The Calendar tab at its root, whatever it had open (the inbox's "Open Calendar", flow 07/08 §7). */
     fun openCalendar() {
         switched = true

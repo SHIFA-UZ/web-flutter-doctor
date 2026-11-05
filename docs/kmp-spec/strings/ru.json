@@ -2678,5 +2678,12 @@
   "tasksLoadFailed": "Не удалось загрузить задачи",
   "noTasksMatchFilters": "Нет задач по этим фильтрам",
   "allStatuses": "Все статусы",
-  "allCategories": "Все категории"
+  "allCategories": "Все категории",
+  "couldNotLoadTask": "Не удалось загрузить задачу",
+  "noCheckInsScheduled": "Отметок пока не запланировано",
+  "patientTimeSuffix": "{time} (время пациента)",
+  "patientNoSubmissionsYet": "Пациент пока ничего не отправил",
+  "submission": "Отправка",
+  "checkInsLoadFailed": "Не удалось загрузить отметки",
+  "taskZoneUnknown": "Часовой пояс пациента неизвестен: время указано по часовому поясу практики."
 }

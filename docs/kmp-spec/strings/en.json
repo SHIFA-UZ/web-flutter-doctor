@@ -2678,5 +2678,12 @@
   "tasksLoadFailed": "Couldn't load tasks",
   "noTasksMatchFilters": "No tasks match your filters",
   "allStatuses": "All statuses",
-  "allCategories": "All categories"
+  "allCategories": "All categories",
+  "couldNotLoadTask": "Couldn't load task",
+  "noCheckInsScheduled": "No check-ins scheduled yet",
+  "patientTimeSuffix": "{time} (patient time)",
+  "patientNoSubmissionsYet": "The patient hasn't submitted anything yet",
+  "submission": "Submission",
+  "checkInsLoadFailed": "Couldn't load check-ins",
+  "taskZoneUnknown": "The patient's time zone isn't known: times follow the practice time zone."
 }

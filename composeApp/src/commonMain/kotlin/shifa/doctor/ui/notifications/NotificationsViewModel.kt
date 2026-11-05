@@ -49,6 +49,10 @@ sealed interface NotificationGo {
     ) : NotificationGo
 
     data object Chat : NotificationGo
+
+    data class Task(
+        val id: Long,
+    ) : NotificationGo
 }
 
 data class NotificationsUiState(
@@ -172,8 +176,9 @@ class NotificationsViewModel(
                     },
                 )
             NotificationTarget.Chat -> go(NotificationGo.Chat)
-            // Tasks (M9) and partnerships (CARE) have no screens yet: the tap only reads it.
-            is NotificationTarget.Task, NotificationTarget.Partnerships, NotificationTarget.Inbox -> Unit
+            is NotificationTarget.Task -> go(NotificationGo.Task(target.id))
+            // Partnerships (CARE) have no screens yet: the tap only reads it.
+            NotificationTarget.Partnerships, NotificationTarget.Inbox -> Unit
         }
     }
 
