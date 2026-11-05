@@ -23,13 +23,17 @@ class SseTest {
     )
 
     @Test
-    fun `events split on blank lines, data lines join, an unterminated event at EOF is dropped`() =
+    fun `events split on blank lines, data is verbatim, an unterminated event at EOF is still delivered`() =
         runTest {
             val events = mutableListOf<SseEvent>()
-            readEvents(ByteReadChannel("data: Hel\ndata: lo\n\nevent: done\ndata: {}\n\ndata: tail")) { events += it }
-            assertThat(
-                events,
-            ).containsExactly(SseEvent("", "Hel\nlo"), SseEvent("done", "{}")).inOrder()
+            readEvents(
+                ByteReadChannel("data: Hel\ndata:lo\n\nevent: done\ndata:{}\n\nid: 3\n: ping\nevent:error\ndata:{}"),
+            ) {
+                events += it
+            }
+            assertThat(events)
+                .containsExactly(SseEvent("", " Hel\nlo"), SseEvent("done", "{}"), SseEvent("error", "{}"))
+                .inOrder()
         }
 
     @Test
@@ -37,7 +41,7 @@ class SseTest {
         runTest {
             val events = mutableListOf<String>()
             val result =
-                client(HttpStatusCode.OK, "data: a\n\ndata: b\n\n").streamEvents({
+                client(HttpStatusCode.OK, "data:a\n\ndata:b\n\n").streamEvents({
                     method = HttpMethod.Post
                     url("ai/stream")
                 }) { events += it.data }

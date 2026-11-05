@@ -719,4 +719,72 @@ class DemoBackendTest {
             ).isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the demo AI streams, speaks, briefs and documents visit facts locally`() =
+        runTest {
+            val repo = shifa.doctor.data.ai.AiRepository({ client })
+            val ask =
+                shifa.doctor.data.model.AiRequest(
+                    listOf(shifa.doctor.data.model.AiMessage("user", "My day?")),
+                    "RU",
+                    conversationId = "s-1",
+                )
+            val morning = mutableListOf<shifa.doctor.data.model.AiStreamEvent>()
+            assertThat(repo.stream(ask, morning = true) { morning += it }.isSuccess).isTrue()
+            val card = morning.first() as shifa.doctor.data.model.AiStreamEvent.Tool
+            assertThat(card.name).isEqualTo("get_today_schedule")
+            val text =
+                morning.filterIsInstance<shifa.doctor.data.model.AiStreamEvent.Token>().joinToString(
+                    "",
+                ) { it.text }
+            assertThat(text).startsWith("Доброе утро. Сегодня у вас ")
+            // The patient stream ends in a draft that the visit's notes can confirm.
+            val patient = mutableListOf<shifa.doctor.data.model.AiStreamEvent>()
+            repo.stream(
+                ask.copy(language = "EN", patientId = 11, consultationId = 101),
+                morning = false,
+            ) { patient += it }
+            val draft = patient.last() as shifa.doctor.data.model.AiStreamEvent.Draft
+            assertThat(
+                shifa.doctor.data.consultation.ConsultationRepository(
+                    { client },
+                ).drafts(101).getOrThrow().map { it.id },
+            )
+                .contains(draft.draftId)
+            val failed =
+                repo.stream(
+                    ask.copy(messages = listOf(shifa.doctor.data.model.AiMessage("user", "please fail"))),
+                    true,
+                ) {}
+            assertThat(
+                (failed.exceptionOrNull() as shifa.doctor.data.model.ApiException).code,
+            ).isEqualTo("AI_UNAVAILABLE")
+
+            val audio = repo.speak("Salom", shifa.doctor.data.storage.AppLanguage.Uzbek).getOrThrow()
+            assertThat(audio.mimeType).isEqualTo("audio/wav")
+            assertThat(audio.bytes.copyOfRange(0, 4).decodeToString()).isEqualTo("RIFF")
+            assertThat(
+                repo.patientBriefing(11, shifa.doctor.data.storage.AppLanguage.English).getOrThrow().documentCount,
+            ).isEqualTo(2)
+
+            val facts = repo.visitFacts(101).getOrThrow()
+            assertThat(facts.keptDrafts).hasSize(2)
+            assertThat(facts.dropped).hasSize(1)
+            val done = repo.commit(shifa.doctor.data.model.CommitVisitFactsRequest(101)).getOrThrow()
+            assertThat(done.committedFacts).hasSize(2)
+            assertThat(done.createdTaskIds).hasSize(1)
+            assertThat(repo.timeline(11).getOrThrow().facts).hasSize(2)
+            assertThat(repo.visitFacts(101).getOrThrow().keptDrafts).isEmpty()
+            // A visit the demo never made answers 404 here; it never reaches the real backend.
+            assertThat(
+                repo.visitFacts(999).exceptionOrNull(),
+            ).isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            assertThat(
+                repo.visitFacts(-1).exceptionOrNull(),
+            ).isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            assertThat(apiCall<JsonObject> { client.get("ai/clinic-patterns") }.exceptionOrNull())
+                .isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            assertThat(forwarded).isEmpty()
+        }
 }

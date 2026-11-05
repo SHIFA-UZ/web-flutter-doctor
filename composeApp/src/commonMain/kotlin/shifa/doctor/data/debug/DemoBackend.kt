@@ -150,6 +150,8 @@ class DemoBackend(
     private val chat = DemoChat()
     private val notifications = DemoNotifications()
     private val tasks = DemoTasks()
+    private val ai = DemoAi()
+    private var lastAiDraft = 0
 
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
 
@@ -698,6 +700,35 @@ class DemoBackend(
                         },
                     ),
                 )
+            // Shifa AI (AI-01): answered here, never forwarded (no paid AI calls, no real patient data).
+            request.method == HttpMethod.Post && path in setOf(Endpoints.AI_STREAM, Endpoints.AI_MORNING_STREAM) -> {
+                val morning = path == Endpoints.AI_MORNING_STREAM
+                // `/ai/stream` saves its answer as a draft; one tied to a demo visit can be confirmed like a scribe one.
+                val draft = if (morning) null else "demo-ai-${++lastAiDraft}"
+                runCatching { apiJson.parseToJsonElement(body).jsonObject["consultationId"]?.jsonPrimitive?.longOrNull }
+                    .getOrNull()
+                    ?.let { visit -> if (draft != null) visitDrafts = visitDrafts + (draft to visit) }
+                Reply(
+                    HttpStatusCode.OK,
+                    "",
+                    ai.stream(body, morning, draft, aiSchedule()).encodeToByteArray(),
+                    "text/event-stream",
+                )
+            }
+            request.method == HttpMethod.Post && path == Endpoints.AI_SPEAK ->
+                Reply(HttpStatusCode.OK, "", demoSpeech(), "audio/wav")
+            request.method == HttpMethod.Post && path.matches(Regex("ai/patient-briefing/\\d+")) -> ok(ai.briefing())
+            get && path.matches(Regex("ai/visit-facts/appointment/\\d+")) -> {
+                val visit = path.substringAfterLast('/').toLong()
+                demoPatientOf(visit)?.let { ok(ai.visitFacts(visit, it)) } ?: fail(HttpStatusCode.NotFound, "NOT_FOUND")
+            }
+            get &&
+                path.matches(
+                    Regex("ai/visit-facts/patient/\\d+/timeline"),
+                )
+            -> ok(ai.timeline(path.split('/')[3].toLong()))
+            request.method == HttpMethod.Post && path == Endpoints.VISIT_FACTS_COMMIT ->
+                ai.commit(body, ::demoPatientOf)?.let { ok(it) } ?: fail(HttpStatusCode.NotFound, "NOT_FOUND")
             path.matches(Regex("ai/draft/[^/]+/(confirm|discard)")) && !get -> {
                 val draft = path.split('/')[2]
                 val visit = visitDrafts[draft]
@@ -817,6 +848,9 @@ class DemoBackend(
                 }
                 Reply(HttpStatusCode.NoContent, "")
             }
+            // Any other AI path (a malformed id, an AI read the demo doesn't serve yet): a local 404, never the real
+            // backend (AI answers carry clinical data).
+            path.startsWith("ai/") -> fail(HttpStatusCode.NotFound, "DEMO_NOT_FOUND")
             get -> null
             else -> refused()
         }
@@ -1228,6 +1262,27 @@ class DemoBackend(
     private fun ok(json: JsonElement) = Reply(HttpStatusCode.OK, apiJson.encodeToString(JsonElement.serializer(), json))
 
     // The backend's error body shape (17 §1), so the app's error path is exercised too.
+    private fun demoPatientOf(visit: Long) = demoAppointment(visit, null)?.get("patientId")?.jsonPrimitive?.longOrNull
+
+    /** Today's demo visits as the morning `schedule` card lists them (practice time, "HH:mm"). */
+    private fun aiSchedule(): JsonArray {
+        val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")
+        val today = currentInstant().toLocalDateTime(zone).date.toString()
+        return JsonArray(
+            demoCalendar(
+                today,
+            ).map { it.jsonObject }.filter { it["type"]?.jsonPrimitive?.content == "APPOINTMENT" }.map {
+                    r ->
+                val start = kotlinx.datetime.Instant.parse(r["startAt"]!!.jsonPrimitive.content).toLocalDateTime(zone)
+                val hhmm = start.hour.toString().padStart(2, '0') + ":" + start.minute.toString().padStart(2, '0')
+                JsonObject(
+                    r.filterKeys { it in setOf("appointmentId", "patientId", "patientName", "status", "startAt") } +
+                        mapOf("date" to JsonPrimitive(today), "startLocal" to JsonPrimitive(hhmm)),
+                )
+            },
+        )
+    }
+
     private fun fail(
         status: HttpStatusCode,
         code: String,

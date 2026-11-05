@@ -124,6 +124,17 @@ object ApiConfig {
 
         fun draftDiscard(id: String) = "ai/draft/$id/discard"
 
+        const val AI_STREAM = "ai/stream"
+        const val AI_MORNING_STREAM = "ai/morning/stream"
+        const val AI_SPEAK = "ai/speak"
+        const val VISIT_FACTS_COMMIT = "ai/visit-facts/commit"
+
+        fun patientBriefing(patientId: Long) = "ai/patient-briefing/$patientId"
+
+        fun visitFacts(appointmentId: Long) = "ai/visit-facts/appointment/$appointmentId"
+
+        fun visitFactsTimeline(patientId: Long) = "ai/visit-facts/patient/$patientId/timeline"
+
         const val SUBSCRIPTION_PLANS = "doctor/subscription/plans"
         const val SUBSCRIPTION_ME = "doctor/subscription/me"
         const val SUBSCRIPTION_CHECKOUT = "doctor/subscription/checkout"
