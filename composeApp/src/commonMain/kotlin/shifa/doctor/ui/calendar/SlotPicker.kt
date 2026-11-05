@@ -210,7 +210,7 @@ fun SlotPickTray(
         val error = state.error
         when {
             error != null -> {
-                codeBanner(error) {}?.invoke()
+                codeBanner(error)?.invoke()
                 ShifaLink(tr(Res.string.retry), { pick(state.date) })
             }
             slots == null -> ShifaListSkeleton(count = 2)

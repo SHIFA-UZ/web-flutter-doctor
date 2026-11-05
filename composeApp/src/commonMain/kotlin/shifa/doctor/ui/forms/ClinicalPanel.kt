@@ -373,7 +373,7 @@ fun ClinicalPanel(
 ) {
     Text(tr(Res.string.clinicalEngine), style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
     state.error?.let { e ->
-        codeBanner(e) {}?.invoke()
+        codeBanner(e)?.invoke()
         ShifaLink(tr(Res.string.retry), actions.retry)
     }
     val disease = state.disease

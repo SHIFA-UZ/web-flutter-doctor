@@ -195,7 +195,7 @@ internal fun TemplatesContent(
                     if (error != null) {
                         item {
                             Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                                codeBanner(error) {}?.invoke()
+                                codeBanner(error)?.invoke()
                                 ShifaLink(tr(Res.string.retry), actions.reload)
                             }
                         }

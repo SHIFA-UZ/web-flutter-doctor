@@ -297,3 +297,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · AI-09 · The patient briefing sheet on patient detail.
 - 2026-11-05 · AI-10 · Visit facts in the workspace and the clinical timeline on the patient chart.
 - 2026-11-05 · INTEL-01 · Intelligence chat models, titles, reply language and the local chat store.
+- 2026-11-05 · fix · Error banners without a dismiss action no longer show a close button that does nothing (24 screens).

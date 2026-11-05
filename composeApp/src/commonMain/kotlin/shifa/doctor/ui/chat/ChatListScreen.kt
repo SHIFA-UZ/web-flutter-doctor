@@ -186,7 +186,7 @@ internal fun ChatListContent(
             state.error?.let { e ->
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                        codeBanner(e) {}?.invoke()
+                        codeBanner(e)?.invoke()
                         ShifaLink(tr(Res.string.retry), actions.refresh)
                     }
                 }

@@ -715,7 +715,7 @@ private fun RescheduleBody(
     val error = state.rescheduleError
     when {
         error != null -> {
-            codeBanner(error) {}?.invoke()
+            codeBanner(error)?.invoke()
             ShifaLink(tr(Res.string.retry), { actions.reschedule(date) })
         }
         slots == null -> ShifaListSkeleton(count = 2)

@@ -216,7 +216,7 @@ internal fun EndConfirm(
                     color = ShifaColors.Text.Secondary,
                 )
             }
-            codeBanner(state.end.error) {}?.invoke()
+            codeBanner(state.end.error)?.invoke()
         }
     }
 }
@@ -331,7 +331,7 @@ internal fun EndProgress(
                 )
                 actions.followUp?.let { ShifaLink(tr(Res.string.bookFollowUp), it) }
             }
-            codeBanner(end.error) {}?.invoke()
+            codeBanner(end.error)?.invoke()
         }
     }
 }

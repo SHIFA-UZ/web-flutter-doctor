@@ -309,7 +309,7 @@ internal fun ThreadContent(
             messages == null && state.error == null -> ShifaListSkeleton(Modifier.padding(ShifaSize.S12), count = 5)
             messages == null ->
                 Column(Modifier.padding(ShifaSize.S12), verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                    state.error?.let { codeBanner(it) {}?.invoke() }
+                    state.error?.let { codeBanner(it)?.invoke() }
                     ShifaLink(tr(Res.string.retry), actions.reload)
                 }
             messages.isEmpty() && state.pending.isEmpty() -> Empty(state.conversation)
@@ -473,7 +473,7 @@ private fun Messages(
     LaunchedEffect(state.newestIncoming, atBottom) { if (atBottom) seen = state.newestIncoming }
     // Own sends scroll to them.
     LaunchedEffect(state.pending.size) { if (state.pending.isNotEmpty()) list.animateScrollToItem(0) }
-    state.error?.let { Box(Modifier.align(Alignment.TopCenter).padding(ShifaSize.S8)) { codeBanner(it) {}?.invoke() } }
+    state.error?.let { Box(Modifier.align(Alignment.TopCenter).padding(ShifaSize.S8)) { codeBanner(it)?.invoke() } }
     LazyColumn(
         Modifier.fillMaxSize(),
         state = list,

@@ -178,7 +178,7 @@ private fun Failed(
     error: shifa.doctor.ui.emailcode.CodeBanner,
     actions: PatientDetailActions,
 ) {
-    codeBanner(error) {}?.invoke()
+    codeBanner(error)?.invoke()
     ShifaLink(tr(Res.string.retry), actions.retryVisits)
 }
 

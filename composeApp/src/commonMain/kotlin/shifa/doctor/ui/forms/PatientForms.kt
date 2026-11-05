@@ -194,7 +194,7 @@ fun LazyListScope.formRows(
         error != null ->
             item {
                 Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                    codeBanner(error) {}?.invoke()
+                    codeBanner(error)?.invoke()
                     ShifaLink(tr(Res.string.retry), actions.retry)
                 }
             }

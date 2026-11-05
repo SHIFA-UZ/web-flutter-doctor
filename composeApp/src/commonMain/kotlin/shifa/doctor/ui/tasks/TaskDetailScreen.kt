@@ -195,7 +195,7 @@ internal fun TaskDetailContent(
                     contentPadding = PaddingValues(ShifaSpacing.Inset.Md),
                     verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
                 ) {
-                    if (error != null) item { codeBanner(error) {}?.invoke() }
+                    if (error != null) item { codeBanner(error)?.invoke() }
                     item { Info(task, state.checkIns, zone, now, actions) }
                     item {
                         Text(

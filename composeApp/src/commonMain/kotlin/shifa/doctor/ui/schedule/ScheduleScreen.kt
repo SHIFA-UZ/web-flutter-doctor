@@ -636,7 +636,7 @@ fun ScheduleContent(
             val error = state.loadError
             when {
                 state.saved == null && error != null -> {
-                    codeBanner(error) {}?.invoke()
+                    codeBanner(error)?.invoke()
                     ShifaLink(tr(Res.string.retry), actions.retry)
                 }
                 state.locations?.isEmpty() == true -> Unit // the hint and Add location are above

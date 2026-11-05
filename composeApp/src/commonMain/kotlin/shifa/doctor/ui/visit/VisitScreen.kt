@@ -1137,7 +1137,7 @@ private fun General(
         multiline = true,
     )
     scribe?.let { ScribeRecorder(state, it, scribeAllowed, actions) }
-    notes.saveError?.let { codeBanner(it) {}?.invoke() }
+    notes.saveError?.let { codeBanner(it)?.invoke() }
     notes.loadError?.let {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -1365,7 +1365,7 @@ private fun LazyListScope.documentRows(
         state.error != null ->
             item {
                 Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                    codeBanner(state.error) {}?.invoke()
+                    codeBanner(state.error)?.invoke()
                     ShifaLink(tr(Res.string.retry), actions.retry)
                 }
             }

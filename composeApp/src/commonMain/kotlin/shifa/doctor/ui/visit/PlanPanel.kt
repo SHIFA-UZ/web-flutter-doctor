@@ -193,7 +193,7 @@ internal fun ColumnScope.PlanChart(
         color = ShifaColors.Text.Secondary,
     )
     plan.linesError?.let {
-        codeBanner(it) {}?.invoke()
+        codeBanner(it)?.invoke()
         ShifaLink(tr(Res.string.retry), actions.retry)
     }
     if (plan.detail == null) {

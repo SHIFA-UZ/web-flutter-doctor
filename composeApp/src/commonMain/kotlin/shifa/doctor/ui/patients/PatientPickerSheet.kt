@@ -82,7 +82,7 @@ internal fun PatientPickerTray(
     ShifaSearchField(query, onQuery, tr(Res.string.searchByNameOrId), Modifier.fillMaxWidth())
     when {
         error != null -> {
-            codeBanner(error) {}?.invoke()
+            codeBanner(error)?.invoke()
             ShifaLink(tr(Res.string.retry), onRetry)
         }
         patients == null -> ShifaListSkeleton(count = 4)

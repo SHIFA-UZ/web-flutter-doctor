@@ -129,7 +129,7 @@ internal fun ColumnScope.DentalPanel(
         )
     }
     state.loadError?.let {
-        codeBanner(it) {}?.invoke()
+        codeBanner(it)?.invoke()
         ShifaLink(tr(Res.string.retry), actions.retry)
         return
     }
@@ -149,7 +149,7 @@ internal fun ColumnScope.DentalPanel(
         areaMinHeight = ShifaSize.S56,
     )
     if (planMode) PlanFinance(plan, planActions) else Totals(state.record, editor)
-    state.saveError?.let { codeBanner(it) {}?.invoke() }
+    state.saveError?.let { codeBanner(it)?.invoke() }
 }
 
 /** Free mode (no plan): dentition, the chart with service counts, its legend, the general services, the discount. */
@@ -319,7 +319,7 @@ internal fun DentalServicesSheet(
         val services = state.services
         when {
             services == null && state.servicesError != null -> {
-                codeBanner(state.servicesError) {}?.invoke()
+                codeBanner(state.servicesError)?.invoke()
                 ShifaLink(tr(Res.string.retry), actions.retryServices)
             }
             services == null -> ShifaSkeleton(Modifier.fillMaxWidth().heightIn(min = ShifaSize.S48))
