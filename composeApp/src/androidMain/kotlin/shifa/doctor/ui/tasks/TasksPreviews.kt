@@ -309,3 +309,51 @@ internal fun CreateTaskCustomPreview() =
             CreateTaskActions(),
         )
     }
+
+private val previewTemplates =
+    listOf(
+        shifa.doctor.data.model.TaskTemplate(
+            "Blood pressure diary",
+            null,
+            shifa.doctor.data.model.TaskCategory.Vital,
+            TaskSchedule.of(3, null, null, listOf("08:00", "13:00", "20:00"), emptyList()),
+            shifa.doctor.data.model.TaskInputType.Numeric,
+            "Systolic (mmHg)",
+            true,
+            null,
+        ),
+        shifa.doctor.data.model.TaskTemplate(
+            "Blood sugar before meals, every two hours while awake",
+            null,
+            shifa.doctor.data.model.TaskCategory.Vital,
+            TaskSchedule.of(7, "07:00", 2, null, emptyList()),
+            shifa.doctor.data.model.TaskInputType.Numeric,
+            "mmol/L",
+            false,
+            null,
+        ),
+        shifa.doctor.data.model.TaskTemplate(
+            "Evening pill",
+            null,
+            shifa.doctor.data.model.TaskCategory.Medication,
+            TaskSchedule.of(1, null, null, null, listOf(null, null, "20:00")),
+            shifa.doctor.data.model.TaskInputType.Boolean,
+            null,
+            false,
+            null,
+        ),
+    )
+
+// TASK-05: three templates: custom times, every 2 h (7 slots, "+3 more"), a legacy evening time.
+@Composable
+internal fun TemplatesPreview() =
+    PreviewTheme {
+        TemplatesContent(TemplatesUiState(previewTemplates), TemplatesActions())
+    }
+
+// TASK-05: none yet.
+@Composable
+internal fun TemplatesEmptyPreview() =
+    PreviewTheme {
+        TemplatesContent(TemplatesUiState(emptyList()), TemplatesActions())
+    }

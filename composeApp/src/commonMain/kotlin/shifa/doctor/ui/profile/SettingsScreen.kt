@@ -3,9 +3,7 @@ package shifa.doctor.ui.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -78,7 +76,7 @@ import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaSubHeader
-import shifa.doctor.ui.widgets.ShifaSwitch
+import shifa.doctor.ui.widgets.ShifaSwitchRow
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.tr
@@ -374,10 +372,4 @@ private fun SwitchRow(
     label: String,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
-) = Row(
-    Modifier.fillMaxWidth().padding(vertical = ShifaSpacing.Gap.Md),
-    verticalAlignment = Alignment.CenterVertically,
-) {
-    Text(label, Modifier.weight(1f), style = ShifaTextStyles.dialogBody(), color = ShifaColors.Text.Primary)
-    ShifaSwitch(checked, onChange)
-}
+) = ShifaSwitchRow(label, checked, onChange, Modifier.padding(vertical = ShifaSpacing.Gap.Md))

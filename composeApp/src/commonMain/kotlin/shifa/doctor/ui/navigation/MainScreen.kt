@@ -95,7 +95,6 @@ import shifa.doctor.generated.resources.talkWithAi
 import shifa.doctor.generated.resources.tasks
 import shifa.doctor.generated.resources.unreadBadge
 import shifa.doctor.generated.resources.unreadCountCap
-import shifa.doctor.generated.resources.useTemplate
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
@@ -137,6 +136,7 @@ import shifa.doctor.ui.schedule.ScheduleScreen
 import shifa.doctor.ui.tasks.CreateTaskScreen
 import shifa.doctor.ui.tasks.TaskDetailScreen
 import shifa.doctor.ui.tasks.TasksScreen
+import shifa.doctor.ui.tasks.TemplatesScreen
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -521,14 +521,34 @@ private fun RouteContent(
             Pushed(Res.string.navReports, actions) {
                 TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
             }
-        // TASK-05 builds this.
         is ShellRoute.Task ->
             TaskDetailScreen(route.id, route.opened, onBack = actions.back, onOpenPatient = {
                 actions.push(ShellRoute.Patient(it))
             })
-        is ShellRoute.TaskCreate -> CreateTaskScreen(route.opened, route.template, onClose = actions.back)
+        is ShellRoute.TaskCreate ->
+            CreateTaskScreen(
+                route.opened,
+                route.template,
+                onClose = actions.back,
+                onCreated = {
+                    actions.back()
+                    if (route.fromTemplates) actions.back()
+                },
+            )
         is ShellRoute.TaskTemplates ->
-            Pushed(Res.string.useTemplate, actions) { TabPlaceholder(Res.string.useTemplate, Res.drawable.ic_tasks_22) }
+            TemplatesScreen(
+                onBack = actions.back,
+                onOpen = {
+                    actions.push(
+                        ShellRoute.TaskCreate(currentInstant().toEpochMilliseconds(), it, fromTemplates = true),
+                    )
+                },
+                onCreate = {
+                    actions.push(
+                        ShellRoute.TaskCreate(currentInstant().toEpochMilliseconds(), fromTemplates = true),
+                    )
+                },
+            )
         is ShellRoute.Block -> BlockPanelScreen(route.entry, route.opened, onClose = actions.back)
         is ShellRoute.Booking ->
             BookingScreen(

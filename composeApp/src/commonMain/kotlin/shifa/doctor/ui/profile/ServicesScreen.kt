@@ -116,7 +116,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
-import shifa.doctor.ui.widgets.ShifaSwitch
+import shifa.doctor.ui.widgets.ShifaSwitchRow
 import shifa.doctor.utils.Money
 import shifa.doctor.utils.tr
 
@@ -809,10 +809,7 @@ private fun SwitchRow(
     label: String,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
-) = Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Text(label, Modifier.weight(1f), style = ShifaTextStyles.dialogBody(), color = ShifaColors.Text.Primary)
-    ShifaSwitch(checked, onChange)
-}
+) = ShifaSwitchRow(label, checked, onChange)
 
 private const val TITLE_MAX = 80
 private const val DESCRIPTION_MAX = 500

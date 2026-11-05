@@ -56,7 +56,6 @@ Built 2026-11-05. Spec 07 §3.1, ticket TASK-02, flow 07/11, board `DaInbox` ("t
 - **Kept as is:** the patient shows the brand picture, not initials (project rule for avatars without a photo);
   Create and Use Templates stay on after a failed read (the app has no connectivity state, and those screens say
   so themselves when offline).
-- **Until TASK-05:** Use Templates opens a placeholder page (a card opens its details, Create Task the form).
 - **Tests:** `TasksViewModelTest` (counts, combined filters, the card toggle, clear; a failed refresh keeps the list).
   Screenshots `Tasks_list`, `_loading`, `_empty`, `_filterEmpty`, `_failed`.
 - **Emulator (dev, reads only):** the seed doctor's 3 tasks (cancelled, active, completed) with their progress, "1 day"
@@ -124,7 +123,7 @@ Built 2026-11-05. Spec 07 §3.3, ticket TASK-04, flow 07/13, board `DaInbox` ("t
   first as the start; even → the interval only with two or more, and the **count that fits** (Flutter sent 15 when 8
   fit, flow §8); the end date or the duration, never both; empty texts left out.
 - **Template prefill:** every field but the patient and dates; times per day 1–15; the interval snapped up to the next
-  choice with "Interval adjusted to n h" (flow §6 NEW); custom times → custom mode. Opening from a template is TASK-05.
+  choice with "Interval adjusted to n h" (flow §6 NEW); custom times → custom mode. Opened from a template by TASK-05.
 - **Not built:** a patient preset from the patient's record (flow §2's overflow entry; the ⋮ sheet isn't built), the
   patient-app hint (no backend field), "Add a patient first" in an empty picker.
 - **Tests:** `TaskFormTest` (slots and clipping, every payload rule, problems, template prefill and snapping, slot
@@ -133,3 +132,29 @@ Built 2026-11-05. Spec 07 §3.3, ticket TASK-04, flow 07/13, board `DaInbox` ("t
 - **Emulator (demo):** picked Malika, "Weight", custom times 08:00 and 09:00, end 20 Dec → the list with "Task created
   successfully" and "Weight · 2× per day · 5 Nov – 20 Dec 2026"; Back after typing asked to discard. Booking's
   screenshots are unchanged by the picker move. Demo mode is off again.
+
+## TASK-05 · Templates
+
+Built 2026-11-05. Spec 07 §3.4, ticket TASK-05, flow 07/14, board `DaInbox` ("taskTemplates").
+
+- **What it is:** `GET /tasks/templates` returns the settings of the doctor's earlier tasks (dev: the seed doctor's 3
+  tasks); there is no create, edit or delete for templates anywhere (flow §1), so this is a picker.
+- **Cards:** the category tile, the name (2 lines; repeats are allowed, flow §8), "Vital · 3× per day · Numeric", the
+  day's times ("08:00 · 13:00 · 20:00", "+3 more" past four; legacy times included), a chevron; read out as one line.
+- **States:** skeletons; "No templates yet" / "Create a task first, then it will appear here." with Create Task (the
+  blank form); "Couldn't load templates" with the request id and Retry when nothing was ever read, a banner over the
+  list otherwise; a 403 reads the profile again (as the other task screens). Read on open, return and pull.
+- **A tap** opens the create form pre-filled ("From template: …"), one form per tap (flow §8). Back from the form returns
+  here; a successful create closes the form **and** this list onto Tasks with the banner (flow §5,
+  `ShellRoute.TaskCreate.fromTemplates`).
+- **Labelled switches:** the form's switches had no accessible name and only the knob toggled. `ShifaSwitchRow`
+  (`ui/widgets/ShifaSwitch.kt`) toggles from the whole row and is read out with its label; Settings' and Services'
+  private copies now use it (their screenshots unchanged). The patient record's SMS switch still uses the bare switch
+  (left as it is, outside this ticket).
+- **Tests:** `TemplatesViewModelTest` (read, repeats kept, the times, a later failure keeps the list, a first failure
+  isn't empty, a 403). Screenshots `TaskTemplates_list`, `_empty`.
+- **Emulator:** dev's 3 templates listed with their times (reads only). In demo: a template → the form pre-filled →
+  patient, 14 days → Create → the Tasks list with "Task created successfully" and the new task (the templates list
+  closed). Demo mode is off again.
+- **Tablets:** every task screen is centred at the board's width (the list at the page width, the others at the form
+  width); a retry after a first failure shows the skeleton again.

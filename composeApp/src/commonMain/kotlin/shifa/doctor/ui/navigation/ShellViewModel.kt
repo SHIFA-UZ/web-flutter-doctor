@@ -93,6 +93,8 @@ sealed interface ShellRoute {
     data class TaskCreate(
         val opened: Long,
         val template: shifa.doctor.data.model.TaskTemplate? = null,
+        // Opened from "Use Templates": a successful create closes that list too (flow 07/14 §5).
+        val fromTemplates: Boolean = false,
     ) : ShellRoute
 
     /** Tasks → "Use Templates" (TASK-05). */

@@ -2692,5 +2692,9 @@
   "timeAlreadyInList": "Это время уже есть в списке",
   "intervalAdjusted": "Интервал изменён на {hours} ч",
   "fromTemplate": "Из шаблона: {name}",
-  "selectEndDate": "Выберите дату окончания"
+  "selectEndDate": "Выберите дату окончания",
+  "noTemplatesTitle": "Шаблонов пока нет",
+  "noTemplatesBody": "Сначала создайте задачу, и она появится здесь.",
+  "templatesLoadFailed": "Не удалось загрузить шаблоны",
+  "moreCount": "ещё {count}"
 }

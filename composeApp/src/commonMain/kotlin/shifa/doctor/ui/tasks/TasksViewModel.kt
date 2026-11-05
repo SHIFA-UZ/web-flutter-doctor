@@ -72,7 +72,8 @@ class TasksViewModel(
 
     fun refresh() {
         reading?.cancel()
-        _state.update { it.copy(refreshing = it.tasks != null) }
+        // A retry after a first failure shows the skeleton again, not the failure with a live Retry.
+        _state.update { it.copy(refreshing = it.tasks != null, failed = false) }
         reading =
             viewModelScope.launch {
                 repo.tasks().fold(

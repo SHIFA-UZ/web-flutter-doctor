@@ -1606,6 +1606,7 @@
     <string name="monthSeptember">Sentabr</string>
     <string name="more">Yana</string>
     <string name="moreActions">Boshqa amallar</string>
+    <string name="moreCount">yana %1$s ta</string>
     <string name="moreDetailsOnAbove">Aynan shu kasalliklarning rivojlanishi</string>
     <string name="moreDocumentationOptions">Hujjatlashtirishning boshqa usullari</string>
     <string name="moreOptions">Boshqa bo'limlar</string>
@@ -1714,6 +1715,8 @@
     <string name="noSummaryYet">Saqlangan uchrashuv hujjati topilmadi.</string>
     <string name="noTasksFound">Vazifalar topilmadi</string>
     <string name="noTasksMatchFilters">Filtrlarga mos vazifa yo'q</string>
+    <string name="noTemplatesBody">Avval vazifa yarating, keyin u shu yerda paydo bo'ladi.</string>
+    <string name="noTemplatesTitle">Hozircha shablonlar yo'q</string>
     <string name="noTemplatesYet">Hali shablonlar yo'q. Avval vazifa yarating, keyin u shu yerda paydo bo'ladi.</string>
     <string name="noTimezoneFound">Vaqt mintaqasi topilmadi. Shahar nomini ingliz tilida yozing.</string>
     <string name="noTokensFound">Tokenlar topilmadi</string>
@@ -2392,6 +2395,7 @@
     <string name="tasksNotOnPlan">Vazifalar sizning tarifingizda mavjud emas.</string>
     <string name="taxIdVatId">Soliq ID / QQS ID</string>
     <string name="telegram">Telegram</string>
+    <string name="templatesLoadFailed">Shablonlarni yuklab bo'lmadi</string>
     <string name="temporaryPassword">Vaqtinchalik parol:</string>
     <string name="text">Matn</string>
     <string name="thisTimeOverlapsExistingSlot">Bu vaqt mavjud vaqt bilan mos keladi.</string>

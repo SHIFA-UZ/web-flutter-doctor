@@ -46,4 +46,10 @@ class TasksScreenshotTest {
 
     @Test
     fun createCustom() = captureRoboImage("screenshots/TaskCreate_custom.png") { CreateTaskCustomPreview() }
+
+    @Test
+    fun templates() = captureRoboImage("screenshots/TaskTemplates_list.png") { TemplatesPreview() }
+
+    @Test
+    fun templatesEmpty() = captureRoboImage("screenshots/TaskTemplates_empty.png") { TemplatesEmptyPreview() }
 }

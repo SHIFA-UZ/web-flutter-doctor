@@ -2692,5 +2692,9 @@
   "timeAlreadyInList": "Bu vaqt ro'yxatda allaqachon bor",
   "intervalAdjusted": "Interval {hours} soatga o'zgartirildi",
   "fromTemplate": "Shablondan: {name}",
-  "selectEndDate": "Tugash sanasini tanlang"
+  "selectEndDate": "Tugash sanasini tanlang",
+  "noTemplatesTitle": "Hozircha shablonlar yo'q",
+  "noTemplatesBody": "Avval vazifa yarating, keyin u shu yerda paydo bo'ladi.",
+  "templatesLoadFailed": "Shablonlarni yuklab bo'lmadi",
+  "moreCount": "yana {count} ta"
 }

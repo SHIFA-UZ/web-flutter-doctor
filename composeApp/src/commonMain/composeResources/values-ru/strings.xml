@@ -1606,6 +1606,7 @@
     <string name="monthSeptember">Сентябрь</string>
     <string name="more">Ещё</string>
     <string name="moreActions">Другие действия</string>
+    <string name="moreCount">ещё %1$s</string>
     <string name="moreDetailsOnAbove">Подробнее о вышеизложенном</string>
     <string name="moreDocumentationOptions">Другие варианты документирования</string>
     <string name="moreOptions">Другие разделы</string>
@@ -1714,6 +1715,8 @@
     <string name="noSummaryYet">Сохранённая документация приёма не найдена.</string>
     <string name="noTasksFound">Задачи не найдены</string>
     <string name="noTasksMatchFilters">Нет задач по этим фильтрам</string>
+    <string name="noTemplatesBody">Сначала создайте задачу, и она появится здесь.</string>
+    <string name="noTemplatesTitle">Шаблонов пока нет</string>
     <string name="noTemplatesYet">Шаблонов пока нет. Сначала создайте задачу — после этого она появится здесь.</string>
     <string name="noTimezoneFound">Часовой пояс не найден. Введите название города на английском.</string>
     <string name="noTokensFound">Токены не найдены</string>
@@ -2392,6 +2395,7 @@
     <string name="tasksNotOnPlan">Задачи недоступны на вашем тарифе.</string>
     <string name="taxIdVatId">ИНН / ИНН НДС</string>
     <string name="telegram">Telegram</string>
+    <string name="templatesLoadFailed">Не удалось загрузить шаблоны</string>
     <string name="temporaryPassword">Временный пароль:</string>
     <string name="text">Текст</string>
     <string name="thisTimeOverlapsExistingSlot">Это время пересекается с существующим слотом.</string>

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -145,7 +147,8 @@ internal fun TasksContent(
 ) = Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
     PullToRefreshBox(state.refreshing, actions.refresh, Modifier.fillMaxSize()) {
         LazyColumn(
-            Modifier.fillMaxSize(),
+            // A tablet keeps the board's page width, centred.
+            Modifier.fillMaxSize().wrapContentWidth().widthIn(max = ShifaDimens.Layout.Page),
             // The floating tab bar and the docked Create button cover the last part.
             contentPadding =
                 PaddingValues(

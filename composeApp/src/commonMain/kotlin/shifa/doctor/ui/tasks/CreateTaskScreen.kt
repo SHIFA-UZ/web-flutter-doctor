@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -113,6 +115,7 @@ import shifa.doctor.ui.patients.PatientPickerSheet
 import shifa.doctor.ui.patients.matching
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -128,7 +131,7 @@ import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
-import shifa.doctor.ui.widgets.ShifaSwitch
+import shifa.doctor.ui.widgets.ShifaSwitchRow
 import shifa.doctor.ui.widgets.ShifaTertiaryButton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
@@ -167,13 +170,15 @@ fun CreateTaskScreen(
     template: TaskTemplate?,
     onClose: () -> Unit,
     patient: PatientOption? = null,
+    // After a create: the caller may close more than the form (templates close too).
+    onCreated: () -> Unit = onClose,
 ) {
     val me by profileRepository.me.collectAsStateWithLifecycle()
     val clock = remember(me?.profile?.timeZone) { PracticeClock(me?.profile?.timeZone) }
     val viewModel: CreateTaskViewModel =
         viewModel(key = "task-create-$opened") { CreateTaskViewModel(clock.today(), template, patient) }
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.done) { if (state.done) onClose() }
+    LaunchedEffect(state.done) { if (state.done) onCreated() }
     val back = { if (viewModel.back()) onClose() }
     BackHandler(onBack = back)
     CreateTaskContent(
@@ -208,7 +213,14 @@ internal fun CreateTaskContent(
     ShifaSubHeader(tr(Res.string.createRemoteCareTask), Modifier.statusBarsPadding(), onBack = actions.back)
     val f = state.form
     Column(
-        Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(ShifaSpacing.Inset.Md),
+        // A tablet keeps the board's form width, centred.
+        Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .wrapContentWidth()
+            .widthIn(max = ShifaDimens.Layout.FormWide)
+            .padding(ShifaSpacing.Inset.Md),
         verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
     ) {
         state.templateName?.let {
@@ -226,17 +238,11 @@ internal fun CreateTaskContent(
         Section { Schedule(state, actions) }
         Section { Dates(state, today, actions) }
         Section {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ShifaSwitch(f.notesRequired, { v -> actions.edit { it.copy(notesRequired = v) } })
-                Text(
-                    tr(Res.string.notesRequired),
-                    style = ShifaTextStyles.buttonCompact(),
-                    color = ShifaColors.Text.Primary,
-                )
-            }
+            ShifaSwitchRow(
+                tr(Res.string.notesRequired),
+                f.notesRequired,
+                { v -> actions.edit { it.copy(notesRequired = v) } },
+            )
             ShifaInputField(
                 f.notesLabel,
                 { v -> actions.edit { it.copy(notesLabel = v) } },
@@ -612,19 +618,12 @@ private fun Dates(
                 { delta -> actions.ui { it.copy(month = it.month.plus(DatePeriod(months = delta))) } },
             )
         }
-        Row(
-            Modifier.fillMaxWidth().padding(vertical = ShifaSize.S8),
-            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ShifaSwitch(f.useEndDate, { v -> actions.edit { it.copy(useEndDate = v) } })
-            Text(
-                tr(Res.string.useEndDate),
-                Modifier.weight(1f),
-                style = ShifaTextStyles.buttonCompact(),
-                color = ShifaColors.Text.Primary,
-            )
-        }
+        ShifaSwitchRow(
+            tr(Res.string.useEndDate),
+            f.useEndDate,
+            { v -> actions.edit { it.copy(useEndDate = v) } },
+            Modifier.padding(vertical = ShifaSize.S8),
+        )
         if (f.useEndDate) {
             ShifaSettingsItem(
                 tr(Res.string.endDate),

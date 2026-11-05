@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -88,6 +90,7 @@ import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -187,7 +190,8 @@ internal fun TaskDetailContent(
             val zone = patientZone ?: fallback
             PullToRefreshBox(state.refreshing, actions.reload, Modifier.weight(1f)) {
                 LazyColumn(
-                    Modifier.fillMaxSize(),
+                    // A tablet keeps the board's form width, centred.
+                    Modifier.fillMaxSize().wrapContentWidth().widthIn(max = ShifaDimens.Layout.FormWide),
                     contentPadding = PaddingValues(ShifaSpacing.Inset.Md),
                     verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
                 ) {
