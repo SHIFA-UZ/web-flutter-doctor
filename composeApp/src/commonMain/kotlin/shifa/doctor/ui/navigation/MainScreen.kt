@@ -389,7 +389,7 @@ private fun RouteContent(
                 },
                 onOpenDocument = { patientId, d -> actions.push(ShellRoute.Document(patientId, d.id, d.title)) },
             )
-        // The visit workspace (APPT-04); a video visit's call pane joins with VIDEO-02.
+        // The visit workspace (APPT-04); a video visit starts on its pre-join page with its call (VIDEO-02).
         is ShellRoute.Visit ->
             VisitScreen(
                 route.appointmentId,
@@ -401,6 +401,7 @@ private fun RouteContent(
                 onOpenForm = { patientId, icd ->
                     actions.push(ShellRoute.Form(patientId, null, currentInstant().toEpochMilliseconds(), icd))
                 },
+                video = route.kind == shifa.doctor.data.model.VisitKind.Video,
             )
         ShellRoute.Locations -> LocationsScreen(onClose = actions.back)
         is ShellRoute.Patient ->

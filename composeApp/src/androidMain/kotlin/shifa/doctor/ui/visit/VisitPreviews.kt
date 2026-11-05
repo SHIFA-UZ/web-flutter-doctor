@@ -18,6 +18,8 @@ import shifa.doctor.data.model.PatientDocument
 import shifa.doctor.data.model.PatientForm
 import shifa.doctor.data.model.ServicePrice
 import shifa.doctor.data.model.ToothServiceLine
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.videoCallNotYetAvailableMessage
 import shifa.doctor.ui.documents.PatientDocumentsUiState
 import shifa.doctor.ui.theme.PreviewTheme
 import shifa.doctor.utils.PracticeClock
@@ -331,6 +333,83 @@ internal fun DentalPlanReadonlyPreview() =
                 .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
                 .padding(shifa.doctor.ui.theme.ShifaSize.S14),
         ) { DentalPlanReadonly(plan.detail!!) }
+    }
+
+// A stand-in for previews: its tiles draw nothing (Daily's are real only on a device).
+private object PreviewCall : shifa.doctor.utils.VideoCall {
+    override val state = kotlinx.coroutines.flow.MutableStateFlow(shifa.doctor.utils.VideoCallState())
+
+    override fun startPreview() = Unit
+
+    override fun join(
+        roomUrl: String,
+        token: String,
+        camera: Boolean,
+        mic: Boolean,
+    ) = Unit
+
+    override fun setCamera(on: Boolean) = Unit
+
+    override fun setMic(on: Boolean) = Unit
+
+    override fun flipCamera() = Unit
+
+    override fun release() = Unit
+}
+
+// VIDEO-02: the pre-join page, the camera off, a refused room explained.
+@Composable
+internal fun VideoPreJoinPreview() =
+    PreviewTheme {
+        PreJoin(
+            state,
+            VideoVisitState(
+                camera = true,
+                mic = true,
+                call = shifa.doctor.utils.VideoCallState(cameraOn = false),
+                error = Res.string.videoCallNotYetAvailableMessage,
+            ),
+            PreviewCall,
+            "10:00–10:30",
+            VisitActions(),
+        )
+    }
+
+// VIDEO-02: the workspace in a call: the patient joined (their tile, name, the doctor's corner), the controls; the
+// microphone off.
+@Composable
+internal fun VideoInCallPreview() =
+    PreviewTheme {
+        VisitContent(
+            state.copy(helper = null, soapOpen = false, photos = emptyList()),
+            notes,
+            VisitActions(),
+            documents,
+            clock = clock,
+            now = { now },
+            video =
+                VideoPart(
+                    VideoVisitState(
+                        stage = VideoStage.InCall,
+                        camera = true,
+                        mic = true,
+                        call = shifa.doctor.utils.VideoCallState(micOn = false, patientJoined = true),
+                    ),
+                    PreviewCall,
+                ),
+        )
+    }
+
+// VIDEO-02: the doctor left the call; the visit stays open with Rejoin.
+@Composable
+internal fun VideoLeftPreview() =
+    PreviewTheme {
+        VideoPane(
+            "Jasur Karimov",
+            VideoVisitState(stage = VideoStage.Left, camera = true, mic = true),
+            PreviewCall,
+            VideoActions(),
+        )
     }
 
 // APPT-05: Camera or Gallery for an after-treatment photo.

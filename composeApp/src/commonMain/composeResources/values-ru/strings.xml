@@ -1531,6 +1531,7 @@
     <string name="metricNext">След.</string>
     <string name="metricReports">Отчёты</string>
     <string name="metricToday">Сегодня</string>
+    <string name="micDeniedPatientCantHear">Нет доступа к микрофону. Без него пациент вас не услышит.</string>
     <string name="microphoneLabel">Микрофон</string>
     <string name="microphonePermissionDenied">Доступ к микрофону запрещен</string>
     <string name="minimum6Characters">Минимум 6 символов</string>
@@ -2611,6 +2612,7 @@
     <string name="yes">Да</string>
     <string name="yesCancel">Да, отменить</string>
     <string name="yesterday">Вчера</string>
+    <string name="youLeftTheCall">Вы вышли из звонка</string>
     <string name="yourCameraPreview">Предпросмотр вашей камеры</string>
     <string name="yourCurrentPlan">Ваш текущий тариф</string>
     <string name="yourName">Ваше имя</string>

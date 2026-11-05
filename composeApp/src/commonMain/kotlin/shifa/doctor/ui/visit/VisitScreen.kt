@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
@@ -245,13 +246,16 @@ import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
+import shifa.doctor.utils.KeepScreenOn
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.displayTime
+import shifa.doctor.utils.rememberCallPermissions
 import shifa.doctor.utils.rememberCameraLauncher
 import shifa.doctor.utils.rememberImagePickerLauncher
 import shifa.doctor.utils.rememberMicPermission
+import shifa.doctor.utils.rememberVideoCallFactory
 import shifa.doctor.utils.tr
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -325,6 +329,8 @@ class VisitActions(
     val dental: DentalActions = DentalActions(),
     // DENTAL-03: the treatment plan: choosing it, its lines, ticks and the payment.
     val plan: PlanActions = PlanActions(),
+    // VIDEO-02: the call (join, camera, microphone, flip, leave).
+    val video: VideoActions = VideoActions(),
     // APPT-05: a photo kind's Camera / Gallery sheet, its sources, a photo removed.
     val photo: (PhotoKind) -> Unit = {},
     val takePhoto: () -> Unit = {},
@@ -349,13 +355,33 @@ fun VisitScreen(
     onOpenDocument: (Long, PatientDocument, String) -> Unit = { _, _, _ -> },
     // The 025-2 editor for a new form: the patient, and the ICD code applied in the visit (APPT-08).
     onOpenForm: (Long, Icd10Hit?) -> Unit = { _, _ -> },
-    viewModel: VisitViewModel = viewModel(key = "visit-$appointmentId-$opened") { VisitViewModel(appointmentId) },
+    // VIDEO-02: a video visit, with its call.
+    video: Boolean = false,
+    viewModel: VisitViewModel =
+        rememberVideoCallFactory().let { calls ->
+            viewModel(
+                key = "visit-$appointmentId-$opened",
+            ) { VisitViewModel(appointmentId, calls = calls.takeIf { video }) }
+        },
 ) {
     if (staff) return StaffCannotRunVisits(onBack)
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notes by viewModel.notes.state.collectAsStateWithLifecycle()
     val dental by viewModel.dentalRecord.state.collectAsStateWithLifecycle()
     val planState by viewModel.plan.state.collectAsStateWithLifecycle()
+    val videoState = viewModel.video?.state?.collectAsStateWithLifecycle()?.value
+    val callPart = viewModel.video?.let { v -> videoState?.let { VideoPart(it, v.call) } }
+    viewModel.video?.let { v ->
+        val permissions = rememberCallPermissions(v::permissions)
+        // Asked once on open; read again on every return to the app, so permissions granted in Settings count at once
+        // (reading, not asking: the system's dialog itself pauses and resumes the app).
+        LaunchedEffect(v) { permissions(true) }
+        LifecycleResumeEffect(v) {
+            permissions(false)
+            onPauseOrDispose {}
+        }
+        if (videoState?.live == true) KeepScreenOn()
+    }
     viewModel.notes.labels =
         SoapLabels(
             tr(Res.string.soapSubjective),
@@ -376,7 +402,13 @@ fun VisitScreen(
         }
     }
     val back = {
-        if (state.focus) viewModel.ui { it.copy(focus = false) } else viewModel.leave()
+        when {
+            state.focus -> viewModel.ui { it.copy(focus = false) }
+            // Back in a call asks to leave the call first, like the red button (flow 05/11).
+            videoState?.live == true -> viewModel.video?.askLeave(true)
+            else -> viewModel.leave()
+        }
+        Unit
     }
     BackHandler(onBack = back)
     val patientId = state.visit?.patientId
@@ -431,6 +463,18 @@ fun VisitScreen(
                     remove = viewModel.dentalRecord::remove,
                     retryServices = viewModel.dentalRecord::loadServices,
                 ),
+            video =
+                viewModel.video?.let { v ->
+                    VideoActions(
+                        join = v::join,
+                        camera = v::toggleCamera,
+                        mic = v::toggleMic,
+                        flip = v::flip,
+                        askLeave = v::askLeave,
+                        leave = v::leave,
+                        dismissError = v::dismissError,
+                    )
+                } ?: VideoActions(),
             plan =
                 PlanActions(
                     select = viewModel.plan::select,
@@ -448,7 +492,11 @@ fun VisitScreen(
         )
     // Dictation for the notes fields (AI-06); the AI scribe (SCRIBE-01) has its own recorder, its state passed down.
     CompositionLocalProvider(LocalDictation provides rememberDictation()) {
-        if (patientId == null) {
+        // VIDEO-02: a video visit starts on the pre-join page, then the workspace with the call on top. Drawn in this
+        // flow, so the sheets below (leaving with unsaved work) still show over it.
+        if (callPart?.state?.stage == VideoStage.PreJoin && state.visit != null) {
+            PreJoin(state, callPart.state, callPart.call, scheduleOf(state), actions)
+        } else if (patientId == null) {
             VisitContent(
                 state,
                 notes,
@@ -457,6 +505,7 @@ fun VisitScreen(
                 scribeAllowed = scribeAllowed,
                 dental = dental,
                 plan = planState,
+                video = callPart,
             )
         } else {
             // The documents and uploads need the patient: they start once the visit says who it is.
@@ -470,7 +519,13 @@ fun VisitScreen(
                 onOpenDocument,
                 scribeState,
                 scribeAllowed,
+                callPart,
             )
+        }
+        if (videoState?.confirmLeave == true) {
+            ProfileSheet(
+                { actions.video.askLeave(false) },
+            ) { LeaveCall(actions.video) }
         }
         state.dentalTooth?.let { tooth ->
             ProfileSheet({ actions.dental.open(null) }) { DentalServicesSheet(tooth, dental, actions.dental) }
@@ -503,12 +558,7 @@ fun VisitScreen(
     if ((end.confirm || end.running || end.completed || end.error != null) && !end.hidden) {
         val clock = remember { PracticeClock(profileRepository.me.value?.profile?.timeZone) }
         val visit = state.visit
-        val schedule =
-            if (visit?.start != null && visit.end != null) {
-                "${displayTime(clock.local(visit.start!!).time)}–${displayTime(clock.local(visit.end!!).time)}"
-            } else {
-                ""
-            }
+        val schedule = scheduleOf(state, clock)
         val minutes = visit?.start?.let { ((currentInstant() - it).inWholeMinutes).toInt().coerceAtLeast(0) } ?: 0
         val doneText = end.noSummary ?: Res.string.appointmentEndedDocumentationSaved
         val title = end.summary?.let { documentTitle(it) }
@@ -549,6 +599,7 @@ private fun PatientParts(
     onOpenDocument: (Long, PatientDocument, String) -> Unit,
     scribe: DictationState,
     scribeAllowed: Boolean,
+    video: VideoPart?,
     documents: PatientDocumentsViewModel =
         viewModel(key = "visit-documents-$patientId") { PatientDocumentsViewModel(patientId) },
     uploads: DocumentUploadViewModel =
@@ -595,6 +646,7 @@ private fun PatientParts(
             applyIcd = actions.applyIcd,
             clearIcd = actions.clearIcd,
             dental = actions.dental,
+            video = actions.video,
             plan = actions.plan,
             photo = actions.photo,
             takePhoto = actions.takePhoto,
@@ -618,6 +670,7 @@ private fun PatientParts(
         scribeAllowed = scribeAllowed,
         dental = dental,
         plan = plan,
+        video = video,
     )
     UploadSheets(upload, uploads, sources)
 }
@@ -636,6 +689,8 @@ internal fun VisitContent(
     scribeAllowed: Boolean = false,
     dental: DentalNotesState = DentalNotesState(),
     plan: VisitPlanState = VisitPlanState(),
+    // VIDEO-02: the call's state and the call (for its video tiles); null for a visit in person.
+    video: VideoPart? = null,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     val visit = state.visit
     when {
@@ -665,6 +720,9 @@ internal fun VisitContent(
                 verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
             ) {
                 item { Box(gap) { Chips(state, actions) } }
+                video?.let { v ->
+                    item { Box(gap) { VideoPane(visit.patientName.orEmpty(), v.state, v.call, actions.video) } }
+                }
                 listOfNotNull(state.banner, notes.banner, heard, scribed).forEach { b ->
                     item {
                         Box(gap) {
@@ -1579,4 +1637,20 @@ private fun rememberEndLabels(): EndLabels {
             }
         },
     )
+}
+
+/** The call's state with the call itself (its video tiles), for a video visit (VIDEO-02). */
+internal class VideoPart(
+    val state: VideoVisitState,
+    val call: shifa.doctor.utils.VideoCall,
+)
+
+/** "10:00–10:30" on the practice clock; empty without times. */
+private fun scheduleOf(
+    state: VisitUiState,
+    clock: PracticeClock = PracticeClock(profileRepository.me.value?.profile?.timeZone),
+): String {
+    val start = state.visit?.start ?: return ""
+    val end = state.visit.end ?: return ""
+    return "${displayTime(clock.local(start).time)}–${displayTime(clock.local(end).time)}"
 }

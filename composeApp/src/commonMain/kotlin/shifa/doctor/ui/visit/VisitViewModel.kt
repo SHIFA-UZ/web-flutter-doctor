@@ -61,6 +61,8 @@ import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.data.treatmentplans.treatmentPlansRepository
+import shifa.doctor.data.video.VideoRepository
+import shifa.doctor.data.video.videoRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiDailyLimitReached
 import shifa.doctor.generated.resources.aiDocumentationWillAppearShortly
@@ -85,6 +87,7 @@ import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.patients.chronicWarned
 import shifa.doctor.utils.PickedImage
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.VideoCall
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.displayTime
@@ -228,6 +231,9 @@ class VisitViewModel(
     private val plans: TreatmentPlansRepository = treatmentPlansRepository,
     private val finance: FinanceRepository = financeRepository,
     private val clinics: ClinicsRepository = clinicsRepository,
+    // VIDEO-02: a video visit's calls (Daily); null for a visit in person.
+    calls: (() -> VideoCall)? = null,
+    videoRepo: VideoRepository = videoRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(VisitUiState())
     val state: StateFlow<VisitUiState> = _state.asStateFlow()
@@ -236,6 +242,17 @@ class VisitViewModel(
 
     // DENTAL-02: read for a dental doctor only.
     val dentalRecord = DentalNotes(appointmentId, viewModelScope, dentalRepo, services)
+
+    // VIDEO-02: the call of a video visit, kept here so it survives opening the patient's record mid-call.
+    val video: VideoVisit? =
+        calls?.let {
+            VideoVisit(appointmentId, viewModelScope, it, {
+                _state.value.visit.let {
+                        v ->
+                    v?.start to v?.end
+                }
+            }, videoRepo)
+        }
 
     // DENTAL-03: the patient's treatment plan in this visit.
     val plan =
@@ -433,6 +450,8 @@ class VisitViewModel(
                 EndStep.Summary,
             )
         _state.update { it.copy(end = EndUiState(running = true, steps = steps, at = EndStep.Notes)) }
+        // A video visit leaves its call first (flow 05/12; the visit's End, not the call's).
+        video?.release()
         ending =
             viewModelScope.launch {
                 if (!notes.flush()) return@launch fail(CodeBanner(Res.string.notesSaveFailed))
@@ -778,6 +797,7 @@ class VisitViewModel(
         // The shell keeps this ViewModel: going back lets the photos go (a reopened visit gets a new one).
         if (to == VisitExit.Back) {
             watching?.cancel()
+            video?.release()
             _state.update { it.copy(photos = emptyList()) }
         }
         _state.update { it.copy(askLeave = null, left = to) }
@@ -785,6 +805,10 @@ class VisitViewModel(
 
     /** The screen went where [VisitUiState.left] said. */
     fun leaving() = _state.update { it.copy(left = null) }
+
+    override fun onCleared() {
+        video?.release()
+    }
 }
 
 private val AI_LATER = Res.string.aiDocumentationWillAppearShortly

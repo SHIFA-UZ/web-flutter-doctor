@@ -19,6 +19,8 @@ final class DailyVideoCall: NSObject, @preconcurrency NativeVideoCall, @preconcu
     private var left = false
     private var failed = false
     private var front = true
+    // Left (or freed): a join still waiting for its inputs is dropped.
+    private var leaving = false
 
     nonisolated override init() {
         super.init()
@@ -38,9 +40,17 @@ final class DailyVideoCall: NSObject, @preconcurrency NativeVideoCall, @preconcu
         client.setInputsEnabled([.camera: true, .microphone: true], completion: nil)
     }
 
-    func join(roomUrl: String, token: String) {
+    func join(roomUrl: String, token: String, camera: Bool, mic: Bool) {
         guard let url = URL(string: roomUrl) else { return fail() }
         failed = false
+        // The doctor's choices first: the join itself never turns the camera or microphone on.
+        client.setInputsEnabled([.camera: camera, .microphone: mic]) { [weak self] _ in
+            guard let self, !self.leaving else { return }
+            self.joinRoom(url: url, token: token)
+        }
+    }
+
+    private func joinRoom(url: URL, token: String) {
         client.join(url: url, token: MeetingToken(stringValue: token)) { [weak self] result in
             guard let self else { return }
             switch result {
@@ -72,6 +82,7 @@ final class DailyVideoCall: NSObject, @preconcurrency NativeVideoCall, @preconcu
     }
 
     func leave() {
+        leaving = true
         client.leave(completion: nil)
     }
 

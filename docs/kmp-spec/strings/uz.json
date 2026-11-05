@@ -2624,5 +2624,7 @@
   "paymentMethodCardTerminal": "Karta (terminal)",
   "summaryPlanDoneThisVisit": "Ushbu tashrifda bajarildi",
   "leaveUnsavedTitle": "Hali saqlanmagan",
-  "leaveUnsavedBody": "Rasmlar, belgilangan reja bandlari va to'lov qabulni yakunlaganingizda saqlanadi. Hozir chiqsangiz, ular yo'qoladi."
+  "leaveUnsavedBody": "Rasmlar, belgilangan reja bandlari va to'lov qabulni yakunlaganingizda saqlanadi. Hozir chiqsangiz, ular yo'qoladi.",
+  "youLeftTheCall": "Siz qo'ng'iroqdan chiqdingiz",
+  "micDeniedPatientCantHear": "Mikrofonga ruxsat berilmagan. Usiz bemor sizni eshitmaydi."
 }

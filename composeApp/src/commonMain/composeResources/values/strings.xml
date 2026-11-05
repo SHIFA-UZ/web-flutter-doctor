@@ -1531,6 +1531,7 @@
     <string name="metricNext">Next</string>
     <string name="metricReports">Reports</string>
     <string name="metricToday">Today</string>
+    <string name="micDeniedPatientCantHear">Microphone permission denied. The patient cannot hear you without it.</string>
     <string name="microphoneLabel">Microphone</string>
     <string name="microphonePermissionDenied">Microphone permission denied</string>
     <string name="minimum6Characters">Minimum 6 characters</string>
@@ -2611,6 +2612,7 @@
     <string name="yes">Yes</string>
     <string name="yesCancel">Yes, Cancel</string>
     <string name="yesterday">Yesterday</string>
+    <string name="youLeftTheCall">You left the call</string>
     <string name="yourCameraPreview">Your camera preview</string>
     <string name="yourCurrentPlan">Your current plan</string>
     <string name="yourName">Your Name</string>

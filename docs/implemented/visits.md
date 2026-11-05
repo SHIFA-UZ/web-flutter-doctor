@@ -592,3 +592,50 @@ Built 2026-11-05. Spec 05 §3.1, ticket VIDEO-01. The call client is the patient
   0.40.0 resolved into `Package.resolved`).
 - **Tests:** `VideoRepositoryTest` (the request, a refusal as Forbidden, 402 as payment, the window messages at
   their edges, a 403 inside the window, a network error); `DemoBackendTest` (the demo room and refusals).
+
+## VIDEO-02 + VIDEO-03 · Video visit: pre-join page and the call in the workspace
+
+Built 2026-11-05. Spec 05 §3.2–3.3, tickets VIDEO-02 and VIDEO-03; flows 05/10 and 05/11; board `DaVisit` "VIDEO
+PRE-JOIN" and the video pane. A video visit (route kind Video) is the same workspace as one in person (APPT-04), with
+the call on top.
+
+- **The call lives in the visit's ViewModel** (`VideoVisit`), so it survives opening the patient's record or the 025-2
+  mid-call. It is freed when the doctor goes back from the visit, ends it (End leaves the call first, flow 05/12) or
+  when the ViewModel goes.
+- **Pre-join page** (`PreJoin`, new UI per the board):
+  - The doctor's camera preview with Flip; Camera and Microphone switches; the patient and the time; Join call and
+    Cancel.
+  - The status: "Video call ready", "Connecting…", or why the room can't be joined (VIDEO-01's messages).
+  - Camera and microphone are asked for on open and read again on every return to the app, so a permission granted in
+    Settings counts at once. Only the microphone is needed: without the camera the call goes on with it off. Without
+    the microphone: "Microphone permission denied. The patient cannot hear you without it." with Open settings, and
+    Join stays off.
+  - Joining keeps the doctor's choices: a camera or microphone turned off before joining stays off.
+- **In the workspace** (`VideoPane`, the first card):
+  - Connecting; alone ("Waiting for {name} to join…" over the doctor's own camera); the patient full size with their
+    name and the doctor's camera in a corner.
+  - Controls: microphone, camera (each shows its off state), flip, and leave (red).
+  - **Leave call** asks first ("The visit stays open until you end it."), and so does Back while joining or in the
+    call. Then "You left the call" with **Rejoin**. Leaving never completes the visit; Flutter's red button didn't
+    either, but said nothing.
+  - A call that drops shows the same state with "Video call ended" (or "Call error occurred") and Rejoin.
+  - The token request is cancelled by Leave, Back and End, so a late answer never joins. A Rejoin makes its new call
+    only once the token is there.
+  - The screen stays awake while joining and in the call (`KeepScreenOn`: Android `keepScreenOn`, iOS
+    `idleTimerDisabled`).
+- **VIDEO-03 (waiting room): not built**, per D-07 (the spec's recommendation). Flutter's page was unreachable, and
+  the backend has no patient-presence endpoint.
+- **Not built:** the visit facts panel (AI, its own ticket); Flutter's notes full-screen overlay (focus mode covers it);
+  the scribe recorder stays offered on video visits too (Flutter had none there, 05 §10.16).
+- **Not run:** a real call. It needs a dev video visit inside its window (minting a token creates a Daily room).
+  The demo's video visit is tomorrow, so its Start is still off. The pre-join page, the pane and the leave state are
+  covered by screenshots.
+- **Builds:** `assembleDebug`, the iOS framework, and the whole iOS app with `xcodebuild` for the simulator.
+- **Tests:**
+  - `VideoVisitTest` (fake call):
+    - Allowed → preview → token → join (the microphone kept off) → in the call when Daily says joined.
+    - A refused room explained, and a failed Daily join, both back on the pre-join page.
+    - Leave frees the call; a refused Rejoin makes no call; Rejoin makes a new one; release only once.
+    - Without the camera the call goes on with it off, and the microphone granted in Settings counts.
+    - A dropped call says so; Back while the token is on its way joins nothing.
+  - Screenshots: `Video_preJoin`, `Video_inCall`, `Video_left`.

@@ -46,6 +46,15 @@ class VisitScreenshotTest {
     fun planReadonly() = captureRoboImage("screenshots/Plan_readonly.png") { DentalPlanReadonlyPreview() }
 
     @Test
+    fun videoPreJoin() = captureRoboImage("screenshots/Video_preJoin.png") { VideoPreJoinPreview() }
+
+    @Test
+    fun videoInCall() = captureRoboImage("screenshots/Video_inCall.png") { VideoInCallPreview() }
+
+    @Test
+    fun videoLeft() = captureRoboImage("screenshots/Video_left.png") { VideoLeftPreview() }
+
+    @Test
     fun photoSource() = captureRoboImage("screenshots/Visit_photoSource.png") { PhotoSourcePreview() }
 
     @Test

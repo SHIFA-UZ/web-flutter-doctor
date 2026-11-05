@@ -1531,6 +1531,7 @@
     <string name="metricNext">Keyingi</string>
     <string name="metricReports">Hisobot</string>
     <string name="metricToday">Bugun</string>
+    <string name="micDeniedPatientCantHear">Mikrofonga ruxsat berilmagan. Usiz bemor sizni eshitmaydi.</string>
     <string name="microphoneLabel">Mikrofon</string>
     <string name="microphonePermissionDenied">Mikrofon ruxsati rad etilgan</string>
     <string name="minimum6Characters">Kamida 6 belgi</string>
@@ -2611,6 +2612,7 @@
     <string name="yes">Ha</string>
     <string name="yesCancel">Ha, bekor qilish</string>
     <string name="yesterday">Kecha</string>
+    <string name="youLeftTheCall">Siz qo'ng'iroqdan chiqdingiz</string>
     <string name="yourCameraPreview">Kamerangizni oldindan ko'rish</string>
     <string name="yourCurrentPlan">Joriy tarifingiz</string>
     <string name="yourName">Sizning ismingiz</string>

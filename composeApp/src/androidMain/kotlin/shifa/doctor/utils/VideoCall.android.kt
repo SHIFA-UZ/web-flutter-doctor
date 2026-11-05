@@ -27,6 +27,7 @@ import co.daily.model.RequestListenerWithData
 import co.daily.model.RequestResultWithData
 import co.daily.settings.CameraInputSettingsUpdate
 import co.daily.settings.ClientSettingsUpdate
+import co.daily.settings.Disable
 import co.daily.settings.Enable
 import co.daily.settings.FacingModeUpdate
 import co.daily.settings.InputSettings
@@ -109,9 +110,15 @@ internal class DailyVideoCall(
     override fun join(
         roomUrl: String,
         token: String,
+        camera: Boolean,
+        mic: Boolean,
     ) {
         update { copy(phase = VideoCallState.Phase.Joining, failed = false) }
-        val inputs = InputSettingsUpdate(camera = Enable(), microphone = Enable())
+        val inputs =
+            InputSettingsUpdate(
+                camera = if (camera) Enable() else Disable(),
+                microphone = if (mic) Enable() else Disable(),
+            )
         client.join(
             roomUrl,
             MeetingToken(token),
@@ -180,17 +187,19 @@ actual fun VideoTile(
 }
 
 @Composable
-actual fun rememberCallPermissions(onResult: (Boolean) -> Unit): () -> Unit {
+actual fun rememberCallPermissions(onResult: (camera: Boolean, mic: Boolean) -> Unit): (ask: Boolean) -> Unit {
     val context = LocalContext.current
     val result by rememberUpdatedState(onResult)
     val permissions = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+
+    fun has(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
     val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
-            result(granted.values.all { it })
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            result(has(Manifest.permission.CAMERA), has(Manifest.permission.RECORD_AUDIO))
         }
-    return {
-        if (permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
-            result(true)
+    return { ask ->
+        if (!ask || permissions.all(::has)) {
+            result(has(Manifest.permission.CAMERA), has(Manifest.permission.RECORD_AUDIO))
         } else {
             launcher.launch(permissions)
         }

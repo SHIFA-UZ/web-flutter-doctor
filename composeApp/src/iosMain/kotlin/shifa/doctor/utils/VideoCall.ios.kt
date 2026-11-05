@@ -10,9 +10,11 @@ import androidx.compose.ui.viewinterop.UIKitView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import platform.AVFoundation.AVAuthorizationStatusAuthorized
 import platform.AVFoundation.AVCaptureDevice
 import platform.AVFoundation.AVMediaTypeAudio
 import platform.AVFoundation.AVMediaTypeVideo
+import platform.AVFoundation.authorizationStatusForMediaType
 import platform.AVFoundation.requestAccessForMediaType
 import platform.UIKit.UIView
 import platform.darwin.dispatch_async
@@ -30,6 +32,8 @@ interface NativeVideoCall {
     fun join(
         roomUrl: String,
         token: String,
+        camera: Boolean,
+        mic: Boolean,
     )
 
     fun setCamera(on: Boolean)
@@ -100,9 +104,13 @@ private class IosVideoCall(
     override fun join(
         roomUrl: String,
         token: String,
+        camera: Boolean,
+        mic: Boolean,
     ) {
         _state.value = _state.value.copy(phase = VideoCallState.Phase.Joining, failed = native == null)
-        native?.join(roomUrl, token) ?: run { _state.value = _state.value.copy(phase = VideoCallState.Phase.Preview) }
+        native?.join(roomUrl, token, camera, mic) ?: run {
+            _state.value = _state.value.copy(phase = VideoCallState.Phase.Preview)
+        }
     }
 
     override fun setCamera(on: Boolean) {
@@ -138,14 +146,26 @@ actual fun VideoTile(
 }
 
 @Composable
-actual fun rememberCallPermissions(onResult: (Boolean) -> Unit): () -> Unit {
+actual fun rememberCallPermissions(onResult: (camera: Boolean, mic: Boolean) -> Unit): (ask: Boolean) -> Unit {
     val result by rememberUpdatedState(onResult)
     return remember {
-        {
-            AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { video ->
-                AVCaptureDevice.requestAccessForMediaType(AVMediaTypeAudio) { audio ->
-                    dispatch_async(dispatch_get_main_queue()) { result(video && audio) }
+        { ask: Boolean ->
+            if (ask) {
+                AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { video ->
+                    AVCaptureDevice.requestAccessForMediaType(AVMediaTypeAudio) { audio ->
+                        dispatch_async(dispatch_get_main_queue()) { result(video, audio) }
+                    }
                 }
+            } else {
+                // Only read: authorised or not, without a dialog.
+                result(
+                    AVCaptureDevice.authorizationStatusForMediaType(
+                        AVMediaTypeVideo,
+                    ) == AVAuthorizationStatusAuthorized,
+                    AVCaptureDevice.authorizationStatusForMediaType(
+                        AVMediaTypeAudio,
+                    ) == AVAuthorizationStatusAuthorized,
+                )
             }
         }
     }

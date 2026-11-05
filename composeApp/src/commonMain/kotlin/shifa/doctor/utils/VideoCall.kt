@@ -26,9 +26,12 @@ interface VideoCall {
     /** Camera and microphone on, for the preview before joining. */
     fun startPreview()
 
+    /** Joins with the doctor's camera and microphone as chosen before (never turned on by the join itself). */
     fun join(
         roomUrl: String,
         token: String,
+        camera: Boolean,
+        mic: Boolean,
     )
 
     fun setCamera(on: Boolean)
@@ -53,6 +56,9 @@ expect fun VideoTile(
     modifier: Modifier = Modifier,
 )
 
-/** Asks for the camera and microphone; [onResult] gets whether both are granted. */
+/**
+ * The camera and microphone permissions: `(true)` asks for them (the system's dialog when not answered yet), `(false)`
+ * only reads them (back from Settings). [onResult] gets each one: a call can go on with the microphone alone.
+ */
 @Composable
-expect fun rememberCallPermissions(onResult: (Boolean) -> Unit): () -> Unit
+expect fun rememberCallPermissions(onResult: (camera: Boolean, mic: Boolean) -> Unit): (ask: Boolean) -> Unit
