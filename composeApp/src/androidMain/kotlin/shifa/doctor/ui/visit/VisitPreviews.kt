@@ -2,6 +2,8 @@
 
 package shifa.doctor.ui.visit
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -158,24 +160,26 @@ private val dental =
             ),
         discount = "10",
         services =
-            listOf(
-                DoctorService(
-                    1,
-                    "Pulp removal",
-                    groupName = "Endodontics",
-                    prices = listOf(ServicePrice(45_000_000, "UZS")),
-                ),
-                DoctorService(
-                    2,
-                    "Temporary filling",
-                    groupName = "Fillings",
-                    prices = listOf(ServicePrice(15_000_000, "UZS")),
-                ),
-                DoctorService(
-                    4,
-                    "Composite filling",
-                    groupName = "Fillings",
-                    prices = listOf(ServicePrice(60_000_000, "UZS")),
+            shifa.doctor.data.model.dentalCatalog(
+                listOf(
+                    DoctorService(
+                        1,
+                        "Pulp removal",
+                        groupName = "Endodontics",
+                        prices = listOf(ServicePrice(45_000_000, "UZS")),
+                    ),
+                    DoctorService(
+                        2,
+                        "Temporary filling",
+                        groupName = "Fillings",
+                        prices = listOf(ServicePrice(15_000_000, "UZS")),
+                    ),
+                    DoctorService(
+                        4,
+                        "Composite filling",
+                        groupName = "Fillings",
+                        prices = listOf(ServicePrice(60_000_000, "UZS")),
+                    ),
                 ),
             ),
     )
@@ -268,6 +272,66 @@ internal fun VisitDentalPlanPreview() =
 // DENTAL-03: tooth 36's planned lines, the root canal ticked.
 @Composable
 internal fun PlanFulfilSheetPreview() = PreviewTheme { PlanFulfilSheet("36", plan, PlanActions()) }
+
+// DENTAL-04: the plan editor (the wizard hosts it, TP-04): 36's root canal and crown, cleaning, a 5 % discount.
+@Composable
+internal fun PlanEditorPreview() =
+    PreviewTheme {
+        val editor =
+            PlanEditor(
+                DentalRecord(
+                    teeth =
+                        mapOf(
+                            "36" to
+                                listOf(
+                                    ToothServiceLine(
+                                        serviceKey = "catalog:1",
+                                        title = "Root canal treatment",
+                                        amountMinor = 80_000_000,
+                                    ),
+                                    ToothServiceLine(
+                                        serviceKey = "catalog:2",
+                                        title = "Ceramic crown",
+                                        amountMinor = 150_000_000,
+                                    ),
+                                ),
+                            "__general__" to
+                                listOf(
+                                    ToothServiceLine(
+                                        serviceKey = "catalog:3",
+                                        title = "Cleaning",
+                                        amountMinor = 40_000_000,
+                                    ),
+                                ),
+                        ),
+                    discountPercent = 5.0,
+                    notes = "Phase 1: endodontics, then the crown.",
+                ),
+                emptyList(),
+            )
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier
+                .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
+                .padding(shifa.doctor.ui.theme.ShifaSize.S14),
+            verticalArrangement =
+                androidx.compose.foundation.layout.Arrangement.spacedBy(
+                    shifa.doctor.ui.theme.ShifaSize.S10,
+                ),
+        ) {
+            DentalPanel(editor.state.value, null, DentalActions(), editor = true)
+        }
+    }
+
+// DENTAL-04: a plan's teeth, read only (plan detail, TP-03): 36 planned, 46 completed.
+@Composable
+internal fun DentalPlanReadonlyPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Box(
+            androidx.compose.ui.Modifier
+                .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
+                .padding(shifa.doctor.ui.theme.ShifaSize.S14),
+        ) { DentalPlanReadonly(plan.detail!!) }
+    }
 
 // APPT-05: Camera or Gallery for an after-treatment photo.
 @Composable

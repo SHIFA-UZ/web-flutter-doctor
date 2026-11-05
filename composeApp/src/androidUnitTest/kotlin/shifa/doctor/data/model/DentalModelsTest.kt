@@ -91,7 +91,8 @@ class DentalModelsTest {
                 discountPercent = 10.0,
             )
         assertThat(r.subtotals).containsExactly("UZS", 100_005L, "USD", 25_000L).inOrder()
-        assertThat(r.totals).containsExactly("UZS", 90_005L, "USD", 22_500L).inOrder()
+        // The discount rounds a half up (10 000.5 → 10 001), so the total is what plan lines would charge.
+        assertThat(r.totals).containsExactly("UZS", 90_004L, "USD", 22_500L).inOrder()
         assertThat(r.lineCount).isEqualTo(3)
         assertThat(r.counts).containsExactly("16", 1, "21", 2)
     }

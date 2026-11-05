@@ -507,6 +507,11 @@ class DemoBackendTest {
             val plan = repo.plans(1, 12, status = "ACTIVE").getOrThrow().single()
             assertThat(repo.plans(1, 99, status = "ACTIVE").getOrThrow()).isEmpty()
             assertThat(repo.plans(2, 12, status = "ACTIVE").getOrThrow()).isEmpty()
+            assertThat(
+                repo.planServices(1).getOrThrow().map {
+                    it.key
+                },
+            ).containsExactly("catalog:1", "catalog:2", "doctor:1:service:3")
             val detail = repo.detail(plan.id).getOrThrow()
             assertThat(detail.lines.map { it.tooth }).containsExactly("36", "36", "46", null).inOrder()
             val open = repo.candidates(plan.id, 102).getOrThrow()

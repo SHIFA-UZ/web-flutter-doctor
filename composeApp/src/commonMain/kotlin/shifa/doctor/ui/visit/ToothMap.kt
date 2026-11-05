@@ -194,3 +194,21 @@ private fun Tooth(
         }
     }
 }
+
+/**
+ * A plan's teeth (05 §4.3–4.4): every line on a tooth [done] → done, some → partly done, none → planned. Cancelled
+ * lines are left out (Flutter coloured them "partly done").
+ */
+fun planToothStates(
+    lines: List<shifa.doctor.data.model.PlanLine>,
+    done: (shifa.doctor.data.model.PlanLine) -> Boolean,
+): Map<String, ToothPlanState> =
+    lines.filter { it.status != shifa.doctor.data.model.LineStatus.Cancelled && it.tooth != null }
+        .groupBy { it.tooth!! }
+        .mapValues { (_, onTooth) ->
+            when (onTooth.count(done)) {
+                onTooth.size -> ToothPlanState.Done
+                0 -> ToothPlanState.Planned
+                else -> ToothPlanState.Partial
+            }
+        }

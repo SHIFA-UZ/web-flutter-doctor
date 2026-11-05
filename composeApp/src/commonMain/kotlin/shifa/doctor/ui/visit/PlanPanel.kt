@@ -26,6 +26,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.input.KeyboardType
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.forms.DentalChartCodec
+import shifa.doctor.data.model.dentition
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.amountExceedsOutstanding
 import shifa.doctor.generated.resources.amountGreaterThanZero
@@ -214,13 +215,7 @@ internal fun ColumnScope.PlanChart(
             )
     }
     Text(tr(Res.string.toothMap).uppercase(), style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
-    val words =
-        mapOf(
-            ToothPlanState.None to tr(Res.string.dentalPlanLegendNone),
-            ToothPlanState.Planned to tr(Res.string.dentalPlanLegendPlanned),
-            ToothPlanState.Partial to tr(Res.string.dentalPlanLegendPartial),
-            ToothPlanState.Done to tr(Res.string.dentalPlanLegendCompleted),
-        )
+    val words = planWords()
     // States only, no count badges (the board's plan mode); the count is in the screen-reader text.
     ToothMap(
         plan.dentition,
@@ -233,14 +228,7 @@ internal fun ColumnScope.PlanChart(
         },
         onTap = { actions.open(it) },
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10)) {
-        listOf(
-            Triple(ShifaColors.Bg.Surface, ShifaColors.Border.Default, ToothPlanState.None),
-            Triple(ShifaColors.Bg.InfoSubtle, ShifaColors.Icon.Info, ToothPlanState.Planned),
-            Triple(ShifaColors.Bg.Surface, ShifaColors.Border.Brand, ToothPlanState.Partial),
-            Triple(ShifaColors.Interactive.Primary, ShifaColors.Interactive.Primary, ToothPlanState.Done),
-        ).forEach { (fill, edge, state) -> Legend(fill, edge, words.getValue(state)) }
-    }
+    PlanLegend(words)
     val general = plan.lines(DentalChartCodec.GENERAL_KEY)
     if (general.isNotEmpty()) {
         Row(
@@ -417,3 +405,51 @@ internal fun PlanFulfilSheet(
 }
 
 private const val DISABLED_ALPHA = 0.6f
+
+@Composable
+private fun planWords() =
+    mapOf(
+        ToothPlanState.None to tr(Res.string.dentalPlanLegendNone),
+        ToothPlanState.Planned to tr(Res.string.dentalPlanLegendPlanned),
+        ToothPlanState.Partial to tr(Res.string.dentalPlanLegendPartial),
+        ToothPlanState.Done to tr(Res.string.dentalPlanLegendCompleted),
+    )
+
+/** The plan chart's legend (board `DaVisit` `.dr-teeth-legend`, plan mode). */
+@Composable
+private fun PlanLegend(words: Map<ToothPlanState, String>) =
+    Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10)) {
+        listOf(
+            Triple(ShifaColors.Bg.Surface, ShifaColors.Border.Default, ToothPlanState.None),
+            Triple(ShifaColors.Bg.InfoSubtle, ShifaColors.Icon.Info, ToothPlanState.Planned),
+            Triple(ShifaColors.Bg.Surface, ShifaColors.Border.Brand, ToothPlanState.Partial),
+            Triple(ShifaColors.Interactive.Primary, ShifaColors.Interactive.Primary, ToothPlanState.Done),
+        ).forEach { (fill, edge, state) -> Legend(fill, edge, words.getValue(state)) }
+    }
+
+/**
+ * A plan's teeth, read only (DENTAL-04, Flutter's `DentalPlanReadonlyView`, for the plan detail TP-03 and the wizard's
+ * review): its progress, the chart coloured by the lines' states and the legend.
+ */
+@Composable
+internal fun DentalPlanReadonly(detail: shifa.doctor.data.model.TreatmentPlanDetail) =
+    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S10)) {
+        val words = planWords()
+        val lines = detail.lines.filter { it.status != shifa.doctor.data.model.LineStatus.Cancelled }
+        val counts = lines.mapNotNull { it.tooth }.groupingBy { it }.eachCount()
+        Text(
+            tr(Res.string.dentalPlanProgress, detail.summary.linesCompletedCount, detail.summary.linesTotalCount),
+            style = ShifaTextStyles.caption(),
+            color = ShifaColors.Text.Secondary,
+        )
+        ToothMap(
+            detail.dentition,
+            emptyMap(),
+            states = planToothStates(lines) { it.status == shifa.doctor.data.model.LineStatus.Completed },
+            describe = { tooth, _, state ->
+                val count = counts[tooth] ?: 0
+                "${trPlural(Res.plurals.toothA11y, count, tooth, count)}, ${words[state ?: ToothPlanState.None]}"
+            },
+        )
+        PlanLegend(words)
+    }

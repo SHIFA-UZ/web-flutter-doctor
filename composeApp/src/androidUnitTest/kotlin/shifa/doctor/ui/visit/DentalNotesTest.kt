@@ -79,7 +79,11 @@ class DentalNotesTest {
         val s = opened().state.value
         assertThat(s.record.lines("16").single().title).isEqualTo("Filling")
         assertThat(s.discount).isEqualTo("5")
-        assertThat(s.services?.map { it.id }).containsExactly(3L, 2L, 1L).inOrder()
+        assertThat(
+            s.services?.map {
+                it.key
+            },
+        ).containsExactly("doctor-service:3", "doctor-service:2", "doctor-service:1").inOrder()
         assertThat(puts()).isEmpty()
     }
 

@@ -515,3 +515,44 @@ against dev's OpenAPI: `GET /treatment-plans…`, `…/detail`, `…/fulfillment
     - End ran Applying treatment plan → Recording payment → Completing → Saving summary.
     - The summary showed the plan (paid 1 000 000 → 1 500 000), the two lines and the payment.
     - Demo mode is off again.
+
+## DENTAL-04 · Dental plan editor and read-only plan chart
+
+Built 2026-11-05. Spec 05 §4.4, ticket DENTAL-04; Flutter's `dental_plan_editor_panel.dart`,
+`dental_plan_readonly_view.dart`, `test/dental_plan_editor_test.dart`. The hosts come later: the plan wizard (TP-04)
+holds the editor, and the plan detail (TP-03) shows the read-only chart. Here they are built and tested on their own.
+
+- **Editor** (`PlanEditor`, drawn by `DentalPanel(editor = true)`): the same free-mode record as the visit (DENTAL-02):
+  dentition, tooth map, services sheet, general services, discount, notes, totals. It uses the clinic's plan services
+  (`GET /treatment-plans/plan-services`, checked on dev), and its labels are "Plan procedures on the teeth chart…",
+  "Plan notes" and "Planned total". It keeps the record until the host saves it, which takes:
+  - `documentation()`: the `dentalPlanDocumentation` JSON (version 2).
+  - `lines()`: the plan lines (`PlanLineRequest`).
+- **Shared code instead of copies:**
+  - The visit record (`DentalNotes`) and the plan editor share `DentalDraft`: edit, add, remove, dentition, discount
+    and notes. The visit adds loading and autosave.
+  - The services sheet now takes `CatalogEntry`s (the doctor's services or the plan services).
+  - The plan's tooth states are one function, `planToothStates`, used by the visit (DENTAL-03) and the read-only
+    chart.
+- **Lines** (`DentalRecord.planLines`, Flutter's `buildLineRequests`):
+  - Teeth in chart order, general last. Each line is `{fdi, dentition, source: PLAN_WIZARD}` (no `fdi` for a general
+    line), quantity 1, PLANNED.
+  - The catalogue item comes from the line, or else from its key in the plan services.
+  - The discount is spread in proportion, with the rounding on the last line. What a line can't take (its price is
+    less than its share) goes to the lines with room.
+  - Fixes Flutter's: untitled lines are left out before spreading (Flutter could drop the remainder with them); each
+    currency gets its own share (blank counts as UZS); no line gets more discount than its price.
+  - One rounding for the plan total shown and the lines: the discount rounds a half up and the total is the subtotal
+    less it. Flutter rounded the two differently, so the total shown could be one unit off the charge.
+- **Read-only chart** (`DentalPlanReadonly`): the progress "1/4 planned items completed", the chart coloured by the
+  lines' states (no count badges, no taps; the screen reader says each tooth's count and state) and the legend.
+- **Search:** above 8 services the services sheet has a search by title or code, with "No services match your
+  search.".
+- **Not built:** Flutter's wide two-column picker; the group chips serve instead. The board's faint halo around a selected tooth: the selected tooth has the focus border only.
+- **Tests:**
+  - `PlanEditorTest`: Flutter's fixture (two lines with tooth and catalogue item, 30 000 discount in all); spreading
+    per currency within prices, chart order, untitled lines; a clamped line's leftover, blank currency, totals equal
+    to the lines; the editor's services, record JSON and lines; the shared
+    tooth states.
+  - `DemoBackendTest`: plan services.
+  - Screenshots: `Plan_editor`, `Plan_readonly`.

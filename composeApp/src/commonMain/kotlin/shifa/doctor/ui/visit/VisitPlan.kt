@@ -18,12 +18,12 @@ import shifa.doctor.data.finance.RecordPayment
 import shifa.doctor.data.finance.financeRepository
 import shifa.doctor.data.forms.DentalChartCodec
 import shifa.doctor.data.model.ApiException
-import shifa.doctor.data.model.DentalRecord
 import shifa.doctor.data.model.FulfillmentCandidate
 import shifa.doctor.data.model.LineStatus
 import shifa.doctor.data.model.PlanLine
 import shifa.doctor.data.model.TreatmentPlanDetail
 import shifa.doctor.data.model.TreatmentPlanSummary
+import shifa.doctor.data.model.dentition
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.data.treatmentplans.treatmentPlansRepository
 import shifa.doctor.generated.resources.Res
@@ -110,32 +110,18 @@ data class VisitPlanState(
             candidates.orEmpty().any { it.lineId == line.id }
 
     /** Each tooth's lines: all done → done, some → partly done, none → planned (ticks count as done). */
-    val toothStates: Map<String, ToothPlanState>
-        get() =
-            activeLines.filter { it.tooth != null }.groupBy { it.tooth!! }.mapValues { (_, lines) ->
-                val done = lines.count(::done)
-                when (done) {
-                    lines.size -> ToothPlanState.Done
-                    0 -> ToothPlanState.Planned
-                    else -> ToothPlanState.Partial
-                }
-            }
+    val toothStates: Map<String, ToothPlanState> get() = planToothStates(activeLines, ::done)
 
     val toothCounts: Map<String, Int>
         get() = activeLines.mapNotNull { it.tooth }.groupingBy { it }.eachCount()
 
     val dentition: shifa.doctor.data.forms.Dentition
-        get() =
-            DentalRecord.read(
-                detail?.dentalPlanDocumentation?.let(::parseOrNull),
-            )?.dentitionKind ?: shifa.doctor.data.forms.Dentition.Permanent
+        get() = detail?.dentition ?: shifa.doctor.data.forms.Dentition.Permanent
 
     val allDone: Boolean get() = activeLines.isNotEmpty() && activeLines.all { it.status == LineStatus.Completed }
 
     val progress: Pair<Int, Int>? get() = selected?.let { it.linesCompletedCount to it.linesTotalCount }
 }
-
-private fun parseOrNull(raw: String) = runCatching { shifa.doctor.data.api.apiJson.parseToJsonElement(raw) }.getOrNull()
 
 /**
  * The treatment plan in a visit (DENTAL-03, flows 05/08 and 05/09, board `DaVisit` treatment plan panel, plan mode and

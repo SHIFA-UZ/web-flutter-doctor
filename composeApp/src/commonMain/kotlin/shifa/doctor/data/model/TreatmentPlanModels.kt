@@ -178,3 +178,9 @@ data class FulfillmentCandidate(
 data class FulfillRequest(
     val lineIds: List<Long>,
 )
+
+/** The dentition the plan's dental record uses (permanent when it has none). */
+val TreatmentPlanDetail.dentition: shifa.doctor.data.forms.Dentition
+    get() =
+        DentalRecord.read(dentalPlanDocumentation?.let { runCatching { apiJson.parseToJsonElement(it) }.getOrNull() })
+            ?.dentitionKind ?: shifa.doctor.data.forms.Dentition.Permanent

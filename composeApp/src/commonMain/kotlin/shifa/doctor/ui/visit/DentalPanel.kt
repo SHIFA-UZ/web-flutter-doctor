@@ -31,10 +31,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.forms.DentalChartCodec
 import shifa.doctor.data.forms.Dentition
+import shifa.doctor.data.model.CatalogEntry
 import shifa.doctor.data.model.DentalRecord
-import shifa.doctor.data.model.DoctorService
 import shifa.doctor.data.model.percentText
-import shifa.doctor.data.model.toothLine
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.all
 import shifa.doctor.generated.resources.dentalClinicalNotes
@@ -49,6 +48,10 @@ import shifa.doctor.generated.resources.dentalLegendAdded
 import shifa.doctor.generated.resources.dentalLegendNone
 import shifa.doctor.generated.resources.dentalLineItems
 import shifa.doctor.generated.resources.dentalNoServices
+import shifa.doctor.generated.resources.dentalPlanEditorIntro
+import shifa.doctor.generated.resources.dentalPlanEditorNoSearchMatches
+import shifa.doctor.generated.resources.dentalPlanEditorNotes
+import shifa.doctor.generated.resources.dentalPlanEditorTotal
 import shifa.doctor.generated.resources.dentalSelectedServices
 import shifa.doctor.generated.resources.dentalSubtotal
 import shifa.doctor.generated.resources.dentalToothServices
@@ -60,6 +63,7 @@ import shifa.doctor.generated.resources.ic_x_16
 import shifa.doctor.generated.resources.removeService
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.save
+import shifa.doctor.generated.resources.search
 import shifa.doctor.generated.resources.toothA11y
 import shifa.doctor.generated.resources.toothMap
 import shifa.doctor.ui.emailcode.codeBanner
@@ -76,6 +80,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.TabItem
 import shifa.doctor.utils.Money
@@ -89,7 +94,7 @@ class DentalActions(
     val edit: ((DentalRecord) -> DentalRecord) -> Unit = {},
     val dentition: (Dentition) -> Unit = {},
     val discount: (String) -> Unit = {},
-    val add: (String, DoctorService) -> Unit = { _, _ -> },
+    val add: (String, CatalogEntry) -> Unit = { _, _ -> },
     val remove: (String, Int) -> Unit = { _, _ -> },
     val retryServices: () -> Unit = {},
 )
@@ -112,10 +117,16 @@ internal fun ColumnScope.DentalPanel(
     // DENTAL-03: with a treatment plan chosen, the chart shows the plan (ticks) and the finances replace the totals.
     plan: VisitPlanState = VisitPlanState(),
     planActions: PlanActions = PlanActions(),
+    // DENTAL-04: a treatment plan's record (the plan editor): its intro, "Plan notes" and "Planned total".
+    editor: Boolean = false,
 ) {
     val planMode = plan.selectedId != null
     if (!planMode) {
-        Text(tr(Res.string.dentalDocIntroFree), style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
+        Text(
+            tr(if (editor) Res.string.dentalPlanEditorIntro else Res.string.dentalDocIntroFree),
+            style = ShifaTextStyles.caption(),
+            color = ShifaColors.Text.Secondary,
+        )
     }
     state.loadError?.let {
         codeBanner(it) {}?.invoke()
@@ -130,14 +141,14 @@ internal fun ColumnScope.DentalPanel(
     SpeechOrPlainField(
         state.record.notes,
         { v -> actions.edit { it.copy(notes = v) } },
-        tr(Res.string.dentalClinicalNotes),
+        tr(if (editor) Res.string.dentalPlanEditorNotes else Res.string.dentalClinicalNotes),
         "dental-notes",
         { t -> actions.edit { it.copy(notes = appendTranscript(it.notes, t)) } },
         Modifier.fillMaxWidth(),
         multiline = true,
         areaMinHeight = ShifaSize.S56,
     )
-    if (planMode) PlanFinance(plan, planActions) else Totals(state.record)
+    if (planMode) PlanFinance(plan, planActions) else Totals(state.record, editor)
     state.saveError?.let { codeBanner(it) {}?.invoke() }
 }
 
@@ -210,29 +221,31 @@ private fun ColumnScope.FreeChart(
 
 /** Free mode's totals per currency: subtotal and lines, the discount, the total due. */
 @Composable
-private fun Totals(record: DentalRecord) =
-    Column(
-        Modifier.fillMaxWidth().background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd).padding(ShifaSize.S12),
-        verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
-    ) {
-        Text(
-            "${tr(
-                Res.string.dentalSubtotal,
-            )}: ${sums(record.subtotals)} · ${record.lineCount} ${tr(Res.string.dentalLineItems)}",
-            style = ShifaTextStyles.metaSmall(),
-            color = ShifaColors.Text.Primary,
-        )
-        Text(
-            "${tr(Res.string.dentalDiscount)}: ${percentText(record.discountPercent.coerceIn(0.0, 100.0))}%",
-            style = ShifaTextStyles.metaSmall(),
-            color = ShifaColors.Text.Primary,
-        )
-        Text(
-            "${tr(Res.string.dentalTotal)}: ${sums(record.totals)}",
-            style = ShifaTextStyles.buttonCompact(),
-            color = ShifaColors.Text.Primary,
-        )
-    }
+private fun Totals(
+    record: DentalRecord,
+    editor: Boolean,
+) = Column(
+    Modifier.fillMaxWidth().background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd).padding(ShifaSize.S12),
+    verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
+) {
+    Text(
+        "${tr(
+            Res.string.dentalSubtotal,
+        )}: ${sums(record.subtotals)} · ${record.lineCount} ${tr(Res.string.dentalLineItems)}",
+        style = ShifaTextStyles.metaSmall(),
+        color = ShifaColors.Text.Primary,
+    )
+    Text(
+        "${tr(Res.string.dentalDiscount)}: ${percentText(record.discountPercent.coerceIn(0.0, 100.0))}%",
+        style = ShifaTextStyles.metaSmall(),
+        color = ShifaColors.Text.Primary,
+    )
+    Text(
+        "${tr(if (editor) Res.string.dentalPlanEditorTotal else Res.string.dentalTotal)}: ${sums(record.totals)}",
+        style = ShifaTextStyles.buttonCompact(),
+        color = ShifaColors.Text.Primary,
+    )
+}
 
 @Composable
 internal fun Legend(
@@ -262,6 +275,7 @@ internal fun DentalServicesSheet(
     val general = tooth == DentalChartCodec.GENERAL_KEY
     val lines = state.record.lines(tooth)
     var group by remember { mutableStateOf<String?>(null) }
+    var query by remember { mutableStateOf("") }
     ShifaDialogSheet(
         if (general) tr(Res.string.dentalGeneralServices) else "${tr(Res.string.dentalToothServices)} $tooth",
         tr(Res.string.save),
@@ -316,6 +330,21 @@ internal fun DentalServicesSheet(
                     color = ShifaColors.Text.Secondary,
                 )
             else -> {
+                // A long catalogue gets a search (05 §4.4: more than 8), by title or code.
+                if (services.size > SEARCH_FROM) {
+                    ShifaSearchField(query, { query = it }, tr(Res.string.search), Modifier.fillMaxWidth())
+                }
+                val q = query.trim().lowercase()
+                val shown =
+                    services.filter {
+                        (group == null || it.groupName == group) &&
+                            (
+                                q.isEmpty() ||
+                                    it.title.lowercase().contains(
+                                        q,
+                                    ) || it.code?.lowercase()?.contains(q) == true
+                            )
+                    }
                 val groups = services.mapNotNull { it.groupName?.takeIf(String::isNotBlank) }.distinct()
                 if (groups.isNotEmpty()) {
                     Row(
@@ -331,8 +360,15 @@ internal fun DentalServicesSheet(
                     Modifier.heightIn(max = ShifaSize.S240).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
                 ) {
-                    services.filter { group == null || it.groupName == group }.forEach { s ->
-                        val line = s.toothLine()
+                    if (shown.isEmpty()) {
+                        Text(
+                            tr(Res.string.dentalPlanEditorNoSearchMatches),
+                            style = ShifaTextStyles.metaSmall(),
+                            color = ShifaColors.Text.Secondary,
+                        )
+                    }
+                    shown.forEach { s ->
+                        val line = s.line
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -358,3 +394,5 @@ internal fun DentalServicesSheet(
         }
     }
 }
+
+private const val SEARCH_FROM = 8

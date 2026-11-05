@@ -40,6 +40,12 @@ class VisitScreenshotTest {
     fun planFulfil() = captureRoboImage("screenshots/Plan_fulfil.png") { PlanFulfilSheetPreview() }
 
     @Test
+    fun planEditor() = captureRoboImage("screenshots/Plan_editor.png") { PlanEditorPreview() }
+
+    @Test
+    fun planReadonly() = captureRoboImage("screenshots/Plan_readonly.png") { DentalPlanReadonlyPreview() }
+
+    @Test
     fun photoSource() = captureRoboImage("screenshots/Visit_photoSource.png") { PhotoSourcePreview() }
 
     @Test

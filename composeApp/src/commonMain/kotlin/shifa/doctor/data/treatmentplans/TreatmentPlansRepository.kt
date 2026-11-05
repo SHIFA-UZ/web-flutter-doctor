@@ -15,6 +15,7 @@ import shifa.doctor.data.api.rows
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.FulfillRequest
 import shifa.doctor.data.model.FulfillmentCandidate
+import shifa.doctor.data.model.PlanServiceOption
 import shifa.doctor.data.model.TreatmentPlanDetail
 import shifa.doctor.data.model.TreatmentPlanSummary
 
@@ -42,6 +43,18 @@ class TreatmentPlansRepository(
                 planKind?.let { parameter("planKind", it) }
             }
         }.map { it.rows(TreatmentPlanSummary.serializer(), "treatment plans") }
+
+    /** The services a plan can use in a clinic (`GET /treatment-plans/plan-services`), for the plan editor. */
+    suspend fun planServices(
+        clinicId: Long,
+        doctorIds: List<Long> = emptyList(),
+    ): Result<List<PlanServiceOption>> =
+        apiCall<List<JsonElement>> {
+            client().get(ApiConfig.Endpoints.PLAN_SERVICES) {
+                parameter("clinicId", clinicId)
+                if (doctorIds.isNotEmpty()) parameter("doctorIds", doctorIds.joinToString(","))
+            }
+        }.map { it.rows(PlanServiceOption.serializer(), "plan services") }
 
     suspend fun detail(planId: Long): Result<TreatmentPlanDetail> =
         apiCall<JsonElement> { client().get(ApiConfig.Endpoints.treatmentPlanDetail(planId)) }
