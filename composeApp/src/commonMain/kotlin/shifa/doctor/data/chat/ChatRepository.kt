@@ -20,6 +20,7 @@ import shifa.doctor.data.api.absoluteFileUrl
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.rows
+import shifa.doctor.data.api.usable
 import shifa.doctor.data.debug.BackendChoice
 import shifa.doctor.data.model.Conversation
 import shifa.doctor.data.model.ConversationDto
@@ -86,7 +87,7 @@ class ChatRepository(
                 contentType(ContentType.Application.Json)
                 setBody(StartConversationRequest(patientId, doctorId))
             }
-        }.mapCatching { Conversation.from(it, apiBase()) ?: error("conversation without an id") }
+        }.usable("conversation") { Conversation.from(it, apiBase()) }
 
     /** `POST /messages/conversations/{id}/read`; on success the shell's Chat badge reads its count again ([ChatReads]). */
     suspend fun markRead(id: Long): Result<Unit> =

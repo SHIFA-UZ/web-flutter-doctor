@@ -149,6 +149,7 @@ class DemoBackend(
 
     private val chat = DemoChat()
     private val notifications = DemoNotifications()
+    private val tasks = DemoTasks()
 
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
 
@@ -228,6 +229,14 @@ class DemoBackend(
             body,
         )
             ?.let { return ok(it) }
+        // TASK-01: the demo remote-care tasks (list, one, check-ins, templates, create, cancel).
+        tasks
+            .handle(
+                request.method.value,
+                path,
+                request.url.parameters.names().associateWith { request.url.parameters[it].orEmpty() },
+                body,
+            )?.let { return ok(it) }
         // NOTIF-01: the demo inbox (its unread count included).
         notifications
             .handle(
@@ -235,6 +244,17 @@ class DemoBackend(
                 path,
                 request.url.parameters.names().associateWith { request.url.parameters[it].orEmpty() },
             )?.let { return ok(it) }
+        // A chat, inbox or task path the demo doesn't know (an id it never made): a local 404. Forwarding it would show
+        // real patient data in demo mode.
+        if (DEMO_OWNED.any {
+                path == it ||
+                    path.startsWith(
+                        "$it/",
+                    )
+            }
+        ) {
+            return fail(HttpStatusCode.NotFound, "DEMO_NOT_FOUND")
+        }
         return when {
             get && path == Endpoints.DOCTOR_ME -> ok(doctorMe())
             get && path == Endpoints.PUBLIC_CONFIG -> ok(publicConfig(bootGate()))
@@ -275,7 +295,6 @@ class DemoBackend(
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
             get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
             // Fixed counts so the badges show; the lists behind them come with their features.
-            get && path == Endpoints.TASKS -> ok(apiJson.parseToJsonElement("[]"))
             // Services kept in memory (SVC-01); the location list until LOC-1.
             get && path == Endpoints.DOCTOR_SERVICES -> ok(JsonArray(services))
             request.method == HttpMethod.Post && path == Endpoints.DOCTOR_SERVICES -> saveService(null, body)
@@ -1597,3 +1616,6 @@ private const val DEMO_CLINICAL =
     "occlusion":[{"chipId":"occ.norm","angleClass":"I","icdHint":"K07.2","labels":{"ru":"Ортогнатический прикус","uz":"Ortognatik tishlam","en":"Orthognathic occlusion"},"variables":[],"priority":10}],
     "shared":[{"templateId":"mucosa.A","type":"mucosa","field":"oral_cavity","labels":{"ru":"Абсолютная норма","uz":"Mutloq me'yor","en":"Normal"},"priority":10,"correlates":[]},
      {"templateId":"xray.caries","type":"xray","field":"xray","labels":{"ru":"Очаг в эмали","uz":"Emalda o'choq","en":"Enamel radiolucency"},"priority":50,"correlates":["grp.caries"]}]}"""
+
+// The paths the in-memory demos (chat, inbox, tasks) own entirely.
+private val DEMO_OWNED = listOf("messages", "notifications", "tasks")

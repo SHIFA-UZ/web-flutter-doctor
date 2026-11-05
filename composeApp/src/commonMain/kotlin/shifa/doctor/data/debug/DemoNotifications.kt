@@ -143,7 +143,7 @@ internal class DemoNotifications(
                 3.hours,
                 "Task completed",
                 "$bekzod completed \"Blood pressure diary\".",
-                mapOf("taskId" to 1, "patientId" to 14, "patientName" to bekzod),
+                mapOf("taskId" to 501, "patientId" to 14, "patientName" to bekzod),
             ),
             Row(
                 505,

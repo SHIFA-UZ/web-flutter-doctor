@@ -162,6 +162,15 @@ object ApiConfig {
 
         fun notificationRead(id: Long) = "notifications/$id/read"
 
+        // TASK-01 (15 §2.10; `TASKS` is above).
+        const val TASK_TEMPLATES = "tasks/templates"
+
+        fun task(id: Long) = "tasks/$id"
+
+        fun taskCheckIns(id: Long) = "tasks/$id/check-ins"
+
+        fun taskCancel(id: Long) = "tasks/$id/cancel"
+
         // ANALYTICS-01 (15 §2.3).
         const val ANALYTICS_OVERVIEW = "doctor/analytics/overview"
         const val ANALYTICS_TREND = "doctor/analytics/appointments-trend"

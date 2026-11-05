@@ -680,4 +680,43 @@ class DemoBackendTest {
             assertThat(count()).isEqualTo("0")
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the demo tasks list, filter, open, create and cancel locally`() =
+        runTest {
+            val repo = shifa.doctor.data.tasks.TasksRepository({ client })
+            assertThat(repo.tasks().getOrThrow().map { it.id }).containsExactly(501L, 502L, 503L).inOrder()
+            assertThat(repo.tasks(status = shifa.doctor.data.model.TaskStatus.Active).getOrThrow()).hasSize(2)
+            assertThat(repo.checkIns(501).getOrThrow()).hasSize(6)
+            assertThat(repo.templates().getOrThrow()).hasSize(2)
+            val made =
+                repo
+                    .create(
+                        shifa.doctor.data.model.CreateTaskRequest(
+                            13,
+                            "Weight",
+                            "VITAL",
+                            1,
+                            "2026-11-06",
+                            "NUMERIC",
+                            false,
+                            startTime = "09:00",
+                        ),
+                    ).getOrThrow()
+            assertThat(made.patientName).isEqualTo("Malika Tursunova")
+            assertThat(repo.tasks(patientId = 13).getOrThrow().map { it.id }).containsExactly(made.id)
+            assertThat(repo.cancel(made.id).getOrThrow().status).isEqualTo(shifa.doctor.data.model.TaskStatus.Cancelled)
+            // An id the demo never made answers 404 here; it never reaches the real backend (real patient data).
+            assertThat(
+                repo.task(999).exceptionOrNull(),
+            ).isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            assertThat(
+                repo.checkIns(999).exceptionOrNull(),
+            ).isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            val chat = shifa.doctor.data.chat.ChatRepository({ client }, { ApiConfig.BASE_URL })
+            assertThat(
+                chat.thread(999).exceptionOrNull(),
+            ).isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            assertThat(forwarded).isEmpty()
+        }
 }
