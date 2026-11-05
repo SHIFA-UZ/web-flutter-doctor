@@ -342,7 +342,7 @@ Your calls / open points from M4:
 - **Dev facts:** a locked document's download answers 404, not 403; the backend sets `phone` from `phones`; an empty
   string clears a patient field.
 
-## M5 · Appointments, scribe, video (in progress)
+## M5 · Appointments, scribe, dental, video (done)
 
 | Ticket | Commit | What it is |
 |---|---|---|
@@ -367,6 +367,8 @@ Your calls / open points from M4:
 | DENTAL-04 | `642cedc` | The dental plan editor (the visit's record UI and draft reused) and plan lines with the discount spread per currency; read-only plan chart (hosts in M11) |
 | VIDEO-01 | `e210617` | The Daily room token and the call client on both platforms (the patient app's, copied; the iOS app builds with Daily's Swift package) |
 | VIDEO-02 + VIDEO-03 | `3ef8cfe` | The video visit: pre-join page, the call on top of the workspace, leave/rejoin, End leaves the call first; no waiting room (D-07) |
+| PDF-02 | `8992700` | Summary PDF content tests (general, dental, plan, photos, Russian) and a golden of the full layout |
+| Follow-up (05/14) | `0e650c6` | Book follow-up from the ended visit: the slot picker, then booking with the patient pre-filled |
 
 Checked on the Android emulator in demo mode: start a visit from the calendar, type and dictate notes (the emulator's
 microphone records silence; the demo answers with a fixed sentence), ask for the signature (signed 15 s later), record
@@ -389,7 +391,9 @@ Notes from M5:
 - **Backend facts:** the doctor's appointment detail has no video flag (only the patient side has it); notes are one
   manual note per visit, updated, and blank text is ignored, so notes can't be emptied; a second scribe recording for a
   visit is accepted and ignored.
-- **Left for their tickets:** the PDF goldens (PDF-02), follow-up booking.
+- **M5 is done.** Not built inside it, by decision or for later: the waiting room (D-07), the visit facts AI panel,
+  the follow-up's quick picks and flag-only mode, a "Record now" plan payment, extra lines outside a plan, and the
+  plan wizard and plan detail that host DENTAL-04 (M11).
 - **Video not run live:** a real call needs a dev video visit inside its window (minting a token creates a Daily room,
   which can't be undone there). Everything builds on both platforms, including the whole iOS app with Daily.
 - **Backend:** dev has no treatment plans, so plan ticks and payments ran in demo mode only. A plan payment has no
