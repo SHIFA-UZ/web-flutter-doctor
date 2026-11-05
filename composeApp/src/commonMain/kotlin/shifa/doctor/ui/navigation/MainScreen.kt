@@ -139,6 +139,7 @@ import shifa.doctor.ui.tasks.TaskDetailScreen
 import shifa.doctor.ui.tasks.TasksScreen
 import shifa.doctor.ui.tasks.TemplatesScreen
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -259,7 +260,12 @@ fun MainScreenContent(
     state: ShellUiState,
     actions: ShellActions,
     // Shifa Intelligence over the tab (INTEL-02); previews pass its stateless content (its chats are in secure storage).
-    intelligence: @Composable () -> Unit = { IntelligenceScreen(onLeave = actions.leaveIntelligence) },
+    intelligence: @Composable () -> Unit = {
+        IntelligenceScreen(
+            onLeave = actions.leaveIntelligence,
+            bottomInset = ShifaSpacing.Inset.Md + ShifaDimens.FabDockedClear,
+        )
+    },
 ) {
     Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
         Column(Modifier.fillMaxSize()) {

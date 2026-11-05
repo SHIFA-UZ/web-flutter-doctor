@@ -119,6 +119,7 @@
     <string name="aiRiskDetected">AI risk detected</string>
     <string name="aiSuggestedDiagnoses">Suggested diagnoses (AI)</string>
     <string name="aiSummary">AI summary</string>
+    <string name="aiUnavailable">Shifa is unavailable right now. Try again in a moment.</string>
     <string name="aiWillRespondHere">AI will respond here…</string>
     <string name="aids">AIDS</string>
     <string name="all">All</string>

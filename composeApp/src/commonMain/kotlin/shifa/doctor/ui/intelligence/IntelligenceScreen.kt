@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +34,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -126,15 +129,27 @@ class IntelligenceActions(
 @Composable
 fun IntelligenceScreen(
     onLeave: () -> Unit,
+    // Room for the shell's floating tab bar under the composer.
+    bottomInset: Dp? = null,
     viewModel: IntelligenceViewModel = viewModel { IntelligenceViewModel() },
-    body: @Composable ColumnScope.(IntelligenceUiState) -> Unit = {},
+    thread: ThreadViewModel = viewModel { ThreadViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val turn by thread.state.collectAsStateWithLifecycle()
+    // A running reply stops when the open chat changes (stopped first, below, so a finishing turn can't reopen the old
+    // chat) and when Intelligence leaves the screen (Flutter kept the stream open).
+    LaunchedEffect(state.active?.id) { thread.stop() }
+    DisposableEffect(thread) { onDispose { thread.stop() } }
+    LaunchedEffect(turn.busy) { viewModel.busy(turn.busy) }
+    val threadActions = ThreadActions(thread::draft, { thread.send() }, thread::retry)
     LifecycleResumeEffect(viewModel) {
         viewModel.load()
         onPauseOrDispose {}
     }
-    val back = { if (viewModel.back()) onLeave() }
+    val back = {
+        if (state.conversationOpen || turn.asking != null) thread.stop()
+        if (viewModel.back()) onLeave()
+    }
     BackHandler(onBack = back)
     val share = rememberFileShare()
     IntelligenceContent(
@@ -142,15 +157,24 @@ fun IntelligenceScreen(
         IntelligenceActions(
             back = back,
             history = viewModel::history,
-            newConversation = viewModel::newConversation,
+            newConversation = {
+                thread.stop()
+                viewModel.newConversation()
+            },
             query = viewModel::query,
-            select = viewModel::select,
+            select = {
+                if (it != state.active?.id) thread.stop()
+                viewModel.select(it)
+            },
             menu = viewModel::menu,
             askRename = viewModel::askRename,
             renameText = viewModel::renameText,
             rename = viewModel::rename,
             askDelete = viewModel::askDelete,
-            delete = viewModel::delete,
+            delete = {
+                if (state.deleting?.id == state.active?.id) thread.stop()
+                viewModel.delete()
+            },
             export = {
                 viewModel.export()?.let {
                     if (!share(
@@ -165,8 +189,21 @@ fun IntelligenceScreen(
             },
             dismissBanner = viewModel::dismissBanner,
         ),
-        body = body,
-    )
+    ) { s ->
+        val chat = s.active
+        Box(Modifier.weight(1f)) {
+            if (s.conversationOpen || turn.asking != null) {
+                ThreadList(
+                    chat,
+                    turn,
+                    threadActions,
+                    Modifier.fillMaxSize(),
+                    currentInstant(),
+                ) { tool, card -> ToolCard(tool, card) }
+            }
+        }
+        Composer(chat, turn, threadActions, bottomInset)
+    }
 }
 
 @Composable

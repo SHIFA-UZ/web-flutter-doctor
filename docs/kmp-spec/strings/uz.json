@@ -2700,5 +2700,6 @@
   "markAsRead": "O'qilgan deb belgilash",
   "allNotifications": "Barcha bildirishnomalar",
   "checkInsOf": "{total} tadan {done} ta belgilash",
-  "moreUnreadInInbox": "Boshqa o'qilmagan bildirishnomalar kiruvchilarda."
+  "moreUnreadInInbox": "Boshqa o'qilmagan bildirishnomalar kiruvchilarda.",
+  "aiUnavailable": "Shifa hozir mavjud emas. Birozdan keyin qayta urinib ko'ring."
 }

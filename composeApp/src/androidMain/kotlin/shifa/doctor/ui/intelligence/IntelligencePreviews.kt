@@ -11,6 +11,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import shifa.doctor.data.intelligence.ChatMessage
 import shifa.doctor.data.intelligence.ChatSession
 import shifa.doctor.data.intelligence.ChatStoreState
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.intelTookTooLong
 import shifa.doctor.ui.theme.PreviewTheme
 
 internal val previewNow = Instant.parse("2026-11-05T09:12:00Z")
@@ -118,5 +120,100 @@ internal fun IntelligenceHistoryEmptyPreview() =
                 )
             }
             HistoryTray(IntelligenceUiState(previewStore, query = "zzz"), IntelligenceActions(), previewNow)
+        }
+    }
+
+private val threadChat =
+    ChatSession(
+        "t",
+        ChatSession.UNTITLED,
+        previewNow,
+        previewNow,
+        listOf(
+            ChatMessage(ChatMessage.ROLE_USER, "Find Jasur Karimov", Instant.parse("2026-11-04T15:02:00Z")),
+            ChatMessage(
+                ChatMessage.ROLE_ASSISTANT,
+                "I found **Jasur Karimov**, 48.\n- Last visit: 21 October\n- Allergy: lidocaine",
+                Instant.parse("2026-11-04T15:02:10Z"),
+                "search_patients",
+                JsonObject(
+                    mapOf(
+                        "cardType" to JsonPrimitive("patient_search"),
+                        "spokenHint" to JsonPrimitive("One patient matched."),
+                        "matches" to
+                            JsonArray(
+                                listOf(
+                                    JsonObject(
+                                        mapOf(
+                                            "patientId" to JsonPrimitive(7),
+                                            "patientName" to JsonPrimitive("Jasur Karimov"),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+@Composable
+private fun ThreadFrame(turn: ThreadUiState) =
+    IntelligenceContent(
+        IntelligenceUiState(ChatStoreState(listOf(threadChat), "t", loaded = true)),
+        IntelligenceActions(),
+        previewNow,
+    ) {
+        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
+            ThreadList(
+                threadChat,
+                turn,
+                ThreadActions(),
+                androidx.compose.ui.Modifier,
+                previewNow,
+            ) { tool, card -> ToolCard(tool, card) }
+        }
+        Composer(threadChat, turn, ThreadActions())
+    }
+
+// INTEL-04: a saved turn (rendered reply, the card), a reply streaming in, the patient line, the composer.
+@Composable
+internal fun ThreadStreamingPreview() =
+    PreviewTheme {
+        ThreadFrame(
+            ThreadUiState(
+                asking = "Book him tomorrow at 10:00",
+                askedAt = previewNow,
+                streaming = "Tomorrow at 10:00 is free. Shall I book",
+            ),
+        )
+    }
+
+// INTEL-04: "Reviewing…" before the first token; then a failed turn with Retry and a typed draft.
+@Composable
+internal fun ThreadErrorPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column {
+            androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.height(shifa.doctor.ui.theme.ShifaSize.S120),
+            ) {
+                ThreadList(
+                    null,
+                    ThreadUiState(asking = "What is my schedule today?", askedAt = previewNow),
+                    ThreadActions(),
+                    now = previewNow,
+                )
+            }
+            ThreadFrame(
+                ThreadUiState(
+                    asking = "What is my schedule today?",
+                    askedAt = previewNow,
+                    error =
+                        shifa.doctor.ui.emailcode.CodeBanner(
+                            Res.string.intelTookTooLong,
+                        ),
+                    draft = "and tomorrow?",
+                ),
+            )
         }
     }

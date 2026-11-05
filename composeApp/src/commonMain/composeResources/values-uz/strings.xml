@@ -119,6 +119,7 @@
     <string name="aiRiskDetected">AI xavf aniqlandi</string>
     <string name="aiSuggestedDiagnoses">Taklif etilgan tashxislar (AI)</string>
     <string name="aiSummary">AI xulosa</string>
+    <string name="aiUnavailable">Shifa hozir mavjud emas. Birozdan keyin qayta urinib ko'ring.</string>
     <string name="aiWillRespondHere">AI bu yerda javob beradi…</string>
     <string name="aids">OITS</string>
     <string name="all">Barchasi</string>

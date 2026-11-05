@@ -19,4 +19,13 @@ class IntelligenceScreenshotTest {
         captureRoboImage(
             "screenshots/Intelligence_historyEmpty.png",
         ) { IntelligenceHistoryEmptyPreview() }
+
+    @Test
+    fun threadStreaming() =
+        captureRoboImage(
+            "screenshots/Intelligence_threadStreaming.png",
+        ) { ThreadStreamingPreview() }
+
+    @Test
+    fun threadError() = captureRoboImage("screenshots/Intelligence_threadError.png") { ThreadErrorPreview() }
 }

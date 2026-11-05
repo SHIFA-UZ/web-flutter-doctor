@@ -24,8 +24,8 @@ import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiRateLimit
+import shifa.doctor.generated.resources.aiUnavailable
 import shifa.doctor.generated.resources.intelTookTooLong
-import shifa.doctor.generated.resources.patientBriefingError
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatientBriefingViewModelTest {
@@ -150,7 +150,8 @@ class PatientBriefingViewModelTest {
         classToTest.copied()
         classToTest.generate()
         settle { classToTest.state.value.error != null }
-        assertThat(classToTest.state.value.error!!.text).isEqualTo(Res.string.patientBriefingError)
+        // The AI service down says so (AI_UNAVAILABLE); other failures say the briefing couldn't be made.
+        assertThat(classToTest.state.value.error!!.text).isEqualTo(Res.string.aiUnavailable)
         assertThat(classToTest.state.value.briefing).isNotNull()
         assertThat(classToTest.state.value.copied).isFalse()
     }

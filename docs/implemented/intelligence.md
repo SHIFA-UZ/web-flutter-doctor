@@ -196,3 +196,44 @@ sheet, options menu, rename and delete dialogs).
 - **Tests:** `IntelligenceViewModelTest` (welcome on cold start, back to the welcome then the clinic, New conversation
   reusing the empty chat, search over messages, select, rename rules keeping the time, delete of the open chat, export
   name and format, the empty export); screenshots `Intelligence_history`, `Intelligence_historyEmpty`.
+
+## INTEL-04 · Chat thread and composer
+
+Built 2026-11-05 (before INTEL-03, so the welcome's starter cards send through a working thread). Spec 02 §3.3,
+§3.7, §4.4 (card slot), flow 03/03, ticket INTEL-04. Board `DaIntel` thread and footer.
+
+- **Turns** (`ui/intelligence/ThreadViewModel.kt`): the typed text (wake phrase stripped; blank or wake-only sends
+  nothing) goes to `/ai/morning/stream` with the chat's history, the focus patient as `patientId` and the chat id as
+  `conversationId`. The reply language is detected per turn (`ChatTitles.detectReplyLanguage`), else the chat's last,
+  starting from the app's. Tokens grow the reply, a tool event shows its card at once (often before the text). At the
+  end the question and the answer are saved to the chat (a booked card says its `statusMessage`; a reply without
+  words falls back to the card's `spokenHint`). A card with `booked: true` reads the calendar again.
+- **History contract** (`data/intelligence/ChatHistory.kt`): every stored message; assistant messages carry Flutter's
+  hidden tags (`<appointment_query>` JSON, `<appointment_list>` ids, `<appointment_action>` cancel token,
+  `<appointment_focus>` visit), byte for byte (the backend's prompt reads them; ids as Dart's `num.toInt()`). The focus patient is the newest clear
+  search match (or the match whose name words the doctor said in the last four messages), else the newest patient card.
+  `ChatHistoryTest` holds the golden JSON.
+- **Errors:** an empty reply with no card ("Shifa had nothing to say"), the daily limit, the 75 s turn running out
+  ("Shifa took too long to reply"), the AI service down (`AI_UNAVAILABLE`, new string `aiUnavailable`; the patient
+  briefing uses the same mapping, `data/ai/AiErrors.kt`), else "Something went wrong"; each with Retry, which asks the
+  same question again (a failed turn is never saved, so it can't appear twice).
+- **One turn at a time:** Send is off while a reply runs; another chat opened, the open one deleted, back, or
+  Intelligence leaving the screen stops the running turn first and closes its connection (Flutter left the stream
+  open); a turn whose chat is no longer open is never saved. The delete dialog asks to stop a running reply. The reply
+  language is kept per conversation (Codex review).
+- **Thread UI** (`ThreadScreen.kt`): the doctor's bubbles on the right (78 %, teal 15 %), timestamps "Today · 09:41" /
+  "Yesterday · 18:02" / "24 October 2026 · 08:15" on the phone's clock; Shifa's answers with the sparkle, rendered by
+  `AiResponseText` once finished (plain while streaming, so a half `**` doesn't flash); "Reviewing…" until the first
+  token; the list follows the newest content (to the end of a long reply) while the doctor's last scroll ended at the bottom.
+- **Cards:** every card is Flutter's default one for now ("Shifa Intelligence" + the spoken line, error or status);
+  INTEL-05…08 add the typed cards.
+- **Composer:** the board's chat bar: a 1–4 line field (no border of its own), Send (keyboard Send too), the patient
+  line above it ("Patient · Name", or "Patient"), the disclaimer under it. Inside the shell it sits above the floating
+  tab bar (it was hidden under it). The mic and dictation come with INTEL-09; TTS of replies with AI-08 / INTEL-09.
+- **Checked:** emulator, demo mode: typed "What is my schedule today" → the demo stream's reply and card, saved; back
+  to the welcome, History shows "Today's schedule", reopened restores it; "please fail now" → the error row with Retry.
+  No real AI call on dev (paid). iOS compiled, not run.
+- **Tests:** `ThreadViewModelTest` (stream, card, saved turn, wake phrase stripped, language and chat id in the
+  request; a booking's status line and calendar refresh, the next turn's history and focus patient; empty reply, limit
+  and Retry without duplicates; AI down; blank and wake-only send nothing), `ChatHistoryTest` (golden history JSON,
+  focus patient rules); screenshots `Intelligence_threadStreaming`, `Intelligence_threadError`.

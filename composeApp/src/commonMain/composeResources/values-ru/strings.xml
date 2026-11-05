@@ -119,6 +119,7 @@
     <string name="aiRiskDetected">AI: риск обнаружен</string>
     <string name="aiSuggestedDiagnoses">Предлагаемые диагнозы (AI)</string>
     <string name="aiSummary">AI-резюме</string>
+    <string name="aiUnavailable">Shifa сейчас недоступна. Попробуйте ещё раз чуть позже.</string>
     <string name="aiWillRespondHere">AI ответит здесь…</string>
     <string name="aids">СПИД</string>
     <string name="all">Все</string>

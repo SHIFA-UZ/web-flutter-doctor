@@ -2700,5 +2700,6 @@
   "markAsRead": "Mark as read",
   "allNotifications": "All notifications",
   "checkInsOf": "{done} of {total} check-ins",
-  "moreUnreadInInbox": "More unread notifications are in the inbox."
+  "moreUnreadInInbox": "More unread notifications are in the inbox.",
+  "aiUnavailable": "Shifa is unavailable right now. Try again in a moment."
 }

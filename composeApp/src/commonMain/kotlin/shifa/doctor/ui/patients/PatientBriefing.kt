@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import shifa.doctor.data.ai.AiRepository
 import shifa.doctor.data.ai.aiRepository
+import shifa.doctor.data.ai.toAiMessage
 import shifa.doctor.data.api.requestId
-import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.PatientBriefing
 import shifa.doctor.data.profile.ProfileRepository
@@ -38,9 +38,7 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
-import shifa.doctor.generated.resources.aiRateLimit
 import shifa.doctor.generated.resources.copied
-import shifa.doctor.generated.resources.intelTookTooLong
 import shifa.doctor.generated.resources.patientBriefingCopy
 import shifa.doctor.generated.resources.patientBriefingEmpty
 import shifa.doctor.generated.resources.patientBriefingError
@@ -113,13 +111,8 @@ class PatientBriefingViewModel(
                         else -> {
                             // A 403: the plan may have changed; the profile read hides the button if so.
                             if (e is ApiException.Forbidden) launch { profile.refresh() }
-                            val text =
-                                when {
-                                    e is ApiException.RateLimit -> Res.string.aiRateLimit
-                                    // The 60 s ran out: the model is slow, not the connection (flow 03/20 §4).
-                                    e is ApiException.NetworkError && e.timeout -> Res.string.intelTookTooLong
-                                    else -> e.toUserMessage(Res.string.patientBriefingError)
-                                }
+                            // The daily limit, the 60 s running out (flow 03/20 §4), the AI service down.
+                            val text = e.toAiMessage(Res.string.patientBriefingError)
                             _state.update {
                                 it.copy(
                                     loading = false,
