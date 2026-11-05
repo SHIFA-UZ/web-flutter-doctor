@@ -421,6 +421,29 @@ Not built in M6:
   §13) and the board's "Medical record" flags on the hero (not in the spec).
 - SMS usage and one range shared with Reports: with REPORT-01.
 
+## M7 · Chat (done)
+
+| Ticket | Commit | What it is |
+|---|---|---|
+| CHAT-01 | `d1dc860` | Chat models and repository (conversations, thread, start, read, send, search, upload), every attachment URL absolute, an in-memory demo chat |
+| CHAT-02 | `e408ac8` | The Chat tab's list: cards with unread pills, newest/oldest and unread-only filter, people search that opens or starts a conversation; read every 5 s only while in front |
+| CHAT-03 | `8287ff0` | The thread: practice-day dividers, board bubbles, ticks, links; optimistic send in order with "Not sent. Tap to retry"; read on open and on each new incoming; "New message" pill |
+| CHAT-04 | `5ec94c8` | Photos: attach sheet, camera or library, upload then send (a retry only re-sends), tiles, a full-screen viewer with 0.5–4× zoom |
+| CHAT-05 | `1200620` | Documents: pdf, doc, docx (jpg/png go as photos), document cards opened outside the app, "File unavailable" without a URL |
+| CHAT-06 | `a1ddde8` | Voice: the shared recorder pill with a counter, < 1 s refused, upload and send with the length; going to the background holds the clip for Send or Discard; one note plays at a time; a failed stream says so |
+| CHAT-07 | `bb44bd5` | Patient Overview "Quick Actions" (new appointment, send message, create document); Send message opens the patient's thread through the backend's find-or-create; the Chat badge drops on read |
+
+Every ticket had a Codex review, most two rounds; all findings were fixed. Chat writes were checked in demo mode only:
+the dev seed doctor has no conversations, and a started conversation can't be deleted. Reads and request shapes were
+checked against dev's `/v3/api-docs` and the backend code. iOS: compiles and links, nothing run.
+
+Not built in M7:
+- The chat push and its deep link (PUSH-03, at the end with the rest of push, D-15).
+- Home's hero "Message" (not on the `DaHome` hero; Flutter's caller is dead code) and "Message patient" on the
+  appointment detail (a NEW item in flow 07/07).
+- Seeking, speed and a 5-minute cap for voice notes; a loading state while a voice stream prepares; the list's
+  preview of an attachment shows the backend's `lastMessage` text (flow 07/01 open question).
+
 ## Decisions
 
 - **D-00:** one branch, `doc-app2.0`.
