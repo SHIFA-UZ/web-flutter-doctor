@@ -149,6 +149,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | HOME-02 Home screen skeleton | Done | Header (photo, name, Refresh, Search, bell with dot), practice-time note, Today/Notifications/Follow-up glance, pull-to-refresh keeping content; the hero follows (HOME-03). See home.md. |
 | HOME-03 Next patient, quick actions, timeline | Done | Hero card (Start 15 min before, Continue, Open chart, age, "In N min" ticker), empty/done/no-timezone cards, New appointment + Video Call chips (first free slot booked as video), today's timeline with folded earlier rows opening the Calendar panels. Prescription chip and medical-record flags not built. See home.md. |
 | HOME-05 Patient search | Done | Home's Search button opens a full-screen search (keyboard up): first 8 by name, then every match by name, id, display id or phone digits (the Patients tab's matcher, now `Patient.matches`); Search key opens a single match; a row opens the patient over the search. See home.md. |
+| ANALYTICS-01 Analytics data | Done | `AnalyticsRepository` (overview, trend with days 1–90, consultation types, engagement, SMS usage from/to), `AnalyticsRange` (inclusive, default last 7 practice days), demo handlers from the demo calendar. Verified on dev. See home.md. |
 
 ## Log
 
@@ -249,3 +250,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · HOME-02 · The Home tab: header, glance and refresh.
 - 2026-11-05 · HOME-03 · Home's next patient, quick actions and today's timeline.
 - 2026-11-05 · HOME-05 · Patient search from Home's header.
+- 2026-11-05 · ANALYTICS-01 · Analytics models, range and repository.

@@ -144,6 +144,13 @@ object ApiConfig {
         const val CHAT_UNREAD = "messages/unread-count"
         const val NOTIFICATIONS_UNREAD = "notifications/unread/count"
         const val TASKS = "tasks"
+
+        // ANALYTICS-01 (15 §2.3).
+        const val ANALYTICS_OVERVIEW = "doctor/analytics/overview"
+        const val ANALYTICS_TREND = "doctor/analytics/appointments-trend"
+        const val ANALYTICS_TYPES = "doctor/analytics/consultation-types"
+        const val ANALYTICS_ENGAGEMENT = "doctor/analytics/engagement"
+        const val ANALYTICS_SMS = "doctor/analytics/sms-usage"
         const val PUBLIC_PROFESSIONS = "public/professions"
         const val PUBLIC_CLINICS = "public/clinics"
         const val RESET_PASSWORD = "auth/reset-password"

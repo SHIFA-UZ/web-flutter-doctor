@@ -141,3 +141,27 @@ Built 2026-11-05. Spec 02 §1.9, ticket HOME-05, flow 02/07, board `DaHome` (sea
   the keyboard's Search opened his record in the Patients tab; Back showed the directory. Reopened from Home: empty
   query; "zz" + Search: "No patients found", keyboard put away.
 
+## ANALYTICS-01 · Analytics data
+
+Built 2026-11-05. Spec 02 §2.1–2.3, ticket ANALYTICS-01, 15 §2.3.
+
+- **`AnalyticsRepository`:** `GET /doctor/analytics/overview`, `appointments-trend?days`, `consultation-types`,
+  `engagement`, `sms-usage?from&to`; five independent reads (one failing never hides the others), no cache. One
+  refresh entry point, `all(range, withSms)`, reads them all in parallel into an `AnalyticsSnapshot` (one `Result` per
+  block): Home and Reports use it on open and on refresh (Flutter never refreshed the trend, types or engagement).
+- **Models** (`AnalyticsModels.kt`): every count defaults to 0 (missing or null), as Flutter's; a trend day with an
+  unreadable date is skipped, not the whole trend (`rows`). `SmsUsage` keeps minor units and the currency for the
+  money formatter.
+- **`AnalyticsRange`:** inclusive days, never reversed; the default is the last 7 days ending on the **practice** date
+  (Flutter: the phone's date). `trendDays` clamps to 1–90: the backend answers the last N days ending today, so a past
+  range can't be honoured until BE-19's `from/to`; SMS takes `from/to` exactly.
+- **Dev (2026-11-05, seed doctor):** all five checked against `/v3/api-docs` and a real GET: overview
+  `{appointmentsToday 0, completedToday 0, cancelledToday 1, newPatientsToday 0}`, a 7-point trend, types
+  `{video 4, inPerson 11}`, engagement `{activePatients 5, documentsReceived 1}`, SMS not allowed, 0 sent. The overview's
+  cancelled visit doesn't show on Home's "Today" (the calendar leaves cancelled ones out): server numbers, labelled
+  "Today" by ANALYTICS-02.
+- **Demo:** today's counts and the trend come from the demo calendar (non-cancelled visits per day, the last N days);
+  types 8/17, engagement 41/12, SMS 12 sent, 6 000 UZS, allowed. `DemoBackendTest` covers them.
+- **Tests:** `AnalyticsRepositoryTest` (zeros for missing or null, a bad trend day skipped, the range maths, `days` 90
+  for a year, SMS dates as given, one refresh reading every block).
+

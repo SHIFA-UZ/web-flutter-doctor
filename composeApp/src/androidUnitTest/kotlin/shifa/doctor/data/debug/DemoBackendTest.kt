@@ -607,4 +607,23 @@ class DemoBackendTest {
             ).isTrue()
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `analytics answer locally, today and the trend from the demo calendar`() =
+        runTest {
+            val trend =
+                apiCall<kotlinx.serialization.json.JsonArray> {
+                    client.get(ApiConfig.Endpoints.ANALYTICS_TREND) { url.parameters.append("days", "30") }
+                }.getOrThrow()
+            assertThat(trend).hasSize(30)
+            for (e in listOf(
+                ApiConfig.Endpoints.ANALYTICS_OVERVIEW,
+                ApiConfig.Endpoints.ANALYTICS_TYPES,
+                ApiConfig.Endpoints.ANALYTICS_ENGAGEMENT,
+                ApiConfig.Endpoints.ANALYTICS_SMS,
+            )) {
+                assertThat(apiCall<JsonObject> { client.get(e) }.getOrThrow()).isNotEmpty()
+            }
+            assertThat(forwarded).isEmpty()
+        }
 }

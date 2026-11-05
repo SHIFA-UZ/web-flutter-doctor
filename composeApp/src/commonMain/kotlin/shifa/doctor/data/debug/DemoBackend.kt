@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
@@ -270,6 +271,22 @@ class DemoBackend(
             get && path == Endpoints.SERVICE_GROUPS -> ok(JsonArray(groups))
             // Plans like dev's; the hosted pages are placeholders (nothing reaches Stripe in demo mode).
             get && path == Endpoints.CALENDAR -> ok(demoCalendar(request.url.parameters["day"]))
+            // ANALYTICS-01: today's counts and the trend from the demo calendar; types, engagement and SMS fixed.
+            get && path == Endpoints.ANALYTICS_OVERVIEW -> ok(demoAnalyticsOverview())
+            get && path == Endpoints.ANALYTICS_TREND -> ok(demoTrend(request.url.parameters["days"]?.toIntOrNull()))
+            get && path == Endpoints.ANALYTICS_TYPES -> ok(apiJson.parseToJsonElement("""{"video":8,"inPerson":17}"""))
+            get && path == Endpoints.ANALYTICS_ENGAGEMENT ->
+                ok(apiJson.parseToJsonElement("""{"activePatients":41,"documentsReceived":12}"""))
+            get && path == Endpoints.ANALYTICS_SMS ->
+                ok(
+                    buildJsonObject {
+                        put("sentCount", 12)
+                        put("totalCostMinor", 6000)
+                        put("currency", "UZS")
+                        put("pricePerSmsMinor", 500)
+                        put("smsRemindersAllowed", true)
+                    },
+                )
             get && path == Endpoints.SUBSCRIPTION_PLANS -> ok(apiJson.parseToJsonElement(DEMO_PLANS))
             // The demo doctor's plan is admin-set: no paid subscription.
             get && path == Endpoints.SUBSCRIPTION_ME -> ok(JsonNull)
@@ -1389,6 +1406,39 @@ private fun demoNote(
  * A demo day (Tashkent, UTC+5): 30-minute slots 09:00–17:00, lunch blocked 13:00–14:00, and on even dates two
  * appointments (one by video, one in the clinic) so the calendar has something to show.
  */
+private fun demoToday() = currentInstant().toLocalDateTime(kotlinx.datetime.TimeZone.of("Asia/Tashkent")).date
+
+private fun demoVisits(day: kotlinx.datetime.LocalDate) =
+    demoCalendar(day.toString()).map { it.jsonObject }.filter { it["type"]?.jsonPrimitive?.content == "APPOINTMENT" }
+
+private fun JsonObject.status() = this["status"]?.jsonPrimitive?.content
+
+/** `GET /doctor/analytics/overview` for the demo calendar's today. */
+internal fun demoAnalyticsOverview(): JsonObject {
+    val today = demoVisits(demoToday())
+    return buildJsonObject {
+        put("appointmentsToday", today.count { it.status() != "CANCELLED" })
+        put("completedToday", today.count { it.status() == "COMPLETED" })
+        put("cancelledToday", today.count { it.status() == "CANCELLED" || it.status() == "NO_SHOW" })
+        put("newPatientsToday", 1)
+    }
+}
+
+/** `GET /doctor/analytics/appointments-trend?days`: the last [days] (1–90) days ending today, as the backend does. */
+internal fun demoTrend(days: Int?): JsonArray {
+    val today = demoToday()
+    val n = (days ?: 7).coerceIn(1, 90)
+    return JsonArray(
+        (n - 1 downTo 0).map { back ->
+            val day = today.minus(back, kotlinx.datetime.DateTimeUnit.DAY)
+            buildJsonObject {
+                put("date", day.toString())
+                put("count", demoVisits(day).count { it.status() != "CANCELLED" })
+            }
+        },
+    )
+}
+
 internal fun demoCalendar(day: String?): JsonArray {
     val date = runCatching { kotlinx.datetime.LocalDate.parse(day ?: "") }.getOrNull() ?: return JsonArray(emptyList())
     val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")
