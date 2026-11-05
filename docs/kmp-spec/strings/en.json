@@ -2667,5 +2667,9 @@
   "chatFileUnavailable": "File unavailable",
   "chatRecordingTooShort": "Recording too short",
   "chatVoicePlayFailed": "Couldn't play the voice message",
-  "chatRecordingInterrupted": "Recording interrupted — send or discard?"
+  "chatRecordingInterrupted": "Recording interrupted — send or discard?",
+  "notificationTypeAppointmentReminder": "Appointment reminder",
+  "notificationTypeAiVisitSummaryReady": "AI visit summary ready",
+  "notificationTypeAiBriefingReady": "AI briefing ready",
+  "notificationTypeTaskUpdate": "Task update"
 }

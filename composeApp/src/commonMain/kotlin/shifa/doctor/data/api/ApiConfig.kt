@@ -156,6 +156,12 @@ object ApiConfig {
 
         fun conversationRead(id: Long) = "messages/conversations/$id/read"
 
+        // NOTIF-01 (15 §2.9; the paged list, newest first, is on dev and prod).
+        const val NOTIFICATIONS_PAGE = "notifications/page"
+        const val NOTIFICATIONS_READ_ALL = "notifications/read-all"
+
+        fun notificationRead(id: Long) = "notifications/$id/read"
+
         // ANALYTICS-01 (15 §2.3).
         const val ANALYTICS_OVERVIEW = "doctor/analytics/overview"
         const val ANALYTICS_TREND = "doctor/analytics/appointments-trend"

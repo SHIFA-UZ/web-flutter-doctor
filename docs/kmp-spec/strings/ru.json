@@ -2667,5 +2667,9 @@
   "chatFileUnavailable": "Файл недоступен",
   "chatRecordingTooShort": "Слишком короткая запись",
   "chatVoicePlayFailed": "Не удалось воспроизвести голосовое сообщение",
-  "chatRecordingInterrupted": "Запись прервана — отправить или удалить?"
+  "chatRecordingInterrupted": "Запись прервана — отправить или удалить?",
+  "notificationTypeAppointmentReminder": "Напоминание о приёме",
+  "notificationTypeAiVisitSummaryReady": "Готово AI-резюме визита",
+  "notificationTypeAiBriefingReady": "Готов AI-брифинг",
+  "notificationTypeTaskUpdate": "Обновление задачи"
 }

@@ -2667,5 +2667,9 @@
   "chatFileUnavailable": "Fayl mavjud emas",
   "chatRecordingTooShort": "Yozuv juda qisqa",
   "chatVoicePlayFailed": "Ovozli xabarni ijro etib bo'lmadi",
-  "chatRecordingInterrupted": "Yozuv to'xtatildi — yuborilsinmi yoki o'chirilsinmi?"
+  "chatRecordingInterrupted": "Yozuv to'xtatildi — yuborilsinmi yoki o'chirilsinmi?",
+  "notificationTypeAppointmentReminder": "Uchrashuv eslatmasi",
+  "notificationTypeAiVisitSummaryReady": "AI tashrif xulosasi tayyor",
+  "notificationTypeAiBriefingReady": "AI brifing tayyor",
+  "notificationTypeTaskUpdate": "Vazifa yangilandi"
 }

@@ -1750,10 +1750,13 @@
     <string name="notificationOpenCalendar">Открыть календарь</string>
     <string name="notificationReschedule">Перенести</string>
     <string name="notificationSettings">Настройки</string>
+    <string name="notificationTypeAiBriefingReady">Готов AI-брифинг</string>
     <string name="notificationTypeAiScribeReady">Готово резюме AI-секретаря</string>
+    <string name="notificationTypeAiVisitSummaryReady">Готово AI-резюме визита</string>
     <string name="notificationTypeAppointmentBooked">Запись создана</string>
     <string name="notificationTypeAppointmentCancelled">Запись отменена</string>
     <string name="notificationTypeAppointmentPaid">Оплата получена</string>
+    <string name="notificationTypeAppointmentReminder">Напоминание о приёме</string>
     <string name="notificationTypeAppointmentRescheduled">Запись перенесена</string>
     <string name="notificationTypeChatMessage">Новое сообщение</string>
     <string name="notificationTypeDocumentAccessApproved">Доступ к документу одобрен</string>
@@ -1764,6 +1767,7 @@
     <string name="notificationTypePartnershipProgress">Обновление партнёрства</string>
     <string name="notificationTypeTaskAssigned">Задача назначена</string>
     <string name="notificationTypeTaskCompleted">Задача выполнена</string>
+    <string name="notificationTypeTaskUpdate">Обновление задачи</string>
     <string name="notificationViewAppointment">Открыть запись</string>
     <string name="notificationViewResult">Посмотреть результат</string>
     <string name="notifications">Уведомления</string>

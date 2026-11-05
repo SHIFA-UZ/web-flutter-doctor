@@ -148,6 +148,7 @@ class DemoBackend(
     private var places: List<JsonElement> = apiJson.parseToJsonElement(DEMO_LOCATIONS).jsonArray.toList()
 
     private val chat = DemoChat()
+    private val notifications = DemoNotifications()
 
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
 
@@ -227,6 +228,13 @@ class DemoBackend(
             body,
         )
             ?.let { return ok(it) }
+        // NOTIF-01: the demo inbox (its unread count included).
+        notifications
+            .handle(
+                request.method.value,
+                path,
+                request.url.parameters.names().associateWith { request.url.parameters[it].orEmpty() },
+            )?.let { return ok(it) }
         return when {
             get && path == Endpoints.DOCTOR_ME -> ok(doctorMe())
             get && path == Endpoints.PUBLIC_CONFIG -> ok(publicConfig(bootGate()))
@@ -267,7 +275,6 @@ class DemoBackend(
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
             get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
             // Fixed counts so the badges show; the lists behind them come with their features.
-            get && path == Endpoints.NOTIFICATIONS_UNREAD -> ok(apiJson.parseToJsonElement("""{"count":12}"""))
             get && path == Endpoints.TASKS -> ok(apiJson.parseToJsonElement("[]"))
             // Services kept in memory (SVC-01); the location list until LOC-1.
             get && path == Endpoints.DOCTOR_SERVICES -> ok(JsonArray(services))

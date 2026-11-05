@@ -1750,10 +1750,13 @@
     <string name="notificationOpenCalendar">Taqvimni ochish</string>
     <string name="notificationReschedule">Qayta rejalashtirish</string>
     <string name="notificationSettings">Sozlamalar</string>
+    <string name="notificationTypeAiBriefingReady">AI brifing tayyor</string>
     <string name="notificationTypeAiScribeReady">AI yozuvchi xulosasi tayyor</string>
+    <string name="notificationTypeAiVisitSummaryReady">AI tashrif xulosasi tayyor</string>
     <string name="notificationTypeAppointmentBooked">Uchrashuv band qilindi</string>
     <string name="notificationTypeAppointmentCancelled">Uchrashuv bekor qilindi</string>
     <string name="notificationTypeAppointmentPaid">To'lov qabul qilindi</string>
+    <string name="notificationTypeAppointmentReminder">Uchrashuv eslatmasi</string>
     <string name="notificationTypeAppointmentRescheduled">Uchrashuv vaqti o'zgartirildi</string>
     <string name="notificationTypeChatMessage">Yangi xabar</string>
     <string name="notificationTypeDocumentAccessApproved">Hujjatga kirish tasdiqlandi</string>
@@ -1764,6 +1767,7 @@
     <string name="notificationTypePartnershipProgress">Hamkorlik yangilanishi</string>
     <string name="notificationTypeTaskAssigned">Vazifa berildi</string>
     <string name="notificationTypeTaskCompleted">Vazifa bajarildi</string>
+    <string name="notificationTypeTaskUpdate">Vazifa yangilandi</string>
     <string name="notificationViewAppointment">Uchrashuvni ko'rish</string>
     <string name="notificationViewResult">Natijani ko'rish</string>
     <string name="notifications">Bildirishnomalar</string>

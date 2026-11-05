@@ -656,4 +656,28 @@ class DemoBackendTest {
             assertThat(repo.upload(byteArrayOf(1), "a.jpg", "image/jpeg").getOrThrow()).contains("/demo/")
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the demo inbox pages, reads one or all and counts locally`() =
+        runTest {
+            val repo = shifa.doctor.data.notifications.NotificationsRepository({ client })
+
+            suspend fun count() =
+                apiCall<JsonObject> { client.get(ApiConfig.Endpoints.NOTIFICATIONS_UNREAD) }
+                    .getOrThrow()["count"]!!
+                    .jsonPrimitive.content
+            val first = repo.page(0, size = 4).getOrThrow()
+            assertThat(first.items.map { it.id }).containsExactly(501L, 502L, 503L, 504L).inOrder()
+            assertThat(first.last).isFalse()
+            assertThat(repo.page(1, size = 4).getOrThrow().items.first().id).isEqualTo(505L)
+            val rest = repo.page(2, size = 4).getOrThrow()
+            assertThat(rest.items.map { it.id }).containsExactly(509L)
+            assertThat(rest.last).isTrue()
+            assertThat(count()).isEqualTo("5")
+            repo.markRead(501).getOrThrow()
+            assertThat(count()).isEqualTo("4")
+            repo.markAllRead().getOrThrow()
+            assertThat(count()).isEqualTo("0")
+            assertThat(forwarded).isEmpty()
+        }
 }

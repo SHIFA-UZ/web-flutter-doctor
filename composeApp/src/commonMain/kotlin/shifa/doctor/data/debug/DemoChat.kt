@@ -263,7 +263,7 @@ internal class DemoChat(
         put("createdAt", at.toString())
     }
 
-    private companion object {
+    companion object {
         val DEMO_NAMES =
             mapOf(11L to "Dilnoza Rahimova", 12L to "Jasur Karimov", 13L to "Malika Tursunova", 14L to "Bekzod Aliyev")
 

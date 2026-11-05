@@ -1750,10 +1750,13 @@
     <string name="notificationOpenCalendar">Open Calendar</string>
     <string name="notificationReschedule">Reschedule</string>
     <string name="notificationSettings">Settings</string>
+    <string name="notificationTypeAiBriefingReady">AI briefing ready</string>
     <string name="notificationTypeAiScribeReady">AI Scribe summary ready</string>
+    <string name="notificationTypeAiVisitSummaryReady">AI visit summary ready</string>
     <string name="notificationTypeAppointmentBooked">Appointment booked</string>
     <string name="notificationTypeAppointmentCancelled">Appointment cancelled</string>
     <string name="notificationTypeAppointmentPaid">Payment received</string>
+    <string name="notificationTypeAppointmentReminder">Appointment reminder</string>
     <string name="notificationTypeAppointmentRescheduled">Appointment rescheduled</string>
     <string name="notificationTypeChatMessage">New message</string>
     <string name="notificationTypeDocumentAccessApproved">Document access approved</string>
@@ -1764,6 +1767,7 @@
     <string name="notificationTypePartnershipProgress">Partnership update</string>
     <string name="notificationTypeTaskAssigned">Task assigned</string>
     <string name="notificationTypeTaskCompleted">Task completed</string>
+    <string name="notificationTypeTaskUpdate">Task update</string>
     <string name="notificationViewAppointment">View Appointment</string>
     <string name="notificationViewResult">View Result</string>
     <string name="notifications">Notifications</string>
