@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.IntSize
 @Stable
 class ZoomState(
     val max: Float = 4f,
+    // Below 1× the content shrinks inside its fit (the chat photo viewer: 0.5×, flow 07/05 §3).
+    val min: Float = 1f,
 ) {
     var scale by mutableStateOf(1f)
         private set
@@ -31,10 +33,10 @@ class ZoomState(
         pan: Offset,
         size: IntSize,
     ) {
-        scale = (scale * zoom).coerceIn(1f, max)
-        // Panned only as far as the zoomed content reaches the edges.
-        val limitX = size.width * (scale - 1) / 2
-        val limitY = size.height * (scale - 1) / 2
+        scale = (scale * zoom).coerceIn(min, max)
+        // Panned only as far as the zoomed content reaches the edges (not at all while smaller than its fit).
+        val limitX = (size.width * (scale - 1) / 2).coerceAtLeast(0f)
+        val limitY = (size.height * (scale - 1) / 2).coerceAtLeast(0f)
         offset = Offset((offset.x + pan.x).coerceIn(-limitX, limitX), (offset.y + pan.y).coerceIn(-limitY, limitY))
     }
 

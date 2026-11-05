@@ -68,11 +68,13 @@ sealed interface ThreadRow {
         val message: shifa.doctor.data.model.Message,
     ) : ThreadRow
 
-    data class Pending(
+    class Pending(
         val localId: Long,
         val text: String,
         val at: Instant,
         val failed: Boolean,
+        // A photo on its way (CHAT-04).
+        val image: ByteArray? = null,
     ) : ThreadRow
 }
 

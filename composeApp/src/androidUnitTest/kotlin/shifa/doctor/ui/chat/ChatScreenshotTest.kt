@@ -31,4 +31,7 @@ class ChatScreenshotTest {
 
     @Test
     fun threadLoading() = captureRoboImage("screenshots/Chat_threadLoading.png") { ThreadLoadingPreview() }
+
+    @Test
+    fun threadImages() = captureRoboImage("screenshots/Chat_threadImages.png") { ThreadImagesPreview() }
 }

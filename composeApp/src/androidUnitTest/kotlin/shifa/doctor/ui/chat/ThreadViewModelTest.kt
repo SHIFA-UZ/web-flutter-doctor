@@ -23,6 +23,9 @@ class ThreadViewModelTest {
     private val asked = mutableListOf<String>()
     private val sent = mutableListOf<String>()
     private var failSend = false
+    private var failUpload = false
+    private val uploads = mutableListOf<Int>()
+    private val bodies = mutableListOf<String>()
     private var failRead = false
     private var holdThread: kotlinx.coroutines.CompletableDeferred<Unit>? = null
     private var nextId = 100
@@ -35,6 +38,21 @@ class ThreadViewModelTest {
             val path = req.url.encodedPath.substringAfter("/api/")
             asked += req.method.value + " " + path
             when (path) {
+                "messages/upload-attachment" -> {
+                    uploads += req.body.toByteArray().size
+                    if (failUpload) {
+                        return@MockEngine respond(
+                            """{"status":500}""",
+                            HttpStatusCode.InternalServerError,
+                            headersOf(HttpHeaders.ContentType, "application/json"),
+                        )
+                    }
+                    respond(
+                        """{"url":"https://api.shifa.uz/chat-attachments/p.jpg?sig=1"}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
                 "messages/send" -> {
                     if (failSend) {
                         return@MockEngine respond(
@@ -43,10 +61,9 @@ class ThreadViewModelTest {
                             headersOf(HttpHeaders.ContentType, "application/json"),
                         )
                     }
-                    val text =
-                        Regex(
-                            "\"text\":\"([^\"]*)\"",
-                        ).find(req.body.toByteArray().decodeToString())!!.groupValues[1]
+                    val body = req.body.toByteArray().decodeToString()
+                    bodies += body
+                    val text = Regex("\"text\":\"([^\"]*)\"").find(body)?.groupValues?.get(1) ?: ""
                     sent += text
                     val m = """{"id":${nextId++},"chatId":7,"senderRole":"doctor","type":"text","content":{"text":"$text"},"status":"sent","isMine":true,"createdAt":"2026-11-05T06:00:00Z"}"""
                     thread += m
@@ -177,5 +194,56 @@ class ThreadViewModelTest {
         holdThread!!.complete(Unit)
         Thread.sleep(100)
         assertThat(classToTest.state.value.messages!!.map { it.text }).containsExactly("Hi", "quick").inOrder()
+    }
+
+    @Test
+    fun `a photo shows at once, is uploaded, then sent as an image with its URL, name and size`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        classToTest.sendImage(shifa.doctor.utils.PickedImage("xray.jpg", ByteArray(1_000)))
+        assertThat(classToTest.state.value.pending.single().image).isNotNull()
+        settle { classToTest.state.value.pending.isEmpty() }
+        assertThat(uploads).hasSize(1)
+        val body = bodies.last()
+        assertThat(body).contains("\"type\":\"image\"")
+        assertThat(body).contains("\"attachmentUrl\":\"https://api.shifa.uz/chat-attachments/p.jpg?sig=1\"")
+        assertThat(body).contains("\"attachmentName\":\"xray.jpg\"")
+        assertThat(body).contains("\"fileSize\":1000")
+    }
+
+    @Test
+    fun `a failed upload keeps the photo for retry, a too large one isn't sent`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        failUpload = true
+        classToTest.sendImage(shifa.doctor.utils.PickedImage("a.jpg", ByteArray(10)))
+        settle { classToTest.state.value.pending.singleOrNull()?.failed == true }
+        assertThat(asked.none { it.endsWith("messages/send") }).isTrue()
+        failUpload = false
+        classToTest.retry(classToTest.state.value.pending.single().localId)
+        settle { classToTest.state.value.pending.isEmpty() }
+        assertThat(uploads).hasSize(2)
+        classToTest.sendImage(shifa.doctor.utils.PickedImage("huge.jpg", ByteArray(21 * 1024 * 1024)))
+        assertThat(classToTest.state.value.pending).isEmpty()
+        assertThat(shifa.doctor.ui.navigation.ShellNotice.pending.value).isNotNull()
+        shifa.doctor.ui.navigation.ShellNotice.pending.value = null
+    }
+
+    @Test
+    fun `a photo whose send failed after the upload is only sent again on retry`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        failSend = true
+        classToTest.sendImage(shifa.doctor.utils.PickedImage("a.jpg", ByteArray(10)))
+        settle { classToTest.state.value.pending.singleOrNull()?.failed == true }
+        assertThat(uploads).hasSize(1)
+        failSend = false
+        classToTest.retry(classToTest.state.value.pending.single().localId)
+        settle { classToTest.state.value.pending.isEmpty() }
+        assertThat(uploads).hasSize(1)
+        assertThat(bodies.last()).contains("\"type\":\"image\"")
     }
 }

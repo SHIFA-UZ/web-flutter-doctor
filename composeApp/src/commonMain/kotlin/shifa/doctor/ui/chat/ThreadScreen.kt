@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +64,9 @@ import shifa.doctor.data.model.MessageStatus
 import shifa.doctor.data.model.MessageType
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.attachFile
 import shifa.doctor.generated.resources.back
+import shifa.doctor.generated.resources.cameraPermissionDenied
 import shifa.doctor.generated.resources.chatNewMessage
 import shifa.doctor.generated.resources.chatNotSent
 import shifa.doctor.generated.resources.chatPhoto
@@ -72,15 +75,19 @@ import shifa.doctor.generated.resources.chatStatusDelivered
 import shifa.doctor.generated.resources.chatStatusRead
 import shifa.doctor.generated.resources.chatStatusSending
 import shifa.doctor.generated.resources.chatStatusSent
+import shifa.doctor.generated.resources.close
 import shifa.doctor.generated.resources.doctor
 import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.ic_chev_l_16
+import shifa.doctor.generated.resources.ic_clip_22
 import shifa.doctor.generated.resources.ic_send_18
+import shifa.doctor.generated.resources.openSettings
 import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.send
 import shifa.doctor.generated.resources.today
 import shifa.doctor.generated.resources.typeMessage
+import shifa.doctor.generated.resources.uploadingFile
 import shifa.doctor.generated.resources.voiceMessage
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.analytics.shortMonth
@@ -97,6 +104,9 @@ import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.openAppSettings
+import shifa.doctor.utils.rememberCameraLauncher
+import shifa.doctor.utils.rememberImagePickerLauncher
 import shifa.doctor.utils.tr
 
 class ThreadActions(
@@ -106,6 +116,20 @@ class ThreadActions(
     val send: () -> Unit = {},
     val retry: (Long) -> Unit = {},
     val reload: () -> Unit = {},
+    // CHAT-04: the attach sheet's photo rows, and a photo to view full screen.
+    val pickImage: () -> Unit = {},
+    val takePhoto: () -> Unit = {},
+    // The attach sheet, the photo viewer and the camera-refused strip (their state is the host's).
+    val attach: (Boolean) -> Unit = {},
+    val view: (String?) -> Unit = {},
+    val dismissCamera: () -> Unit = {},
+)
+
+/** What the thread's host keeps besides the ViewModel's state: the attach sheet, the photo viewed, a refused camera. */
+data class ThreadOverlays(
+    val attaching: Boolean = false,
+    val viewing: String? = null,
+    val cameraDenied: Boolean = false,
 )
 
 /**
@@ -126,13 +150,36 @@ fun ThreadScreen(
         viewModel.foreground(true)
         onPauseOrDispose { viewModel.foreground(false) }
     }
+    var attaching by rememberSaveable { mutableStateOf(false) }
+    var viewing by rememberSaveable { mutableStateOf<String?>(null) }
+    var cameraDenied by rememberSaveable { mutableStateOf(false) }
+    // CHAT-04: the library and the camera (asking for the camera permission first; refused → a strip with Open settings).
+    val pickImage = rememberImagePickerLauncher { it?.let(viewModel::sendImage) }
+    val takePhoto =
+        rememberCameraLauncher({
+            cameraDenied = false
+            it?.let(viewModel::sendImage)
+        }, { cameraDenied = true })
     val me by profileRepository.me.collectAsStateWithLifecycle()
     val zone = me?.profile?.timeZone
     val clock = remember(zone) { PracticeClock(zone) }
     ThreadContent(
         state.copy(conversation = state.conversation ?: known),
-        ThreadActions(onBack, onOpenPatient, viewModel::draft, viewModel::send, viewModel::retry, viewModel::refresh),
+        ThreadActions(
+            onBack,
+            onOpenPatient,
+            viewModel::draft,
+            viewModel::send,
+            viewModel::retry,
+            viewModel::refresh,
+            pickImage,
+            takePhoto,
+            { attaching = it },
+            { viewing = it },
+            { cameraDenied = false },
+        ),
         clock,
+        ThreadOverlays(attaching, viewing, cameraDenied),
     )
 }
 
@@ -141,6 +188,7 @@ internal fun ThreadContent(
     state: ThreadUiState,
     actions: ThreadActions,
     clock: PracticeClock,
+    overlays: ThreadOverlays = ThreadOverlays(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Surface).statusBarsPadding().imePadding()) {
     Header(state.conversation, actions)
     // The board's message area is white, set off from the header and composer by hairlines.
@@ -160,10 +208,42 @@ internal fun ThreadContent(
                     ShifaLink(tr(Res.string.retry), actions.reload)
                 }
             messages.isEmpty() && state.pending.isEmpty() -> Empty(state.conversation)
-            else -> Messages(state, messages, actions, clock)
+            else -> Messages(state, messages, actions, clock) { actions.view(it) }
         }
     }
-    Composer(state, actions)
+    // An attachment on its way (flow 07/03 §3: a strip above the composer, Flutter's SnackBars).
+    if (state.uploading) {
+        Text(
+            tr(Res.string.uploadingFile),
+            Modifier.fillMaxWidth().background(
+                ShifaColors.Bg.Canvas,
+            ).padding(horizontal = ShifaSize.S12, vertical = ShifaSize.S6),
+            style = ShifaTextStyles.tag(),
+            color = ShifaColors.Text.Secondary,
+        )
+    }
+    // The camera was refused (now or for good): say so, with the way to the OS settings (flow 07/05 §6).
+    if (overlays.cameraDenied) {
+        Row(
+            Modifier.fillMaxWidth().background(
+                ShifaColors.Bg.WarningSubtle,
+            ).padding(horizontal = ShifaSize.S12, vertical = ShifaSize.S6),
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                tr(Res.string.cameraPermissionDenied),
+                Modifier.weight(1f),
+                style = ShifaTextStyles.tag(),
+                color = ShifaColors.Text.Primary,
+            )
+            ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
+            ShifaLink(tr(Res.string.close), actions.dismissCamera)
+        }
+    }
+    Composer(state, actions) { actions.attach(true) }
+    if (overlays.attaching) AttachSheet(actions) { actions.attach(false) }
+    overlays.viewing?.let { url -> ImageViewer(url) { actions.view(null) } }
 }
 
 /** Back, the photo, the name and "Patient"/"Doctor"; a patient's name is a link to their record (flow 07/02 §7). */
@@ -243,11 +323,12 @@ private fun Messages(
     messages: List<Message>,
     actions: ThreadActions,
     clock: PracticeClock,
+    onView: (String) -> Unit,
 ) = BoxWithConstraints(Modifier.fillMaxSize()) {
     val rows =
         threadRows(
             messages,
-            state.pending.map { ThreadRow.Pending(it.localId, it.text, it.at, it.failed) },
+            state.pending.map { ThreadRow.Pending(it.localId, it.text, it.at, it.failed, it.image) },
             clock,
         ).asReversed()
     val list = rememberLazyListState()
@@ -279,7 +360,7 @@ private fun Messages(
         ) { row ->
             when (row) {
                 is ThreadRow.Day -> DayDivider(row, clock)
-                is ThreadRow.Sent -> MessageRow(row.message, maxBubble, clock)
+                is ThreadRow.Sent -> MessageRow(row.message, maxBubble, clock, onView)
                 is ThreadRow.Pending -> PendingRow(row, maxBubble, clock) { actions.retry(row.localId) }
             }
         }
@@ -339,6 +420,7 @@ private fun MessageRow(
     m: Message,
     max: androidx.compose.ui.unit.Dp,
     clock: PracticeClock,
+    onView: (String) -> Unit,
 ) {
     val time = hm(m.sentAt, clock)
     if (m.type == MessageType.System) {
@@ -393,6 +475,11 @@ private fun MessageRow(
                 color = ShifaColors.Text.Secondary,
             )
         }
+        if (m.type == MessageType.Image) {
+            return@Column ImageTile(m.fileUrl, null, m.isMine, time, if (m.isMine) tick(m.status) else null) {
+                m.fileUrl?.let(onView)
+            }
+        }
         Bubble(m.isMine, max) {
             // Long-press selects and copies (flow 07/02 §7).
             SelectionContainer {
@@ -422,9 +509,16 @@ private fun PendingRow(
 ) {
     val time = hm(p.at, clock)
     val status = tr(if (p.failed) Res.string.chatNotSent else Res.string.chatStatusSending)
-    Bubble(true, max, Modifier.clearAndSetSemantics { contentDescription = "$time, ${p.text}, $status" }) {
-        SelectionContainer { Text(p.text, style = ShifaTextStyles.chatBubble(), color = ShifaColors.Text.Primary) }
-        Footer(time, if (p.failed) "!" else "◷")
+    val label = if (p.image != null) tr(Res.string.chatPhoto) else p.text
+    if (p.image != null) {
+        Box(Modifier.clearAndSetSemantics { contentDescription = "$time, $label, $status" }) {
+            ImageTile(null, p.image, true, time, if (p.failed) "!" else "◷") {}
+        }
+    } else {
+        Bubble(true, max, Modifier.clearAndSetSemantics { contentDescription = "$time, $label, $status" }) {
+            SelectionContainer { Text(p.text, style = ShifaTextStyles.chatBubble(), color = ShifaColors.Text.Primary) }
+            Footer(time, if (p.failed) "!" else "◷")
+        }
     }
     if (p.failed) {
         Text(
@@ -517,6 +611,7 @@ private fun linkified(text: String): AnnotatedString {
 private fun Composer(
     state: ThreadUiState,
     actions: ThreadActions,
+    onAttach: () -> Unit,
 ) = Row(
     Modifier
         .fillMaxWidth()
@@ -526,6 +621,14 @@ private fun Composer(
     horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
     verticalAlignment = Alignment.Bottom,
 ) {
+    // The paperclip: the attach sheet (CHAT-04 photos; documents and voice notes join with CHAT-05 and CHAT-06).
+    ShifaIconButton(
+        Res.drawable.ic_clip_22,
+        tr(Res.string.attachFile),
+        onAttach,
+        variant = ShifaIconButtonVariant.Ghost,
+        enabled = state.messages != null,
+    )
     val style = ShifaTextStyles.chatInput()
     val hint = tr(Res.string.typeMessage)
     BasicTextField(

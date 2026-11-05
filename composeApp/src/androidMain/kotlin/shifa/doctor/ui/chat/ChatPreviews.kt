@@ -144,3 +144,30 @@ internal fun ThreadLoadingPreview() =
     PreviewTheme {
         ThreadContent(ThreadUiState(conversations[2]), ThreadActions(), clock)
     }
+
+// CHAT-04: a photo the patient sent (no URL here: "Image not available"; on the phone the picture), a photo of mine
+// on its way with the uploading strip.
+@Composable
+internal fun ThreadImagesPreview() =
+    PreviewTheme {
+        ThreadContent(
+            ThreadUiState(
+                conversations[0],
+                listOf(
+                    msg(10, "2026-11-05T03:30:00Z", "Here is the rash", false),
+                    msg(11, "2026-11-05T03:31:00Z", "", false, type = shifa.doctor.data.model.MessageType.Image),
+                ),
+                listOf(
+                    PendingMessage(
+                        3,
+                        "",
+                        Instant.parse("2026-11-05T09:10:00Z"),
+                        image = ByteArray(0),
+                        fileName = "x.jpg",
+                    ),
+                ),
+            ),
+            ThreadActions(),
+            clock,
+        )
+    }

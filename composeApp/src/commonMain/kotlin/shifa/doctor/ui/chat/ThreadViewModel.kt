@@ -22,7 +22,11 @@ import shifa.doctor.data.model.Message
 import shifa.doctor.data.model.SendMessageRequest
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chatLoadFailed
+import shifa.doctor.generated.resources.fileTooLarge
 import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.navigation.Notice
+import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.utils.PickedImage
 import shifa.doctor.utils.currentInstant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -33,6 +37,11 @@ data class PendingMessage(
     val text: String,
     val at: Instant,
     val failed: Boolean = false,
+    // CHAT-04: a photo on its way (shown from these bytes until the server's message takes its place).
+    val image: ByteArray? = null,
+    val fileName: String? = null,
+    // The photo's URL once uploaded: a retry after a failed send only sends again (flow 07/03 §6), never a second file.
+    val uploadedUrl: String? = null,
 )
 
 data class ThreadUiState(
@@ -46,6 +55,9 @@ data class ThreadUiState(
     val newestIncoming: Long? = null,
 ) {
     val canSend: Boolean get() = draft.isNotBlank() && messages != null
+
+    // An attachment is uploading (the strip above the composer, flow 07/03 §3).
+    val uploading: Boolean get() = pending.any { it.image != null && !it.failed }
 }
 
 /**
@@ -139,6 +151,21 @@ class ThreadViewModel(
         deliver(pending)
     }
 
+    /**
+     * A photo from the library or the camera (CHAT-04, flow 07/05): already a JPEG of at most 1600 px (the picker), so
+     * nothing to compress here; shown at once, uploaded, then sent as an image message. Over 20 MB it isn't sent.
+     */
+    fun sendImage(photo: PickedImage) {
+        if (_state.value.messages == null) return
+        if (photo.bytes.size > MAX_ATTACHMENT_BYTES) {
+            ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            return
+        }
+        val pending = PendingMessage(++lastLocalId, "", now(), image = photo.bytes, fileName = photo.fileName)
+        _state.update { it.copy(pending = it.pending + pending) }
+        deliver(pending)
+    }
+
     /** A failed text, tapped: sent again, once. */
     fun retry(localId: Long) {
         val p = _state.value.pending.firstOrNull { it.localId == localId && it.failed } ?: return
@@ -149,12 +176,29 @@ class ThreadViewModel(
         deliver(p.copy(failed = false))
     }
 
+    // A text as it is; a photo uploaded first, then sent with its URL, name and size (07 §1.4).
+    private suspend fun request(p: PendingMessage): Result<SendMessageRequest> {
+        val bytes = p.image ?: return Result.success(SendMessageRequest(id, "text", text = p.text))
+        val name = p.fileName ?: "photo.jpg"
+        val url =
+            p.uploadedUrl ?: repo.upload(bytes, name, "image/jpeg").getOrElse { return Result.failure(it) }.also {
+                    url ->
+                _state.update {
+                        s ->
+                    s.copy(pending = s.pending.map { if (it.localId == p.localId) it.copy(uploadedUrl = url) else it })
+                }
+            }
+        return Result.success(
+            SendMessageRequest(id, "image", attachmentUrl = url, attachmentName = name, fileSize = bytes.size.toLong()),
+        )
+    }
+
     // One send at a time, so texts arrive in the order they were written.
     private val sending = Mutex()
 
     private fun deliver(p: PendingMessage) {
         viewModelScope.launch {
-            sending.withLock { repo.send(SendMessageRequest(id, "text", text = p.text)) }.fold(
+            sending.withLock { request(p).mapCatching { repo.send(it).getOrThrow() } }.fold(
                 { sent ->
                     sentIds += sent.id
                     _state.update { s ->
@@ -175,3 +219,7 @@ class ThreadViewModel(
         }
     }
 }
+
+// The attachment cap (flow 07/03 §4 target; the backend takes 25 MB).
+private const val MAX_ATTACHMENT_MB = 20
+private const val MAX_ATTACHMENT_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024

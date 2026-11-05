@@ -97,3 +97,31 @@ Built 2026-11-05. Spec 07 §1.2–1.3, ticket CHAT-03, flow 07/02, board `DaChat
 - **Emulator (demo):** opened Dilnoza's thread at the newest, sent "Thanks Dilnoza, see you on Friday" (appeared at the
   bottom, ticked), the header opened her record and Back returned. Demo mode is off again. Dev has no conversations.
 
+## CHAT-04 · Image attachments
+
+Built 2026-11-05. Spec 07 §1.3–1.4, ticket CHAT-04, flows 07/03 and 07/05, board `DaChat` (attach sheet, image
+bubble, viewer).
+
+- **Attach:** a paperclip left of the field opens "Attach file": Select Image (the system photo picker, no permission)
+  and Take Photo (asks for the camera; refused → a strip "Camera permission denied" with Open settings). Select Document and Record Voice
+  Message join with CHAT-05 and CHAT-06.
+- **Compression:** the shared picker (`utils/ImagePicker`) already gives an upright JPEG, longest side 1600 px,
+  quality 85 (HEIC and PNG too), so nothing is compressed again here; Flutter compressed only above 500 KB, to 1920 px.
+- **Sending:** the photo shows at once from the phone with ◷ and "Uploading file..." above the composer (Flutter:
+  SnackBars); it is uploaded (`upload-attachment`, part `file`), then sent as `type: image` with the URL, file name
+  and size, in order with texts. Over 20 MB: "The file is too large (max 20 MB)" and nothing is sent (Flutter had no
+  cap; the backend takes 25 MB): the cap is on the JPEG sent, not the original (the picker samples large originals).
+  A failed upload or send keeps it with "Not sent. Tap to retry"; once uploaded, a retry only sends again.
+- **Image bubble:** a 240 square cropped to fill, in the bubble's shape, the time (and my tick) on a dark pill;
+  skeleton while loading, "Failed to load image" when it can't, "Image not available" without a URL. Read out as
+  "Patient, 08:31, Photo". A tap opens the viewer.
+- **Viewer:** black, full screen, fit, pinch zoom 0.5×–4× and pan, double tap for 2× (the documents' `zoomable`,
+  given a `min`), a close button; Back closes it. Not built: swipe between photos, save/share (none in Flutter).
+- **Tests:** `ThreadViewModelTest` (a photo shows at once, uploads, then sends `image` with URL, name and size; a failed
+  upload keeps it and Retry uploads again; a failed send after the upload only sends again; over 20 MB nothing is sent
+  and the banner says so). Screenshot
+  `Chat_threadImages`.
+- **Emulator (demo):** paperclip → Select Image → the system picker → a photo: it showed at once, uploaded, and was sent
+  ("09:24, Photo, Read"); the demo's upload URL doesn't load (demo files never leave the phone), so the tile says
+  "Failed to load image" there. Dev has no conversations to show a real photo. Demo mode is off again.
+
