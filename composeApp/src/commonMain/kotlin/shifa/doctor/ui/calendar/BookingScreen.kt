@@ -129,6 +129,8 @@ data class BookingUiState(
     val start: CalendarEntry.FreeSlot = slot,
     val end: Instant = slot.end,
     val video: Boolean = false,
+    // How the booking was opened (Home's Video Call chip: video), so leaving it untouched asks nothing.
+    val presetVideo: Boolean = false,
     val reason: String = defaultReason,
     val patient: PatientOption? = null,
     // The patient the screen opened with (from a patient's record): not a change of the doctor's.
@@ -195,7 +197,12 @@ data class BookingUiState(
     }
 
     val dirty: Boolean
-        get() = patient != preset || video || reason != defaultReason || start.start != slot.start || end != slot.end
+        get() =
+            patient != preset ||
+                video != presetVideo ||
+                reason != defaultReason ||
+                start.start != slot.start ||
+                end != slot.end
 
     val shown: List<PatientOption>
         get() {
@@ -227,9 +234,21 @@ class BookingViewModel(
     private val patients: PatientsRepository = patientsRepository,
     // Booking from a patient's record (PAT-07): already chosen, still changeable.
     patient: PatientOption? = null,
+    // Home's Video Call chip (HOME-03): starts as a video call, still changeable.
+    video: Boolean = false,
 ) : ViewModel() {
     private val _state =
-        MutableStateFlow(BookingUiState(slot, clock, defaultReason, patient = patient, preset = patient))
+        MutableStateFlow(
+            BookingUiState(
+                slot,
+                clock,
+                defaultReason,
+                patient = patient,
+                preset = patient,
+                video = video,
+                presetVideo = video,
+            ),
+        )
     val state: StateFlow<BookingUiState> = _state.asStateFlow()
 
     init {
@@ -387,6 +406,7 @@ fun BookingScreen(
     opened: Long,
     onClose: () -> Unit,
     patient: PatientOption? = null,
+    video: Boolean = false,
 ) {
     val defaultReason = tr(Res.string.defaultVisitReason)
     val viewModel =
@@ -396,6 +416,7 @@ fun BookingScreen(
                 PracticeClock(profileRepository.me.value?.profile?.timeZone),
                 defaultReason,
                 patient = patient,
+                video = video,
             )
         }
     val state by viewModel.state.collectAsStateWithLifecycle()

@@ -88,6 +88,12 @@
         <item quantity="many">Скан документа (%1$s страниц)</item>
         <item quantity="other">Скан документа (%1$s страницы)</item>
     </plurals>
+    <plurals name="showEarlierCount">
+        <item quantity="few">Показать %1$s прошедших</item>
+        <item quantity="many">Показать %1$s прошедших</item>
+        <item quantity="one">Показать %1$s прошедший</item>
+        <item quantity="other">Показать %1$s прошедших</item>
+    </plurals>
     <plurals name="toothA11y">
         <item quantity="other">Зуб %1$s, услуг: %2$s</item>
     </plurals>

@@ -147,6 +147,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | Follow-up booking (05/14) | Done (basic) | Book follow-up on End's done step opens the slot picker, then booking with the patient pre-filled (D-14). Quick picks, flag-only and the previous-visit link not built. See visits.md. |
 | HOME-01 Home data layer | Done | Today's visits and the hero (in slot / next / 14-day look-ahead; cancelled and no-show never the hero) from the shared calendar day cache, look-ahead four days at a time; 60 s refresh gate. See home.md. |
 | HOME-02 Home screen skeleton | Done | Header (photo, name, Refresh, Search, bell with dot), practice-time note, Today/Notifications/Follow-up glance, pull-to-refresh keeping content; the hero follows (HOME-03). See home.md. |
+| HOME-03 Next patient, quick actions, timeline | Done | Hero card (Start 15 min before, Continue, Open chart, age, "In N min" ticker), empty/done/no-timezone cards, New appointment + Video Call chips (first free slot booked as video), today's timeline with folded earlier rows opening the Calendar panels. Prescription chip and medical-record flags not built. See home.md. |
 
 ## Log
 
@@ -245,3 +246,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · 05/14 · Book follow-up from the ended visit.
 - 2026-11-05 · HOME-01 · Home's schedule and hero from the calendar cache.
 - 2026-11-05 · HOME-02 · The Home tab: header, glance and refresh.
+- 2026-11-05 · HOME-03 · Home's next patient, quick actions and today's timeline.

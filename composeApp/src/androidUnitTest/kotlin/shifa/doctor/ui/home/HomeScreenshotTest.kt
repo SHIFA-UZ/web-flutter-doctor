@@ -19,4 +19,13 @@ class HomeScreenshotTest {
 
     @Test
     fun largeText() = captureRoboImage("screenshots/Home_largeText.png") { HomeLargeTextPreview() }
+
+    @Test
+    fun heroLater() = captureRoboImage("screenshots/Home_heroLater.png") { HomeHeroLaterPreview() }
+
+    @Test
+    fun done() = captureRoboImage("screenshots/Home_done.png") { HomeDonePreview() }
+
+    @Test
+    fun noZone() = captureRoboImage("screenshots/Home_noZone.png") { HomeNoZonePreview() }
 }

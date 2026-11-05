@@ -178,6 +178,10 @@ object ShifaTextStyles {
     @Composable
     fun heroNamePhone() = manrope(manropeFontFamily(), FontWeight.Bold, 20, 24, -1)
 
+    // Home's section headings ("Quick Actions", "Today's schedule": Bold 18/22, snug)
+    @Composable
+    fun sectionHeading() = manrope(manropeFontFamily(), FontWeight.Bold, 18, 22, -1)
+
     // times in the timeline gutter (Bold 14/16, tabular numerals)
     @Composable
     fun timeLabel() = manrope(manropeFontFamily(), FontWeight.Bold, 14, 16).copy(fontFeatureSettings = "tnum")

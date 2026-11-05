@@ -65,6 +65,10 @@
         <item quantity="one">Scanned document (%1$s page)</item>
         <item quantity="other">Scanned document (%1$s pages)</item>
     </plurals>
+    <plurals name="showEarlierCount">
+        <item quantity="one">Show %1$s earlier</item>
+        <item quantity="other">Show %1$s earlier</item>
+    </plurals>
     <plurals name="toothA11y">
         <item quantity="one">Tooth %1$s, %2$s service</item>
         <item quantity="other">Tooth %1$s, %2$s services</item>

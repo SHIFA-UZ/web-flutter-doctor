@@ -7,15 +7,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.home.HomeRepository
 import shifa.doctor.data.home.HomeSchedule
 import shifa.doctor.data.home.RefreshGate
 import shifa.doctor.data.home.homeRepository
+import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.patients.PatientsRepository
+import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.homeLoadFailed
+import shifa.doctor.generated.resources.noSlotsAvailable
 import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.navigation.Notice
+import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.PracticeClock
 
 data class HomeUiState(
@@ -25,6 +32,12 @@ data class HomeUiState(
     val refreshing: Boolean = false,
     val schedule: HomeSchedule? = null,
     val error: CodeBanner? = null,
+    // HOME-03: the hero patient's birth date, once their record is read (no age until then, or if it fails); the age is
+    // worked out on the practice date at each draw, so a birthday turns it over.
+    val heroBirth: LocalDate? = null,
+    // HOME-03: the Video Call chip is looking for a free slot; [videoSlot] is the one found, until the screen opens it.
+    val findingSlot: Boolean = false,
+    val videoSlot: CalendarEntry.FreeSlot? = null,
 )
 
 /**
@@ -36,11 +49,13 @@ class HomeViewModel(
     private val repo: HomeRepository = homeRepository,
     private val clockFor: (String?) -> PracticeClock = { PracticeClock(it) },
     private val gate: RefreshGate = RefreshGate(),
+    private val patients: PatientsRepository = patientsRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
     // Nothing is read before the profile brings the practice zone (a read before it would count the UTC day).
+    private var agedFor: Long? = null
     private var zoneKnown = false
     private var zone: String? = null
 
@@ -87,7 +102,15 @@ class HomeViewModel(
         if (zone != asked) return read(force)
         _state.update {
             result.fold(
-                onSuccess = { s -> it.copy(loading = false, schedule = s, error = null) },
+                onSuccess = { s ->
+                    val samePatient = s.hero?.patientId == it.schedule?.hero?.patientId
+                    it.copy(
+                        loading = false,
+                        schedule = s,
+                        error = null,
+                        heroBirth = it.heroBirth.takeIf { samePatient },
+                    )
+                },
                 onFailure = { e ->
                     it.copy(
                         loading = false,
@@ -96,5 +119,34 @@ class HomeViewModel(
                 },
             )
         }
+        // Outside the gate: a slow patient read never holds up the next schedule read.
+        result.getOrNull()?.hero?.patientId?.let { id -> viewModelScope.launch { readBirth(id) } }
     }
+
+    // The hero patient's birth date, for the age (flow 02/02 §4: birthday-aware on the practice date).
+    private suspend fun readBirth(patientId: Long) {
+        // Once per hero patient: a record without a birth date (or a failed read) isn't asked again each minute.
+        if (agedFor == patientId) return
+        agedFor = patientId
+        val birth = patients.patient(patientId).getOrNull()?.birth ?: return
+        _state.update { if (it.schedule?.hero?.patientId == patientId) it.copy(heroBirth = birth) else it }
+    }
+
+    /**
+     * The Video Call chip (flow 02/02 §7): the first free slot from now through the next 29 days, opened by the screen
+     * as a video booking; none (or today unreadable) → "No slots available".
+     */
+    fun findVideoSlot() {
+        // Without the practice zone "today" isn't known (a UTC day could skip the earliest slot): the chip is off then.
+        if (_state.value.findingSlot || !zoneKnown || zone == null) return
+        _state.update { it.copy(findingSlot = true) }
+        viewModelScope.launch {
+            val slot = repo.firstFreeSlot(clockFor(zone)).getOrNull()
+            if (slot == null) ShellNotice.pending.value = Notice(Res.string.noSlotsAvailable)
+            _state.update { it.copy(findingSlot = false, videoSlot = slot) }
+        }
+    }
+
+    /** The found slot was opened. */
+    fun videoSlotOpened() = _state.update { it.copy(videoSlot = null) }
 }

@@ -2628,5 +2628,16 @@
   "youLeftTheCall": "You left the call",
   "micDeniedPatientCantHear": "Microphone permission denied. The patient cannot hear you without it.",
   "homeTimesInPracticeTime": "Times are in practice time ({zone}). Your phone is set to {device}.",
-  "homeLoadFailed": "Could not load today's schedule"
+  "homeLoadFailed": "Could not load today's schedule",
+  "nextAppointment": "Next appointment",
+  "startVideoCall": "Start Video Call",
+  "heroInMinutes": "In {n} min",
+  "heroOpensAt": "Opens 15 minutes before the visit ({time}).",
+  "doneForToday": "Done for today",
+  "doneForTodayBody": "All of today's visits are finished. Nothing is booked for the next 14 days.",
+  "noUpcomingBody": "New bookings will show here as soon as patients make them.",
+  "homeSetTimezone": "Set your practice timezone to see today's schedule.",
+  "seeAllInCalendar": "See all in Calendar",
+  "hideEarlier": "Hide earlier",
+  "heroOpensAtVideo": "Opens 5 minutes before the call ({time})."
 }

@@ -137,4 +137,56 @@ class HomeRepositoryTest {
             time += 61.seconds
             assertThat(gate.run { }).isTrue()
         }
+
+    private fun free(
+        start: String,
+        end: String,
+    ) = """{"type":"FREE","startAt":"$start","endAt":"$end","locationId":7}"""
+
+    @Test
+    fun `the video chip's slot is the first not yet begun, today first, then the following days`() =
+        runTest {
+            // 09:12: the 09:00 slot has begun, so today's 10:00 one is first.
+            days["2026-11-05"] = "[" +
+                free(
+                    "2026-11-05T04:00:00Z",
+                    "2026-11-05T04:30:00Z",
+                ) + "," + free("2026-11-05T05:00:00Z", "2026-11-05T05:30:00Z") + "]"
+            assertThat(
+                classToTest.firstFreeSlot(clock()).getOrThrow()?.start,
+            ).isEqualTo(Instant.parse("2026-11-05T05:00:00Z"))
+            // Nothing left today: the first in the days after, skipping a day that fails.
+            days["2026-11-05"] = "[" + free("2026-11-05T04:00:00Z", "2026-11-05T04:30:00Z") + "]"
+            days["2026-11-06"] = "fail"
+            days["2026-11-08"] = "[" + free("2026-11-08T07:00:00Z", "2026-11-08T07:30:00Z") + "]"
+            val repo =
+                HomeRepository(
+                    CalendarRepository({ createHttpClient({ null }, engine) }, TestTimeSource(), 60.seconds),
+                ) { true }
+            assertThat(repo.firstFreeSlot(clock()).getOrThrow()?.start).isEqualTo(Instant.parse("2026-11-08T07:00:00Z"))
+            // None within 30 days: null (the chip says "No slots available"); today unreadable: a failure.
+            days.clear()
+            val empty =
+                HomeRepository(
+                    CalendarRepository({ createHttpClient({ null }, engine) }, TestTimeSource(), 60.seconds),
+                ) { true }
+            assertThat(empty.firstFreeSlot(clock()).getOrThrow()).isNull()
+            days["2026-11-05"] = "fail"
+            val failing =
+                HomeRepository(
+                    CalendarRepository({ createHttpClient({ null }, engine) }, TestTimeSource(), 60.seconds),
+                ) { true }
+            assertThat(failing.firstFreeSlot(clock()).isFailure).isTrue()
+        }
+
+    @Test
+    fun `today's blocks and practice day come with the schedule`() =
+        runTest {
+            days["2026-11-05"] =
+                "[" + visit(1, "2026-11-05T05:00:00Z", "2026-11-05T05:30:00Z") +
+                """,{"type":"BLOCKED","startAt":"2026-11-05T07:00:00Z","endAt":"2026-11-05T08:00:00Z","blockId":9,"blockReason":"Lunch"}]"""
+            val s = classToTest.schedule(clock()).getOrThrow()
+            assertThat(s.blocks.map { it.blockId }).containsExactly(9L)
+            assertThat(s.day).isEqualTo(LocalDate(2026, 11, 5))
+        }
 }

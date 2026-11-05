@@ -336,6 +336,8 @@ private fun RouteContent(
                 // HOME-02: the doctor and the counts the shell keeps.
                 val me by profileRepository.me.collectAsStateWithLifecycle()
                 val p = me?.profile
+                var timezone by rememberSaveable { mutableStateOf(false) }
+                if (timezone) PracticeTimezoneSheet(onClose = { timezone = false })
                 HomeScreen(
                     HomeShell(
                         name = doctorDisplayName(p?.firstName, p?.lastName, tr(Res.string.drMedPrefix)),
@@ -357,6 +359,27 @@ private fun RouteContent(
                         notifications = { actions.select(ShellTab.Notifications) },
                         calendar = { actions.select(ShellTab.Calendar) },
                         tasks = { actions.select(ShellTab.Tasks) },
+                        // HOME-03: the visit, the patient and the panels open inside Home's stack, as from Calendar.
+                        start = {
+                            actions.push(
+                                ShellRoute.Visit(it.appointmentId, it.kind, currentInstant().toEpochMilliseconds()),
+                            )
+                        },
+                        openChart = { actions.push(ShellRoute.Patient(it)) },
+                        openEntry = {
+                            val opened = currentInstant().toEpochMilliseconds()
+                            when (it) {
+                                is CalendarEntry.Appointment -> actions.push(ShellRoute.Appointment(it, opened))
+                                is CalendarEntry.Blocked -> actions.push(ShellRoute.Block(it, opened))
+                                is CalendarEntry.FreeSlot -> actions.push(ShellRoute.Booking(it, opened))
+                            }
+                        },
+                        bookVideo = {
+                            actions.push(
+                                ShellRoute.Booking(it, currentInstant().toEpochMilliseconds(), video = true),
+                            )
+                        },
+                        setTimezone = { timezone = true },
                     ),
                 )
             } else if (route.tab == ShellTab.Patients && !staff) {
@@ -415,6 +438,7 @@ private fun RouteContent(
                 route.opened,
                 onClose = actions.back,
                 patient = route.patient,
+                video = route.video,
             )
         is ShellRoute.Appointment ->
             AppointmentPanelScreen(

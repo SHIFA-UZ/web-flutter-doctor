@@ -211,6 +211,21 @@
       "other": "{total} bemordan {start}–{end} ko'rsatilmoqda"
     }
   },
+  "showEarlierCount": {
+    "en": {
+      "one": "Show {count} earlier",
+      "other": "Show {count} earlier"
+    },
+    "ru": {
+      "few": "Показать {count} прошедших",
+      "many": "Показать {count} прошедших",
+      "one": "Показать {count} прошедший",
+      "other": "Показать {count} прошедших"
+    },
+    "uz": {
+      "other": "Oldingi {count} tasini ko'rsatish"
+    }
+  },
   "toothA11y": {
     "en": {
       "one": "Tooth {fdi}, {count} service",

@@ -24,6 +24,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,8 +39,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Instant
+import kotlinx.datetime.yearsUntil
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.home.heroLook
+import shifa.doctor.data.home.stale
+import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.followUpTasksCount
 import shifa.doctor.generated.resources.home
@@ -76,6 +84,7 @@ import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
+import kotlin.time.Duration.Companion.seconds
 
 class HomeActions(
     val openProfile: () -> Unit = {},
@@ -86,6 +95,14 @@ class HomeActions(
     val notifications: () -> Unit = {},
     val calendar: () -> Unit = {},
     val tasks: () -> Unit = {},
+    // HOME-03: the hero's Start and Open chart, a timeline row's panel, the Video Call chip and its booking, the
+    // practice-timezone sheet.
+    val start: (CalendarEntry.Appointment) -> Unit = {},
+    val openChart: (Long) -> Unit = {},
+    val openEntry: (CalendarEntry) -> Unit = {},
+    val videoCall: () -> Unit = {},
+    val bookVideo: (CalendarEntry.FreeSlot) -> Unit = {},
+    val setTimezone: () -> Unit = {},
 )
 
 /** What Home shows from the shell: the doctor, and the counts the shell keeps (02 §1.3–1.4). */
@@ -125,6 +142,31 @@ fun HomeScreen(
         viewModel.focus(actions.refreshCounts)
         onPauseOrDispose {}
     }
+    // A ticker: Start opens, "In 12 min" counts down and the timeline moves on without a refresh (Flutter never ticked);
+    // a hero that left its slot, or a new practice day, reads the schedule again (gated).
+    val clock = remember(shell.zone) { PracticeClock(shell.zone) }
+    val now by produceState(clock.nowInstant(), clock) {
+        while (true) {
+            delay(TICK)
+            value = clock.nowInstant()
+        }
+    }
+    LaunchedEffect(now) {
+        if (viewModel.state.value.schedule?.stale(
+                now,
+                clock.local(now).date,
+            ) == true
+        ) {
+            viewModel.focus(actions.refreshCounts)
+        }
+    }
+    // The Video Call chip found its slot: open it as a video booking, once.
+    LaunchedEffect(state.videoSlot) {
+        state.videoSlot?.let {
+            actions.bookVideo(it)
+            viewModel.videoSlotOpened()
+        }
+    }
     HomeContent(
         state,
         shell,
@@ -135,9 +177,18 @@ fun HomeScreen(
             notifications = actions.notifications,
             calendar = actions.calendar,
             tasks = actions.tasks,
+            start = actions.start,
+            openChart = actions.openChart,
+            openEntry = actions.openEntry,
+            videoCall = viewModel::findVideoSlot,
+            setTimezone = actions.setTimezone,
         ),
+        clock,
+        now,
     )
 }
+
+private val TICK = 30.seconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,18 +197,26 @@ internal fun HomeContent(
     shell: HomeShell,
     actions: HomeActions,
     clock: PracticeClock = PracticeClock(shell.zone),
+    now: Instant = clock.nowInstant(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
     Header(shell, actions)
     PullToRefreshBox(state.refreshing, actions.refresh, Modifier.weight(1f)) {
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(ShifaSpacing.Inset.Md),
-            verticalArrangement = Arrangement.spacedBy(ShifaSize.S14),
+            // The floating tab bar covers the last 120 (as on the other tabs).
+            contentPadding =
+                PaddingValues(
+                    start = ShifaSpacing.Inset.Md,
+                    top = ShifaSpacing.Inset.Md,
+                    end = ShifaSpacing.Inset.Md,
+                    bottom = ShifaSize.S120,
+                ),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S20),
         ) {
             if (!clock.zoneMissing && clock.deviceDiffers()) {
                 item { TimeZoneNote(clock) }
             }
-            item { Metrics(state, shell, actions) }
+            item { Metrics(state, shell, actions, unknownDay = shell.profileLoaded && clock.zoneMissing) }
             // No profile, no practice zone, no schedule: the same error as a failed schedule read.
             (state.error ?: CodeBanner(Res.string.homeLoadFailed).takeIf { shell.profileFailed })?.let { e ->
                 item {
@@ -167,15 +226,35 @@ internal fun HomeContent(
                     }
                 }
             }
-            // The next patient and today's schedule join with HOME-03.
-            if (state.loading && !shell.profileFailed) {
-                item {
-                    ShifaSkeleton(
-                        Modifier.fillMaxWidth().height(ShifaSize.S180),
-                        ShifaRadius.ControlLg,
-                    )
+            // HOME-03: the next patient, the quick actions, today's timeline (flow 02/02 §3).
+            val zoneMissing = shell.profileLoaded && clock.zoneMissing
+            val schedule = state.schedule
+            when {
+                zoneMissing -> item { EmptyHero(schedule, zoneMissing = true, actions) }
+                state.loading && !shell.profileFailed ->
+                    item { ShifaSkeleton(Modifier.fillMaxWidth().height(ShifaSize.S180), ShifaRadius.ControlLg) }
+                schedule != null -> {
+                    val look = heroLook(schedule, now)
+                    item {
+                        if (look != null) {
+                            HeroCard(
+                                schedule,
+                                look,
+                                state.heroBirth?.let {
+                                        b ->
+                                    clock.local(now).date.takeIf { b <= it }?.let { b.yearsUntil(it) }
+                                },
+                                clock,
+                                actions,
+                            )
+                        } else {
+                            EmptyHero(schedule, zoneMissing = false, actions)
+                        }
+                    }
                 }
             }
+            item { QuickActions(!state.findingSlot && shell.profileLoaded && !clock.zoneMissing, actions) }
+            if (schedule != null && !zoneMissing) item { Timeline(schedule, now, clock, actions) }
         }
     }
 }
@@ -269,8 +348,10 @@ private fun Metrics(
     state: HomeUiState,
     shell: HomeShell,
     actions: HomeActions,
+    // No practice timezone: "today" can't be known, so its count isn't either.
+    unknownDay: Boolean = false,
 ) {
-    val today = state.schedule?.today?.size
+    val today = state.schedule?.today?.size?.takeUnless { unknownDay }
     val cards =
         listOfNotNull<@Composable (Modifier) -> Unit>(
             { m ->
@@ -279,7 +360,7 @@ private fun Metrics(
                     ShifaColors.Bg.SuccessSubtle,
                     ShifaColors.Icon.Brand,
                     tr(Res.string.metricToday),
-                    countText(today, state.error != null || shell.profileFailed),
+                    countText(today, state.error != null || shell.profileFailed || unknownDay),
                     trPlural(Res.plurals.visitsCount, today ?: 0, today ?: 0).substringAfter(' '),
                     actions.calendar,
                     m,

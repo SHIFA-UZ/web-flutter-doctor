@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -280,6 +281,13 @@ class VisitViewModel(
                     }
                 }
             val dental = documentationTemplateFor(profession()) == DocumentationTemplate.Dental
+            // The patient's record before the workspace opens (at most PATIENT_WAIT), so a chronic-disease warning comes
+            // before any action, never after a doctor has started (flow 02/02 §8; Flutter skipped it when not loaded).
+            val early =
+                visit.patientId?.let {
+                        id ->
+                    withTimeoutOrNull(PATIENT_WAIT) { patients.patient(id).getOrNull() }
+                }
             _state.update {
                 it.copy(
                     loading = false,
@@ -287,6 +295,13 @@ class VisitViewModel(
                     dental = dental,
                     // The profession's mode on the first open only (05 §2.4: never over the doctor's choice).
                     mode = if (it.visit == null && dental) VisitMode.Dental else it.mode,
+                    patient = early ?: it.patient,
+                    chronicWarning =
+                        it.chronicWarning || (
+                            early?.chronic != null && visit.patientId?.let(
+                                warned::add,
+                            ) == true
+                        ),
                 )
             }
             notes.load()
@@ -300,7 +315,8 @@ class VisitViewModel(
             // The patient's facts are extras: a failure leaves them out, the visit still works.
             val visits = async { patients.appointments(patientId) }
             val formList = async { forms.list(patientId) }
-            val patient = patients.patient(patientId).getOrNull()
+            // Read here only when it didn't come in time above.
+            val patient = early ?: patients.patient(patientId).getOrNull()
             val history = visits.await().getOrNull().orEmpty()
             val start = visit.start
             _state.update { s ->
@@ -315,7 +331,7 @@ class VisitViewModel(
                             .maxOrNull(),
                     forms = formList.await().getOrNull()?.filter { it.templateId == FormTemplates.F025_2 }.orEmpty(),
                     // The chronic-disease warning, once per patient per session (05 §2.2, shared with the record).
-                    chronicWarning = patient?.chronic != null && warned.add(patientId),
+                    chronicWarning = s.chronicWarning || (patient?.chronic != null && warned.add(patientId)),
                 )
             }
         }
@@ -815,3 +831,6 @@ private val AI_LATER = Res.string.aiDocumentationWillAppearShortly
 
 // Flow 05/04 §8: photos per visit.
 const val MAX_PHOTOS = 20
+
+// How long a visit waits for its patient's record before opening without it (flow 02/02 §8: about 3 s).
+private val PATIENT_WAIT = kotlin.time.Duration.parse("3s")

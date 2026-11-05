@@ -104,6 +104,8 @@ sealed interface ShellRoute {
         val slot: CalendarEntry.FreeSlot,
         val opened: Long,
         val patient: shifa.doctor.data.model.PatientOption? = null,
+        // Home's Video Call chip (HOME-03): the booking starts as a video call.
+        val video: Boolean = false,
     ) : ShellRoute
 
     /** A patient's 025-2 form, new ([formId] null) or existing (FORM-04); [opened] as for [Appointment]. */

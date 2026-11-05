@@ -2628,5 +2628,16 @@
   "youLeftTheCall": "Siz qo'ng'iroqdan chiqdingiz",
   "micDeniedPatientCantHear": "Mikrofonga ruxsat berilmagan. Usiz bemor sizni eshitmaydi.",
   "homeTimesInPracticeTime": "Vaqtlar amaliyot vaqtida ({zone}). Telefoningiz {device} vaqtida.",
-  "homeLoadFailed": "Bugungi jadvalni yuklab bo'lmadi"
+  "homeLoadFailed": "Bugungi jadvalni yuklab bo'lmadi",
+  "nextAppointment": "Keyingi qabul",
+  "startVideoCall": "Videoqo'ng'iroqni boshlash",
+  "heroInMinutes": "{n} daqiqadan so'ng",
+  "heroOpensAt": "Tashrifdan 15 daqiqa oldin ochiladi ({time}).",
+  "doneForToday": "Bugun uchun tamom",
+  "doneForTodayBody": "Bugungi barcha tashriflar yakunlandi. Keyingi 14 kunga hech narsa band qilinmagan.",
+  "noUpcomingBody": "Bemorlar yozilishi bilan yangi qabullar shu yerda ko'rinadi.",
+  "homeSetTimezone": "Bugungi jadvalni ko'rish uchun amaliyot vaqt mintaqasini belgilang.",
+  "seeAllInCalendar": "Hammasi kalendarda",
+  "hideEarlier": "Oldingilarini yashirish",
+  "heroOpensAtVideo": "Qo'ng'iroqdan 5 daqiqa oldin ochiladi ({time})."
 }

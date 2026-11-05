@@ -983,6 +983,8 @@
     <string name="documentsNoMatch">“%1$s” bo'yicha hujjat topilmadi</string>
     <string name="documentsReceived">Qabul qilingan hujjatlar (30 kun)</string>
     <string name="done">Tayyor</string>
+    <string name="doneForToday">Bugun uchun tamom</string>
+    <string name="doneForTodayBody">Bugungi barcha tashriflar yakunlandi. Keyingi 14 kunga hech narsa band qilinmagan.</string>
     <string name="downloadSummary">Yuklab olish</string>
     <string name="drMedPrefix">Dr. med.</string>
     <string name="draft">Qoralama</string>
@@ -1217,10 +1219,14 @@
     <string name="goodMorning">Xayrli tong</string>
     <string name="groupName">Guruh nomi</string>
     <string name="heartDisease">Yurak kasalligi</string>
+    <string name="heroInMinutes">%1$s daqiqadan so'ng</string>
+    <string name="heroOpensAt">Tashrifdan 15 daqiqa oldin ochiladi (%1$s).</string>
+    <string name="heroOpensAtVideo">Qo'ng'iroqdan 5 daqiqa oldin ochiladi (%1$s).</string>
     <string name="hiddenByFilters">Filtrlar bilan yashirilgan</string>
     <string name="hideAiAndFormNotes">Yashirish</string>
     <string name="hideAiReminders">Eslatmalarni yashirish</string>
     <string name="hideDetails">Batafsilni yashirish</string>
+    <string name="hideEarlier">Oldingilarini yashirish</string>
     <string name="hidePassword">Parolni yashirish</string>
     <string name="history">Tarix</string>
     <string name="historyOtherTeethHidden">Boshqa tishlar uchun yozilgan oldingi qatorlar yashirilgan; ko'rish uchun qayta almashtiring.</string>
@@ -1228,6 +1234,7 @@
     <string name="holdToExpandAnswer">Javobni kattalashtirish uchun bosib turing</string>
     <string name="home">Bosh sahifa</string>
     <string name="homeLoadFailed">Bugungi jadvalni yuklab bo'lmadi</string>
+    <string name="homeSetTimezone">Bugungi jadvalni ko'rish uchun amaliyot vaqt mintaqasini belgilang.</string>
     <string name="homeTimesInPracticeTime">Vaqtlar amaliyot vaqtida (%1$s). Telefoningiz %2$s vaqtida.</string>
     <string name="hourAgo">1 soat oldin</string>
     <string name="hypertension">Gipertoniya</string>
@@ -1603,6 +1610,7 @@
     <string name="newSession">Yangi sessiya</string>
     <string name="newestFirst">Avval Yangilari</string>
     <string name="next">Keyingi</string>
+    <string name="nextAppointment">Keyingi qabul</string>
     <string name="nextAppointmentInMinutes">Keyingi uchrashuv %1$s daqiqadan keyin boshlanadi.</string>
     <string name="nextAvailable">Keyingi bo'sh kun: %1$s</string>
     <string name="nextMonth">Keyingi oy</string>
@@ -1674,6 +1682,7 @@
     <string name="noTimezoneFound">Vaqt mintaqasi topilmadi. Shahar nomini ingliz tilida yozing.</string>
     <string name="noTokensFound">Tokenlar topilmadi</string>
     <string name="noUnreadConversations">O'qilmagan suhbatlar yo'q</string>
+    <string name="noUpcomingBody">Bemorlar yozilishi bilan yangi qabullar shu yerda ko'rinadi.</string>
     <string name="noUsersFound">Foydalanuvchilar topilmadi</string>
     <string name="none">Yo'q</string>
     <string name="notAvailableShort">Mavjud emas</string>
@@ -2105,6 +2114,7 @@
     <string name="searchUsersPlaceholder">Ism, raqam yoki rol bo'yicha qidirish</string>
     <string name="searching">Qidirilmoqda…</string>
     <string name="security">Xavfsizlik</string>
+    <string name="seeAllInCalendar">Hammasi kalendarda</string>
     <string name="selectChronicDisease">Surunkali kasallikni tanlash</string>
     <string name="selectConversation">Suhbatni tanlash</string>
     <string name="selectDate">Sanani tanlash</string>
@@ -2253,6 +2263,7 @@
     <string name="startDate">Boshlanish sanasi</string>
     <string name="startTabHelper">Ilovani ochganda asosiy bo'lim. Bildirishnomalar baribir tegishli ekranni ochadi.</string>
     <string name="startTime">Boshlanish vaqti</string>
+    <string name="startVideoCall">Videoqo'ng'iroqni boshlash</string>
     <string name="startingScreen">Boshlang'ich ekran</string>
     <string name="startingScreenHint">Ilovani ochganda ko'rsatiladigan asosiy bo'lim. Bildirishnomalar tegishli ekranni ochadi.</string>
     <string name="startsIn">Boshlanishiga</string>

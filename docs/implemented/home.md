@@ -69,3 +69,49 @@ board `DaHome` (header, "Today at a glance").
   0. Demo mode is off again. Dev after the review fixes: Today 0, 46 unread, Follow-up 1 (dev has 1 ACTIVE task, no
   drafts), avatar read as "Profile". Offline cold start: "—" in both counts and "Could not load today's schedule";
   back online, Retry brought Today 0, 46 unread, Follow-up 1.
+
+## HOME-03 · Next patient, quick actions, today's timeline
+
+Built 2026-11-05. Spec 02 §1.4, ticket HOME-03, flow 02/02, board `DaHome` (hero, empty hero, "Quick Actions",
+"Today's schedule").
+
+- **Next patient card** (`HeroCard`):
+  - "Next patient" today, "Next appointment" for a later day (the look-ahead, with its date).
+  - Status pill: Now (in its slot or in progress), Waiting (requested), "In 12 min" within the hour, else Confirmed.
+  - Photo, name (2 lines), time range, Online / In Clinic, the place (left out when it would only repeat "In Clinic"),
+    "Age 36" once the patient's record is read (worked out from the birth date on the practice date at each draw, so
+    a birthday turns it over), the reason.
+  - Start Appointment / Start Video Call / Continue Appointment, full width; Open chart opens the patient in Home's
+    stack. Start opens 15 minutes before a visit today (5 before a video call: the backend's join window), not for a
+    requested one; while closed, "Opens 15 minutes before the visit (09:45)." or "Opens 5 minutes before the call
+    (09:55)." The visit screen warns about a chronic disease itself, so Home doesn't ask twice; it now waits
+    up to 3 s for the patient's record before its workspace opens, so the warning comes first (Codex HOME-03 P1).
+  - Read out as "Next patient: <name>".
+- **No hero:** "Done for today" when today had visits and nothing is booked for 14 days, else "No upcoming
+  appointments"; both with New appointment (Calendar). Without a practice timezone: "Set your practice timezone to see
+  today's schedule." with Add practice timezone (the profile's timezone sheet), Today "—", no timeline (flow 02/02 §6
+  target).
+- **Quick Actions:** New appointment (Calendar) and Video Call (off until the practice timezone is known): the first free slot not yet begun, today and the next
+  29 days (`HomeRepository.firstFreeSlot`), opened as a booking set to video (`ShellRoute.Booking.video`; leaving it
+  untouched asks nothing). None → "No slots available". Flutter sent the doctor to the Calendar to scan there.
+- **Today's schedule:** visits and blocked times by start, a dot on a line, the status chip from the Calendar
+  (`status`), "Now" in brand colours for the current visit. Finished ones (completed, no-show, ended) fold into "Show N
+  earlier"; at most 8 still to come; "See all in Calendar". A row opens its Calendar panel (with Start), not just a
+  highlight as in Flutter. Hidden when today has nothing.
+- **Ticker:** every 30 s the pill, Start and the timeline move on without a read. When the hero isn't the one
+  `pickHero` would choose now (it left its slot, or the next visit's slot began while it ran over), or the practice day
+  turned, the schedule is read again through Home's gate (Flutter never ticked, flow §8).
+- **Not built:**
+  - The "Prescription" chip: it opens the remote-care task form, whose screen comes with the TASK tickets, and its
+    label and destination disagree (flow 02/02 §13). It waits for both.
+  - The board's "Medical record" flags (allergy, chronic disease, documents, briefing) on the hero: not in the spec.
+- **Design notes:** the date of a later hero is `06.11.2026` (the app's date format), not the board's "Thu, 6 Nov".
+- **Tests:** `HomeRulesTest` (Start window and pill; the 5-minute video window; in progress, requested, another day; the timeline split; when the
+  schedule is stale), `HomeRepositoryTest` (the free-slot scan skipping failed days, null when none, failure when today
+  fails; blocks and the day come along). Screenshots `Home_loaded`, `Home_heroLater`, `Home_done`, `Home_noZone`.
+- **Emulator:**
+  - Dev: "No upcoming appointments" (dev has only free slots for 30 days, checked against `/calendar`). Video Call
+    opened the 09:00 slot as a video booking (07:23 in Tashkent); backed out without booking.
+  - Demo: "Next appointment" Dilnoza Rahimova on 06.11 at 10:00, Online, Age 36, Start Video Call off with "Opens …
+    (06.11.2026, 09:45)"; the Lunch row opened its block panel; Open chart opened her record. Demo mode is off again.
+

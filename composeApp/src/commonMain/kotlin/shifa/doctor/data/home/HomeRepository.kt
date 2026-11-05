@@ -24,6 +24,10 @@ import kotlin.time.TimeSource
  */
 data class HomeSchedule(
     val today: List<CalendarEntry.Appointment> = emptyList(),
+    // Today's blocked times, for the timeline (HOME-03).
+    val blocks: List<CalendarEntry.Blocked> = emptyList(),
+    // The practice day this was read for; null for the signed-out empty schedule.
+    val day: LocalDate? = null,
     val hero: CalendarEntry.Appointment? = null,
     // The hero is in its slot (or already in progress).
     val heroNow: Boolean = false,
@@ -73,10 +77,46 @@ class HomeRepository(
         val now = clock.nowInstant()
         val today = clock.local(now).date
         val entries = calendar.day(DayKey(today), force).getOrElse { return Result.failure(it) }
-        val visits = entries.visits()
-        pickHero(visits, now)?.let { (hero, inSlot) -> return Result.success(HomeSchedule(visits, hero, inSlot)) }
-        (1..LOOK_AHEAD_DAYS).map { today.plus(DatePeriod(days = it)) }.chunked(BATCH).forEach { days ->
-            // A day that can't be read is skipped: the hero then comes from a later day, never an error for Home.
+        val base =
+            HomeSchedule(
+                entries.visits(),
+                entries.filterIsInstance<CalendarEntry.Blocked>().sortedBy { it.start },
+                today,
+            )
+        val found = pickHero(base.today, now)
+        if (found != null) return Result.success(base.copy(hero = found.first, heroNow = found.second))
+        val ahead =
+            firstOf(today, 1..LOOK_AHEAD_DAYS, force) { day, dayEntries ->
+                pickHero(dayEntries.visits(), now)?.let { (hero, _) -> base.copy(hero = hero, heroDay = day) }
+            }
+        return Result.success(ahead ?: base)
+    }
+
+    /**
+     * Home's Video Call chip (HOME-03, flow 02/02 §7): the first free slot not yet begun, today and the next
+     * [FREE_SLOT_DAYS] days; null when there is none. Fails only when today can't be read.
+     */
+    suspend fun firstFreeSlot(clock: PracticeClock): Result<CalendarEntry.FreeSlot?> {
+        val now = clock.nowInstant()
+        val today = clock.local(now).date
+        val free = { entries: List<CalendarEntry> ->
+            entries.filterIsInstance<CalendarEntry.FreeSlot>().filter { it.start >= now }.minByOrNull { it.start }
+        }
+        val first = calendar.day(DayKey(today)).getOrElse { return Result.failure(it) }
+        return Result.success(free(first) ?: firstOf(today, 1..FREE_SLOT_DAYS, force = false) { _, e -> free(e) })
+    }
+
+    /**
+     * The first non-null [pick] over the days [offsets] after [from], in order, read four at a time from the day cache
+     * (the backend has no range query). A day that can't be read is skipped: never an error for Home.
+     */
+    private suspend fun <T> firstOf(
+        from: LocalDate,
+        offsets: IntRange,
+        force: Boolean,
+        pick: (LocalDate, List<CalendarEntry>) -> T?,
+    ): T? {
+        offsets.map { from.plus(DatePeriod(days = it)) }.chunked(BATCH).forEach { days ->
             val read =
                 coroutineScope {
                     days.map {
@@ -84,13 +124,9 @@ class HomeRepository(
                         async { d to calendar.day(DayKey(d), force).getOrNull() }
                     }.awaitAll()
                 }
-            read.forEach { (day, dayEntries) ->
-                pickHero(dayEntries.orEmpty().visits(), now)?.let { (hero, _) ->
-                    return Result.success(HomeSchedule(visits, hero, heroNow = false, heroDay = day))
-                }
-            }
+            read.forEach { (day, entries) -> pick(day, entries.orEmpty())?.let { return it } }
         }
-        return Result.success(HomeSchedule(visits))
+        return null
     }
 
     private fun List<CalendarEntry>.visits() =
@@ -98,6 +134,7 @@ class HomeRepository(
 
     companion object {
         const val LOOK_AHEAD_DAYS = 14
+        const val FREE_SLOT_DAYS = 29
         private const val BATCH = 4
     }
 }
