@@ -107,6 +107,7 @@ import shifa.doctor.ui.forms.FormEditorScreen
 import shifa.doctor.ui.home.HomeActions
 import shifa.doctor.ui.home.HomeScreen
 import shifa.doctor.ui.home.HomeShell
+import shifa.doctor.ui.home.PatientSearchScreen
 import shifa.doctor.ui.patients.PatientDetailScreen
 import shifa.doctor.ui.patients.PatientsScreen
 import shifa.doctor.ui.profile.BillingScreen
@@ -198,6 +199,7 @@ fun MainScreen(
         state,
         ShellActions(
             select = viewModel::select,
+            openPatientFromSearch = viewModel::openPatientFromSearch,
             refreshHomeCounts = viewModel::refreshHomeCounts,
             push = viewModel::push,
             back = { viewModel.back() },
@@ -217,6 +219,8 @@ class ShellActions(
     val select: (ShellTab) -> Unit = {},
     // HOME-02: Home's notification and follow-up counts read again.
     val refreshHomeCounts: () -> Unit = {},
+    // HOME-05: a search result opens in the Patients tab.
+    val openPatientFromSearch: (Long) -> Unit = {},
     val push: (ShellRoute) -> Unit = {},
     val back: () -> Unit = {},
     val openMore: () -> Unit = {},
@@ -354,8 +358,7 @@ private fun RouteContent(
                     HomeActions(
                         openProfile = { actions.select(ShellTab.Profile) },
                         refreshCounts = actions.refreshHomeCounts,
-                        // The search overlay joins with HOME-05; until then the Patients tab has the search.
-                        search = { actions.select(ShellTab.Patients) },
+                        search = { actions.push(ShellRoute.Search(currentInstant().toEpochMilliseconds())) },
                         notifications = { actions.select(ShellTab.Notifications) },
                         calendar = { actions.select(ShellTab.Calendar) },
                         tasks = { actions.select(ShellTab.Tasks) },
@@ -468,6 +471,13 @@ private fun RouteContent(
                 video = route.kind == shifa.doctor.data.model.VisitKind.Video,
             )
         ShellRoute.Locations -> LocationsScreen(onClose = actions.back)
+        is ShellRoute.Search ->
+            PatientSearchScreen(
+                route.opened,
+                onBack = actions.back,
+                onOpen = actions.openPatientFromSearch,
+                onAddPatient = { actions.select(ShellTab.Patients) },
+            )
         is ShellRoute.Patient ->
             PatientDetailScreen(
                 route.id,

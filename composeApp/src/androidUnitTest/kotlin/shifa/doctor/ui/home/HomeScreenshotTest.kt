@@ -28,4 +28,10 @@ class HomeScreenshotTest {
 
     @Test
     fun noZone() = captureRoboImage("screenshots/Home_noZone.png") { HomeNoZonePreview() }
+
+    @Test
+    fun search() = captureRoboImage("screenshots/Home_search.png") { PatientSearchPreview() }
+
+    @Test
+    fun searchEmpty() = captureRoboImage("screenshots/Home_searchEmpty.png") { PatientSearchEmptyPreview() }
 }

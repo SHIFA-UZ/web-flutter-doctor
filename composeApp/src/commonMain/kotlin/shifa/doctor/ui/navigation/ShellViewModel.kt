@@ -57,6 +57,11 @@ sealed interface ShellRoute {
     /** More → Language (SET-02 builds the screen). */
     data object Language : ShellRoute
 
+    /** Home → patient search (HOME-05); [opened] makes each open a fresh search (an empty query, a staleness check). */
+    data class Search(
+        val opened: Long,
+    ) : ShellRoute
+
     /** Profile → Debug menu, debug builds only. */
     data object Debug : ShellRoute
 
@@ -287,6 +292,24 @@ class ShellViewModel(
             } else {
                 s.copy(tab = target, moreOpen = false)
             }
+        }
+    }
+
+    /**
+     * HOME-05 (flow 02/07 §10): the search closes and [patientId] opens in the Patients tab over its directory, so Back
+     * leads to the directory, not to the search.
+     */
+    fun openPatientFromSearch(patientId: Long) {
+        switched = true
+        ShellNotice.dismissSuccess()
+        _state.update { s ->
+            val withoutSearch = s.stack.filterNot { it is ShellRoute.Search }
+            val patients = listOf(ShellRoute.Root(ShellTab.Patients), ShellRoute.Patient(patientId))
+            s.copy(
+                stacks = s.stacks + (s.tab to withoutSearch) + (ShellTab.Patients to patients),
+                tab = ShellTab.Patients,
+                moreOpen = false,
+            )
         }
     }
 

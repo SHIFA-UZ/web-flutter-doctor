@@ -2639,5 +2639,7 @@
   "homeSetTimezone": "Укажите часовой пояс практики, чтобы видеть расписание на сегодня.",
   "seeAllInCalendar": "Все в календаре",
   "hideEarlier": "Скрыть прошедшие",
-  "heroOpensAtVideo": "Откроется за 5 минут до звонка ({time})."
+  "heroOpensAtVideo": "Откроется за 5 минут до звонка ({time}).",
+  "searchPatientsByNameOrPhone": "Поиск пациентов по имени или телефону",
+  "noPatientsFoundHint": "Проверьте написание или ищите по номеру телефона."
 }

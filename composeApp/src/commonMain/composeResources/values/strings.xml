@@ -1656,6 +1656,7 @@
     <string name="noPatientSelected">No patient selected</string>
     <string name="noPatientsAvailable">No patients available</string>
     <string name="noPatientsFound">No patients found</string>
+    <string name="noPatientsFoundHint">Check the spelling or search by phone number.</string>
     <string name="noPatientsYet">No patients yet</string>
     <string name="noPatientsYetBody">Add your first patient to start keeping records.</string>
     <string name="noPhone">No phone</string>
@@ -2104,6 +2105,7 @@
     <string name="searchDoctorsAndPatients">Search doctors and patients</string>
     <string name="searchPatients">Search patients...</string>
     <string name="searchPatientsAppointmentsHint">Search patients, appointments…</string>
+    <string name="searchPatientsByNameOrPhone">Search patients by name or phone</string>
     <string name="searchPatientsDirectoryHint">Name, phone, or ID</string>
     <string name="searchPatientsGlobalHint">Search all patients…</string>
     <string name="searchPatientsHint">Search by name, phone, or ID…</string>

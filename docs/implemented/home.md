@@ -115,3 +115,29 @@ Built 2026-11-05. Spec 02 §1.4, ticket HOME-03, flow 02/02, board `DaHome` (her
   - Demo: "Next appointment" Dilnoza Rahimova on 06.11 at 10:00, Online, Age 36, Start Video Call off with "Opens …
     (06.11.2026, 09:45)"; the Lunch row opened its block panel; Open chart opened her record. Demo mode is off again.
 
+## HOME-05 · Patient search
+
+Built 2026-11-05. Spec 02 §1.9, ticket HOME-05, flow 02/07, board `DaHome` (search page).
+
+- **Entry:** the header's Search button (Flutter had only Cmd/Ctrl+K, unreachable on phones) pushes `ShellRoute.Search`
+  in Home's stack: a full page (the flow's target), Back and the field with the keyboard up, the tab bar hidden.
+- **List:** from the shared directory (`PatientsRepository`, read when stale like the Patients tab; nothing extra on
+  the server). Blank: "Patients" and the first 8 by name (Flutter: server order). Typed: every match, counted ("2
+  patients", read out as it changes), by name, id, display id or phone digits (3+ digits, no letters). The matcher
+  moved from the Patients tab to `Patient.matches`, so both search the same way. Rows are the Patients tab's
+  `PatientRow` (age, gender, phone, status).
+- **Open:** a row (or the keyboard's Search with a single match; otherwise Search just hides the keyboard) closes the
+  search and opens the patient in the Patients tab over its directory, so Back leads to the directory (flow §10;
+  Flutter switched to the Patients tab without opening anyone). Each open starts with an empty query.
+- **States:** skeleton while the directory is read the first time; "Could not load patients" with Retry; "No patients
+  found" with "Check the spelling or search by phone number."; no patients at all: "No patients yet" with Add patient
+  (the Patients tab).
+- **Not built:** Latin/Cyrillic Uzbek normalisation and an "Add patient" button on no match (flow §8, §9 targets);
+  highlighting the matched part of the name.
+- **Tests:** `PatientSearchTest` (first 8 by name, name / display id / phone digits, letters never match phones);
+  `ShellViewModelTest` (a result opens in the Patients tab, Back to the directory);
+  `PatientsViewModelTest` still passes on the shared matcher. Screenshots `Home_search`, `Home_searchEmpty`.
+- **Emulator (dev):** Search opened with the keyboard up and the 5 seed patients; "0103" found Sardor Ismoilov by phone;
+  the keyboard's Search opened his record in the Patients tab; Back showed the directory. Reopened from Home: empty
+  query; "zz" + Search: "No patients found", keyboard put away.
+

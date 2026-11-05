@@ -133,18 +133,9 @@ data class PatientsUiState(
 
     /** Search (name, id, display id, phone digits), segment, status, then name order. */
     val visible: List<Patient>
-        get() {
-            val q = query.trim().lowercase()
-            // Phone digits only for a number-like query ("90 123", "+998…"), so "Alice 123" doesn't match phones.
-            val digits = q.filter(Char::isDigit).takeIf { q.none(Char::isLetter) }.orEmpty()
-            return patients.orEmpty().asSequence()
-                .filter { p ->
-                    q.isEmpty() ||
-                        p.name.lowercase().contains(
-                            q,
-                        ) || p.id.toString() == q || p.displayId.lowercase().contains(q) ||
-                        (digits.length >= MIN_DIGITS && p.allPhones.any { it.filter(Char::isDigit).contains(digits) })
-                }
+        get() =
+            patients.orEmpty().asSequence()
+                .filter { it.matches(query) }
                 .filter {
                     when (tab) {
                         PatientTab.All -> true
@@ -156,7 +147,6 @@ data class PatientsUiState(
                 .filter { status == null || shown(it.status) == status }
                 .sortedWith(compareBy<Patient> { it.name.lowercase() }.let { if (descending) it.reversed() else it })
                 .toList()
-        }
 
     val pages: Int get() = maxOf(1, (visible.size + PAGE - 1) / PAGE)
 
@@ -169,7 +159,6 @@ data class PatientsUiState(
 private fun shown(s: PatientStatus) = if (s == PatientStatus.Unknown) PatientStatus.Active else s
 
 private const val PAGE = 10
-private const val MIN_DIGITS = 3
 
 /**
  * PAT-03 (flow 06/01, spec 06 §1.2–1.5): the doctor's patients from the shared directory, read when stale (60 s) rather

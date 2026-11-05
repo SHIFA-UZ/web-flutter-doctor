@@ -1656,6 +1656,7 @@
     <string name="noPatientSelected">Bemor tanlanmagan</string>
     <string name="noPatientsAvailable">Mavjud bemorlar yo'q</string>
     <string name="noPatientsFound">Bemorlar topilmadi</string>
+    <string name="noPatientsFoundHint">Imloni tekshiring yoki telefon raqami bo'yicha qidiring.</string>
     <string name="noPatientsYet">Hali bemorlar yo'q</string>
     <string name="noPatientsYetBody">Yozuvlarni yuritish uchun birinchi bemoringizni qo'shing.</string>
     <string name="noPhone">Telefon yo'q</string>
@@ -2104,6 +2105,7 @@
     <string name="searchDoctorsAndPatients">Shifokorlar va bemorlarni qidirish</string>
     <string name="searchPatients">Bemorlarni qidirish...</string>
     <string name="searchPatientsAppointmentsHint">Bemorlar, uchrashuvlarni qidirish…</string>
+    <string name="searchPatientsByNameOrPhone">Bemorlarni ism yoki telefon bo'yicha qidirish</string>
     <string name="searchPatientsDirectoryHint">Ism, telefon yoki ID</string>
     <string name="searchPatientsGlobalHint">Barcha bemorlarni qidirish…</string>
     <string name="searchPatientsHint">Ism, telefon yoki ID bo'yicha qidirish…</string>

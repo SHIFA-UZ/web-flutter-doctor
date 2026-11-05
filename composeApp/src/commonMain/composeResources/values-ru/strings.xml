@@ -1656,6 +1656,7 @@
     <string name="noPatientSelected">Пациент не выбран</string>
     <string name="noPatientsAvailable">Нет доступных пациентов</string>
     <string name="noPatientsFound">Пациенты не найдены</string>
+    <string name="noPatientsFoundHint">Проверьте написание или ищите по номеру телефона.</string>
     <string name="noPatientsYet">Пациентов пока нет</string>
     <string name="noPatientsYetBody">Добавьте первого пациента, чтобы вести записи.</string>
     <string name="noPhone">Нет телефона</string>
@@ -2104,6 +2105,7 @@
     <string name="searchDoctorsAndPatients">Поиск врачей и пациентов</string>
     <string name="searchPatients">Поиск пациентов...</string>
     <string name="searchPatientsAppointmentsHint">Поиск пациентов, записей…</string>
+    <string name="searchPatientsByNameOrPhone">Поиск пациентов по имени или телефону</string>
     <string name="searchPatientsDirectoryHint">Имя, телефон или ID</string>
     <string name="searchPatientsGlobalHint">Поиск по всем пациентам…</string>
     <string name="searchPatientsHint">Поиск по имени, телефону или ID…</string>

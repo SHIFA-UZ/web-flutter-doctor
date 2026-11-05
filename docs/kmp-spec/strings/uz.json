@@ -2639,5 +2639,7 @@
   "homeSetTimezone": "Bugungi jadvalni ko'rish uchun amaliyot vaqt mintaqasini belgilang.",
   "seeAllInCalendar": "Hammasi kalendarda",
   "hideEarlier": "Oldingilarini yashirish",
-  "heroOpensAtVideo": "Qo'ng'iroqdan 5 daqiqa oldin ochiladi ({time})."
+  "heroOpensAtVideo": "Qo'ng'iroqdan 5 daqiqa oldin ochiladi ({time}).",
+  "searchPatientsByNameOrPhone": "Bemorlarni ism yoki telefon bo'yicha qidirish",
+  "noPatientsFoundHint": "Imloni tekshiring yoki telefon raqami bo'yicha qidiring."
 }

@@ -155,6 +155,20 @@ class ShellViewModelTest {
     }
 
     @Test
+    fun `a search result closes the search and opens the patient over the directory`() {
+        val classToTest = vm()
+        classToTest.settle()
+        classToTest.push(ShellRoute.Search(1))
+        classToTest.openPatientFromSearch(16)
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Patients)
+        assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Patient(16))
+        assertThat(classToTest.back()).isTrue() // the directory, not the search
+        assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Root(ShellTab.Patients))
+        classToTest.select(ShellTab.Home)
+        assertThat(classToTest.state.value.route).isEqualTo(ShellRoute.Root(ShellTab.Home))
+    }
+
+    @Test
     fun `a push before the profile arrives keeps the doctor where they went`() {
         hold = CompletableDeferred()
         val classToTest = vm()

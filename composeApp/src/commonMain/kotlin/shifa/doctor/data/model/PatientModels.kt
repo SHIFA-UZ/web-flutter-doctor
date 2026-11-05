@@ -97,7 +97,23 @@ data class Patient(
 
     /** Whole years on [today] (the practice date, injected so tests and the practice zone decide). */
     fun age(today: LocalDate): Int? = birth?.takeIf { it <= today }?.yearsUntil(today)
+
+    /**
+     * The directory search (PAT-03, HOME-05): name, id, display id, or phone digits for a number-like query of 3+
+     * digits ("90 123", "+998…"), so "Alice 123" doesn't match phones. A blank query matches everyone.
+     */
+    fun matches(query: String): Boolean {
+        val q = query.trim().lowercase()
+        if (q.isEmpty()) return true
+        val digits = q.filter(Char::isDigit).takeIf { q.none(Char::isLetter) }.orEmpty()
+        return name.lowercase().contains(q) ||
+            id.toString() == q ||
+            displayId.lowercase().contains(q) ||
+            (digits.length >= MIN_PHONE_DIGITS && allPhones.any { it.filter(Char::isDigit).contains(digits) })
+    }
 }
+
+private const val MIN_PHONE_DIGITS = 3
 
 /** An appointment of this patient with the doctor (`GET /patients/{id}/appointments`). */
 @Serializable

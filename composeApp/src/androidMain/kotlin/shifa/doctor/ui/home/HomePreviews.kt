@@ -145,3 +145,34 @@ internal fun HomeLargeTextPreview() =
             )
         }
     }
+
+private val searchPeople =
+    listOf(
+        shifa.doctor.data.model.Patient(
+            12,
+            "Dilnoza Rahimova",
+            phones = listOf("+998 90 123 45 67"),
+            birthDate = "1990-05-15",
+        ),
+        shifa.doctor.data.model.Patient(
+            7,
+            "Jasur Karimov",
+            phones = listOf("+998 93 555 12 34"),
+            birthDate = "1978-02-01",
+        ),
+        shifa.doctor.data.model.Patient(18, "Malika Karimova", birthDate = "2001-09-30", clinicalStatus = "FOLLOW_UP"),
+    )
+
+// HOME-05: "kar" typed: two matches, counted.
+@Composable
+internal fun PatientSearchPreview() =
+    PreviewTheme {
+        PatientSearchContent(PatientSearchUiState(searchPeople, query = "kar", today = day), {}, {}, {}, {})
+    }
+
+// HOME-05: nothing matches.
+@Composable
+internal fun PatientSearchEmptyPreview() =
+    PreviewTheme {
+        PatientSearchContent(PatientSearchUiState(searchPeople, query = "zz", today = day), {}, {}, {}, {})
+    }
