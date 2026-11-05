@@ -211,6 +211,7 @@
     <string name="appointmentTreatmentPlanTitle">Treatment plan for this visit</string>
     <string name="appointmentType">Appointment type</string>
     <string name="appointments">Appointments</string>
+    <string name="appointmentsInRange">Appointments (%1$s)</string>
     <string name="appointmentsLast7Days">Appointments (Last 7 Days)</string>
     <string name="appointmentsLoadFailed">Couldn't load the appointments.</string>
     <string name="appointmentsTabHint">Schedule and manage appointments for this patient.</string>
@@ -990,6 +991,7 @@
     <string name="done">Done</string>
     <string name="doneForToday">Done for today</string>
     <string name="doneForTodayBody">All of today's visits are finished. Nothing is booked for the next 14 days.</string>
+    <string name="donutSummary">In-person %1$s, video %2$s</string>
     <string name="downloadSummary">Download</string>
     <string name="drMedPrefix">Dr. med.</string>
     <string name="draft">Draft</string>
@@ -2480,6 +2482,7 @@
     <string name="treatmentResultProgress">Treatment result (progress/dynamics)</string>
     <string name="treatmentStage1">Treatment (stage 1)</string>
     <string name="treatmentStage2">Treatment (stage 2 / epicrisis)</string>
+    <string name="trendSummary">Appointments per day, %1$s. Highest %2$s.</string>
     <string name="tuesday">Tuesday</string>
     <string name="turkmen">Turkmen</string>
     <string name="turnOn">Turn on</string>

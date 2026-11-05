@@ -192,7 +192,12 @@ internal fun AnalyticsContent(
     }
     Kpis(state.overview, onRetry, actions)
     when (advanced) {
-        true -> EngagementBlock(state.engagement, onRetry, actions)
+        true -> {
+            // ANALYTICS-03: the trend for the range, the visit types, then engagement.
+            TrendBlock(state.trend, state.range, state.today, state.trendLoading, onRetry)
+            TypesBlock(state.types, onRetry)
+            EngagementBlock(state.engagement, onRetry, actions)
+        }
         false -> Teaser(actions.seePlans)
         null -> Unit
     }
@@ -399,6 +404,8 @@ internal fun LoadFailed(onRetry: () -> Unit) =
         )
         ShifaLink(tr(Res.string.retry), onRetry)
     }
+
+internal fun shortMonth(month: Int) = SHORT_MONTHS[month - 1]
 
 private val SHORT_MONTHS =
     listOf(

@@ -211,6 +211,7 @@
     <string name="appointmentTreatmentPlanTitle">Ushbu qabul uchun davolash rejasi</string>
     <string name="appointmentType">Uchrashuv turi</string>
     <string name="appointments">Uchrashuvlar</string>
+    <string name="appointmentsInRange">Qabullar (%1$s)</string>
     <string name="appointmentsLast7Days">Uchrashuvlar (Oxirgi 7 kun)</string>
     <string name="appointmentsLoadFailed">Uchrashuvlarni yuklab bo'lmadi.</string>
     <string name="appointmentsTabHint">Ushbu bemor uchun uchrashuvlarni rejalashtiring va boshqaring.</string>
@@ -990,6 +991,7 @@
     <string name="done">Tayyor</string>
     <string name="doneForToday">Bugun uchun tamom</string>
     <string name="doneForTodayBody">Bugungi barcha tashriflar yakunlandi. Keyingi 14 kunga hech narsa band qilinmagan.</string>
+    <string name="donutSummary">Klinikada %1$s, video %2$s</string>
     <string name="downloadSummary">Yuklab olish</string>
     <string name="drMedPrefix">Dr. med.</string>
     <string name="draft">Qoralama</string>
@@ -2480,6 +2482,7 @@
     <string name="treatmentResultProgress">Davolanish natijasi (epikriz)</string>
     <string name="treatmentStage1">Davolash (1-bosqich)</string>
     <string name="treatmentStage2">Davolash (2-bosqich / epikriz)</string>
+    <string name="trendSummary">Kunlik qabullar, %1$s. Eng ko'pi %2$s.</string>
     <string name="tuesday">Seshanba</string>
     <string name="turkmen">Turkman</string>
     <string name="turnOn">Yoqish</string>

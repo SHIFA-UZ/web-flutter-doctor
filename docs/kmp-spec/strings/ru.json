@@ -2647,5 +2647,8 @@
   "couldNotLoad": "Не удалось загрузить",
   "analyticsTeaserTitle": "Тренды, типы визитов и вовлечённость",
   "analyticsTeaserBody": "Графики входят в тариф Premium.",
-  "seePlans": "Смотреть тарифы"
+  "seePlans": "Смотреть тарифы",
+  "appointmentsInRange": "Записи ({range})",
+  "trendSummary": "Записи по дням, {range}. Максимум {max}.",
+  "donutSummary": "Очно {inPerson}, видео {video}"
 }

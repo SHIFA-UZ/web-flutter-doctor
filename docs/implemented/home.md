@@ -200,3 +200,29 @@ card, range dialog).
   share sheet with `shifa_dashboard_2026-10-30_2026-11-05.csv` (dev's numbers, documented layout, read from the app
   cache); the range dialog's "Last 30 days" + Save made it "7 Oct – 5 Nov, 2026". iOS: compiled and linked, not run.
 
+## ANALYTICS-03 · Trend and visit types
+
+Built 2026-11-05. Spec 02 §2.4, ticket ANALYTICS-03, flow 02/05 §3–§8, board `DaHome` (trend and donut blocks).
+
+- **Where:** PREMIUM only (`AdvancedAnalytics`), between the KPIs and engagement in "Clinic performance"; BASIC/PRO
+  keep ANALYTICS-02's teaser. Drawn with Compose `Canvas` (no chart library, CLAUDE.md).
+- **Trend** (`TrendBlock`): a smooth line (control points half way, the board's path) in brand teal, white-ringed
+  dots, grid lines with their counts (top 20 % over the highest day, 10 when all are 0; steps of 1 up to 5, else a
+  fifth), "MM/DD" for about 7 days whatever the range (every n-th, the last always; kept inside the chart, and placed
+  by measured width so none touch at large text sizes). The title names the days drawn (the requested range while
+  loading, empty or failed): "Appointments (Last 7 Days)" or "Appointments (7 Oct – 5 Nov, 2026)" (Flutter always said
+  "Last 7 Days"). A tap on a day shows "2 Nov · 3 visits" (tap again to hide). All zero or empty: "No data yet".
+  Skeleton while the trend for a new range is read.
+- **Visit types** (`TypesBlock`): a 160 ring, in-person in brand over video in brand at 25 %, the in-person share in
+  the middle with the video share under it, and a legend with counts beside it (a `FlowRow`, so it goes below at large
+  text sizes; from 130 % text the shares move from the ring's centre into the legend). Shares always add up to 100 (Flutter could show 101 %). Total 0: "No data yet".
+- **Accessibility:** each chart reads out a summary: "Appointments per day, 30 Oct – 5 Nov, 2026. Highest 4." and
+  "In-person 11, video 4".
+- **Not built:** a draw animation (flow §8 asks for none under reduce-motion; none at all keeps it simple); donut
+  segment taps (the counts are already shown).
+- **Tests:** `AnalyticsChartsTest` (axis top and step, about seven labels for 1/7/30/90 points, shares adding up to
+  100). Screenshots `Analytics_loaded` (7 days, 68/32 ring), `Analytics_charts` (30 days, no visit types),
+  `Analytics_largeText` (14 days at 200 %: dates spaced, shares in the legend).
+- **Emulator (dev):** trend 4, 1, 1, 3, 0, 0, 1 for 30 Oct – 5 Nov as dev answers; ring 73 % / 27 % (11 in person,
+  4 video); tapping 2 Nov showed "2 Nov · 3 visits".
+

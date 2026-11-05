@@ -2647,5 +2647,8 @@
   "couldNotLoad": "Yuklab bo'lmadi",
   "analyticsTeaserTitle": "Trendlar, tashrif turlari va faollik",
   "analyticsTeaserBody": "Grafiklar Premium tarifiga kiradi.",
-  "seePlans": "Tariflarni ko'rish"
+  "seePlans": "Tariflarni ko'rish",
+  "appointmentsInRange": "Qabullar ({range})",
+  "trendSummary": "Kunlik qabullar, {range}. Eng ko'pi {max}.",
+  "donutSummary": "Klinikada {inPerson}, video {video}"
 }

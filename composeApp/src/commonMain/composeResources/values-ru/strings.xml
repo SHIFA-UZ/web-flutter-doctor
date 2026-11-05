@@ -211,6 +211,7 @@
     <string name="appointmentTreatmentPlanTitle">План лечения на этот приём</string>
     <string name="appointmentType">Тип приёма</string>
     <string name="appointments">Записи</string>
+    <string name="appointmentsInRange">Записи (%1$s)</string>
     <string name="appointmentsLast7Days">Записи (последние 7 дней)</string>
     <string name="appointmentsLoadFailed">Не удалось загрузить записи.</string>
     <string name="appointmentsTabHint">Планируйте и управляйте записями для этого пациента.</string>
@@ -990,6 +991,7 @@
     <string name="done">Готово</string>
     <string name="doneForToday">На сегодня всё</string>
     <string name="doneForTodayBody">Все визиты на сегодня завершены. На ближайшие 14 дней записей нет.</string>
+    <string name="donutSummary">Очно %1$s, видео %2$s</string>
     <string name="downloadSummary">Скачать</string>
     <string name="drMedPrefix">Dr. med.</string>
     <string name="draft">Черновик</string>
@@ -2480,6 +2482,7 @@
     <string name="treatmentResultProgress">Результат лечения (прогресс/динамика)</string>
     <string name="treatmentStage1">Лечение (этап 1)</string>
     <string name="treatmentStage2">Лечение (этап 2 / эпикриз)</string>
+    <string name="trendSummary">Записи по дням, %1$s. Максимум %2$s.</string>
     <string name="tuesday">Вторник</string>
     <string name="turkmen">Туркменский</string>
     <string name="turnOn">Включить</string>

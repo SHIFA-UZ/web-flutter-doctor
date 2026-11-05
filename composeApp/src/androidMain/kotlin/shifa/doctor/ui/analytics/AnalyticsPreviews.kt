@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import shifa.doctor.data.analytics.AnalyticsSnapshot
 import shifa.doctor.data.model.AnalyticsOverview
 import shifa.doctor.data.model.AnalyticsRange
@@ -73,4 +74,63 @@ internal fun AnalyticsTeaserPreview() =
             {},
             AnalyticsActions(),
         )
+    }
+
+// ANALYTICS-03: 30 days with a day's tooltip off, and no visit types yet.
+@Composable
+internal fun AnalyticsChartsPreview() =
+    Frame {
+        AnalyticsContent(
+            AnalyticsUiState(
+                AnalyticsRange.lastDays(today, 30),
+                today,
+                previewSnapshot.overview,
+                Result.success(
+                    (0 until 30).map { i ->
+                        val d = today.minus(kotlinx.datetime.DatePeriod(days = 29 - i))
+                        TrendPoint(d.toString(), listOf(3, 5, 2, 7, 4, 0, 6, 8, 1)[i % 9])
+                    },
+                ),
+                Result.success(ConsultationTypes(0, 0)),
+                previewSnapshot.engagement,
+            ),
+            true,
+            {},
+            {},
+            {},
+            AnalyticsActions(),
+        )
+    }
+
+// ANALYTICS-03: 200 % text and 14 days: the ring's shares move to the legend, the last date never overlaps.
+@Composable
+internal fun AnalyticsLargeTextPreview() =
+    Frame {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalDensity provides
+                androidx.compose.ui.unit.Density(androidx.compose.ui.platform.LocalDensity.current.density, 2f),
+        ) {
+            AnalyticsContent(
+                AnalyticsUiState(
+                    AnalyticsRange.lastDays(today, 14),
+                    today,
+                    previewSnapshot.overview,
+                    Result.success(
+                        (0 until 14).map { i ->
+                            TrendPoint(
+                                today.minus(kotlinx.datetime.DatePeriod(days = 13 - i)).toString(),
+                                listOf(3, 5, 2, 7)[i % 4],
+                            )
+                        },
+                    ),
+                    previewSnapshot.types,
+                    previewSnapshot.engagement,
+                ),
+                true,
+                {},
+                {},
+                {},
+                AnalyticsActions(),
+            )
+        }
     }

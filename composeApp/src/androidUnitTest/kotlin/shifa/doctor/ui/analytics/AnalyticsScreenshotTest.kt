@@ -9,7 +9,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [33], qualifiers = "w402dp-h1100dp-xhdpi")
+@Config(sdk = [33], qualifiers = "w402dp-h1900dp-xhdpi")
 class AnalyticsScreenshotTest {
     @Test
     fun loaded() = captureRoboImage("screenshots/Analytics_loaded.png") { AnalyticsLoadedPreview() }
@@ -19,4 +19,12 @@ class AnalyticsScreenshotTest {
 
     @Test
     fun teaser() = captureRoboImage("screenshots/Analytics_teaser.png") { AnalyticsTeaserPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h1900dp-xhdpi")
+    fun charts() = captureRoboImage("screenshots/Analytics_charts.png") { AnalyticsChartsPreview() }
+
+    @Test
+    @Config(qualifiers = "w402dp-h3000dp-xhdpi")
+    fun largeText() = captureRoboImage("screenshots/Analytics_largeText.png") { AnalyticsLargeTextPreview() }
 }

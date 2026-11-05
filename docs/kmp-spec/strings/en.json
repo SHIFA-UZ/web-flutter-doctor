@@ -2647,5 +2647,8 @@
   "couldNotLoad": "Could not load",
   "analyticsTeaserTitle": "See trends, visit types and engagement",
   "analyticsTeaserBody": "Charts are part of the Premium plan.",
-  "seePlans": "See plans"
+  "seePlans": "See plans",
+  "appointmentsInRange": "Appointments ({range})",
+  "trendSummary": "Appointments per day, {range}. Highest {max}.",
+  "donutSummary": "In-person {inPerson}, video {video}"
 }
