@@ -2641,5 +2641,11 @@
   "hideEarlier": "Hide earlier",
   "heroOpensAtVideo": "Opens 5 minutes before the call ({time}).",
   "searchPatientsByNameOrPhone": "Search patients by name or phone",
-  "noPatientsFoundHint": "Check the spelling or search by phone number."
+  "noPatientsFoundHint": "Check the spelling or search by phone number.",
+  "analyticsRangeHint": "From a year ago up to 30 days ahead. The trend chart shows at most 90 days.",
+  "analyticsDateRange": "Date range, {range}",
+  "couldNotLoad": "Could not load",
+  "analyticsTeaserTitle": "See trends, visit types and engagement",
+  "analyticsTeaserBody": "Charts are part of the Premium plan.",
+  "seePlans": "See plans"
 }

@@ -58,6 +58,12 @@
         <item quantity="one">Могу отменить %1$s предстоящий визит: %2$s. Скажите «да», чтобы отменить. Пока ничего не отменено.</item>
         <item quantity="other">Могу отменить %1$s предстоящих визита: %2$s. Скажите «да», чтобы отменить. Пока ничего не отменено.</item>
     </plurals>
+    <plurals name="lastDaysCount">
+        <item quantity="few">Последние %1$s дня</item>
+        <item quantity="many">Последние %1$s дней</item>
+        <item quantity="one">Последний %1$s день</item>
+        <item quantity="other">Последние %1$s дня</item>
+    </plurals>
     <plurals name="minutesAgo">
         <item quantity="few">%1$s минуты назад</item>
         <item quantity="many">%1$s минут назад</item>

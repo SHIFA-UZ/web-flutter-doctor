@@ -2641,5 +2641,11 @@
   "hideEarlier": "Скрыть прошедшие",
   "heroOpensAtVideo": "Откроется за 5 минут до звонка ({time}).",
   "searchPatientsByNameOrPhone": "Поиск пациентов по имени или телефону",
-  "noPatientsFoundHint": "Проверьте написание или ищите по номеру телефона."
+  "noPatientsFoundHint": "Проверьте написание или ищите по номеру телефона.",
+  "analyticsRangeHint": "От года назад до 30 дней вперёд. График показывает не более 90 дней.",
+  "analyticsDateRange": "Период, {range}",
+  "couldNotLoad": "Не удалось загрузить",
+  "analyticsTeaserTitle": "Тренды, типы визитов и вовлечённость",
+  "analyticsTeaserBody": "Графики входят в тариф Premium.",
+  "seePlans": "Смотреть тарифы"
 }

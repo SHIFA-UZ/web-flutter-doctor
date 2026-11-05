@@ -2641,5 +2641,11 @@
   "hideEarlier": "Oldingilarini yashirish",
   "heroOpensAtVideo": "Qo'ng'iroqdan 5 daqiqa oldin ochiladi ({time}).",
   "searchPatientsByNameOrPhone": "Bemorlarni ism yoki telefon bo'yicha qidirish",
-  "noPatientsFoundHint": "Imloni tekshiring yoki telefon raqami bo'yicha qidiring."
+  "noPatientsFoundHint": "Imloni tekshiring yoki telefon raqami bo'yicha qidiring.",
+  "analyticsRangeHint": "Bir yil oldindan 30 kun oldinga qadar. Grafik ko'pi bilan 90 kunni ko'rsatadi.",
+  "analyticsDateRange": "Davr, {range}",
+  "couldNotLoad": "Yuklab bo'lmadi",
+  "analyticsTeaserTitle": "Trendlar, tashrif turlari va faollik",
+  "analyticsTeaserBody": "Grafiklar Premium tarifiga kiradi.",
+  "seePlans": "Tariflarni ko'rish"
 }

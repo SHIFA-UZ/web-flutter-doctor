@@ -24,8 +24,10 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,6 +70,9 @@ import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.searchPatients
 import shifa.doctor.generated.resources.unreadCountLabel
 import shifa.doctor.generated.resources.visitsCount
+import shifa.doctor.ui.analytics.AnalyticsActions
+import shifa.doctor.ui.analytics.AnalyticsSection
+import shifa.doctor.ui.analytics.AnalyticsViewModel
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.theme.ShifaColors
@@ -103,6 +108,9 @@ class HomeActions(
     val videoCall: () -> Unit = {},
     val bookVideo: (CalendarEntry.FreeSlot) -> Unit = {},
     val setTimezone: () -> Unit = {},
+    // ANALYTICS-02: the card's taps (Calendar, Patients, the plans) and its refresh with Home's.
+    val patients: () -> Unit = {},
+    val seePlans: () -> Unit = {},
 )
 
 /** What Home shows from the shell: the doctor, and the counts the shell keeps (02 §1.3–1.4). */
@@ -121,6 +129,8 @@ data class HomeShell(
     // The profile is in, with its practice zone (null zone: the doctor hasn't set one).
     val profileLoaded: Boolean = false,
     val zone: String? = null,
+    // ANALYTICS-02: PREMIUM's advanced analytics; null until the plan is known (neither charts nor teaser then).
+    val advancedAnalytics: Boolean? = null,
 )
 
 /**
@@ -145,6 +155,15 @@ fun HomeScreen(
     // A ticker: Start opens, "In 12 min" counts down and the timeline moves on without a refresh (Flutter never ticked);
     // a hero that left its slot, or a new practice day, reads the schedule again (gated).
     val clock = remember(shell.zone) { PracticeClock(shell.zone) }
+    // ANALYTICS-02: once the practice zone is known (its "today" sets the default range), one per zone.
+    val analytics: AnalyticsViewModel? =
+        if (shell.profileLoaded) {
+            viewModel(
+                key = "analytics-${shell.zone}",
+            ) { AnalyticsViewModel(clock.today()) }
+        } else {
+            null
+        }
     val now by produceState(clock.nowInstant(), clock) {
         while (true) {
             delay(TICK)
@@ -160,6 +179,13 @@ fun HomeScreen(
             viewModel.focus(actions.refreshCounts)
         }
     }
+    // ANALYTICS-02: today's KPIs follow each new read of today's schedule (coming back, a hero leaving its slot, a new
+    // day, a refresh), at most once a minute like that read; the first is the card's own open.
+    var readsSeen by remember(analytics) { mutableStateOf(state.reads) }
+    LaunchedEffect(analytics, state.reads) {
+        if (state.reads > readsSeen) analytics?.refreshToday(clock.local(clock.nowInstant()).date)
+        readsSeen = state.reads
+    }
     // The Video Call chip found its slot: open it as a video booking, once.
     LaunchedEffect(state.videoSlot) {
         state.videoSlot?.let {
@@ -172,7 +198,10 @@ fun HomeScreen(
         shell,
         HomeActions(
             actions.openProfile,
-            refresh = { viewModel.refresh(actions.refreshCounts) },
+            refresh = {
+                viewModel.refresh(actions.refreshCounts)
+                analytics?.refresh()
+            },
             search = actions.search,
             notifications = actions.notifications,
             calendar = actions.calendar,
@@ -185,7 +214,16 @@ fun HomeScreen(
         ),
         clock,
         now,
-    )
+    ) {
+        analytics?.let {
+            AnalyticsSection(
+                clock.today(),
+                shell.advancedAnalytics,
+                AnalyticsActions(actions.calendar, actions.patients, actions.seePlans),
+                it,
+            )
+        }
+    }
 }
 
 private val TICK = 30.seconds
@@ -198,6 +236,8 @@ internal fun HomeContent(
     actions: HomeActions,
     clock: PracticeClock = PracticeClock(shell.zone),
     now: Instant = clock.nowInstant(),
+    // ANALYTICS-02: "Clinic performance", last on Home (a slot, so previews draw Home without its reads).
+    analytics: @Composable () -> Unit = {},
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
     Header(shell, actions)
     PullToRefreshBox(state.refreshing, actions.refresh, Modifier.weight(1f)) {
@@ -255,6 +295,7 @@ internal fun HomeContent(
             }
             item { QuickActions(!state.findingSlot && shell.profileLoaded && !clock.zoneMissing, actions) }
             if (schedule != null && !zoneMissing) item { Timeline(schedule, now, clock, actions) }
+            item { analytics() }
         }
     }
 }

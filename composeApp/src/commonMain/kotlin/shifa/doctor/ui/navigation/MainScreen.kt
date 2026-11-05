@@ -44,6 +44,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
 import shifa.doctor.generated.resources.calendar
@@ -354,6 +355,10 @@ private fun RouteContent(
                         showFollowUps = shell.canTasks,
                         profileLoaded = me != null,
                         zone = p?.timeZone,
+                        advancedAnalytics =
+                            shell.gate.allows(
+                                DoctorFeature.AdvancedAnalytics,
+                            ).takeIf { shell.gate.known },
                     ),
                     HomeActions(
                         openProfile = { actions.select(ShellTab.Profile) },
@@ -383,6 +388,8 @@ private fun RouteContent(
                             )
                         },
                         setTimezone = { timezone = true },
+                        patients = { actions.select(ShellTab.Patients) },
+                        seePlans = { actions.push(ShellRoute.Profile(ProfileSection.Subscription)) },
                     ),
                 )
             } else if (route.tab == ShellTab.Patients && !staff) {

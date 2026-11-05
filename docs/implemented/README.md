@@ -150,6 +150,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | HOME-03 Next patient, quick actions, timeline | Done | Hero card (Start 15 min before, Continue, Open chart, age, "In N min" ticker), empty/done/no-timezone cards, New appointment + Video Call chips (first free slot booked as video), today's timeline with folded earlier rows opening the Calendar panels. Prescription chip and medical-record flags not built. See home.md. |
 | HOME-05 Patient search | Done | Home's Search button opens a full-screen search (keyboard up): first 8 by name, then every match by name, id, display id or phone digits (the Patients tab's matcher, now `Patient.matches`); Search key opens a single match; a row opens the patient over the search. See home.md. |
 | ANALYTICS-01 Analytics data | Done | `AnalyticsRepository` (overview, trend with days 1–90, consultation types, engagement, SMS usage from/to), `AnalyticsRange` (inclusive, default last 7 practice days), demo handlers from the demo calendar. Verified on dev. See home.md. |
+| ANALYTICS-02 Clinic performance card | Done | Last on Home: range button (localised "30 Oct – 5 Nov, 2026", picker with 7/30/90-day presets, a year back to 30 days ahead) and Export (CSV through the share sheet), today's four KPI tiles, PREMIUM engagement or a Premium teaser, per-block "Could not load" + Retry. Charts: ANALYTICS-03. See home.md. |
 
 ## Log
 
@@ -251,3 +252,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-05 · HOME-03 · Home's next patient, quick actions and today's timeline.
 - 2026-11-05 · HOME-05 · Patient search from Home's header.
 - 2026-11-05 · ANALYTICS-01 · Analytics models, range and repository.
+- 2026-11-05 · ANALYTICS-02 · Home's Clinic performance card: range, export, KPIs, engagement.

@@ -74,9 +74,12 @@ class HomeViewModelTest {
         classToTest.focus()
         Thread.sleep(50)
         assertThat(reads).isEqualTo(first)
+        val readsBefore = classToTest.state.value.reads
         classToTest.refresh()
         settle { !classToTest.state.value.refreshing }
         assertThat(reads).isGreaterThan(first)
+        // An unchanged answer still counts as a read (the analytics card's KPIs follow each one).
+        assertThat(classToTest.state.value.reads).isEqualTo(readsBefore + 1)
         assertThat(classToTest.state.value.schedule?.today).hasSize(1)
     }
 

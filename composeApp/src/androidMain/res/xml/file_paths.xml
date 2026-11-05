@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="camera" path="camera/" />
+    <!-- ANALYTICS-02: the exported CSV, shared through the share sheet. -->
+    <cache-path name="share" path="share/" />
 </paths>

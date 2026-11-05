@@ -156,6 +156,21 @@
       "other": "Men yaqinlashib kelayotgan {count} ta qabulni bekor qila olaman: {names}. Ularni bekor qilish uchun «ha» deng. Hali hech narsa bekor qilinmadi."
     }
   },
+  "lastDaysCount": {
+    "en": {
+      "one": "Last {count} day",
+      "other": "Last {count} days"
+    },
+    "ru": {
+      "few": "Последние {count} дня",
+      "many": "Последние {count} дней",
+      "one": "Последний {count} день",
+      "other": "Последние {count} дня"
+    },
+    "uz": {
+      "other": "Oxirgi {count} kun"
+    }
+  },
   "minutesAgo": {
     "en": {
       "one": "{count} minute ago",

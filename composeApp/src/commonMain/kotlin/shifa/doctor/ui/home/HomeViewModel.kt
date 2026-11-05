@@ -38,6 +38,8 @@ data class HomeUiState(
     // HOME-03: the Video Call chip is looking for a free slot; [videoSlot] is the one found, until the screen opens it.
     val findingSlot: Boolean = false,
     val videoSlot: CalendarEntry.FreeSlot? = null,
+    // ANALYTICS-02: counts the schedule's successful reads, so the card's KPIs follow each one (even an unchanged one).
+    val reads: Int = 0,
 )
 
 /**
@@ -109,6 +111,7 @@ class HomeViewModel(
                         schedule = s,
                         error = null,
                         heroBirth = it.heroBirth.takeIf { samePatient },
+                        reads = it.reads + 1,
                     )
                 },
                 onFailure = { e ->

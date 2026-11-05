@@ -135,7 +135,11 @@
     <string name="amountExceedsOutstanding">Qolgan qarzdan ko'p</string>
     <string name="amountGreaterThanZero">0 dan katta summa kiriting</string>
     <string name="analytics">Tahlillar</string>
+    <string name="analyticsDateRange">Davr, %1$s</string>
     <string name="analyticsNoData">Ma'lumot yo'q</string>
+    <string name="analyticsRangeHint">Bir yil oldindan 30 kun oldinga qadar. Grafik ko'pi bilan 90 kunni ko'rsatadi.</string>
+    <string name="analyticsTeaserBody">Grafiklar Premium tarifiga kiradi.</string>
+    <string name="analyticsTeaserTitle">Trendlar, tashrif turlari va faollik</string>
     <string name="anamnesis">Anamnez</string>
     <string name="anotherUser">Boshqa foydalanuvchi</string>
     <string name="appAccounts">Ilova hisoblari</string>
@@ -778,6 +782,7 @@
     <string name="couldNotBook">Yozib bo'lmadi: %1$s</string>
     <string name="couldNotChangeMic">Mikrofonni almashtirib bo'lmadi</string>
     <string name="couldNotGetAddressDetails">Manzil tafsilotlarini olish mumkin emas. Iltimos, boshqa joylashuvni tanlang.</string>
+    <string name="couldNotLoad">Yuklab bo'lmadi</string>
     <string name="couldNotLoadDocument">Hujjatni yuklab bo'lmadi</string>
     <string name="couldNotLoadEarlierNotes">Oldingi qaydlarni yuklab bo'lmadi</string>
     <string name="couldNotLoadRetry">Yuklab bo'lmadi. Qayta urinish</string>
@@ -2117,6 +2122,7 @@
     <string name="searching">Qidirilmoqda…</string>
     <string name="security">Xavfsizlik</string>
     <string name="seeAllInCalendar">Hammasi kalendarda</string>
+    <string name="seePlans">Tariflarni ko'rish</string>
     <string name="selectChronicDisease">Surunkali kasallikni tanlash</string>
     <string name="selectConversation">Suhbatni tanlash</string>
     <string name="selectDate">Sanani tanlash</string>

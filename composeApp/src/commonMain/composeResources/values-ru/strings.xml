@@ -135,7 +135,11 @@
     <string name="amountExceedsOutstanding">Больше остатка к оплате</string>
     <string name="amountGreaterThanZero">Введите сумму больше 0</string>
     <string name="analytics">Аналитика</string>
+    <string name="analyticsDateRange">Период, %1$s</string>
     <string name="analyticsNoData">Нет данных</string>
+    <string name="analyticsRangeHint">От года назад до 30 дней вперёд. График показывает не более 90 дней.</string>
+    <string name="analyticsTeaserBody">Графики входят в тариф Premium.</string>
+    <string name="analyticsTeaserTitle">Тренды, типы визитов и вовлечённость</string>
     <string name="anamnesis">Анамнез</string>
     <string name="anotherUser">Другой пользователь</string>
     <string name="appAccounts">Аккаунты в приложении</string>
@@ -778,6 +782,7 @@
     <string name="couldNotBook">Не удалось записать: %1$s</string>
     <string name="couldNotChangeMic">Не удалось сменить микрофон</string>
     <string name="couldNotGetAddressDetails">Не удалось получить данные адреса. Пожалуйста, попробуйте выбрать другое местоположение.</string>
+    <string name="couldNotLoad">Не удалось загрузить</string>
     <string name="couldNotLoadDocument">Не удалось загрузить документ</string>
     <string name="couldNotLoadEarlierNotes">Не удалось загрузить предыдущие заметки</string>
     <string name="couldNotLoadRetry">Не удалось загрузить. Повторить</string>
@@ -2117,6 +2122,7 @@
     <string name="searching">Поиск…</string>
     <string name="security">Безопасность</string>
     <string name="seeAllInCalendar">Все в календаре</string>
+    <string name="seePlans">Смотреть тарифы</string>
     <string name="selectChronicDisease">Выбрать хроническое заболевание</string>
     <string name="selectConversation">Выбрать беседу</string>
     <string name="selectDate">Выбрать дату</string>

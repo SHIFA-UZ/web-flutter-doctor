@@ -34,6 +34,9 @@
     <plurals name="intelCancelPreview">
         <item quantity="other">Men yaqinlashib kelayotgan %1$s ta qabulni bekor qila olaman: %2$s. Ularni bekor qilish uchun «ha» deng. Hali hech narsa bekor qilinmadi.</item>
     </plurals>
+    <plurals name="lastDaysCount">
+        <item quantity="other">Oxirgi %1$s kun</item>
+    </plurals>
     <plurals name="minutesAgo">
         <item quantity="other">%1$s daqiqa oldin</item>
     </plurals>

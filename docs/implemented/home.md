@@ -165,3 +165,38 @@ Built 2026-11-05. Spec 02 §2.1–2.3, ticket ANALYTICS-01, 15 §2.3.
 - **Tests:** `AnalyticsRepositoryTest` (zeros for missing or null, a bad trend day skipped, the range maths, `days` 90
   for a year, SMS dates as given, one refresh reading every block).
 
+## ANALYTICS-02 · Clinic performance card
+
+Built 2026-11-05. Spec 02 §1.7–1.8, §2.4, ticket ANALYTICS-02, flows 02/05 and 02/06, board `DaHome` (analytics
+card, range dialog).
+
+- **Where:** last on Home (`AnalyticsSection`, `ui/analytics/`), shown once the profile is in (its practice date
+  sets the default range). Its own ViewModel; each block is read and shown as it answers (a slow one never holds the
+  others back). Home's pull-to-refresh and Refresh refresh all of it; each successful read of today's schedule (even
+  an unchanged one) reads today's KPIs again and brings the practice date: on a new day the picker moves, and so does
+  a range the doctor never changed. Reports will reuse it (REPORT-01).
+- **Toolbar** (stacked full width): the range ("30 Oct – 5 Nov, 2026" with the app's month names; the year on both
+  ends across a new year; one date for one day), read out as "Date range, …"; Export with its spinner.
+- **Range dialog:** the system range picker (`DateRangePicker`) with the board's presets (Last 7 / 30 / 90 days) and
+  hint in its title, bounds a year back to 30 days ahead of the **practice** date (Flutter: the phone's), Save with
+  both ends picked. A new range reads only the trend (the KPIs are today's); the range isn't kept across launches.
+- **KPIs:** today's four as the board's tiles (tinted icon, value, label), one per row: Appointments (opens Calendar),
+  Completed, Cancelled / No-show, New patients (opens Patients). Skeleton values while loading.
+- **PREMIUM** (`AdvancedAnalytics`): "Patient Engagement" (active patients, opens Patients; documents received).
+  BASIC/PRO: the board's teaser "See trends, visit types and engagement" with See plans (Subscription). Unknown plan:
+  neither (no flash).
+- **Errors:** each block on its own: "Could not load" with Retry (Flutter printed "Error").
+- **Export:** CSV in the documented layout (`dashboardCsv`, plain ISO dates in the period line), built from what is
+  loaded (read again only when a block is missing); a failed block fails the export with "Could not export dashboard
+  data". The file goes to the app cache (`cache/share/`, replaced each time) and the share sheet
+  (`utils/FileShare`: Android `FileProvider`, iOS `UIActivityViewController`); no "check your downloads" message.
+- **Not built here:** the trend and donut (ANALYTICS-03); SMS usage (Reports only, REPORT-01); one range shared with
+  Reports (comes with REPORT-01).
+- **Tests:** `AnalyticsViewModelTest` (open reads every block, a range reads only the trend, today's refresh reads only
+  the KPIs; export from loaded data without reading, a failed block fails it with the notice; the CSV layout; a slow
+  block doesn't hold the others; an export's read never replaces a new range's trend). Screenshots `Analytics_loaded`,
+  `Analytics_loading`, `Analytics_teaser`.
+- **Emulator (dev, PREMIUM seed doctor):** KPIs 0 / 0 / 1 / 0 and engagement 5 / 1, as dev answers; Export opened the
+  share sheet with `shifa_dashboard_2026-10-30_2026-11-05.csv` (dev's numbers, documented layout, read from the app
+  cache); the range dialog's "Last 30 days" + Save made it "7 Oct – 5 Nov, 2026". iOS: compiled and linked, not run.
+

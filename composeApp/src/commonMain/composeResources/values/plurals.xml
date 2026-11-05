@@ -45,6 +45,10 @@
         <item quantity="one">I can cancel %1$s upcoming visit: %2$s. Say yes to cancel it. Nothing has been cancelled yet.</item>
         <item quantity="other">I can cancel %1$s upcoming visits: %2$s. Say yes to cancel them. Nothing has been cancelled yet.</item>
     </plurals>
+    <plurals name="lastDaysCount">
+        <item quantity="one">Last %1$s day</item>
+        <item quantity="other">Last %1$s days</item>
+    </plurals>
     <plurals name="minutesAgo">
         <item quantity="one">%1$s minute ago</item>
         <item quantity="other">%1$s minutes ago</item>

@@ -135,7 +135,11 @@
     <string name="amountExceedsOutstanding">More than the outstanding balance</string>
     <string name="amountGreaterThanZero">Enter an amount greater than 0</string>
     <string name="analytics">Analytics</string>
+    <string name="analyticsDateRange">Date range, %1$s</string>
     <string name="analyticsNoData">No data yet</string>
+    <string name="analyticsRangeHint">From a year ago up to 30 days ahead. The trend chart shows at most 90 days.</string>
+    <string name="analyticsTeaserBody">Charts are part of the Premium plan.</string>
+    <string name="analyticsTeaserTitle">See trends, visit types and engagement</string>
     <string name="anamnesis">Anamnesis</string>
     <string name="anotherUser">Another user</string>
     <string name="appAccounts">App Accounts</string>
@@ -778,6 +782,7 @@
     <string name="couldNotBook">Could not book: %1$s</string>
     <string name="couldNotChangeMic">Could not change microphone</string>
     <string name="couldNotGetAddressDetails">Could not get address details. Please try selecting a different location.</string>
+    <string name="couldNotLoad">Could not load</string>
     <string name="couldNotLoadDocument">Could not load document</string>
     <string name="couldNotLoadEarlierNotes">Could not load earlier notes</string>
     <string name="couldNotLoadRetry">Couldn't load. Retry</string>
@@ -2117,6 +2122,7 @@
     <string name="searching">Searching…</string>
     <string name="security">Security</string>
     <string name="seeAllInCalendar">See all in Calendar</string>
+    <string name="seePlans">See plans</string>
     <string name="selectChronicDisease">Select Chronic Disease</string>
     <string name="selectConversation">Select a conversation</string>
     <string name="selectDate">Select Date</string>
