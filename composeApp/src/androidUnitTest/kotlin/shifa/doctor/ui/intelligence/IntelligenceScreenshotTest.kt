@@ -51,5 +51,9 @@ class IntelligenceScreenshotTest {
     fun openVisitCards() = captureRoboImage("screenshots/Intelligence_openVisitCards.png") { OpenVisitCardsPreview() }
 
     @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun voice() = captureRoboImage("screenshots/Intelligence_voice.png") { VoicePreview() }
+
+    @Test
     fun cancelCards() = captureRoboImage("screenshots/Intelligence_cancelCards.png") { CancelCardsPreview() }
 }

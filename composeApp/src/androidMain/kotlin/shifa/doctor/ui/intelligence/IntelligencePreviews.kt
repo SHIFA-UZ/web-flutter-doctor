@@ -176,7 +176,7 @@ private fun ThreadFrame(turn: ThreadUiState) =
                 previewNow,
             ) { tool, card, at -> ToolCard(tool, card, live = at?.live == true) }
         }
-        Composer(threadChat, turn, ThreadActions())
+        Composer(threadChat, turn, ThreadActions(), canSpeech = true)
     }
 
 // INTEL-04: a saved turn (rendered reply, the card), a reply streaming in, the patient line, the composer.
@@ -412,5 +412,41 @@ internal fun OpenVisitCardsPreview() =
                         """"status":"$status","day":"2026-11-06","startLocal":"15:00","endLocal":"15:30"}}""",
                 ),
             )
+        }
+    }
+
+// INTEL-09 (board `DaIntel`, flows 03/04–05): the orb panel listening and speaking, the composer dictating, then idle
+// with hands-free on, and the line below PRO.
+@Composable
+internal fun VoicePreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier
+                .background(shifa.doctor.ui.theme.ShifaColors.Bg.Surface)
+                .padding(shifa.doctor.ui.theme.ShifaSize.S16),
+            verticalArrangement =
+                androidx.compose.foundation.layout.Arrangement.spacedBy(
+                    shifa.doctor.ui.theme.ShifaSize.S12,
+                ),
+        ) {
+            VoicePanel(
+                VoiceUiState(
+                    shifa.doctor.ui.widgets.VoicePhase.Listening,
+                    level = 0.6f,
+                    heard = true,
+                    handsFree = true,
+                ),
+            ) {}
+            VoicePanel(VoiceUiState(shifa.doctor.ui.widgets.VoicePhase.Speaking, handsFree = true)) {}
+            val idle = ThreadUiState(draft = "")
+            Composer(
+                threadChat,
+                idle,
+                ThreadActions(),
+                voice = VoiceUiState(shifa.doctor.ui.widgets.VoicePhase.Listening, level = 0.5f, dictating = true),
+                canSpeech = true,
+            )
+            Composer(threadChat, idle, ThreadActions(), voice = VoiceUiState(handsFree = true), canSpeech = true)
+            Composer(null, idle, ThreadActions(), canSpeech = false)
         }
     }

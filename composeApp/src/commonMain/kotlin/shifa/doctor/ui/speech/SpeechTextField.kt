@@ -225,24 +225,32 @@ fun RecordingPill(
     }
 }
 
-/** The last [BARS] levels as bars, newest on the right. */
+/**
+ * The last [bars] levels as bars, newest on the right: 2-wide bars spread out ([barWidth]), or, without a width, bars
+ * that share the row (the Intelligence composer's 22-bar wave, board `DaIntel`).
+ */
 @Composable
-private fun Wave(
+internal fun Wave(
     level: Float,
     modifier: Modifier,
+    bars: Int = BARS,
+    barWidth: Dp? = ShifaSize.S2,
 ) {
-    val levels = remember { mutableStateListOf<Float>().apply { repeat(BARS) { add(0f) } } }
+    val levels = remember(bars) { mutableStateListOf<Float>().apply { repeat(bars) { add(0f) } } }
     LaunchedEffect(level) {
         levels.removeAt(0)
         levels.add(level)
     }
-    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(
+        modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (barWidth != null) Arrangement.SpaceBetween else Arrangement.spacedBy(ShifaSize.S4),
+    ) {
         levels.forEach { l ->
             Box(
-                Modifier
-                    .width(ShifaSize.S2)
+                (if (barWidth != null) Modifier.width(barWidth) else Modifier.weight(1f))
                     .fillMaxHeight(l.coerceIn(MIN_BAR, 1f))
-                    .background(ShifaColors.Bg.Brand, ShifaRadius.Full),
+                    .background(ShifaColors.Bg.Brand, if (barWidth != null) ShifaRadius.Full else ShifaRadius.Xs),
             )
         }
     }

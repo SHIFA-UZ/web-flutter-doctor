@@ -463,3 +463,54 @@ source). `ui/widgets/VoiceOrb.kt`:
 - New tokens: `ShifaColors.Raw.OrbHighlight`, `ShifaDimens.VoiceOrbMark`; board icons `ic_voice_wave_16` and
   `ic_dictate_18` drawn by hand from `DaIntel` (the generator now accepts such files instead of reporting them missing).
 - Tests: `VoiceOrbTest` (Flutter's intensity tests, plus reduced motion); screenshot `Intelligence_voice`.
+
+## AI-08 · Voice session
+
+Built 2026-11-06. Spec 02 §3.3–3.5, flows 03/04 (mic, hands-free), 03/05 (dictation), 03/06 (playback), ticket AI-08.
+`ui/intelligence/VoiceSession.kt`, owned by the thread's ViewModel (no wake word, no live caption: the mobile decision).
+- `Vad`: Flutter's end-of-take rules ported as they were (speech ≥ 0.12; silence relative to a decaying peak, 30 %
+  between 0.09 and 0.40; 1.9 s of it after ≥ 700 ms since the first word sends; nothing heard in 20 s gives up; 45 s
+  sends whatever was captured), on the recorder's level every 60 ms.
+- `VoiceSession`: mic (listen with hands-free on; while listening, send what was captured; a tap within 400 ms of
+  starting is ignored, the flow's double-tap target; while speaking, barge in; while reviewing, that reply stops and
+  the mic opens), record (dictation with no silence rules, up to 10 min, hands-free off; while reviewing: "Stopped."),
+  Stop (sends), Discard (the flow's target: drops a dictation), Turn off, typed (hands-free off, the voice stops).
+  The take is transcribed with the language left to the server; the words, then what the server heard, decide the
+  reply language; the question goes to the thread like a typed one; the reply (or the card's line) is spoken through
+  AI-04; hands-free, the mic opens again 450 ms later (650 ms after "no speech"). Every failure has the flow's message
+  in a banner, not a snackbar (no speech, no permission, a mic that won't start with the mobile wording, Pro or
+  refused, timeout, failure, voice slow or skipped); a visit opened by the answer (INTEL-08) stops the voice; leaving
+  drops the take and the voice.
+- Codex review fixes: in the background a take is stopped and dropped (with "Recording stopped while the app was in
+  the background."), the voice stops and hands-free ends; an iOS audio interruption ends the clip (Apple's player
+  never reports it as finished); the mic or record button during a typed reply stops that reply first; Retry of a
+  spoken question is spoken again and doesn't re-listen meanwhile; a take whose upload failed is kept and the banner
+  offers Retry (sent again, not recorded anew); a clip that can't play says "Voice skipped…".
+- Sign-off phrases (Flutter's `_isSignOffPhrase` list and patterns, ported as they were; Flutter ran them on the web
+  only): "that's it", "rahmat", "хватит"… end hands-free locally with "You're welcome / Alright. Tap the mic when you
+  need me again." as a banner; nothing goes to Shifa. Not spoken (the app's strings resolve in the UI, not here).
+- Not built: the 45 s countdown and the permanently-denied "Open settings" dialog (the banner shows each time).
+- Tests: `VoiceSessionTest` (a hands-free turn end to end on virtual time, no speech, barge-in and double tap,
+  dictation, empty and refused transcripts, record while reviewing, a mic that won't start, leaving, Flutter's VAD
+  timings, sign-off phrases, a typed reply stopped, a kept take resent, a clip that can't play, the background); the thread's existing tests still pass with the voice wired in.
+
+## INTEL-09 · Voice in Intelligence
+
+Built 2026-11-06. Spec 02 §3.4–3.5, flows 03/04–06, ticket INTEL-09. Board `DaIntel` (composer and orb panel).
+- **Composer:** the board's record button (dictate → a check while recording, a spinner while transcribing), mic (a
+  red stop while listening, "interrupt" while Shifa speaks) and send; the field is replaced by the take's 22-bar wave
+  while dictating (focus border), its hint says "Listening…" / "Shifa is speaking… tap the mic to interrupt";
+  "Recording… tap the check…" / "Transcribing your recording…" above the box, with Discard; "Hands-free is on — the
+  mic opens after each reply · Turn off" in the idle gap; below PRO the line "Speech requires Pro…" and the buttons
+  only say so (banner).
+- **Thread:** the orb panel ends the thread while listening, dictating, speaking, or thinking hands-free; the thread
+  shows from the welcome as soon as a take starts. Voice messages are banners above the composer.
+- **Screen:** the recorder is the screen's (leaving drops a take); the mic permission is asked before a take starts;
+  the plan gate is `rememberSpeechAllowed`.
+- **Checked:** emulator, demo mode, mic granted: dictation → "Recording…" with the orb and Discard → the check → the
+  demo transcript as the question → the demo reply, spoken (the demo's silent clip), no hands-free after; the mic with
+  silence → "No speech detected…" after 20 s; mic → Stop → the reply → the mic reopened by itself ("Listening… speak
+  now"); the record button while listening sent and ended hands-free. Real speech on a phone and iOS are not checked
+  (the emulator mic hears nothing; iOS compiled, not run).
+- **Screenshots:** `Intelligence_voice` (orb panel listening and speaking, the composer dictating, hands-free on,
+  below PRO); `Intelligence_threadStreaming` / `threadError` re-recorded (the composer's new buttons).

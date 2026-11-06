@@ -39,6 +39,8 @@ import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.CommitVisitFactsRequest
 import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.speech.TranscriptionRepository
+import shifa.doctor.data.speech.transcriptionRepository
 import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelBookingFailed
@@ -53,6 +55,8 @@ import shifa.doctor.generated.resources.intelSlotConflict
 import shifa.doctor.generated.resources.somethingWentWrong
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.SpeechPlayer
+import shifa.doctor.utils.createSpeechPlayer
 import shifa.doctor.utils.currentInstant
 
 data class ThreadUiState(
@@ -102,9 +106,35 @@ class ThreadViewModel(
         calendarRepository.changed(clock, *(dates + starts.map { clock.local(it).date }).distinct().toTypedArray())
     },
     private val appointments: AppointmentsRepository = appointmentsRepository,
+    transcription: TranscriptionRepository = transcriptionRepository,
+    speechPlayer: () -> SpeechPlayer = ::createSpeechPlayer,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ThreadUiState())
     val state: StateFlow<ThreadUiState> = _state.asStateFlow()
+
+    // The player is made on first use (a voice reply), not with the screen.
+    private val speech by lazy(speechPlayer)
+
+    /** Shifa's voice in this conversation (AI-08 / INTEL-09): the mic, dictation, the spoken replies, hands-free. */
+    val voice =
+        VoiceSession(
+            viewModelScope,
+            transcription,
+            ai,
+            player = { speech },
+            ask = ::askVoice,
+            cancelTurn = ::cancelTurn,
+            busy = { _state.value.busy && !voiceTurn },
+            clock = { now().toEpochMilliseconds() },
+        )
+
+    // The turn running now came from the voice: its reply is spoken, in [replyLanguage].
+    private var voiceTurn = false
+    private var replyLanguage = "EN"
+
+    // How the last question was asked, for Retry: spoken (and in which language) or typed.
+    private var lastSpoken: String? = null
+    private var lastWasVoice = false
 
     private var turn: Job? = null
 
@@ -128,14 +158,28 @@ class ThreadViewModel(
         if (_state.value.busy || store.state.value.activeId in bookings) return
         val question = ChatTitles.stripWakePhrase(text).ifBlank { return }
         _state.update { it.copy(draft = "") }
+        voice.typed()
         ask(question)
+    }
+
+    /** A transcribed take as the question, in the language it was spoken in; false when a question can't go now. */
+    private fun askVoice(
+        text: String,
+        language: String?,
+    ): Boolean {
+        if (_state.value.busy || store.state.value.activeId in bookings) return false
+        val question = ChatTitles.stripWakePhrase(text).ifBlank { return false }
+        ask(question, language, voice = true)
+        return true
     }
 
     /** The error row's Retry: the same question again (it was never saved, so it isn't asked twice). */
     fun retry() {
         val q = lastQuestion ?: return
         _state.update { it.copy(error = null) }
-        ask(q)
+        // A spoken question is retried as one: no re-listen meanwhile, and its answer is spoken.
+        if (lastWasVoice) voice.retrying()
+        ask(q, lastSpoken, voice = lastWasVoice)
     }
 
     /**
@@ -300,8 +344,15 @@ class ThreadViewModel(
 
     /** Leaving the chat (back, another chat, deleting it): the running turn stops and its question goes. */
     fun stop() {
+        voice.leave()
+        cancelTurn()
+    }
+
+    // The running turn stops and its question goes (the voice's mic tap while "Reviewing…" too).
+    private fun cancelTurn() {
         turn?.cancel()
         turn = null
+        voiceTurn = false
         // A card's booking or commit runs on (it can't be taken back halfway); back in its chat, the card shows it.
         val active = store.state.value.activeId
         val booking = bookings[active]
@@ -315,13 +366,21 @@ class ThreadViewModel(
         }
     }
 
-    private fun ask(question: String) {
+    private fun ask(
+        question: String,
+        spokenIn: String? = null,
+        voice: Boolean = false,
+    ) {
         turn?.cancel()
         store.ensureLoaded()
         val chat = store.state.value.active ?: return
         val stored = chat.messages
-        val reply = ChatTitles.detectReplyLanguage(question) ?: languages[chat.id] ?: appLanguage()
+        val reply = spokenIn ?: ChatTitles.detectReplyLanguage(question) ?: languages[chat.id] ?: appLanguage()
         languages[chat.id] = reply
+        voiceTurn = voice
+        replyLanguage = reply
+        lastWasVoice = voice
+        lastSpoken = spokenIn
         lastQuestion = question
         val askedAt = now()
         _state.update {
@@ -369,11 +428,9 @@ class ThreadViewModel(
         val s = _state.value
         val card = s.card
         if (reply.isEmpty() && card == null) {
-            return _state.update {
-                it.copy(
-                    error = CodeBanner(Res.string.intelEmptyReply),
-                )
-            }
+            _state.update { it.copy(error = CodeBanner(Res.string.intelEmptyReply)) }
+            if (voiceTurn.also { voiceTurn = false }) voice.turnFailed()
+            return
         }
         // A booking Shifa made says so; a reply without words falls back to the card's spoken line (02 §3.3 step 8).
         val said =
@@ -396,14 +453,20 @@ class ThreadViewModel(
             card?.let { IntelCard.of(s.toolName, it) as? IntelCard.OpenVisit }
                 ?.takeIf { it.openable && openedVisits.add(it.openKey) }
         _state.update { ThreadUiState(draft = it.draft, cards = it.cards, autoOpen = open) }
+        // A spoken question gets a spoken answer (02 §3.3 step 8); a visit opening stops the voice (flow 03/19 §7).
+        if (voiceTurn.also { voiceTurn = false }) {
+            if (open != null) voice.leave() else voice.replied(said, replyLanguage)
+        }
     }
 
-    private fun fail(e: Throwable) =
+    private fun fail(e: Throwable) {
         _state.update {
             it.copy(
                 error = CodeBanner(e.toAiMessage(Res.string.somethingWentWrong), requestId = e.requestId),
             )
         }
+        if (voiceTurn.also { voiceTurn = false }) voice.turnFailed()
+    }
 }
 
 private const val HTTP_CONFLICT = 409

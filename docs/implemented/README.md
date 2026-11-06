@@ -143,6 +143,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | INTEL-08 Open visit card | Done | `open_appointment` card (patient, day, times, status, kind; "cannot be opened" for cancelled / no-show / incomplete), the visit (or the patient's record) opened once from a live answer over Intelligence, Back to the thread; restored chats never auto-open. See intelligence.md. |
 | AI-04 Speech player | Done | `SpeechPlayer` (expect/actual): one clip from memory, suspends until it ends, stop for barge-in. See intelligence.md. |
 | AI-07 Voice orb | Done | The board's orb (pulse + ripple per phase, following the mic while listening; still with reduced motion) and orb panel; Flutter's intensity rule ported with its tests. See intelligence.md. |
+| AI-08 Voice session | Done | Hands-free takes ended by Flutter's VAD, dictation, server transcription, spoken replies, re-listen, sign-off phrases, background stop, kept takes with Retry; flow messages as banners. See intelligence.md. |
+| INTEL-09 Voice in Intelligence | Done (no real speech checked) | Composer voice buttons and states per the board, orb panel in the thread, Turn off, Discard, Pro lock. See intelligence.md. |
 | INTEL-10 Card text localiser | Done | Flutter's `intelligence_card_text.dart` ported (`CardText`): statuses, ISO and English dates, period labels, placeholder names, and the backend's English hint sentences (cancel, book, move, search, schedule, money…) by exact match or pattern, in uz / ru (Cyrillic Uzbek too); the golden test ported and passing. Cards and card replies use it. Checked on the emulator in Uzbek. See intelligence.md. |
 | SCRIBE-01 AI scribe recording | Done (in-person; video with VIDEO-02) | Start AI Notes (PRO), recording pill, upload with the visit and language, awaiting-scribe flag for End, 429 / 403 messages, failed upload kept for another try; From Shifa AI reads again. See visits.md. |
 | PDF-01 Visit summary document | Done (made in the app; BE-01 pending) | A4 summary: header, patient and visit, clinical notes across pages, signatures, footer with page numbers; en/uz/ru labels; shared `PdfFlow` with the 025-2. Wired by APPT-07. See visits.md. |
@@ -317,3 +319,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · INTEL-07 · Intelligence clinical cards: draft facts, documents with an inline viewer, dental diagram.
 - 2026-11-06 · INTEL-08 · Intelligence open-visit card with auto-open over the conversation.
 - 2026-11-06 · AI-04, AI-07 · Speech player and the voice orb.
+- 2026-11-06 · AI-08, INTEL-09 · Shifa Intelligence by voice: the voice session, composer and orb panel.

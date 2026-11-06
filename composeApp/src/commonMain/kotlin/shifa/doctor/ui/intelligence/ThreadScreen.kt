@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -37,6 +39,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,19 +53,48 @@ import shifa.doctor.data.intelligence.ChatMessage
 import shifa.doctor.data.intelligence.ChatSession
 import shifa.doctor.data.intelligence.IntelCard
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.ic_check_16
+import shifa.doctor.generated.resources.ic_dictate_18
+import shifa.doctor.generated.resources.ic_mic_18
 import shifa.doctor.generated.resources.ic_send_18
 import shifa.doctor.generated.resources.ic_sparkles_16
+import shifa.doctor.generated.resources.ic_stop_filled_16
 import shifa.doctor.generated.resources.ic_user_16
+import shifa.doctor.generated.resources.intelBannerHandsFreeSubtitle
+import shifa.doctor.generated.resources.intelBannerManualSubtitle
+import shifa.doctor.generated.resources.intelBannerPauseSend
+import shifa.doctor.generated.resources.intelBannerRecording
+import shifa.doctor.generated.resources.intelBannerSpeakNow
 import shifa.doctor.generated.resources.intelComposerHint
+import shifa.doctor.generated.resources.intelComposerListening
+import shifa.doctor.generated.resources.intelComposerSpeaking
 import shifa.doctor.generated.resources.intelContextPatient
+import shifa.doctor.generated.resources.intelDictateHint
+import shifa.doctor.generated.resources.intelDiscardTake
 import shifa.doctor.generated.resources.intelDisclaimer
+import shifa.doctor.generated.resources.intelHandsFreeOff
+import shifa.doctor.generated.resources.intelHandsFreeOn
+import shifa.doctor.generated.resources.intelInterruptSpeak
+import shifa.doctor.generated.resources.intelMicTalk
 import shifa.doctor.generated.resources.intelPatient
+import shifa.doctor.generated.resources.intelRecordingHold
 import shifa.doctor.generated.resources.intelReviewing
+import shifa.doctor.generated.resources.intelSendingRecording
+import shifa.doctor.generated.resources.intelSpeechRequiresPro
+import shifa.doctor.generated.resources.intelStopListening
+import shifa.doctor.generated.resources.intelTapToSendRecording
+import shifa.doctor.generated.resources.intelTranscribingRecording
+import shifa.doctor.generated.resources.intelVoiceStop
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.send
 import shifa.doctor.generated.resources.today
+import shifa.doctor.generated.resources.transcribing
+import shifa.doctor.generated.resources.voiceSpeaking
+import shifa.doctor.generated.resources.voiceSpeakingSubtitle
+import shifa.doctor.generated.resources.voiceThinkingSubtitle
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.calendar.longDate
+import shifa.doctor.ui.speech.Wave
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -72,6 +104,9 @@ import shifa.doctor.ui.widgets.AiResponseText
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaSpinner
+import shifa.doctor.ui.widgets.VoiceOrbPanel
+import shifa.doctor.ui.widgets.VoicePhase
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
 
@@ -79,6 +114,12 @@ class ThreadActions(
     val draft: (String) -> Unit = {},
     val send: () -> Unit = {},
     val retry: () -> Unit = {},
+    // INTEL-09: the voice buttons, the orb panel's Stop, dictation's Discard, hands-free's Turn off.
+    val mic: () -> Unit = {},
+    val record: () -> Unit = {},
+    val stopTake: () -> Unit = {},
+    val discard: () -> Unit = {},
+    val handsFreeOff: () -> Unit = {},
 )
 
 /** Where a saved card sits in the chat, and whether its buttons work (see [ToolCard]). */
@@ -99,6 +140,8 @@ internal fun ThreadList(
     actions: ThreadActions,
     modifier: Modifier = Modifier,
     now: Instant,
+    // INTEL-09: the voice, whose orb panel ends the list while it's active.
+    voice: VoiceUiState = VoiceUiState(),
     listState: LazyListState = rememberLazyListState(),
     card: @Composable (toolName: String?, payload: JsonObject, at: CardAt?) -> Unit = { _, _, _ -> },
 ) {
@@ -121,7 +164,7 @@ internal fun ThreadList(
             ) == "cancel_preview"
         )
     val cardText = rememberCardText()
-    val extra = if (state.asking != null) 1 else 0
+    val extra = (if (state.asking != null) 1 else 0) + (if (voice.panel) 1 else 0)
     // Follow the newest content while the doctor is at the very bottom (flow 03/03 §3): a scroll the doctor ends above
     // the bottom stops it, one back to the bottom starts it again; a new question always jumps down.
     // Saveable: back from a screen opened over Intelligence, the thread is where the doctor left it.
@@ -131,7 +174,7 @@ internal fun ThreadList(
             if (!scrolling) follow = !listState.canScrollForward
         }
     }
-    LaunchedEffect(messages.size, state.asking, state.streaming.length, state.card, state.error) {
+    LaunchedEffect(messages.size, state.asking, state.streaming.length, state.card, state.error, voice.panel) {
         // Before any suspension: a quick answer changes these keys again and cancels this run, and the next run must
         // still follow (it didn't when the demo answered at once).
         if (state.asking != null && state.streaming.isEmpty()) follow = true
@@ -200,6 +243,7 @@ internal fun ThreadList(
                 }
             }
         }
+        if (voice.panel) item(key = "voice") { VoicePanel(voice, actions.stopTake) }
     }
 }
 
@@ -285,6 +329,8 @@ internal fun Composer(
     state: ThreadUiState,
     actions: ThreadActions,
     bottomInset: Dp? = null,
+    voice: VoiceUiState = VoiceUiState(),
+    canSpeech: Boolean = false,
 ) = Column(
     Modifier
         .fillMaxWidth()
@@ -296,45 +342,141 @@ internal fun Composer(
     verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
 ) {
     PatientContextLine(chat)
+    val dictating = voice.recording && voice.dictating
+    val dictationSent = voice.transcribing && voice.dictating
+    // Board `DaIntel` dictation: the helper line above the box ("Recording… tap the check…" / "Transcribing…"),
+    // and the flow's target Discard (03/05 §7: nothing else drops a take).
+    if (dictating || dictationSent) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+        ) {
+            Text(
+                tr(if (dictating) Res.string.intelRecordingHold else Res.string.intelTranscribingRecording),
+                Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+                style = ShifaTextStyles.metaSmall().copy(fontWeight = FontWeight.Bold),
+                color = ShifaColors.Text.BrandStrong,
+            )
+            if (dictating) ShifaLink(tr(Res.string.intelDiscardTake), actions.discard)
+        }
+    }
     Row(
         Modifier.fillMaxWidth().border(
-            ShifaSize.S1,
-            ShifaColors.Border.Default,
+            if (dictating) ShifaSize.S2 else ShifaSize.S1,
+            if (dictating) ShifaColors.Border.Focus else ShifaColors.Border.Default,
             ShifaRadius.ControlLg,
         ).padding(ShifaSize.S6),
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
     ) {
-        // The board's chat-bar textarea: 1–4 lines, no field border of its own (the box is the border).
-        val hint = tr(Res.string.intelComposerHint)
-        val style = ShifaTextStyles.chatBubble()
-        BasicTextField(
-            state.draft,
-            actions.draft,
-            Modifier
-                .weight(1f)
-                .heightIn(min = ShifaSize.S40)
-                .padding(horizontal = ShifaSize.S8, vertical = ShifaSize.S10)
-                .semantics { contentDescription = hint },
-            enabled = !state.busy,
-            textStyle = style.copy(color = ShifaColors.Text.Primary),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-            keyboardActions = KeyboardActions(onSend = { if (state.canSend) actions.send() }),
-            maxLines = MAX_LINES,
-            cursorBrush = SolidColor(ShifaColors.Border.Focus),
-            decorationBox = { field ->
-                Box {
-                    if (state.draft.isEmpty()) Text(hint, style = style, color = ShifaColors.Text.Tertiary)
-                    field()
-                }
-            },
+        val listening = voice.recording && !voice.dictating
+        val speaking = voice.phase == VoicePhase.Speaking
+        if (dictating) {
+            // The take's level as 22 bars across the box (board `DaIntel`).
+            Wave(
+                voice.level,
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = ShifaSize.S40)
+                    .padding(horizontal = ShifaSize.S8, vertical = ShifaSize.S6)
+                    .height(ShifaSize.S28),
+                bars = WAVE_BARS,
+                barWidth = null,
+            )
+        } else {
+            // The board's chat-bar textarea: 1–4 lines, no field border of its own (the box is the border).
+            val hint =
+                tr(
+                    when {
+                        listening -> Res.string.intelComposerListening
+                        speaking -> Res.string.intelComposerSpeaking
+                        else -> Res.string.intelComposerHint
+                    },
+                )
+            val style = ShifaTextStyles.chatBubble()
+            BasicTextField(
+                state.draft,
+                actions.draft,
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = ShifaSize.S40)
+                    .padding(horizontal = ShifaSize.S8, vertical = ShifaSize.S10)
+                    .semantics { contentDescription = hint },
+                enabled = !state.busy && !listening && !speaking,
+                textStyle = style.copy(color = ShifaColors.Text.Primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions =
+                    KeyboardActions(
+                        onSend = { if (state.canSend && voice.phase == VoicePhase.Idle) actions.send() },
+                    ),
+                maxLines = MAX_LINES,
+                cursorBrush = SolidColor(ShifaColors.Border.Focus),
+                decorationBox = { field ->
+                    Box {
+                        if (state.draft.isEmpty()) Text(hint, style = style, color = ShifaColors.Text.Tertiary)
+                        field()
+                    }
+                },
+            )
+        }
+        // INTEL-09 (board `DaIntel`): dictation (record → check, a spinner while transcribing), the mic (a red stop
+        // while listening, "interrupt" while Shifa speaks), send. Locked below PRO: a tap says so.
+        if (dictationSent) {
+            Box(Modifier.size(ShifaSize.Touch), contentAlignment = Alignment.Center) {
+                ShifaSpinner(ShifaColors.Text.BrandStrong)
+            }
+        } else {
+            ShifaIconButton(
+                if (dictating) Res.drawable.ic_check_16 else Res.drawable.ic_dictate_18,
+                tr(if (dictating) Res.string.intelTapToSendRecording else Res.string.intelDictateHint),
+                actions.record,
+                variant = if (dictating) ShifaIconButtonVariant.Primary else ShifaIconButtonVariant.Secondary,
+            )
+        }
+        ShifaIconButton(
+            if (listening) Res.drawable.ic_stop_filled_16 else Res.drawable.ic_mic_18,
+            tr(
+                when {
+                    listening -> Res.string.intelStopListening
+                    speaking -> Res.string.intelInterruptSpeak
+                    else -> Res.string.intelMicTalk
+                },
+            ),
+            actions.mic,
+            variant =
+                when {
+                    listening -> ShifaIconButtonVariant.Danger
+                    speaking -> ShifaIconButtonVariant.Primary
+                    else -> ShifaIconButtonVariant.Secondary
+                },
         )
         ShifaIconButton(
             Res.drawable.ic_send_18,
             tr(Res.string.send),
             actions.send,
             variant = ShifaIconButtonVariant.Primary,
-            enabled = state.canSend,
+            enabled = state.canSend && voice.phase == VoicePhase.Idle,
+        )
+    }
+    if (voice.handsFree && voice.phase == VoicePhase.Idle) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+        ) {
+            Text(
+                tr(Res.string.intelHandsFreeOn),
+                Modifier.weight(1f, fill = false),
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Secondary,
+            )
+            ShifaLink(tr(Res.string.intelHandsFreeOff), actions.handsFreeOff)
+        }
+    }
+    if (!canSpeech) {
+        Text(
+            tr(Res.string.intelSpeechRequiresPro),
+            style = ShifaTextStyles.metaSmall(),
+            color = ShifaColors.Text.Secondary,
         )
     }
     Text(
@@ -345,6 +487,49 @@ internal fun Composer(
         textAlign = TextAlign.Center,
     )
 }
+
+/**
+ * The orb panel at the end of the thread (flow 03/04 §3, board `DaIntel`): while listening, dictating, speaking, or
+ * thinking with hands-free on (so the orb doesn't flash away between turns); Stop sends what was captured.
+ */
+@Composable
+internal fun VoicePanel(
+    voice: VoiceUiState,
+    stop: () -> Unit,
+) {
+    val listening = voice.recording && !voice.dictating
+    val status =
+        when {
+            voice.dictating && voice.recording -> Res.string.intelBannerRecording
+            listening -> if (voice.heard) Res.string.intelBannerPauseSend else Res.string.intelBannerSpeakNow
+            voice.phase == VoicePhase.Speaking -> Res.string.voiceSpeaking
+            voice.transcribing -> Res.string.transcribing
+            else -> Res.string.intelReviewing
+        }
+    val subtitle =
+        when {
+            voice.dictating && voice.recording -> Res.string.intelBannerManualSubtitle
+            listening -> Res.string.intelBannerHandsFreeSubtitle
+            voice.phase == VoicePhase.Speaking -> Res.string.voiceSpeakingSubtitle
+            voice.transcribing -> Res.string.intelSendingRecording
+            else -> Res.string.voiceThinkingSubtitle
+        }
+    VoiceOrbPanel(
+        voice.phase,
+        voice.level,
+        tr(status),
+        tr(subtitle),
+        tr(Res.string.intelVoiceStop),
+        onStop = stop.takeIf { voice.recording },
+    )
+}
+
+/** Whether the orb panel shows (see [VoicePanel]). */
+internal val VoiceUiState.panel: Boolean
+    get() =
+        recording || phase == VoicePhase.Speaking || phase == VoicePhase.Thinking && (handsFree || transcribing)
+
+private const val WAVE_BARS = 22
 
 /** "Today · 09:41", "Yesterday · 18:02", "24 October 2026 · 08:15": the doctor's own clock (flow 03/03 §4). */
 @Composable

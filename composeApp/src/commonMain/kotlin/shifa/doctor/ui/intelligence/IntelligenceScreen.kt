@@ -83,12 +83,14 @@ import shifa.doctor.generated.resources.intelligenceEmptyHint
 import shifa.doctor.generated.resources.justNow
 import shifa.doctor.generated.resources.minutesAgo
 import shifa.doctor.generated.resources.newChat
+import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.save
 import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.ShellRoute
 import shifa.doctor.ui.profile.ProfileSheet
+import shifa.doctor.ui.speech.rememberSpeechAllowed
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -100,15 +102,19 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
+import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaTray
+import shifa.doctor.ui.widgets.VoicePhase
 import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.rememberFileShare
+import shifa.doctor.utils.rememberMicPermission
+import shifa.doctor.utils.rememberVoiceRecorder
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
 
@@ -164,10 +170,45 @@ fun IntelligenceScreen(
             onOpen(it.route())
         }
     }
-    val threadActions = ThreadActions(thread::draft, { thread.send() }, thread::retry)
+    // INTEL-09: the voice. The recorder is the screen's (leaving drops a take); the mic asks for permission before a
+    // take starts, and below PRO the buttons only say so.
+    val voice by thread.voice.state.collectAsStateWithLifecycle()
+    val recorder = rememberVoiceRecorder()
+    DisposableEffect(recorder) {
+        thread.voice.attach(recorder)
+        onDispose { thread.voice.attach(null) }
+    }
+    val canSpeech = rememberSpeechAllowed()
+    var afterPermission by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val askMic = rememberMicPermission { granted -> if (granted) afterPermission?.invoke() else thread.voice.denied() }
+
+    fun voiceAction(start: () -> Unit): () -> Unit =
+        {
+            when {
+                !canSpeech -> thread.voice.locked()
+                // Starting a take needs the microphone; stopping or interrupting one doesn't.
+                voice.phase == VoicePhase.Idle || voice.phase == VoicePhase.Speaking -> {
+                    afterPermission = start
+                    askMic()
+                }
+                else -> start()
+            }
+        }
+    val threadActions =
+        ThreadActions(
+            thread::draft,
+            { thread.send() },
+            thread::retry,
+            mic = voiceAction(thread.voice::mic),
+            record = voiceAction(thread.voice::record),
+            stopTake = thread.voice::stopTake,
+            discard = thread.voice::discard,
+            handsFreeOff = thread.voice::handsFreeOff,
+        )
     LifecycleResumeEffect(viewModel) {
         viewModel.load()
-        onPauseOrDispose {}
+        // In the background the mic and the voice stop (flows 03/04–05 §8).
+        onPauseOrDispose { thread.voice.paused() }
     }
     val back = {
         if (state.conversationOpen || turn.asking != null) thread.stop()
@@ -215,13 +256,14 @@ fun IntelligenceScreen(
     ) { s ->
         val chat = s.active
         Box(Modifier.weight(1f)) {
-            if (s.conversationOpen || turn.asking != null) {
+            if (s.conversationOpen || turn.asking != null || voice.panel) {
                 ThreadList(
                     chat,
                     turn,
                     threadActions,
                     Modifier.fillMaxSize(),
                     currentInstant(),
+                    voice,
                 ) { tool, card, at ->
                     ToolCard(
                         tool,
@@ -276,7 +318,16 @@ fun IntelligenceScreen(
                 }
             }
         }
-        Composer(chat, turn, threadActions, bottomInset)
+        codeBanner(voice.banner, thread.voice::dismiss)?.let {
+            Box(Modifier.padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSize.S4)) { it() }
+        }
+        // A take whose upload failed is kept: Retry sends it again.
+        if (voice.canResend) {
+            Box(Modifier.padding(horizontal = ShifaSpacing.Inset.Md)) {
+                ShifaLink(tr(Res.string.retry), thread.voice::resend)
+            }
+        }
+        Composer(chat, turn, threadActions, bottomInset, voice, canSpeech)
     }
 }
 
