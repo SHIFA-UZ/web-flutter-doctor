@@ -24,23 +24,33 @@ import shifa.doctor.data.model.AnalyticsRange
 import shifa.doctor.data.model.ConsultationTypes
 import shifa.doctor.data.model.Engagement
 import shifa.doctor.data.model.TrendPoint
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 
 class AnalyticsViewModelTest {
     private val asked = mutableListOf<String>()
     private var failEngagement = false
+    private var smsForbidden = false
     private val engine =
         MockEngine { req ->
             val path = req.url.encodedPath.substringAfterLast('/')
-            asked += path + (req.url.parameters["days"]?.let { "?days=$it" } ?: "")
+            asked += path + (req.url.parameters["days"]?.let { "?days=$it" } ?: "") +
+                (req.url.parameters["from"]?.let { "?from=$it&to=${req.url.parameters["to"]}" } ?: "")
             val body =
                 when (path) {
                     "overview" -> """{"appointmentsToday":6,"completedToday":4,"cancelledToday":1,"newPatientsToday":2}"""
                     "appointments-trend" -> """[{"date":"2026-11-04","count":3},{"date":"2026-11-05","count":5}]"""
                     "consultation-types" -> """{"video":8,"inPerson":17}"""
+                    "sms-usage" -> """{"sentCount":12345,"totalCostMinor":617250,"currency":"UZS","pricePerSmsMinor":5000,"smsRemindersAllowed":true}"""
                     else -> """{"activePatients":41,"documentsReceived":12}"""
                 }
-            if (path == "engagement" && failEngagement) {
+            if (path == "sms-usage" && smsForbidden) {
+                respond(
+                    """{"status":403,"code":"FORBIDDEN"}""",
+                    HttpStatusCode.Forbidden,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            } else if (path == "engagement" && failEngagement) {
                 respond(
                     """{"status":500}""",
                     HttpStatusCode.InternalServerError,
@@ -67,6 +77,34 @@ class AnalyticsViewModelTest {
     }
 
     private fun opened() = AnalyticsViewModel(today, AnalyticsRepository { createHttpClient({ null }, engine) })
+
+    @Test
+    fun `reports also read the SMS usage for the range, again on a new range, a 403 meaning not enabled`() {
+        val classToTest =
+            AnalyticsViewModel(today, AnalyticsRepository { createHttpClient({ null }, engine) }, withSms = true)
+        settle { classToTest.state.value.sms != null }
+        assertThat(classToTest.state.value.sms!!.getOrThrow().sentCount).isEqualTo(12345)
+        assertThat(asked.single { it.startsWith("sms-usage") }).startsWith("sms-usage?from=")
+        asked.clear()
+        smsForbidden = true
+        classToTest.setRange(AnalyticsRange.lastDays(today, 30))
+        // The old range's numbers never show under the new label.
+        assertThat(classToTest.state.value.sms?.getOrNull()?.sentCount).isNotEqualTo(12345)
+        settle {
+            asked.any {
+                it.startsWith(
+                    "sms-usage",
+                )
+            } && classToTest.state.value.sms?.getOrNull()?.smsRemindersAllowed == false
+        }
+        assertThat(classToTest.state.value.sms!!.getOrThrow().smsRemindersAllowed).isFalse()
+        // Home never reads it.
+        asked.clear()
+        val home = opened()
+        settle { home.state.value.loaded != null }
+        assertThat(asked.none { it.startsWith("sms-usage") }).isTrue()
+        listOf(classToTest, home).stopAll()
+    }
 
     @Test
     fun `opening reads every block, a new range reads only the trend`() {
@@ -119,7 +157,7 @@ class AnalyticsViewModelTest {
                 listOf(TrendPoint("2026-10-01", 3), TrendPoint("2026-10-02", 0)),
             )
         assertThat(csv).isEqualTo(
-            "SHIFA Dashboard Export\nPeriod,2026-10-01,2026-10-02\n\nMetric,Value\nAppointments today,6\nCompleted today,4\nCancelled today,1\nNew patients today,2\nActive patients (30d),41\nDocuments received (30d),12\nVideo consultations,8\nIn-person consultations,17\n\nDate,Appointments\n2026-10-01,3\n2026-10-02,0\n",
+            "SHIFA Dashboard Export\nPeriod,2026-10-01,2026-10-02\n\nMetric,Value\nAppointments today,6\nCompleted today,4\nCancelled today,1\nNew patients today,2\nActive patients (30d),41\nDocuments received (30d),12\nVideo consultations (30d),8\nIn-person consultations (30d),17\n\nDate,Appointments\n2026-10-01,3\n2026-10-02,0\n",
         )
     }
 

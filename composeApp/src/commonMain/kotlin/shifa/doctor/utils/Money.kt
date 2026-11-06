@@ -55,7 +55,8 @@ object Money {
         return units * 100 + cents
     }
 
-    private fun group(value: Long): String =
+    /** A whole count grouped like money ("12 345"; REPORT-01's SMS count). */
+    fun group(value: Long): String =
         value.toString().reversed().chunked(
             3,
         ).joinToString(GROUP.toString()).reversed()

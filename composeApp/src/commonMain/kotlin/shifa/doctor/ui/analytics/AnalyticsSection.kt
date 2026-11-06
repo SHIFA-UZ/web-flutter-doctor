@@ -54,6 +54,7 @@ import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.model.AnalyticsOverview
 import shifa.doctor.data.model.AnalyticsRange
 import shifa.doctor.data.model.Engagement
+import shifa.doctor.data.model.SmsUsage
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.activePatients
 import shifa.doctor.generated.resources.analyticsDateRange
@@ -93,6 +94,11 @@ import shifa.doctor.generated.resources.monthNov
 import shifa.doctor.generated.resources.monthOct
 import shifa.doctor.generated.resources.monthSep
 import shifa.doctor.generated.resources.newPatientsToday
+import shifa.doctor.generated.resources.reportsSmsNotAllowed
+import shifa.doctor.generated.resources.reportsSmsRateHint
+import shifa.doctor.generated.resources.reportsSmsSent
+import shifa.doctor.generated.resources.reportsSmsSpent
+import shifa.doctor.generated.resources.reportsSmsTitle
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.save
 import shifa.doctor.generated.resources.seePlans
@@ -108,6 +114,7 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.utils.Money
 import shifa.doctor.utils.rememberFileShare
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
@@ -130,6 +137,8 @@ fun AnalyticsSection(
     advanced: Boolean?,
     actions: AnalyticsActions,
     viewModel: AnalyticsViewModel = viewModel { AnalyticsViewModel(today) },
+    // REPORT-01: the SMS reminders block (Reports).
+    sms: Boolean = false,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val share = rememberFileShare()
@@ -137,7 +146,7 @@ fun AnalyticsSection(
     LaunchedEffect(state.export) {
         state.export?.let { viewModel.exported(share(it.fileName, "text/csv", it.csv.encodeToByteArray())) }
     }
-    AnalyticsContent(state, advanced, viewModel::refresh, viewModel::setRange, viewModel::export, actions)
+    AnalyticsContent(state, advanced, viewModel::refresh, viewModel::setRange, viewModel::export, actions, sms)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -149,6 +158,7 @@ internal fun AnalyticsContent(
     onRange: (AnalyticsRange) -> Unit,
     onExport: () -> Unit,
     actions: AnalyticsActions,
+    sms: Boolean = false,
 ) = Column(
     Modifier
         .fillMaxWidth()
@@ -191,6 +201,7 @@ internal fun AnalyticsContent(
         )
     }
     Kpis(state.overview, onRetry, actions)
+    if (sms) SmsBlock(state.sms, onRetry)
     when (advanced) {
         true -> {
             // ANALYTICS-03: the trend for the range, the visit types, then engagement.
@@ -307,6 +318,50 @@ private fun EngagementBlock(
             Modifier.weight(1f),
         )
     }
+}
+
+/**
+ * "SMS reminders" (REPORT-01, flow 08/14 §3, board `DaProfile` reports): sent and cost for the range, the price per SMS
+ * (hidden at 0); not enabled for the account says so instead.
+ */
+@Composable
+private fun SmsBlock(
+    sms: Result<SmsUsage>?,
+    onRetry: () -> Unit,
+) = Block(tr(Res.string.reportsSmsTitle)) {
+    if (sms?.isFailure == true) return@Block LoadFailed(onRetry)
+    val u = sms?.getOrNull()
+    when {
+        u == null -> ShifaSkeleton(Modifier.fillMaxWidth().height(ShifaSize.S40))
+        !u.smsRemindersAllowed ->
+            Text(
+                tr(Res.string.reportsSmsNotAllowed),
+                style = ShifaTextStyles.bodyText(),
+                color = ShifaColors.Text.Secondary,
+            )
+        else ->
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                SmsRow(tr(Res.string.reportsSmsSent), Money.group(u.sentCount.toLong()))
+                SmsRow(tr(Res.string.reportsSmsSpent), Money.format(u.totalCostMinor, u.currency))
+                if (u.pricePerSmsMinor > 0) {
+                    val price = Money.format(u.pricePerSmsMinor, u.currency).removeSuffix(u.currency).trim()
+                    Text(
+                        tr(Res.string.reportsSmsRateHint, price, u.currency),
+                        style = ShifaTextStyles.metaSmall(),
+                        color = ShifaColors.Text.Secondary,
+                    )
+                }
+            }
+    }
+}
+
+@Composable
+private fun SmsRow(
+    label: String,
+    value: String,
+) = Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+    Text(label, Modifier.weight(1f), style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Secondary)
+    Text(value, style = MaterialTheme.typography.titleSmall, color = ShifaColors.Text.Primary)
 }
 
 /** A titled, outlined block inside the card (the charts and engagement, board `DaHome`). */

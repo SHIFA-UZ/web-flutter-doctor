@@ -383,3 +383,26 @@ Built 2026-11-04. Spec `08 §6.2`; flow `08/11` §3 and `08/10` §3.3.
   generic "Password and app lock" subtitle from SET-01 is gone.
 - **Tests:** `SettingsViewModelTest` (+1: preview off, then on with biometrics after reopening); `Settings_doctor`
   screenshot re-recorded.
+
+## REPORT-01 · Reports
+
+Built 2026-11-06. Spec 08 §7, flow 08/14, ticket REPORT-01. Board `DaProfile` reports (`ui/analytics/ReportsScreen.kt`).
+- **Where:** More → Reports (the tab's root: title and subtitle) and Profile → Reports (pushed, Back to Profile). Not
+  for clinic staff (the tab falls back to the placeholder they never reach; their More sheet has no Reports).
+- **Content:** "Clinic analytics, trends, and performance reports", then Home's Clinic performance card
+  (ANALYTICS-02/03: range, Export, today's KPIs, PREMIUM trend / visit types / engagement or the teaser, nothing while
+  the plan is unknown) with one more block, **SMS reminders** for the range: SMS sent (grouped), total SMS cost, "{price}
+  {currency} per SMS" (hidden at 0); "SMS reminders are not enabled for your account. Contact support." when the flag
+  is off or the call answers 403 (flow §6 partial data). `GET /doctor/analytics/sms-usage?from&to` (plain dates, the
+    range's), read on every visit, on refresh and on a new range (the block goes back to its skeleton); an answer for
+  an older range is dropped. Pull to refresh. Each visit also passes the practice day as it is now (a new day moves an
+  untouched range). As a tab root the page clears the floating tab bar.
+- **Range:** Reports has its own (a separate ViewModel); Flutter shared it with Home, so changing it here moved Home's
+  (flow §13 flags it). Export is Home's CSV (the dashboard metrics and the trend; no SMS rows, as Flutter);
+  its visit-type rows now say "(30d)", the backend's window, not the period.
+- **Codex review:** SMS skeleton on a new range, the practice day on each visit, tab bar clearance, the CSV's 30-day
+  labels (answers in `codex/REPORT-01.md`).
+- **Checked:** emulator on dev (reads only): More → Reports: the KPIs (0, 0, 2, 1), SMS "not enabled" (dev answers
+  `smsRemindersAllowed: false`, checked with a real GET), the trend for 31 Oct – 6 Nov (PREMIUM seed doctor).
+- **Tests:** `AnalyticsViewModelTest` (Reports reads SMS for the range and again for a new one, a 403 as not enabled,
+  Home never reads it); screenshots `Reports`, `Reports_noSms`.

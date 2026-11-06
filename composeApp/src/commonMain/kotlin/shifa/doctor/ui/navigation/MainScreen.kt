@@ -95,6 +95,8 @@ import shifa.doctor.generated.resources.talkWithAi
 import shifa.doctor.generated.resources.tasks
 import shifa.doctor.generated.resources.unreadBadge
 import shifa.doctor.generated.resources.unreadCountCap
+import shifa.doctor.ui.analytics.AnalyticsActions
+import shifa.doctor.ui.analytics.ReportsScreen
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.auth.SignOutSheet
 import shifa.doctor.ui.auth.SignOutViewModel
@@ -157,6 +159,7 @@ import shifa.doctor.ui.visit.VisitScreen
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.trackActivity
+import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.doctorDisplayName
 import shifa.doctor.utils.isDebugBuild
@@ -545,6 +548,9 @@ private fun RouteContent(
                 ) { section, clinic ->
                     ClinicSectionContent(section, clinic, staff, actions)
                 }
+            } else if (route.tab == ShellTab.Reports && !staff) {
+                // REPORT-01: More → Reports, the tab's root.
+                Reports(shell, actions, onBack = null)
             } else {
                 TabPlaceholder(route.tab.label, route.tab.icon)
             }
@@ -594,10 +600,8 @@ private fun RouteContent(
                 onBack = actions.back,
                 onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
             )
-        ShellRoute.Reports ->
-            Pushed(Res.string.navReports, actions) {
-                TabPlaceholder(Res.string.navReports, Res.drawable.ic_reports_22)
-            }
+        // REPORT-01: Profile → Reports, Back returns there.
+        ShellRoute.Reports -> Reports(shell, actions, onBack = actions.back)
         is ShellRoute.Task ->
             TaskDetailScreen(route.id, route.opened, onBack = actions.back, onOpenPatient = {
                 actions.push(ShellRoute.Patient(it))
@@ -773,6 +777,26 @@ private fun Pushed(
 ) = Column(Modifier.fillMaxSize()) {
     ShifaSubHeader(tr(title), Modifier.statusBarsPadding(), onBack = actions.back)
     Box(Modifier.weight(1f)) { content() }
+}
+
+/** Reports (REPORT-01) in the practice's day, the plan's advanced analytics once known. */
+@Composable
+private fun Reports(
+    shell: ShellUiState,
+    actions: ShellActions,
+    onBack: (() -> Unit)?,
+) {
+    val me by profileRepository.me.collectAsStateWithLifecycle()
+    ReportsScreen(
+        PracticeClock(me?.profile?.timeZone).today(),
+        shell.gate.allows(DoctorFeature.AdvancedAnalytics).takeIf { shell.gate.known },
+        AnalyticsActions(
+            calendar = actions.openCalendar,
+            patients = { actions.select(ShellTab.Patients) },
+            seePlans = { actions.push(ShellRoute.Profile(ProfileSection.Subscription)) },
+        ),
+        onBack,
+    )
 }
 
 @Composable

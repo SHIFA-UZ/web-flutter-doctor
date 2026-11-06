@@ -17,8 +17,10 @@ import shifa.doctor.data.analytics.dashboardCsv
 import shifa.doctor.data.analytics.dashboardCsvName
 import shifa.doctor.data.model.AnalyticsOverview
 import shifa.doctor.data.model.AnalyticsRange
+import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.ConsultationTypes
 import shifa.doctor.data.model.Engagement
+import shifa.doctor.data.model.SmsUsage
 import shifa.doctor.data.model.TrendPoint
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.exportFailed
@@ -42,6 +44,8 @@ data class AnalyticsUiState(
     val engagement: Result<Engagement>? = null,
     // A new range: only the trend reads again (KPIs are today's).
     val trendLoading: Boolean = false,
+    // REPORT-01: the SMS reminders for the range (Reports only; null there until read).
+    val sms: Result<SmsUsage>? = null,
     val exporting: Boolean = false,
     val export: AnalyticsExport? = null,
 ) {
@@ -68,6 +72,8 @@ private fun AnalyticsSnapshot.complete() =
 class AnalyticsViewModel(
     today: LocalDate,
     private val repo: AnalyticsRepository = analyticsRepository,
+    // REPORT-01: Reports also reads the SMS reminders for the range.
+    private val withSms: Boolean = false,
 ) : ViewModel() {
     private val _state = MutableStateFlow(AnalyticsUiState(AnalyticsRange.lastDays(today), today))
     val state: StateFlow<AnalyticsUiState> = _state.asStateFlow()
@@ -83,7 +89,18 @@ class AnalyticsViewModel(
         readTrend(_state.value.range)
         read("types") { repo.consultationTypes().let { r -> _state.update { it.copy(types = r) } } }
         read("engagement") { repo.engagement().let { r -> _state.update { it.copy(engagement = r) } } }
+        if (withSms) readSms(_state.value.range)
     }
+
+    /** The range's SMS usage; a 403 means SMS reminders aren't on for the account (flow 08/14 §6), not a failure. */
+    private fun readSms(range: AnalyticsRange) =
+        read("sms") {
+            val sms =
+                repo.smsUsage(range).recoverCatching { e ->
+                    if (e is ApiException.Forbidden) SmsUsage(smsRemindersAllowed = false) else throw e
+                }
+            _state.update { s -> if (s.range != range) s else s.copy(sms = sms) }
+        }
 
     /**
      * Home read today's schedule again (coming back, a hero leaving its slot, a new day): today's counts, and the
@@ -102,8 +119,10 @@ class AnalyticsViewModel(
     /** A saved range: the label at once, the trend read for it. */
     fun setRange(range: AnalyticsRange) {
         if (range == _state.value.range) return
-        _state.update { it.copy(range = range, trendLoading = true) }
+        // The SMS block shows its skeleton, never the old range's numbers under the new label.
+        _state.update { it.copy(range = range, trendLoading = true, sms = if (withSms) null else it.sms) }
         readTrend(range)
+        if (withSms) readSms(range)
     }
 
     private fun readTrend(range: AnalyticsRange) =

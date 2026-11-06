@@ -134,3 +134,41 @@ internal fun AnalyticsLargeTextPreview() =
             )
         }
     }
+
+// REPORT-01: Reports as the More tab's root, a BASIC plan (teaser) and the SMS reminders.
+@Composable
+internal fun ReportsPreview() =
+    PreviewTheme {
+        ReportsContent(null, {}) {
+            AnalyticsContent(
+                state(previewSnapshot).copy(
+                    sms = Result.success(shifa.doctor.data.model.SmsUsage(12345, 617_250_00, "UZS", 5000, true)),
+                ),
+                false,
+                {},
+                {},
+                {},
+                AnalyticsActions(),
+                sms = true,
+            )
+        }
+    }
+
+// REPORT-01: pushed from Profile, SMS reminders not enabled for the account.
+@Composable
+internal fun ReportsNoSmsPreview() =
+    PreviewTheme {
+        ReportsContent({}, {}) {
+            AnalyticsContent(
+                state(
+                    previewSnapshot,
+                ).copy(sms = Result.success(shifa.doctor.data.model.SmsUsage(smsRemindersAllowed = false))),
+                null,
+                {},
+                {},
+                {},
+                AnalyticsActions(),
+                sms = true,
+            )
+        }
+    }

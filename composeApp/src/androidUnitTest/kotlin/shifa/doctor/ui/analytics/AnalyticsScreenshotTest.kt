@@ -27,4 +27,10 @@ class AnalyticsScreenshotTest {
     @Test
     @Config(qualifiers = "w402dp-h3000dp-xhdpi")
     fun largeText() = captureRoboImage("screenshots/Analytics_largeText.png") { AnalyticsLargeTextPreview() }
+
+    @Test
+    fun reports() = captureRoboImage("screenshots/Reports.png") { ReportsPreview() }
+
+    @Test
+    fun reportsNoSms() = captureRoboImage("screenshots/Reports_noSms.png") { ReportsNoSmsPreview() }
 }

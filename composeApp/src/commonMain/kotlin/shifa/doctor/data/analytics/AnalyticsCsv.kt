@@ -29,8 +29,9 @@ fun dashboardCsv(
         appendLine("New patients today,${overview.newPatientsToday}")
         appendLine("Active patients (30d),${engagement.activePatients}")
         appendLine("Documents received (30d),${engagement.documentsReceived}")
-        appendLine("Video consultations,${types.video}")
-        appendLine("In-person consultations,${types.inPerson}")
+        // The backend counts visit types over the last 30 days, not the period above.
+        appendLine("Video consultations (30d),${types.video}")
+        appendLine("In-person consultations (30d),${types.inPerson}")
         appendLine()
         appendLine("Date,Appointments")
         trend.forEach { appendLine("${it.date},${it.count}") }
