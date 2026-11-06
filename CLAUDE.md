@@ -132,8 +132,8 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
   parameter comments, Figma-named theme files and on-demand `Res` imports.
 - All versions live in `gradle/libs.versions.toml`; add deps there, never inline. Copy the catalog from the patient
   app and keep the two apps on the same versions.
-- Known pin: kotlinx-datetime is skewed between Android and iOS (CMP pulls a newer one on iOS), so
-  `kotlinx.datetime.Clock.System` fails on iOS. Use `utils/getCurrentInstant()` until the pin is bumped.
+- kotlinx-datetime is 0.7.1 on every platform (WEB-02, 2026-11-06; it used to resolve differently on iOS). 0.7 has no
+  `kotlinx.datetime.Clock`: read now through `utils/currentInstant()` (the stdlib `kotlin.time.Clock`).
 - No DI framework and no navigation library (deferred on purpose; ask before adding either).
 
 ## Architecture: MVVM + Repository
