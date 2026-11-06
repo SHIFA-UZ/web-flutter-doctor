@@ -38,9 +38,11 @@ fixed and identical to the patient app's. Follow them for every new feature.
 
 ## Scope decisions (the user's calls; update when they change)
 
-- Targets: **Android + iOS** first, same as the patient app. The Flutter **web** build (doctor web + admin host) keeps
-  running from `main` until a web target is decided (see `00-README.md` "Open decisions"). Do not design screens for
-  desktop widths; the KMP app is a phone/tablet app.
+- Targets: **Android + iOS**, and **web** from the same code (milestone M14, `docs/kmp-spec/18-web-milestone.md`, the
+  user's call 2026-11-06). Web reuses the ViewModels, repositories and kit; desktop widths get their own arrangements of
+  the same content composables (shell: bottom bar below 768, icon rail 768–1099, sidebar from 1100, board `DaApp`),
+  never copied screens. The Flutter web build (doctor web + admin host) keeps running from `main` until `doc-app2.0`
+  is merged; web hosting moves to cPanel (WEB-09).
 - The **admin panel** (`/admin`, hostname-based) is **not** part of the KMP app (`ADMIN-*` tickets are parked); it
   stays a web product.
 - Doctor roles in the JWT (`DOCTOR`, `CLINIC_STAFF`, …) and clinic workspace mode are in scope; a clinic-staff user
@@ -66,8 +68,9 @@ Keep, and reuse as they are:
 - Anything else from the Flutter repo that is not Dart or design: store assets, legal texts (`docs/contracts`), the
   thesis docs under `docs/`, `scripts/` that still apply.
 
-Delete when the KMP app replaces it: the Flutter code (`lib/`, `android/`, `ios/`, `windows/`, `web/`, `pubspec.*`,
-`test/`, `firebase.json` hosting targets if web is dropped…), the Flutter design assets, themes, fonts and icons.
+Deleted on `doc-app2.0` (WEB-01, 2026-11-06): the Flutter code (`lib/`, `android/`, `ios/`, `windows/`, `web/`,
+`pubspec.*`, `test/`, `assets/`, `firebase.json` and the Firebase Hosting workflow `deploy_web.yml`, Flutter build
+scripts). The admin panel moves to its own repository (`SHIFA-UZ/web-flutter-admin`, WEB-00, which the user does).
 Design comes only from `docs/design/`; do not port Flutter styles, colours or widgets (the legacy tokens are
 listed in `04-design-system-and-ui-kit.md` §A only for comparison).
 
@@ -78,9 +81,8 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
   there until the full app is done and the user merges it into `main` through a pull request (the user decides when).
   Do not create per-feature branches during the rewrite (D-00, the user's call 2026-11-04, overriding the per-ticket
   branches `17-master-plan.md` §2 proposed).
-- The Flutter code (`lib/`, `android/`, `ios/`, `web/`, `windows/`, `pubspec.*`, `test/`) stays on this branch until
-  the KMP app replaces it, so `deploy_web.yml` keeps building the web app from `main`. Gradle only sees
-  `composeApp/`; Xcode only `iosApp/`.
+- The Flutter code is gone from this branch (WEB-01); `main` still has it, and its `deploy_web.yml` keeps building the
+    Flutter web app until the merge. Gradle only sees `composeApp/`; Xcode only `iosApp/`.
 - After that merge, switch to the patient app's rule: before making any change, check the current branch; if the task
   has no branch yet, create one from `main` named `feature/<feature-name>` (kebab-case, e.g.
   `feature/schedule-management`) and do all the work there. Update this section when that happens.
