@@ -2760,5 +2760,18 @@
   "clinicFinanceCharged": "Charged",
   "clinicFinanceChargedHint": "Completed visits and plan payments",
   "clinicFinancePaymentsInPeriod": "Payments in the period",
-  "clinicRecordsPickPatient": "Choose a patient"
+  "clinicRecordsPickPatient": "Choose a patient",
+  "planStatusOnHold": "On hold",
+  "planOpen": "Open",
+  "planOptions": "Plan options",
+  "planCancelTitle": "Cancel this plan?",
+  "planCancelBody": "Its status changes to Cancelled. Payments already recorded stay as they are.",
+  "planStatusFailed": "Couldn't change the plan's status.",
+  "planLineTooth": "Tooth {{tooth}}",
+  "planNoInstallments": "No installment schedule. Payments are taken per visit.",
+  "planProgress": "{{done}} of {{total}} done",
+  "planNoLines": "No lines yet",
+  "planLoadFailed": "Couldn't load the treatment plan.",
+  "plansNoneMatch": "No treatment plans match.",
+  "planVisitsFailed": "Couldn't load the visits."
 }

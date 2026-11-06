@@ -129,6 +129,9 @@ class DemoBackend(
     private val planLinesDone = mutableSetOf(DEMO_PLAN_DONE_LINE)
     private var planPaid = 100_000_000L
 
+    // A status set by hand (TP-02/03), else derived from the lines.
+    private var planStatus: String? = null
+
     // The demo clinic's records and installments (FIN-03, FIN-05), in memory.
     private val records =
         mutableListOf(
@@ -672,10 +675,52 @@ class DemoBackend(
                 val plan = demoPlanSummary()
                 val patient = q["patientId"].let { it == null || it == "12" }
                 val status = q["status"].let { it == null || it == plan["status"]?.jsonPrimitive?.content }
-                val mine = q["clinicId"] == "1" && patient && q["planKind"] != "VISIT" && status
+                // `q` searches the patient and the title (TP-02).
+                val search =
+                    q["q"]?.trim()?.lowercase()?.let {
+                        "jasur karimov treatment of 36 and 46".contains(
+                            it,
+                        )
+                    } ?: true
+                val mine = q["clinicId"] == "1" && patient && q["planKind"] != "VISIT" && status && search
                 ok(JsonArray(if (mine) listOf(plan) else emptyList()))
             }
             get && path == Endpoints.treatmentPlanDetail(DEMO_PLAN_ID) -> ok(demoPlanDetail())
+            // The demo plan's visits (TP-02/03): Aziza's done one and Bobur's upcoming one.
+            get && path == Endpoints.treatmentPlanVisits(DEMO_PLAN_ID) ->
+                ok(
+                    JsonArray(
+                        listOf(
+                            demoPlanVisit(
+                                101,
+                                "2026-11-04T05:00:00Z",
+                                21,
+                                "Aziza Karimova",
+                                "COMPLETED",
+                                "PAST",
+                                "Root canal treatment",
+                            ),
+                            demoPlanVisit(
+                                201,
+                                "2026-11-12T06:00:00Z",
+                                22,
+                                "Bobur Aliyev",
+                                "CONFIRMED",
+                                "UPCOMING",
+                                "Ceramic crown",
+                            ),
+                        ),
+                    ),
+                )
+            request.method == HttpMethod.Patch && path == Endpoints.treatmentPlanStatus(DEMO_PLAN_ID) -> {
+                planStatus =
+                    runCatching {
+                        apiJson.parseToJsonElement(
+                            body,
+                        ).jsonObject["status"]?.jsonPrimitive?.content
+                    }.getOrNull()
+                ok(demoPlanSummary())
+            }
 
             get && path == Endpoints.fulfillmentCandidates(DEMO_PLAN_ID) -> ok(demoCandidates())
             request.method == HttpMethod.Post &&
@@ -957,7 +1002,7 @@ class DemoBackend(
             put("title", "Treatment of 36 and 46")
             put("diagnosis", "K04.0 Pulpitis")
             // Every line done completes the plan (09 §4.5: the backend does it when the visit completes).
-            put("status", if (lines.all { it.id in planLinesDone }) "COMPLETED" else "ACTIVE")
+            put("status", planStatus ?: if (lines.all { it.id in planLinesDone }) "COMPLETED" else "ACTIVE")
             put("planKind", "COMPREHENSIVE")
             put("totalMinor", total)
             put("paidMinor", planPaid)
@@ -1569,6 +1614,30 @@ private const val DEMO_PATIENTS =
     """{"content":[{"id":11,"name":"Dilnoza Rahimova","photoUrl":null},""" +
         """{"id":12,"name":"Jasur Karimov","photoUrl":null},{"id":13,"name":"Malika Tursunova","photoUrl":null},""" +
         """{"id":14,"name":"Bekzod Aliyev","photoUrl":null},{"id":15,"name":"","photoUrl":null}],"last":true}"""
+
+internal fun demoPlanVisit(
+    id: Long,
+    start: String,
+    doctor: Long,
+    name: String,
+    status: String,
+    timing: String,
+    service: String,
+) = buildJsonObject {
+    put("appointmentId", id)
+    put("startAt", start)
+    put("endAt", start.replace(":00:00Z", ":30:00Z"))
+    put("status", status)
+    put("doctorProfileId", doctor)
+    put("doctorName", name)
+    put("location", "Shifa Demo Clinic")
+    put("services", JsonArray(listOf(JsonPrimitive(service))))
+    put("visitTotalMinor", 80_000_000)
+    put("visitCollectedMinor", if (timing == "PAST") 80_000_000 else 0)
+    put("visitOwedMinor", if (timing == "PAST") 0 else 80_000_000)
+    put("currency", "UZS")
+    put("timing", timing)
+}
 
 internal fun demoRecord(
     id: Long,

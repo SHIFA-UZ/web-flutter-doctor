@@ -34,7 +34,11 @@ internal fun ColumnScope.ClinicSectionContent(
             })
         ClinicSection.Invitations -> InvitationsSection(clinic)
         ClinicSection.Services -> ServicesSection(clinic)
-        ClinicSection.Finance -> FinanceSection(clinic)
+        ClinicSection.Finance ->
+            FinanceSection(clinic, onOpenPlan = {
+                actions.push(ShellRoute.PlanDetail(it, clinic.clinicId))
+            })
+        ClinicSection.Plans -> PlansSection(clinic, actions)
         ClinicSection.Patients ->
             ClinicPatientsSection(clinic, onOpen = { actions.push(ShellRoute.Patient(it.patientId, clinic.clinicId)) })
         else -> Text(tr(sectionLabel(section)), style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Secondary)

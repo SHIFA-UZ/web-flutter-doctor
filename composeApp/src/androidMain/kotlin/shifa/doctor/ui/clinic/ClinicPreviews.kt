@@ -284,3 +284,122 @@ internal fun FinanceRecordSheetPreview() =
             )
         }
     }
+
+private val previewPlan =
+    shifa.doctor.data.model.TreatmentPlanSummary(
+        501, 2, 12, "Jasur Karimov", attendingDoctorName = "Aziza Karimova", title = "Treatment of 36 and 46",
+        diagnosis = "K04.0 Pulpitis", statusRaw = "ACTIVE", totalMinor = 160_000_000, paidMinor = 100_000_000,
+        owedMinor = 60_000_000, visitCount = 2, linesCompletedCount = 1, linesTotalCount = 3,
+    )
+
+private val previewVisits =
+    listOf(
+        shifa.doctor.data.model.PlanVisit(
+            101,
+            "2026-11-04T05:00:00Z",
+            "2026-11-04T05:30:00Z",
+            "COMPLETED",
+            21,
+            "Aziza Karimova",
+            services = listOf("Root canal treatment"),
+            timing = "PAST",
+        ),
+        shifa.doctor.data.model.PlanVisit(
+            201,
+            "2026-11-12T06:00:00Z",
+            "2026-11-12T06:30:00Z",
+            "CONFIRMED",
+            22,
+            "Bobur Aliyev",
+            services = listOf("Ceramic crown"),
+            timing = "UPCOMING",
+        ),
+    )
+
+// TP-02 (board `DaClinic` Plans): search, New plan, status chips, a plan with its visits open.
+@Composable
+internal fun ClinicPlansPreview() =
+    Workspace(ClinicUiState(previewClinics, section = ClinicSection.Plans)) { _, clinic ->
+        PlansContent(
+            ClinicPlansUiState(
+                plans =
+                    listOf(
+                        previewPlan,
+                        previewPlan.copy(
+                            id = 502,
+                            title = "Braces",
+                            statusRaw = "ON_HOLD",
+                            owedMinor = 0,
+                            paidMinor = 160_000_000,
+                        ),
+                    ),
+                open = setOf(501),
+                visits = mapOf(501L to previewVisits),
+            ),
+            clinic,
+            PlansActions(newPlan = {}),
+        )
+    }
+
+// TP-03 (board `DaClinic` plan detail): overview with Record payment, the chart, the lines, visits, installments.
+@Composable
+internal fun PlanDetailPreview() =
+    PreviewTheme {
+        PlanDetailContent(
+            PlanDetailUiState(
+                detail =
+                    shifa.doctor.data.model.TreatmentPlanDetail(
+                        previewPlan,
+                        listOf(
+                            shifa.doctor.data.model.PlanLine(
+                                1,
+                                title = "Root canal treatment",
+                                lineTotalMinor = 80_000_000,
+                                statusRaw = "COMPLETED",
+                                specialtyMetadata = """{"fdi":"36"}""",
+                            ),
+                            shifa.doctor.data.model.PlanLine(
+                                2,
+                                title = "Ceramic crown",
+                                lineTotalMinor = 60_000_000,
+                                statusRaw = "SCHEDULED",
+                                specialtyMetadata = """{"fdi":"46"}""",
+                            ),
+                            shifa.doctor.data.model.PlanLine(
+                                3,
+                                title = "Hygiene",
+                                lineTotalMinor = 20_000_000,
+                                statusRaw = "PLANNED",
+                            ),
+                        ),
+                        installmentPlans =
+                            listOf(
+                                shifa.doctor.data.model.InstallmentPlan(
+                                    61,
+                                    items =
+                                        listOf(
+                                            shifa.doctor.data.model.InstallmentItem(
+                                                801,
+                                                1,
+                                                30_000_000,
+                                                dueDate = "2026-11-15",
+                                                status = "PAID",
+                                            ),
+                                            shifa.doctor.data.model.InstallmentItem(
+                                                802,
+                                                2,
+                                                30_000_000,
+                                                dueDate = "2026-12-15",
+                                                status = "PENDING",
+                                            ),
+                                        ),
+                                ),
+                            ),
+                    ),
+                visits = previewVisits,
+                loading = false,
+            ),
+            previewClinics.clinics.first(),
+            PlanDetailActions(),
+        )
+    }

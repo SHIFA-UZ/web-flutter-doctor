@@ -251,3 +251,39 @@ Built 2026-11-06. Spec 09 §3, §6–8, flows 09/07…09/13, tickets FIN-01…07
   stale answers, CSV quoting), `DemoBackendTest` (+1); screenshots `Clinic_finance_dashboard`, `…_ledger`,
   `…_installments`.
 
+## TP-02 + TP-03 · Treatment plans list and detail
+
+Built 2026-11-06. Spec 09 §4.1, §4.3, flows 09/14, 09/16, 09/17, tickets TP-02 and TP-03. Board `DaClinic` Plans and the
+plan detail (`ui/clinic/ClinicPlans.kt`).
+- **Data:** `TreatmentPlansRepository.plans(clinicId, patientId?, status, kind, q)` (the clinic's plans when no patient),
+  `visits(planId)`, `setStatus(planId, status)`; the detail now reads `installmentPlans`; `PlanVisit`, `InstallmentPlan`.
+- **List (TP-02):** search (`q`, debounced, on the server) and status chips (All, Active, In progress, On hold, Draft,
+  Completed, Cancelled — `status` on the server); a card per plan (the kit's `TreatmentPlanCard`, its amounts now wrap
+  as whole phrases): title ("(untitled plan)"), patient · doctors, progress "1 of 3 done", paid / total / outstanding,
+  the status badge → the status menu (the current one marked; Cancelled asks "Cancel this plan?"), "N visits" (read on
+  first open, Retry on failure) and Open. A visit opens as an appointment of its doctor's calendar in the clinic's zone
+  (quirk 6; `CalendarScope`), cancelled visits don't open. The list reads again on return. New plan comes with TP-04.
+- **Detail (TP-03):** `ShellRoute.PlanDetail(planId, clinicId)` from the list and the finance dashboard's plan
+  balances. "#501 · title" with ⋮ (Change status, Record payment); overview: status badge (menu), progress, the patient
+  (opens them in the clinic's scope), doctors, diagnosis, notes, total / paid / outstanding (red when owed), updated
+  (the clinic's day); Record payment (who may handle finance, something owed, not cancelled): amount (the outstanding
+  by default), method, memo → `POST …/finance/payments {treatmentPlanId, …}`. The read-only dental chart when lines
+  carry teeth (done / part done / planned with the count), the lines (tooth or General · × qty, total, line status;
+  cancelled struck through), the visits, the installment schedule ("No installment schedule. Payments are taken per
+    visit." — read as the backend sends it: `installmentPlanId`, `scheduleRows`, `installmentItemId`; the OpenAPI is
+  wrong there). Read again on every return (quirk 10), an older answer never overwriting a newer one; a failed visits
+  read has Retry; a 404 says "Treatment plan not found.". The finance section reads again on return too (a payment
+  made here shows on its dashboard).
+- **Codex review:** the real installment shape, visits refreshed on every reload, finance refreshed on return, visits
+  failure with Retry, stale answers dropped (answers in `codex/TP-02-03.md`).
+- **Not built:** the board's per-plan payments list (the payments endpoint has no plan filter: BE-36), "Add service"
+  and cancelling a line from the detail (not in the spec's detail; the visit fulfils lines), Edit plan (comes with the
+  wizard, TP-04), the PDF (TP-05).
+- **Demo:** the demo plan's visits (Aziza's past one, Bobur's upcoming one), its status set by hand, `q`.
+- **Checked:** emulator, demo: the plan listed with progress and money, its visits expanded, the detail, Record payment
+  ("Payment recorded", outstanding 0), Cancelled after the question ("Status updated"). Dev: no plans in clinic 2 (curl,
+  `[]`). iOS compiled, not run.
+- **Tests:** `ClinicPlansViewModelTest` (server status / search params, visits read once, the cancel question and the
+  PATCH body, the detail with lines / teeth / installments, the payment body, 404); screenshots `Clinic_plans`,
+  `Clinic_plan_detail`.
+

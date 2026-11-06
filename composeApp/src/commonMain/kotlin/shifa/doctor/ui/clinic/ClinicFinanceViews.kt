@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.LocalDate
@@ -233,17 +235,22 @@ class FinanceActions(
     val info: (InfoSheet?) -> Unit = {},
     val dismiss: () -> Unit = {},
     val export: (String, ByteArray) -> Boolean = { _, _ -> false },
+    // A plan's balance (the dashboard's all-time Outstanding) opens the plan (TP-03).
+    val openPlan: (Long) -> Unit = {},
 )
 
 @Composable
 internal fun ColumnScope.FinanceSection(
     clinic: MyClinic,
+    onOpenPlan: (Long) -> Unit = {},
     viewModel: ClinicFinanceViewModel =
         viewModel(key = "clinic-finance-${clinic.clinicId}") {
             ClinicFinanceViewModel(clinic, PracticeClock(clinic.timeZone).today())
         },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Back from a plan (a payment, a status change) or the app: the view reads again.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
     val share = rememberFileShare()
     val vm = viewModel
     FinanceContent(
@@ -256,6 +263,7 @@ internal fun ColumnScope.FinanceSection(
             vm::editRecord, vm::searchPatient, vm::pickPatient, vm::pickPlan, vm::saveRecord, vm::closeRecord,
             vm::info, vm::dismiss,
             { name, bytes -> share(name, "text/csv", bytes) },
+            onOpenPlan,
         ),
     )
 }
@@ -528,7 +536,14 @@ private fun ColumnScope.OwedList(
                     null,
                     Money.format(o.amountMinor, o.currency),
                     ShifaColors.Text.Error,
-                    onClick = o.view?.let { v -> { actions.view(v) } },
+                    onClick =
+                        o.planId?.let {
+                                id ->
+                            { actions.openPlan(id) }
+                        } ?: o.view?.let {
+                                v ->
+                            { actions.view(v) }
+                        },
                 )
             }
     }
@@ -1106,7 +1121,7 @@ private fun PayMenu(
 }
 
 @Composable
-private fun MethodChips(
+internal fun MethodChips(
     selected: PayMethod,
     enabled: Boolean,
     onPick: (PayMethod) -> Unit,

@@ -100,8 +100,8 @@ data class RecordSheet(
 
 /**
  * A row of the dashboard's Outstanding / Overdue lists: when ([date], an instant or a due date), who ([name]), what
- * ([detail]: a plan title or a doctor; [recordType] for an invoice), how much, and the view that lists it ([view]; a
- * plan's balance opens the plan once its screen exists).
+ * ([detail]: a plan title or a doctor; [recordType] for an invoice), how much, and what it opens: the plan ([planId])
+ * or the view that lists it ([view]).
  */
 data class Owed(
     val date: String?,

@@ -45,6 +45,12 @@ class ClinicScreenshotTest {
         }
 
     @Test
+    fun plans() = captureRoboImage("screenshots/Clinic_plans.png") { ClinicPlansPreview() }
+
+    @Test
+    fun planDetail() = captureRoboImage("screenshots/Clinic_plan_detail.png") { PlanDetailPreview() }
+
+    @Test
     fun calendar() = captureRoboImage("screenshots/Clinic_calendar.png") { ClinicCalendarPreview() }
 
     @Test

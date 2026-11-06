@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -115,6 +117,7 @@ fun ShifaSlider(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 /**
  * `.dr-plan`: a treatment plan in the plans list: title, patient line, status badge in [status], visit progress,
  * the money line (paid, owed in red) and [actions].
@@ -162,7 +165,11 @@ fun TreatmentPlanCard(
             ShifaProgressBar(progress, Modifier.weight(1f))
             Text(progressLabel, style = ShifaTextStyles.legend(), color = ShifaColors.Text.Primary)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
+        // The amounts wrap as whole phrases on a phone (UZS amounts are long).
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S2),
+        ) {
             Text(
                 paid,
                 style = ShifaTextStyles.dialogBody().copy(fontWeight = FontWeight.Bold),

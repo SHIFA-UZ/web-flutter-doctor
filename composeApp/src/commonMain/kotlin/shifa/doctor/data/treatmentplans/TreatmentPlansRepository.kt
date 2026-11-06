@@ -20,6 +20,8 @@ import shifa.doctor.data.model.FulfillRequest
 import shifa.doctor.data.model.FulfillmentCandidate
 import shifa.doctor.data.model.NewCatalogItem
 import shifa.doctor.data.model.PlanServiceOption
+import shifa.doctor.data.model.PlanStatusBody
+import shifa.doctor.data.model.PlanVisit
 import shifa.doctor.data.model.TreatmentPlanDetail
 import shifa.doctor.data.model.TreatmentPlanSummary
 
@@ -39,6 +41,8 @@ class TreatmentPlansRepository(
         patientId: Long?,
         status: String? = null,
         planKind: String? = "COMPREHENSIVE",
+        // TP-02: the server's search over patient and plan title.
+        q: String? = null,
     ): Result<List<TreatmentPlanSummary>> =
         apiCall<List<JsonElement>> {
             client().get(ApiConfig.Endpoints.TREATMENT_PLANS) {
@@ -46,8 +50,26 @@ class TreatmentPlansRepository(
                 patientId?.let { parameter("patientId", it) }
                 status?.let { parameter("status", it) }
                 planKind?.let { parameter("planKind", it) }
+                q?.trim()?.takeIf { it.isNotEmpty() }?.let { parameter("q", it) }
             }
         }.map { it.rows(TreatmentPlanSummary.serializer(), "treatment plans") }
+
+    /** `GET /treatment-plans/{id}/visits` (TP-02/03): the visits linked to the plan. */
+    suspend fun visits(planId: Long): Result<List<PlanVisit>> =
+        apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.treatmentPlanVisits(planId)) }
+            .map { it.rows(PlanVisit.serializer(), "plan visits") }
+
+    /** `PATCH /treatment-plans/{id}/status {status}`: the plan as it is then. */
+    suspend fun setStatus(
+        planId: Long,
+        status: String,
+    ): Result<TreatmentPlanSummary> =
+        apiCall<TreatmentPlanSummary> {
+            client().patch(ApiConfig.Endpoints.treatmentPlanStatus(planId)) {
+                contentType(ContentType.Application.Json)
+                setBody(PlanStatusBody(status))
+            }
+        }
 
     /** The services a plan can use in a clinic (`GET /treatment-plans/plan-services`), for the plan editor. */
     suspend fun planServices(

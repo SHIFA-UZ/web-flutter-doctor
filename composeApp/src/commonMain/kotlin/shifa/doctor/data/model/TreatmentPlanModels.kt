@@ -94,6 +94,8 @@ data class TreatmentPlanSummary(
     val visitCount: Int = 0,
     val linesCompletedCount: Int = 0,
     val linesTotalCount: Int = 0,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 ) {
     val status: PlanStatus get() = PlanStatus.of(statusRaw)
     val kind: PlanKind get() = PlanKind.of(kindRaw)
@@ -139,6 +141,8 @@ data class TreatmentPlanDetail(
     val summary: TreatmentPlanSummary,
     val lines: List<PlanLine> = emptyList(),
     val dentalPlanDocumentation: String? = null,
+    // The plan's installment schedules (`installmentPlans`; TP-03), each with its items.
+    val installmentPlans: List<InstallmentPlan> = emptyList(),
 ) {
     companion object {
         /** Read leniently; an older backend sent the summary's fields flat beside `lines` (09 §7: "tolerates flat"). */
@@ -150,10 +154,64 @@ data class TreatmentPlanDetail(
                     .getOrNull() ?: return null
             val lines = (map["lines"] as? JsonArray).orEmpty().rows(PlanLine.serializer(), "plan lines")
             val dental = (map["dentalPlanDocumentation"] as? JsonPrimitive)?.contentOrNull
-            return TreatmentPlanDetail(summary, lines, dental)
+            val installments =
+                (map["installmentPlans"] as? JsonArray).orEmpty().rows(
+                    InstallmentPlan.serializer(),
+                    "installment plans",
+                )
+            return TreatmentPlanDetail(summary, lines, dental, installments)
         }
     }
 }
+
+/**
+ * The detail's `InstallmentSummaryDto` (backend source, 2026-11-06; the OpenAPI names another DTO): a schedule and its
+ * rows in order.
+ */
+@Serializable
+data class InstallmentPlan(
+    @SerialName("installmentPlanId") val id: Long = 0,
+    val status: String? = null,
+    val totalAmountMinor: Long = 0,
+    val currency: String = "UZS",
+    @SerialName("scheduleRows") val items: List<InstallmentItem> = emptyList(),
+)
+
+/** `InstallmentScheduleRowDto`: PENDING, PAID, OVERDUE, WAIVED or CANCELLED. */
+@Serializable
+data class InstallmentItem(
+    @SerialName("installmentItemId") val id: Long = 0,
+    val sequenceNumber: Int = 0,
+    val amountMinor: Long = 0,
+    val currency: String = "UZS",
+    val dueDate: String = "",
+    val status: String = "",
+)
+
+/** `PlanVisitDto` (`GET /treatment-plans/{id}/visits`): a visit linked to the plan, its money and timing. */
+@Serializable
+data class PlanVisit(
+    val appointmentId: Long = 0,
+    val startAt: String = "",
+    val endAt: String = "",
+    val status: String? = null,
+    val doctorProfileId: Long? = null,
+    val doctorName: String? = null,
+    val location: String? = null,
+    val services: List<String?> = emptyList(),
+    val visitTotalMinor: Long = 0,
+    val visitCollectedMinor: Long = 0,
+    val visitOwedMinor: Long = 0,
+    val currency: String = "UZS",
+    val visitPaymentStatus: String? = null,
+    // UPCOMING, PAST or CANCELLED.
+    val timing: String? = null,
+)
+
+@Serializable
+data class PlanStatusBody(
+    val status: String,
+)
 
 /** `FulfillmentCandidateDto`: an open plan line this visit may complete; [fdi] null for a general one. */
 @Serializable

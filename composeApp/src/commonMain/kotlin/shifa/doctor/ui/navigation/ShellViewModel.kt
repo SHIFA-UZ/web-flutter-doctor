@@ -157,6 +157,12 @@ sealed interface ShellRoute {
         val scope: shifa.doctor.ui.calendar.CalendarScope? = null,
     ) : ShellRoute
 
+    /** A clinic's treatment plan (TP-03), from the plans list, the finance dashboard or a patient. */
+    data class PlanDetail(
+        val planId: Long,
+        val clinicId: Long,
+    ) : ShellRoute
+
     /** A colleague's calendar from the clinic workspace (CAL-10 / CLINIC-09, flow 04/14 B); back returns there. */
     data class DoctorSchedule(
         val scope: shifa.doctor.ui.calendar.CalendarScope,

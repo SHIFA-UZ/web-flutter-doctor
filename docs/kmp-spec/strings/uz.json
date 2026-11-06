@@ -2760,5 +2760,18 @@
   "clinicFinanceCharged": "Hisoblangan",
   "clinicFinanceChargedHint": "Yakunlangan tashriflar va reja to'lovlari",
   "clinicFinancePaymentsInPeriod": "Davrdagi to'lovlar",
-  "clinicRecordsPickPatient": "Bemorni tanlang"
+  "clinicRecordsPickPatient": "Bemorni tanlang",
+  "planStatusOnHold": "To'xtatilgan",
+  "planOpen": "Ochish",
+  "planOptions": "Reja amallari",
+  "planCancelTitle": "Bu reja bekor qilinsinmi?",
+  "planCancelBody": "Holati «Bekor qilingan»ga o'zgaradi. Kiritilgan to'lovlar saqlanib qoladi.",
+  "planStatusFailed": "Reja holatini o'zgartirib bo'lmadi.",
+  "planLineTooth": "Tish {{tooth}}",
+  "planNoInstallments": "Bo'lib to'lash jadvali yo'q. To'lov har tashrif uchun olinadi.",
+  "planProgress": "{{total}} tadan {{done}} tasi bajarildi",
+  "planNoLines": "Hali xizmatlar yo'q",
+  "planLoadFailed": "Davolash rejasini yuklab bo'lmadi.",
+  "plansNoneMatch": "Mos davolash rejalari yo'q.",
+  "planVisitsFailed": "Tashriflarni yuklab bo'lmadi."
 }

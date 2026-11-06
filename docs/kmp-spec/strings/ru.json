@@ -2760,5 +2760,18 @@
   "clinicFinanceCharged": "Начислено",
   "clinicFinanceChargedHint": "Завершённые визиты и платежи по планам",
   "clinicFinancePaymentsInPeriod": "Платежи за период",
-  "clinicRecordsPickPatient": "Выберите пациента"
+  "clinicRecordsPickPatient": "Выберите пациента",
+  "planStatusOnHold": "Приостановлен",
+  "planOpen": "Открыть",
+  "planOptions": "Действия с планом",
+  "planCancelTitle": "Отменить этот план?",
+  "planCancelBody": "Статус станет «Отменён». Уже внесённые платежи останутся.",
+  "planStatusFailed": "Не удалось изменить статус плана.",
+  "planLineTooth": "Зуб {{tooth}}",
+  "planNoInstallments": "Графика рассрочки нет. Оплата за каждый визит.",
+  "planProgress": "Выполнено {{done}} из {{total}}",
+  "planNoLines": "Пока нет услуг",
+  "planLoadFailed": "Не удалось загрузить план лечения.",
+  "plansNoneMatch": "Подходящих планов лечения нет.",
+  "planVisitsFailed": "Не удалось загрузить визиты."
 }

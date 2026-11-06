@@ -111,6 +111,7 @@ import shifa.doctor.ui.clinic.ClinicActions
 import shifa.doctor.ui.clinic.ClinicDoctorScheduleScreen
 import shifa.doctor.ui.clinic.ClinicSectionContent
 import shifa.doctor.ui.clinic.ClinicWorkspaceScreen
+import shifa.doctor.ui.clinic.PlanDetailScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.documents.DocumentViewerScreen
 import shifa.doctor.ui.forms.FormEditorScreen
@@ -621,6 +622,7 @@ private fun RouteContent(
                 scope = route.scope,
             )
         is ShellRoute.DoctorSchedule -> ClinicDoctorScheduleScreen(route.scope, actions)
+        is ShellRoute.PlanDetail -> PlanDetailScreen(route.planId, route.clinicId, actions)
         is ShellRoute.Booking ->
             BookingScreen(
                 route.slot,
