@@ -71,6 +71,7 @@ import shifa.doctor.generated.resources.clinicOpenCalendarTab
 import shifa.doctor.generated.resources.clinicSettingsReadOnly
 import shifa.doctor.generated.resources.clinicSettingsTitle
 import shifa.doctor.generated.resources.clinicStatsFailed
+import shifa.doctor.generated.resources.clinicTabPlans
 import shifa.doctor.generated.resources.clinicTreatmentPlansNew
 import shifa.doctor.generated.resources.clinicWorkspaceCalendar
 import shifa.doctor.generated.resources.clinicWorkspaceDoctors
@@ -99,7 +100,6 @@ import shifa.doctor.generated.resources.ic_pin_16
 import shifa.doctor.generated.resources.ic_users_16
 import shifa.doctor.generated.resources.ic_users_20
 import shifa.doctor.generated.resources.phone
-import shifa.doctor.generated.resources.plans
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
@@ -136,7 +136,8 @@ internal fun clinicGroups(staff: Boolean): List<Pair<StringResource, List<Clinic
         Res.string.clinicGroupPeople to
             if (staff) listOf(ClinicSection.Doctors) else listOf(ClinicSection.Doctors, ClinicSection.Invitations),
         Res.string.clinicWorkspacePatients to listOf(ClinicSection.Patients),
-        Res.string.plans to listOf(ClinicSection.Plans),
+        // Its own key: `plans` is the subscription's ("Тарифы").
+        Res.string.clinicTabPlans to listOf(ClinicSection.Plans),
         Res.string.clinicWorkspaceFinance to listOf(ClinicSection.Finance, ClinicSection.Services),
     )
 

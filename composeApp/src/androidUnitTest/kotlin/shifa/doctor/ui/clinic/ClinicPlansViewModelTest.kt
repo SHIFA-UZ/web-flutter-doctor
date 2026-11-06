@@ -21,6 +21,8 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.finance.FinanceRepository
 import shifa.doctor.data.model.PlanStatus
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.clinicTreatmentPlanExportPdfFailed
 import shifa.doctor.stopAll
 import java.util.Collections
 
@@ -154,5 +156,52 @@ class ClinicPlansViewModelTest {
         gone.load()
         settle { gone.state.value.notFound }
         assertThat(gone.state.value.error).isNull()
+    }
+
+    @Test
+    fun `export makes the plan's PDF with its file name, a failed one says so, a share that didn't open too`() {
+        var made: shifa.doctor.data.treatmentplans.TreatmentPlanPdfData? = null
+        var bytes: ByteArray? = byteArrayOf(37, 80)
+        val vm =
+            PlanDetailViewModel(501, 2, TreatmentPlansRepository { client }, FinanceRepository { client }, { d, _ ->
+                made = d
+                bytes
+            }).also { created += it }
+        // Nothing read yet: nothing to export.
+        vm.exportPdf({ error("not called") }, shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels(), "2026-11-06")
+        assertThat(vm.state.value.exporting).isFalse()
+        vm.load()
+        settle { vm.state.value.detail != null }
+        vm.menu(true)
+        vm.exportPdf(
+            {
+                    d ->
+                shifa.doctor.data.treatmentplans.TreatmentPlanPdfData(d, "Clinic", "06.11.2026 10:00", null, null, null)
+            },
+            shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels(),
+            "2026-11-06",
+        )
+        settle { vm.state.value.pdf != null }
+        assertThat(vm.state.value.menu).isFalse()
+        assertThat(vm.state.value.pdf!!.name).isEqualTo("treatment_plan_501_2026-11-06.pdf")
+        assertThat(made!!.plan.summary.id).isEqualTo(501L)
+        vm.pdfShared(true)
+        assertThat(vm.state.value.pdf).isNull()
+        assertThat(vm.state.value.banner).isNull()
+        vm.pdfShared(false)
+        assertThat(
+            vm.state.value.banner!!.text,
+        ).isEqualTo(Res.string.clinicTreatmentPlanExportPdfFailed)
+        bytes = null
+        vm.exportPdf(
+            { d -> made!!.copy(plan = d) },
+            shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels(),
+            "2026-11-06",
+        )
+        settle { !vm.state.value.exporting }
+        assertThat(vm.state.value.pdf).isNull()
+        assertThat(
+            vm.state.value.banner!!.text,
+        ).isEqualTo(Res.string.clinicTreatmentPlanExportPdfFailed)
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
@@ -52,6 +54,9 @@ import shifa.doctor.data.model.PlanVisit
 import shifa.doctor.data.model.TreatmentPlanDetail
 import shifa.doctor.data.model.TreatmentPlanSummary
 import shifa.doctor.data.model.mayManageFinance
+import shifa.doctor.data.treatmentplans.TreatmentPlanPdf
+import shifa.doctor.data.treatmentplans.TreatmentPlanPdfData
+import shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.data.treatmentplans.treatmentPlansRepository
 import shifa.doctor.generated.resources.Res
@@ -78,6 +83,9 @@ import shifa.doctor.generated.resources.clinicFinancePaymentRecorded
 import shifa.doctor.generated.resources.clinicTreatmentPlanDetailDentalChart
 import shifa.doctor.generated.resources.clinicTreatmentPlanDetailNotFound
 import shifa.doctor.generated.resources.clinicTreatmentPlanDetailTitle
+import shifa.doctor.generated.resources.clinicTreatmentPlanExportPdf
+import shifa.doctor.generated.resources.clinicTreatmentPlanExportPdfFailed
+import shifa.doctor.generated.resources.clinicTreatmentPlanExportPdfPreparing
 import shifa.doctor.generated.resources.clinicTreatmentPlanLineStatusPlanned
 import shifa.doctor.generated.resources.clinicTreatmentPlanLineStatusScheduled
 import shifa.doctor.generated.resources.clinicTreatmentPlansAll
@@ -97,6 +105,8 @@ import shifa.doctor.generated.resources.diagnosis
 import shifa.doctor.generated.resources.draft
 import shifa.doctor.generated.resources.ic_plus_16
 import shifa.doctor.generated.resources.notes
+import shifa.doctor.generated.resources.patient
+import shifa.doctor.generated.resources.patientId
 import shifa.doctor.generated.resources.planCancelBody
 import shifa.doctor.generated.resources.planCancelTitle
 import shifa.doctor.generated.resources.planLineTooth
@@ -114,6 +124,37 @@ import shifa.doctor.generated.resources.plansNoneMatch
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.services
 import shifa.doctor.generated.resources.statusInProgress
+import shifa.doctor.generated.resources.tpPdfAcknowledgement
+import shifa.doctor.generated.resources.tpPdfAcknowledgementNote
+import shifa.doctor.generated.resources.tpPdfAmountDue
+import shifa.doctor.generated.resources.tpPdfCreated
+import shifa.doctor.generated.resources.tpPdfDate
+import shifa.doctor.generated.resources.tpPdfDiscount
+import shifa.doctor.generated.resources.tpPdfDoctors
+import shifa.doctor.generated.resources.tpPdfDueDate
+import shifa.doctor.generated.resources.tpPdfFooter
+import shifa.doctor.generated.resources.tpPdfGenerated
+import shifa.doctor.generated.resources.tpPdfInstallments
+import shifa.doctor.generated.resources.tpPdfLineStatus
+import shifa.doctor.generated.resources.tpPdfLineTotal
+import shifa.doctor.generated.resources.tpPdfNotes
+import shifa.doctor.generated.resources.tpPdfOtherServices
+import shifa.doctor.generated.resources.tpPdfPage
+import shifa.doctor.generated.resources.tpPdfPartStatus
+import shifa.doctor.generated.resources.tpPdfPatientSignature
+import shifa.doctor.generated.resources.tpPdfPlanId
+import shifa.doctor.generated.resources.tpPdfProcedures
+import shifa.doctor.generated.resources.tpPdfQty
+import shifa.doctor.generated.resources.tpPdfSchedule
+import shifa.doctor.generated.resources.tpPdfStatus
+import shifa.doctor.generated.resources.tpPdfSummary
+import shifa.doctor.generated.resources.tpPdfSymptoms
+import shifa.doctor.generated.resources.tpPdfTitle
+import shifa.doctor.generated.resources.tpPdfTooth
+import shifa.doctor.generated.resources.tpPdfUnitPrice
+import shifa.doctor.generated.resources.tpPdfUpdated
+import shifa.doctor.generated.resources.treatmentPlanTitle
+import shifa.doctor.generated.resources.wizardService
 import shifa.doctor.ui.calendar.CalendarScope
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
@@ -148,6 +189,7 @@ import shifa.doctor.utils.Money
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayDate
 import shifa.doctor.utils.displayTime
+import shifa.doctor.utils.rememberFileShare
 import shifa.doctor.utils.tr
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -625,6 +667,15 @@ data class PlanDetailUiState(
     val pay: PlanPaySheet? = null,
     val busy: Boolean = false,
     val banner: CodeBanner? = null,
+    // TP-05: the PDF being made, then the file for the share sheet.
+    val exporting: Boolean = false,
+    val pdf: PlanPdfFile? = null,
+)
+
+/** A made plan PDF for the share sheet (compared by identity: each export is shared once). */
+class PlanPdfFile(
+    val name: String,
+    val bytes: ByteArray,
 )
 
 /**
@@ -637,6 +688,9 @@ class PlanDetailViewModel(
     private val clinicId: Long,
     private val repo: TreatmentPlansRepository = treatmentPlansRepository,
     private val finance: FinanceRepository = financeRepository,
+    private val makePdf: (TreatmentPlanPdfData, TreatmentPlanPdfLabels) -> ByteArray? = { d, l ->
+        TreatmentPlanPdf().pdf(d, l)
+    },
 ) : ViewModel() {
     private val _state = MutableStateFlow(PlanDetailUiState())
     val state: StateFlow<PlanDetailUiState> = _state.asStateFlow()
@@ -793,6 +847,41 @@ class PlanDetailViewModel(
         }
     }
 
+    /**
+     * Export PDF (TP-05): the plan as it was last read, made in the app (BE-01), named
+     * `treatment_plan_<id>_<yyyy-MM-dd>.pdf` (Flutter's), then handed to the share sheet ([pdfShared] after).
+     */
+    fun exportPdf(
+        data: (TreatmentPlanDetail) -> TreatmentPlanPdfData,
+        labels: TreatmentPlanPdfLabels,
+        day: String,
+    ) {
+        val detail = _state.value.detail ?: return
+        if (_state.value.exporting) return
+        _state.update { it.copy(menu = false, exporting = true, banner = null) }
+        viewModelScope.launch {
+            // Let "Preparing PDF…" draw before the pages are laid out.
+            yield()
+            val bytes = runCatching { makePdf(data(detail), labels) }.getOrNull()?.takeIf { it.isNotEmpty() }
+            _state.update {
+                it.copy(
+                    exporting = false,
+                    pdf = bytes?.let { b -> PlanPdfFile("treatment_plan_${planId}_$day.pdf", b) },
+                    banner = if (bytes == null) CodeBanner(Res.string.clinicTreatmentPlanExportPdfFailed) else null,
+                )
+            }
+        }
+    }
+
+    /** The share sheet took the file, or couldn't open ([opened] false says so). */
+    fun pdfShared(opened: Boolean) =
+        _state.update {
+            it.copy(
+                pdf = null,
+                banner = if (opened) it.banner else CodeBanner(Res.string.clinicTreatmentPlanExportPdfFailed),
+            )
+        }
+
     fun dismiss() = _state.update { it.copy(banner = null) }
 }
 
@@ -807,6 +896,12 @@ fun PlanDetailScreen(
     val clinics by clinicsRepository.state.collectAsStateWithLifecycle()
     val clinic = clinics.clinics.firstOrNull { it.clinicId == clinicId } ?: MyClinic(clinicId)
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.load() }
+    val share = rememberFileShare()
+    state.pdf?.let { file ->
+        LaunchedEffect(file) { viewModel.pdfShared(share(file.name, "application/pdf", file.bytes)) }
+    }
+    val pdfLabels = planPdfLabels()
+    val doctorsText = state.detail?.summary?.let { doctorsOf(it) }
     PlanDetailContent(
         state,
         clinic,
@@ -823,7 +918,93 @@ fun PlanDetailScreen(
             dismiss = viewModel::dismiss,
             openPatient = { actions.push(ShellRoute.Patient(it, clinicId)) },
             openVisit = { v -> actions.openPlanVisit(v, state.detail?.summary, clinic) },
+            exportPdf = {
+                val clock = PracticeClock(clinic.timeZone)
+                val now = clock.now()
+                val day = { raw: String? ->
+                    raw?.let(PracticeClock::parseInstant)?.let { displayDate(clock.local(it).date) }
+                }
+                viewModel.exportPdf(
+                    { d ->
+                        TreatmentPlanPdfData(
+                            d,
+                            clinic.name.takeIf { it.isNotBlank() },
+                            "${displayDate(now.date)} ${twoDigits(now.hour)}:${twoDigits(now.minute)}",
+                            day(d.summary.createdAt),
+                            day(d.summary.updatedAt),
+                            doctorsText,
+                        )
+                    },
+                    pdfLabels,
+                    now.date.toString(),
+                )
+            },
         ),
+    )
+}
+
+private fun twoDigits(n: Int) = n.toString().padStart(2, '0')
+
+/** The PDF's words in the app's language (TP-05). */
+@Composable
+private fun planPdfLabels(): TreatmentPlanPdfLabels {
+    val planStatuses = PlanStatus.entries.associateWith { tr(planStatusLabel(it)) }
+    val lineStatuses = LineStatus.entries.associateWith { tr(lineStatusLabel(it)) }
+    val installmentStatuses =
+        listOf("PENDING", "PAID", "OVERDUE", "WAIVED", "CANCELLED").associateWith { tr(installmentLabelOf(it)) }
+    val planId = tr(Res.string.tpPdfPlanId, "{id}")
+    val generated = tr(Res.string.tpPdfGenerated, "{date}")
+    val tooth = tr(Res.string.tpPdfTooth, "{fdi}")
+    val schedule = tr(Res.string.tpPdfSchedule, "{id}", "{status}", "{total}")
+    val page = tr(Res.string.tpPdfPage, "{page}", "{pages}")
+    return TreatmentPlanPdfLabels(
+        title = tr(Res.string.tpPdfTitle),
+        planId = { planId.replace("{id}", "$it") },
+        generated = { generated.replace("{date}", it) },
+        summary = tr(Res.string.tpPdfSummary),
+        patient = tr(Res.string.patient),
+        patientId = tr(Res.string.patientId),
+        planTitle = tr(Res.string.treatmentPlanTitle),
+        diagnosis = tr(Res.string.diagnosis),
+        created = tr(Res.string.tpPdfCreated),
+        updated = tr(Res.string.tpPdfUpdated),
+        doctors = tr(Res.string.tpPdfDoctors),
+        status = tr(Res.string.tpPdfStatus),
+        total = tr(Res.string.clinicTreatmentPlansTotal),
+        paid = tr(Res.string.clinicTreatmentPlansPaid),
+        outstanding = tr(Res.string.clinicFinanceOutstanding),
+        symptoms = tr(Res.string.tpPdfSymptoms),
+        notes = tr(Res.string.tpPdfNotes),
+        procedures = tr(Res.string.tpPdfProcedures),
+        tooth = { tooth.replace("{fdi}", it) },
+        otherServices = tr(Res.string.tpPdfOtherServices),
+        service = tr(Res.string.wizardService),
+        quantity = tr(Res.string.tpPdfQty),
+        unitPrice = tr(Res.string.tpPdfUnitPrice),
+        discount = tr(Res.string.tpPdfDiscount),
+        lineTotal = tr(Res.string.tpPdfLineTotal),
+        lineStatus = tr(Res.string.tpPdfLineStatus),
+        installments = tr(Res.string.tpPdfInstallments),
+        schedule = { id, status, total ->
+            schedule.replace("{id}", "$id").replace("{status}", status).replace("{total}", total)
+        },
+        dueDate = tr(Res.string.tpPdfDueDate),
+        amountDue = tr(Res.string.tpPdfAmountDue),
+        partStatus = tr(Res.string.tpPdfPartStatus),
+        acknowledgement = tr(Res.string.tpPdfAcknowledgement),
+        acknowledgementNote = tr(Res.string.tpPdfAcknowledgementNote),
+        patientSignature = tr(Res.string.tpPdfPatientSignature),
+        date = tr(Res.string.tpPdfDate),
+        footer = tr(Res.string.tpPdfFooter),
+        page = { p, n -> page.replace("{page}", "$p").replace("{pages}", "$n") },
+        planStatus = { planStatuses.getValue(it) },
+        lineStatusOf = { lineStatuses.getValue(it) },
+        installmentStatus = { installmentStatuses[it.uppercase()] ?: installmentStatuses.getValue("PENDING") },
+        // A schedule is ACTIVE, COMPLETED or CANCELLED (the plan's words); anything else as sent.
+        scheduleStatus = {
+                raw ->
+            PlanStatus.of(raw).takeIf { it != PlanStatus.Unknown }?.let(planStatuses::getValue) ?: raw
+        },
     )
 }
 
@@ -840,6 +1021,7 @@ class PlanDetailActions(
     val dismiss: () -> Unit = {},
     val openPatient: (Long) -> Unit = {},
     val openVisit: (PlanVisit) -> Unit = {},
+    val exportPdf: () -> Unit = {},
 )
 
 @Composable
@@ -867,6 +1049,13 @@ fun PlanDetailContent(
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
     ) {
         codeBanner(state.banner) { actions.dismiss() }?.let { it() }
+        if (state.exporting) {
+            Text(
+                tr(Res.string.clinicTreatmentPlanExportPdfPreparing),
+                style = ShifaTextStyles.caption(),
+                color = ShifaColors.Text.Secondary,
+            )
+        }
         state.error?.let { e ->
             codeBanner(e)?.let { it() }
             ShifaLink(tr(Res.string.retry), actions.load)
@@ -1142,8 +1331,10 @@ private fun PlanMenu(
     ShifaTray(tr(Res.string.planOptions), { actions.menu(false) }) {
         ShifaSettingsItem(tr(Res.string.clinicChangeStatus), {
             actions.statusSheet(StatusSheet(plan))
-        }, divider = clinic.mayManageFinance)
-        if (clinic.mayManageFinance && plan.owedMinor > 0 && plan.status != PlanStatus.Cancelled) {
+        })
+        val pay = clinic.mayManageFinance && plan.owedMinor > 0 && plan.status != PlanStatus.Cancelled
+        ShifaSettingsItem(tr(Res.string.clinicTreatmentPlanExportPdf), actions.exportPdf, divider = pay)
+        if (pay) {
             ShifaSettingsItem(tr(Res.string.clinicFinancePaymentDialogTitle), actions.openPay, divider = false)
         }
     }

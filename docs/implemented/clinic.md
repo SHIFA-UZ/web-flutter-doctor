@@ -352,3 +352,34 @@ Built 2026-11-06. Spec 09 §4.2, flow 09/15, ticket TP-04. Board `DaClinic` plan
   order, a failed lines request kept as a draft and resumed without a second create, a draft stays one, the discard
   rule), `DemoBackendTest` (a wizard plan through the demo); screenshots `Plan_wizard_patient`, `Plan_wizard_team`,
   `Plan_wizard_payment`, `Plan_wizard_review`, `Clinic_overview` (New plan).
+
+## TP-05 · Treatment plan PDF
+
+Built 2026-11-06. Spec 09 §4.4, flow 09/16, ticket TP-05. `data/treatmentplans/TreatmentPlanPdf.kt` on the shared
+`PdfFlow` / `renderPdf` (FORM-03, PDF-01).
+- **Where:** the plan detail's ⋮ → Export PDF (every member, like the detail itself). "Preparing PDF…" while it's
+  made, then the share sheet (`treatment_plan_<id>_<yyyy-MM-dd>.pdf`, Flutter's name); Flutter's was web only. A
+  failure, or a share sheet that didn't open, says "Could not export treatment plan PDF".
+- **Document** (portrait A4, 40 pt margins, system fonts): SHIFA, the clinic, "Plan ID: #501", "Generated: 06.11.2026
+  10:44" (the clinic's zone); the title band "Treatment Plan · <title>"; the summary (patient, patient id, title,
+  diagnosis, attending doctors, plan status, total / paid / outstanding, created / updated when known); symptoms;
+  notes; the lines (grouped per tooth, teeth by number, "Other services" last; # · service · qty · unit price ·
+  discount · line total · status); the installment schedules (each "#61 · status · total", then # · due date · amount ·
+  status); the patient's acknowledgement with "Patient: name", signature and date lines (kept on one page); a footer
+  with "Page n / N" on every page.
+- **Fixes Flutter's:** labels in en, uz and ru (Flutter fell back to English for ru); money grouped like the app
+  (Flutter printed "150000.00 UZS"); the clinic's zone for times (Flutter used the phone's).
+- **Left out:** the linked visit per line (the detail's lines don't carry it), payment status and plan type rows (the
+  plan list shows them; plan type is always comprehensive here), the logo (text "SHIFA", as the visit summary). Server
+  rendering stays BE-01.
+- **Also fixed:** the clinic's Plans tab used the subscription's `plans` key, which says "Тарифы" / "Tariflar" in
+  ru/uz; it has its own key now (`clinicTabPlans`: Plans / Планы / Rejalar).
+- **Checked:** emulator, demo, plan 501 exported in English and in Russian, the files pulled and read: one page each,
+  teeth 36 and 46 then Other services, Cyrillic drawn; a too narrow Qty and Status column in Russian was widened. App
+  language back to English, demo mode off. iOS compiled, not run (`UIGraphicsPDFRenderer`, as the 025-2).
+- **Codex review:** schedule status in its own words, headings kept with their measured first row, an oversized
+  summary value flowing over pages, a stricter margin test (answers in `codex/TP-05.md`).
+- **Tests:** `TreatmentPlanPdfTest` (order of everything, teeth grouped by number with others last, schedule rows by
+  sequence, no empty rows, footer on every page, 80 lines over pages with every text ending inside the margin and the
+  signature block together, a 700-word diagnosis, every tooth heading with its first line, the schedule's own status);
+  `ClinicPlansViewModelTest` (export: nothing before the plan is read, the file name, the failures).
