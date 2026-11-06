@@ -191,5 +191,5 @@ Built 2026-11-06. Spec 09 §5, 03 §1.12, flow 04/14 (B), tickets CLINIC-09 and 
   screenshots `Calendar_colleague`, `Clinic_calendar` (`Calendar_day` / `Calendar_details` unchanged).
 - **Codex review:** `changed` scoped to the doctor, the reschedule month reads the colleague's days, the ViewModel is
   keyed by the whole scope, the patient link (answers in `codex/CLINIC-09.md`).
-- **Next (CAL-10 A):** the "Staff calendars" chip row in the doctor's own Calendar.
+- **CAL-10 A** (the chip row in the doctor's own Calendar) is in calendar.md.
 

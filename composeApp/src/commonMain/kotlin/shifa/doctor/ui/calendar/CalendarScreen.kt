@@ -40,10 +40,15 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.russhwolf.settings.Settings
+import com.russhwolf.settings.set
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
@@ -57,6 +62,8 @@ import shifa.doctor.data.calendar.CalendarCache
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
 import shifa.doctor.data.calendar.calendarRepository
+import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.clinics.clinicsRepository
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.DayOccupancy
 import shifa.doctor.data.profile.ProfileRepository
@@ -89,6 +96,7 @@ import shifa.doctor.generated.resources.ic_block_16
 import shifa.doctor.generated.resources.ic_block_22
 import shifa.doctor.generated.resources.ic_refresh_22
 import shifa.doctor.generated.resources.ic_sliders_22
+import shifa.doctor.generated.resources.mySchedule
 import shifa.doctor.generated.resources.noItemsForThisDay
 import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.paymentFailed
@@ -108,6 +116,7 @@ import shifa.doctor.generated.resources.statusPendingPayment
 import shifa.doctor.generated.resources.statusRequested
 import shifa.doctor.generated.resources.tzMismatchZones
 import shifa.doctor.generated.resources.videoCall
+import shifa.doctor.ui.clinic.calendars
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileChip
@@ -182,6 +191,10 @@ data class CalendarUiState(
     val mismatchDismissed: Boolean = false,
     // A colleague's calendar (CAL-10); null for the signed-in doctor's own.
     val scope: CalendarScope? = null,
+    // The doctor's own calendar in a clinic with colleagues (CAL-10 A): the roster and who shows; null otherwise.
+    val staff: StaffCalendars? = null,
+    // Colleagues' days that failed to read (their section offers Retry).
+    val staffFailed: Set<DayKey> = emptySet(),
 ) {
     val today: LocalDate get() = clock.today()
 
@@ -214,6 +227,9 @@ class CalendarViewModel(
     private val profile: ProfileRepository = profileRepository,
     // A colleague's calendar in the clinic's zone (CAL-10 / CLINIC-09); null for the doctor's own.
     private val scope: CalendarScope? = null,
+    // The selected clinic and its members for the staff calendars (CAL-10 A), and where the choice is remembered.
+    private val clinics: ClinicsRepository = clinicsRepository,
+    private val settings: Settings = Settings(),
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(
@@ -227,8 +243,61 @@ class CalendarViewModel(
             viewModelScope.launch { calendar.state.collect { cache -> _state.update { it.copy(cache = cache) } } }
         } else {
             followOwn()
+            followStaff()
         }
         load()
+    }
+
+    /**
+     * The staff calendars (CAL-10 A, flow 04/14 §2 A): once the selected clinic and the doctor's own profile are known,
+     * the clinic's members are read; with two or more doctors (the signed-in one among them) the chips show, the
+     * colleagues chosen before come back (per doctor and clinic) and their days are read. Another clinic starts again.
+     */
+    private fun followStaff() {
+        viewModelScope.launch {
+            combine(clinics.state.map { it.selected }, profile.me.map { it?.profile?.id }) { c, id -> c to id }
+                .distinctUntilChanged()
+                // Another clinic (or doctor) cancels a roster read still running for the previous one.
+                .collectLatest { (clinic, ownId) ->
+                    _state.update { it.copy(staff = null, staffFailed = emptySet()) }
+                    if (clinic == null || ownId == null) return@collectLatest
+                    val roster = clinics.members(clinic.clinicId).getOrNull()?.calendars() ?: return@collectLatest
+                    if (roster.size < 2 || roster.none { it.doctorProfileId == ownId }) return@collectLatest
+                    val saved =
+                        settings.getStringOrNull(StaffCalendars.key(ownId, clinic.clinicId)).orEmpty()
+                            .split(',').mapNotNull { it.trim().toLongOrNull() }.toSet()
+                    // Members who left are dropped; the doctor's own calendar always shows anyway.
+                    val visible = saved.filter { id -> id != ownId && roster.any { it.doctorProfileId == id } }.toSet()
+                    _state.update { it.copy(staff = StaffCalendars(clinic, roster, ownId, visible)) }
+                    visible.forEach { loadColleague(it) }
+                }
+        }
+    }
+
+    /** A colleague's chip: shown or hidden, remembered; the doctor's own can't be hidden (min one, flow 04/14 §4). */
+    fun toggleStaff(doctorId: Long) {
+        val staff = _state.value.staff ?: return
+        if (doctorId == staff.ownId || staff.roster.none { it.doctorProfileId == doctorId }) return
+        val visible = if (doctorId in staff.visible) staff.visible - doctorId else staff.visible + doctorId
+        settings[StaffCalendars.key(staff.ownId, staff.clinic.clinicId)] = visible.sorted().joinToString(",")
+        _state.update { it.copy(staff = staff.copy(visible = visible)) }
+        if (doctorId in visible) loadColleague(doctorId)
+    }
+
+    fun retryStaff(doctorId: Long) = loadColleague(doctorId, force = true)
+
+    /** A colleague's selected day, cached under them; a failure is remembered for that day (their section says so). */
+    private fun loadColleague(
+        doctorId: Long,
+        force: Boolean = false,
+    ) {
+        val key = DayKey(_state.value.selected, doctorId)
+        _state.update { it.copy(staffFailed = it.staffFailed - key) }
+        viewModelScope.launch {
+            // Each day's failure is its own: a late failure of another day never hides this one's.
+            val failed = calendar.day(key, force).isFailure
+            if (failed) _state.update { it.copy(staffFailed = it.staffFailed + key) }
+        }
     }
 
     private fun followOwn() {
@@ -296,6 +365,7 @@ class CalendarViewModel(
             }
             prefetch()
         }
+        _state.value.staff?.visible?.forEach { loadColleague(it, force) }
     }
 
     private fun prefetch() {
@@ -316,6 +386,8 @@ object CalendarFocus {
 @Composable
 fun CalendarScreen(
     onOpen: (CalendarEntry) -> Unit,
+    // A colleague's row from the staff calendars (CAL-10 A), opened in their calendar.
+    onOpenColleague: (CalendarEntry, CalendarScope) -> Unit = { _, _ -> },
     viewModel: CalendarViewModel = viewModel { CalendarViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -339,6 +411,9 @@ fun CalendarScreen(
             open = onOpen,
             block = { blocking = currentInstant().toEpochMilliseconds() },
             ui = viewModel::ui,
+            staff = viewModel::toggleStaff,
+            openColleague = onOpenColleague,
+            retryStaff = viewModel::retryStaff,
         ),
     )
     blocking?.let { BlockTimeSheet(state.selected, it, onClose = { blocking = null }) }
@@ -353,6 +428,10 @@ class CalendarActions(
     val block: () -> Unit = {},
     // A pushed calendar (a colleague's) has a back button; the tab's own has none.
     val back: (() -> Unit)? = null,
+    // The staff calendars (CAL-10 A): a chip, a colleague's row (opened in their calendar), a section's Retry.
+    val staff: (Long) -> Unit = {},
+    val openColleague: (CalendarEntry, CalendarScope) -> Unit = { _, _ -> },
+    val retryStaff: (Long) -> Unit = {},
     val ui: ((CalendarUiState) -> CalendarUiState) -> Unit = {},
 )
 
@@ -385,10 +464,20 @@ fun CalendarContent(
                 color = ShifaColors.Text.Secondary,
             )
         }
+        state.staff?.let { StaffChips(it, actions.staff) }
         MonthPicker(state.month, state.selected, state.today, state::occupancy, actions.select, actions.month)
         codeBanner(state.error) { actions.ui { it.copy(error = null) } }?.invoke()
         state.error?.let { ShifaLink(tr(Res.string.retry), actions.retry) }
+        val staff = state.staff
+        // With colleagues shown, each calendar gets its head: "My schedule" first, then theirs (flow 04/14 §3.3).
+        if (staff != null && staff.colleagues.isNotEmpty()) {
+            StaffHeader(
+                tr(Res.string.mySchedule),
+                staff.color(staff.ownId),
+            )
+        }
         Agenda(state, actions)
+        staff?.colleagues?.forEach { StaffSection(it, state, actions) }
     }
     state.filterDraft?.let { FilterSheet(it, colleague = state.scope != null, actions) }
 }

@@ -148,6 +148,37 @@ class CalendarRepositoryTest {
         }
 
     @Test
+    fun `a read after clear never joins the one clear dropped, it asks again and caches`() =
+        runBlocking {
+            val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+            var calls = 0
+            val repo =
+                CalendarRepository(
+                    {
+                        createHttpClient(
+                            { null },
+                            MockEngine {
+                                if (++calls == 1) gate.await()
+                                respond(day, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                            },
+                        )
+                    },
+                    time,
+                )
+            coroutineScope {
+                val dropped = async { repo.day(oct30) }
+                yield()
+                repo.clear()
+                // Not forced: before the fix it joined the dropped read and returned without caching.
+                repo.day(oct30).getOrThrow()
+                gate.complete(Unit)
+                dropped.await()
+            }
+            assertThat(calls).isEqualTo(2)
+            assertThat(repo.state.value.days[oct30]).hasSize(4)
+        }
+
+    @Test
     fun `reads of the same day share one request, the location is part of the key`() =
         runBlocking {
             coroutineScope { (1..3).map { async { classToTest.day(oct30) } }.awaitAll() }

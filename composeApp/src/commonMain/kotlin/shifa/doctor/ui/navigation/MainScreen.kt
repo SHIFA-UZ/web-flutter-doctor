@@ -510,8 +510,21 @@ private fun RouteContent(
                         when (it) {
                             is CalendarEntry.Appointment -> actions.push(ShellRoute.Appointment(it, opened))
                             is CalendarEntry.FreeSlot -> actions.push(ShellRoute.Booking(it, opened))
-                            is CalendarEntry.Blocked -> actions.push(ShellRoute.Block(it, opened))
+                            is CalendarEntry.Blocked ->
+                                actions.push(
+                                    ShellRoute.Block(it, opened),
+                                )
                         }
+                    },
+                    onOpenColleague = { entry, scope ->
+                        val opened = currentInstant().toEpochMilliseconds()
+                        actions.push(
+                            when (entry) {
+                                is CalendarEntry.Appointment -> ShellRoute.Appointment(entry, opened, scope)
+                                is CalendarEntry.FreeSlot -> ShellRoute.Booking(entry, opened, scope = scope)
+                                is CalendarEntry.Blocked -> ShellRoute.Block(entry, opened, scope)
+                            },
+                        )
                     },
                 )
             } else if (route.tab == ShellTab.Clinic) {

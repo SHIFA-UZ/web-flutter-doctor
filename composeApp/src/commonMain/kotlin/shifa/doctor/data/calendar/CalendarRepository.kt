@@ -115,7 +115,14 @@ class CalendarRepository(
     /** Forget when [keys] were read, so the next read (or month) goes to the backend. */
     fun invalidate(vararg keys: DayKey) = _state.update { it.copy(loadedAt = it.loadedAt - keys.toSet()) }
 
-    fun clear() = _state.update { CalendarCache(generation = it.generation + 1) }
+    /**
+     * Drops the cache and every answer still on its way (sign-out, another practice zone). Reads still running are
+     * forgotten too, so a new read never joins one whose answer will be discarded (it would return without caching).
+     */
+    fun clear() {
+        inFlight.value = emptyMap()
+        _state.update { CalendarCache(generation = it.generation + 1) }
+    }
 
     /**
      * Every day is stale (the schedule changed): cached days are read again when shown, and answers still on their way

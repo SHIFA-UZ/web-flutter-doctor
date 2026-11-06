@@ -96,7 +96,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CAL-8 Blocks | Done | Block a day, some hours or several days from the calendar header (reason chips, cancel overlapping with a live count); blocked row panel with Remove block. See calendar.md. |
 | LOC-1 Locations | Done | Profile → Locations: list, add, edit (label, clinic, street, city, primary), delete with a confirmation; one shared list (services use it too). See schedule.md. |
 | CAL-9 Deep-link intents | Waits for its first caller | Go-to-appointment and quick-book are only started by push (D-15, at the end) and Home (M6); built with them instead of as unused code (2026-11-04). |
-| CAL-10 Staff calendars | In progress (the colleague's calendar done with CLINIC-09; the chip row in the doctor's own Calendar next) | A colleague's calendar in the clinic's zone, cached under the doctor; booking, moving, cancelling and unblocking for them. See calendar.md, clinic.md. |
+| CAL-10 Staff calendars | Done | A: "Staff calendars" chips in the doctor's own Calendar (two or more doctors in the selected clinic; own always on; remembered per doctor and clinic) with each colleague's day below in the clinic's zone. B: a colleague's calendar from the clinic workspace (with CLINIC-09). Both cache colleagues' days under them; booking, moving, cancelling and unblocking act for them. See calendar.md, clinic.md. |
 | CAL-5 N-day grid | Last in M3 | Tablet only (master plan: build last in M3 or in a tablet pass). |
 | SCHED-1 Schedule data | Done | Weekly template per location, validity periods, date-specific hours; range and period validators. See schedule.md. |
 | SCHED-2 Working hours | Done | Profile → Schedule: week overview with a sheet per day (ranges, copy, Mon–Fri), the bookable period, extra hours on dates; Save blocked until the rules are read. See schedule.md. |
@@ -335,3 +335,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · CLINIC-06 · Clinic patients and the patient in the clinic's scope with its prophylaxis card; BE-35.
 - 2026-11-06 · CLINIC-07 · Clinic services and the catalogue editor; sheets read their latest close check.
 - 2026-11-06 · CLINIC-09, CAL-10 (B) · A colleague's calendar from the clinic workspace, booking and unblocking on their behalf.
+- 2026-11-06 · CAL-10 (A) · Staff calendars in the doctor's own Calendar.

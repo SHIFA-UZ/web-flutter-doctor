@@ -3,6 +3,7 @@
 package shifa.doctor.ui.calendar
 
 import com.google.common.truth.Truth.assertThat
+import com.russhwolf.settings.MapSettings
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -21,6 +22,7 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
+import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.generated.resources.Res
@@ -37,7 +39,23 @@ class CalendarViewModelTest {
     private val engine =
         MockEngine { req ->
             val json = headersOf(HttpHeaders.ContentType, "application/json")
-            if (!req.url.encodedPath.endsWith("calendar")) return@MockEngine respond(me, HttpStatusCode.OK, json)
+            val path = req.url.encodedPath
+            // CAL-10 A: the doctor (9001) owns clinic 2 with a colleague (22) and a receptionist.
+            if (path.endsWith("me/clinics")) {
+                return@MockEngine respond(
+                    """[{"clinicId":2,"name":"Dev","timeZone":"Asia/Tashkent","membershipRole":"OWNER"}]""",
+                    HttpStatusCode.OK,
+                    json,
+                )
+            }
+            if (path.endsWith("clinics/2/members")) {
+                return@MockEngine respond(
+                    """[{"doctorProfileId":9001,"displayName":"Ulugbek","membershipRole":"OWNER"},{"doctorProfileId":22,"displayName":"Bobur","membershipRole":"DOCTOR"},{"displayName":"Desk","membershipRole":"RECEPTIONIST"}]""",
+                    HttpStatusCode.OK,
+                    json,
+                )
+            }
+            if (!path.endsWith("calendar")) return@MockEngine respond(me, HttpStatusCode.OK, json)
             val day = req.url.parameters["day"]!!
             requested += day
             req.url.parameters["doctorId"]?.let { doctors += it }
@@ -59,6 +77,8 @@ class CalendarViewModelTest {
         }
     private val calendar = CalendarRepository({ createHttpClient({ null }, engine) })
     private val profile = ProfileRepository { createHttpClient({ null }, engine) }
+    private val clinics = ClinicsRepository({ createHttpClient({ null }, engine) }, MapSettings(), { "u1" })
+    private val settings = MapSettings()
 
     @Before fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -73,7 +93,10 @@ class CalendarViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun opened() = CalendarViewModel(calendar, profile).also { created += it }
+    private fun opened() =
+        CalendarViewModel(calendar, profile, clinics = clinics, settings = settings).also {
+            created += it
+        }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -102,6 +125,8 @@ class CalendarViewModelTest {
                 calendar,
                 profile,
                 CalendarScope(22, "Bobur Aliyev", "Europe/Moscow"),
+                clinics,
+                settings,
             ).also { created += it }
         settle { classToTest.state.value.day != null && requested.size > 20 }
         val s = classToTest.state.value
@@ -112,6 +137,32 @@ class CalendarViewModelTest {
         // The filter can't hide a colleague's blocks (two options there).
         classToTest.ui { it.copy(filter = AgendaFilter(blocked = false)) }
         assertThat(classToTest.state.value.rows.map { it::class.simpleName }).contains("Blocked")
+    }
+
+    @Test
+    fun `staff calendars - two doctors in the clinic show the chips, a colleague's day reads under them, the choice is remembered`() {
+        runBlocking { clinics.mine() }
+        val classToTest = opened()
+        settle { classToTest.state.value.staff != null }
+        val staff = classToTest.state.value.staff!!
+        assertThat(staff.ownId).isEqualTo(9001L)
+        // Doctors and owners only, by name.
+        assertThat(staff.roster.map { it.doctorProfileId }).containsExactly(22L, 9001L).inOrder()
+        assertThat(staff.colleagues).isEmpty()
+        // The doctor's own calendar can't be hidden.
+        classToTest.toggleStaff(9001)
+        assertThat(classToTest.state.value.staff!!.visible).isEmpty()
+        classToTest.toggleStaff(22)
+        settle { classToTest.state.value.cache.days.keys.any { it.doctorId == 22L } }
+        assertThat(classToTest.state.value.staff!!.colleagues.map { it.doctorProfileId }).containsExactly(22L)
+        assertThat(doctors).contains("22")
+        assertThat(settings.getStringOrNull("calendar_visible_staff_v1:9001:2")).isEqualTo("22")
+        // Another visit to the calendar brings the colleague back.
+        val again = opened()
+        settle { again.state.value.staff != null }
+        assertThat(again.state.value.staff!!.visible).containsExactly(22L)
+        again.toggleStaff(22)
+        assertThat(settings.getStringOrNull("calendar_visible_staff_v1:9001:2")).isEmpty()
     }
 
     @Test
@@ -154,7 +205,13 @@ class CalendarViewModelTest {
     @Test
     fun `a profile that arrives after opening moves today to the practice zone and reads the days again`() {
         val fresh = ProfileRepository { createHttpClient({ null }, engine) } // not read yet: no zone
-        val classToTest = CalendarViewModel(calendar, fresh).also { created += it }
+        val classToTest =
+            CalendarViewModel(
+                calendar,
+                fresh,
+                clinics = clinics,
+                settings = settings,
+            ).also { created += it }
         settle { classToTest.state.value.day != null }
         assertThat(classToTest.state.value.clock.zoneMissing).isTrue()
         val before = requested.size

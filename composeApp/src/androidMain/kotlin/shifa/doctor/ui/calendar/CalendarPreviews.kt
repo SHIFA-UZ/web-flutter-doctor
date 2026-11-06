@@ -94,6 +94,41 @@ private fun state(details: Boolean) =
 @Composable
 internal fun CalendarDayPreview() = PreviewTheme { CalendarContent(state(false), CalendarActions()) }
 
+// CAL-10 A (flow 04/14 §3 A, board DaCalendar "Staff calendars"): the doctor's own day under "My schedule", a
+// colleague's under their name and colour; the third doctor's chip off.
+@Composable
+internal fun CalendarStaffPreview() =
+    PreviewTheme {
+        val clinic = shifa.doctor.data.model.MyClinic(2, "Shifa Dev Clinic", "Asia/Tashkent", address = "Amir Temur 1")
+        val roster =
+            listOf(
+                shifa.doctor.data.model.ClinicMember(22, 102, "Bobur Aliyev", "DOCTOR"),
+                shifa.doctor.data.model.ClinicMember(23, 103, "Madina Rasulova", "DOCTOR"),
+                shifa.doctor.data.model.ClinicMember(9001, 101, "Ulugbek Karimov", "OWNER"),
+            )
+        val colleague =
+            listOf(
+                shifa.doctor.data.model.CalendarEntry.FreeSlot(at(9, 0), at(9, 30), 1, "Shifa Clinic"),
+                shifa.doctor.data.model.CalendarEntry.Blocked(at(12, 0), at(12, 30), 2, "Team meeting"),
+            )
+        CalendarContent(
+            state(false).let { s ->
+                s.copy(
+                    cache =
+                        s.cache.copy(
+                            days =
+                                mapOf(
+                                    shifa.doctor.data.calendar.DayKey(LocalDate(2026, 11, 4)) to day.take(2),
+                                    shifa.doctor.data.calendar.DayKey(LocalDate(2026, 11, 4), 22) to colleague,
+                                ),
+                        ),
+                    staff = StaffCalendars(clinic, roster, 9001, setOf(22)),
+                )
+            },
+            CalendarActions(),
+        )
+    }
+
 // CAL-10 / CLINIC-09 (flow 04/14 B, board DaCalendar calDoctor): a colleague's calendar, titled with their name, the
 // clinic hint, no Block button, a back button.
 @Composable

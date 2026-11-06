@@ -253,3 +253,31 @@ Built 2026-11-04. Flow `04/09-block-time.md`; spec 03 §1.8, §6; board `DaCalen
   covered cached days re-read and the cancelled count; invalid hours count and send nothing; a failed count is said; From
   / To dragging; a 25-hour DST day; removing re-reads every day showing the block, a block without an id sends
   nothing), `DemoBackendTest` (+1), `CalendarScreenshotTest` (+2: `Calendar_blockTime`, `Calendar_blockPanel`).
+
+## CAL-10 (A) · Staff calendars in the doctor's own Calendar
+
+Built 2026-11-06. Spec 03 §1.12, flow 04/14 (A), board `DaCalendar` "Staff calendars" (`ui/calendar/StaffCalendars.kt`;
+B, the colleague's calendar from the clinic workspace, is in clinic.md with CLINIC-09).
+- **When:** the selected clinic (the clinic workspace's choice) and the doctor's profile are known, the clinic's members
+  are read once per clinic; with two or more doctors / owners with a profile, the signed-in doctor among them, the row
+  shows between the header and the month. Another clinic starts again; a failed members read shows no chips.
+- **Chips:** "Staff calendars", "My schedule" first (always on: the ticket and Flutter; the board let it go when another
+  was on), then the colleagues by name, each with its roster colour (the chart series, as in the clinic's Calendar
+  section, so a doctor keeps one colour); a horizontal carousel (flow §8 target). The choice is remembered under
+  `calendar_visible_staff_v1:<doctorId>:<clinicId>` (Flutter's key); members who left are dropped on restore.
+- **Sections:** with a colleague on, "My schedule" heads the doctor's day, then each colleague's day under their name in
+  their colour: the same rows in the clinic's zone (flow 04/14 §4: colleagues in the clinic's zone, the doctor's own in
+  the practice zone, as Flutter), the agenda filter applies, "No items for this day", or "Couldn't load this day" +
+  Retry (Flutter failed silently). Their days are read with `doctorId` and cached under them (kept across tab switches;
+  Flutter dropped them), on open, on a day change, on resume and on refresh. A colleague's row opens in their calendar
+  (`CalendarScope`): booking, the appointment panel, the block panel act for them.
+- **Codex review:** a clinic change cancels the roster read still running; failures are kept per (doctor, day);
+  `CalendarRepository.clear()` now forgets reads in flight (a read after it never joins a discarded one — this could
+  leave the doctor's own day loading forever after the practice zone arrived late).
+- **Not built:** collapsing sections to a summary (flow §8 target), haptics on the own chip.
+- **Checked:** emulator, dev (reads): the seed doctor's Calendar shows "My schedule", Bekzod, Dilnoza; Dilnoza on shows
+  her day under her name after his own (09:00 onwards), no failures logged. iOS compiled, not run.
+- **Tests:** `CalendarViewModelTest` (+1: roster, own always on, colleague read under them, remembered, restored),
+  `CalendarRepositoryTest` (+1: a read after `clear` asks again);
+  screenshot `Calendar_staff`.
+
