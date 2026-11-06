@@ -208,6 +208,20 @@ data class PlanVisit(
     val timing: String? = null,
 )
 
+/** `CreatePlanRequest` (TP-04): a new comprehensive plan (DRAFT until its status is set). */
+@Serializable
+data class NewTreatmentPlan(
+    val clinicId: Long,
+    val patientId: Long,
+    val title: String,
+    val diagnosis: String? = null,
+    val notes: String? = null,
+    val paymentReminderDays: Int? = null,
+    // The first doctor doubles as the legacy single attending doctor.
+    val attendingDoctorId: Long? = null,
+    val attendingDoctorIds: List<Long>? = null,
+)
+
 @Serializable
 data class PlanStatusBody(
     val status: String,

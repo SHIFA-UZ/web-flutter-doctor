@@ -262,7 +262,7 @@ plan detail (`ui/clinic/ClinicPlans.kt`).
   as whole phrases): title ("(untitled plan)"), patient · doctors, progress "1 of 3 done", paid / total / outstanding,
   the status badge → the status menu (the current one marked; Cancelled asks "Cancel this plan?"), "N visits" (read on
   first open, Retry on failure) and Open. A visit opens as an appointment of its doctor's calendar in the clinic's zone
-  (quirk 6; `CalendarScope`), cancelled visits don't open. The list reads again on return. New plan comes with TP-04.
+  (quirk 6; `CalendarScope`), cancelled visits don't open. The list reads again on return. New plan opens the wizard (TP-04).
 - **Detail (TP-03):** `ShellRoute.PlanDetail(planId, clinicId)` from the list and the finance dashboard's plan
   balances. "#501 · title" with ⋮ (Change status, Record payment); overview: status badge (menu), progress, the patient
   (opens them in the clinic's scope), doctors, diagnosis, notes, total / paid / outstanding (red when owed), updated
@@ -287,3 +287,68 @@ plan detail (`ui/clinic/ClinicPlans.kt`).
   PATCH body, the detail with lines / teeth / installments, the payment body, 404); screenshots `Clinic_plans`,
   `Clinic_plan_detail`.
 
+## TP-04 · Treatment plan wizard
+
+Built 2026-11-06. Spec 09 §4.2, flow 09/15, ticket TP-04. Board `DaClinic` plan wizard, the board's five steps
+(`ui/clinic/PlanWizard.kt`, `ShellRoute.PlanWizard(clinicId, opened, patientId?, patientName?)`).
+- **Entry points:** Plans → New plan; clinic Overview → Quick actions → New plan (the board's); a clinic patient's
+  record → Quick Actions → "Create treatment plan" (board `DaPatients`; in a clinic's scope only), which opens on step 2
+  with the patient set and no way back to step 1. `opened` keys the ViewModel, so each opening starts empty.
+- **Steps:** a stepper ("Step 2/5", the step's name, the bar) and the action bar (Back · Next, Save on the last).
+  1. Patient: the clinic's patients searched on the server (`GET /clinics/{id}/patients?size=40&q=`) from 2 letters,
+          250 ms after the last key; a row moves on; a failed search shows its message.
+  2. Plan basics: Title * (required), Diagnosis, Notes, Payment reminder (every day / 2 / 3 / 5 / 7 / 14 / 30 days,
+     default 3).
+  3. Care team & services: chips of the clinic's doctors (members with a doctor profile, by name; the signed-in doctor
+     starts picked when a member), "Pick at least one doctor"; the service picker offers the active plan services
+     (`GET /treatment-plans/plan-services?clinicId=`) offered by a picked doctor, in the plan's currency once a line
+          exists (one currency per plan; a hint names it); a doctor taken off the team takes the lines only they offer; an optional FDI tooth (11–48 permanent, 51–85 primary, "Enter an
+     FDI tooth number, e.g. 36"); Add service; the lines with remove; Plan total.
+  4. Payment: Plan total, Initial payment (0 or more, at most the total; method chips when above 0), Remaining; when
+     something remains, "Split the rest into installments": two rows due in 30 and 60 days sharing the balance, due
+     date through the date picker (from yesterday, 5 years), amount, Add installment row (30 days after the last, with
+     what's missing), remove above two; "Schedule covers the remaining …" or "Schedule … ≠ remaining …" in red. Next
+     needs two rows or more, each above 0, adding up to the balance exactly.
+  5. Review: patient, title, doctors, services ("2 lines · 2 300 000 UZS"), initial payment, installments, reminder;
+     "Activate the plan now" (on; off keeps it a draft).
+- **Save** (Flutter's order): `POST /treatment-plans` (DRAFT; the first doctor also as the legacy
+  `attendingDoctorId`) → `POST /treatment-plans/{id}/lines` (replaces the lines; a line on a tooth carries
+  `{"fdi","dentition","source":"PLAN_WIZARD"}`, a general one no metadata, as Flutter's list mode) → the initial
+  payment `POST /clinics/{id}/finance/payments` (memo "Initial payment at desk", Flutter's) → `POST
+  …/finance/installment-plans` (total = the balance, rows by due date, start = the first due) → `PATCH …/status ACTIVE`
+  when chosen → the plan detail replaces the wizard. A failed request stops there with its message and "The plan was
+  saved as a draft. Retry finishes the rest."; Retry (the button) resends only that request and goes on, so the plan
+  isn't created twice. A request whose answer was lost although the server did it would be sent again by Retry (no
+  idempotency key on these endpoints; the same for every write in the app). Once a draft exists nothing can be edited;
+  closing opens the draft's detail (payment and status can be finished there; lines or a schedule that were not saved
+  need a new plan, there is no plan editor yet). Closing with
+  input after step 1 asks "Discard changes?" (the shared sheet); system back too.
+- **Fixes Flutter's:** the schedule is checked against the balance before anything is sent (Flutter skipped a wrong
+  one silently after creating the plan and still activated it); validation per step, inline; one currency per plan
+  (Flutter added mixed currencies); the plan isn't recreated on retry.
+- **Request shapes:** checked in the backend source (`CreatePlanRequest`, `LineReq` list, `CreateInstallmentRequest`:
+  rows ≥ 2, sum = total); the dev OpenAPI agrees. Not sent on dev: creating a plan can't be undone there (a plan can
+  only be cancelled), so the writes were checked in demo.
+- **Not built, and why:**
+  - Free-slot booking per doctor and "Link to visit" (Flutter's, flow §3 step 3/4): not on the board's wizard; visits
+    are booked from the calendar and the visit fulfils lines.
+  - The "By tooth" chart mode (DENTAL-04's `PlanEditor`): the board puts the tooth on each line instead; the editor
+    stays ready for a host.
+  - Quantity per line (add the service again), "Pay in full now" (an initial payment of the total does it), the memo
+    field (not on the board), Symptoms (no field in Flutter either), "New patient" from step 1 (open question).
+    - The home quick action (flow §2): Home has no "New plan" on the board.
+  - An "Incomplete" tag on a draft left by a failed save (flow §8): the backend has nothing to tell it by.
+- **Demo:** `DemoPlans` keeps the wizard's plans in memory (create, lines, desk payments, schedule, status, detail,
+  visits `[]`), listed with the demo plan.
+- **Checked:** emulator, demo: New plan → search "mal" → Malika → title → doctors (Bobur's services only the shared
+  one; with Aziza the crown and cleaning) → a line on 16 and a general one → 200 000 cash, two installments, a due date
+  picked → Review → Save → plan #601 Active, paid 200 000, outstanding 1 000 000, the schedule 15.12.2026 / 05.01.2027;
+  Back → the list with both plans. From Jasur's record: "Create treatment plan" → step 2 → typed → back → "Discard
+  changes?". The step errors (no title, no doctor, no service, tooth 19). Demo mode off again. iOS compiled, not run.
+- **Codex review:** lines pruned with their doctor, whole-sum default split, search errors, closing opens the draft,
+  demo search and currency; retry after a lost answer documented (answers in `codex/TP-04.md`).
+- **Tests:** `PlanWizardViewModelTest` (doctors and the own one, debounced search and its failure, pruning, the split, per-step checks, the offered
+  services by doctor and currency, tooth check, initial and schedule rules, the five requests and their bodies in
+  order, a failed lines request kept as a draft and resumed without a second create, a draft stays one, the discard
+  rule), `DemoBackendTest` (a wizard plan through the demo); screenshots `Plan_wizard_patient`, `Plan_wizard_team`,
+  `Plan_wizard_payment`, `Plan_wizard_review`, `Clinic_overview` (New plan).

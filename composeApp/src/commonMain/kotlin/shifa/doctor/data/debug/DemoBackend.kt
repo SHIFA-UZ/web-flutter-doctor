@@ -168,6 +168,14 @@ class DemoBackend(
     private val chat = DemoChat()
     private val notifications = DemoNotifications()
     private val tasks = DemoTasks()
+
+    // TP-04: the plans the wizard creates.
+    private val newPlans =
+        DemoPlans { id ->
+            people.firstOrNull { it.jsonObject["id"]?.jsonPrimitive?.content == "$id" }
+                ?.jsonObject?.get("name")?.jsonPrimitive?.content
+        }
+
     private val ai = DemoAi()
     private val clinic = DemoClinic()
     private var lastAiDraft = 0
@@ -265,6 +273,8 @@ class DemoBackend(
                 path,
                 request.url.parameters.names().associateWith { request.url.parameters[it].orEmpty() },
             )?.let { return ok(it) }
+        // TP-04: the wizard's plans (create, lines, payments, schedule, status, detail).
+        newPlans.handle(request.method.value, path, body)?.let { return ok(it) }
         // A chat, inbox or task path the demo doesn't know (an id it never made): a local 404. Forwarding it would show
         // real patient data in demo mode.
         if (DEMO_OWNED.any {
@@ -683,7 +693,8 @@ class DemoBackend(
                         )
                     } ?: true
                 val mine = q["clinicId"] == "1" && patient && q["planKind"] != "VISIT" && status && search
-                ok(JsonArray(if (mine) listOf(plan) else emptyList()))
+                val created = newPlans.list(q.names().associateWith { q[it] })
+                ok(JsonArray((if (mine) listOf(plan) else emptyList()) + created))
             }
             get && path == Endpoints.treatmentPlanDetail(DEMO_PLAN_ID) -> ok(demoPlanDetail())
             // The demo plan's visits (TP-02/03): Aziza's done one and Bobur's upcoming one.

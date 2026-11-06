@@ -172,6 +172,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CLINIC-08 Invitations | Done | Invite receptionist, pending / used / expired, revoke with confirmation. See clinic.md. |
 | TP-02 Treatment plans list | Done | The Plans section: server search and status chips, a card per plan (progress, money, status menu with a cancel confirmation), visits on demand that open as appointments in the clinic's zone. See clinic.md. |
 | TP-03 Treatment plan detail | Done (no payments list: no plan filter on the backend) | Overview with status and patient, Record payment, read-only dental chart, lines, visits, installment schedule; read again on every return (quirk 10). See clinic.md. |
+| TP-04 Treatment plan wizard | Done (no slot booking, no chart mode: the board's 5 steps) | Patient → basics → care team & services (optional FDI tooth per line) → payment (desk payment, installment schedule that must match the balance) → review with Activate now; a save that stops at the failed request and resumes on Retry; from the plans list, the clinic overview and a clinic patient. See clinic.md. |
+
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
 | DENTAL-03 + TP-06 Treatment plan in the visit | Done | Plan panel (linked/only plan chosen, progress), plan-mode chart and fulfil sheet, Plan finances with this visit's payment; End applies ticks then records the payment before completing (once each); checklist rows; one plan section in the summary; leaving asks. Demo only (no dev plans). See visits.md. |
 | DENTAL-04 Plan editor + read-only plan chart | Done (hosts in M11) | The visit's dental record UI and draft reused with plan services; plan lines with the discount spread per currency (Flutter's fixture ported); read-only plan chart. Wizard (TP-04) and plan detail (TP-03) host them. See visits.md. |
@@ -347,3 +349,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · CAL-10 (A) · Staff calendars in the doctor's own Calendar.
 - 2026-11-06 · FIN-01…07 · Clinic finance: dashboard, ledger and desk payments, installments, records, payments, earnings, CSV export; BE-36, BE-37.
 - 2026-11-06 · TP-02, TP-03 · Treatment plans list and plan detail.
+- 2026-11-06 · TP-04 · Treatment plan wizard (board's five steps) with a resumable save.

@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import shifa.doctor.data.clinics.ClinicsState
 import shifa.doctor.data.model.ClinicOverviewStats
 import shifa.doctor.data.model.MyClinic
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.treatmentPlanWizardCouldNotSaveServices
 import shifa.doctor.ui.theme.PreviewTheme
 
 internal val previewClinics =
@@ -31,7 +33,7 @@ internal val previewClinics =
 private fun Workspace(
     state: ClinicUiState,
     section: @Composable androidx.compose.foundation.layout.ColumnScope.(ClinicSection, MyClinic) -> Unit = { _, _ -> },
-) = PreviewTheme { ClinicWorkspaceContent(state, false, {}, {}, {}, {}, {}, ClinicActions(), section) }
+) = PreviewTheme { ClinicWorkspaceContent(state, false, {}, {}, {}, {}, {}, ClinicActions(newPlan = {}), section) }
 
 // CLINIC-02/04 (board `DaClinic`, flows 09/01, 09/20): the header with two clinics, the Overview, Settings.
 @Composable
@@ -401,5 +403,97 @@ internal fun PlanDetailPreview() =
             ),
             previewClinics.clinics.first(),
             PlanDetailActions(),
+        )
+    }
+
+private val wizardServices =
+    listOf(
+        shifa.doctor.data.model.PlanServiceOption(
+            "c1",
+            catalogItemId = 1,
+            title = "Root canal treatment",
+            defaultPriceMinor = 80_000_000,
+        ),
+        shifa.doctor.data.model.PlanServiceOption(
+            "c2",
+            catalogItemId = 2,
+            title = "Ceramic crown",
+            defaultPriceMinor = 150_000_000,
+        ),
+    )
+
+private val wizardBase =
+    PlanWizardUiState(
+        firstStep = 2,
+        patient = shifa.doctor.data.model.ClinicPatient(12, "Jasur Karimov"),
+        title = "Treatment of 36 and 46",
+        doctors =
+            listOf(
+                shifa.doctor.data.model.ClinicMember(21, displayName = "Aziza Karimova"),
+                shifa.doctor.data.model.ClinicMember(22, displayName = "Bobur Aliyev"),
+            ),
+        picked = listOf(21L),
+        services = wizardServices,
+        lines = listOf(WizardLine(wizardServices[0], "36"), WizardLine(wizardServices[1], "46")),
+        initial = "300 000",
+        useInstallments = true,
+        installments =
+            listOf(
+                WizardInstallment(kotlinx.datetime.LocalDate(2026, 12, 6), "1 000 000"),
+                WizardInstallment(kotlinx.datetime.LocalDate(2027, 1, 5), "900 000"),
+            ),
+    )
+
+private val wizardToday = kotlinx.datetime.LocalDate(2026, 11, 6)
+
+@Composable
+internal fun PlanWizardPatientPreview() =
+    PreviewTheme {
+        PlanWizardContent(
+            PlanWizardUiState(
+                query = "kar",
+                matches =
+                    listOf(
+                        shifa.doctor.data.model.ClinicPatient(12, "Jasur Karimov", "+998 90 123 45 67"),
+                        shifa.doctor.data.model.ClinicPatient(14, "Bekzod Karimov", email = "bekzod@mail.uz"),
+                    ),
+            ),
+            wizardToday,
+            PlanWizardActions(),
+        )
+    }
+
+@Composable
+internal fun PlanWizardTeamPreview() =
+    PreviewTheme {
+        PlanWizardContent(wizardBase.copy(step = 3, tooth = "19", toothTried = true), wizardToday, PlanWizardActions())
+    }
+
+@Composable
+internal fun PlanWizardPaymentPreview() =
+    PreviewTheme {
+        PlanWizardContent(wizardBase.copy(step = 4, tried = setOf(4)), wizardToday, PlanWizardActions())
+    }
+
+@Composable
+internal fun PlanWizardReviewPreview() =
+    PreviewTheme {
+        PlanWizardContent(
+            wizardBase.copy(
+                step = 5,
+                installments =
+                    wizardBase.installments.take(
+                        1,
+                    ) + WizardInstallment(kotlinx.datetime.LocalDate(2027, 1, 5), "1 000 000"),
+                planId = 601,
+                done = setOf(SaveStep.Plan),
+                error =
+                    shifa.doctor.ui.emailcode.CodeBanner(
+                        Res.string.treatmentPlanWizardCouldNotSaveServices,
+                        requestId = "req-7f3a",
+                    ),
+            ),
+            wizardToday,
+            PlanWizardActions(),
         )
     }

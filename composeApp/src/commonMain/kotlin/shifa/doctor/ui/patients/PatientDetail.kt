@@ -98,6 +98,7 @@ import shifa.doctor.generated.resources.copied
 import shifa.doctor.generated.resources.copy
 import shifa.doctor.generated.resources.createDocument
 import shifa.doctor.generated.resources.createPatientAccount
+import shifa.doctor.generated.resources.createTreatmentPlan
 import shifa.doctor.generated.resources.dealingWithChronicDiseasePatient
 import shifa.doctor.generated.resources.documents
 import shifa.doctor.generated.resources.done
@@ -113,6 +114,7 @@ import shifa.doctor.generated.resources.ic_chat_18
 import shifa.doctor.generated.resources.ic_check_circle_20
 import shifa.doctor.generated.resources.ic_copy_16
 import shifa.doctor.generated.resources.ic_file_plus_18
+import shifa.doctor.generated.resources.ic_layers_18
 import shifa.doctor.generated.resources.ic_sparkles_16
 import shifa.doctor.generated.resources.ic_sparkles_22
 import shifa.doctor.generated.resources.ic_star_24
@@ -699,6 +701,8 @@ data class PatientDetailActions(
     val book: () -> Unit = {},
     // CHAT-07: Quick actions → "Send message" (the Chat tab on this patient's thread).
     val message: () -> Unit = {},
+    // TP-04: "Create treatment plan" (a clinic's patient only): the plan wizard with this patient.
+    val newPlan: (() -> Unit)? = null,
     // AI-09: "AI summary" in the header; null hides it (below PRO, or clinic staff).
     val briefing: (() -> Unit)? = null,
     val retryVisits: () -> Unit = {},
@@ -721,6 +725,8 @@ fun PatientDetailScreen(
     onOpenForm: (Long?) -> Unit = {},
     // "Send message" (CHAT-07): the patient, for the chat header while the conversation resolves.
     onMessage: (Patient) -> Unit = {},
+    // TP-04: "Create treatment plan" in a clinic's scope; the patient for the wizard.
+    onNewPlan: ((Patient) -> Unit)? = null,
     viewModel: PatientDetailViewModel =
         viewModel(key = "patient-$id-$clinicId") { PatientDetailViewModel(id, clinicId = clinicId) },
     documents: PatientDocumentsViewModel =
@@ -778,6 +784,7 @@ fun PatientDetailScreen(
             createAccount = viewModel::createAccount,
             book = viewModel::openBooking,
             message = { state.patient?.let(onMessage) },
+            newPlan = onNewPlan?.let { go -> { state.patient?.let(go) } },
             briefing = { briefingOpen = true }.takeIf { briefingAllowed },
             retryVisits = viewModel::retryVisits,
             documents =
@@ -1200,8 +1207,15 @@ private fun QuickActions(actions: PatientDetailActions) =
             listOf(
                 Triple(Res.string.newAppointment, Res.drawable.ic_cal_plus_18, actions.book),
                 Triple(Res.string.sendMessage, Res.drawable.ic_chat_18, actions.message),
-                Triple(Res.string.createDocument, Res.drawable.ic_file_plus_18, actions.documents.upload),
-            )
+                Triple(
+                    Res.string.createDocument,
+                    Res.drawable.ic_file_plus_18,
+                    actions.documents.upload,
+                ),
+            ) +
+                listOfNotNull(
+                    actions.newPlan?.let { Triple(Res.string.createTreatmentPlan, Res.drawable.ic_layers_18, it) },
+                )
         tiles.chunked(2).forEach { row ->
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
                 row.forEach { (label, icon, go) ->

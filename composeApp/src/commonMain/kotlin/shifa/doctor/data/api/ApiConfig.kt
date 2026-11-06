@@ -137,6 +137,8 @@ object ApiConfig {
 
         fun treatmentPlanVisits(id: Long) = "treatment-plans/$id/visits"
 
+        fun treatmentPlanLines(id: Long) = "treatment-plans/$id/lines"
+
         fun treatmentPlanStatus(id: Long) = "treatment-plans/$id/status"
 
         fun fulfillmentCandidates(id: Long) = "treatment-plans/$id/fulfillment-candidates"

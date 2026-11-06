@@ -126,6 +126,24 @@ data class MarkPaidBody(
     val memo: String? = null,
 )
 
+/** `CreateInstallmentRequest` (TP-04): a monthly schedule of the plan's balance, its rows as entered. */
+@Serializable
+data class NewInstallmentPlan(
+    val treatmentPlanId: Long,
+    val totalAmountMinor: Long,
+    val currency: String,
+    val numInstallments: Int,
+    val startDate: String,
+    val scheduleItems: List<InstallmentSpec>,
+    val frequency: String = "MONTHLY",
+)
+
+@Serializable
+data class InstallmentSpec(
+    val dueDate: String,
+    val amountMinor: Long,
+)
+
 @Serializable
 data class InstallmentStatusBody(
     val status: String,

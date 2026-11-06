@@ -163,6 +163,17 @@ sealed interface ShellRoute {
         val clinicId: Long,
     ) : ShellRoute
 
+    /**
+     * The treatment plan wizard (TP-04): from the plans list, or a clinic patient ([patientId] set, step 2 first).
+     * [opened] keys its ViewModel, so a new wizard starts empty.
+     */
+    data class PlanWizard(
+        val clinicId: Long,
+        val opened: Long,
+        val patientId: Long? = null,
+        val patientName: String? = null,
+    ) : ShellRoute
+
     /** A colleague's calendar from the clinic workspace (CAL-10 / CLINIC-09, flow 04/14 B); back returns there. */
     data class DoctorSchedule(
         val scope: shifa.doctor.ui.calendar.CalendarScope,

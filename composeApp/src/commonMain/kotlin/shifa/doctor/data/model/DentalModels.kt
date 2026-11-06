@@ -280,8 +280,9 @@ data class PlanLineRequest(
     val currency: String,
     val sortOrder: Int,
     val status: String = "PLANNED",
-    // `{"fdi":"16","dentition":"permanent","source":"PLAN_WIZARD"}` as a string; no `fdi` for a general line.
-    val specialtyMetadata: String,
+    // `{"fdi":"16","dentition":"permanent","source":"PLAN_WIZARD"}` as a string; no `fdi` for a general line, none
+    // at all for a wizard line without a tooth (Flutter's list mode).
+    val specialtyMetadata: String? = null,
 )
 
 /**

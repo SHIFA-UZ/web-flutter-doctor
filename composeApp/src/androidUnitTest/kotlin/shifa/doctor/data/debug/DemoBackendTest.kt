@@ -650,6 +650,62 @@ class DemoBackendTest {
         }
 
     @Test
+    fun `a plan from the wizard lives in the demo - lines, desk payment, schedule, status, listed and read back`() =
+        runTest {
+            val repo = shifa.doctor.data.treatmentplans.TreatmentPlansRepository({ client })
+            val finance = shifa.doctor.data.finance.FinanceRepository({ client })
+            val plan =
+                repo.create(
+                    shifa.doctor.data.model.NewTreatmentPlan(1, 13, "Crowns", attendingDoctorId = 21),
+                ).getOrThrow()
+            assertThat(plan.status).isEqualTo(shifa.doctor.data.model.PlanStatus.Draft)
+            assertThat(plan.patientName).isEqualTo("Malika Tursunova")
+            repo.addLines(
+                plan.id,
+                listOf(
+                    shifa.doctor.data.model.PlanLineRequest(
+                        2,
+                        "Ceramic crown",
+                        unitPriceMinor = 150_000_000,
+                        discountMinor = 0,
+                        currency = "UZS",
+                        sortOrder = 0,
+                        specialtyMetadata = """{"fdi":"16"}""",
+                    ),
+                ),
+            ).getOrThrow()
+            finance.recordPayment(
+                1,
+                shifa.doctor.data.finance.RecordPayment(plan.id, 50_000_000, "UZS", "CASH"),
+            ).getOrThrow()
+            finance.createInstallmentPlan(
+                1,
+                shifa.doctor.data.model.NewInstallmentPlan(
+                    plan.id,
+                    100_000_000,
+                    "UZS",
+                    2,
+                    "2026-12-01",
+                    listOf(
+                        shifa.doctor.data.model.InstallmentSpec("2026-12-01", 50_000_000),
+                        shifa.doctor.data.model.InstallmentSpec("2027-01-01", 50_000_000),
+                    ),
+                ),
+            ).getOrThrow()
+            repo.setStatus(plan.id, "ACTIVE").getOrThrow()
+            val detail = repo.detail(plan.id).getOrThrow()
+            assertThat(detail.summary.owedMinor).isEqualTo(100_000_000)
+            assertThat(detail.lines.single().tooth).isEqualTo("16")
+            assertThat(
+                detail.installmentPlans.single().items.map { it.dueDate },
+            ).containsExactly("2026-12-01", "2027-01-01")
+            assertThat(repo.visits(plan.id).getOrThrow()).isEmpty()
+            assertThat(repo.plans(1, 13, status = "ACTIVE").getOrThrow().map { it.id }).containsExactly(plan.id)
+            assertThat(repo.plans(1, null, status = "DRAFT").getOrThrow()).isEmpty()
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
     fun `the demo video visit has a room, the others are refused like the backend`() =
         runTest {
             val repo = shifa.doctor.data.video.VideoRepository({ client })

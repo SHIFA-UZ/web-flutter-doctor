@@ -395,6 +395,11 @@ internal fun ColumnScope.PlansSection(
                     clinic,
                 )
             },
+            newPlan = {
+                actions.push(
+                    ShellRoute.PlanWizard(clinic.clinicId, shifa.doctor.utils.currentInstant().toEpochMilliseconds()),
+                )
+            },
         ),
     )
 }

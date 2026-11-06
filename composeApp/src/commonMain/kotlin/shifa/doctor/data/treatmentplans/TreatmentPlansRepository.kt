@@ -19,6 +19,8 @@ import shifa.doctor.data.model.CatalogItemPatch
 import shifa.doctor.data.model.FulfillRequest
 import shifa.doctor.data.model.FulfillmentCandidate
 import shifa.doctor.data.model.NewCatalogItem
+import shifa.doctor.data.model.NewTreatmentPlan
+import shifa.doctor.data.model.PlanLineRequest
 import shifa.doctor.data.model.PlanServiceOption
 import shifa.doctor.data.model.PlanStatusBody
 import shifa.doctor.data.model.PlanVisit
@@ -53,6 +55,27 @@ class TreatmentPlansRepository(
                 q?.trim()?.takeIf { it.isNotEmpty() }?.let { parameter("q", it) }
             }
         }.map { it.rows(TreatmentPlanSummary.serializer(), "treatment plans") }
+
+    /** `POST /treatment-plans` (TP-04): the new plan, DRAFT. */
+    suspend fun create(plan: NewTreatmentPlan): Result<TreatmentPlanSummary> =
+        apiCall<TreatmentPlanSummary> {
+            client().post(ApiConfig.Endpoints.TREATMENT_PLANS) {
+                contentType(ContentType.Application.Json)
+                setBody(plan)
+            }
+        }
+
+    /** `POST /treatment-plans/{id}/lines` (TP-04): the plan's services, in order. */
+    suspend fun addLines(
+        planId: Long,
+        lines: List<PlanLineRequest>,
+    ): Result<Unit> =
+        apiCall<JsonElement> {
+            client().post(ApiConfig.Endpoints.treatmentPlanLines(planId)) {
+                contentType(ContentType.Application.Json)
+                setBody(lines)
+            }
+        }.map { }
 
     /** `GET /treatment-plans/{id}/visits` (TP-02/03): the visits linked to the plan. */
     suspend fun visits(planId: Long): Result<List<PlanVisit>> =

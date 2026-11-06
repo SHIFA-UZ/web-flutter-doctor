@@ -112,6 +112,7 @@ import shifa.doctor.ui.clinic.ClinicDoctorScheduleScreen
 import shifa.doctor.ui.clinic.ClinicSectionContent
 import shifa.doctor.ui.clinic.ClinicWorkspaceScreen
 import shifa.doctor.ui.clinic.PlanDetailScreen
+import shifa.doctor.ui.clinic.PlanWizardScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.documents.DocumentViewerScreen
 import shifa.doctor.ui.forms.FormEditorScreen
@@ -530,7 +531,13 @@ private fun RouteContent(
                 )
             } else if (route.tab == ShellTab.Clinic) {
                 // M11: the clinic workspace (doctors with a clinic, and clinic staff).
-                ClinicWorkspaceScreen(staff, ClinicActions(openMyCalendar = actions.openCalendar)) { section, clinic ->
+                ClinicWorkspaceScreen(
+                    staff,
+                    ClinicActions(
+                        openMyCalendar = actions.openCalendar,
+                        newPlan = { actions.push(ShellRoute.PlanWizard(it, currentInstant().toEpochMilliseconds())) },
+                    ),
+                ) { section, clinic ->
                     ClinicSectionContent(section, clinic, staff, actions)
                 }
             } else {
@@ -623,6 +630,15 @@ private fun RouteContent(
             )
         is ShellRoute.DoctorSchedule -> ClinicDoctorScheduleScreen(route.scope, actions)
         is ShellRoute.PlanDetail -> PlanDetailScreen(route.planId, route.clinicId, actions)
+        is ShellRoute.PlanWizard ->
+            PlanWizardScreen(
+                route.clinicId,
+                route.opened,
+                route.patientId,
+                route.patientName,
+                actions,
+            )
+
         is ShellRoute.Booking ->
             BookingScreen(
                 route.slot,
@@ -704,6 +720,14 @@ private fun RouteContent(
                         ShellRoute.PatientChat(p.id, p.name, p.photoUrl, currentInstant().toEpochMilliseconds()),
                     )
                 },
+                onNewPlan =
+                    route.clinicId?.let { clinicId ->
+                        { p ->
+                            actions.push(
+                                ShellRoute.PlanWizard(clinicId, currentInstant().toEpochMilliseconds(), p.id, p.name),
+                            )
+                        }
+                    },
             )
         is ShellRoute.Form ->
             FormEditorScreen(

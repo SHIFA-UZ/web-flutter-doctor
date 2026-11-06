@@ -71,6 +71,7 @@ import shifa.doctor.generated.resources.clinicOpenCalendarTab
 import shifa.doctor.generated.resources.clinicSettingsReadOnly
 import shifa.doctor.generated.resources.clinicSettingsTitle
 import shifa.doctor.generated.resources.clinicStatsFailed
+import shifa.doctor.generated.resources.clinicTreatmentPlansNew
 import shifa.doctor.generated.resources.clinicWorkspaceCalendar
 import shifa.doctor.generated.resources.clinicWorkspaceDoctors
 import shifa.doctor.generated.resources.clinicWorkspaceFinance
@@ -91,6 +92,7 @@ import shifa.doctor.generated.resources.ic_calendar_16
 import shifa.doctor.generated.resources.ic_calendar_20
 import shifa.doctor.generated.resources.ic_clinic_22
 import shifa.doctor.generated.resources.ic_gear_20
+import shifa.doctor.generated.resources.ic_layers_16
 import shifa.doctor.generated.resources.ic_mail_16
 import shifa.doctor.generated.resources.ic_phone_16
 import shifa.doctor.generated.resources.ic_pin_16
@@ -235,6 +237,8 @@ class ClinicWorkspaceViewModel(
 class ClinicActions(
     // Overview's "My calendar" (doctors only): the shell's Calendar tab, the doctor's own calendar.
     val openMyCalendar: () -> Unit = {},
+    // Overview's "New plan" (board `DaClinic`, TP-04): the plan wizard for this clinic.
+    val newPlan: ((Long) -> Unit)? = null,
 )
 
 @Composable
@@ -461,6 +465,13 @@ private fun ColumnScope.Overview(
             ShifaSecondaryButton(tr(Res.string.clinicWorkspacePatients), {
                 onSection(ClinicSection.Patients)
             }, icon = Res.drawable.ic_users_16)
+            actions.newPlan?.let { go ->
+                ShifaSecondaryButton(
+                    tr(Res.string.clinicTreatmentPlansNew),
+                    { go(clinic.clinicId) },
+                    icon = Res.drawable.ic_layers_16,
+                )
+            }
         }
     }
     val uri = LocalUriHandler.current

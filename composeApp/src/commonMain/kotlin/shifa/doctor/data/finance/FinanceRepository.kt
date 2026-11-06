@@ -36,6 +36,7 @@ import shifa.doctor.data.model.InstallmentStatusBody
 import shifa.doctor.data.model.LedgerRow
 import shifa.doctor.data.model.MarkPaidBody
 import shifa.doctor.data.model.NewFinancialRecord
+import shifa.doctor.data.model.NewInstallmentPlan
 
 /** `POST /clinics/{id}/finance/payments` body (dev OpenAPI `RecordPaymentRequest`); [method] CASH, CARD_EXTERNAL, TRANSFER. */
 @Serializable
@@ -225,6 +226,18 @@ class FinanceRepository(
     ): Result<Unit> =
         apiCall<JsonElement> {
             client().post(ApiConfig.Endpoints.clinicFinance(clinicId, "installment-items/$itemId/notify"))
+        }.map { }
+
+    /** `POST …/finance/installment-plans` (TP-04): a plan's installment schedule. */
+    suspend fun createInstallmentPlan(
+        clinicId: Long,
+        plan: NewInstallmentPlan,
+    ): Result<Unit> =
+        apiCall<JsonElement> {
+            client().post(ApiConfig.Endpoints.clinicFinance(clinicId, "installment-plans")) {
+                contentType(ContentType.Application.Json)
+                setBody(plan)
+            }
         }.map { }
 
     /** `GET …/finance/doctor-earnings[?from&to]`. */

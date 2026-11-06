@@ -51,6 +51,18 @@ class ClinicScreenshotTest {
     fun planDetail() = captureRoboImage("screenshots/Clinic_plan_detail.png") { PlanDetailPreview() }
 
     @Test
+    fun wizardPatient() = captureRoboImage("screenshots/Plan_wizard_patient.png") { PlanWizardPatientPreview() }
+
+    @Test
+    fun wizardTeam() = captureRoboImage("screenshots/Plan_wizard_team.png") { PlanWizardTeamPreview() }
+
+    @Test
+    fun wizardPayment() = captureRoboImage("screenshots/Plan_wizard_payment.png") { PlanWizardPaymentPreview() }
+
+    @Test
+    fun wizardReview() = captureRoboImage("screenshots/Plan_wizard_review.png") { PlanWizardReviewPreview() }
+
+    @Test
     fun calendar() = captureRoboImage("screenshots/Clinic_calendar.png") { ClinicCalendarPreview() }
 
     @Test
