@@ -361,3 +361,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · CARE-01…03 · Care partnerships: find a partner, the list and the partnership with its updates.
 - 2026-11-06 · REPORT-01 · Reports: the clinic performance card with SMS reminders.
 - 2026-11-06 · LEGAL-01 · Contract spike (no doctor endpoint, BE-16) and the About screen; LEGAL-02 not built.
+- 2026-11-06 · Final check · Full suite reliable (1 064 tests green); iOS release link runs out of memory (open, see OVERNIGHT_2026-11-06.md).
