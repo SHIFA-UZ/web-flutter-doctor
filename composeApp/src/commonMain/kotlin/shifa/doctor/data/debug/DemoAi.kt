@@ -356,6 +356,32 @@ internal class DemoAi {
                                 "2 teeth have recorded services.",
                         )
                     }
+            // INTEL-08: visit 102 (Jasur Karimov, today 15:00 in the demo clinic) opened.
+            listOf("open my", "next patient", "start the visit").any(text::contains) ->
+                "open_appointment" to
+                    buildJsonObject {
+                        val today = currentInstant().toLocalDateTime(zone).date
+                        put("cardType", "open_appointment")
+                        put("target", "appointment")
+                        put("appointmentId", DEMO_VISIT)
+                        put("patientId", DEMO_PATIENT)
+                        put("route", "inPerson")
+                        put(
+                            "appointment",
+                            buildJsonObject {
+                                put("appointmentId", DEMO_VISIT)
+                                put("patientId", DEMO_PATIENT)
+                                put("patientName", "Jasur Karimov")
+                                put("location", "Shifa Demo Clinic")
+                                put("status", "REQUESTED")
+                                put("day", today.toString())
+                                put("startLocal", "15:00")
+                                put("endLocal", "15:30")
+                                put("route", "inPerson")
+                            },
+                        )
+                        put("spokenHint", "Jasur Karimov · today at 15:00 · REQUESTED. Opening the appointment.")
+                    }
             listOf("move", "перенес", "ko'chir", "ko‘chir").any(text::contains) ->
                 "propose_reschedule" to
                     buildJsonObject {

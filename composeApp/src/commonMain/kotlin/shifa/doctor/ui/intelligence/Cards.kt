@@ -51,6 +51,7 @@ import shifa.doctor.generated.resources.factsAlreadyDocumented
 import shifa.doctor.generated.resources.ic_arrow_r_16
 import shifa.doctor.generated.resources.ic_eye_16
 import shifa.doctor.generated.resources.ic_file_16
+import shifa.doctor.generated.resources.inClinic
 import shifa.doctor.generated.resources.intelAppointmentsCount
 import shifa.doctor.generated.resources.intelBookedOk
 import shifa.doctor.generated.resources.intelCancelCardTitle
@@ -64,6 +65,7 @@ import shifa.doctor.generated.resources.intelCardDocuments
 import shifa.doctor.generated.resources.intelCardDraftFacts
 import shifa.doctor.generated.resources.intelCardFreeSlots
 import shifa.doctor.generated.resources.intelCardMostVisited
+import shifa.doctor.generated.resources.intelCardOpenAppointment
 import shifa.doctor.generated.resources.intelCardPatientAppointments
 import shifa.doctor.generated.resources.intelCardPatients
 import shifa.doctor.generated.resources.intelCardPatterns
@@ -92,15 +94,19 @@ import shifa.doctor.generated.resources.intelNoPatientsMatched
 import shifa.doctor.generated.resources.intelNoToothServices
 import shifa.doctor.generated.resources.intelOpenCalendar
 import shifa.doctor.generated.resources.intelOpenFullScreen
+import shifa.doctor.generated.resources.intelOpenVisit
 import shifa.doctor.generated.resources.intelOtherTimes
 import shifa.doctor.generated.resources.intelPatient
 import shifa.doctor.generated.resources.intelReviewOnVisit
 import shifa.doctor.generated.resources.intelService
 import shifa.doctor.generated.resources.intelTime
 import shifa.doctor.generated.resources.intelTimeNotSelected
+import shifa.doctor.generated.resources.intelVisitCannotOpen
 import shifa.doctor.generated.resources.moreCount
+import shifa.doctor.generated.resources.openChart
 import shifa.doctor.generated.resources.shifaIntelligence
 import shifa.doctor.generated.resources.toothA11y
+import shifa.doctor.generated.resources.videoCall
 import shifa.doctor.ui.analytics.shortMonth
 import shifa.doctor.ui.calendar.longDate
 import shifa.doctor.ui.theme.ShifaColors
@@ -132,6 +138,8 @@ class CardActions(
     val documentFacts: () -> Unit = {},
     val openVisit: (appointmentId: Long) -> Unit = {},
     val openDocument: (patientId: Long, documentId: Long, title: String) -> Unit = { _, _, _ -> },
+    // INTEL-08: the visit (or the patient's record) of an open_appointment card.
+    val openVisitCard: (IntelCard.OpenVisit) -> Unit = {},
 )
 
 /**
@@ -226,6 +234,7 @@ private fun CardBox(
             is IntelCard.Documents -> DocumentsBody(card, actions, documentView)
             is IntelCard.Document -> InlineDocument(card.patientId, card.documentId, card.title, actions, documentView)
             is IntelCard.DentalChart -> DentalBody(card)
+            is IntelCard.OpenVisit -> OpenVisitBody(card, actions)
             is IntelCard.Brief -> AiResponseText(card.text)
             is IntelCard.Other -> card.line?.let { Line(ct.localizeHint(it)) }
             is IntelCard.Failed -> Line(ct.localizeHint(card.line))
@@ -248,6 +257,7 @@ private fun title(card: IntelCard): StringResource =
         is IntelCard.Documents -> Res.string.intelCardDocuments
         is IntelCard.Document -> Res.string.intelCardDocumentViewer
         is IntelCard.DentalChart -> Res.string.intelCardDentalChart
+        is IntelCard.OpenVisit -> Res.string.intelCardOpenAppointment
         is IntelCard.Other ->
             when (card.type) {
                 "cancel_preview", "cancel_result" -> Res.string.intelCancelCardTitle
@@ -268,6 +278,7 @@ private fun title(card: IntelCard): StringResource =
                 "patient_documents", "list_patient_documents" -> Res.string.intelCardDocuments
                 "document_viewer", "open_patient_document" -> Res.string.intelCardDocumentViewer
                 "dental_chart", "open_dental_chart" -> Res.string.intelCardDentalChart
+                "open_appointment" -> Res.string.intelCardOpenAppointment
                 else -> Res.string.shifaIntelligence
             }
     }
@@ -665,6 +676,38 @@ private fun ColumnScope.DentalBody(card: IntelCard.DentalChart) {
         }
     }
     card.notes?.let { Line(it, secondary = true) }
+}
+
+/**
+ * Flow 03/19: the patient, the day, "10:30–11:00", the status and where (video or the location); "Open visit" (or
+ * "Open chart" when the backend opened the patient's record), or why it can't be opened (cancelled, a no-show, an
+ * incomplete plan). The answer opens it once by itself (the screen, after the turn); the button opens it again.
+ */
+@Composable
+private fun ColumnScope.OpenVisitBody(
+    card: IntelCard.OpenVisit,
+    actions: CardActions,
+) {
+    val ct = LocalCardText.current
+    Field(tr(Res.string.intelPatient), ct.patientLabel(card.patientName))
+    Field(tr(Res.string.intelDate), card.day?.let { ct.dateLabel(isoDate = it.toString()) } ?: DASH)
+    Field(tr(Res.string.intelTime), listOfNotNull(card.start, card.end).joinToString("–").ifEmpty { DASH })
+    Line(
+        listOfNotNull(
+            card.status?.let(ct::statusLabel),
+            if (card.video) tr(Res.string.videoCall) else card.location ?: tr(Res.string.inClinic),
+        ).joinToString(" · "),
+        secondary = true,
+    )
+    if (card.openable) {
+        ShifaPrimaryButton(
+            tr(if (card.target == "patient") Res.string.openChart else Res.string.intelOpenVisit),
+            { actions.openVisitCard(card) },
+            size = ShifaButtonSize.Compact,
+        )
+    } else {
+        Line(tr(Res.string.intelVisitCannotOpen), secondary = true)
+    }
 }
 
 /** "Patient   Jasur Karimov": the label column, then the value (read as one by a screen reader). */

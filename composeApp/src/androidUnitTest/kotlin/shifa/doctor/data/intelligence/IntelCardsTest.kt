@@ -313,4 +313,46 @@ class IntelCardsTest {
         assertThat(empty.counts).isEmpty()
         assertThat(empty.hint).isEqualTo("There is no dental diagram saved.")
     }
+
+    // INTEL-08: AppointmentActionService.openCard's payload.
+    @Test
+    fun `an open_appointment card opens only a whole plan for a visit that is neither cancelled nor a no-show`() {
+        fun open(
+            status: String = "CONFIRMED",
+            start: String = "10:30",
+            route: String = "inPerson",
+            target: String = "appointment",
+        ) = card(
+            "open_appointment",
+            """{"cardType":"open_appointment","target":"$target","appointmentId":102,"patientId":12,"route":"$route","appointment":{"appointmentId":102,"patientId":12,"patientName":"Jasur Karimov","location":"Clinic","status":"$status","day":"2026-11-06","startLocal":"$start","endLocal":"11:00","route":"$route"}}""",
+        ) as IntelCard.OpenVisit
+        val ok = open()
+        assertThat(ok.openable).isTrue()
+        assertThat(ok.day).isEqualTo(LocalDate(2026, 11, 6))
+        assertThat(ok.start to ok.end).isEqualTo("10:30" to "11:00")
+        assertThat(ok.video).isFalse()
+        assertThat(open(route = "video").video).isTrue()
+        assertThat(open(target = "patient").target).isEqualTo("patient")
+        assertThat(open(status = "CANCELLED").openable).isFalse()
+        assertThat(open(status = "NO_SHOW").openable).isFalse()
+        assertThat(open(start = "25:00").openable).isFalse()
+        assertThat(open(route = "elsewhere").openable).isFalse()
+        assertThat(open(status = "BOGUS").openable).isFalse()
+        assertThat(open(status = "EXPIRED").openable).isFalse()
+        assertThat(open(status = "IN_PROGRESS").openable).isTrue()
+        // "Open chart" needs the patient.
+        val noPatient =
+            card(
+                "open_appointment",
+                """{"target":"patient","route":"inPerson","appointment":{"appointmentId":5,"status":"CONFIRMED","day":"2026-11-06","startLocal":"10:30"}}""",
+            ) as IntelCard.OpenVisit
+        assertThat(noPatient.openable).isFalse()
+        // A refusal comes without the visit: its line.
+        assertThat(
+            card(
+                "open_appointment",
+                """{"supported":false,"status":"FAILURE","spokenHint":"That appointment is not on your calendar."}""",
+            ),
+        ).isEqualTo(IntelCard.Failed("open_appointment", "That appointment is not on your calendar."))
+    }
 }

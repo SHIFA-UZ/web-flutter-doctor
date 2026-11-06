@@ -191,6 +191,29 @@ sealed interface IntelCard {
         val hint: String?,
     ) : IntelCard
 
+    /**
+     * A visit to open (`open_appointment`, flow 03/19): its patient, day and times in practice time, status and kind;
+     * [target] is what the backend opened it for ("appointment", "documentation" or "patient"). [openable] when the plan
+     * is whole and the visit is neither cancelled nor a no-show (Flutter's `planOpenAppointmentRoute`).
+     */
+    data class OpenVisit(
+        val appointmentId: Long?,
+        val patientId: Long?,
+        val patientName: String?,
+        val day: LocalDate?,
+        val start: String?,
+        val end: String?,
+        val status: String?,
+        val video: Boolean,
+        val location: String?,
+        val target: String,
+        val openable: Boolean,
+        // The visit's start as an instant: with the id, route and status, what makes one opening the same as another.
+        val startAt: String? = null,
+    ) : IntelCard {
+        val openKey: String get() = "$appointmentId|${if (video) "video" else "inPerson"}|$status|$startAt"
+    }
+
     data class Brief(
         val text: String,
     ) : IntelCard
@@ -359,6 +382,13 @@ sealed interface IntelCard {
                     }
                 }
                 "dental_chart", "open_dental_chart" -> dental(payload, hint)
+                // A refusal (a no-show, not on the calendar) comes without the visit: its line only.
+                "open_appointment" ->
+                    if (payload["appointment"] is JsonObject) {
+                        openVisit(payload)
+                    } else {
+                        Failed(type, hint ?: payload.text("error").orEmpty())
+                    }
                 // Fix (ticket): rendered as a briefing (headings, bullets, bold), not plain text.
                 "patient_brief", "brief_patient" -> Brief(payload.text("briefing") ?: hint.orEmpty())
                 else -> Other(type, hint ?: payload.text("error") ?: payload.text("statusMessage"))
@@ -407,6 +437,37 @@ sealed interface IntelCard {
                 dismissed = p.flag(KEY_DISMISSED),
             )
         }
+
+        private fun openVisit(p: JsonObject): OpenVisit {
+            val row = p["appointment"] as JsonObject
+            val id = row.long("appointmentId") ?: p.long("appointmentId")
+            val route = p.text("route") ?: row.text("route")
+            val day = row.date("day")
+            val start = row.text("startLocal")?.takeIf { TIME.matches(it) }
+            val status = row.text("status")?.uppercase()
+            return OpenVisit(
+                appointmentId = id,
+                patientId = row.long("patientId") ?: p.long("patientId"),
+                patientName = row.text("patientName"),
+                day = day,
+                start = start,
+                end = row.text("endLocal")?.takeIf { TIME.matches(it) },
+                status = status,
+                video = route == "video",
+                location = row.text("location"),
+                target = p.text("target") ?: "appointment",
+                // Booked states only: cancelled, a no-show, an expired or failed payment hold, or an unknown status are not.
+                openable =
+                    id != null && day != null && start != null && status in OPENABLE_STATUSES &&
+                        route in setOf("video", "inPerson") &&
+                        (p.text("target") != "patient" || (row.long("patientId") ?: p.long("patientId")) != null),
+                startAt = row.text("startAt"),
+            )
+        }
+
+        private val OPENABLE_STATUSES = setOf("REQUESTED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "PENDING_PAYMENT")
+
+        private val TIME = Regex("""([01]\d|2[0-3]):[0-5]\d""")
 
         private fun dental(
             p: JsonObject,

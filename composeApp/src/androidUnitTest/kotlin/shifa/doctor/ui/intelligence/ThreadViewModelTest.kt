@@ -426,6 +426,29 @@ class ThreadViewModelTest {
         settle { kinds.size == 2 }
         assertThat(kinds).containsExactly(VisitKind.Video, VisitKind.InPerson).inOrder()
     }
+
+    @Test
+    fun `a live answer that opens a visit asks the screen to open it once, a closed or already opened visit does not`() {
+        val classToTest = vm()
+        val visit =
+            """{"cardType":"open_appointment","appointmentId":102,"route":"inPerson","appointment":{"appointmentId":102,"status":"CONFIRMED","day":"2026-11-06","startLocal":"10:30","endLocal":"11:00","route":"inPerson"}}"""
+        withCard(classToTest, visit)
+        assertThat(classToTest.state.value.autoOpen!!.appointmentId).isEqualTo(102)
+        classToTest.autoOpened()
+        assertThat(classToTest.state.value.autoOpen).isNull()
+        answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"open_appointment\",\"payload\":${visit.replace(
+            "CONFIRMED",
+            "CANCELLED",
+        )}}\n\ndata:Cancelled.\n\n"
+        classToTest.send("Open it again")
+        settle { store.state.value.active!!.messages.size == 4 }
+        assertThat(classToTest.state.value.autoOpen).isNull()
+        // The same visit asked for again in this run doesn't open again.
+        answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"open_appointment\",\"payload\":$visit}\n\ndata:Again.\n\n"
+        classToTest.send("Open my 10:30 again")
+        settle { store.state.value.active!!.messages.size == 6 }
+        assertThat(classToTest.state.value.autoOpen).isNull()
+    }
 }
 
 private const val COMMITTED_1021 = """{"id":1021,"patientId":12,"factType":"MEDICATION","text":"Ibuprofen","status":"COMMITTED"}"""

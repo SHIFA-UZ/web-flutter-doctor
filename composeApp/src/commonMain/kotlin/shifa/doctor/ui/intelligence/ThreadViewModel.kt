@@ -69,6 +69,8 @@ data class ThreadUiState(
     val cards: Map<Int, CardUi> = emptyMap(),
     // A card's booking is running in this chat: no new question until it ends (its history would be stale).
     val booking: Boolean = false,
+    // INTEL-08: the visit the answer just opened (`open_appointment`), for the screen to open once; never from history.
+    val autoOpen: IntelCard.OpenVisit? = null,
 ) {
     val busy: Boolean get() = asking != null && error == null
     val canSend: Boolean get() = draft.isNotBlank() && !busy && !booking
@@ -112,6 +114,9 @@ class ThreadViewModel(
 
     // The card each chat is booking from, kept when the doctor leaves and comes back: one booking per chat at a time.
     private val bookings = mutableMapOf<String, Int>()
+
+    // Visits an answer opened by itself in this app run.
+    private val openedVisits = mutableSetOf<String>()
 
     // Draft-fact cards being documented ("chat id" to index), kept the same way: one commit per card.
     private val committing = mutableSetOf<Pair<String, Int>>()
@@ -244,6 +249,9 @@ class ThreadViewModel(
             open(appointments.detail(appointmentId).getOrNull()?.kind ?: VisitKind.InPerson)
         }
     }
+
+    /** The screen opened [ThreadUiState.autoOpen]. */
+    fun autoOpened() = _state.update { it.copy(autoOpen = null) }
 
     /** "Other times" / "Hide other times" under a proposal's Confirm. */
     fun toggleOtherTimes(index: Int) = cardUi(index) { it.copy(showOther = !it.showOther) }
@@ -383,7 +391,11 @@ class ThreadViewModel(
                 ChatMessage(ChatMessage.ROLE_USER, question, askedAt) +
                 ChatMessage(ChatMessage.ROLE_ASSISTANT, said, now(), s.toolName, card),
         )
-        _state.update { ThreadUiState(draft = it.draft, cards = it.cards) }
+        // Once per visit (id, kind, status, start) in this app run (flow 03/19 §4): asking again doesn't open it again.
+        val open =
+            card?.let { IntelCard.of(s.toolName, it) as? IntelCard.OpenVisit }
+                ?.takeIf { it.openable && openedVisits.add(it.openKey) }
+        _state.update { ThreadUiState(draft = it.draft, cards = it.cards, autoOpen = open) }
     }
 
     private fun fail(e: Throwable) =

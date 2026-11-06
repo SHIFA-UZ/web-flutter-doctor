@@ -410,3 +410,30 @@ the card's style).
   counts, error turns), `ThreadViewModelTest` (Document everything: one commit with every id, the count saved, a
   failure, no second commit), `ShellViewModelTest` (screens over Intelligence and Back), `DemoBackendTest` (demo
   cards); screenshot `Intelligence_clinicalCards`.
+
+## INTEL-08 · Open visit card and auto-open
+
+Built 2026-11-06. Spec 02 §4.8, flow 03/19, ticket INTEL-08. The flow's target card ("not in the design"; Flutter had
+only the planner and its tests, nothing wired).
+
+- **Model** (`IntelCards.kt`): `OpenVisit` from `AppointmentActionService.openCard`: the visit's patient, practice-local
+  day and times, status, kind (`route` video / inPerson), location and `target` (appointment, documentation,
+  patient). Openable when the plan is whole (id, day, a valid HH:mm start, status, a known route) and the visit is
+  in a booked state (requested, confirmed, in progress, completed, awaiting payment; not cancelled, a no-show, expired,
+  a failed payment or an unknown status; Flutter's `planOpenAppointmentRoute`), and "Open chart" needs the patient. A refusal (no-show, not on the calendar)
+  comes without the visit and shows its line.
+- **Card:** Patient, Date, Time "15:00–15:30", "Confirmed · Shifa Demo Clinic" (or Video Call), then "Open visit"
+  ("Open chart" when the backend opened the patient's record), or "This visit cannot be opened.".
+- **Auto-open:** only from a live answer, after the turn is saved (opening during the stream would cancel it): the
+  thread hands the card to the screen once (`ThreadUiState.autoOpen`), which opens the visit (as video or in the
+  clinic) or the patient's record over Intelligence, closing the history sheet first; Back returns to the thread. A
+  visit opens by itself once per app run (id, kind, status and start, Flutter's claim key), and a restored chat never
+  opens anything by itself (the flow's target; Flutter's per-process claim alone would have reopened old visits after a
+  restart). The button opens it again any time.
+- **Not built:** the screen-reader announcement before navigating, the 2-second "Opening…" grace (an open design
+  question), stopping hands-free voice (INTEL-09 does that when it exists).
+- **Checked:** emulator, demo mode: "Open my next patient" → Jasur Karimov's visit opened by itself; Back → the thread
+  with the card; "Open visit" → the visit again; Back → the thread, nothing reopened. iOS compiled, not run.
+- **Tests:** `IntelCardsTest` (openable plans, cancelled, no-show, bad time, unknown route, refusals),
+  `ThreadViewModelTest` (a live answer asks once, a closed visit doesn't), `DemoBackendTest`; screenshot
+  `Intelligence_openVisitCards`.

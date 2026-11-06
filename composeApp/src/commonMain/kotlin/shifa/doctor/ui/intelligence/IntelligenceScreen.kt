@@ -46,6 +46,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.intelligence.ChatSession
+import shifa.doctor.data.intelligence.IntelCard
+import shifa.doctor.data.model.VisitKind
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.cancel
 import shifa.doctor.generated.resources.delete
@@ -153,6 +155,15 @@ fun IntelligenceScreen(
     LaunchedEffect(state.active?.id) { thread.stop() }
     DisposableEffect(thread) { onDispose { thread.stop() } }
     LaunchedEffect(turn.busy) { viewModel.busy(turn.busy) }
+    // INTEL-08: a visit Shifa just opened (a live answer, never a restored one) opens once, over Intelligence.
+    LaunchedEffect(turn.autoOpen) {
+        turn.autoOpen?.let {
+            thread.autoOpened()
+            // The history sheet closes first (flow 03/19 §8), so it isn't back over the thread on return.
+            viewModel.history(false)
+            onOpen(it.route())
+        }
+    }
     val threadActions = ThreadActions(thread::draft, { thread.send() }, thread::retry)
     LifecycleResumeEffect(viewModel) {
         viewModel.load()
@@ -233,6 +244,7 @@ fun IntelligenceScreen(
                                 openDocument = { patient, document, title ->
                                     onOpen(ShellRoute.Document(patient, document, title))
                                 },
+                                openVisitCard = { onOpen(it.route()) },
                             )
                         } ?: CardActions(),
                         // One download per card (two cards of one document don't share or cancel each other's).
@@ -573,3 +585,13 @@ internal fun ago(
 
 private const val HISTORY_HEIGHT = 0.72f
 private const val LARGE_TEXT = 1.5f
+
+/** An open_appointment card's screen: the patient's record when that is what was opened, else the visit as it is. */
+private fun IntelCard.OpenVisit.route(): ShellRoute {
+    val now = currentInstant().toEpochMilliseconds()
+    return if (target == "patient" && patientId != null) {
+        ShellRoute.Patient(patientId)
+    } else {
+        ShellRoute.Visit(appointmentId ?: 0, if (video) VisitKind.Video else VisitKind.InPerson, now)
+    }
+}

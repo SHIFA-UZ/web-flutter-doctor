@@ -398,3 +398,19 @@ internal fun ClinicalCardsPreview() =
             ),
         )
     }
+
+// INTEL-08 (flow 03/19): a visit Shifa opened, and one that can't be opened (cancelled).
+@Composable
+internal fun OpenVisitCardsPreview() =
+    CardColumn {
+        listOf("CONFIRMED" to "inPerson", "CANCELLED" to "video").forEach { (status, route) ->
+            ToolCard(
+                "open_appointment",
+                cardJson(
+                    """{"cardType":"open_appointment","appointmentId":102,"route":"$route","appointment":{""" +
+                        """"appointmentId":102,"patientName":"Jasur Karimov","location":"Shifa Demo Clinic",""" +
+                        """"status":"$status","day":"2026-11-06","startLocal":"15:00","endLocal":"15:30"}}""",
+                ),
+            )
+        }
+    }

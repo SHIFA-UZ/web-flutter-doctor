@@ -48,5 +48,8 @@ class IntelligenceScreenshotTest {
     fun clinicalCards() = captureRoboImage("screenshots/Intelligence_clinicalCards.png") { ClinicalCardsPreview() }
 
     @Test
+    fun openVisitCards() = captureRoboImage("screenshots/Intelligence_openVisitCards.png") { OpenVisitCardsPreview() }
+
+    @Test
     fun cancelCards() = captureRoboImage("screenshots/Intelligence_cancelCards.png") { CancelCardsPreview() }
 }
