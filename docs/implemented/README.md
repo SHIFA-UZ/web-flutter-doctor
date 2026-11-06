@@ -96,7 +96,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CAL-8 Blocks | Done | Block a day, some hours or several days from the calendar header (reason chips, cancel overlapping with a live count); blocked row panel with Remove block. See calendar.md. |
 | LOC-1 Locations | Done | Profile → Locations: list, add, edit (label, clinic, street, city, primary), delete with a confirmation; one shared list (services use it too). See schedule.md. |
 | CAL-9 Deep-link intents | Waits for its first caller | Go-to-appointment and quick-book are only started by push (D-15, at the end) and Home (M6); built with them instead of as unused code (2026-11-04). |
-| CAL-10 Staff calendars | Waits for CLINIC-05 | Needs the clinic workspace members (M11). |
+| CAL-10 Staff calendars | In progress (the colleague's calendar done with CLINIC-09; the chip row in the doctor's own Calendar next) | A colleague's calendar in the clinic's zone, cached under the doctor; booking, moving, cancelling and unblocking for them. See calendar.md, clinic.md. |
 | CAL-5 N-day grid | Last in M3 | Tablet only (master plan: build last in M3 or in a tablet pass). |
 | SCHED-1 Schedule data | Done | Weekly template per location, validity periods, date-specific hours; range and period validators. See schedule.md. |
 | SCHED-2 Working hours | Done | Profile → Schedule: week overview with a sheet per day (ranges, copy, Mon–Fri), the bookable period, extra hours on dates; Save blocked until the rules are read. See schedule.md. |
@@ -158,8 +158,9 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CLINIC-02 Clinic workspace shell | Done | Clinic tab → workspace: header with the switcher, the board's section groups, Settings behind the gear. See clinic.md. |
 | CLINIC-03 Clinic list kit | Done (kit reused) | The design system's components cover it; tickets add what they need. See clinic.md. |
 | CLINIC-04 Overview + Settings | Done | Numbers with taps, quick actions, contact rows; read-only settings with the default share. See clinic.md. |
-| CLINIC-05 Doctors + revenue share | Done (schedule button with CLINIC-09) | Members with chips and search, the share in force, one share sheet for a doctor and the clinic default. See clinic.md. |
+| CLINIC-05 Doctors + revenue share | Done | Members with chips and search, the share in force, one share sheet for a doctor and the clinic default. See clinic.md. |
 | CLINIC-06 Clinic patients | Done (phone: push; no tablet side pane) | Server-searched, paged list (50, Load more), "Total: N"; a patient opens in the clinic's scope (patient, documents, uploads, the prophylaxis card). BE-35. See clinic.md. |
+| CLINIC-09 Clinic doctor schedule | Done | The Calendar section (a card per doctor) and the Doctors' schedule button open the colleague's calendar (CAL-10 B): their days in the clinic's zone, book / move / cancel / unblock on their behalf; Back returns through the shell stack (no "return info"). See clinic.md. |
 | CLINIC-07 Services + catalogue editor | Done | One list (clinic catalogue and doctors' own services) with status chips and search; add / edit sheet (name, code, price > 0, active, all doctors or chosen ones), deactivate / reactivate; every member may edit (backend rule). See clinic.md. |
 | CLINIC-08 Invitations | Done | Invite receptionist, pending / used / expired, revoke with confirmation. See clinic.md. |
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
@@ -333,3 +334,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · CLINIC-05, CLINIC-08 · Clinic people: doctors and their revenue share, receptionist invitations.
 - 2026-11-06 · CLINIC-06 · Clinic patients and the patient in the clinic's scope with its prophylaxis card; BE-35.
 - 2026-11-06 · CLINIC-07 · Clinic services and the catalogue editor; sheets read their latest close check.
+- 2026-11-06 · CLINIC-09, CAL-10 (B) · A colleague's calendar from the clinic workspace, booking and unblocking on their behalf.

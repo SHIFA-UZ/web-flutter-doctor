@@ -72,7 +72,7 @@ class BlockViewModelTest {
                     )
                 }
                 req.method == HttpMethod.Delete -> {
-                    sent += "DELETE $path"
+                    sent += "DELETE $path" + req.url.encodedQuery.let { if (it.isEmpty()) "" else "?$it" }
                     respond("", HttpStatusCode.OK)
                 }
                 else -> {
@@ -210,6 +210,22 @@ class BlockViewModelTest {
         val noId = BlockPanelViewModel(entry.copy(blockId = null), clock, calendar, blocks).also { created += it }
         noId.remove()
         assertThat(sent).hasSize(1)
+    }
+
+    @Test
+    fun `a colleague's block is removed in their calendar and their days are read again`() {
+        runBlocking { calendar.day(DayKey(LocalDate(2026, 11, 6), 22)) }
+        read.clear()
+        val entry =
+            calendar.state.value.days.getValue(
+                DayKey(LocalDate(2026, 11, 6), 22),
+            ).single() as CalendarEntry.Blocked
+        val classToTest = BlockPanelViewModel(entry, clock, calendar, blocks, doctorId = 22).also { created += it }
+        classToTest.remove()
+        settle { classToTest.state.value.done }
+        assertThat(sent.single()).isEqualTo("DELETE /api/schedule/blocks/5?doctorId=22")
+        assertThat(read).contains("2026-11-06")
+        assertThat(calendar.state.value.days.keys.map { it.doctorId }.toSet()).containsExactly(22L)
     }
 
     @Test

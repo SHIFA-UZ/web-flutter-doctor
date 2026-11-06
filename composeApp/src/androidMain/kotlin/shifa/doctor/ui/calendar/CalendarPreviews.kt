@@ -94,6 +94,26 @@ private fun state(details: Boolean) =
 @Composable
 internal fun CalendarDayPreview() = PreviewTheme { CalendarContent(state(false), CalendarActions()) }
 
+// CAL-10 / CLINIC-09 (flow 04/14 B, board DaCalendar calDoctor): a colleague's calendar, titled with their name, the
+// clinic hint, no Block button, a back button.
+@Composable
+internal fun ClinicDoctorSchedulePreview() =
+    PreviewTheme {
+        val scope = CalendarScope(22, "Bobur Aliyev", "Asia/Tashkent", "Amir Temur 1")
+        CalendarContent(
+            state(false).let { s ->
+                s.copy(
+                    scope = scope,
+                    cache =
+                        s.cache.copy(
+                            days = mapOf(shifa.doctor.data.calendar.DayKey(LocalDate(2026, 11, 4), 22) to day),
+                        ),
+                )
+            },
+            CalendarActions(back = {}),
+        )
+    }
+
 @Composable
 internal fun CalendarDetailsPreview() = PreviewTheme { CalendarContent(state(true), CalendarActions()) }
 

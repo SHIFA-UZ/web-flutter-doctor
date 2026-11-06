@@ -182,3 +182,11 @@ internal fun ClinicServiceEditorPreview() =
             ServicesActions(),
         )
     }
+
+// CLINIC-09 (board `DaClinic` Calendar): the clinic's zone, a card per doctor (colour, name, role, Open schedule);
+// the receptionist has no calendar.
+@Composable
+internal fun ClinicCalendarPreview() =
+    Workspace(ClinicUiState(previewClinics, section = ClinicSection.Calendar)) { _, clinic ->
+        ClinicCalendarContent(clinic, previewPeople, {})
+    }

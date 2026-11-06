@@ -159,3 +159,37 @@ sheets, phone layout (`ui/clinic/ClinicServices.kt`).
 - **Tests:** `ClinicServicesViewModelTest` (filters, create validation and body, edit prefill and PATCH bodies, toggle,
   discard, failures), `DemoBackendTest` (+1); screenshots `Clinic_services`, `Clinic_service_editor`.
 
+## CLINIC-09 + CAL-10 (B) · A colleague's calendar
+
+Built 2026-11-06. Spec 09 §5, 03 §1.12, flow 04/14 (B), tickets CLINIC-09 and CAL-10. Boards `DaClinic` Calendar and
+`DaCalendar` calDoctor (`ui/clinic/ClinicSchedule.kt`, `CalendarScope` in `ui/calendar/CalendarScreen.kt`).
+- **Calendar section:** "Book and manage each doctor's appointments. Times are in Asia/Tashkent (UTC+5)." and a card per
+  doctor (doctors and owners with a profile, by name; a colour bar from the chart series by roster place, name, role,
+  "Open schedule"). The Doctors section's calendar button opens the same screen. Staff see both (flow 04/14 B).
+- **The colleague's calendar** is the Calendar screen with a `CalendarScope(doctorId, name, clinic zone, clinic
+  address)`: titled with the doctor's name ("Doctor #12" without one), a back button, the hint "Book and manage this
+  doctor's appointments. Times use this clinic timezone.", no Block button, the filter on appointments and free slots
+  (blocks always show), the mismatch banner against the clinic's zone. Its days are read with `doctorId` and cached
+  under that doctor (`DayKey(date, doctorId)`), so the doctor's own calendar is never touched; the 60 s throttle
+  applies (Flutter forced every read).
+- **On their behalf:** a free slot books with `resourceDoctorId` (the clinic's address as the venue when the slot has
+  none); an appointment opens the panel in their calendar (reschedule reads their days; change / cancel need no doctor
+  id, the backend reads it from the appointment) without Start / Continue (the visit is theirs); a block is removed
+    with `DELETE …/blocks/{id}?doctorId=` (checked in `ScheduleBlockController`). Each change refreshes their days
+  (`changed(…, doctorId)`), and `changed` now invalidates only that doctor's cached days (before: every doctor's on
+  those dates). The panel's patient name opens the patient (in the clinic's scope for a colleague's).
+- **Back stack:** pushes go over the colleague's calendar in the shell's stack, so Back from a booking, a panel or a
+  patient comes back to it on the same day (Flutter re-created the page from serialized "return info" — §5's hack).
+- **Demo:** Bobur (22) has a day of his own (10:00–14:00, a visit at 11:00, a meeting block at 12:00).
+- New strings: `clinicCalendarIntro`, `clinicOpenSchedule`.
+- **Checked:** emulator, dev (reads): Calendar section lists the 3 doctors; Dilnoza's calendar opens in Asia/Tashkent
+  with her slots, no failures logged; Back returns to the workspace. Demo: booked Bobur's 10:00 for a patient (back on
+  his calendar with "Patient assigned"), removed his meeting block ("Block removed"), his appointment's panel has no
+  Start. iOS compiled, not run.
+- **Tests:** `CalendarViewModelTest` (+1: colleague zone, `doctorId`, separate cache, blocks always shown),
+  `BookingViewModelTest` (+1: `resourceDoctorId`, their day), `BlockViewModelTest` (+1: `?doctorId=`, their days);
+  screenshots `Calendar_colleague`, `Clinic_calendar` (`Calendar_day` / `Calendar_details` unchanged).
+- **Codex review:** `changed` scoped to the doctor, the reschedule month reads the colleague's days, the ViewModel is
+  keyed by the whole scope, the patient link (answers in `codex/CLINIC-09.md`).
+- **Next (CAL-10 A):** the "Staff calendars" chip row in the doctor's own Calendar.
+

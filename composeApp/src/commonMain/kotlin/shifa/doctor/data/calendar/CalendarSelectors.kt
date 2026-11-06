@@ -35,8 +35,9 @@ suspend fun CalendarRepository.changed(
     doctorId: Long? = null,
 ) {
     val touched = (days.toSet() + clock.today())
-    // Every cached view of those dates (any location, any colleague) is stale now; the doctor's own is read again.
-    invalidate(*state.value.days.keys.filter { it.date in touched }.toTypedArray())
+    // Every cached view of those dates in this calendar (any location) is stale now and read again; another doctor's
+    // calendar isn't touched by this change (CAL-10: a colleague's booking leaves the doctor's own days fresh).
+    invalidate(*state.value.days.keys.filter { it.date in touched && it.doctorId == doctorId }.toTypedArray())
     // Four at a time, the given days first (a block over a vacation touches many; Flutter read them one by one).
     (days.toList() + clock.today()).distinct().chunked(BATCH).forEach { batch ->
         coroutineScope { batch.map { async { day(DayKey(it, doctorId), force = true) } }.awaitAll() }

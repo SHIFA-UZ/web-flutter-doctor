@@ -49,12 +49,14 @@ class AppointmentPanelViewModelTest {
     private var failWrites = false
     private var failDay: String? = null
     private var empty = false
+    private val doctors = java.util.Collections.synchronizedList(mutableListOf<String>())
     private val engine =
         MockEngine { req ->
             val json = headersOf(HttpHeaders.ContentType, "application/json")
             if (req.method == HttpMethod.Get) {
                 val day = req.url.parameters["day"]!!
                 read += day
+                req.url.parameters["doctorId"]?.let { doctors += it }
                 if (empty) return@MockEngine respond("[]", HttpStatusCode.OK, json)
                 if (day == failDay) {
                     return@MockEngine respond(
@@ -172,6 +174,25 @@ class AppointmentPanelViewModelTest {
         assertThat(writes.last()).isEqualTo("DELETE /api/appointments/7 ")
         assertThat(ShellNotice.pending.value?.text).isEqualTo(Res.string.appointmentCancelled)
         assertThat(read).contains(today.toString())
+    }
+
+    @Test
+    fun `a colleague's panel pages and reads their days, and has no main button`() {
+        val entry =
+            calendar.state.value.days.getValue(DayKey(today)).filterIsInstance<CalendarEntry.Appointment>().single()
+        val classToTest =
+            AppointmentPanelViewModel(
+                entry,
+                clock,
+                calendar,
+                appointments,
+                doctorId = 22,
+            ).also { created += it }
+        assertThat(classToTest.state.value.cta).isNull()
+        classToTest.rescheduleMonth(1)
+        classToTest.rescheduleOn(LocalDate.fromEpochDays(today.toEpochDays() + 1))
+        settle { doctors.size > 20 }
+        assertThat(doctors.toSet()).containsExactly("22")
     }
 
     @Test

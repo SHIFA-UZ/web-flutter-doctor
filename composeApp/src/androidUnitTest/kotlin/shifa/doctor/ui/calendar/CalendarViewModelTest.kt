@@ -31,7 +31,8 @@ import java.io.File
 @OptIn(ExperimentalCoroutinesApi::class)
 class CalendarViewModelTest {
     private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
-    private val requested = mutableListOf<String>()
+    private val requested = java.util.Collections.synchronizedList(mutableListOf<String>())
+    private val doctors = java.util.Collections.synchronizedList(mutableListOf<String>())
     private var failing = false
     private val engine =
         MockEngine { req ->
@@ -39,6 +40,7 @@ class CalendarViewModelTest {
             if (!req.url.encodedPath.endsWith("calendar")) return@MockEngine respond(me, HttpStatusCode.OK, json)
             val day = req.url.parameters["day"]!!
             requested += day
+            req.url.parameters["doctorId"]?.let { doctors += it }
             if (failing) {
                 return@MockEngine respond(
                     """{"status":500,"code":"INTERNAL","requestId":"req-cal"}""",
@@ -91,6 +93,25 @@ class CalendarViewModelTest {
         assertThat(requested).contains(s.today.toString())
         // The month is prefetched for the shading.
         assertThat(s.occupancy(LocalDate(s.today.year, s.today.monthNumber, 1))).isNotNull()
+    }
+
+    @Test
+    fun `a colleague's calendar reads their days in the clinic's zone, apart from the doctor's own, blocks always shown`() {
+        val classToTest =
+            CalendarViewModel(
+                calendar,
+                profile,
+                CalendarScope(22, "Bobur Aliyev", "Europe/Moscow"),
+            ).also { created += it }
+        settle { classToTest.state.value.day != null && requested.size > 20 }
+        val s = classToTest.state.value
+        assertThat(s.clock.zoneId).isEqualTo("Europe/Moscow")
+        assertThat(doctors.toSet()).containsExactly("22")
+        assertThat(calendar.state.value.days.keys.map { it.doctorId }.toSet()).containsExactly(22L)
+        assertThat(s.occupancy(LocalDate(s.today.year, s.today.monthNumber, 1))).isNotNull()
+        // The filter can't hide a colleague's blocks (two options there).
+        classToTest.ui { it.copy(filter = AgendaFilter(blocked = false)) }
+        assertThat(classToTest.state.value.rows.map { it::class.simpleName }).contains("Blocked")
     }
 
     @Test

@@ -409,6 +409,7 @@
     <string name="clinicActionSuccess">Bajarildi</string>
     <string name="clinicAddress">Klinika manzili</string>
     <string name="clinicAnalyticsAndExports">Klinika tahlili va eksport</string>
+    <string name="clinicCalendarIntro">Har bir shifokorning qabullarini yozing va boshqaring. Vaqt %1$s bo'yicha.</string>
     <string name="clinicCalendarMvpHint">«Mening jadvalim» — asosiy Taqvim (o'zingizning bandlaringiz). Hamkasbni tanlang — klinika vaqt zonasida yozish va boshqarish oynasi ochiladi.</string>
     <string name="clinicChangeStatus">Holatni o'zgartirish</string>
     <string name="clinicDefaultShareClear">Qiymatni tozalash</string>
@@ -596,6 +597,7 @@
     <string name="clinicMode">Klinika rejimi</string>
     <string name="clinicNavClinic">Klinika</string>
     <string name="clinicOpenCalendarTab">Mening taqvimim</string>
+    <string name="clinicOpenSchedule">Jadvalni ochish</string>
     <string name="clinicOrWorkplaceName">Klinika / Ish joyi nomi</string>
     <string name="clinicPatientNumber">Bemor #%1$s</string>
     <string name="clinicPatientsColActions">Harakatlar</string>

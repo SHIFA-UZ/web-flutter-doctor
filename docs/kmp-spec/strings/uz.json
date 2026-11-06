@@ -2743,5 +2743,7 @@
   "clinicServicePriceInCurrency": "Narx ({{currency}})",
   "clinicServiceOptions": "Xizmat amallari",
   "clinicServiceDoctorsLoadFailed": "Klinika shifokorlarini yuklab bo'lmadi.",
-  "clinicServicePriceZero": "Narx 0: bepul xizmat"
+  "clinicServicePriceZero": "Narx 0: bepul xizmat",
+  "clinicCalendarIntro": "Har bir shifokorning qabullarini yozing va boshqaring. Vaqt {{zone}} bo'yicha.",
+  "clinicOpenSchedule": "Jadvalni ochish"
 }

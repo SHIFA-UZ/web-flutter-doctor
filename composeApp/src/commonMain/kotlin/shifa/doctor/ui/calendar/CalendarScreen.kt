@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -63,11 +65,14 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.allDay
 import shifa.doctor.generated.resources.apply
 import shifa.doctor.generated.resources.appointments
+import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.blockTime
 import shifa.doctor.generated.resources.blocked
 import shifa.doctor.generated.resources.calendar
 import shifa.doctor.generated.resources.calendarTimezoneMismatchHint
 import shifa.doctor.generated.resources.clinicFinancePaymentFailed
+import shifa.doctor.generated.resources.clinicMemberFallback
+import shifa.doctor.generated.resources.clinicSchedulePreviewHint
 import shifa.doctor.generated.resources.couldNotLoadThisDay
 import shifa.doctor.generated.resources.durationHours
 import shifa.doctor.generated.resources.durationHoursMinutes
@@ -79,6 +84,7 @@ import shifa.doctor.generated.resources.freeSlots
 import shifa.doctor.generated.resources.hiddenByFilters
 import shifa.doctor.generated.resources.hideDetails
 import shifa.doctor.generated.resources.ic_alert_circle_16
+import shifa.doctor.generated.resources.ic_arrow_l_16
 import shifa.doctor.generated.resources.ic_block_16
 import shifa.doctor.generated.resources.ic_block_22
 import shifa.doctor.generated.resources.ic_refresh_22
@@ -112,6 +118,8 @@ import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.ShifaActionButton
+import shifa.doctor.ui.widgets.ShifaActionVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
@@ -127,6 +135,22 @@ import shifa.doctor.utils.TimeZones
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
+
+/**
+ * A colleague's calendar, opened from the clinic workspace (CAL-10 / CLINIC-09, flow 04/14 B): whose ([doctorId], the
+ * name for the title), the clinic's [zone] its times are in, the clinic's address as the venue. Every read, booking,
+ * block removal and refresh in that context carries the doctor (`doctorId` / `resourceDoctorId`), and its days are
+ * cached under that doctor, never mixed into the signed-in doctor's own.
+ */
+data class CalendarScope(
+    val doctorId: Long,
+    // The member's display name; null shows "Doctor #12".
+    val name: String?,
+    val zone: String?,
+    val venue: String? = null,
+    // The clinic whose workspace opened it: a patient opened from here is read in that clinic's scope.
+    val clinicId: Long? = null,
+)
 
 /** Which row kinds the agenda shows (the Filter sheet). */
 data class AgendaFilter(
@@ -156,19 +180,25 @@ data class CalendarUiState(
     val filterDraft: AgendaFilter? = null,
     val details: Boolean = false,
     val mismatchDismissed: Boolean = false,
+    // A colleague's calendar (CAL-10); null for the signed-in doctor's own.
+    val scope: CalendarScope? = null,
 ) {
     val today: LocalDate get() = clock.today()
 
-    /** The selected day's rows, unfiltered (null until read). */
-    val day: List<CalendarEntry>? get() = cache.days[DayKey(selected)]
+    private fun key(date: LocalDate) = DayKey(date, scope?.doctorId)
 
-    val rows: List<CalendarEntry> get() = day.orEmpty().filter(filter::shows)
+    /** The selected day's rows, unfiltered (null until read). */
+    val day: List<CalendarEntry>? get() = cache.days[key(selected)]
+
+    // A colleague's blocks always show (flow 04/14: the filter has two options there).
+    val rows: List<CalendarEntry>
+        get() = day.orEmpty().filter { (scope != null && it is CalendarEntry.Blocked) || filter.shows(it) }
 
     /** Flow 04/03: phone and practice offsets differ now, and the doctor hasn't dismissed it this session. */
     val showMismatch: Boolean get() = !mismatchDismissed && !clock.zoneMissing && clock.deviceDiffers()
 
     fun occupancy(date: LocalDate): DayOccupancy? =
-        cache.days[DayKey(date)]?.let { entries ->
+        cache.days[key(date)]?.let { entries ->
             DayOccupancy.of(entries) { clock.local(it).time == LocalTime(0, 0) }
         }
 }
@@ -182,11 +212,26 @@ data class CalendarUiState(
 class CalendarViewModel(
     private val calendar: CalendarRepository = calendarRepository,
     private val profile: ProfileRepository = profileRepository,
+    // A colleague's calendar in the clinic's zone (CAL-10 / CLINIC-09); null for the doctor's own.
+    private val scope: CalendarScope? = null,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(CalendarUiState(clock = clockOf(profile)))
+    private val _state =
+        MutableStateFlow(
+            CalendarUiState(clock = scope?.let { PracticeClock(it.zone) } ?: clockOf(profile), scope = scope),
+        )
     val state: StateFlow<CalendarUiState> = _state.asStateFlow()
 
     init {
+        if (scope != null) {
+            // The clinic's zone is fixed; only the cache is followed (the practice zone is the doctor's own).
+            viewModelScope.launch { calendar.state.collect { cache -> _state.update { it.copy(cache = cache) } } }
+        } else {
+            followOwn()
+        }
+        load()
+    }
+
+    private fun followOwn() {
         viewModelScope.launch {
             // The cache and the practice zone (the profile may change it while the calendar is open).
             combine(calendar.state, profile.me) { cache, me -> cache to me?.profile?.timeZone }.collect {
@@ -215,7 +260,6 @@ class CalendarViewModel(
                 load()
             }
         }
-        load()
     }
 
     fun select(date: LocalDate) {
@@ -236,7 +280,7 @@ class CalendarViewModel(
         val date = _state.value.selected
         _state.update { it.copy(loading = it.day == null, error = null) }
         viewModelScope.launch {
-            val result = calendar.day(DayKey(date), force)
+            val result = calendar.day(DayKey(date, scope?.doctorId), force)
             _state.update { s ->
                 if (s.selected != date) {
                     s
@@ -256,7 +300,7 @@ class CalendarViewModel(
 
     private fun prefetch() {
         val month = _state.value.month
-        viewModelScope.launch { calendar.month(monthCells(month).filterNotNull()) }
+        viewModelScope.launch { calendar.month(monthCells(month).filterNotNull(), scope?.doctorId) }
     }
 
     private companion object {
@@ -307,6 +351,8 @@ class CalendarActions(
     val open: (CalendarEntry) -> Unit = {},
     // Block time over the selected day (CAL-8).
     val block: () -> Unit = {},
+    // A pushed calendar (a colleague's) has a back button; the tab's own has none.
+    val back: (() -> Unit)? = null,
     val ui: ((CalendarUiState) -> CalendarUiState) -> Unit = {},
 )
 
@@ -332,12 +378,19 @@ fun CalendarContent(
     ) {
         if (state.showMismatch) MismatchBanner(state.clock) { actions.ui { it.copy(mismatchDismissed = true) } }
         Header(state, actions)
+        if (state.scope != null) {
+            Text(
+                tr(Res.string.clinicSchedulePreviewHint),
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Secondary,
+            )
+        }
         MonthPicker(state.month, state.selected, state.today, state::occupancy, actions.select, actions.month)
         codeBanner(state.error) { actions.ui { it.copy(error = null) } }?.invoke()
         state.error?.let { ShifaLink(tr(Res.string.retry), actions.retry) }
         Agenda(state, actions)
     }
-    state.filterDraft?.let { FilterSheet(it, actions) }
+    state.filterDraft?.let { FilterSheet(it, colleague = state.scope != null, actions) }
 }
 
 @Composable
@@ -345,16 +398,36 @@ private fun Header(
     state: CalendarUiState,
     actions: CalendarActions,
 ) = Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    actions.back?.let {
+        ShifaActionButton(
+            it,
+            icon = Res.drawable.ic_arrow_l_16,
+            contentDescription = tr(Res.string.back),
+            variant = ShifaActionVariant.Secondary,
+        )
+        Spacer(Modifier.width(ShifaSpacing.Gap.Md))
+    }
     Column(Modifier.weight(1f)) {
-        Text(tr(Res.string.calendar), style = ShifaTextStyles.trayTitle(), color = ShifaColors.Text.Primary)
+        // A colleague's calendar is titled with the doctor's name (the board's calDoctor).
+        Text(
+            state.scope?.let { it.name ?: tr(Res.string.clinicMemberFallback, it.doctorId.toString()) }
+                ?: tr(Res.string.calendar),
+            style = ShifaTextStyles.trayTitle(),
+            color = ShifaColors.Text.Primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
         Text(longDate(state.selected), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
     }
-    ShifaIconButton(
-        Res.drawable.ic_block_22,
-        tr(Res.string.blockTime),
-        actions.block,
-        variant = ShifaIconButtonVariant.Ghost,
-    )
+    // Blocks are created on one's own calendar only (flow 04/14 §3 B).
+    if (state.scope == null) {
+        ShifaIconButton(
+            Res.drawable.ic_block_22,
+            tr(Res.string.blockTime),
+            actions.block,
+            variant = ShifaIconButtonVariant.Ghost,
+        )
+    }
     ShifaIconButton(
         Res.drawable.ic_refresh_22,
         tr(Res.string.refresh),
@@ -592,6 +665,8 @@ private fun Chips(
 @Composable
 private fun FilterSheet(
     draft: AgendaFilter,
+    // A colleague's blocks always show: no third option (flow 04/14 §3 B).
+    colleague: Boolean,
     actions: CalendarActions,
 ) = ProfileSheet({ actions.ui { it.copy(filterDraft = null) } }) {
     ShifaTray(tr(Res.string.filter), { actions.ui { it.copy(filterDraft = null) } }) {
@@ -601,11 +676,13 @@ private fun FilterSheet(
             edit { it.copy(appointments = !it.appointments) }
         })
         ShifaCheckboxRow(tr(Res.string.freeSlots), ToggleableState(draft.free), { edit { it.copy(free = !it.free) } })
-        ShifaCheckboxRow(
-            tr(Res.string.blocked),
-            ToggleableState(draft.blocked),
-            { edit { it.copy(blocked = !it.blocked) } },
-        )
+        if (!colleague) {
+            ShifaCheckboxRow(
+                tr(Res.string.blocked),
+                ToggleableState(draft.blocked),
+                { edit { it.copy(blocked = !it.blocked) } },
+            )
+        }
         ShifaPrimaryButton(
             tr(Res.string.apply),
             { actions.ui { s -> s.copy(filter = s.filterDraft ?: s.filter, filterDraft = null) } },

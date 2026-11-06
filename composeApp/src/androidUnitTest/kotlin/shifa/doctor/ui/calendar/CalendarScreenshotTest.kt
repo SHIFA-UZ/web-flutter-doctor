@@ -19,6 +19,9 @@ class CalendarScreenshotTest {
     fun day() = captureRoboImage("screenshots/Calendar_day.png") { CalendarDayPreview() }
 
     @Test
+    fun colleague() = captureRoboImage("screenshots/Calendar_colleague.png") { ClinicDoctorSchedulePreview() }
+
+    @Test
     @Config(qualifiers = "w402dp-h1500dp-xhdpi")
     fun details() = captureRoboImage("screenshots/Calendar_details.png") { CalendarDetailsPreview() }
 

@@ -108,6 +108,7 @@ import shifa.doctor.ui.chat.ChatListScreen
 import shifa.doctor.ui.chat.PatientChatScreen
 import shifa.doctor.ui.chat.ThreadScreen
 import shifa.doctor.ui.clinic.ClinicActions
+import shifa.doctor.ui.clinic.ClinicDoctorScheduleScreen
 import shifa.doctor.ui.clinic.ClinicSectionContent
 import shifa.doctor.ui.clinic.ClinicWorkspaceScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
@@ -599,7 +600,14 @@ private fun RouteContent(
                     )
                 },
             )
-        is ShellRoute.Block -> BlockPanelScreen(route.entry, route.opened, onClose = actions.back)
+        is ShellRoute.Block ->
+            BlockPanelScreen(
+                route.entry,
+                route.opened,
+                onClose = actions.back,
+                scope = route.scope,
+            )
+        is ShellRoute.DoctorSchedule -> ClinicDoctorScheduleScreen(route.scope, actions)
         is ShellRoute.Booking ->
             BookingScreen(
                 route.slot,
@@ -607,6 +615,7 @@ private fun RouteContent(
                 onClose = actions.back,
                 patient = route.patient,
                 video = route.video,
+                scope = route.scope,
             )
         is ShellRoute.Appointment ->
             AppointmentPanelScreen(
@@ -616,7 +625,15 @@ private fun RouteContent(
                 onStart = {
                     actions.push(ShellRoute.Visit(it.appointmentId, it.kind, currentInstant().toEpochMilliseconds()))
                 },
-                onOpenDocument = { patientId, d -> actions.push(ShellRoute.Document(patientId, d.id, d.title)) },
+                onOpenDocument = {
+                        patientId,
+                        d,
+                    ->
+                    actions.push(ShellRoute.Document(patientId, d.id, d.title))
+                },
+                scope = route.scope,
+                // A colleague's patient opens in the clinic's scope (CLINIC-09); Back returns to the panel.
+                onOpenPatient = { actions.push(ShellRoute.Patient(it, route.scope?.clinicId)) },
             )
         // The visit workspace (APPT-04); a video visit starts on its pre-join page with its call (VIDEO-02).
         is ShellRoute.Visit ->

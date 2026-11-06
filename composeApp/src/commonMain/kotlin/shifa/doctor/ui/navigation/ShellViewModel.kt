@@ -136,6 +136,8 @@ sealed interface ShellRoute {
     data class Appointment(
         val appointment: CalendarEntry.Appointment,
         val opened: Long,
+        // A colleague's appointment from the clinic doctor schedule (CAL-10 / CLINIC-09).
+        val scope: shifa.doctor.ui.calendar.CalendarScope? = null,
     ) : ShellRoute
 
     /**
@@ -152,6 +154,12 @@ sealed interface ShellRoute {
     data class Block(
         val entry: CalendarEntry.Blocked,
         val opened: Long,
+        val scope: shifa.doctor.ui.calendar.CalendarScope? = null,
+    ) : ShellRoute
+
+    /** A colleague's calendar from the clinic workspace (CAL-10 / CLINIC-09, flow 04/14 B); back returns there. */
+    data class DoctorSchedule(
+        val scope: shifa.doctor.ui.calendar.CalendarScope,
     ) : ShellRoute
 
     /** Calendar → book a free slot (CAL-7); [opened] as for [Appointment]. From a patient's record, [patient] is set. */
@@ -161,6 +169,7 @@ sealed interface ShellRoute {
         val patient: shifa.doctor.data.model.PatientOption? = null,
         // Home's Video Call chip (HOME-03): the booking starts as a video call.
         val video: Boolean = false,
+        val scope: shifa.doctor.ui.calendar.CalendarScope? = null,
     ) : ShellRoute
 
     /** A patient's 025-2 form, new ([formId] null) or existing (FORM-04); [opened] as for [Appointment]. */

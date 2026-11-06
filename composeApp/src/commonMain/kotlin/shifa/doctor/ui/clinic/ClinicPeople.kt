@@ -379,7 +379,7 @@ private fun ClinicPeopleViewModel.actions() =
     )
 
 @Composable
-private fun rememberPeople(clinic: MyClinic): ClinicPeopleViewModel =
+internal fun rememberPeople(clinic: MyClinic): ClinicPeopleViewModel =
     viewModel(key = "clinic-people-${clinic.clinicId}") { ClinicPeopleViewModel(clinic.clinicId) }
 
 /**

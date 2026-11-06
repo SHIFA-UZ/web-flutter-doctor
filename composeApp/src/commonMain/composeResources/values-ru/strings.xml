@@ -409,6 +409,7 @@
     <string name="clinicActionSuccess">Готово</string>
     <string name="clinicAddress">Адрес клиники</string>
     <string name="clinicAnalyticsAndExports">Аналитика клиники и экспорт</string>
+    <string name="clinicCalendarIntro">Записывайте пациентов и управляйте приёмами каждого врача. Время указано в %1$s.</string>
     <string name="clinicCalendarMvpHint">«Моё расписание» — основная вкладка «Календарь» (ваши записи). Коллега — отдельное окно записи в часовом поясе клиники.</string>
     <string name="clinicChangeStatus">Изменить статус</string>
     <string name="clinicDefaultShareClear">Сбросить значение</string>
@@ -596,6 +597,7 @@
     <string name="clinicMode">Режим клиники</string>
     <string name="clinicNavClinic">Клиника</string>
     <string name="clinicOpenCalendarTab">Мой календарь</string>
+    <string name="clinicOpenSchedule">Открыть расписание</string>
     <string name="clinicOrWorkplaceName">Название клиники / рабочего места</string>
     <string name="clinicPatientNumber">Пациент #%1$s</string>
     <string name="clinicPatientsColActions">Действия</string>

@@ -547,6 +547,8 @@ class BlockPanelViewModel(
     clock: PracticeClock,
     private val calendar: CalendarRepository = calendarRepository,
     private val blocks: BlocksRepository = blocksRepository,
+    // A colleague's block (CAL-10): removed and refreshed in their calendar.
+    private val doctorId: Long? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BlockPanelUiState(entry, clock))
     val state: StateFlow<BlockPanelUiState> = _state.asStateFlow()
@@ -559,7 +561,7 @@ class BlockPanelViewModel(
         if (s.busy) return
         _state.update { it.copy(busy = true, banner = null) }
         viewModelScope.launch {
-            val result = blocks.remove(id)
+            val result = blocks.remove(id, doctorId)
             // Every cached day showing a slice of this block, and the tapped one, read again.
             val cache = calendar.state.value
             val showing = cache.days.filterValues { day -> day.any { it is CalendarEntry.Blocked && it.blockId == id } }
@@ -569,7 +571,7 @@ class BlockPanelViewModel(
                     s.clock.local(
                         s.entry.start,
                     ).date
-            calendar.changed(s.clock, *days.distinct().toTypedArray())
+            calendar.changed(s.clock, *days.distinct().toTypedArray(), doctorId = doctorId)
             result.fold(
                 onSuccess = {
                     ShellNotice.pending.value = Notice(Res.string.unblockSuccess, true)
@@ -594,10 +596,16 @@ fun BlockPanelScreen(
     entry: CalendarEntry.Blocked,
     opened: Long,
     onClose: () -> Unit,
+    // A colleague's block from the clinic doctor schedule (CAL-10): their calendar, the clinic's zone.
+    scope: CalendarScope? = null,
 ) {
     val viewModel =
         viewModel(key = "blocked-${entry.blockId}-${entry.start}-$opened") {
-            BlockPanelViewModel(entry, PracticeClock(profileRepository.me.value?.profile?.timeZone))
+            BlockPanelViewModel(
+                entry,
+                scope?.let { PracticeClock(it.zone) } ?: PracticeClock(profileRepository.me.value?.profile?.timeZone),
+                doctorId = scope?.doctorId,
+            )
         }
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.done) { if (state.done) onClose() }

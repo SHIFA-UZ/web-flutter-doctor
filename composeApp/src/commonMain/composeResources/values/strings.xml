@@ -409,6 +409,7 @@
     <string name="clinicActionSuccess">Done</string>
     <string name="clinicAddress">Clinic Address</string>
     <string name="clinicAnalyticsAndExports">Clinic analytics and exports</string>
+    <string name="clinicCalendarIntro">Book and manage each doctor's appointments. Times are in %1$s.</string>
     <string name="clinicCalendarMvpHint">Use My schedule for your own calendar (main Calendar tab). Tap a colleague to open their schedule and book in the clinic timezone.</string>
     <string name="clinicChangeStatus">Change status</string>
     <string name="clinicDefaultShareClear">Clear default</string>
@@ -596,6 +597,7 @@
     <string name="clinicMode">Clinic mode</string>
     <string name="clinicNavClinic">Clinic</string>
     <string name="clinicOpenCalendarTab">My calendar</string>
+    <string name="clinicOpenSchedule">Open schedule</string>
     <string name="clinicOrWorkplaceName">Clinic / Workplace Name</string>
     <string name="clinicPatientNumber">Patient #%1$s</string>
     <string name="clinicPatientsColActions">Actions</string>

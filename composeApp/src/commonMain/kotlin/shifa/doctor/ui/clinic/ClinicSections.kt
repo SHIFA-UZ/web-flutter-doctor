@@ -22,7 +22,16 @@ internal fun ColumnScope.ClinicSectionContent(
     actions: ShellActions,
 ) {
     when (section) {
-        ClinicSection.Doctors -> DoctorsSection(clinic)
+        ClinicSection.Doctors ->
+            DoctorsSection(clinic, onSchedule = {
+                    m ->
+                clinic.scheduleOf(m)?.let { actions.push(ShellRoute.DoctorSchedule(it)) }
+            })
+        ClinicSection.Calendar ->
+            ClinicCalendarSection(clinic, onOpen = {
+                    m ->
+                clinic.scheduleOf(m)?.let { actions.push(ShellRoute.DoctorSchedule(it)) }
+            })
         ClinicSection.Invitations -> InvitationsSection(clinic)
         ClinicSection.Services -> ServicesSection(clinic)
         ClinicSection.Patients ->

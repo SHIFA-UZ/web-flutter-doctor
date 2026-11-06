@@ -2743,5 +2743,7 @@
   "clinicServicePriceInCurrency": "Цена ({{currency}})",
   "clinicServiceOptions": "Действия с услугой",
   "clinicServiceDoctorsLoadFailed": "Не удалось загрузить врачей клиники.",
-  "clinicServicePriceZero": "Цена 0: бесплатная услуга"
+  "clinicServicePriceZero": "Цена 0: бесплатная услуга",
+  "clinicCalendarIntro": "Записывайте пациентов и управляйте приёмами каждого врача. Время указано в {{zone}}.",
+  "clinicOpenSchedule": "Открыть расписание"
 }

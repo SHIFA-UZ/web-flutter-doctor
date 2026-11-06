@@ -156,8 +156,8 @@ for its buttons), not a sheet.
   times on success, so after a move it watches the new day.
 - **Not built:** the date strip above the month (the month alone covers it), grouping slots by location (the
   location is on the chip instead), a same-day move that overlaps the visit's own time (its slot isn't free), the main
-  button's targets (start / continue / summary are the visit flows, M5), the patient link,
-  the colleague's calendar (CAL-10).
+      button's targets (start / continue / summary are the visit flows, M5). The colleague's calendar and the patient link
+  came with CAL-10 / CLINIC-09 (clinic.md): the same panels with a `CalendarScope`.
 - **Demo:** the three calls answer OK without changing the generated days, so after a move the panel shows the old
   time again once the day is re-read (the demo calendar is stateless).
 - **Verified on dev (2026-11-04, with CAL-7):** a booked hour moved from 10:00 to 14:00 (the backend kept 60

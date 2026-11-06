@@ -155,13 +155,17 @@ data class PanelUiState(
     val now: Instant = clock.nowInstant(),
     // The calendar's cached days, for the reschedule month's shading.
     val days: Map<DayKey, List<CalendarEntry>> = emptyMap(),
+    // A colleague's appointment (CAL-10): their days; the visit is theirs to start, so no main button.
+    val doctorId: Long? = null,
 ) {
     val current: Int get() = (appointment.end - appointment.start).inWholeMinutes.toInt()
     val changeable: Boolean get() = appointment.changeable(now)
-    val cta: Cta? get() = ctaFor(appointment, clock, now)
+    val cta: Cta? get() = if (doctorId != null) null else ctaFor(appointment, clock, now)
+
+    fun key(date: LocalDate) = DayKey(date, doctorId)
 
     fun occupancy(date: LocalDate): DayOccupancy? =
-        days[DayKey(date)]?.let { entries -> DayOccupancy.of(entries) { clock.local(it).time == LocalTime(0, 0) } }
+        days[key(date)]?.let { entries -> DayOccupancy.of(entries) { clock.local(it).time == LocalTime(0, 0) } }
 }
 
 /**
@@ -175,8 +179,10 @@ class AppointmentPanelViewModel(
     clock: PracticeClock,
     private val calendar: CalendarRepository = calendarRepository,
     private val appointments: AppointmentsRepository = appointmentsRepository,
+    // A colleague's appointment from the clinic doctor schedule (CAL-10).
+    private val doctorId: Long? = null,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(PanelUiState(appointment, clock))
+    private val _state = MutableStateFlow(PanelUiState(appointment, clock, doctorId = doctorId))
     val state: StateFlow<PanelUiState> = _state.asStateFlow()
 
     // The appointment's practice date now (a move changes it).
@@ -198,7 +204,11 @@ class AppointmentPanelViewModel(
     private fun onCache(cache: CalendarCache) =
         _state.update { s ->
             val day =
-                cache.days[DayKey(s.clock.local(s.appointment.start).date)] ?: return@update s.copy(days = cache.days)
+                cache.days[
+                    s.key(
+                        s.clock.local(s.appointment.start).date,
+                    ),
+                ] ?: return@update s.copy(days = cache.days)
             val live =
                 day.filterIsInstance<CalendarEntry.Appointment>().firstOrNull {
                     it.appointmentId == s.appointment.appointmentId
@@ -257,7 +267,7 @@ class AppointmentPanelViewModel(
             it.copy(rescheduleDate = day, rescheduleSlots = null, rescheduleError = null, target = null)
         }
         viewModelScope.launch {
-            val result = calendar.day(DayKey(day))
+            val result = calendar.day(DayKey(day, doctorId))
             _state.update { s ->
                 if (s.rescheduleDate != day) return@update s
                 result.fold(
@@ -283,7 +293,7 @@ class AppointmentPanelViewModel(
     fun rescheduleMonth(delta: Int) {
         val month = _state.value.rescheduleMonth.plus(DatePeriod(months = delta))
         _state.update { it.copy(rescheduleMonth = month) }
-        viewModelScope.launch { calendar.month(monthCells(month).filterNotNull()) }
+        viewModelScope.launch { calendar.month(monthCells(month).filterNotNull(), doctorId) }
     }
 
     /** Moves to the chosen free slot keeping the length (the backend checks the slots after it). */
@@ -312,13 +322,13 @@ class AppointmentPanelViewModel(
         viewModelScope.launch {
             appointments.cancel(s.appointment.appointmentId).fold(
                 onSuccess = {
-                    calendar.changed(s.clock, date)
+                    calendar.changed(s.clock, date, doctorId = doctorId)
                     ShellNotice.pending.value = Notice(Res.string.appointmentCancelled, success = true)
                     _state.update { it.copy(busy = false, askCancel = false, closed = true) }
                 },
                 onFailure = { e ->
                     // It may have gone through with the answer lost: the day read again shows it (04/08 §3).
-                    calendar.changed(s.clock, date)
+                    calendar.changed(s.clock, date, doctorId = doctorId)
                     _state.update {
                         it.copy(
                             busy = false,
@@ -349,7 +359,13 @@ class AppointmentPanelViewModel(
             // The new times first, so the refreshed day below finds the appointment where it is now.
             if (result.isSuccess) _state.update(after)
             // A conflict (409 / 400) means the calendar moved under us: reading the days shows why.
-            if (refresh || result.isFailure) calendar.changed(_state.value.clock, *days.toTypedArray())
+            if (refresh || result.isFailure) {
+                calendar.changed(
+                    _state.value.clock,
+                    *days.toTypedArray(),
+                    doctorId = doctorId,
+                )
+            }
             // A move is done with the panel: back to the calendar with the notice (04/07 §5).
             if (close && result.isSuccess) {
                 ShellNotice.pending.value = Notice(done, success = true)
@@ -380,9 +396,17 @@ fun AppointmentPanelScreen(
     onStart: (CalendarEntry.Appointment) -> Unit = {},
     // An attached document from the briefing: the patient, the document.
     onOpenDocument: (Long, PatientDocument) -> Unit = { _, _ -> },
+    // A colleague's appointment from the clinic doctor schedule (CAL-10): their calendar, the clinic's zone.
+    scope: CalendarScope? = null,
+    // The patient's record (Back returns here).
+    onOpenPatient: ((Long) -> Unit)? = null,
     viewModel: AppointmentPanelViewModel =
         viewModel(key = "appointment-${appointment.appointmentId}-$opened") {
-            AppointmentPanelViewModel(appointment, PracticeClock(profileRepository.me.value?.profile?.timeZone))
+            AppointmentPanelViewModel(
+                appointment,
+                scope?.let { PracticeClock(it.zone) } ?: PracticeClock(profileRepository.me.value?.profile?.timeZone),
+                doctorId = scope?.doctorId,
+            )
         },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -406,6 +430,7 @@ fun AppointmentPanelScreen(
             move = viewModel::move,
             cancel = viewModel::cancel,
             durations = { viewModel.durations },
+            patient = onOpenPatient,
         ),
     )
     if (briefingOpen) {
@@ -437,6 +462,8 @@ class PanelActions(
     // The visit briefing sheet (APPT-06).
     val briefing: () -> Unit = {},
     val durations: () -> List<Int> = { emptyList() },
+    // The patient's record (the name is a link when set and the patient is known).
+    val patient: ((Long) -> Unit)? = null,
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -465,11 +492,14 @@ fun AppointmentPanel(
                     ) {
                         ShifaAvatar(a.photoUrl, ShifaSize.S48)
                         Column(Modifier.weight(1f)) {
-                            Text(
-                                a.patientName?.takeIf { it.isNotBlank() } ?: tr(Res.string.unknownPatient),
-                                style = ShifaTextStyles.panelTitle(),
-                                color = ShifaColors.Text.Primary,
-                            )
+                            val name = a.patientName?.takeIf { it.isNotBlank() } ?: tr(Res.string.unknownPatient)
+                            val open = actions.patient
+                            val id = a.patientId
+                            if (open != null && id != null) {
+                                ShifaLink(name, { open(id) })
+                            } else {
+                                Text(name, style = ShifaTextStyles.panelTitle(), color = ShifaColors.Text.Primary)
+                            }
                             Text(
                                 "${longDate(start.date)} · ${displayTime(start.time)} – ${displayTime(end.time)}",
                                 style = ShifaTextStyles.metaSmall(),

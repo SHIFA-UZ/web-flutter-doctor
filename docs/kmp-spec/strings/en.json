@@ -2743,5 +2743,7 @@
   "clinicServicePriceInCurrency": "Price ({{currency}})",
   "clinicServiceOptions": "Service options",
   "clinicServiceDoctorsLoadFailed": "Couldn't load the clinic's doctors.",
-  "clinicServicePriceZero": "Price is 0: a free service"
+  "clinicServicePriceZero": "Price is 0: a free service",
+  "clinicCalendarIntro": "Book and manage each doctor's appointments. Times are in {{zone}}.",
+  "clinicOpenSchedule": "Open schedule"
 }

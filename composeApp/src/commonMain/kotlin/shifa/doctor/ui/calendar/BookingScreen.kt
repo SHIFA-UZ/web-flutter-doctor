@@ -211,6 +211,8 @@ class BookingViewModel(
     patient: PatientOption? = null,
     // Home's Video Call chip (HOME-03): starts as a video call, still changeable.
     video: Boolean = false,
+    // Booking on a colleague's behalf (CAL-10): their day, `resourceDoctorId`, the clinic as the venue.
+    private val scope: CalendarScope? = null,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(
@@ -243,7 +245,7 @@ class BookingViewModel(
 
     private fun onCache(cache: CalendarCache) =
         _state.update { s ->
-            val day = cache.days[DayKey(s.date)] ?: return@update s
+            val day = cache.days[DayKey(s.date, scope?.doctorId)] ?: return@update s
             // The day changed under the form: keep the end only while the chain still reaches it (after a save).
             s.copy(day = day).let { if (it.saving) it else it.reconciled() }
         }
@@ -331,13 +333,14 @@ class BookingViewModel(
                 isVideo = s.video,
                 reason = s.reason.trim().ifEmpty { s.defaultReason },
                 // Only for older backends; this one labels video and known locations itself (BookingDtos).
-                location = if (s.video) VIDEO_LOCATION else s.start.locationLabel ?: CLINIC_LOCATION,
+                location = if (s.video) VIDEO_LOCATION else s.start.locationLabel ?: scope?.venue ?: CLINIC_LOCATION,
                 locationId = s.start.locationId.takeUnless { s.video },
+                resourceDoctorId = scope?.doctorId,
             )
         viewModelScope.launch {
             val result = appointments.book(request)
             // Taken or not, the day is read again: a conflict shows why, a lost answer may hide a booking.
-            calendar.changed(s.clock, s.date)
+            calendar.changed(s.clock, s.date, doctorId = scope?.doctorId)
             result.fold(
                 onSuccess = {
                     ShellNotice.pending.value = Notice(Res.string.patientAssignedName, true, listOf(name(patient)))
@@ -382,16 +385,19 @@ fun BookingScreen(
     onClose: () -> Unit,
     patient: PatientOption? = null,
     video: Boolean = false,
+    // A colleague's free slot from the clinic doctor schedule (CAL-10).
+    scope: CalendarScope? = null,
 ) {
     val defaultReason = tr(Res.string.defaultVisitReason)
     val viewModel =
-        viewModel(key = "booking-${slot.start}-${slot.locationId}-$opened") {
+        viewModel(key = "booking-${slot.start}-${slot.locationId}-${scope?.doctorId}-$opened") {
             BookingViewModel(
                 slot,
-                PracticeClock(profileRepository.me.value?.profile?.timeZone),
+                scope?.let { PracticeClock(it.zone) } ?: PracticeClock(profileRepository.me.value?.profile?.timeZone),
                 defaultReason,
                 patient = patient,
                 video = video,
+                scope = scope,
             )
         }
     val state by viewModel.state.collectAsStateWithLifecycle()

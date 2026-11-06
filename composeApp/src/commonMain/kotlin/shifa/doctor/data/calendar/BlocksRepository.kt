@@ -61,11 +61,13 @@ class BlocksRepository(
             }
         }.map { it.cancelledAppointmentCount ?: 0 }
 
-    suspend fun remove(id: Long): Result<Unit> =
+    /** `DELETE /schedule/blocks/{id}[?doctorId=]`: a colleague's block names the doctor (CAL-10). */
+    suspend fun remove(
+        id: Long,
+        doctorId: Long? = null,
+    ): Result<Unit> =
         apiCall<Unit> {
-            client().delete(
-                ApiConfig.Endpoints.scheduleBlock(id),
-            )
+            client().delete(ApiConfig.Endpoints.scheduleBlock(id)) { doctorId?.let { parameter("doctorId", it) } }
         }
 }
 

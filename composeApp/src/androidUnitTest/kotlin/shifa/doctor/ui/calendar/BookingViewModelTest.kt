@@ -116,9 +116,10 @@ class BookingViewModelTest {
     private fun opened(
         date: LocalDate = LocalDate(2026, 11, 6),
         wait: Boolean = true,
+        scope: CalendarScope? = null,
     ): BookingViewModel {
         val slot =
-            runBlocking { calendar.day(DayKey(date)).getOrThrow() }
+            runBlocking { calendar.day(DayKey(date, scope?.doctorId)).getOrThrow() }
                 .filterIsInstance<CalendarEntry.FreeSlot>().first { it.locationId == 1L }
         read.clear()
         val vm =
@@ -129,6 +130,7 @@ class BookingViewModelTest {
                 calendar,
                 AppointmentsRepository { createHttpClient({ null }, engine) },
                 PatientsRepository(client = { createHttpClient({ null }, engine) }),
+                scope = scope,
             )
         screen.launch { vm.follow() }
         created += vm
@@ -152,6 +154,22 @@ class BookingViewModelTest {
         assertThat(ShellNotice.pending.value?.text).isEqualTo(Res.string.patientAssignedName)
         assertThat(ShellNotice.pending.value?.args).containsExactly("Anna Karimova")
         assertThat(read).contains("2026-11-06")
+    }
+
+    @Test
+    fun `booking on a colleague's behalf names the doctor and follows their day, not the doctor's own`() {
+        // The doctor's own day is cached and fresh; the colleague's booking must leave it so.
+        runBlocking { calendar.day(DayKey(LocalDate(2026, 11, 6))) }
+        val classToTest = opened(scope = CalendarScope(22, "Bobur Aliyev", "Asia/Tashkent", "Amir Temur 1"))
+        assertThat(classToTest.state.value.day).isNotNull()
+        classToTest.pickPatient(classToTest.state.value.patients!!.first())
+        classToTest.book()
+        settle { classToTest.state.value.closed }
+        assertThat(posted.single()).contains("\"resourceDoctorId\":22")
+        // The colleague's day was read again; the doctor's own is still fresh (no read when shown again).
+        read.clear()
+        runBlocking { calendar.day(DayKey(LocalDate(2026, 11, 6))) }
+        assertThat(read).isEmpty()
     }
 
     @Test

@@ -335,7 +335,15 @@ class DemoBackend(
             }
             get && path == Endpoints.SERVICE_GROUPS -> ok(JsonArray(groups))
             // Plans like dev's; the hosted pages are placeholders (nothing reaches Stripe in demo mode).
-            get && path == Endpoints.CALENDAR -> ok(demoCalendar(request.url.parameters["day"]))
+            // A colleague (CAL-10: the demo clinic's Bobur, 22) has a day of their own; anyone else reads the demo doctor's.
+            get && path == Endpoints.CALENDAR ->
+                ok(
+                    if (request.url.parameters["doctorId"] == "22") {
+                        demoColleagueCalendar(request.url.parameters["day"])
+                    } else {
+                        demoCalendar(request.url.parameters["day"])
+                    },
+                )
             // ANALYTICS-01: today's counts and the trend from the demo calendar; types, engagement and SMS fixed.
             get && path == Endpoints.ANALYTICS_OVERVIEW -> ok(demoAnalyticsOverview())
             get && path == Endpoints.ANALYTICS_TREND -> ok(demoTrend(request.url.parameters["days"]?.toIntOrNull()))
@@ -1651,6 +1659,46 @@ internal fun demoCalendar(day: String?): JsonArray {
                     )
                 else -> row(m, m + 30, "type" to "FREE_SLOT")
             }
+        }
+    return JsonArray(rows)
+}
+
+/** The demo clinic's colleague (Bobur, 22): 10:00–14:00, one visit at 11:00 and a meeting block at 12:00. */
+internal fun demoColleagueCalendar(day: String?): JsonArray {
+    val date = runCatching { kotlinx.datetime.LocalDate.parse(day ?: "") }.getOrNull() ?: return JsonArray(emptyList())
+    val zone = kotlinx.datetime.TimeZone.of("Asia/Tashkent")
+
+    fun at(minutes: Int) =
+        kotlinx.datetime.LocalDateTime(
+            date,
+            kotlinx.datetime.LocalTime(minutes / 60, minutes % 60),
+        ).toInstant(zone).toString()
+    val rows =
+        (10 * 60 until 14 * 60 step 30).map { m ->
+            val fields =
+                when (m) {
+                    11 * 60 ->
+                        mapOf(
+                            "type" to "APPOINTMENT",
+                            "appointmentId" to 201,
+                            "patientId" to 13,
+                            "patientName" to "Malika Tursunova",
+                            "location" to "Shifa Demo Clinic",
+                            "reason" to "Braces check",
+                            "status" to "CONFIRMED",
+                            "paymentStatus" to "PAID",
+                        )
+                    12 * 60 -> mapOf("type" to "BLOCKED", "blockId" to 2, "blockReason" to "Team meeting")
+                    else -> mapOf("type" to "FREE_SLOT")
+                }
+            JsonObject(
+                mapOf(
+                    "startAt" to JsonPrimitive(at(m)),
+                    "endAt" to JsonPrimitive(at(m + 30)),
+                    "locationId" to JsonPrimitive(1),
+                    "locationLabel" to JsonPrimitive("Shifa Demo Clinic"),
+                ) + fields.mapValues { (_, v) -> if (v is Number) JsonPrimitive(v) else JsonPrimitive(v.toString()) },
+            )
         }
     return JsonArray(rows)
 }
