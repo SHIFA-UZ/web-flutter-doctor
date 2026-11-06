@@ -28,8 +28,10 @@ internal val previewClinics =
     )
 
 @Composable
-private fun Workspace(state: ClinicUiState) =
-    PreviewTheme { ClinicWorkspaceContent(state, false, {}, {}, {}, {}, {}, ClinicActions()) { _, _ -> } }
+private fun Workspace(
+    state: ClinicUiState,
+    section: @Composable androidx.compose.foundation.layout.ColumnScope.(ClinicSection, MyClinic) -> Unit = { _, _ -> },
+) = PreviewTheme { ClinicWorkspaceContent(state, false, {}, {}, {}, {}, {}, ClinicActions(), section) }
 
 // CLINIC-02/04 (board `DaClinic`, flows 09/01, 09/20): the header with two clinics, the Overview, Settings.
 @Composable
@@ -40,3 +42,32 @@ internal fun ClinicSettingsPreview() = Workspace(ClinicUiState(previewClinics, s
 
 @Composable
 internal fun ClinicEmptyPreview() = Workspace(ClinicUiState(ClinicsState(known = true)))
+
+private val previewPeople =
+    ClinicPeopleUiState(
+        members =
+            listOf(
+                shifa.doctor.data.model.ClinicMember(21, 101, "Aziza Karimova", "OWNER", null, 60),
+                shifa.doctor.data.model.ClinicMember(22, 102, "Bobur Aliyev", "DOCTOR", 70, 70),
+                shifa.doctor.data.model.ClinicMember(null, 103, "Dilfuza Yusupova", "RECEPTIONIST"),
+            ),
+        invitations =
+            listOf(
+                shifa.doctor.data.model.ClinicInvitation(5, "anna@clinic.uz", "2999-01-10T13:00:00Z", pending = true),
+                shifa.doctor.data.model.ClinicInvitation(6, "olim@clinic.uz", "2026-10-01T13:00:00Z", consumed = true),
+            ),
+    )
+
+// CLINIC-05 (flow 09/02): the owner's hint and Default share, chips from the roles, shares (a receptionist has none).
+@Composable
+internal fun ClinicDoctorsPreview() =
+    Workspace(ClinicUiState(previewClinics, section = ClinicSection.Doctors)) { _, clinic ->
+        DoctorsContent(clinic, previewPeople, PeopleActions()) {}
+    }
+
+// CLINIC-08 (flow 09/19): Invite receptionist, a pending invitation with Revoke, a used one.
+@Composable
+internal fun ClinicInvitationsPreview() =
+    Workspace(ClinicUiState(previewClinics, section = ClinicSection.Invitations)) { _, clinic ->
+        InvitationsContent(clinic, previewPeople, PeopleActions())
+    }

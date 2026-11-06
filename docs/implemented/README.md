@@ -158,6 +158,8 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CLINIC-02 Clinic workspace shell | Done | Clinic tab → workspace: header with the switcher, the board's section groups, Settings behind the gear. See clinic.md. |
 | CLINIC-03 Clinic list kit | Done (kit reused) | The design system's components cover it; tickets add what they need. See clinic.md. |
 | CLINIC-04 Overview + Settings | Done | Numbers with taps, quick actions, contact rows; read-only settings with the default share. See clinic.md. |
+| CLINIC-05 Doctors + revenue share | Done (schedule button with CLINIC-09) | Members with chips and search, the share in force, one share sheet for a doctor and the clinic default. See clinic.md. |
+| CLINIC-08 Invitations | Done | Invite receptionist, pending / used / expired, revoke with confirmation. See clinic.md. |
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
 | DENTAL-03 + TP-06 Treatment plan in the visit | Done | Plan panel (linked/only plan chosen, progress), plan-mode chart and fulfil sheet, Plan finances with this visit's payment; End applies ticks then records the payment before completing (once each); checklist rows; one plan section in the summary; leaving asks. Demo only (no dev plans). See visits.md. |
 | DENTAL-04 Plan editor + read-only plan chart | Done (hosts in M11) | The visit's dental record UI and draft reused with plan services; plan lines with the discount spread per currency (Flutter's fixture ported); read-only plan chart. Wizard (TP-04) and plan detail (TP-03) host them. See visits.md. |
@@ -326,3 +328,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · AI-08, INTEL-09 · Shifa Intelligence by voice: the voice session, composer and orb panel.
 - 2026-11-06 · CLINIC-01 · Clinic memberships, the remembered clinic and one permission helper.
 - 2026-11-06 · CLINIC-02…04 · The clinic workspace: header, sections, Overview and Settings.
+- 2026-11-06 · CLINIC-05, CLINIC-08 · Clinic people: doctors and their revenue share, receptionist invitations.

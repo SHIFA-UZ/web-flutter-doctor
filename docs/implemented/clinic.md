@@ -54,3 +54,35 @@ Built 2026-11-06. Spec 09 §1.5–1.7, §2, flows 09/01 and 09/20, tickets CLINI
 - **Tests:** `ClinicWorkspaceViewModelTest` (load and numbers, switching re-reads the other clinic, error and
   partial states, the board's groups); screenshots `Clinic_overview`, `Clinic_settings`, `Clinic_empty`,
   `Workspace_workspace_chrome` re-recorded (the role line).
+
+## CLINIC-05 + CLINIC-08 · People: doctors, revenue share, invitations
+
+Built 2026-11-06. Spec 09 §2 (rows 1 and 7), §3.8, flows 09/02, 09/03, 09/19, tickets CLINIC-05 and CLINIC-08. Board
+`DaClinic` Doctors, Invitations and the "share" / "invite" sheets (`ui/clinic/ClinicPeople.kt`, one ViewModel per
+clinic).
+- **Doctors:** who may set shares (`mayManageFinanceSettings`) gets the hint and "Default share"; search (name, role,
+  profile #), role chips built from the roles present, members sorted by name: avatar, name ("Doctor #12" when empty;
+  Flutter showed nothing), role, and the share in force ("60% doctor / 40% clinic" / "Not set") for doctors and owners
+  only — a link when it can be edited. The schedule button comes with CLINIC-09.
+- **Revenue share sheet** (one for a doctor and the clinic default, the board's "share"): the doctor share as a number
+  and the kit slider (the clinic keeps the rest), a whole number 0–100 only (Save disabled otherwise), "Use clinic default" (a
+  doctor) / "Clear default" (the clinic), Save; `PATCH …/members/{doctorProfileId}/revenue-share` or
+  `PATCH …/finance-settings` (a cleared share sends no field; the backend reads it as null). After saving the list
+  reads again; a changed default re-reads the clinics (Settings and every share in force follow). Failures stay in
+  the sheet.
+- **Invitations:** "Invite receptionist", Pending and Used / expired groups (pending and past `expiresAt` counts as
+  expired), "Expires 13.11.2026 06:59" in the clinic's time zone, Revoke after a confirmation
+  (`DELETE …/invitations/{id}`). The invite sheet names the clinic, needs a valid email that isn't already pending,
+  sends it trimmed and lower-cased with role `RECEPTIONIST`. Resend: no endpoint (hidden).
+- **Codex review:** invitations are read with `?status=all` (the default hides used and expired ones); the share
+  field keeps what was typed and saves only a whole number 0–100 (clearing is its own action); a doctor on the
+  default sees its split; read failures show over kept lists; the content takes callbacks (`PeopleActions`).
+- **Demo:** `DemoClinic` keeps the demo clinic's numbers, members with their shares and invitations in memory; the demo
+  doctor owns the clinic so every action can be tried.
+- New strings: invitation sheet and confirmation, groups, share sheet lines and results, members/invitations errors.
+- **Checked:** emulator, demo mode: a doctor's share back to the clinic default ("Now using the clinic default."),
+  the default to 50 % with the slider (the owner without an own share follows, Bobur keeps 70 %), validation (506 →
+  "Enter a whole number from 0 to 100", Save off), an invitation sent and revoked. Dev: members read with curl (3
+  members, shares null). iOS compiled, not run.
+- **Tests:** `ClinicPeopleViewModelTest` (search, chips, sort; share save / clear / default and the failure; invite
+  validation, duplicate, lower-casing, revoke); screenshots `Clinic_doctors`, `Clinic_invitations`.

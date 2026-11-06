@@ -3,7 +3,14 @@ package shifa.doctor.data.clinics
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.set
 import io.ktor.client.HttpClient
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,8 +20,12 @@ import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.rows
+import shifa.doctor.data.model.ClinicInvitation
 import shifa.doctor.data.model.ClinicMember
 import shifa.doctor.data.model.ClinicOverviewStats
+import shifa.doctor.data.model.DefaultShareBody
+import shifa.doctor.data.model.InvitationBody
+import shifa.doctor.data.model.MemberShareBody
 import shifa.doctor.data.model.MyClinic
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.utils.Jwt
@@ -91,6 +102,59 @@ class ClinicsRepository(
     suspend fun members(clinicId: Long): Result<List<ClinicMember>> =
         apiCall<List<JsonElement>> { client().get(ApiConfig.Endpoints.clinicMembers(clinicId)) }
             .map { it.rows(ClinicMember.serializer(), "clinic members") }
+
+    /**
+     * `PATCH /clinics/{id}/members/{doctorProfileId}/revenue-share`: the doctor's own share; null goes back to the
+     * clinic default (the backend reads a missing field as null).
+     */
+    suspend fun updateMemberShare(
+        clinicId: Long,
+        doctorProfileId: Long,
+        percent: Int?,
+    ): Result<Unit> =
+        apiCall<Unit> {
+            client().patch(ApiConfig.Endpoints.clinicMemberShare(clinicId, doctorProfileId)) {
+                contentType(ContentType.Application.Json)
+                setBody(MemberShareBody(percent))
+            }
+        }
+
+    /** `PATCH /clinics/{id}/finance-settings`: the clinic's default doctor share; null clears it. */
+    suspend fun updateDefaultShare(
+        clinicId: Long,
+        percent: Int?,
+    ): Result<Unit> =
+        apiCall<Unit> {
+            client().patch(ApiConfig.Endpoints.clinicFinanceSettings(clinicId)) {
+                contentType(ContentType.Application.Json)
+                setBody(DefaultShareBody(percent))
+            }
+        }
+
+    /** `GET /clinics/{id}/invitations?status=all`: every receptionist invitation (the default lists only live ones). */
+    suspend fun invitations(clinicId: Long): Result<List<ClinicInvitation>> =
+        apiCall<List<JsonElement>> {
+            client().get(ApiConfig.Endpoints.clinicInvitations(clinicId)) { parameter("status", "all") }
+        }
+            .map { it.rows(ClinicInvitation.serializer(), "clinic invitations") }
+
+    /** `POST /clinics/{id}/invitations {email, role: RECEPTIONIST}` (the email trimmed and lower-cased). */
+    suspend fun invite(
+        clinicId: Long,
+        email: String,
+    ): Result<Unit> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.clinicInvitations(clinicId)) {
+                contentType(ContentType.Application.Json)
+                setBody(InvitationBody(email.trim().lowercase()))
+            }
+        }
+
+    /** `DELETE /clinics/{id}/invitations/{invitationId}`. */
+    suspend fun revokeInvitation(
+        clinicId: Long,
+        invitationId: Long,
+    ): Result<Unit> = apiCall<Unit> { client().delete(ApiConfig.Endpoints.clinicInvitation(clinicId, invitationId)) }
 
     private fun key(user: String) = "clinic_workspace_selected_id:$user"
 }

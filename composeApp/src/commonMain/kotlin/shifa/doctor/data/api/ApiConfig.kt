@@ -109,6 +109,20 @@ object ApiConfig {
 
         fun clinicMembers(clinicId: Long) = "clinics/$clinicId/members"
 
+        fun clinicMemberShare(
+            clinicId: Long,
+            doctorProfileId: Long,
+        ) = "clinics/$clinicId/members/$doctorProfileId/revenue-share"
+
+        fun clinicFinanceSettings(clinicId: Long) = "clinics/$clinicId/finance-settings"
+
+        fun clinicInvitations(clinicId: Long) = "clinics/$clinicId/invitations"
+
+        fun clinicInvitation(
+            clinicId: Long,
+            invitationId: Long,
+        ) = "clinics/$clinicId/invitations/$invitationId"
+
         fun treatmentPlanDetail(id: Long) = "treatment-plans/$id/detail"
 
         fun fulfillmentCandidates(id: Long) = "treatment-plans/$id/fulfillment-candidates"

@@ -86,3 +86,29 @@ data class ClinicMember(
 ) {
     val role: MembershipRole get() = MembershipRole.of(membershipRole)
 }
+
+/** `GET /clinics/{id}/invitations` item (OpenAPI `InvitationListItemDto`): a receptionist invitation. */
+@Serializable
+data class ClinicInvitation(
+    val id: Long = 0,
+    val emailSentTo: String? = null,
+    val expiresAt: String? = null,
+    val consumed: Boolean = false,
+    val pending: Boolean = false,
+)
+
+@Serializable
+internal data class MemberShareBody(
+    val doctorRevenueSharePercent: Int?,
+)
+
+@Serializable
+internal data class DefaultShareBody(
+    val defaultDoctorRevenueSharePercent: Int?,
+)
+
+@Serializable
+internal data class InvitationBody(
+    val email: String,
+    val role: String = "RECEPTIONIST",
+)

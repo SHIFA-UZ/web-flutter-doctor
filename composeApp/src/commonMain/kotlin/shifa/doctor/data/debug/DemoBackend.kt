@@ -151,6 +151,7 @@ class DemoBackend(
     private val notifications = DemoNotifications()
     private val tasks = DemoTasks()
     private val ai = DemoAi()
+    private val clinic = DemoClinic()
     private var lastAiDraft = 0
 
     private var services: List<JsonElement> = apiJson.parseToJsonElement(DEMO_SERVICES).jsonArray.toList()
@@ -295,7 +296,28 @@ class DemoBackend(
                     fail(HttpStatusCode.BadRequest, "BAD_REQUEST")
                 }
             get && path == Endpoints.ME_PROFILE -> ok(meProfile())
-            get && path == Endpoints.ME_CLINICS -> ok(apiJson.parseToJsonElement(DEMO_CLINICS))
+            get && path == Endpoints.ME_CLINICS ->
+                ok(
+                    JsonArray(
+                        apiJson.parseToJsonElement(DEMO_CLINICS).jsonArray.map {
+                            JsonObject(
+                                it.jsonObject + (
+                                    "defaultDoctorRevenueSharePercent" to (
+                                        clinic.defaultShare()?.let(
+                                            ::JsonPrimitive,
+                                        ) ?: JsonNull
+                                    )
+                                ),
+                            )
+                        },
+                    ),
+                )
+            // The clinic workspace (M11): numbers, members and their shares, invitations; kept in memory.
+            clinic.handles(path) ->
+                clinic.answer(request.method, path, body).let {
+                        (status, json) ->
+                    Reply(status, json)
+                }
             // Fixed counts so the badges show; the lists behind them come with their features.
             // Services kept in memory (SVC-01); the location list until LOC-1.
             get && path == Endpoints.DOCTOR_SERVICES -> ok(JsonArray(services))
@@ -1311,8 +1333,8 @@ class DemoBackend(
         private const val DEMO_CLINICS =
             """[{"clinicId":1,"name":"Shifa Demo Clinic","timeZone":"Asia/Tashkent","currency":"UZS",
             "phone":"+998900000001","email":"clinic@shifa.dev","address":"Chilonzor 9, Tashkent",
-            "membershipRole":"DOCTOR","isPracticeClinic":false,"defaultDoctorRevenueSharePercent":null,
-            "canManageFinanceSettings":false}]"""
+            "membershipRole":"OWNER","isPracticeClinic":true,"defaultDoctorRevenueSharePercent":null,
+            "canManageFinanceSettings":true}]"""
 
         // A slice of the dev catalogue (2026-11-04: 138 entries of {id, english, uzbek, name, category, displayOrder}).
         private const val DEMO_PROFESSIONS =

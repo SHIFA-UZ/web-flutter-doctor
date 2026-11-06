@@ -21,6 +21,8 @@ internal fun ColumnScope.ClinicSectionContent(
     actions: ShellActions,
 ) {
     when (section) {
+        ClinicSection.Doctors -> DoctorsSection(clinic)
+        ClinicSection.Invitations -> InvitationsSection(clinic)
         else -> Text(tr(sectionLabel(section)), style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Secondary)
     }
 }
