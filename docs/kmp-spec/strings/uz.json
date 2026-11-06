@@ -2727,5 +2727,7 @@
   "clinicShareUsesDefault": "Endi klinika qiymati qo‘llanadi.",
   "clinicDefaultShareClear": "Qiymatni tozalash",
   "clinicDefaultShareCleared": "Klinika qiymati tozalandi. O‘z ulushi yo‘q shifokorlarda ulush belgilanmagan.",
-  "clinicShareFailed": "Daromad ulushini saqlab bo‘lmadi."
+  "clinicShareFailed": "Daromad ulushini saqlab bo‘lmadi.",
+  "prophylaxisLoadFailed": "Profilaktika sozlamalarini yuklab bo‘lmadi",
+  "prophylaxisSaveFailed": "Profilaktika sozlamalarini saqlab bo‘lmadi"
 }

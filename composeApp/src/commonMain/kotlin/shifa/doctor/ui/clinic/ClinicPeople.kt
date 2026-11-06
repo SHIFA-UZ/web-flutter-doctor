@@ -741,5 +741,5 @@ private fun InviteSheetView(
     }
 }
 
-private const val SKELETON_ROWS = 3
+internal const val SKELETON_ROWS = 3
 private const val DONE_ALPHA = 0.7f

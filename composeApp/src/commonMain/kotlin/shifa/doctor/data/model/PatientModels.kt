@@ -19,6 +19,7 @@ data class PatientOption(
 data class Page<T>(
     val content: List<T?> = emptyList(),
     val last: Boolean = true,
+    val totalElements: Long? = null,
 )
 
 /** The doctor's view of a patient's status (`clinicalStatus`); anything new reads as [Unknown], never a crash. */
@@ -127,11 +128,14 @@ data class PatientAppointment(
     val reason: String? = null,
 )
 
-/** Prophylaxis reminders for a patient in a clinic (`/prophylaxis/settings`). */
+/**
+ * Prophylaxis reminders for a patient in a clinic (`/prophylaxis/settings`, `SettingDto`; its `patientId` may come
+ * back null, so the ids are optional when read). Sent with both ids, without `lastSentAt`.
+ */
 @Serializable
 data class ProphylaxisSetting(
-    val patientId: Long,
-    val clinicId: Long,
+    val patientId: Long? = null,
+    val clinicId: Long? = null,
     val intervalMonths: Int = 12,
     val enabled: Boolean = true,
     val lastSentAt: String? = null,

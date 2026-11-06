@@ -173,8 +173,7 @@ on the board, stacked here on a phone, allergies with Save).
   text as ""); "Patient details saved". Typing left in the tab survives unless the sheet changed that field; a 404
   there shows "Patient not found" too. A birth date can be changed but not cleared there (a PATCH keeps a null).
   Address edits the legacy one-line address; the structured location parts aren't edited in the app (as before).
-- **Not built:** the prophylaxis card (clinic scope): the detail is only opened from the doctor's own directory today;
-  it comes with CLINIC-06, which opens it with a clinic id (the repository calls exist since PAT-02).
+- **Prophylaxis card:** built with CLINIC-06 (see clinic.md): only a patient opened from a clinic's workspace has it.
 - **Tests:** `PatientDetailViewModelTest` (+4: dropdown saves with clearing and rollback; a 404 on save; phones: bad row, 409, saved
   list, last-phone question; the discard guard on tab and back, allergies save and rollback, Edit details over drafts),
   `CreatePatientViewModelTest` (+3: edit filled, only changes sent as PATCH; removing every phone asks; a 404 hands back); screenshots `PatientDetail_medical`, `Patients_edit`. Checked on the emulator

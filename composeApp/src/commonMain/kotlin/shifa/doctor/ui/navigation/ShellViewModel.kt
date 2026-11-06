@@ -119,6 +119,8 @@ sealed interface ShellRoute {
     /** Patients → one patient (PAT-05 builds the detail). */
     data class Patient(
         val id: Long,
+        // Opened from a clinic's workspace (CLINIC-06): read in that clinic's scope (staff have no other).
+        val clinicId: Long? = null,
     ) : ShellRoute
 
     /** Profile → Locations (LOC-1); also reached from the schedule setup (SCHED-2). */
@@ -168,6 +170,8 @@ sealed interface ShellRoute {
         val opened: Long,
         // A new form's ICD-10 code from the visit (APPT-08: an AI suggestion applied there).
         val icd: Icd10Hit? = null,
+        // CLINIC-06: opened from a patient in a clinic's scope (the patient read and the form's PDF use it).
+        val clinicId: Long? = null,
     ) : ShellRoute
 
     /** A patient's document in the viewer (DOCS-05), in a clinic's scope when [clinicId] is set. */

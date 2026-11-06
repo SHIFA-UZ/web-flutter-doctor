@@ -25,4 +25,10 @@ class ClinicScreenshotTest {
 
     @Test
     fun invitations() = captureRoboImage("screenshots/Clinic_invitations.png") { ClinicInvitationsPreview() }
+
+    @Test
+    fun patients() = captureRoboImage("screenshots/Clinic_patients.png") { ClinicPatientsPreview() }
+
+    @Test
+    fun patientsEmpty() = captureRoboImage("screenshots/Clinic_patients_empty.png") { ClinicPatientsEmptyPreview() }
 }

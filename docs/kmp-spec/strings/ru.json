@@ -2727,5 +2727,7 @@
   "clinicShareUsesDefault": "Теперь действует значение клиники.",
   "clinicDefaultShareClear": "Сбросить значение",
   "clinicDefaultShareCleared": "Значение клиники сброшено. У врачей без своей доли она не задана.",
-  "clinicShareFailed": "Не удалось сохранить долю дохода."
+  "clinicShareFailed": "Не удалось сохранить долю дохода.",
+  "prophylaxisLoadFailed": "Не удалось загрузить настройки профилактики",
+  "prophylaxisSaveFailed": "Не удалось сохранить настройки профилактики"
 }

@@ -2053,8 +2053,10 @@
     <string name="prophylaxisEnabled">Send reminders</string>
     <string name="prophylaxisIntervalMonths">Interval (months)</string>
     <string name="prophylaxisLastSent">Last sent: %1$s</string>
+    <string name="prophylaxisLoadFailed">Could not load prophylaxis settings</string>
     <string name="prophylaxisRemindersTitle">Prophylaxis reminders</string>
     <string name="prophylaxisSave">Save</string>
+    <string name="prophylaxisSaveFailed">Could not save prophylaxis settings</string>
     <string name="prophylaxisSaved">Prophylaxis settings saved</string>
     <string name="quadrantUpperRight">Upper right quadrant</string>
     <string name="quickActions">Quick Actions</string>

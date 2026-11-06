@@ -34,6 +34,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -108,6 +109,7 @@ class DemoBackend(
         listOf(11L to "Dilnoza Rahimova", 12L to "Jasur Karimov", 13L to "Malika Tursunova", 14L to "Bekzod Aliyev")
             .map { (id, name) -> JsonObject(demoPatient(id, name)) }
     private var lastPatientId = 14L
+    private val prophylaxis = mutableMapOf<String, JsonElement>()
 
     // Uploaded documents per patient id, newest first, and their files by document id.
     private var uploads: Map<String, List<JsonElement>> = emptyMap()
@@ -312,6 +314,8 @@ class DemoBackend(
                         },
                     ),
                 )
+            // The clinic's patients (CLINIC-06): the demo directory, searched and paged like the backend.
+            get && path == Endpoints.clinicPatients(1) -> ok(clinicPatientsPage(people, request.url.parameters))
             // The clinic workspace (M11): numbers, members and their shares, invitations; kept in memory.
             clinic.handles(path) ->
                 clinic.answer(request.method, path, body).let {
@@ -560,11 +564,15 @@ class DemoBackend(
                     Regex("patients/\\d+/send-test-sms"),
                 )
             -> Reply(HttpStatusCode.OK, "")
-            get && path == Endpoints.PROPHYLAXIS_SETTINGS -> Reply(HttpStatusCode.OK, "")
-            request.method == HttpMethod.Put && path == Endpoints.PROPHYLAXIS_SETTINGS ->
-                ok(
-                    apiJson.parseToJsonElement(body),
-                )
+            // Prophylaxis (CLINIC-06): no setting until one is saved (an empty answer), then the saved one, per patient.
+            get && path == Endpoints.PROPHYLAXIS_SETTINGS ->
+                prophylaxis[request.url.parameters["patientId"]]?.let(::ok) ?: Reply(HttpStatusCode.OK, "")
+            request.method == HttpMethod.Put && path == Endpoints.PROPHYLAXIS_SETTINGS -> {
+                val sent = apiJson.parseToJsonElement(body).jsonObject
+                val saved = JsonObject(sent + ("lastSentAt" to JsonNull))
+                sent["patientId"]?.jsonPrimitive?.content?.let { prophylaxis[it] = saved }
+                ok(saved)
+            }
             // The booking list (CAL-7): the demo calendar's patients and a few more, one page.
             get && path == Endpoints.PATIENTS_FOR_ASSIGNMENT -> ok(apiJson.parseToJsonElement(DEMO_PATIENTS))
             request.method == HttpMethod.Post && path == Endpoints.SCHEDULE_BOOK -> Reply(HttpStatusCode.OK, "")
@@ -1372,6 +1380,41 @@ private const val DEMO_PATIENTS =
     """{"content":[{"id":11,"name":"Dilnoza Rahimova","photoUrl":null},""" +
         """{"id":12,"name":"Jasur Karimov","photoUrl":null},{"id":13,"name":"Malika Tursunova","photoUrl":null},""" +
         """{"id":14,"name":"Bekzod Aliyev","photoUrl":null},{"id":15,"name":"","photoUrl":null}],"last":true}"""
+
+/** The demo directory as `GET /clinics/1/patients` pages it (`q` over name, phone and email). */
+private fun clinicPatientsPage(
+    people: List<JsonElement>,
+    parameters: io.ktor.http.Parameters,
+): JsonObject {
+    val q = parameters["q"]?.trim()?.lowercase().orEmpty()
+    val page = parameters["page"]?.toIntOrNull() ?: 0
+    val size = parameters["size"]?.toIntOrNull()?.coerceAtLeast(1) ?: 20
+    val rows =
+        people.map { it.jsonObject }.map { p ->
+            val phone = (p["phones"] as? JsonArray)?.firstOrNull()?.jsonPrimitive?.content
+            JsonObject(
+                mapOf(
+                    "patientId" to (p["id"] ?: JsonNull),
+                    "fullName" to (p["name"] ?: JsonNull),
+                    "phone" to (phone?.let(::JsonPrimitive) ?: JsonNull),
+                    "email" to (p["email"] ?: JsonNull),
+                ),
+            )
+        }.filter { r ->
+            q.isEmpty() ||
+                listOf("fullName", "phone", "email").any {
+                    (r[it] as? JsonPrimitive)?.contentOrNull?.lowercase()?.contains(q) == true
+                }
+        }
+    val shown = rows.drop(page * size).take(size)
+    return JsonObject(
+        mapOf(
+            "content" to JsonArray(shown),
+            "totalElements" to JsonPrimitive(rows.size),
+            "last" to JsonPrimitive((page + 1) * size >= rows.size),
+        ),
+    )
+}
 
 /** A demo patient row with the fields `/patients` answers (the rest omitted). */
 internal fun demoPatient(

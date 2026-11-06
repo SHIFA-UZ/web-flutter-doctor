@@ -323,6 +323,8 @@ class PatientDetailViewModel(
         },
     private val clockOf: (String?) -> PracticeClock = { PracticeClock(it) },
     private val warned: MutableSet<Long> = chronicWarned,
+    // The clinic whose workspace opened the patient (CLINIC-06), else the doctor's own scope.
+    private val clinicId: Long? = null,
 ) : ViewModel() {
     private var clock = clockOf(profileRepository.me.value?.profile?.timeZone)
     private var appointments: List<PatientAppointment>? = null
@@ -363,7 +365,7 @@ class PatientDetailViewModel(
             )
         }
         viewModelScope.launch {
-            repo.patient(id).fold(
+            repo.patient(id, clinicId).fold(
                 onSuccess = { p ->
                     _state.update { it.copy(patient = if (it.saving) it.patient else p, loading = false) }
                     warnOnce(p)
@@ -625,7 +627,7 @@ class PatientDetailViewModel(
                 },
             )
             // The account flag (and username) come from a fresh read, after success or a "has one already".
-            repo.patient(id).onSuccess { p -> _state.update { it.copy(patient = p) } }
+            repo.patient(id, clinicId).onSuccess { p -> _state.update { it.copy(patient = p) } }
         }
     }
 
@@ -709,6 +711,8 @@ data class PatientDetailActions(
 fun PatientDetailScreen(
     id: Long,
     onBack: () -> Unit,
+    // CLINIC-06: the clinic whose workspace opened the patient (its scope for the patient and the documents).
+    clinicId: Long? = null,
     // "New appointment": the picked free slot, with this patient chosen, for the booking screen (CAL-7).
     onBook: (CalendarEntry.FreeSlot, PatientOption) -> Unit = { _, _ -> },
     // A viewable document, for the viewer (DOCS-05): the document and the title to show.
@@ -717,9 +721,12 @@ fun PatientDetailScreen(
     onOpenForm: (Long?) -> Unit = {},
     // "Send message" (CHAT-07): the patient, for the chat header while the conversation resolves.
     onMessage: (Patient) -> Unit = {},
-    viewModel: PatientDetailViewModel = viewModel(key = "patient-$id") { PatientDetailViewModel(id) },
-    documents: PatientDocumentsViewModel = viewModel(key = "patient-documents-$id") { PatientDocumentsViewModel(id) },
-    uploads: DocumentUploadViewModel = viewModel(key = "patient-upload-$id") { DocumentUploadViewModel(id) },
+    viewModel: PatientDetailViewModel =
+        viewModel(key = "patient-$id-$clinicId") { PatientDetailViewModel(id, clinicId = clinicId) },
+    documents: PatientDocumentsViewModel =
+        viewModel(key = "patient-documents-$id-$clinicId") { PatientDocumentsViewModel(id, clinicId) },
+    uploads: DocumentUploadViewModel =
+        viewModel(key = "patient-upload-$id-$clinicId") { DocumentUploadViewModel(id, clinicId) },
     forms: PatientFormsViewModel = viewModel(key = "patient-forms-$id") { PatientFormsViewModel(id) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -809,6 +816,7 @@ fun PatientDetailScreen(
         upload,
         formsState,
         timeline = if (timelineAllowed) ({ ClinicalTimeline(id) }) else null,
+        prophylaxis = clinicId?.let { c -> { ProphylaxisCard(id, c) } },
     )
     UploadSheets(upload, uploads, sources)
     if (briefingOpen && briefingAllowed) {
@@ -868,6 +876,8 @@ fun PatientDetailContent(
     forms: PatientFormsUiState = PatientFormsUiState(),
     // AI-10: the clinical timeline card on the overview; null without the AI notes plan (or for clinic staff).
     timeline: (@Composable () -> Unit)? = null,
+    // CLINIC-06: the clinic's prophylaxis card under Medical info; only in a clinic's scope.
+    prophylaxis: (@Composable () -> Unit)? = null,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
     // No title: the header below names the patient (flow 06/03 §3.1).
     ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
@@ -919,7 +929,10 @@ fun PatientDetailContent(
                                 Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md)) {
                                     when (state.tab) {
                                         RecordTab.Overview -> Overview(patient, state, actions, timeline)
-                                        RecordTab.Medical -> MedicalInfo(patient, state, actions.medical)
+                                        RecordTab.Medical -> {
+                                            MedicalInfo(patient, state, actions.medical)
+                                            prophylaxis?.invoke()
+                                        }
                                         else -> EmptyState(tr(Res.string.tabComesLater), Res.drawable.ic_users_22)
                                     }
                                 }

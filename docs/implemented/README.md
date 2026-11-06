@@ -106,7 +106,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | PAT-03 Patients directory | Done (phone) | Patients tab: count, search (name, id, display id, phone digits; debounced), All / Favorites / Follow-ups, status filter, name order, 10 per page, pull to refresh; favourites kept per doctor. See patients.md. |
 | PAT-04 Create patient | Done | One create sheet (directory and booking picker): name, phones in E.164, email, address, language, gender, blood group, allergies, birth date; stays open while saving. See patients.md. |
 | PAT-05 Patient detail | Done (phone, Overview) | Header, stats, record tabs (Overview built), clinical summary, patient-app login shown once, SMS reminders saved at once with rollback, chronic warning once per session, shared favourites. See patients.md. |
-| PAT-06 Medical info | Done (no prophylaxis yet) | Per-field saves with rollback (dropdowns at once, phones and allergies with Save), localised chronic diseases, discard guard, Edit details (the create sheet, PATCH of changes). Prophylaxis with CLINIC-06. See patients.md. |
+| PAT-06 Medical info | Done | Per-field saves with rollback (dropdowns at once, phones and allergies with Save), localised chronic diseases, discard guard, Edit details (the create sheet, PATCH of changes). The clinic's prophylaxis card came with CLINIC-06. See patients.md. |
 | PAT-07 Appointments & Activity | Done (visits only) | Visits on the practice clock, Appointments tab, Activity by month and Recent activity (visits; documents and forms join later), New appointment → free-slot sheet → CAL-7 booking with the patient chosen. See patients.md. |
 | DOCS-01 Document models | Done | 27 categories (labels), lenient list, download named by Content-Disposition (RFC 5987) and typed by bytes, request access; a locked download is 404 on dev. See patients.md. |
 | DOCS-02 Pickers & photos to PDF | Done | Existing pickers reused; a shared photos-to-PDF writer that embeds the JPEGs unchanged (48 KB for two photos instead of megabytes). See patients.md. |
@@ -159,6 +159,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CLINIC-03 Clinic list kit | Done (kit reused) | The design system's components cover it; tickets add what they need. See clinic.md. |
 | CLINIC-04 Overview + Settings | Done | Numbers with taps, quick actions, contact rows; read-only settings with the default share. See clinic.md. |
 | CLINIC-05 Doctors + revenue share | Done (schedule button with CLINIC-09) | Members with chips and search, the share in force, one share sheet for a doctor and the clinic default. See clinic.md. |
+| CLINIC-06 Clinic patients | Done (phone: push; no tablet side pane) | Server-searched, paged list (50, Load more), "Total: N"; a patient opens in the clinic's scope (patient, documents, uploads, the prophylaxis card). BE-35. See clinic.md. |
 | CLINIC-08 Invitations | Done | Invite receptionist, pending / used / expired, revoke with confirmation. See clinic.md. |
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
 | DENTAL-03 + TP-06 Treatment plan in the visit | Done | Plan panel (linked/only plan chosen, progress), plan-mode chart and fulfil sheet, Plan finances with this visit's payment; End applies ticks then records the payment before completing (once each); checklist rows; one plan section in the summary; leaving asks. Demo only (no dev plans). See visits.md. |
@@ -329,3 +330,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · CLINIC-01 · Clinic memberships, the remembered clinic and one permission helper.
 - 2026-11-06 · CLINIC-02…04 · The clinic workspace: header, sections, Overview and Settings.
 - 2026-11-06 · CLINIC-05, CLINIC-08 · Clinic people: doctors and their revenue share, receptionist invitations.
+- 2026-11-06 · CLINIC-06 · Clinic patients and the patient in the clinic's scope with its prophylaxis card; BE-35.

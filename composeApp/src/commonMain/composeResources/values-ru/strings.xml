@@ -2053,8 +2053,10 @@
     <string name="prophylaxisEnabled">Отправлять напоминания</string>
     <string name="prophylaxisIntervalMonths">Интервал (месяцев)</string>
     <string name="prophylaxisLastSent">Последняя отправка: %1$s</string>
+    <string name="prophylaxisLoadFailed">Не удалось загрузить настройки профилактики</string>
     <string name="prophylaxisRemindersTitle">Напоминания о профилактике</string>
     <string name="prophylaxisSave">Сохранить</string>
+    <string name="prophylaxisSaveFailed">Не удалось сохранить настройки профилактики</string>
     <string name="prophylaxisSaved">Настройки профилактики сохранены</string>
     <string name="quadrantUpperRight">Верхний правый квадрант</string>
     <string name="quickActions">Быстрые действия</string>

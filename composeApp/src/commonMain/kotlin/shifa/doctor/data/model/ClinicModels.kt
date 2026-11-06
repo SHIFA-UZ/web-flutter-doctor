@@ -97,6 +97,22 @@ data class ClinicInvitation(
     val pending: Boolean = false,
 )
 
+/** `GET /clinics/{id}/patients` row (`ClinicPatientRow`, dev 2026-11-06): a patient of the clinic's doctors. */
+@Serializable
+data class ClinicPatient(
+    val patientId: Long = 0,
+    val fullName: String? = null,
+    val phone: String? = null,
+    val email: String? = null,
+)
+
+/** One page of clinic patients: [total] across all pages (for "Total: N"), [last] when nothing follows. */
+data class ClinicPatientsPage(
+    val rows: List<ClinicPatient>,
+    val total: Long,
+    val last: Boolean,
+)
+
 @Serializable
 internal data class MemberShareBody(
     val doctorRevenueSharePercent: Int?,

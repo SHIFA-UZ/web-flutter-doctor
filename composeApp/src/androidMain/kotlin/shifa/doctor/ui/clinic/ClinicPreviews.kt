@@ -71,3 +71,34 @@ internal fun ClinicInvitationsPreview() =
     Workspace(ClinicUiState(previewClinics, section = ClinicSection.Invitations)) { _, clinic ->
         InvitationsContent(clinic, previewPeople, PeopleActions())
     }
+
+// CLINIC-06 (board `DaClinic` Patients): search, the total, patients with phone and email (a dash without a phone), Load more.
+@Composable
+internal fun ClinicPatientsPreview() =
+    Workspace(ClinicUiState(previewClinics, section = ClinicSection.Patients)) { _, _ ->
+        ClinicPatientsContent(
+            ClinicPatientsUiState(
+                rows =
+                    listOf(
+                        shifa.doctor.data.model.ClinicPatient(
+                            15,
+                            "Gulnora Rashidova",
+                            "+998 90 123 45 67",
+                            "gulnora@mail.uz",
+                        ),
+                        shifa.doctor.data.model.ClinicPatient(16, "Jasur Karimov", "+998 93 555 12 34"),
+                        shifa.doctor.data.model.ClinicPatient(17, "Malika Tursunova", null, "malika@mail.uz"),
+                    ),
+                total = 64,
+                last = false,
+            ),
+            ClinicPatientsActions(),
+        )
+    }
+
+// CLINIC-06: nothing matches the search.
+@Composable
+internal fun ClinicPatientsEmptyPreview() =
+    Workspace(ClinicUiState(previewClinics, section = ClinicSection.Patients)) { _, _ ->
+        ClinicPatientsContent(ClinicPatientsUiState(typed = "zzz", rows = emptyList()), ClinicPatientsActions())
+    }

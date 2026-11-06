@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import shifa.doctor.data.model.MyClinic
 import shifa.doctor.ui.navigation.ShellActions
+import shifa.doctor.ui.navigation.ShellRoute
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.utils.tr
@@ -23,6 +24,8 @@ internal fun ColumnScope.ClinicSectionContent(
     when (section) {
         ClinicSection.Doctors -> DoctorsSection(clinic)
         ClinicSection.Invitations -> InvitationsSection(clinic)
+        ClinicSection.Patients ->
+            ClinicPatientsSection(clinic, onOpen = { actions.push(ShellRoute.Patient(it.patientId, clinic.clinicId)) })
         else -> Text(tr(sectionLabel(section)), style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Secondary)
     }
 }

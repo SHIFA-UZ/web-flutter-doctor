@@ -21,9 +21,11 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
+import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.httpLogger
 import shifa.doctor.data.api.rows
+import shifa.doctor.data.api.usable
 import shifa.doctor.data.model.Patient
 import shifa.doctor.data.model.PatientAccount
 import shifa.doctor.data.model.PatientAppointment
@@ -100,7 +102,10 @@ class PatientsRepository(
         return refresh()
     }
 
-    /** One patient, in a clinic's scope when [clinicId] is given; the directory takes the fresh copy. */
+    /**
+     * One patient, in a clinic's scope when [clinicId] is given; the directory takes the fresh copy. A clinic read
+     * only refreshes a patient already in the doctor's own directory: another clinic doctor's patient never joins it.
+     */
     suspend fun patient(
         id: Long,
         clinicId: Long? = null,
@@ -109,7 +114,7 @@ class PatientsRepository(
         val mine = generation.value
         return apiCall<Patient> {
             client().get(ApiConfig.Endpoints.patient(id)) { clinicId?.let { parameter("clinicId", it) } }
-        }.onSuccess { if (generation.value == mine) remember(it) }
+        }.onSuccess { if (generation.value == mine) remember(it, join = clinicId == null) }
     }
 
     suspend fun create(request: PatientRequest): Result<Patient> {
@@ -161,19 +166,31 @@ class PatientsRepository(
         patientId: Long,
         clinicId: Long,
     ): Result<ProphylaxisSetting?> =
-        // Decoded by apiCall: an empty answer is null ("no setting"), an unreadable one a typed, logged failure.
-        apiCall<ProphylaxisSetting?> {
+        // "No setting" is a 200 with an empty body and no content type (dev, 2026-11-06), which Ktor can't decode:
+        // read as text, null when blank; an unreadable setting is a logged failure, never the defaults.
+        apiCall<String> {
             client().get(ApiConfig.Endpoints.PROPHYLAXIS_SETTINGS) {
                 parameter("patientId", patientId)
                 parameter("clinicId", clinicId)
             }
-        }
+        }.fold(
+            { text ->
+                if (text.isBlank()) {
+                    Result.success(null)
+                } else {
+                    Result.success(text).usable("prophylaxis setting") {
+                        apiJson.decodeFromString(ProphylaxisSetting.serializer(), it)
+                    }
+                }
+            },
+            { Result.failure(it) },
+        )
 
     suspend fun saveProphylaxis(setting: ProphylaxisSetting): Result<ProphylaxisSetting> =
         apiCall<ProphylaxisSetting> {
             client().put(ApiConfig.Endpoints.PROPHYLAXIS_SETTINGS) {
                 contentType(ContentType.Application.Json)
-                setBody(setting)
+                setBody(setting.copy(lastSentAt = null))
             }
         }
 
@@ -208,12 +225,20 @@ class PatientsRepository(
         readAt = null
     }
 
-    /** A fresh copy of one patient replaces (or joins) the directory, keeping the name order; older reads are dropped. */
-    private fun remember(p: Patient) {
+    /**
+     * A fresh copy of one patient replaces (or, with [join], joins) the directory, keeping the name order; older reads
+     * are dropped.
+     */
+    private fun remember(
+        p: Patient,
+        join: Boolean = true,
+    ) {
         generation.incrementAndGet()
         _patients.update {
                 list ->
-            list?.let { (it.filter { x -> x.id != p.id } + p).sortedBy { x -> x.name.lowercase() } }
+            list?.takeIf { join || it.any { x -> x.id == p.id } }
+                ?.let { (it.filter { x -> x.id != p.id } + p).sortedBy { x -> x.name.lowercase() } }
+                ?: list
         }
     }
 

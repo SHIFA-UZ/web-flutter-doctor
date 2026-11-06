@@ -23,10 +23,13 @@ import shifa.doctor.data.api.rows
 import shifa.doctor.data.model.ClinicInvitation
 import shifa.doctor.data.model.ClinicMember
 import shifa.doctor.data.model.ClinicOverviewStats
+import shifa.doctor.data.model.ClinicPatient
+import shifa.doctor.data.model.ClinicPatientsPage
 import shifa.doctor.data.model.DefaultShareBody
 import shifa.doctor.data.model.InvitationBody
 import shifa.doctor.data.model.MemberShareBody
 import shifa.doctor.data.model.MyClinic
+import shifa.doctor.data.model.Page
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.utils.Jwt
 
@@ -104,6 +107,30 @@ class ClinicsRepository(
             .map { it.rows(ClinicMember.serializer(), "clinic members") }
 
     /**
+     * `GET /clinics/{id}/patients?page&size&q` (CLINIC-06): one page of the clinic's patients, searched on the server
+     * (name, phone or email); a blank [q] lists everyone. Rows without a patient id are skipped.
+     */
+    suspend fun patients(
+        clinicId: Long,
+        page: Int,
+        q: String,
+        size: Int = PATIENTS_PAGE,
+    ): Result<ClinicPatientsPage> =
+        apiCall<Page<JsonElement>> {
+            client().get(ApiConfig.Endpoints.clinicPatients(clinicId)) {
+                parameter("page", page)
+                parameter("size", size)
+                q.trim().takeIf { it.isNotEmpty() }?.let { parameter("q", it) }
+            }
+        }.map { p ->
+            val rows =
+                p.content.filterNotNull().rows(ClinicPatient.serializer(), "clinic patients") {
+                    it.takeIf { r -> r.patientId > 0 }
+                }
+            ClinicPatientsPage(rows, p.totalElements ?: rows.size.toLong(), p.last)
+        }
+
+    /**
      * `PATCH /clinics/{id}/members/{doctorProfileId}/revenue-share`: the doctor's own share; null goes back to the
      * clinic default (the backend reads a missing field as null).
      */
@@ -157,6 +184,10 @@ class ClinicsRepository(
     ): Result<Unit> = apiCall<Unit> { client().delete(ApiConfig.Endpoints.clinicInvitation(clinicId, invitationId)) }
 
     private fun key(user: String) = "clinic_workspace_selected_id:$user"
+
+    companion object {
+        const val PATIENTS_PAGE = 50
+    }
 }
 
 val clinicsRepository by lazy { ClinicsRepository() }

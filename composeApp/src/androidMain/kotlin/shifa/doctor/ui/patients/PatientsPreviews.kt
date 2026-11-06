@@ -1,5 +1,7 @@
 package shifa.doctor.ui.patients
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import kotlinx.datetime.LocalDate
 import shifa.doctor.data.model.Patient
@@ -132,6 +134,23 @@ internal fun PatientMedicalPreview() =
             ),
             PatientDetailActions(),
         )
+    }
+
+// CLINIC-06: the clinic's prophylaxis card (Medical info in a clinic's scope), last sent shown in the clinic's zone.
+@Composable
+internal fun ProphylaxisPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column(
+            androidx.compose.ui.Modifier.background(
+                shifa.doctor.ui.theme.ShifaColors.Bg.Canvas,
+            ).padding(shifa.doctor.ui.theme.ShifaSpacing.Inset.Md),
+        ) {
+            ProphylaxisContent(
+                ProphylaxisUiState(loaded = true, interval = 6, lastSentAt = "2026-10-01T05:00:00Z"),
+                ProphylaxisActions(),
+                shifa.doctor.utils.PracticeClock("Asia/Tashkent"),
+            )
+        }
     }
 
 // PAT-06: "Edit details" (the create sheet, filled; Save once something changed).

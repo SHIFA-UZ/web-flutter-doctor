@@ -552,3 +552,18 @@ appointment count).
 
 **App until then:** one message names all three: "This location can't be deleted: it's your only one, or it still
 has working hours or upcoming appointments."
+
+## BE-35 Answer "no prophylaxis setting" as JSON
+
+**Needed by:** flow `06/05` §6 (the clinic's prophylaxis card); ticket CLINIC-06.
+
+**Now:** `GET /prophylaxis/settings?patientId&clinicId` answers 200 with an empty body and no `Content-Type` when the
+patient has no setting (dev, 2026-11-06); the OpenAPI says `SettingDto`. A JSON client can't decode that as "nothing".
+`SettingDto.patientId` is also nullable in the OpenAPI although the request requires it.
+
+**Change:** 204, or 200 with `null` / the defaults (`{"intervalMonths":12,"enabled":true,...}`) as JSON; always echo
+`patientId`.
+
+**App until then:** reads the answer as text: blank is "no setting" (12 months, on), anything else must decode or the
+card says it couldn't load (never falls back to defaults that Save would write over the server's values).
+

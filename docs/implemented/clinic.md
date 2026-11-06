@@ -86,3 +86,36 @@ clinic).
   members, shares null). iOS compiled, not run.
 - **Tests:** `ClinicPeopleViewModelTest` (search, chips, sort; share save / clear / default and the failure; invite
   validation, duplicate, lower-casing, revoke); screenshots `Clinic_doctors`, `Clinic_invitations`.
+
+## CLINIC-06 · Clinic patients, the patient in the clinic's scope
+
+Built 2026-11-06. Spec 09 §2 row 3, 06 §1 (clinic scoping) and §2.9, flows 09/05 and 06/05 §3.2, ticket CLINIC-06. Board
+`DaClinic` Patients (`ui/clinic/ClinicPatients.kt`); the prophylaxis card is not in the design (`ui/patients/Prophylaxis.kt`,
+Medical info's card style).
+- **List:** `GET /clinics/{id}/patients?page&size=50&q`: search on the server (name, phone or email; Flutter filtered
+  one page on the device) once typing pauses (350 ms, trimmed, only when it changed; an answer for an older search is
+  dropped), "Total: N" from `totalElements`, cards with avatar, name, "phone · email" (a dash without a phone), "Load
+  more" while pages follow (no repeats; a failed next page keeps the rows). Rows without a patient id are skipped.
+  Empty: "No patients match this clinic roster for your access level."
+- **Patient in the clinic's scope:** `ShellRoute.Patient(id, clinicId)` → the detail reads `GET /patients/{id}?clinicId`;
+    documents, the viewer, uploads, request-access and the 025-2 editor (its patient read and its PDF) carry the
+  `clinicId`. A clinic read refreshes a patient of the doctor's own directory but never adds another doctor's patient
+  to it. Phone only: a push, no tablet side pane (the app has no tablet layout yet).
+- **Prophylaxis card** (Medical info, clinic scope only): `GET /prophylaxis/settings?patientId&clinicId`, interval
+  1–60 months (default 12), "Send reminders" (default on), "Last sent" as a date in the clinic's zone, Save →
+  `PUT /prophylaxis/settings {patientId, clinicId, intervalMonths, enabled}`. A failed read shows "Could not load
+  prophylaxis settings" + Retry and no Save (Flutter fell back to the defaults, which Save would write over the
+  server's values). Dev answers "no setting" with an empty 200 without a content type: read as text (BE-35).
+- **Demo:** the demo directory as the clinic's patients (searched and paged like the backend); prophylaxis kept per
+  patient in memory.
+- New strings: `prophylaxisLoadFailed`, `prophylaxisSaveFailed`.
+- **Checked:** emulator, dev (reads only): Clinic → Patients lists the 4 seeded patients ("Total: 4"), "Gul" finds
+  Gulnora (Total: 1), her detail opens in clinic 2's scope, Medical info shows the prophylaxis card (12 months, on; the
+  first build failed on the empty answer, fixed). Save not tried on dev (a write). iOS compiled, not run.
+- **Codex review:** the form editor keeps the clinic scope; clinic reads stay out of the personal directory; a page
+  of unreadable rows still offers the next page.
+- **Tests:** `ClinicPatientsViewModelTest` (paging without repeats, debounced trimmed search, failures),
+  `PatientsRepositoryTest` (+1 clinic read), `FormEditorViewModelTest` (+1 clinic scope),
+  `ProphylaxisViewModelTest` (empty answer = defaults, Save body, failed read blocks Save, failed save),
+  `DemoBackendTest` (+1); screenshots `Clinic_patients`, `Clinic_patients_empty`, `PatientDetail_prophylaxis`.
+

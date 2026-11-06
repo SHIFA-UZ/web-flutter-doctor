@@ -140,6 +140,34 @@ class DemoBackendTest {
         }
 
     @Test
+    fun `the demo clinic answers locally - members, patients paged and searched, prophylaxis kept per patient`() =
+        runTest {
+            val clinics =
+                shifa.doctor.data.clinics.ClinicsRepository(
+                    { client },
+                    com.russhwolf.settings.MapSettings(),
+                    { "u1" },
+                )
+            assertThat(clinics.members(1).getOrThrow().map { it.displayName }).contains("Aziza Karimova")
+            val first = clinics.patients(1, 0, "", size = 3).getOrThrow()
+            assertThat(first.rows).hasSize(3)
+            assertThat(first.total).isEqualTo(4)
+            assertThat(first.last).isFalse()
+            val next = clinics.patients(1, 1, "", size = 3).getOrThrow()
+            assertThat(next.rows.map { it.patientId }).containsExactly(14L)
+            assertThat(next.last).isTrue()
+            assertThat(
+                clinics.patients(1, 0, " malika ").getOrThrow().rows.single().fullName,
+            ).isEqualTo("Malika Tursunova")
+            val patients = shifa.doctor.data.patients.PatientsRepository({ client })
+            assertThat(patients.prophylaxis(11, 1).getOrThrow()).isNull()
+            patients.saveProphylaxis(shifa.doctor.data.model.ProphylaxisSetting(11, 1, 6, false)).getOrThrow()
+            assertThat(patients.prophylaxis(11, 1).getOrThrow()!!.intervalMonths).isEqualTo(6)
+            assertThat(patients.prophylaxis(12, 1).getOrThrow()).isNull()
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
     fun `professions, clinics and the profile PATCH answer locally`() =
         runTest {
             val catalog = CatalogRepository({ client })

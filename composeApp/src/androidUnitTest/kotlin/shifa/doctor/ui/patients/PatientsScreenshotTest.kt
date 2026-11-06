@@ -38,6 +38,9 @@ class PatientsScreenshotTest {
     fun medical() = captureRoboImage("screenshots/PatientDetail_medical.png") { PatientMedicalPreview() }
 
     @Test
+    fun prophylaxis() = captureRoboImage("screenshots/PatientDetail_prophylaxis.png") { ProphylaxisPreview() }
+
+    @Test
     @Config(qualifiers = "w402dp-h1500dp-xhdpi")
     fun edit() = captureRoboImage("screenshots/Patients_edit.png") { EditPatientPreview() }
 

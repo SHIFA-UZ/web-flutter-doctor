@@ -2053,8 +2053,10 @@
     <string name="prophylaxisEnabled">Eslatmalar yoniqi</string>
     <string name="prophylaxisIntervalMonths">Oraliq (oylar)</string>
     <string name="prophylaxisLastSent">Oxirgi yuborilgan: %1$s</string>
+    <string name="prophylaxisLoadFailed">Profilaktika sozlamalarini yuklab bo‘lmadi</string>
     <string name="prophylaxisRemindersTitle">Profilaktika eslatmalari</string>
     <string name="prophylaxisSave">Saqlash</string>
+    <string name="prophylaxisSaveFailed">Profilaktika sozlamalarini saqlab bo‘lmadi</string>
     <string name="prophylaxisSaved">Profilaktika sozlamalari saqlandi</string>
     <string name="quadrantUpperRight">Yuqori o'ng kvadrant</string>
     <string name="quickActions">Tezkor amallar</string>

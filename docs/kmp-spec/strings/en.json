@@ -2727,5 +2727,7 @@
   "clinicShareUsesDefault": "Now using the clinic default.",
   "clinicDefaultShareClear": "Clear default",
   "clinicDefaultShareCleared": "Clinic default cleared. Doctors without their own share have none set.",
-  "clinicShareFailed": "Couldn't save the revenue share."
+  "clinicShareFailed": "Couldn't save the revenue share.",
+  "prophylaxisLoadFailed": "Could not load prophylaxis settings",
+  "prophylaxisSaveFailed": "Could not save prophylaxis settings"
 }

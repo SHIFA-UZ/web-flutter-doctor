@@ -123,6 +123,7 @@ class FormEditorViewModelTest {
         formId: Long? = null,
         warned: MutableSet<Long> = mutableSetOf(),
         icd: Icd10Hit? = null,
+        clinicId: Long? = null,
     ): FormEditorViewModel {
         val client = { createHttpClient({ null }, engine) }
         return FormEditorViewModel(
@@ -138,6 +139,7 @@ class FormEditorViewModelTest {
             { "%PDF-1.4 form".encodeToByteArray() },
             warned,
             icd,
+            clinicId,
         ).also {
             created += it
             it.load()
@@ -183,6 +185,16 @@ class FormEditorViewModelTest {
             "POST clinical-engine/record-usage",
         ).inOrder()
         assertThat(classToTest.state.value.form?.documentId).isEqualTo(101L)
+    }
+
+    @Test
+    fun `in a clinic's scope the patient is read and the form's PDF stored with the clinic`() {
+        val classToTest = opened(clinicId = 2)
+        assertThat(calls.first { it.startsWith("GET patients/14?") }).isEqualTo("GET patients/14?clinicId=2")
+        classToTest.edit { it.copy(diagnosis = "Pulpit", clinicalDiseaseId = "dis.010") }
+        classToTest.save()
+        settle { classToTest.state.value.done }
+        assertThat(calls).contains("POST patients/14/documents?clinicId=2")
     }
 
     @Test

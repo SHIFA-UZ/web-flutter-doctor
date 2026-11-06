@@ -109,6 +109,8 @@ object ApiConfig {
 
         fun clinicMembers(clinicId: Long) = "clinics/$clinicId/members"
 
+        fun clinicPatients(clinicId: Long) = "clinics/$clinicId/patients"
+
         fun clinicMemberShare(
             clinicId: Long,
             doctorProfileId: Long,

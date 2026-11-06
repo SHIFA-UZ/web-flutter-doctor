@@ -120,6 +120,8 @@ class FormEditorViewModel(
     private val warned: MutableSet<Long> = chronicWarned,
     // APPT-08: a new form opened from a visit with an AI-suggested ICD-10 code applied there.
     private val presetIcd: Icd10Hit? = null,
+    // CLINIC-06: a patient opened in a clinic's scope is read, and the form's PDF stored, in that scope.
+    private val clinicId: Long? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(FormEditorUiState())
     val state: StateFlow<FormEditorUiState> = _state.asStateFlow()
@@ -133,7 +135,7 @@ class FormEditorViewModel(
     fun load() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
-            val patient = async { patients.patient(patientId) }
+            val patient = async { patients.patient(patientId, clinicId) }
             val list = forms.list(patientId)
             val p = patient.await()
             // A new form opens without the previous chart if only the forms list failed (flow §6); an existing one
@@ -419,20 +421,26 @@ class FormEditorViewModel(
         val file = UploadFile(bytes, "form_025-2_$day.pdf", DocumentFile.PDF)
         val linked = form.documentId
         if (linked != null) {
-            documents.replaceFile(patientId, linked, file).onFailure {
+            documents.replaceFile(patientId, linked, file, clinicId).onFailure {
                 return failed(SaveStep.Document, Res.string.formDocumentFailed, it)
             }
         } else {
             // A document uploaded by a save that failed later is reused (its file replaced if the PDF was remade).
             val earlier = uploadedDocument
             if (earlier != null && uploadedPdf !== bytes) {
-                documents.replaceFile(patientId, earlier, file).onFailure {
+                documents.replaceFile(patientId, earlier, file, clinicId).onFailure {
                     return failed(SaveStep.Document, Res.string.formDocumentFailed, it)
                 }
             }
             val docId =
                 earlier ?: documents
-                    .upload(patientId, file, "Form 025-2 ($day)", DocumentCategory.FORM_025_2.name)
+                    .upload(
+                        patientId,
+                        file,
+                        "Form 025-2 ($day)",
+                        DocumentCategory.FORM_025_2.name,
+                        clinicId,
+                    )
                     .getOrElse { return failed(SaveStep.Document, Res.string.formDocumentFailed, it) }
                     .id
             uploadedDocument = docId

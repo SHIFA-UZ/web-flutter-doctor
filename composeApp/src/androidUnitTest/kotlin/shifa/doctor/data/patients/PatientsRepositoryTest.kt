@@ -76,6 +76,10 @@ class PatientsRepositoryTest {
                         json,
                     )
                 path.endsWith("settings") -> respond(prophylaxisBody, HttpStatusCode.OK, json)
+                path.matches(Regex(".*/patients/\\d+")) -> {
+                    val id = path.substringAfterLast('/')
+                    respond("""{"id":$id,"name":"Fresh $id"}""", HttpStatusCode.OK, json)
+                }
                 else -> respond("[]", HttpStatusCode.OK, json)
             }
         }
@@ -94,6 +98,20 @@ class PatientsRepositoryTest {
             ).inOrder()
             assertThat(list).hasSize(101) // 99 + 101 + 102, the repeated 1 once
             assertThat(repo.patients.value).isEqualTo(list)
+        }
+
+    @Test
+    fun `a clinic read refreshes a patient of the directory but never adds another clinic doctor's patient`() =
+        runBlocking<Unit> {
+            repo.refresh()
+            repo.patient(500, clinicId = 2).getOrThrow()
+            assertThat(reads.last()).isEqualTo("/api/patients/500?clinicId=2")
+            assertThat(repo.patients.value!!.none { it.id == 500L }).isTrue()
+            repo.patient(5, clinicId = 2).getOrThrow()
+            assertThat(repo.patients.value!!.single { it.id == 5L }.name).isEqualTo("Fresh 5")
+            // The doctor's own read still joins.
+            repo.patient(501).getOrThrow()
+            assertThat(repo.patients.value!!.any { it.id == 501L }).isTrue()
         }
 
     @Test
