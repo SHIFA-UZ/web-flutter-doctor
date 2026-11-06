@@ -18,14 +18,17 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.profile.ProfileRepository
+import shifa.doctor.stopAll
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
     private var status = HttpStatusCode.OK
     private var failBody: String? = null
-    private val paths = mutableListOf<String>()
+    private val paths = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val repo =
         ProfileRepository {
             createHttpClient(
@@ -49,7 +52,10 @@ class ProfileViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(200) {
@@ -60,11 +66,11 @@ class ProfileViewModelTest {
 
     @Test
     fun `the doctor's profile comes from the shared repository, reading it only when the shell hasn't`() {
-        val classToTest = ProfileViewModel(false, repo)
+        val classToTest = ProfileViewModel(false, repo).also { created += it }
         settle { classToTest.state.value.me != null }
         assertThat(classToTest.state.value.me?.profile?.firstName).isEqualTo("Aziza")
         assertThat(classToTest.state.value.loading).isFalse()
-        val again = ProfileViewModel(false, repo)
+        val again = ProfileViewModel(false, repo).also { created += it }
         assertThat(again.state.value.me).isNotNull() // already there: no second read
         assertThat(paths.count { it.endsWith("doctors/me") }).isEqualTo(1)
     }
@@ -73,7 +79,7 @@ class ProfileViewModelTest {
     fun `a failed read keeps its request id, a later read from anywhere clears it, Retry reads again`() {
         status = HttpStatusCode.InternalServerError
         failBody = """{"status":500,"code":"INTERNAL","requestId":"req-77"}"""
-        val classToTest = ProfileViewModel(false, repo)
+        val classToTest = ProfileViewModel(false, repo).also { created += it }
         settle { classToTest.state.value.failed }
         assertThat(classToTest.state.value.requestId).isEqualTo("req-77")
         status = HttpStatusCode.OK
@@ -85,7 +91,7 @@ class ProfileViewModelTest {
 
     @Test
     fun `staff read me_profile, never doctors_me`() {
-        val classToTest = ProfileViewModel(true, repo)
+        val classToTest = ProfileViewModel(true, repo).also { created += it }
         settle { classToTest.state.value.staffMe != null }
         assertThat(classToTest.state.value.staffMe?.firstName).isEqualTo("Dilfuza")
         assertThat(paths.none { it.endsWith("doctors/me") }).isTrue()

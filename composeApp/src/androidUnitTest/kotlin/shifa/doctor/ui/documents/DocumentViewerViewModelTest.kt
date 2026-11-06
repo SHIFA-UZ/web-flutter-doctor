@@ -27,7 +27,7 @@ import shifa.doctor.utils.FileSaver
 class DocumentViewerViewModelTest {
     private var status = HttpStatusCode.OK
     private var body = "%PDF-1.4 x".encodeToByteArray()
-    private val requested = mutableListOf<String>()
+    private val requested = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var hold: CompletableDeferred<Unit>? = null
     private val engine =
         MockEngine { req ->

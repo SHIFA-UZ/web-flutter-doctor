@@ -45,14 +45,17 @@ import shifa.doctor.generated.resources.registrationConflict
 import shifa.doctor.generated.resources.registrationIncomplete
 import shifa.doctor.generated.resources.staffEmailInUse
 import shifa.doctor.generated.resources.timezoneDetectionFailed
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val sessions =
         SessionRepository(TokenStorage(MapSettings()), MapSettings(), LanguageRepository { error("unused") })
-    private val calls = mutableListOf<Pair<String, String>>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<Pair<String, String>>()
 
     // path → status and body; dev answers of 2026-11-04 (check-existing-doctor 404 for an unknown address).
     private val replies =
@@ -88,14 +91,17 @@ class RegisterViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(main)
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun vm(
         invite: Invite = Invite("KEY-1", false),
         zone: String? = "Asia/Tashkent",
     ) = RegisterViewModel(invite, auth, sessions, {
         zone
-    }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository { client })
+    }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository { client }).also { created += it }
 
     private fun RegisterViewModel.settle() {
         repeat(200) {
@@ -155,7 +161,15 @@ class RegisterViewModelTest {
         calls.clear()
         var doctorCalls = 0
         replies["check-existing-doctor"] = HttpStatusCode.NotFound to """{"error":404,"status":404,"code":"NOT_FOUND"}"""
-        val phoneVm = RegisterViewModel(Invite("KEY-1", false), phoneAuth { doctorCalls++ == 1 }, sessions, { "UTC" })
+        val phoneVm =
+            RegisterViewModel(
+                Invite("KEY-1", false),
+                phoneAuth {
+                    doctorCalls++ == 1
+                },
+                sessions,
+                { "UTC" },
+            ).also { created += it }
         phoneVm.fill()
         phoneVm.next()
         phoneVm.settle()
@@ -379,7 +393,7 @@ class RegisterViewModelTest {
         val vm =
             RegisterViewModel(Invite("KEY-1", false), auth, sessions, {
                 "UTC"
-            }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository(tokenClient))
+            }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository(tokenClient)).also { created += it }
         vm.toStep2()
         vm.onAddress("Chilonzor 5")
         vm.register()

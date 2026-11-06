@@ -22,13 +22,16 @@ import shifa.doctor.data.model.TaskStatus
 import shifa.doctor.data.tasks.TasksRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksLoadFailed
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TasksViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private var fail = false
     private var forbidden = false
     private var reads = 0
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val list =
         """[{"id":1,"patientId":14,"patientName":"Bekzod Aliyev","taskName":"Blood pressure","category":"VITAL","status":"ACTIVE","startDate":"2026-11-01"},
            {"id":2,"patientId":11,"patientName":"Dilnoza","taskName":"Metformin","category":"MEDICATION","status":"ACTIVE","startDate":"2026-11-01"},
@@ -59,7 +62,10 @@ class TasksViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -71,7 +77,7 @@ class TasksViewModelTest {
     private fun loaded() =
         TasksViewModel(
             repo,
-        ).also { vm -> vm.refresh().also { settle { vm.state.value.tasks != null } } }
+        ).also { created += it }.also { vm -> vm.refresh().also { settle { vm.state.value.tasks != null } } }
 
     @Test
     fun `counts over every task, filters combine on the phone`() {
@@ -102,7 +108,7 @@ class TasksViewModelTest {
         assertThat(classToTest.state.value.tasks).hasSize(4)
         assertThat(classToTest.state.value.error?.text).isEqualTo(Res.string.tasksLoadFailed)
         assertThat(classToTest.state.value.error?.requestId).isEqualTo("r-9")
-        val fresh = TasksViewModel(repo)
+        val fresh = TasksViewModel(repo).also { created += it }
         fresh.refresh()
         settle { fresh.state.value.error != null }
         // Never read: the list is unknown (not "no tasks"), even once the banner is closed.
@@ -126,7 +132,7 @@ class TasksViewModelTest {
                 )
             }
         forbidden = true
-        val classToTest = TasksViewModel(repo, profile)
+        val classToTest = TasksViewModel(repo, profile).also { created += it }
         classToTest.refresh()
         settle { asked.any { it.startsWith("doctors/me") } }
         assertThat(asked.any { it.startsWith("doctors/me") }).isTrue()
@@ -137,7 +143,7 @@ class TasksViewModelTest {
 
     @Test
     fun `Refresh during the first read replaces it`() {
-        val classToTest = TasksViewModel(repo)
+        val classToTest = TasksViewModel(repo).also { created += it }
         classToTest.refresh()
         classToTest.refresh()
         settle { classToTest.state.value.tasks != null }

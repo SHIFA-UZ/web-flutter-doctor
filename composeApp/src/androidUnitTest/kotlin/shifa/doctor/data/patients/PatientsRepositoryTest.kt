@@ -20,8 +20,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TestTimeSource
 
 class PatientsRepositoryTest {
-    private val reads = mutableListOf<String>()
-    private val sent = mutableListOf<String>()
+    private val reads = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var prophylaxisBody = ""
     private var asPage = false
     private var badPage = false

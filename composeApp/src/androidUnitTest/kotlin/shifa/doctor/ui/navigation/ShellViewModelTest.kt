@@ -28,9 +28,12 @@ import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.DoctorTier
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShellViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private var startTab = "calendar"
     private var tier = "PREMIUM"
 
@@ -42,7 +45,7 @@ class ShellViewModelTest {
 
     private var clinics = """[{"clinicId":1,"name":"Shifa Demo Clinic"}]"""
     private var hold = CompletableDeferred(Unit)
-    private val paths = mutableListOf<String>()
+    private val paths = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var chat = 1
     private var notifications = 140
     private val client by lazy {
@@ -74,7 +77,10 @@ class ShellViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(main)
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private val profile by lazy { ProfileRepository { client } }
 
@@ -88,7 +94,7 @@ class ShellViewModelTest {
                 client
             }, com.russhwolf.settings.MapSettings(), { "u1" }),
             BadgesRepository { client },
-        ) { scheduleReads++ }
+        ) { scheduleReads++ }.also { created += it }
 
     private fun ShellViewModel.settle() {
         repeat(200) {

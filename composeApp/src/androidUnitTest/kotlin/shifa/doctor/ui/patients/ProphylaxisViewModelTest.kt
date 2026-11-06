@@ -22,15 +22,14 @@ import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.prophylaxisSaved
 import shifa.doctor.stopAll
-import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProphylaxisViewModelTest {
     private var getBody = ""
     private var getStatus = HttpStatusCode.OK
     private var putStatus = HttpStatusCode.OK
-    private val sent = Collections.synchronizedList(mutableListOf<String>())
-    private val queries = Collections.synchronizedList(mutableListOf<String>())
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val queries = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val client =
         createHttpClient(
             { null },

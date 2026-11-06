@@ -45,14 +45,14 @@ internal fun jwt(
 }
 
 class ApiCallTest {
-    private val ended = mutableListOf<Pair<SessionEndReason, String>>()
+    private val ended = java.util.concurrent.CopyOnWriteArrayList<Pair<SessionEndReason, String>>()
 
     init {
         SessionEvents.listener = { reason, token -> ended += reason to token }
     }
 
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
-    private val requests = mutableListOf<HttpRequestData>()
+    private val requests = java.util.concurrent.CopyOnWriteArrayList<HttpRequestData>()
 
     private fun client(
         token: String? = jwt(NOW + 3600),

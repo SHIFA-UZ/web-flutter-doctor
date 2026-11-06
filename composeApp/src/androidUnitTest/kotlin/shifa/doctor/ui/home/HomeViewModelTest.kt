@@ -22,11 +22,14 @@ import shifa.doctor.data.home.HomeRepository
 import shifa.doctor.data.home.RefreshGate
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.homeLoadFailed
+import shifa.doctor.stopAll
 import shifa.doctor.utils.PracticeClock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TestTimeSource
 
 class HomeViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private var status = HttpStatusCode.OK
     private var reads = 0
     private val engine =
@@ -41,11 +44,14 @@ class HomeViewModelTest {
             )
         }
     private val time = TestTimeSource()
-    private val zones = mutableListOf<String?>()
+    private val zones = java.util.concurrent.CopyOnWriteArrayList<String?>()
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -62,7 +68,7 @@ class HomeViewModelTest {
                 PracticeClock(zone, { Instant.parse("2026-11-05T04:12:00Z") })
             },
             RefreshGate(60.seconds, time),
-        )
+        ).also { created += it }
 
     @Test
     fun `the tab's focus reads once a minute, pull-to-refresh always, keeping the content meanwhile`() {

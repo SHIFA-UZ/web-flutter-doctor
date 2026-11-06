@@ -31,14 +31,17 @@ import shifa.doctor.generated.resources.invalidEmail
 import shifa.doctor.generated.resources.invalidOtp
 import shifa.doctor.generated.resources.otpResent
 import shifa.doctor.generated.resources.tooManyRequests
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EmailCodeViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private var now = 1_000_000L
     private val cooldown = OtpCooldown { now }
     private val sessions =
         SessionRepository(TokenStorage(MapSettings()), MapSettings(), LanguageRepository { error("unused") })
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var status = HttpStatusCode.OK
     private var body = """{"sent":true}"""
     private val auth =
@@ -54,7 +57,10 @@ class EmailCodeViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun waitFor(done: () -> Boolean) {
         repeat(200) {
@@ -65,7 +71,7 @@ class EmailCodeViewModelTest {
 
     @Test
     fun `the address is checked before anything is sent`() {
-        val vm = EmailEntryViewModel(EmailCodeMode.SignIn, auth = auth, cooldown = cooldown)
+        val vm = EmailEntryViewModel(EmailCodeMode.SignIn, auth = auth, cooldown = cooldown).also { created += it }
         vm.submit()
         assertThat(vm.state.value.error).isEqualTo(Res.string.enterEmail)
         vm.onEmail("doctor@shifa")
@@ -76,7 +82,7 @@ class EmailCodeViewModelTest {
 
     @Test
     fun `a code goes out once a minute per address, by mode`() {
-        val vm = EmailEntryViewModel(EmailCodeMode.SignIn, auth = auth, cooldown = cooldown)
+        val vm = EmailEntryViewModel(EmailCodeMode.SignIn, auth = auth, cooldown = cooldown).also { created += it }
         vm.onEmail(" Doctor@Shifa.dev ")
         vm.submit()
         waitFor { vm.state.value.sentTo != null }
@@ -88,7 +94,7 @@ class EmailCodeViewModelTest {
         assertThat(calls.single()).startsWith("/api/auth/send-login-otp")
 
         // A reset code for the same address is a different code: it is sent.
-        val reset = EmailEntryViewModel(EmailCodeMode.Reset, auth = auth, cooldown = cooldown)
+        val reset = EmailEntryViewModel(EmailCodeMode.Reset, auth = auth, cooldown = cooldown).also { created += it }
         reset.onEmail("doctor@shifa.dev")
         reset.submit()
         waitFor { reset.state.value.sentTo != null }
@@ -100,7 +106,7 @@ class EmailCodeViewModelTest {
     fun `a rate-limited send says so`() {
         status = HttpStatusCode.TooManyRequests
         body = """{"code":"RATE_LIMITED"}"""
-        val vm = EmailEntryViewModel(EmailCodeMode.SignIn, auth = auth, cooldown = cooldown)
+        val vm = EmailEntryViewModel(EmailCodeMode.SignIn, auth = auth, cooldown = cooldown).also { created += it }
         vm.onEmail("a@b.cd")
         vm.submit()
         waitFor { !vm.state.value.loading }
@@ -110,7 +116,7 @@ class EmailCodeViewModelTest {
     @Test
     fun `the sixth digit signs in, a wrong code clears the field`() {
         cooldown.start("a@b.cd", "SignIn")
-        val vm = CodeViewModel("a@b.cd", EmailCodeMode.SignIn, auth, sessions, cooldown)
+        val vm = CodeViewModel("a@b.cd", EmailCodeMode.SignIn, auth, sessions, cooldown).also { created += it }
         assertThat(vm.state.value.resendIn).isEqualTo(60)
         status = HttpStatusCode.BadRequest
         body = """{"code":"VALIDATION"}"""
@@ -128,7 +134,7 @@ class EmailCodeViewModelTest {
     @Test
     fun `reset mode sends nothing on the code, and resend waits for the cooldown`() {
         cooldown.start("a@b.cd", "Reset")
-        val vm = CodeViewModel("a@b.cd", EmailCodeMode.Reset, auth, sessions, cooldown)
+        val vm = CodeViewModel("a@b.cd", EmailCodeMode.Reset, auth, sessions, cooldown).also { created += it }
         vm.onCode("654321")
         assertThat(vm.state.value.resetCode).isEqualTo("654321")
         vm.resend()

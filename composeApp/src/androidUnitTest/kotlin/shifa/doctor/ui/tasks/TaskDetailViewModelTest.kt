@@ -24,11 +24,14 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.couldNotLoadTask
 import shifa.doctor.generated.resources.failedToCancel
 import shifa.doctor.generated.resources.taskCancelled
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskDetailViewModelTest {
-    private val asked = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var taskStatus = HttpStatusCode.OK
     private var cancelStatus = HttpStatusCode.OK
     private var checksFail = false
@@ -90,6 +93,7 @@ class TaskDetailViewModelTest {
 
     @After
     fun tearDown() {
+        created.stopAll()
         Dispatchers.resetMain()
         ShellNotice.pending.value = null
     }
@@ -102,7 +106,7 @@ class TaskDetailViewModelTest {
     }
 
     private fun loaded() =
-        TaskDetailViewModel(7, repo).also { vm ->
+        TaskDetailViewModel(7, repo).also { created += it }.also { vm ->
             vm.load().also {
                 settle { vm.state.value.task != null && vm.state.value.checkIns != null }
             }
@@ -120,18 +124,18 @@ class TaskDetailViewModelTest {
     @Test
     fun `404 is not found, any other failure can be retried, check-ins fail on their own`() {
         taskStatus = HttpStatusCode.NotFound
-        val gone = TaskDetailViewModel(7, repo).also { it.load() }
+        val gone = TaskDetailViewModel(7, repo).also { created += it }.also { it.load() }
         settle { gone.state.value.error != null }
         assertThat(gone.state.value.notFound).isTrue()
         taskStatus = HttpStatusCode.InternalServerError
-        val broken = TaskDetailViewModel(7, repo).also { it.load() }
+        val broken = TaskDetailViewModel(7, repo).also { created += it }.also { it.load() }
         settle { broken.state.value.error != null }
         assertThat(broken.state.value.notFound).isFalse()
         assertThat(broken.state.value.error?.text).isEqualTo(Res.string.couldNotLoadTask)
         assertThat(broken.state.value.error?.requestId).isEqualTo("r-t")
         taskStatus = HttpStatusCode.OK
         checksFail = true
-        val partial = TaskDetailViewModel(7, repo).also { it.load() }
+        val partial = TaskDetailViewModel(7, repo).also { created += it }.also { it.load() }
         settle { partial.state.value.task != null }
         assertThat(partial.state.value.checkInsFailed).isTrue()
         assertThat(partial.state.value.checkIns).isNull()
@@ -187,7 +191,7 @@ class TaskDetailViewModelTest {
                 7,
                 repo,
                 shifa.doctor.data.profile.ProfileRepository { client },
-            ).also { it.load() }
+            ).also { created += it }.also { it.load() }
         settle { asked.any { it.startsWith("doctors/me") } }
         assertThat(asked.any { it.startsWith("doctors/me") }).isTrue()
         assertThat(gated.state.value.error).isNotNull()

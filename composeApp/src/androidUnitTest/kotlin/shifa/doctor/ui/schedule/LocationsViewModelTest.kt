@@ -28,7 +28,7 @@ import shifa.doctor.stopAll
 @OptIn(ExperimentalCoroutinesApi::class)
 class LocationsViewModelTest {
     private var list = """[{"id":1,"label":"Main","clinic":"Shifa","locationCity":"Tashkent","isPrimary":true},{"id":2,"label":"Evening","isPrimary":false}]"""
-    private val writes = mutableListOf<String>()
+    private val writes = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var deleteStatus = HttpStatusCode.NoContent
     private var reads = 0
     private val engine =

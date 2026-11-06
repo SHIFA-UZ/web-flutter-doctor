@@ -17,7 +17,7 @@ import shifa.doctor.data.model.CreateTaskRequest
 import shifa.doctor.data.model.TaskStatus
 
 class TasksRepositoryTest {
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var forbidden = false
     private val task = """{"id":7,"patientId":14,"patientName":"B","taskName":"T","category":"VITAL","status":"ACTIVE","startDate":"2026-11-01","inputType":"NUMERIC","timesPerDay":1}"""
     private val classToTest =

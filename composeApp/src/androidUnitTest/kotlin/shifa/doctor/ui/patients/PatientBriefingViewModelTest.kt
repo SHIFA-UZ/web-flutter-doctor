@@ -26,12 +26,15 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.aiRateLimit
 import shifa.doctor.generated.resources.aiUnavailable
 import shifa.doctor.generated.resources.intelTookTooLong
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatientBriefingViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     // Each briefing request takes the next answer; a held one waits for [gate].
     private val answers = ArrayDeque<Pair<HttpStatusCode, String>>()
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var gate: CompletableDeferred<Unit>? = null
     private val client =
         createHttpClient(
@@ -48,11 +51,19 @@ class PatientBriefingViewModelTest {
         )
 
     private fun vm(language: AppLanguage = AppLanguage.English) =
-        PatientBriefingViewModel(11, AiRepository { client }, { language }, ProfileRepository { client })
+        PatientBriefingViewModel(
+            11,
+            AiRepository { client },
+            { language },
+            ProfileRepository { client },
+        ).also { created += it }
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -127,7 +138,7 @@ class PatientBriefingViewModelTest {
                 },
                 { AppLanguage.English },
                 ProfileRepository { client },
-            )
+            ).also { created += it }
         slow.open()
         settle { slow.state.value.error != null }
         assertThat(slow.state.value.error!!.text).isEqualTo(Res.string.intelTookTooLong)

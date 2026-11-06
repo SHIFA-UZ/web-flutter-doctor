@@ -24,11 +24,10 @@ import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicTreatmentPlanExportPdfFailed
 import shifa.doctor.stopAll
-import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicPlansViewModelTest {
-    private val calls = Collections.synchronizedList(mutableListOf<String>())
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var detailMissing = false
     private val plan = """{"id":501,"clinicId":2,"patientId":12,"patientName":"Jasur","title":"Molars","status":"ACTIVE","totalMinor":160000000,"paidMinor":100000000,"owedMinor":60000000,"currency":"UZS","visitCount":2,"linesCompletedCount":1,"linesTotalCount":3}"""
     private val client =
@@ -66,7 +65,9 @@ class ClinicPlansViewModelTest {
         )
     private val created = mutableListOf<androidx.lifecycle.ViewModel>()
 
-    @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    private val main = UnconfinedTestDispatcher()
+
+    @Before fun setUp() = Dispatchers.setMain(main)
 
     @After fun tearDown() {
         created.stopAll()
@@ -90,7 +91,12 @@ class ClinicPlansViewModelTest {
         assertThat(calls.last()).isEqualTo("GET treatment-plans?clinicId=2&status=ON_HOLD&planKind=COMPREHENSIVE")
         vm.status(null)
         vm.type(" jas ")
-        settle { calls.any { it.endsWith("&q=jas") } }
+        // The search waits for the pause on the test clock.
+        main.scheduler.advanceTimeBy(ClinicPlansViewModel.DEBOUNCE.inWholeMilliseconds + 1)
+        main.scheduler.runCurrent()
+        settle { calls.any { it.endsWith("&q=jas") } && vm.state.value.plans != null }
+        assertThat(calls.last { it.startsWith("GET treatment-plans?") })
+            .isEqualTo("GET treatment-plans?clinicId=2&planKind=COMPREHENSIVE&q=jas")
         val p = vm.state.value.plans!!.single()
         vm.toggle(p)
         settle { vm.state.value.visits[501L] != null }

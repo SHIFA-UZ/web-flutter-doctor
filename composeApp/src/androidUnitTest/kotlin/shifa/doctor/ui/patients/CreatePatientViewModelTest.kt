@@ -29,8 +29,8 @@ import shifa.doctor.ui.navigation.ShellNotice
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreatePatientViewModelTest {
-    private val sent = mutableListOf<String>()
-    private val methods = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val methods = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var status = HttpStatusCode.OK
     private val engine =
         MockEngine { req ->

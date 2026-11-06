@@ -23,12 +23,15 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.visitFactsDocumentFailed
 import shifa.doctor.generated.resources.visitFactsLoadFailed
+import shifa.doctor.stopAll
 import shifa.doctor.ui.patients.ClinicalTimelineViewModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VisitFactsViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val answers = ArrayDeque<Pair<HttpStatusCode, String>>()
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val client =
         createHttpClient(
             { null },
@@ -44,7 +47,10 @@ class VisitFactsViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -81,7 +87,7 @@ class VisitFactsViewModelTest {
             "MEDICATION",
             "COMMITTED",
         )},${fact(2, "SYMPTOM", "REJECTED")},${fact(3, "DIAGNOSIS", kept = false)}],"patterns":[]}"""
-        val classToTest = VisitFactsViewModel(101, AiRepository { client })
+        val classToTest = VisitFactsViewModel(101, AiRepository { client }).also { created += it }
         classToTest.load()
         settle { classToTest.state.value.facts != null }
         assertThat(classToTest.state.value.drafts.map { it.id }).containsExactly(1L, 2L)
@@ -108,7 +114,7 @@ class VisitFactsViewModelTest {
         answers += HttpStatusCode.InternalServerError to """{"status":500}"""
         answers += drafts
         answers += HttpStatusCode.InternalServerError to """{"status":500}"""
-        val classToTest = VisitFactsViewModel(101, AiRepository { client })
+        val classToTest = VisitFactsViewModel(101, AiRepository { client }).also { created += it }
         classToTest.load()
         settle { classToTest.state.value.loadError != null }
         assertThat(classToTest.state.value.loadError!!.text).isEqualTo(Res.string.visitFactsLoadFailed)
@@ -137,7 +143,7 @@ class VisitFactsViewModelTest {
             "COMMITTED",
         )},${fact(2, "SYMPTOM", "COMMITTED")}],"createdTaskIds":[],"patterns":[]}"""
         answers += HttpStatusCode.InternalServerError to """{"status":500}"""
-        val classToTest = VisitFactsViewModel(101, AiRepository { client })
+        val classToTest = VisitFactsViewModel(101, AiRepository { client }).also { created += it }
         classToTest.load()
         settle { classToTest.state.value.facts != null }
 
@@ -159,7 +165,7 @@ class VisitFactsViewModelTest {
     @Test
     fun `no facts at all draws nothing`() {
         answers += HttpStatusCode.OK to """{"facts":[],"patterns":[]}"""
-        val classToTest = VisitFactsViewModel(101, AiRepository { client })
+        val classToTest = VisitFactsViewModel(101, AiRepository { client }).also { created += it }
         classToTest.load()
         settle { classToTest.state.value.facts != null }
         assertThat(classToTest.state.value.empty).isTrue()
@@ -169,7 +175,7 @@ class VisitFactsViewModelTest {
     fun `the timeline keeps what it shows when a re-read fails`() {
         answers += HttpStatusCode.OK to """{"timeline":[${fact(1, "MEDICATION", "COMMITTED")}],"patterns":[]}"""
         answers += HttpStatusCode.InternalServerError to """{"status":500}"""
-        val classToTest = ClinicalTimelineViewModel(11, AiRepository { client })
+        val classToTest = ClinicalTimelineViewModel(11, AiRepository { client }).also { created += it }
         classToTest.load()
         settle { classToTest.state.value.timeline != null }
         classToTest.load()

@@ -284,6 +284,8 @@ fun MainScreenContent(
             onOpen = actions.push,
         )
     },
+    // A route's screen; shell previews pass a stand-in (the tabs' screens read repositories and the clock).
+    route: @Composable (ShellRoute) -> Unit = { RouteContent(it, actions, state.staff, state) },
 ) {
     Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
         Column(Modifier.fillMaxSize()) {
@@ -295,7 +297,7 @@ fun MainScreenContent(
                 if (state.intelligence && overIntelligence != null) {
                     // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
                     saved.SaveableStateProvider("intelligence/${state.overIntelligence.size}/$overIntelligence") {
-                        RouteContent(overIntelligence, actions, state.staff, state)
+                        route(overIntelligence)
                     }
                 } else if (state.intelligence) {
                     // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
@@ -304,7 +306,7 @@ fun MainScreenContent(
                     saved.SaveableStateProvider("intelligence") { intelligence() }
                 } else {
                     saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
-                        RouteContent(state.route, actions, state.staff, state)
+                        route(state.route)
                     }
                 }
             }

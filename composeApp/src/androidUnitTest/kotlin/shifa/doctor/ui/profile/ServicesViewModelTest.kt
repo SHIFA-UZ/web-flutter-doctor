@@ -26,14 +26,17 @@ import shifa.doctor.generated.resources.serviceManagedByClinic
 import shifa.doctor.generated.resources.servicePriceDuplicate
 import shifa.doctor.generated.resources.servicePriceInvalid
 import shifa.doctor.generated.resources.servicePricesInvalid
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServicesViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     // dev 2026-11-04, shortened
     private val services =
         """[{"id":2,"title":"Follow-up visit","description":null,"isActive":true,"isFreeConsultation":false,"paymentType":"PAY_LATER","clinicManaged":false,"groupId":null,"groupName":null,"groupSortOrder":null,"prices":[{"id":1,"amountMinor":10000000,"currency":"UZS","locationId":2}]},
             {"id":9,"title":"Cleaning","isActive":true,"isFreeConsultation":false,"clinicManaged":true,"prices":[]}]"""
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failServices = false
     private var deleteStatus = HttpStatusCode.NoContent
     private var failGroupWrite = -1 // the index of the group write to fail, -1 for none
@@ -92,7 +95,10 @@ class ServicesViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(200) {
@@ -105,7 +111,7 @@ class ServicesViewModelTest {
         ServicesViewModel(
             repo,
             shifa.doctor.data.locations.LocationsRepository { createHttpClient({ null }, engine) },
-        ).also {
+        ).also { created += it }.also {
                 vm ->
             settle { !vm.state.value.loading }
         }

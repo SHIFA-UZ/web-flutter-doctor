@@ -27,15 +27,18 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.checkoutFailed
 import shifa.doctor.generated.resources.planChanged
 import shifa.doctor.generated.resources.planUnchanged
+import shifa.doctor.stopAll
 import java.io.File
 
 // SUB-02: plans, checkout and Stripe Connect from Subscription & billing.
 @OptIn(ExperimentalCoroutinesApi::class)
 class BillingSubscriptionTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val fixture = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
     private var tier = "BASIC"
     private val me get() = fixture.replace(Regex(""""tier"\s*:\s*"[A-Z]+""""), """"tier":"$tier"""")
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failCheckout = false
     private var failPlans = false
     private val engine =
@@ -86,7 +89,10 @@ class BillingSubscriptionTest {
         runBlocking { repo.refresh() }
     }
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(200) {
@@ -96,7 +102,7 @@ class BillingSubscriptionTest {
     }
 
     private fun opened() =
-        BillingViewModel(repo, subscriptions, retryDelayMs = 0).apply {
+        BillingViewModel(repo, subscriptions, retryDelayMs = 0).also { created += it }.apply {
             open()
             settle { state.value.plans.isNotEmpty() }
         }
@@ -183,7 +189,7 @@ class BillingSubscriptionTest {
                     )
                 },
                 0,
-            )
+            ).also { created += it }
         classToTest.open()
         classToTest.upgrade(shifa.doctor.data.subscription.SubscriptionPlan("PRO", "Pro"))
         settle { classToTest.state.value.banner != null }

@@ -31,8 +31,8 @@ import shifa.doctor.data.model.CommitVisitFactsRequest
 import shifa.doctor.data.storage.AppLanguage
 
 class AiRepositoryTest {
-    private val calls = mutableListOf<String>()
-    private val accepts = mutableListOf<String?>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val accepts = java.util.concurrent.CopyOnWriteArrayList<String?>()
 
     private fun repo(
         status: HttpStatusCode,

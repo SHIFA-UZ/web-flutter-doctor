@@ -14,7 +14,7 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 
 class NotificationsRepositoryTest {
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val classToTest =
         NotificationsRepository({
             createHttpClient(

@@ -18,10 +18,13 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.data.chat.ConversationSort
 import shifa.doctor.data.model.UserSearchResult
+import shifa.doctor.stopAll
 import kotlin.time.Duration.Companion.milliseconds
 
 class ChatListViewModelTest {
-    private val asked = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine =
         MockEngine { req ->
             val path = req.url.encodedPath.substringAfter("/api/")
@@ -40,7 +43,10 @@ class ChatListViewModelTest {
     // Real time: the polling and the search debounce wait with delay().
     @Before fun setUp() = Dispatchers.setMain(Dispatchers.Unconfined)
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -58,7 +64,7 @@ class ChatListViewModelTest {
             }, { "https://api.shifa.uz/api/" }),
             every = 50.milliseconds,
             debounce = 30.milliseconds,
-        )
+        ).also { created += it }
 
     @Test
     fun `in front it reads now and again, behind it nothing`() {
@@ -126,7 +132,7 @@ class ChatListViewModelTest {
                     createHttpClient({ null }, slow)
                 }, { "https://api.shifa.uz/api/" }),
                 every = 20.milliseconds,
-            )
+            ).also { created += it }
         classToTest.foreground(true)
         settle { classToTest.state.value.conversations != null }
         assertThat(classToTest.state.value.conversations!!.map { it.id }).containsExactly(7L)
@@ -159,7 +165,7 @@ class ChatListViewModelTest {
                     createHttpClient({ null }, flaky)
                 }, { "https://api.shifa.uz/api/" }),
                 debounce = 10.milliseconds,
-            )
+            ).also { created += it }
         classToTest.type("Dil")
         settle { classToTest.state.value.searchFailed }
         assertThat(classToTest.state.value.searchFailed).isTrue()

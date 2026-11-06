@@ -31,9 +31,9 @@ import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicPeopleViewModelTest {
-    private val calls = mutableListOf<Pair<String, String>>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<Pair<String, String>>()
     private var shareStatus = HttpStatusCode.OK
-    private val statuses = mutableListOf<String>()
+    private val statuses = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val client =
         createHttpClient(
             { null },

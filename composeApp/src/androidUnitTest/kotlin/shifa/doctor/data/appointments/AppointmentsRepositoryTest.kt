@@ -14,7 +14,7 @@ import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.SignatureState
 
 class AppointmentsRepositoryTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
 
     private fun repo(vararg answers: String): AppointmentsRepository {

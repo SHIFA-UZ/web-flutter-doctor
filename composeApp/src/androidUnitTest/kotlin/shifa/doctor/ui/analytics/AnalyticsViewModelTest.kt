@@ -28,7 +28,7 @@ import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 
 class AnalyticsViewModelTest {
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failEngagement = false
     private var smsForbidden = false
     private val engine =

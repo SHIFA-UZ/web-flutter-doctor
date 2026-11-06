@@ -53,8 +53,8 @@ class PatientDetailViewModelTest {
     private var patchStatus = HttpStatusCode.OK
     private var smsStatus = HttpStatusCode.OK
     private var accountStatus = HttpStatusCode.OK
-    private val bodies = mutableListOf<String>()
-    private val calls = mutableListOf<String>()
+    private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     private fun patient() =
         """{"id":7,"name":"Dilnoza Karimova","phones":$phones,"birthDate":"1990-11-04","language":"ru","gender":"FEMALE","chronicDisease":"Diabetes","hasAccount":$account,"username":${if (account) "\"dilnoza.k\"" else "null"},"smsReminderEnabled":false,"smsReminderHoursBefore":24,"clinicalStatus":"AT_RISK","atRisk":true}"""

@@ -21,7 +21,7 @@ import kotlin.time.TestTimeSource
 class HomeRepositoryTest {
     // Days by date (Tashkent, UTC+5); a missing day is empty, "fail" answers 500.
     private val days = mutableMapOf<String, String>()
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     private fun visit(
         id: Long,

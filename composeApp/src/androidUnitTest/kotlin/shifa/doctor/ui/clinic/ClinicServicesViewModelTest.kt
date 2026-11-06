@@ -26,11 +26,10 @@ import shifa.doctor.generated.resources.clinicServiceAdded
 import shifa.doctor.generated.resources.clinicServiceDeactivated
 import shifa.doctor.generated.resources.serviceSaved
 import shifa.doctor.stopAll
-import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicServicesViewModelTest {
-    private val writes = Collections.synchronizedList(mutableListOf<String>())
+    private val writes = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var catalogFails = false
     private var servicesFail = false
     private var reads = 0

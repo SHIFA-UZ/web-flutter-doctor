@@ -22,7 +22,7 @@ import shifa.doctor.data.model.BriefingStatus
 import shifa.doctor.stopAll
 
 class BriefingViewModelTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var briefing = """{"appointmentId":7,"status":"FAILED"}"""
     private var briefingStatus = HttpStatusCode.OK
     private val json = headersOf(HttpHeaders.ContentType, "application/json")

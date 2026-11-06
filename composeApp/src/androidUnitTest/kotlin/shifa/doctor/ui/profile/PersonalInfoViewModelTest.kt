@@ -30,16 +30,19 @@ import shifa.doctor.generated.resources.enterFirstName
 import shifa.doctor.generated.resources.nameInvalid
 import shifa.doctor.generated.resources.photoUpdated
 import shifa.doctor.generated.resources.profileInformationSaved
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.PickedImage
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalInfoViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
     private var fail: String? = null
     private var slowCatalog = false
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine =
         MockEngine { req ->
             val path = req.url.encodedPath
@@ -96,6 +99,7 @@ class PersonalInfoViewModelTest {
 
     @After fun tearDown() {
         ShellNotice.pending.value = null
+        created.stopAll()
         Dispatchers.resetMain()
     }
 
@@ -107,7 +111,7 @@ class PersonalInfoViewModelTest {
     }
 
     private fun opened(): PersonalInfoViewModel {
-        val vm = PersonalInfoViewModel(repo, catalog)
+        val vm = PersonalInfoViewModel(repo, catalog).also { created += it }
         vm.open()
         settle { vm.state.value.catalog.isNotEmpty() }
         return vm
@@ -233,7 +237,7 @@ class PersonalInfoViewModelTest {
     @Test
     fun `the bundled professions show at once while the backend is slow`() {
         slowCatalog = true
-        val classToTest = PersonalInfoViewModel(repo, catalog)
+        val classToTest = PersonalInfoViewModel(repo, catalog).also { created += it }
         classToTest.open()
         settle { classToTest.state.value.catalog.isNotEmpty() }
         assertThat(classToTest.state.value.catalog.map { it.english }).containsExactly("Cardiologist", "Dentist")

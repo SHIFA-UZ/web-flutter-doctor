@@ -23,12 +23,15 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.extendedProfileSaved
 import shifa.doctor.generated.resources.serviceTagDuplicate
 import shifa.doctor.generated.resources.serviceTagTooLong
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.DocumentPickerResult
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExtendedProfileViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val me =
         File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
             .replace(Regex(""""services"\s*:\s*(null|"[^"]*(\\"[^"]*)*")"""), """"services":"[\\"Braces\\"]"""")
@@ -36,7 +39,7 @@ class ExtendedProfileViewModelTest {
                 Regex(""""certificates"\s*:\s*(null|"[^"]*(\\"[^"]*)*")"""),
                 """"certificates":"[\\"https://x/certificates/a.pdf\\"]"""",
             )
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failing = false
 
     // While closed, writes wait: lets a test start several before any answers.
@@ -72,6 +75,7 @@ class ExtendedProfileViewModelTest {
 
     @After fun tearDown() {
         ShellNotice.pending.value = null
+        created.stopAll()
         Dispatchers.resetMain()
     }
 
@@ -82,7 +86,7 @@ class ExtendedProfileViewModelTest {
         }
     }
 
-    private fun opened() = ExtendedProfileViewModel(repo).apply { open() }
+    private fun opened() = ExtendedProfileViewModel(repo).also { created += it }.apply { open() }
 
     @Test
     fun `tags save at once as the backend's JSON string, with the rules checked first`() {

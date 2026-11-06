@@ -17,7 +17,7 @@ import shifa.doctor.data.model.PlanKind
 import shifa.doctor.data.model.PlanStatus
 
 class TreatmentPlansRepositoryTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val summary =
         """{"id":5,"clinicId":2,"patientId":14,"title":"Upper jaw","status":"IN_PROGRESS","planKind":"COMPREHENSIVE","totalMinor":300,"paidMinor":100,"owedMinor":200,"currency":"UZS","planPaymentStatus":"PARTIAL","linesCompletedCount":1,"linesTotalCount":3,"attendingDoctors":[{"id":4,"name":"Dr. A"},{"id":"bad"}],"symptoms":[]}"""
     private val lines =

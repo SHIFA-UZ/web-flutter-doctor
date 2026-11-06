@@ -21,13 +21,16 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.tasks.TasksRepository
+import shifa.doctor.stopAll
 import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationOpener
 import shifa.doctor.utils.PracticeClock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeAttentionViewModelTest {
-    private val asked = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var pageFails = false
     private var readFails = false
     private var allReadFirstPage = false
@@ -93,11 +96,14 @@ class HomeAttentionViewModelTest {
             }),
             TasksRepository({ client }),
             NotificationOpener(),
-        )
+        ).also { created += it }
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {

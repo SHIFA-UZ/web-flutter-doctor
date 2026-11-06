@@ -74,7 +74,7 @@ class VideoVisitTest {
             }
         }
     private val scope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher(TestCoroutineScheduler()))
-    private val made = mutableListOf<FakeCall>()
+    private val made = java.util.concurrent.CopyOnWriteArrayList<FakeCall>()
     private val start = Instant.parse("2026-11-05T10:00:00Z")
     private var now = start
 

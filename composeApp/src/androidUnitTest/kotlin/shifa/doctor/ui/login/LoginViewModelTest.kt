@@ -38,9 +38,12 @@ import shifa.doctor.generated.resources.minimum6Characters
 import shifa.doctor.generated.resources.networkError
 import shifa.doctor.generated.resources.signedOutInactivity
 import shifa.doctor.generated.resources.youveSignedOut
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val tokens = TokenStorage(MapSettings())
     private val sessions = SessionRepository(tokens, MapSettings(), LanguageRepository { error("unused") })
     private var reply: suspend (
@@ -48,8 +51,8 @@ class LoginViewModelTest {
     ) -> Pair<HttpStatusCode, String> = {
         HttpStatusCode.OK to """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""
     }
-    private val sent = mutableListOf<String>()
-    private val urls = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val urls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val auth =
         AuthRepository {
             createHttpClient(
@@ -65,9 +68,12 @@ class LoginViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
-    private fun vm() = LoginViewModel(auth, sessions)
+    private fun vm() = LoginViewModel(auth, sessions).also { created += it }
 
     // MockEngine answers on another thread: wait for the request to finish.
     private fun LoginViewModel.settle() {

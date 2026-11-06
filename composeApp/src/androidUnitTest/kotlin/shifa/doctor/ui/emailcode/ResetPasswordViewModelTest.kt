@@ -31,12 +31,15 @@ import shifa.doctor.generated.resources.passwordsDoNotMatch
 import shifa.doctor.generated.resources.pleaseConfirmPassword
 import shifa.doctor.generated.resources.resetPasswordFailed
 import shifa.doctor.generated.resources.wrongOrExpiredCodeBackToCode
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResetPasswordViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val sessions =
         SessionRepository(TokenStorage(MapSettings()), MapSettings(), LanguageRepository { error("unused") })
-    private val bodies = mutableListOf<String>()
+    private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var status = HttpStatusCode.OK
     private var body = """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""
     private val auth =
@@ -52,9 +55,12 @@ class ResetPasswordViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
-    private fun vm() = ResetPasswordViewModel("doctor@shifa.dev", "123456", auth, sessions)
+    private fun vm() = ResetPasswordViewModel("doctor@shifa.dev", "123456", auth, sessions).also { created += it }
 
     private fun ResetPasswordViewModel.settle() {
         repeat(200) {

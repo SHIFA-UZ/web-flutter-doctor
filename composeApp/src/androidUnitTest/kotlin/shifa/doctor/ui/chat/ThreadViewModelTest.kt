@@ -21,15 +21,18 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chatRecordingTooShort
 import shifa.doctor.generated.resources.errorRecordingVoice
 import shifa.doctor.generated.resources.errorUploadingFile
+import shifa.doctor.stopAll
 import kotlin.time.Duration.Companion.milliseconds
 
 class ThreadViewModelTest {
-    private val asked = mutableListOf<String>()
-    private val sent = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failSend = false
     private var failUpload = false
-    private val uploads = mutableListOf<Int>()
-    private val bodies = mutableListOf<String>()
+    private val uploads = java.util.concurrent.CopyOnWriteArrayList<Int>()
+    private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failRead = false
     private var holdThread: kotlinx.coroutines.CompletableDeferred<Unit>? = null
     private var nextId = 100
@@ -102,7 +105,10 @@ class ThreadViewModelTest {
     // Real time: polling waits with delay().
     @Before fun setUp() = Dispatchers.setMain(Dispatchers.Unconfined)
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -118,7 +124,7 @@ class ThreadViewModelTest {
                 createHttpClient({ null }, engine)
             }, { "https://api.shifa.uz/api/" }),
             every = 40.milliseconds,
-        )
+        ).also { created += it }
 
     @Test
     fun `read on open, and again only when something new comes from the other side`() {

@@ -39,7 +39,7 @@ import java.io.File
 // Every endpoint the app calls has a handler (CLAUDE.md "Debug builds"); this test lists them, so a new endpoint
 // without one is noticed here.
 class DemoBackendTest {
-    private val forwarded = mutableListOf<String>()
+    private val forwarded = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var gate = DemoBootGate.None
     private val demo =
         DemoBackend(

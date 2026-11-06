@@ -53,7 +53,7 @@ class CalendarSelectorsTest {
             )},${appt(4, "2026-11-04T09:00:00Z", "2026-11-04T09:30:00Z")}]",
             "2026-11-07" to "[${appt(9, "2026-11-07T04:00:00Z", "2026-11-07T04:30:00Z")}]",
         )
-    private val requested = mutableListOf<String>()
+    private val requested = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failDay: String? = null
     private val engine =
         MockEngine { req ->
@@ -109,7 +109,9 @@ class CalendarSelectorsTest {
                 repo.changed(clock, LocalDate(2026, 11, 7), LocalDate(2026, 11, 4))
                 assertThat(event.await()).containsExactly(LocalDate(2026, 11, 4), LocalDate(2026, 11, 7))
             }
-            assertThat(requested).containsExactly("2026-11-07", "2026-11-04").inOrder()
+            // Once each; the reads of one batch run together, so their order isn't fixed.
+            assertThat(requested).containsExactly("2026-11-07", "2026-11-04")
+            Unit
         }
 
     @Test

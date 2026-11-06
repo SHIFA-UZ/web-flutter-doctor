@@ -24,11 +24,10 @@ import shifa.doctor.data.finance.FinanceRepository
 import shifa.doctor.data.model.ClinicPatient
 import shifa.doctor.data.treatmentplans.TreatmentPlansRepository
 import shifa.doctor.stopAll
-import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlanWizardViewModelTest {
-    private val calls = Collections.synchronizedList(mutableListOf<String>())
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var linesFail = false
     private var searchFail = false
 

@@ -31,11 +31,14 @@ import shifa.doctor.generated.resources.failedToCreateTask
 import shifa.doctor.generated.resources.pleaseSelectPatient
 import shifa.doctor.generated.resources.taskCreated
 import shifa.doctor.generated.resources.timeAlreadyInList
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateTaskViewModelTest {
-    private val posted = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val posted = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var status = HttpStatusCode.OK
     private val today = LocalDate(2026, 11, 5)
 
@@ -70,12 +73,13 @@ class CreateTaskViewModelTest {
             null,
             TasksRepository({ client }),
             PatientsRepository({ client }),
-        )
+        ).also { created += it }
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     @After
     fun tearDown() {
+        created.stopAll()
         Dispatchers.resetMain()
         ShellNotice.pending.value = null
     }

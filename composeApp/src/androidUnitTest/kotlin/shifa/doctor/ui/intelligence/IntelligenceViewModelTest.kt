@@ -18,17 +18,23 @@ import shifa.doctor.data.intelligence.ChatMessage
 import shifa.doctor.data.intelligence.ChatSessionStore
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.intelDownloadEmpty
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class IntelligenceViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private var clock = Instant.parse("2026-11-05T05:00:00Z")
     private val store = ChatSessionStore(MapSettings(), { "1" }, { clock })
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
-    private fun opened() = IntelligenceViewModel(store, { clock }).also { it.load() }
+    private fun opened() = IntelligenceViewModel(store, { clock }).also { created += it }.also { it.load() }
 
     private fun talk(text: String) {
         clock = Instant.fromEpochMilliseconds(clock.toEpochMilliseconds() + 60_000)
@@ -132,7 +138,7 @@ class IntelligenceViewModelTest {
                     },
                 )
             }
-        val classToTest = IntelligenceViewModel(store, { clock }, profile)
+        val classToTest = IntelligenceViewModel(store, { clock }, profile).also { created += it }
         assertThat(classToTest.state.value.doctorFirst).isNull()
         kotlinx.coroutines.runBlocking { profile.refresh() }
         assertThat(classToTest.state.value.doctorFirst).isEqualTo("Aziza")

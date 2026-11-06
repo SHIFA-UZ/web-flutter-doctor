@@ -46,8 +46,8 @@ import shifa.doctor.utils.PracticeClock
 class BookingViewModelTest {
     private val clock =
         PracticeClock("Asia/Tashkent", { Instant.parse("2026-11-04T03:00:00Z") }, { TimeZone.of("Asia/Tashkent") })
-    private val read = mutableListOf<String>()
-    private val posted = mutableListOf<String>()
+    private val read = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val posted = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var bookStatus = HttpStatusCode.OK
     private var taken = false
     private var patientReads = 0

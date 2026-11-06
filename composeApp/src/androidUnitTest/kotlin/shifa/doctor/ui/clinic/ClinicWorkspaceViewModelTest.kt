@@ -28,7 +28,7 @@ import shifa.doctor.stopAll
 class ClinicWorkspaceViewModelTest {
     private var clinics = HttpStatusCode.OK to """[{"clinicId":2,"name":"Shifa Dev Clinic","membershipRole":"OWNER"},{"clinicId":5,"name":"Second"}]"""
     private var statsOk = true
-    private val statsFor = mutableListOf<String>()
+    private val statsFor = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val client =
         createHttpClient(
             { null },

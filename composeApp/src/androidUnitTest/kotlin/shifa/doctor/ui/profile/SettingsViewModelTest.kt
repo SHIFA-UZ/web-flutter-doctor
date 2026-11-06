@@ -23,13 +23,16 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.storage.AppLanguage
 import shifa.doctor.data.storage.LanguageStorage
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellTab
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var fail = false
     private var hold = CompletableDeferred(Unit)
     private val engine =
@@ -57,7 +60,10 @@ class SettingsViewModelTest {
         runBlocking { repo.refresh() }
     }
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(200) {
@@ -66,7 +72,10 @@ class SettingsViewModelTest {
         }
     }
 
-    private fun opened(staff: Boolean = false) = SettingsViewModel(staff, repo, language).apply { open() }
+    private fun opened(staff: Boolean = false) =
+        SettingsViewModel(staff, repo, language).also {
+            created += it
+        }.apply { open() }
 
     @Test
     fun `a change goes out as the whole block with the backend language code`() {
@@ -145,7 +154,7 @@ class SettingsViewModelTest {
     fun `the Security row says whether the app lock is on, read again on every open`() {
         val store = shifa.doctor.data.storage.AppLockStorage(MapSettings())
         val lock = shifa.doctor.data.applock.AppLockRepository({ store })
-        val classToTest = SettingsViewModel(false, repo, language, lock).apply { open() }
+        val classToTest = SettingsViewModel(false, repo, language, lock).also { created += it }.apply { open() }
         assertThat(classToTest.state.value.appLock).isFalse()
         lock.turnOn("1234")
         lock.setBiometric(true)

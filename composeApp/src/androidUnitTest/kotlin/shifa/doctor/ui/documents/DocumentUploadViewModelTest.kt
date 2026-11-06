@@ -34,7 +34,7 @@ import shifa.doctor.stopAll
 class DocumentUploadViewModelTest {
     private var status = HttpStatusCode.OK
     private var hold: CompletableDeferred<Unit>? = null
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine =
         MockEngine { req ->
             sent += "${req.method.value} ${req.url.encodedPath}?${req.url.encodedQuery}\n" + req.body.toByteArray().decodeToString()

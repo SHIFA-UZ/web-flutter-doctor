@@ -16,7 +16,7 @@ import shifa.doctor.data.model.ClinicalChipSelection
 import shifa.doctor.data.model.LocalizedName
 
 class ClinicalEngineRepositoryTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val engine =
         MockEngine { req ->

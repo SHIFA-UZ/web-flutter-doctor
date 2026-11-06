@@ -32,7 +32,7 @@ class CalendarRepositoryTest {
         {"type":"HOLD","startAt":"2026-10-30T06:00:00Z","endAt":"2026-10-30T06:30:00Z"},
         {"type":"APPOINTMENT","startAt":"not a time","endAt":"2026-10-30T07:30:00Z","appointmentId":8}
         ]"""
-    private val requests = mutableListOf<String>()
+    private val requests = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var body = day
     private val engine =
         MockEngine { req ->

@@ -22,11 +22,14 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.chat.ChatRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.failedToStartConversation
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PatientChatViewModelTest {
-    private val asked = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var status = HttpStatusCode.OK
 
     private fun body(req: HttpRequestData) = (req.body as? OutgoingContent.ByteArrayContent)?.bytes()?.decodeToString()
@@ -54,6 +57,7 @@ class PatientChatViewModelTest {
 
     @After
     fun tearDown() {
+        created.stopAll()
         Dispatchers.resetMain()
         ShellNotice.pending.value = null
     }
@@ -67,7 +71,7 @@ class PatientChatViewModelTest {
 
     @Test
     fun `the backend finds or starts the conversation with the patient in one call`() {
-        val classToTest = PatientChatViewModel(11, repo)
+        val classToTest = PatientChatViewModel(11, repo).also { created += it }
         settle { classToTest.state.value.conversation != null }
         assertThat(classToTest.state.value.conversation?.id).isEqualTo(801L)
         assertThat(asked).containsExactly("POST messages/conversations/start {\"recipientPatientId\":11}")
@@ -76,7 +80,7 @@ class PatientChatViewModelTest {
     @Test
     fun `a refused start says so and gives up`() {
         status = HttpStatusCode.BadRequest
-        val classToTest = PatientChatViewModel(11, repo)
+        val classToTest = PatientChatViewModel(11, repo).also { created += it }
         settle { classToTest.state.value.failed != null }
         assertThat(classToTest.state.value.failed?.text).isEqualTo(Res.string.failedToStartConversation)
         assertThat(classToTest.state.value.failed?.requestId).isEqualTo("req-7")

@@ -20,12 +20,11 @@ import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.stopAll
-import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicPatientsViewModelTest {
     // Each request's page and q ("-" without q).
-    private val asked = Collections.synchronizedList(mutableListOf<String>())
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var fail = false
     private val client =
         createHttpClient(

@@ -39,7 +39,8 @@ import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.stopAll
 
 class VisitViewModelTest {
-    private val calls = mutableListOf<String>()
+    // Written from the mock engine's threads while the test reads it.
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var visit = """{"id":7,"patientId":14,"patientName":"Jasur Aliyev","startAt":"2026-11-04T05:00:00Z","endAt":"2026-11-04T05:30:00Z","location":"Shifa Dev Clinic","status":"CONFIRMED"}"""
     private var visitStatus = HttpStatusCode.OK
     private var notesStatus = HttpStatusCode.OK
@@ -50,8 +51,8 @@ class VisitViewModelTest {
     private var documentStatus = HttpStatusCode.OK
     private var scribePending = false
     private var notesList = "[]"
-    private val completedDays = mutableListOf<kotlinx.datetime.LocalDate>()
-    private val summaries = mutableListOf<shifa.doctor.data.consultation.VisitSummary>()
+    private val completedDays = java.util.concurrent.CopyOnWriteArrayList<kotlinx.datetime.LocalDate>()
+    private val summaries = java.util.concurrent.CopyOnWriteArrayList<shifa.doctor.data.consultation.VisitSummary>()
     private var notesReadFails = false
     private var dentalReadFails = false
     private var planOn = false

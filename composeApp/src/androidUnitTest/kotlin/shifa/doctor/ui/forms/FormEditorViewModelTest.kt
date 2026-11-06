@@ -42,7 +42,7 @@ import shifa.doctor.utils.PracticeClock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FormEditorViewModelTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var linkStatus = HttpStatusCode.OK
     private var latest = true
     private var formsFail = false

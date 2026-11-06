@@ -36,14 +36,17 @@ import shifa.doctor.generated.resources.newPasswordConfirmationMismatchError
 import shifa.doctor.generated.resources.passwordUpdatedSuccessfully
 import shifa.doctor.generated.resources.paymentAndInvoicingSaved
 import shifa.doctor.generated.resources.phoneNumberRequired
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import java.io.File
 
 // PROF-04: Contact & clinic address, Subscription & billing (invoicing), Security (password).
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileFormsViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     // Path ending → (status, body) for writes; reads answer the fixture.
     private val fail = mutableMapOf<String, Pair<HttpStatusCode, String>>()
@@ -69,6 +72,7 @@ class ProfileFormsViewModelTest {
 
     @After fun tearDown() {
         ShellNotice.pending.value = null
+        created.stopAll()
         Dispatchers.resetMain()
     }
 
@@ -81,7 +85,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `contact starts grouped from the saved profile, with the address and coordinates`() {
-        val classToTest = ContactViewModel(repo).apply { open() }
+        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
         val s = classToTest.state.value
         assertThat(s.form.phone).isEqualTo("+998 90 000 00 00")
         assertThat(s.form.email).isEqualTo("demo.doctor@shifa.dev")
@@ -92,7 +96,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `phone and e-mail are checked before anything is sent`() {
-        val classToTest = ContactViewModel(repo).apply { open() }
+        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
         classToTest.edit { it.copy(phone = " ", email = "name@domain") }
         classToTest.save()
         assertThat(classToTest.state.value.phoneError).isEqualTo(Res.string.phoneNumberRequired)
@@ -106,7 +110,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `contact saves whole and E164, the address only its changed keys, then closes`() {
-        val classToTest = ContactViewModel(repo).apply { open() }
+        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
         classToTest.edit {
             it.copy(
                 phone = "(90) 123-45-67",
@@ -126,7 +130,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `only the address changed - one profile PATCH, a cleared field is sent empty`() {
-        val classToTest = ContactViewModel(repo).apply { open() }
+        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
         classToTest.edit { it.copy(city = "") }
         classToTest.save()
         settle { classToTest.state.value.done }
@@ -137,7 +141,7 @@ class ProfileFormsViewModelTest {
     @Test
     fun `a failed address after a saved contact says so and keeps only the address dirty`() {
         fail["doctors/me/profile"] = HttpStatusCode.InternalServerError to """{"status":500,"code":"INTERNAL","requestId":"req-41"}"""
-        val classToTest = ContactViewModel(repo).apply { open() }
+        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
         classToTest.edit { it.copy(email = "x@shifa.dev", region = "Tashkent") }
         classToTest.save()
         settle { !classToTest.state.value.saving }
@@ -157,7 +161,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `the map opens on the saved pin, a tap moves it, Confirm fills the form and Save sends both coordinates`() {
-        val classToTest = ContactViewModel(repo).apply { open() }
+        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
         classToTest.openMap()
         assertThat(classToTest.state.value.mapPin).isEqualTo(41.3111 to 69.2797)
         assertThat(classToTest.back()).isFalse() // an unmoved pin: Back closes the map, not the form
@@ -180,7 +184,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `with no saved pin the map opens on Tashkent`() {
-        val classToTest = ContactViewModel(repo).apply { open() }
+        val classToTest = ContactViewModel(repo).also { created += it }.apply { open() }
         classToTest.edit { it.copy(latitude = null, longitude = null) }
         classToTest.openMap()
         assertThat(classToTest.state.value.mapPin).isEqualTo(41.2995 to 69.2401)
@@ -188,7 +192,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `billing shows the plan, cleans the IBAN, echoes what it doesn't edit and stays`() {
-        val classToTest = BillingViewModel(repo).apply { open() }
+        val classToTest = BillingViewModel(repo).also { created += it }.apply { open() }
         assertThat(classToTest.state.value.tier).isEqualTo(DoctorTier.Premium)
         classToTest.edit { it.copy(name = " Dr Karimova ", iban = "de89 3704 0044 0532 0130 00") }
         classToTest.save()
@@ -208,7 +212,7 @@ class ProfileFormsViewModelTest {
         val bad = listOf("DE8937", "1234", "DEXX370400440532013000", "UZ12-3456")
         ok.forEach { assertThat(BillingViewModel.isIbanOrAccount(it)).isTrue() }
         bad.forEach { assertThat(BillingViewModel.isIbanOrAccount(BillingViewModel.cleanIban(it))).isFalse() }
-        val classToTest = BillingViewModel(repo).apply { open() }
+        val classToTest = BillingViewModel(repo).also { created += it }.apply { open() }
         classToTest.edit { it.copy(iban = "1234") }
         classToTest.save()
         assertThat(classToTest.state.value.ibanError).isEqualTo(Res.string.invalidIban)
@@ -217,7 +221,10 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `password - checks first, sends as typed, clears on success`() {
-        val classToTest = SecurityViewModel(AuthRepository { createHttpClient({ null }, engine) })
+        val classToTest =
+            SecurityViewModel(
+                AuthRepository { createHttpClient({ null }, engine) },
+            ).also { created += it }
         classToTest.type { it.copy(new = "Abcdef1!", confirm = "Abcdef1?") }
         classToTest.change()
         assertThat(classToTest.state.value.currentError).isEqualTo(Res.string.currentPasswordIsRequired)
@@ -235,7 +242,10 @@ class ProfileFormsViewModelTest {
     @Test
     fun `password - a 400 means the current one is wrong, it is cleared`() {
         fail["auth/reset-password"] = HttpStatusCode.BadRequest to """{"status":400,"code":"BAD_REQUEST","requestId":"req-9"}"""
-        val classToTest = SecurityViewModel(AuthRepository { createHttpClient({ null }, engine) })
+        val classToTest =
+            SecurityViewModel(
+                AuthRepository { createHttpClient({ null }, engine) },
+            ).also { created += it }
         classToTest.type { it.copy(current = "wrong", new = "Abcdef1!", confirm = "Abcdef1!") }
         classToTest.change()
         settle { !classToTest.state.value.saving }
@@ -246,7 +256,10 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `typed passwords ask before leaving, and nothing survives a close`() {
-        val classToTest = SecurityViewModel(AuthRepository { createHttpClient({ null }, engine) })
+        val classToTest =
+            SecurityViewModel(
+                AuthRepository { createHttpClient({ null }, engine) },
+            ).also { created += it }
         assertThat(classToTest.back()).isTrue()
         classToTest.type { it.copy(current = "x") }
         assertThat(classToTest.back()).isFalse()
@@ -259,7 +272,10 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `Change password is off until the request can succeed, and a clean Back forgets everything`() {
-        val classToTest = SecurityViewModel(AuthRepository { createHttpClient({ null }, engine) })
+        val classToTest =
+            SecurityViewModel(
+                AuthRepository { createHttpClient({ null }, engine) },
+            ).also { created += it }
         classToTest.type { it.copy(current = "x", new = "Abcdef1!", confirm = "Abcdef1") }
         assertThat(classToTest.state.value.canChange).isFalse()
         assertThat(classToTest.state.value.confirmMismatch).isFalse() // still typing
@@ -274,7 +290,7 @@ class ProfileFormsViewModelTest {
 
     @Test
     fun `billing keeps a Stripe account that arrived after the screen opened`() {
-        val classToTest = BillingViewModel(repo).apply { open() }
+        val classToTest = BillingViewModel(repo).also { created += it }.apply { open() }
         runBlocking {
             repo.updateBilling(shifa.doctor.data.model.DoctorBilling(stripeConnectAccountId = "acct_1234"))
         }

@@ -38,14 +38,17 @@ import shifa.doctor.generated.resources.intelBookingFailed
 import shifa.doctor.generated.resources.intelEmptyReply
 import shifa.doctor.generated.resources.intelMissingPatientOrSlot
 import shifa.doctor.generated.resources.intelSlotConflict
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ThreadViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private val answers = ArrayDeque<Pair<HttpStatusCode, String>>()
-    private val bodies = mutableListOf<String>()
+    private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     // Booking calls (INTEL-06), apart from the streams: "PUT appointments/102/change" → its body; the next status.
-    private val calls = mutableListOf<Pair<String, String>>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<Pair<String, String>>()
     private val callAnswers = ArrayDeque<HttpStatusCode>()
 
     // Holds booking calls until completed, to look at the state while one runs.
@@ -97,7 +100,7 @@ class ThreadViewModelTest {
                 changed++
             },
             AppointmentsRepository { client },
-        )
+        ).also { created += it }
 
     // One answered turn whose card is [payload] (the second saved message).
     private fun withCard(
@@ -118,7 +121,10 @@ class ThreadViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     // Up to 10 s: streams are read on the engine's threads, slow while the other test forks run (returns at once when met).
     private fun settle(check: () -> Boolean) {
@@ -255,7 +261,7 @@ class ThreadViewModelTest {
         val classToTest = vm()
         withCard(classToTest, """{"cardType":"propose_appointment","patientId":12,"isVideo":true,$slots}""")
         classToTest.book(1, slot)
-        settle { calls.size == 1 }
+        settle { calls.size == 1 && !classToTest.state.value.booking }
         val video = apiJson.parseToJsonElement(calls[0].second).jsonObject
         assertThat(video["isVideo"]!!.jsonPrimitive.content).isEqualTo("true")
         assertThat(video.keys).containsNoneOf("location", "locationId", "reason")
@@ -263,7 +269,12 @@ class ThreadViewModelTest {
         classToTest.stop()
         answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"propose_reschedule\",\"payload\":{\"cardType\":\"propose_reschedule\",\"appointmentId\":102,$slots}}\n\n"
         classToTest.send("Move Jasur")
-        settle { store.state.value.active!!.messages.size == 4 }
+        // Booking waits for Shifa's reply to end and the first booking to settle (both refuse a tap meanwhile).
+        settle {
+            store.state.value.active!!.messages.size == 4 &&
+                !classToTest.state.value.busy &&
+                !classToTest.state.value.booking
+        }
         classToTest.book(3, slot)
         settle { calls.size == 2 }
         assertThat(calls[1].first).isEqualTo("PUT appointments/102/change")

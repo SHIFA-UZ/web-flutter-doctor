@@ -26,7 +26,7 @@ import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicalPanelViewModelTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var hold: CompletableDeferred<Unit>? = null
     private var failDisease = false
     private val json = headersOf(HttpHeaders.ContentType, "application/json")

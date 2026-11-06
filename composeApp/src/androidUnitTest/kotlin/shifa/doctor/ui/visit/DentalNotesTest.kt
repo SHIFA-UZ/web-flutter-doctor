@@ -26,7 +26,7 @@ import shifa.doctor.generated.resources.dentalDocSaveFailed
 import shifa.doctor.generated.resources.dentalLoadFailed
 
 class DentalNotesTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var saved = """{"version":2,"dentition":"permanent","teeth":{"16":[{"serviceId":2,"title":"Filling","amountMinor":60000000,"currency":"UZS"}]},"discountPercent":5,"notes":"Earlier"}"""
     private var readStatus = HttpStatusCode.OK
     private var saveStatus = HttpStatusCode.OK

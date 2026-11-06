@@ -33,8 +33,8 @@ import java.io.File
 @OptIn(ExperimentalCoroutinesApi::class)
 class CalendarViewModelTest {
     private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
-    private val requested = java.util.Collections.synchronizedList(mutableListOf<String>())
-    private val doctors = java.util.Collections.synchronizedList(mutableListOf<String>())
+    private val requested = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val doctors = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failing = false
     private val engine =
         MockEngine { req ->

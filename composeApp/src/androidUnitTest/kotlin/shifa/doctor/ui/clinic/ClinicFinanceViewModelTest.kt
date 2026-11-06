@@ -32,12 +32,11 @@ import shifa.doctor.generated.resources.clinicFinancePaymentRecorded
 import shifa.doctor.generated.resources.clinicRecordsFormSuccess
 import shifa.doctor.stopAll
 import shifa.doctor.utils.csv
-import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicFinanceViewModelTest {
     // "METHOD path?query" for reads, plus " body" for writes.
-    private val calls = Collections.synchronizedList(mutableListOf<String>())
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var hold: kotlinx.coroutines.CompletableDeferred<Unit>? = null
     private var ledgerFails = false
     private val client =
@@ -112,7 +111,9 @@ class ClinicFinanceViewModelTest {
             shifa.doctor.data.treatmentplans.TreatmentPlansRepository { client },
         ).also { created += it }
 
-    @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    private val main = UnconfinedTestDispatcher()
+
+    @Before fun setUp() = Dispatchers.setMain(main)
 
     @After fun tearDown() {
         created.stopAll()
@@ -243,7 +244,10 @@ class ClinicFinanceViewModelTest {
         assertThat(vm.state.value.record!!.tried).isTrue()
         assertThat(calls.none { it.startsWith("POST finance/records") }).isTrue()
         vm.searchPatient("Gul")
+        main.scheduler.advanceTimeBy(ClinicFinanceViewModel.SEARCH_DEBOUNCE.inWholeMilliseconds + 1)
+        main.scheduler.runCurrent()
         settle { vm.state.value.record!!.matches != null }
+        assertThat(vm.state.value.record!!.matches!!.single().fullName).isEqualTo("Gulnora")
         vm.editRecord { it.copy(patient = ClinicPatient(15, "Gulnora"), amount = "250 000", notes = " visit ") }
         vm.saveRecord()
         settle { vm.state.value.record == null }

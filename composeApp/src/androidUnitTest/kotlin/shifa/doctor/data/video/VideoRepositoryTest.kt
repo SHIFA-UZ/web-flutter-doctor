@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.minutes
 
 class VideoRepositoryTest {
     private var status = HttpStatusCode.OK
-    private val bodies = mutableListOf<String>()
+    private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val classToTest =
         VideoRepository {

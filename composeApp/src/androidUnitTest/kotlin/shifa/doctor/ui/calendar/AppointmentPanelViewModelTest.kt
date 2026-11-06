@@ -44,12 +44,12 @@ class AppointmentPanelViewModelTest {
     private val clock =
         PracticeClock("Asia/Tashkent", { Instant.parse("2026-11-04T03:00:00Z") }, { TimeZone.of("Asia/Tashkent") })
     private val today = LocalDate(2026, 11, 4)
-    private val read = mutableListOf<String>()
-    private val writes = mutableListOf<String>()
+    private val read = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val writes = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failWrites = false
     private var failDay: String? = null
     private var empty = false
-    private val doctors = java.util.Collections.synchronizedList(mutableListOf<String>())
+    private val doctors = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine =
         MockEngine { req ->
             val json = headersOf(HttpHeaders.ContentType, "application/json")

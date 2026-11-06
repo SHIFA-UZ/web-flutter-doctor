@@ -94,7 +94,7 @@ class VoiceSessionTest {
             },
         )
 
-    private val asked = mutableListOf<Pair<String, String?>>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<Pair<String, String?>>()
     private var cancelled = 0
     private var typedReply = false
     private val player = FakePlayer()

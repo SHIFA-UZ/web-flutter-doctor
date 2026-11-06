@@ -21,7 +21,7 @@ import shifa.doctor.data.documents.UploadFile
 import shifa.doctor.data.model.PatientForm
 
 class FormsRepositoryTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var hold: CompletableDeferred<Unit>? = null
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
     private val engine =

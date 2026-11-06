@@ -15,7 +15,7 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.model.AnalyticsRange
 
 class AnalyticsRepositoryTest {
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine =
         MockEngine { req ->
             asked += req.url.encodedPath.substringAfter("/api/") + "?" + req.url.encodedQuery

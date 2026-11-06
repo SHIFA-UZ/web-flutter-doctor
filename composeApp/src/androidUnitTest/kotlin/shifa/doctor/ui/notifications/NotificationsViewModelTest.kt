@@ -27,12 +27,15 @@ import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appointmentGone
 import shifa.doctor.generated.resources.notificationsMarkFailed
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.PracticeClock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationsViewModelTest {
-    private val asked = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var readStatus = HttpStatusCode.OK
     private var pageFails = false
     private var holdPageOne: kotlinx.coroutines.CompletableDeferred<Unit>? = null
@@ -119,12 +122,13 @@ class NotificationsViewModelTest {
         NotificationsViewModel(
             NotificationsRepository({ client }),
             NotificationOpener(AppointmentsRepository({ client }), CalendarRepository({ client })),
-        )
+        ).also { created += it }
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     @After
     fun tearDown() {
+        created.stopAll()
         Dispatchers.resetMain()
         ShellNotice.pending.value = null
     }

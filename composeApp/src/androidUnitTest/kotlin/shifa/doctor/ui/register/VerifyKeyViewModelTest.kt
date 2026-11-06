@@ -24,11 +24,14 @@ import shifa.doctor.data.auth.Invite
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.invalidInviteKey
 import shifa.doctor.generated.resources.pleaseEnterOneTimeKey
+import shifa.doctor.stopAll
 import shifa.doctor.ui.emailcode.CodeBanner
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VerifyKeyViewModelTest {
-    private val sent = mutableListOf<String>()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var status = HttpStatusCode.OK
     private var hold = CompletableDeferred(Unit)
     private var body = """{"valid":false,"purpose":null,"clinicId":null,"clinicName":null,"emailSentTo":null}""" // dev, 2026-11-04
@@ -46,7 +49,10 @@ class VerifyKeyViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun VerifyKeyViewModel.settle() {
         repeat(200) {
@@ -57,7 +63,7 @@ class VerifyKeyViewModelTest {
 
     @Test
     fun `an empty key is caught inline, a pasted one is trimmed`() {
-        val vm = VerifyKeyViewModel(auth)
+        val vm = VerifyKeyViewModel(auth).also { created += it }
         vm.onKey("  \n ")
         vm.submit()
         assertThat(vm.state.value.error).isEqualTo(Res.string.pleaseEnterOneTimeKey)
@@ -70,7 +76,7 @@ class VerifyKeyViewModelTest {
 
     @Test
     fun `an unknown or used key gets one neutral banner`() {
-        val vm = VerifyKeyViewModel(auth)
+        val vm = VerifyKeyViewModel(auth).also { created += it }
         vm.onKey("NOT-A-REAL-KEY")
         vm.submit()
         vm.settle()
@@ -81,7 +87,7 @@ class VerifyKeyViewModelTest {
     @Test
     fun `the purpose picks the form`() {
         body = """{"valid":true,"purpose":"CLINIC_RECEPTIONIST_INVITE","clinicId":7,"clinicName":"Shifa Dental","emailSentTo":" dilfuza@shifadental.uz "}"""
-        val vm = VerifyKeyViewModel(auth)
+        val vm = VerifyKeyViewModel(auth).also { created += it }
         vm.onKey("K1")
         vm.submit()
         vm.settle()
@@ -98,7 +104,7 @@ class VerifyKeyViewModelTest {
         hold = CompletableDeferred()
         status = HttpStatusCode.InternalServerError
         body = """{"error":"Internal Server Error","status":500,"code":"INTERNAL","requestId":"req-42"}"""
-        val vm = VerifyKeyViewModel(auth)
+        val vm = VerifyKeyViewModel(auth).also { created += it }
         vm.onKey("K1")
         vm.submit()
         assertThat(vm.state.value.loading).isTrue()

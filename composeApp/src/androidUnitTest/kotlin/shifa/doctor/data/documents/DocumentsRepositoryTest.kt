@@ -17,8 +17,8 @@ import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.DocumentCategory
 
 class DocumentsRepositoryTest {
-    private val calls = mutableListOf<String>()
-    private val bodies = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val engine =
         MockEngine { req ->
             calls += "${req.method.value} ${req.url.encodedPath}?${req.url.encodedQuery}"

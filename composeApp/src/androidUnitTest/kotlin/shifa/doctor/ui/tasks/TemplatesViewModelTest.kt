@@ -21,11 +21,14 @@ import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.tasks.TasksRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.templatesLoadFailed
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TemplatesViewModelTest {
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
     private var status = HttpStatusCode.OK
-    private val asked = mutableListOf<String>()
+    private val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val client =
         createHttpClient(
             { null },
@@ -51,11 +54,18 @@ class TemplatesViewModelTest {
             },
         )
 
-    private fun vm() = TemplatesViewModel(TasksRepository({ client }), ProfileRepository { client })
+    private fun vm() =
+        TemplatesViewModel(
+            TasksRepository({ client }),
+            ProfileRepository { client },
+        ).also { created += it }
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {

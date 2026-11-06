@@ -28,7 +28,7 @@ import java.io.File
 @OptIn(ExperimentalCoroutinesApi::class)
 class TimezoneViewModelTest {
     private var me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failing = false
     private val engine =
         MockEngine { req ->

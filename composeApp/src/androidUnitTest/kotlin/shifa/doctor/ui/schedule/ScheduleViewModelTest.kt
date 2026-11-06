@@ -43,7 +43,7 @@ import shifa.doctor.utils.PracticeClock
 class ScheduleViewModelTest {
     private val clock =
         PracticeClock("Asia/Tashkent", { Instant.parse("2026-11-04T03:00:00Z") }, { TimeZone.of("Asia/Tashkent") })
-    private val writes = mutableListOf<String>()
+    private val writes = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var rulesFail = false
     private var periodFails = false
     private var datesFail = false

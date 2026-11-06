@@ -26,11 +26,10 @@ import shifa.doctor.generated.resources.careAccepted
 import shifa.doctor.generated.resources.careInviteExists
 import shifa.doctor.generated.resources.carePostFailed
 import shifa.doctor.stopAll
-import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CareViewModelsTest {
-    private val calls = Collections.synchronizedList(mutableListOf<String>())
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var inviteConflict = false
     private var progressFails = false
     private var postFails = false

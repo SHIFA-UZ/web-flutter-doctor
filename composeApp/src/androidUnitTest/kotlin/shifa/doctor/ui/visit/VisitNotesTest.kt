@@ -23,7 +23,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.notesSaveFailed
 
 class VisitNotesTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var notes = """[{"id":1,"body":"Earlier notes","source":"MANUAL"},{"id":2,"body":"AI SOAP","source":"AI_DRAFT"}]"""
     private var drafts = """[{"id":"d1","body":"Draft SOAP"}]"""
     private var saveStatus = HttpStatusCode.OK

@@ -27,14 +27,14 @@ import shifa.doctor.generated.resources.appointmentPlanPaymentFailed
 import shifa.doctor.generated.resources.plansLoadFailed
 
 class VisitPlanTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     // What the server has: the paid amount (a payment moves it) and the lines it completed.
     private var paid = 10_000_000L
     private var payWrites = true
     private var completedOnServer = setOf<Long>()
     private var ours = listOf<Long>()
-    private val ledger = mutableListOf<String>()
+    private val ledger = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     private fun summary(
         id: Long,

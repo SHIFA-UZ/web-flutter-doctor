@@ -24,7 +24,7 @@ import java.io.File
 class ProfileRepositoryTest {
     // The scrubbed dev answer of GET /doctors/me (same keys and types as dev, 2026-11-04).
     private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
-    private val sent = mutableListOf<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var status = HttpStatusCode.OK
     private val classToTest =
         ProfileRepository {

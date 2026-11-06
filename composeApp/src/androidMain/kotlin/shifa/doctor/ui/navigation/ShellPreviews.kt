@@ -1,5 +1,6 @@
 package shifa.doctor.ui.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ internal fun ShellHomePreview() =
         MainScreenContent(
             ShellUiState(gate = FeatureGate.forTier(DoctorTier.Premium), hasClinic = true, chatUnread = 3),
             ShellActions(),
+            route = { ShellRouteStandIn() },
         )
     }
 
@@ -28,6 +30,7 @@ internal fun ShellMoreTabPreview() =
         MainScreenContent(
             ShellUiState(tab = ShellTab.Reports, gate = FeatureGate.forTier(DoctorTier.Premium)),
             ShellActions(),
+            route = { ShellRouteStandIn() },
         )
     }
 
@@ -66,7 +69,11 @@ internal fun MoreSheetBasicPreview() =
 @Composable
 internal fun ShellStaffPreview() =
     PreviewTheme {
-        MainScreenContent(ShellUiState(staff = true, chatUnread = 2, notificationsUnread = 7), ShellActions())
+        MainScreenContent(
+            ShellUiState(staff = true, chatUnread = 2, notificationsUnread = 7),
+            ShellActions(),
+            route = { ShellRouteStandIn() },
+        )
     }
 
 // SHELL-05: Shifa Intelligence over the content, the bar staying (area 03 builds the surface).
@@ -75,12 +82,22 @@ internal fun ShellStaffPreview() =
 internal fun ShellIntelligencePreview() =
     PreviewTheme {
         MainScreenContent(
-            ShellUiState(gate = FeatureGate.forTier(DoctorTier.Premium), intelligence = true, tab = ShellTab.Calendar),
+            ShellUiState(
+                gate = FeatureGate.forTier(DoctorTier.Premium),
+                intelligence = true,
+                tab = ShellTab.Calendar,
+            ),
             ShellActions(),
-        ) {
-            shifa.doctor.ui.intelligence.IntelligenceContent(
-                shifa.doctor.ui.intelligence.IntelligenceUiState(),
-                shifa.doctor.ui.intelligence.IntelligenceActions(),
-            )
-        }
+            intelligence = {
+                shifa.doctor.ui.intelligence.IntelligenceContent(
+                    shifa.doctor.ui.intelligence.IntelligenceUiState(),
+                    shifa.doctor.ui.intelligence.IntelligenceActions(),
+                )
+            },
+            route = { ShellRouteStandIn() },
+        )
     }
+
+// The shell's frame only: the tab's own screen reads repositories and the clock (its own previews cover it).
+@Composable
+private fun ShellRouteStandIn() = Box(Modifier.fillMaxSize().background(shifa.doctor.ui.theme.ShifaColors.Bg.Canvas))

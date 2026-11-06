@@ -42,9 +42,9 @@ class BlockViewModelTest {
     private val clock =
         PracticeClock("Asia/Tashkent", { Instant.parse("2026-11-04T03:00:00Z") }, { TimeZone.of("Asia/Tashkent") })
     private val scheduler = TestCoroutineScheduler()
-    private val read = mutableListOf<String>()
-    private val counts = mutableListOf<String>()
-    private val sent = mutableListOf<String>()
+    private val read = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val counts = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val sent = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var countFails = false
     private var hold7 = CompletableDeferred(Unit)
     private val engine =

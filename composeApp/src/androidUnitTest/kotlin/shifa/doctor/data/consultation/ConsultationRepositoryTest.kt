@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
 class ConsultationRepositoryTest {
-    private val calls = mutableListOf<String>()
+    private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
 
     private fun repo(vararg answers: Pair<HttpStatusCode, String>): ConsultationRepository {
