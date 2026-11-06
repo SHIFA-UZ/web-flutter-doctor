@@ -211,6 +211,47 @@ class DemoBackendTest {
         }
 
     @Test
+    fun `the demo clinic's finance answers locally - a desk payment moves the ledger and the dashboard`() =
+        runTest {
+            val finance = shifa.doctor.data.finance.FinanceRepository { client }
+            val before = finance.dashboard(1, null).getOrThrow()
+            val ledger = finance.ledger(1, null, 0).getOrThrow()
+            // The demo plan starts with 1 000 000 paid: the first visit is paid, the second partly.
+            assertThat(ledger.rows.map { it.planSimplePaymentStatus }).containsExactly("PAID", "PARTIAL").inOrder()
+            val visit = ledger.rows.last()
+            finance.recordPayment(
+                1,
+                shifa.doctor.data.finance.RecordPayment(
+                    visit.treatmentPlanId!!,
+                    visit.remainingMinor,
+                    "UZS",
+                    "CASH",
+                    visit.appointmentId,
+                ),
+            ).getOrThrow()
+            assertThat(
+                finance.ledger(1, null, 0).getOrThrow().rows.map {
+                    it.planSimplePaymentStatus
+                },
+            ).containsExactly("PAID", "PAID")
+            assertThat(
+                finance.dashboard(1, null).getOrThrow().totalRevenueMinor,
+            ).isEqualTo(before.totalRevenueMinor + visit.remainingMinor)
+            val overdue = finance.installments(1, "overdue").getOrThrow().single()
+            finance.markPaid(1, overdue.id, shifa.doctor.data.model.MarkPaidBody("CASH")).getOrThrow()
+            assertThat(finance.installments(1, "overdue").getOrThrow()).isEmpty()
+            assertThat(finance.setInstallmentStatus(1, overdue.id, "OVERDUE").isFailure).isTrue()
+            finance.createRecord(
+                1,
+                shifa.doctor.data.model.NewFinancialRecord(11, "INVOICE", 5_000_000, "UZS"),
+            ).getOrThrow()
+            assertThat(finance.records(1, null, 0).getOrThrow().rows).hasSize(3)
+            assertThat(finance.records(1, "PAID", 0).getOrThrow().rows.map { it.recordType }).containsExactly("RECEIPT")
+            assertThat(finance.earnings(1, null).getOrThrow()).hasSize(2)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
     fun `professions, clinics and the profile PATCH answer locally`() =
         runTest {
             val catalog = CatalogRepository({ client })

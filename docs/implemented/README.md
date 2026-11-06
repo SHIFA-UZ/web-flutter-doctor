@@ -161,6 +161,13 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CLINIC-05 Doctors + revenue share | Done | Members with chips and search, the share in force, one share sheet for a doctor and the clinic default. See clinic.md. |
 | CLINIC-06 Clinic patients | Done (phone: push; no tablet side pane) | Server-searched, paged list (50, Load more), "Total: N"; a patient opens in the clinic's scope (patient, documents, uploads, the prophylaxis card). BE-35. See clinic.md. |
 | CLINIC-09 Clinic doctor schedule | Done | The Calendar section (a card per doctor) and the Doctors' schedule button open the colleague's calendar (CAL-10 B): their days in the clinic's zone, book / move / cancel / unblock on their behalf; Back returns through the shell stack (no "return info"). See clinic.md. |
+| FIN-01 Finance data layer | Done | `FinanceRepository` grew every finance read and write (pages, month range in the clinic's zone, tolerant rows); `FinanceMonth`. See clinic.md. |
+| FIN-02 Finance dashboard | Done | Month, four KPIs, the selected one's list (top doctors, visits with a balance, overdue installments, how the rate is calculated). See clinic.md. |
+| FIN-03 Payments & records | Done (no month filter: BE-36) | Server-paged lists with chips and search; New record (clinic patient search, type, total, due date, notes). See clinic.md. |
+| FIN-04 Appointment ledger + quick pay | Done (month-scoped list fails on dev: BE-37) | Visits by appointment, chips, search, the services sheet, pay the remainder by method or a custom amount with a memo. See clinic.md. |
+| FIN-05 Installments | Done | Server filters, totals strip, Mark paid with method and memo, Pending / Waived / Cancelled, reminder. See clinic.md. |
+| FIN-06 Doctor earnings | Done (share edit stays in Doctors) | Month, rows with visits, share, gross / collected / outstanding and the split. See clinic.md. |
+| FIN-07 Export | Done (CSV; PDF off) | The current view as RFC 4180 CSV through the share sheet. See clinic.md. |
 | CLINIC-07 Services + catalogue editor | Done | One list (clinic catalogue and doctors' own services) with status chips and search; add / edit sheet (name, code, price > 0, active, all doctors or chosen ones), deactivate / reactivate; every member may edit (backend rule). See clinic.md. |
 | CLINIC-08 Invitations | Done | Invite receptionist, pending / used / expired, revoke with confirmation. See clinic.md. |
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
@@ -336,3 +343,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · CLINIC-07 · Clinic services and the catalogue editor; sheets read their latest close check.
 - 2026-11-06 · CLINIC-09, CAL-10 (B) · A colleague's calendar from the clinic workspace, booking and unblocking on their behalf.
 - 2026-11-06 · CAL-10 (A) · Staff calendars in the doctor's own Calendar.
+- 2026-11-06 · FIN-01…07 · Clinic finance: dashboard, ledger and desk payments, installments, records, payments, earnings, CSV export; BE-36, BE-37.

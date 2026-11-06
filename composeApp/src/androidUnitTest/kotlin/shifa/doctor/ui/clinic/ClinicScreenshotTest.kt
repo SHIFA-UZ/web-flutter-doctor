@@ -33,6 +33,18 @@ class ClinicScreenshotTest {
     fun patientsEmpty() = captureRoboImage("screenshots/Clinic_patients_empty.png") { ClinicPatientsEmptyPreview() }
 
     @Test
+    fun financeDashboard() = captureRoboImage("screenshots/Clinic_finance_dashboard.png") { FinanceDashboardPreview() }
+
+    @Test
+    fun financeLedger() = captureRoboImage("screenshots/Clinic_finance_ledger.png") { FinanceLedgerPreview() }
+
+    @Test
+    fun financeInstallments() =
+        captureRoboImage("screenshots/Clinic_finance_installments.png") {
+            FinanceInstallmentsPreview()
+        }
+
+    @Test
     fun calendar() = captureRoboImage("screenshots/Clinic_calendar.png") { ClinicCalendarPreview() }
 
     @Test

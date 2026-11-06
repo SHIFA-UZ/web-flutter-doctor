@@ -444,12 +444,17 @@
     <string name="clinicEarningsColSharePercent">Доля %</string>
     <string name="clinicEarningsColVisits">Визиты</string>
     <string name="clinicEarningsSearchHint">Поиск врача по имени или №…</string>
+    <string name="clinicEarningsShare">Доля %1$s%</string>
+    <string name="clinicEarningsShareNotSet">Доля не задана</string>
     <string name="clinicEarningsSplitTotals">Итого по долям</string>
     <string name="clinicFinanceByAppointment">По приёму</string>
+    <string name="clinicFinanceCharged">Начислено</string>
+    <string name="clinicFinanceChargedHint">Завершённые визиты и платежи по планам</string>
     <string name="clinicFinanceClinicShareCollected">Доля клиники (получено)</string>
     <string name="clinicFinanceClinicShareGross">Доля клиники (брутто)</string>
     <string name="clinicFinanceCollectionRate">Процент сбора</string>
     <string name="clinicFinanceConfigureDefaultShare">Доля по умолчанию</string>
+    <string name="clinicFinanceCreatedOn">Создано %1$s</string>
     <string name="clinicFinanceDashboard">Панель</string>
     <string name="clinicFinanceDashboardCollectionDetail">Детализация сбора</string>
     <string name="clinicFinanceDashboardCollectionHint">Собрано / ожидается · % сбора по плану лечения</string>
@@ -475,6 +480,7 @@
     <string name="clinicFinanceDoctorEarningsHintMonth">Валовый / получено / остаток · визиты за выбранный месяц (по дате визита)</string>
     <string name="clinicFinanceDoctorShareCollected">Доля врача (получено)</string>
     <string name="clinicFinanceDoctorShareGross">Доля врача (брутто)</string>
+    <string name="clinicFinanceDueOn">Срок %1$s</string>
     <string name="clinicFinanceEarningsEditShare">Изменить долю</string>
     <string name="clinicFinanceEarningsRevenueShareBanner">Задайте долю клиники по умолчанию или нажмите на % врача для индивидуальной настройки.</string>
     <string name="clinicFinanceExport">Экспорт</string>
@@ -482,6 +488,7 @@
     <string name="clinicFinanceExportFailed">Не удалось экспортировать</string>
     <string name="clinicFinanceExportNoRows">По текущим фильтрам нечего экспортировать.</string>
     <string name="clinicFinanceExportPdf">Экспорт PDF</string>
+    <string name="clinicFinanceHowCalculated">Как это считается</string>
     <string name="clinicFinanceInstallClearDates">Очистить даты</string>
     <string name="clinicFinanceInstallColActions">Действия</string>
     <string name="clinicFinanceInstallColAmount">Сумма</string>
@@ -516,8 +523,10 @@
     <string name="clinicFinanceInstallTotalsOutstanding">Остаток</string>
     <string name="clinicFinanceInstallTotalsPaidSum">Оплачено</string>
     <string name="clinicFinanceInstallTotalsScheduled">Запланировано</string>
+    <string name="clinicFinanceInstallmentNumber">№%1$s по графику</string>
     <string name="clinicFinanceInstallments">Рассрочка</string>
     <string name="clinicFinanceInvalidAmount">Введите корректную сумму</string>
+    <string name="clinicFinanceLoadFailed">Не удалось загрузить финансовые данные.</string>
     <string name="clinicFinanceLoadMore">Загрузить ещё</string>
     <string name="clinicFinanceMarkInstallmentPaid">Оплачено</string>
     <string name="clinicFinanceMonthAllTime">За всё время</string>
@@ -526,6 +535,7 @@
     <string name="clinicFinanceNoLedgerRows">Нет привязанных услуг к визитам.</string>
     <string name="clinicFinanceNoPayments">Истории платежей пока нет.</string>
     <string name="clinicFinanceNoRecords">Финансовых записей пока нет.</string>
+    <string name="clinicFinanceNothing">За этот период ничего нет.</string>
     <string name="clinicFinanceNotifyInstallment">Напоминание</string>
     <string name="clinicFinanceOutstanding">Задолженность</string>
     <string name="clinicFinanceOverdueCount">Просроченные</string>
@@ -541,7 +551,11 @@
     <string name="clinicFinancePaymentMemoLabel">Примечание (необязательно)</string>
     <string name="clinicFinancePaymentRecorded">Оплата записана</string>
     <string name="clinicFinancePayments">Платежи</string>
+    <string name="clinicFinancePaymentsInPeriod">Платежи за период</string>
+    <string name="clinicFinancePlanNumber">План №%1$s</string>
     <string name="clinicFinanceRecords">Записи</string>
+    <string name="clinicFinanceReminderFailed">Не удалось отправить напоминание.</string>
+    <string name="clinicFinanceReminderSent">Напоминание отправлено: %1$s</string>
     <string name="clinicFinanceShowingRows">Показано %1$s из %2$s</string>
     <string name="clinicFinanceTotalRevenue">Общий доход</string>
     <string name="clinicFinanceTotalRevenueHint">Собранный доход по оплачиваемым визитам</string>
@@ -679,6 +693,7 @@
     <string name="clinicRecordsFormTitle">Создание финансовой записи</string>
     <string name="clinicRecordsFormType">Тип</string>
     <string name="clinicRecordsNewRecord">Новый документ</string>
+    <string name="clinicRecordsPickPatient">Выберите пациента</string>
     <string name="clinicRecordsSearchHint">Поиск по номеру, типу, примечаниям…</string>
     <string name="clinicSchedulePreviewHint">Запись и управление расписанием этого врача. Время — часовой пояс клиники.</string>
     <string name="clinicServiceActivate">Включить снова</string>

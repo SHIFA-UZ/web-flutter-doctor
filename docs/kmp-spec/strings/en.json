@@ -2745,5 +2745,20 @@
   "clinicServiceDoctorsLoadFailed": "Couldn't load the clinic's doctors.",
   "clinicServicePriceZero": "Price is 0: a free service",
   "clinicCalendarIntro": "Book and manage each doctor's appointments. Times are in {{zone}}.",
-  "clinicOpenSchedule": "Open schedule"
+  "clinicOpenSchedule": "Open schedule",
+  "clinicFinanceLoadFailed": "Couldn't load finance data.",
+  "clinicFinanceReminderSent": "Reminder sent to {{name}}",
+  "clinicFinanceReminderFailed": "Couldn't send the reminder.",
+  "clinicFinanceNothing": "Nothing for this period.",
+  "clinicFinancePlanNumber": "Plan #{{id}}",
+  "clinicEarningsShare": "Share {{percent}}%",
+  "clinicEarningsShareNotSet": "Share not set",
+  "clinicFinanceInstallmentNumber": "#{{n}} of the schedule",
+  "clinicFinanceDueOn": "Due {{date}}",
+  "clinicFinanceCreatedOn": "Created {{date}}",
+  "clinicFinanceHowCalculated": "How it is calculated",
+  "clinicFinanceCharged": "Charged",
+  "clinicFinanceChargedHint": "Completed visits and plan payments",
+  "clinicFinancePaymentsInPeriod": "Payments in the period",
+  "clinicRecordsPickPatient": "Choose a patient"
 }

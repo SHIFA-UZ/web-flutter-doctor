@@ -2745,5 +2745,20 @@
   "clinicServiceDoctorsLoadFailed": "Не удалось загрузить врачей клиники.",
   "clinicServicePriceZero": "Цена 0: бесплатная услуга",
   "clinicCalendarIntro": "Записывайте пациентов и управляйте приёмами каждого врача. Время указано в {{zone}}.",
-  "clinicOpenSchedule": "Открыть расписание"
+  "clinicOpenSchedule": "Открыть расписание",
+  "clinicFinanceLoadFailed": "Не удалось загрузить финансовые данные.",
+  "clinicFinanceReminderSent": "Напоминание отправлено: {{name}}",
+  "clinicFinanceReminderFailed": "Не удалось отправить напоминание.",
+  "clinicFinanceNothing": "За этот период ничего нет.",
+  "clinicFinancePlanNumber": "План №{{id}}",
+  "clinicEarningsShare": "Доля {{percent}}%",
+  "clinicEarningsShareNotSet": "Доля не задана",
+  "clinicFinanceInstallmentNumber": "№{{n}} по графику",
+  "clinicFinanceDueOn": "Срок {{date}}",
+  "clinicFinanceCreatedOn": "Создано {{date}}",
+  "clinicFinanceHowCalculated": "Как это считается",
+  "clinicFinanceCharged": "Начислено",
+  "clinicFinanceChargedHint": "Завершённые визиты и платежи по планам",
+  "clinicFinancePaymentsInPeriod": "Платежи за период",
+  "clinicRecordsPickPatient": "Выберите пациента"
 }

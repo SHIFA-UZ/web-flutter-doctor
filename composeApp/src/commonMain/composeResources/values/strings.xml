@@ -444,12 +444,17 @@
     <string name="clinicEarningsColSharePercent">Share %</string>
     <string name="clinicEarningsColVisits">Visits</string>
     <string name="clinicEarningsSearchHint">Search doctor by name or #…</string>
+    <string name="clinicEarningsShare">Share %1$s%</string>
+    <string name="clinicEarningsShareNotSet">Share not set</string>
     <string name="clinicEarningsSplitTotals">Revenue share totals</string>
     <string name="clinicFinanceByAppointment">By appointment</string>
+    <string name="clinicFinanceCharged">Charged</string>
+    <string name="clinicFinanceChargedHint">Completed visits and plan payments</string>
     <string name="clinicFinanceClinicShareCollected">Clinic share (collected)</string>
     <string name="clinicFinanceClinicShareGross">Clinic share (gross)</string>
     <string name="clinicFinanceCollectionRate">Collection Rate</string>
     <string name="clinicFinanceConfigureDefaultShare">Default share</string>
+    <string name="clinicFinanceCreatedOn">Created %1$s</string>
     <string name="clinicFinanceDashboard">Dashboard</string>
     <string name="clinicFinanceDashboardCollectionDetail">Collection breakdown</string>
     <string name="clinicFinanceDashboardCollectionHint">Collected / expected · collection % per treatment plan</string>
@@ -475,6 +480,7 @@
     <string name="clinicFinanceDoctorEarningsHintMonth">Gross / collected / outstanding · billable visits in the selected month (by visit date)</string>
     <string name="clinicFinanceDoctorShareCollected">Doctor share (collected)</string>
     <string name="clinicFinanceDoctorShareGross">Doctor share (gross)</string>
+    <string name="clinicFinanceDueOn">Due %1$s</string>
     <string name="clinicFinanceEarningsEditShare">Edit revenue share</string>
     <string name="clinicFinanceEarningsRevenueShareBanner">Set the clinic default share or tap a doctor's share % to override per doctor.</string>
     <string name="clinicFinanceExport">Export</string>
@@ -482,6 +488,7 @@
     <string name="clinicFinanceExportFailed">Export failed</string>
     <string name="clinicFinanceExportNoRows">Nothing to export for the current filters.</string>
     <string name="clinicFinanceExportPdf">Export PDF</string>
+    <string name="clinicFinanceHowCalculated">How it is calculated</string>
     <string name="clinicFinanceInstallClearDates">Clear date range</string>
     <string name="clinicFinanceInstallColActions">Actions</string>
     <string name="clinicFinanceInstallColAmount">Amount</string>
@@ -516,8 +523,10 @@
     <string name="clinicFinanceInstallTotalsOutstanding">Outstanding</string>
     <string name="clinicFinanceInstallTotalsPaidSum">Paid</string>
     <string name="clinicFinanceInstallTotalsScheduled">Scheduled</string>
+    <string name="clinicFinanceInstallmentNumber">#%1$s of the schedule</string>
     <string name="clinicFinanceInstallments">Installments</string>
     <string name="clinicFinanceInvalidAmount">Enter a valid amount</string>
+    <string name="clinicFinanceLoadFailed">Couldn't load finance data.</string>
     <string name="clinicFinanceLoadMore">Load more</string>
     <string name="clinicFinanceMarkInstallmentPaid">Mark paid</string>
     <string name="clinicFinanceMonthAllTime">All time</string>
@@ -526,6 +535,7 @@
     <string name="clinicFinanceNoLedgerRows">No linked visit charges yet.</string>
     <string name="clinicFinanceNoPayments">No payment history yet.</string>
     <string name="clinicFinanceNoRecords">No financial records yet.</string>
+    <string name="clinicFinanceNothing">Nothing for this period.</string>
     <string name="clinicFinanceNotifyInstallment">Notify patient</string>
     <string name="clinicFinanceOutstanding">Outstanding</string>
     <string name="clinicFinanceOverdueCount">Overdue</string>
@@ -541,7 +551,11 @@
     <string name="clinicFinancePaymentMemoLabel">Memo (optional)</string>
     <string name="clinicFinancePaymentRecorded">Payment recorded</string>
     <string name="clinicFinancePayments">Payments</string>
+    <string name="clinicFinancePaymentsInPeriod">Payments in the period</string>
+    <string name="clinicFinancePlanNumber">Plan #%1$s</string>
     <string name="clinicFinanceRecords">Records</string>
+    <string name="clinicFinanceReminderFailed">Couldn't send the reminder.</string>
+    <string name="clinicFinanceReminderSent">Reminder sent to %1$s</string>
     <string name="clinicFinanceShowingRows">Showing %1$s of %2$s</string>
     <string name="clinicFinanceTotalRevenue">Total Revenue</string>
     <string name="clinicFinanceTotalRevenueHint">Collected revenue across billable visits</string>
@@ -679,6 +693,7 @@
     <string name="clinicRecordsFormTitle">Create financial record</string>
     <string name="clinicRecordsFormType">Record type</string>
     <string name="clinicRecordsNewRecord">New record</string>
+    <string name="clinicRecordsPickPatient">Choose a patient</string>
     <string name="clinicRecordsSearchHint">Search by number, type, notes…</string>
     <string name="clinicSchedulePreviewHint">Book and manage this doctor's appointments. Times use this clinic timezone.</string>
     <string name="clinicServiceActivate">Reactivate</string>

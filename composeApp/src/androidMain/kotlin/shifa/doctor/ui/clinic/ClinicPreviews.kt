@@ -190,3 +190,97 @@ internal fun ClinicCalendarPreview() =
     Workspace(ClinicUiState(previewClinics, section = ClinicSection.Calendar)) { _, clinic ->
         ClinicCalendarContent(clinic, previewPeople, {})
     }
+
+private val previewLedger =
+    listOf(
+        shifa.doctor.data.model.LedgerRow(
+            101, "2026-11-04T05:00:00Z", 11, "Dilnoza Rahimova", 21, "Aziza Karimova", 501,
+            listOf(shifa.doctor.data.model.LedgerService("Root canal treatment", 80_000_000)), 80_000_000, 50_000_000,
+            planSimplePaymentStatus = "PARTIAL",
+        ),
+        shifa.doctor.data.model.LedgerRow(
+            201, "2026-11-05T05:00:00Z", 13, "Malika Tursunova", 22, "Bobur Aliyev", 501,
+            listOf(shifa.doctor.data.model.LedgerService("Braces check", 30_000_000)), 30_000_000, 0,
+            planSimplePaymentStatus = "UNPAID",
+        ),
+    )
+
+@Composable
+private fun Finance(state: ClinicFinanceUiState) =
+    Workspace(ClinicUiState(previewClinics, section = ClinicSection.Finance)) { _, clinic ->
+        FinanceContent(state, clinic, FinanceActions())
+    }
+
+// FIN-02 (board `DaClinic` Finance, Dashboard): the month, Export, four KPIs, Outstanding selected with its visits.
+@Composable
+internal fun FinanceDashboardPreview() =
+    Finance(
+        ClinicFinanceUiState(
+            month = null,
+            kpi = FinanceKpi.Outstanding,
+            dashboard = shifa.doctor.data.model.FinanceDashboard(130_000_000, 60_000_000, 1, 0.68),
+            balances =
+                listOf(
+                    Owed(null, "Malika Tursunova", "Braces", 30_000_000, "UZS", planId = 502),
+                    Owed(null, "Dilnoza Rahimova", "Molar restoration", 30_000_000, "UZS", planId = 501),
+                ),
+        ),
+    )
+
+// FIN-04: visits by appointment, Showing 2 of 2, partial and unpaid with the pay menu caret.
+@Composable
+internal fun FinanceLedgerPreview() =
+    Finance(
+        ClinicFinanceUiState(
+            view = FinanceView.Ledger,
+            month = shifa.doctor.data.finance.FinanceMonth(2026, 11),
+            ledger = previewLedger,
+            ledgerTotal = 2,
+        ),
+    )
+
+private fun installment(
+    id: Long,
+    seq: Int,
+    due: String,
+    status: String,
+) = shifa.doctor.data.model.InstallmentRow(
+    id, 61, 501, "Molar restoration", 11, "Dilnoza Rahimova", seq, 40_000_000, "UZS", due, status,
+)
+
+// FIN-05: installments with the totals strip, an overdue one with the reminder bell, a paid one locked.
+@Composable
+internal fun FinanceInstallmentsPreview() =
+    Finance(
+        ClinicFinanceUiState(
+            view = FinanceView.Installments,
+            installments =
+                listOf(
+                    installment(801, 1, "2026-10-15", "PAID"),
+                    installment(802, 2, "2026-10-30", "OVERDUE"),
+                    installment(803, 3, "2026-12-15", "PENDING"),
+                ),
+        ),
+    )
+
+// FIN-03: a new record, tried without a patient.
+@Composable
+internal fun FinanceRecordSheetPreview() =
+    PreviewTheme {
+        androidx.compose.foundation.layout.Column {
+            FinanceContent(
+                ClinicFinanceUiState(
+                    view = FinanceView.Records,
+                    records = emptyList(),
+                    record =
+                        RecordSheet(
+                            amount = "250000",
+                            due = kotlinx.datetime.LocalDate(2026, 11, 20),
+                            tried = true,
+                        ),
+                ),
+                previewClinics.clinics.first(),
+                FinanceActions(),
+            )
+        }
+    }

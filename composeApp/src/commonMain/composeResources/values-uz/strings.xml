@@ -444,12 +444,17 @@
     <string name="clinicEarningsColSharePercent">Ulush %</string>
     <string name="clinicEarningsColVisits">Tashriflar</string>
     <string name="clinicEarningsSearchHint">Shifokorni ism yoki # bo'yicha…</string>
+    <string name="clinicEarningsShare">Ulush %1$s%</string>
+    <string name="clinicEarningsShareNotSet">Ulush belgilanmagan</string>
     <string name="clinicEarningsSplitTotals">Ulush jami</string>
     <string name="clinicFinanceByAppointment">Qabul bo'yicha</string>
+    <string name="clinicFinanceCharged">Hisoblangan</string>
+    <string name="clinicFinanceChargedHint">Yakunlangan tashriflar va reja to'lovlari</string>
     <string name="clinicFinanceClinicShareCollected">Klinika ulushi (yig'ilgan)</string>
     <string name="clinicFinanceClinicShareGross">Klinika ulushi (yalpi)</string>
     <string name="clinicFinanceCollectionRate">Yig'ish darajasi</string>
     <string name="clinicFinanceConfigureDefaultShare">Standart ulush</string>
+    <string name="clinicFinanceCreatedOn">Yaratilgan %1$s</string>
     <string name="clinicFinanceDashboard">Boshqaruv paneli</string>
     <string name="clinicFinanceDashboardCollectionDetail">Yig'ish tafsilotlari</string>
     <string name="clinicFinanceDashboardCollectionHint">Yig'ilgan / kutilgan · davolash rejasi bo'yicha yig'ish %</string>
@@ -475,6 +480,7 @@
     <string name="clinicFinanceDoctorEarningsHintMonth">Yalpi / yig'ilgan / qoldiq · tanlangan oydagi tashriflar (tashrif sanasi bo'yicha)</string>
     <string name="clinicFinanceDoctorShareCollected">Shifokor ulushi (yig'ilgan)</string>
     <string name="clinicFinanceDoctorShareGross">Shifokor ulushi (yalpi)</string>
+    <string name="clinicFinanceDueOn">Muddat %1$s</string>
     <string name="clinicFinanceEarningsEditShare">Ulushni tahrirlash</string>
     <string name="clinicFinanceEarningsRevenueShareBanner">Klinika standart ulushini belgilang yoki shifokor ulushi % ustiga bosib alohida o'zgartiring.</string>
     <string name="clinicFinanceExport">Eksport</string>
@@ -482,6 +488,7 @@
     <string name="clinicFinanceExportFailed">Eksport muvaffaqiyatsiz</string>
     <string name="clinicFinanceExportNoRows">Joriy filtrlar bo'yicha eksport qilinadigan ma'lumot yo'q.</string>
     <string name="clinicFinanceExportPdf">PDF eksport</string>
+    <string name="clinicFinanceHowCalculated">Qanday hisoblanadi</string>
     <string name="clinicFinanceInstallClearDates">Sanani tozalash</string>
     <string name="clinicFinanceInstallColActions">Harakatlar</string>
     <string name="clinicFinanceInstallColAmount">Summa</string>
@@ -516,8 +523,10 @@
     <string name="clinicFinanceInstallTotalsOutstanding">Qoldiq</string>
     <string name="clinicFinanceInstallTotalsPaidSum">To'langan</string>
     <string name="clinicFinanceInstallTotalsScheduled">Rejalashtirilgan</string>
+    <string name="clinicFinanceInstallmentNumber">Jadval bo'yicha №%1$s</string>
     <string name="clinicFinanceInstallments">Bo'lib-to'lash</string>
     <string name="clinicFinanceInvalidAmount">To'g'ri summani kiriting</string>
+    <string name="clinicFinanceLoadFailed">Moliyaviy ma'lumotlarni yuklab bo'lmadi.</string>
     <string name="clinicFinanceLoadMore">Yana yuklash</string>
     <string name="clinicFinanceMarkInstallmentPaid">To'langan</string>
     <string name="clinicFinanceMonthAllTime">Barcha vaqt</string>
@@ -526,6 +535,7 @@
     <string name="clinicFinanceNoLedgerRows">Ulangan tashrif yo'qlari yo'q.</string>
     <string name="clinicFinanceNoPayments">Hali to'lov tarixi yo'q.</string>
     <string name="clinicFinanceNoRecords">Hali moliyaviy yozuvlar yo'q.</string>
+    <string name="clinicFinanceNothing">Bu davr uchun hech narsa yo'q.</string>
     <string name="clinicFinanceNotifyInstallment">Bemorga xabar</string>
     <string name="clinicFinanceOutstanding">Qoldiq</string>
     <string name="clinicFinanceOverdueCount">Muddati o'tgan</string>
@@ -541,7 +551,11 @@
     <string name="clinicFinancePaymentMemoLabel">Izoh (ixtiyoriy)</string>
     <string name="clinicFinancePaymentRecorded">To'lov qayd etildi</string>
     <string name="clinicFinancePayments">To'lovlar</string>
+    <string name="clinicFinancePaymentsInPeriod">Davrdagi to'lovlar</string>
+    <string name="clinicFinancePlanNumber">Reja №%1$s</string>
     <string name="clinicFinanceRecords">Hisob-kitoblar</string>
+    <string name="clinicFinanceReminderFailed">Eslatmani yuborib bo'lmadi.</string>
+    <string name="clinicFinanceReminderSent">Eslatma yuborildi: %1$s</string>
     <string name="clinicFinanceShowingRows">%1$s / %2$s ko'rsatilmoqda</string>
     <string name="clinicFinanceTotalRevenue">Jami daromad</string>
     <string name="clinicFinanceTotalRevenueHint">To'lovli tashriflar bo'yicha yig'ilgan daromad</string>
@@ -679,6 +693,7 @@
     <string name="clinicRecordsFormTitle">Moliya hujjati</string>
     <string name="clinicRecordsFormType">Turi</string>
     <string name="clinicRecordsNewRecord">Yangi hujjat</string>
+    <string name="clinicRecordsPickPatient">Bemorni tanlang</string>
     <string name="clinicRecordsSearchHint">Raqam, tur, izohlar bo'yicha…</string>
     <string name="clinicSchedulePreviewHint">Bu shifokorning bandlarini shu sahifadan boshqaring. Vaqlar klinikaning vaqt zonasi bo'yicha.</string>
     <string name="clinicServiceActivate">Qayta faollashtirish</string>

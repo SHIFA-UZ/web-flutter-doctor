@@ -35,14 +35,15 @@ class TreatmentPlansRepository(
     /** `GET /treatment-plans?clinicId&patientId&status&planKind`: one unreadable plan is skipped, not the list. */
     suspend fun plans(
         clinicId: Long,
-        patientId: Long,
+        // Null lists the clinic's plans (the finance dashboard's balances, the plans tab).
+        patientId: Long?,
         status: String? = null,
         planKind: String? = "COMPREHENSIVE",
     ): Result<List<TreatmentPlanSummary>> =
         apiCall<List<JsonElement>> {
             client().get(ApiConfig.Endpoints.TREATMENT_PLANS) {
                 parameter("clinicId", clinicId)
-                parameter("patientId", patientId)
+                patientId?.let { parameter("patientId", it) }
                 status?.let { parameter("status", it) }
                 planKind?.let { parameter("planKind", it) }
             }

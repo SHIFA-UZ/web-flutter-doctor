@@ -2,33 +2,23 @@ package shifa.doctor.ui.register
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import kotlinx.datetime.DatePeriod
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import shifa.doctor.data.catalog.Profession
 import shifa.doctor.data.profile.Gender
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.address
-import shifa.doctor.generated.resources.cancel
 import shifa.doctor.generated.resources.chooseAClinic
 import shifa.doctor.generated.resources.chooseOneOrMore
 import shifa.doctor.generated.resources.clinic
 import shifa.doctor.generated.resources.createAccount
 import shifa.doctor.generated.resources.dateOfBirth
-import shifa.doctor.generated.resources.done
 import shifa.doctor.generated.resources.female
 import shifa.doctor.generated.resources.gender
 import shifa.doctor.generated.resources.male
@@ -42,10 +32,9 @@ import shifa.doctor.generated.resources.searching
 import shifa.doctor.generated.resources.timezoneScheduleHint
 import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.profile.ProfessionPickerSheet
-import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.widgets.OptionItem
+import shifa.doctor.ui.widgets.ShifaDatePickerDialog
 import shifa.doctor.ui.widgets.ShifaDropdown
-import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPickField
 import shifa.doctor.ui.widgets.ShifaPickerSheet
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
@@ -154,43 +143,20 @@ internal fun ProfessionPicker(
     actions.closePicker,
 )
 
-/**
- * The platform-neutral Material date picker for the birth date: 1900 to today, opening 25 years back (flow 01/08 §3).
- * The picker works in UTC midnights, so the date never shifts with the device zone.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The birth date picker: 1900 to today, opening 25 years back (flow 01/08 §3). */
 @Composable
 internal fun DobPicker(
     current: LocalDate?,
     onPick: (LocalDate?) -> Unit,
 ) {
     val today = remember { currentInstant().toLocalDateTime(TimeZone.currentSystemDefault()).date }
-    val initial = current ?: today.minus(DatePeriod(years = DEFAULT_AGE))
-    val state =
-        rememberDatePickerState(
-            initialSelectedDateMillis = initial.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds(),
-            yearRange = FIRST_YEAR..today.year,
-            selectableDates =
-                object : SelectableDates {
-                    override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis.toDate() <= today
-                },
-        )
-    val colors =
-        DatePickerDefaults.colors(
-            containerColor = ShifaColors.Bg.Surface,
-            selectedDayContainerColor = ShifaColors.Interactive.Primary,
-            selectedYearContainerColor = ShifaColors.Interactive.Primary,
-            todayDateBorderColor = ShifaColors.Border.Brand,
-        )
-    DatePickerDialog(
-        onDismissRequest = { onPick(null) },
-        confirmButton = { ShifaLink(tr(Res.string.done), { onPick(state.selectedDateMillis?.toDate()) }) },
-        dismissButton = { ShifaLink(tr(Res.string.cancel), { onPick(null) }) },
-        colors = colors,
-    ) { DatePicker(state, colors = colors, showModeToggle = false) }
+    ShifaDatePickerDialog(
+        current ?: today.minus(DatePeriod(years = DEFAULT_AGE)),
+        FIRST_YEAR..today.year,
+        onPick,
+        selectable = { it <= today },
+    )
 }
-
-private fun Long.toDate() = Instant.fromEpochMilliseconds(this).toLocalDateTime(TimeZone.UTC).date
 
 /** dd.MM.yyyy, the usual form in all three languages (flow 01/08 §12: never the ISO string the backend gets). */
 private fun Gender?.label() =

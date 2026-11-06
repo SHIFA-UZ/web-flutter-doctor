@@ -567,3 +567,31 @@ patient has no setting (dev, 2026-11-06); the OpenAPI says `SettingDto`. A JSON 
 **App until then:** reads the answer as text: blank is "no setting" (12 months, on), anything else must decode or the
 card says it couldn't load (never falls back to defaults that Save would write over the server's values).
 
+## BE-36 A date range on the payments and records lists
+
+**Needed by:** flow `09/09`, `09/10` (a month's payments and records); tickets FIN-03 (quirk 1).
+
+**Now:** `GET /clinics/{id}/finance/payments` takes only `page` and `size` (a bare list), `…/finance/records` only
+`status`, `page`, `size`. Flutter filtered the first 50 by month on the device, so older months looked empty.
+
+**Change:** `from` and `to` (ISO instants, both or neither) on both, as the dashboard, ledger and earnings take; and
+the payments list as a page (`content`, `totalElements`) like the others.
+
+**App until then:** Payments and Records have no month picker: they list all time, newest first, page by page (Load
+more), with chips and search over what is loaded.
+
+## BE-37 The month-scoped appointment ledger answers 500
+
+**Needed by:** flow `09/08` (By appointment, a month); ticket FIN-04, FIN-02 (Outstanding list).
+
+**Now:** `GET /clinics/{id}/finance/appointment-ledger?from&to&page&size` answers 500 `INTERNAL` on dev
+(2026-11-06; without `from`/`to` it answers 200). `TreatmentPlanLineRepository.findDistinctLinkedAppointmentIdsForClinicInRange`
+(and the `…AndPatientsInRange` twin) run `SELECT DISTINCT l.linked_appointment_id … ORDER BY a.start_at DESC`, which
+Postgres refuses: with `DISTINCT`, every `ORDER BY` expression must be selected.
+
+**Change:** select `a.start_at` too (and map the first column), or `GROUP BY l.linked_appointment_id` with
+`ORDER BY MAX(a.start_at) DESC`.
+
+**App until then:** the month's ledger and the dashboard's Outstanding list show "Couldn't load finance data." with the
+request id and Retry; "All time" works.
+

@@ -108,6 +108,11 @@ object ApiConfig {
 
         fun clinicPayments(clinicId: Long) = "clinics/$clinicId/finance/payments"
 
+        fun clinicFinance(
+            clinicId: Long,
+            path: String,
+        ) = "clinics/$clinicId/finance/$path"
+
         fun clinicOverviewStats(clinicId: Long) = "clinics/$clinicId/overview-stats"
 
         fun clinicMembers(clinicId: Long) = "clinics/$clinicId/members"

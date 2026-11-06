@@ -128,6 +128,19 @@ class DemoBackend(
     // TP-01: the demo patient's one active dental plan; the lines completed so far.
     private val planLinesDone = mutableSetOf(DEMO_PLAN_DONE_LINE)
     private var planPaid = 100_000_000L
+
+    // The demo clinic's records and installments (FIN-03, FIN-05), in memory.
+    private val records =
+        mutableListOf(
+            demoRecord(701, "INVOICE", "INV-2026-014", "ISSUED", 120_000_000, 0, "2026-11-20"),
+            demoRecord(702, "RECEIPT", "RCP-2026-009", "PAID", 50_000_000, 50_000_000, null),
+        )
+    private val installments =
+        mutableListOf(
+            demoInstallment(801, 1, 40_000_000, "2026-10-15", "PAID"),
+            demoInstallment(802, 2, 40_000_000, "2026-10-30", "OVERDUE"),
+            demoInstallment(803, 3, 40_000_000, "2026-12-15", "PENDING"),
+        )
     private val planPayments = mutableListOf<JsonObject>()
     private var visitDrafts = mapOf(DEMO_DRAFT_ID to 101L)
 
@@ -695,13 +708,21 @@ class DemoBackend(
                             put("amountMinor", amount)
                             put("currency", "UZS")
                             put("method", o["method"]?.jsonPrimitive?.content)
-                            put("linkedAppointmentId", o["linkedAppointmentId"]?.jsonPrimitive?.content?.toLongOrNull())
+                            put(
+                                "linkedAppointmentId",
+                                o["linkedAppointmentId"]?.jsonPrimitive?.content?.toLongOrNull(),
+                            )
                             put("recordedAt", currentInstant().toString())
+                            put("patientName", "Jasur Karimov")
+                            put("treatmentPlanTitle", "Molar restoration")
+                            o["memo"]?.jsonPrimitive?.content?.let { put("memo", it) }
                         }
                     planPayments.add(0, row)
                     ok(row)
                 }
             }
+            // The demo clinic's finance (FIN-01…07): visits on the demo plan, so a desk payment moves the totals.
+            path.startsWith("clinics/1/finance/") -> finance(request.method, path, body, request.url.parameters)
             // A visit's dental record (DENTAL-02): stored as given, `{}` until the first save.
             path.matches(Regex("appointments/\\d+/dental-documentation")) -> {
                 val id = path.split('/')[1].toLong()
@@ -1299,6 +1320,171 @@ class DemoBackend(
     private fun ok(json: JsonElement) = Reply(HttpStatusCode.OK, apiJson.encodeToString(JsonElement.serializer(), json))
 
     // The backend's error body shape (17 §1), so the app's error path is exercised too.
+
+    /** The demo clinic's finance paths (FIN-01…07): ledger and dashboard from the demo plan's payments, records, installments. */
+    private fun finance(
+        method: HttpMethod,
+        path: String,
+        body: String,
+        params: io.ktor.http.Parameters,
+    ): Reply {
+        val sub = path.removePrefix("clinics/1/finance/")
+        val sent = runCatching { apiJson.parseToJsonElement(body).jsonObject }.getOrNull()
+
+        fun page(rows: List<JsonElement>): Reply {
+            val p = params["page"]?.toIntOrNull() ?: 0
+            val size = params["size"]?.toIntOrNull() ?: 20
+            return ok(
+                JsonObject(
+                    mapOf(
+                        "content" to JsonArray(rows.drop(p * size).take(size)),
+                        "totalElements" to JsonPrimitive(rows.size),
+                        "number" to JsonPrimitive(p),
+                    ),
+                ),
+            )
+        }
+        // Two billable visits on the demo plan: payments fill the first, then the second.
+        val visits =
+            listOf(Triple(101L, 80_000_000L, "Jasur Karimov"), Triple(201L, 30_000_000L, "Jasur Karimov"))
+        var pool = planPaid
+        val ledger =
+            visits.mapIndexed { i, (appt, total, patient) ->
+                val paid = minOf(pool, total).also { pool -= it }
+                buildJsonObject {
+                    put("appointmentId", appt)
+                    put("startAt", "2026-11-0${4 + i}T05:00:00Z")
+                    put("patientId", 12)
+                    put("patientName", patient)
+                    put("doctorProfileId", 21 + i)
+                    put("doctorName", if (i == 0) "Aziza Karimova" else "Bobur Aliyev")
+                    put("treatmentPlanId", DEMO_PLAN_ID)
+                    put(
+                        "services",
+                        JsonArray(
+                            listOf(
+                                buildJsonObject {
+                                    put("title", if (i == 0) "Root canal treatment" else "Braces check")
+                                    put("lineTotalMinor", total)
+                                },
+                            ),
+                        ),
+                    )
+                    put("visitTotalMinor", total)
+                    put("visitCollectedMinor", paid)
+                    put("currency", "UZS")
+                    put(
+                        "planSimplePaymentStatus",
+                        if (paid <= 0) {
+                            "UNPAID"
+                        } else if (paid >= total) {
+                            "PAID"
+                        } else {
+                            "PARTIAL"
+                        },
+                    )
+                }
+            }
+        val outstanding = visits.sumOf { it.second } - minOf(planPaid, visits.sumOf { it.second })
+
+        fun earning(
+            id: Long,
+            collected: Long,
+        ) = buildJsonObject {
+            put("doctorProfileId", id)
+            put("visitCount", 1)
+            put("grossMinor", if (id == 21L) 80_000_000 else 30_000_000)
+            put("collectedMinor", collected)
+            put("outstandingMinor", (if (id == 21L) 80_000_000 else 30_000_000) - collected)
+            put("currency", "UZS")
+            put("revenueSharePercent", if (id == 21L) 60 else 70)
+            put("doctorShareCollectedMinor", collected * (if (id == 21L) 60 else 70) / 100)
+            put("clinicShareCollectedMinor", collected - collected * (if (id == 21L) 60 else 70) / 100)
+        }
+        val earnings =
+            listOf(
+                earning(21, minOf(planPaid, 80_000_000)),
+                earning(22, (planPaid - 80_000_000).coerceIn(0, 30_000_000)),
+            )
+        return when {
+            sub == "dashboard" ->
+                ok(
+                    buildJsonObject {
+                        put("totalRevenueMinor", planPaid)
+                        put("outstandingMinor", outstanding)
+                        put("overdueCount", installments.count { it["status"]?.jsonPrimitive?.content == "OVERDUE" })
+                        put("collectionRate", planPaid.toDouble() / (planPaid + outstanding))
+                        put("currency", "UZS")
+                        put("doctorEarningsTop", JsonArray(earnings))
+                    },
+                )
+            sub == "appointment-ledger" -> page(ledger)
+            sub == "doctor-earnings" -> ok(JsonArray(earnings))
+            sub == "records" && method == HttpMethod.Get -> {
+                val status = params["status"]
+                page(records.filter { status == null || it["status"]?.jsonPrimitive?.content == status })
+            }
+            sub == "records" && method == HttpMethod.Post -> {
+                val total = sent?.get("subtotalMinor")?.jsonPrimitive?.content?.toLongOrNull()
+                if (sent == null || total == null || sent["patientId"] == null) {
+                    fail(HttpStatusCode.BadRequest, "VALIDATION")
+                } else {
+                    val r =
+                        demoRecord(
+                            703L + records.size,
+                            sent["recordType"]?.jsonPrimitive?.content ?: "INVOICE",
+                            null,
+                            "ISSUED",
+                            total,
+                            0,
+                            sent["dueDate"]?.jsonPrimitive?.content,
+                        )
+                    records.add(0, r)
+                    ok(r)
+                }
+            }
+            sub == "installment-items" -> {
+                val filter = params["filter"] ?: "all"
+                ok(
+                    JsonArray(
+                        installments.filter {
+                            filter == "all" || it["status"]?.jsonPrimitive?.content == filter.uppercase()
+                        },
+                    ),
+                )
+            }
+            sub.matches(Regex("installment-items/\\d+(/mark-paid|/notify)?")) -> {
+                val id = sub.split('/')[1].toLong()
+                val i = installments.indexOfFirst { it["id"]?.jsonPrimitive?.content == "$id" }
+                if (i < 0) return fail(HttpStatusCode.NotFound, "NOT_FOUND")
+                val item = installments[i]
+                when {
+                    sub.endsWith("/notify") -> ok(JsonObject(mapOf("status" to JsonPrimitive("sent"))))
+                    sub.endsWith("/mark-paid") -> {
+                        planPaid += item["amountMinor"]!!.jsonPrimitive.content.toLong()
+                        installments[i] = JsonObject(item + ("status" to JsonPrimitive("PAID")))
+                        ok(installments[i])
+                    }
+                    else -> {
+                        val status = sent?.get("status")?.jsonPrimitive?.content
+                        if (status !in
+                            setOf(
+                                "PENDING",
+                                "WAIVED",
+                                "CANCELLED",
+                            )
+                        ) {
+                            return fail(HttpStatusCode.BadRequest, "VALIDATION")
+                        }
+                        installments[i] = JsonObject(item + ("status" to JsonPrimitive(status!!)))
+                        ok(installments[i])
+                    }
+                }
+            }
+            else -> fail(HttpStatusCode.NotFound, "NOT_FOUND")
+        }
+    }
+
     private fun demoPatientOf(visit: Long) = demoAppointment(visit, null)?.get("patientId")?.jsonPrimitive?.longOrNull
 
     /** Today's demo visits as the morning `schedule` card lists them (practice time, "HH:mm"). */
@@ -1383,6 +1569,62 @@ private const val DEMO_PATIENTS =
     """{"content":[{"id":11,"name":"Dilnoza Rahimova","photoUrl":null},""" +
         """{"id":12,"name":"Jasur Karimov","photoUrl":null},{"id":13,"name":"Malika Tursunova","photoUrl":null},""" +
         """{"id":14,"name":"Bekzod Aliyev","photoUrl":null},{"id":15,"name":"","photoUrl":null}],"last":true}"""
+
+internal fun demoRecord(
+    id: Long,
+    type: String,
+    number: String?,
+    status: String,
+    total: Long,
+    paid: Long,
+    due: String?,
+) = buildJsonObject {
+    put("id", id)
+    put("clinicId", 1)
+    put("patientId", 12)
+    put("recordType", type)
+    put("recordNumber", number?.let(::JsonPrimitive) ?: JsonNull)
+    put("status", status)
+    put(
+        "uiPaymentStatus",
+        if (paid <= 0) {
+            "UNPAID"
+        } else if (paid >= total) {
+            "PAID"
+        } else {
+            "PARTIAL"
+        },
+    )
+    put("subtotalMinor", total)
+    put("discountMinor", 0)
+    put("taxMinor", 0)
+    put("totalMinor", total)
+    put("paidMinor", paid)
+    put("remainingMinor", total - paid)
+    put("currency", "UZS")
+    put("createdAt", "2026-11-01T06:00:00Z")
+    put("dueDate", due?.let(::JsonPrimitive) ?: JsonNull)
+}
+
+internal fun demoInstallment(
+    id: Long,
+    seq: Int,
+    amount: Long,
+    due: String,
+    status: String,
+) = buildJsonObject {
+    put("id", id)
+    put("installmentPlanId", 61)
+    put("treatmentPlanId", 501)
+    put("treatmentPlanTitle", "Molar restoration")
+    put("patientId", 12)
+    put("patientName", "Jasur Karimov")
+    put("sequenceNumber", seq)
+    put("amountMinor", amount)
+    put("currency", "UZS")
+    put("dueDate", due)
+    put("status", status)
+}
 
 /** The demo directory as `GET /clinics/1/patients` pages it (`q` over name, phone and email). */
 private fun clinicPatientsPage(

@@ -2745,5 +2745,20 @@
   "clinicServiceDoctorsLoadFailed": "Klinika shifokorlarini yuklab bo'lmadi.",
   "clinicServicePriceZero": "Narx 0: bepul xizmat",
   "clinicCalendarIntro": "Har bir shifokorning qabullarini yozing va boshqaring. Vaqt {{zone}} bo'yicha.",
-  "clinicOpenSchedule": "Jadvalni ochish"
+  "clinicOpenSchedule": "Jadvalni ochish",
+  "clinicFinanceLoadFailed": "Moliyaviy ma'lumotlarni yuklab bo'lmadi.",
+  "clinicFinanceReminderSent": "Eslatma yuborildi: {{name}}",
+  "clinicFinanceReminderFailed": "Eslatmani yuborib bo'lmadi.",
+  "clinicFinanceNothing": "Bu davr uchun hech narsa yo'q.",
+  "clinicFinancePlanNumber": "Reja №{{id}}",
+  "clinicEarningsShare": "Ulush {{percent}}%",
+  "clinicEarningsShareNotSet": "Ulush belgilanmagan",
+  "clinicFinanceInstallmentNumber": "Jadval bo'yicha №{{n}}",
+  "clinicFinanceDueOn": "Muddat {{date}}",
+  "clinicFinanceCreatedOn": "Yaratilgan {{date}}",
+  "clinicFinanceHowCalculated": "Qanday hisoblanadi",
+  "clinicFinanceCharged": "Hisoblangan",
+  "clinicFinanceChargedHint": "Yakunlangan tashriflar va reja to'lovlari",
+  "clinicFinancePaymentsInPeriod": "Davrdagi to'lovlar",
+  "clinicRecordsPickPatient": "Bemorni tanlang"
 }

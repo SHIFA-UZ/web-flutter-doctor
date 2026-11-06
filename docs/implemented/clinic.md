@@ -193,3 +193,61 @@ Built 2026-11-06. Spec 09 §5, 03 §1.12, flow 04/14 (B), tickets CLINIC-09 and 
   keyed by the whole scope, the patient link (answers in `codex/CLINIC-09.md`).
 - **CAL-10 A** (the chip row in the doctor's own Calendar) is in calendar.md.
 
+## FIN-01…07 · Clinic finance
+
+Built 2026-11-06. Spec 09 §3, §6–8, flows 09/07…09/13, tickets FIN-01…07. Board `DaClinic` Finance (phone cards;
+`ui/clinic/ClinicFinance.kt` the ViewModel, `ClinicFinanceViews.kt` the views and sheets).
+- **Data (FIN-01):** `data/finance/FinanceRepository` (it already recorded a visit's payment) gained the dashboard,
+  appointment ledger, payments, records (+ create), installment items (+ mark paid, status, notify) and doctor earnings;
+  models in `data/model/FinanceModels.kt`, amounts as `Long` minor units, each row read on its own (quirk 4), pages read
+  as `{content, totalElements}`. `FinanceMonth.range(zone)` gives the month's first instant and the next month's in the
+  clinic's zone (tested for Asia/Tashkent and a DST month in New York). No refresh fan-out: each view reads itself, and
+  again after its own writes (quirk 15); Flutter's unused providers weren't ported (quirk 17).
+- **Views:** Dashboard, By appointment, Installments, Doctor earnings, Records, Payments (the board's order) as chips;
+  the month (All time + 18 months, the clinic's current one first) where the backend filters by it (Dashboard, Ledger,
+  Earnings; not Payments / Records: BE-36; not Installments, as on the board); Export CSV; search and chips per view.
+  An answer for older filters is dropped (a generation counter). Instants (a visit's start, a payment) show as their
+  day in the clinic's zone; due dates as sent.
+- **Dashboard (FIN-02):** Total revenue, Outstanding, Overdue, Collection rate (the backend's 0–1 ratio as a percent)
+    with their hints; the selected KPI picks the list: top doctors (names from the members) → Doctor earnings; balances,
+  largest first — all time: the plans with a balance (`GET /treatment-plans?clinicId`, what the KPI counts), a month:
+  that month's visits with a balance from every page (at most 10 × 50) → By appointment; overdue installments and
+  overdue invoices (all time only, as the backend counts them); how the rate is calculated (collected and the backend's
+  rate; nothing derived from the clamped ratio). A failed list shows the error with Retry instead of loading forever.
+- **By appointment (FIN-04):** server pages (Load more), "Showing n of total", chips All / Paid / Partial / Unpaid on the
+  visit's own status (the backend computes it per visit: quirk 13), search over patient, doctor and plan #. A row:
+  date · doctor, patient, services count · plan #, the visit total and its status pill; tap → the services with total
+  and paid. Who may (`mayManageFinance`) gets the pill's menu when something is owed: "Paid by cash / card / transfer /
+  other" (the remainder) or "Custom amount…" (amount — `Money.parse`, the visit's currency —, method, memo);
+  `POST …/finance/payments {treatmentPlanId, amountMinor, currency, method, linkedAppointmentId, memo}`.
+- **Installments (FIN-05):** server filters All / Upcoming / Overdue / Paid, search, the totals strip (count, scheduled,
+  paid, outstanding; waived and cancelled ones left out), a pill menu for anything not paid: Mark paid (method + memo;
+  quirk 8: Flutter always sent CASH; not for a cancelled one, which the backend refuses), Pending / Waived / Cancelled
+  (OVERDUE is never chosen), the bell for a reminder.
+- **Records (FIN-03):** server chips by status (VOIDED, quirk 2), search over number, type and notes, the status always
+    localized (quirk 3); "New record": patient (the clinic's patients searched on the server), their plan (optional: the
+  totals then come from its lines, the backend's branch), type (invoice, receipt, estimate, credit note), total in the
+  clinic's currency when there's no plan, due date (date picker, default +14 days), notes → `POST …/finance/records`
+  (subtotal = total, no discount or tax lines, as the board).
+- **Payments (FIN-03):** all time, paged, chips by method, search, the count and sum, a row's details sheet.
+- **Doctor earnings (FIN-06):** visits, the share ("Share not set"), gross / collected / outstanding and the doctor /
+  clinic split when the backend sends it; editing the share stays in Doctors (one share sheet).
+- **Export (FIN-07):** the current view's rows as RFC 4180 CSV (`utils/Csv.kt`: quoting, CRLF, the UTF-8 BOM as bytes),
+  amounts as major units with two decimals beside a currency column (quirk 5), earnings with the whole split, headers
+  in the app's language, through the system share sheet
+  (`rememberFileShare`); PDF stays off on mobile.
+- **Shared:** `ShifaDatePickerDialog` (widgets) now serves the birth date picker and the record's due date.
+- **Demo:** the demo clinic's finance follows the demo plan's payments (two visits, records, three installments,
+  earnings); a desk payment or a paid installment moves the ledger and the dashboard.
+- **Checked:** emulator, demo: dashboard numbers, the ledger, "Paid by cash" on Malika's partial visit → "Payment
+  recorded", Paid, revenue 1 100 000 and outstanding 0 on the dashboard; an overdue installment marked paid by card →
+  "Status updated". Dev (reads): every view loads empty ("Nothing for this period."), except the month's ledger:
+  500 (BE-37, reproduced with curl; all time works). iOS compiled, not run.
+- **Codex review:** paging after a reload, the dashboard lists matching the KPIs (plans, every page, invoices), no
+  float "charged", waived installments out of the totals, no Mark paid on cancelled, records with a plan, CSV BOM /
+  currency / earnings split (answers in `codex/FIN.md`).
+- **Tests:** `ClinicFinanceViewModelTest` (month range, drill-downs and their failure, ledger chips / search / full and
+  custom payment bodies, installments filters / mark paid / status / reminder, records status and the new record body,
+  stale answers, CSV quoting), `DemoBackendTest` (+1); screenshots `Clinic_finance_dashboard`, `…_ledger`,
+  `…_installments`.
+
