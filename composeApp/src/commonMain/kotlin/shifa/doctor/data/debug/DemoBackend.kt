@@ -169,6 +169,13 @@ class DemoBackend(
     private val notifications = DemoNotifications()
     private val tasks = DemoTasks()
 
+    // CARE-01…03: the demo care partnerships.
+    private val care =
+        DemoCare { id ->
+            people.firstOrNull { it.jsonObject["id"]?.jsonPrimitive?.content == "$id" }
+                ?.jsonObject?.get("name")?.jsonPrimitive?.content
+        }
+
     // TP-04: the plans the wizard creates.
     private val newPlans =
         DemoPlans { id ->
@@ -273,6 +280,13 @@ class DemoBackend(
                 path,
                 request.url.parameters.names().associateWith { request.url.parameters[it].orEmpty() },
             )?.let { return ok(it) }
+        // CARE-01…03: never forwarded (an unknown id is a local 404, like the chat's).
+        care.handle(
+            request.method.value,
+            path,
+            request.url.parameters.names().associateWith { request.url.parameters[it].orEmpty() },
+            body,
+        )?.let { (status, json) -> return Reply(status, apiJson.encodeToString(JsonElement.serializer(), json)) }
         // TP-04: the wizard's plans (create, lines, payments, schedule, status, detail).
         newPlans.handle(request.method.value, path, body)?.let { return ok(it) }
         // A chat, inbox or task path the demo doesn't know (an id it never made): a local 404. Forwarding it would show

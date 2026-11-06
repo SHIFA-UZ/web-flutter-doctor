@@ -538,3 +538,54 @@ Form Template").
   tab empty → Create Form → template → editor (prefilled) → diagnosis → Save → "Form saved successfully", back on
   Forms with "1 form" and no "No PDF"; Documents shows "Form 025-2 (05.11.2026)" with Edit form (opens the saved form)
   and Open (the PDF, diagnosis in it). FORM-04's editor checked end to end with it.
+
+## CARE-01…03 · Care partnerships
+
+Built 2026-11-06. Spec 06 §5, flows 06/12, 06/13, 06/14, tickets CARE-01…03. Board `DaPatients` partnerFind,
+partnerships, partnerDetail (`data/care/CarePartnershipsRepository.kt`, `data/model/CareModels.kt`, `ui/care/`).
+- **Data (CARE-01):** `GET …/partners/search?q&profession&limit=30` (the server leaves the doctor out and filters by
+  country, Uzbekistan by default), `GET /care-partnerships`, `GET …/{id}`, `POST /care-partnerships`, `POST
+  …/{id}/accept|decline|cancel|complete` with `{}`, `GET|POST …/{id}/progress`. Any 2xx is success (Flutter: only
+  200). Statuses PENDING, ACTIVE, DECLINED, COMPLETED, CANCELLED (the backend's enum); anything else reads as Unknown.
+  The doctor's side is the server's `viewerRole`, else their profile id against the two ids, else unknown (no actions,
+  no guessed label; Flutter defaulted to "You sent"). Shapes checked in the backend source; dev GETs: no partnerships,
+  three doctors in search.
+- **Entries:** the patient record's ⋮ (new; doctors only, the board's more sheet carries just these two here since the
+  others are Quick Actions): Find therapy partner, Care partnerships (this patient's). A partnership notification opens
+  the list (the inbox row carries no partnership id).
+- **Find therapy partner (CARE-02):** "Find a partner doctor in Uzbekistan for {patient}", Doctor name and Specialty
+    (free text) searched 300 ms after typing in the doctor's own country (`locationCountry`; none lets the server use
+  Uzbekistan), any answer for older text dropped as soon as the text changes; rows with photo (brand fallback), name, "profession
+  · clinic · city" (or "Shifa doctor"), "Already a partner for this patient" when a pending or active partnership with
+  that doctor exists; one picked (check, again lets go; a pick that leaves the results is cleared). The action bar:
+  "Invite {name}", Specialty requested (the doctor's profession, else the filter; once typed it stays when another doctor is picked), Message (500), Send invite → the
+  partnership's detail replaces the search (Back returns to the patient). A pending duplicate (409) says "This invite is
+  already waiting for an answer."; a typed message asks before leaving.
+- **List (CARE-03):** chips All · Needs my answer · Active · Sent · Finished; from a patient only theirs with "For
+  {name}" and Show all; invites waiting for my answer first (dot on the avatar), then the latest change; row: patient,
+  "with {other doctor} · specialty", status chip ("Pending — needs your answer" / "Pending — waiting for {name}" /
+    "Pending" when the side isn't known / Active / Declined / Cancelled / Completed / Unknown) and the day. Empty: "No care partnerships yet" + hint (+ Find
+  therapy partner from a patient). Pull to refresh; read again on return.
+- **Detail (CARE-03):** patient + Open patient, status chip, Invited by / Partner, specialty requested, the quoted
+  message, the hint by side; actions by status and side (partner: Accept, Decline; initiator: Cancel invite; active:
+  Mark completed), each after a question (Decline and Cancel red); the server's answer replaces the partnership, a
+  failure reads it again. Progress updates oldest first, mine on the right, "name · 06.11.2026, 11:22" in the practice
+  zone (Flutter showed the raw string); a failed read has Retry and leaves the rest working (a failed refresh says so
+  above the updates read before; a read older than a post never hides it); composer only while active
+  (1 000 chars), a failed send keeps the text; an unsent update asks before leaving. A 404: "This partnership no
+  longer exists".
+- **Codex review:** stale answers during the pause, the doctor's country, a neutral chip for an unknown side, posted
+  updates kept, the specialty following the pick, refresh failures shown (answers in `codex/CARE-01-03.md`).
+- **Not built:** a country picker (the doctor's own country is sent), the 138-profession picker for the specialty (free text, as
+  Flutter), the doctor preview sheet, "Refer…" from an appointment (`originatingAppointmentId`), offline caching.
+- **Demo:** `DemoCare` (the demo doctor 9001 on both sides: Dilnoza with Madina active and two updates, Jasur's invite
+  from Behzod waiting, Malika's completed; a directory of five; the backend's rules and 409).
+- **Checked:** emulator, demo: Dilnoza ⋮ → Find → "endo" → Zarina → message → Send → the detail (pending, Cancel
+  invite) → Back to the patient; ⋮ → Care partnerships (Dilnoza's two, Show all) → Jasur's invite → Accept (question) →
+  Active → an update posted → Mark completed (question) → Completed, no composer; the partnership notification → the
+  list. Dev (reads only): Jasur Aliyev's list empty with Find, the search lists the three dev doctors. Demo mode off.
+- **Tests:** `CareViewModelsTest` (search on open and as typed, skipped rows, partners marked, pick and its specialty,
+  the invite body, 409, the discard question, stale answers dropped, list order / filters / Show all / unknown side,
+  the detail's question, server answer, posting only when active, a failed post kept, a failed progress read, 404),
+  `DemoBackendTest` (the demo rules); screenshots `Care_find`, `Care_find_empty`, `Care_list`, `Care_list_empty`,
+  `Care_invite`, `Care_active`.

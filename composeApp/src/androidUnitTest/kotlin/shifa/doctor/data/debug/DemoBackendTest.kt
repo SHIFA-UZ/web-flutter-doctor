@@ -706,6 +706,34 @@ class DemoBackendTest {
         }
 
     @Test
+    fun `demo care partnerships answer locally with the backend's rules`() =
+        runTest {
+            val repo = shifa.doctor.data.care.CarePartnershipsRepository({ client })
+            assertThat(repo.search("", "ortho").getOrThrow().map { it.name }).containsExactly("Behzod Normatov")
+            val all = repo.mine().getOrThrow()
+            assertThat(all.map { it.status }).containsAtLeast(
+                shifa.doctor.data.model.PartnershipStatus.Active,
+                shifa.doctor.data.model.PartnershipStatus.Pending,
+                shifa.doctor.data.model.PartnershipStatus.Completed,
+            )
+            val invite = all.single { it.needsMyAnswer(null) }
+            // The initiator's action on an invite for me is refused; mine is taken.
+            assertThat(repo.act(invite.id, shifa.doctor.data.care.PartnershipAction.Cancel).isFailure).isTrue()
+            assertThat(repo.act(invite.id, shifa.doctor.data.care.PartnershipAction.Accept).getOrThrow().status)
+                .isEqualTo(shifa.doctor.data.model.PartnershipStatus.Active)
+            assertThat(repo.addProgress(invite.id, "Seen").getOrThrow().body).isEqualTo("Seen")
+            assertThat(repo.progress(invite.id).getOrThrow().map { it.body }).contains("Seen")
+            val sent = repo.invite(shifa.doctor.data.model.PartnerInvite(14, 34, "Surgery")).getOrThrow()
+            assertThat(sent.patientName).isEqualTo("Bekzod Aliyev")
+            assertThat(repo.invite(shifa.doctor.data.model.PartnerInvite(14, 34)).exceptionOrNull())
+                .isInstanceOf(shifa.doctor.data.model.ApiException.Conflict::class.java)
+            assertThat(
+                repo.get(999).exceptionOrNull(),
+            ).isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
     fun `the demo video visit has a room, the others are refused like the backend`() =
         runTest {
             val repo = shifa.doctor.data.video.VideoRepository({ client })

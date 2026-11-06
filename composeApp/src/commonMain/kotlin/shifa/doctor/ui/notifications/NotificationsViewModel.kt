@@ -41,6 +41,9 @@ sealed interface NotificationGo {
 
     data object Chat : NotificationGo
 
+    /** CARE-03: the care partnerships (the row carries no partnership id, so the list). */
+    data object Partnerships : NotificationGo
+
     data class Task(
         val id: Long,
     ) : NotificationGo

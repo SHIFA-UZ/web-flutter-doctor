@@ -174,6 +174,26 @@ sealed interface ShellRoute {
         val patientName: String? = null,
     ) : ShellRoute
 
+    /** CARE-02: find a partner doctor for a patient; [opened] keys its ViewModel. */
+    data class FindPartner(
+        val patientId: Long,
+        val patientName: String,
+        val opened: Long,
+    ) : ShellRoute
+
+    /** CARE-03: the care partnerships, only [patientId]'s when set ("Show all" lifts it). */
+    data class Partnerships(
+        val patientId: Long?,
+        val patientName: String?,
+        val opened: Long,
+    ) : ShellRoute
+
+    /** CARE-03: one partnership. */
+    data class Partnership(
+        val id: Long,
+        val opened: Long,
+    ) : ShellRoute
+
     /** A colleague's calendar from the clinic workspace (CAL-10 / CLINIC-09, flow 04/14 B); back returns there. */
     data class DoctorSchedule(
         val scope: shifa.doctor.ui.calendar.CalendarScope,

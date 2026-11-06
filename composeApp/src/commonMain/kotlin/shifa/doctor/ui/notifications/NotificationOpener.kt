@@ -49,8 +49,9 @@ class NotificationOpener(
                 }
             NotificationTarget.Chat -> NotificationGo.Chat
             is NotificationTarget.Task -> NotificationGo.Task(target.id)
-            // Partnerships (CARE) have no screens yet: the tap only reads it.
-            NotificationTarget.Partnerships, NotificationTarget.Inbox -> null
+            // The row carries no partnership id: the list, the newest change on top of its group.
+            NotificationTarget.Partnerships -> NotificationGo.Partnerships
+            NotificationTarget.Inbox -> null
         }
 
     private suspend fun appointment(

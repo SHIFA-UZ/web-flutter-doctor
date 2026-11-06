@@ -104,6 +104,9 @@ import shifa.doctor.ui.calendar.BlockPanelScreen
 import shifa.doctor.ui.calendar.BookingScreen
 import shifa.doctor.ui.calendar.CalendarFocus
 import shifa.doctor.ui.calendar.CalendarScreen
+import shifa.doctor.ui.care.FindPartnerScreen
+import shifa.doctor.ui.care.PartnershipScreen
+import shifa.doctor.ui.care.PartnershipsScreen
 import shifa.doctor.ui.chat.ChatListScreen
 import shifa.doctor.ui.chat.PatientChatScreen
 import shifa.doctor.ui.chat.ThreadScreen
@@ -452,6 +455,7 @@ private fun RouteContent(
                                         ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
                                     )
                                 NotificationGo.Chat -> actions.select(ShellTab.Chat)
+                                NotificationGo.Partnerships -> actions.push(ShellRoute.Partnerships(null, null, opened))
                                 is NotificationGo.Task -> actions.push(ShellRoute.Task(go.id, opened))
                                 NotificationGo.Inbox -> actions.select(ShellTab.Notifications)
                             }
@@ -483,6 +487,7 @@ private fun RouteContent(
                                     ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
                                 )
                             NotificationGo.Chat -> actions.select(ShellTab.Chat)
+                            NotificationGo.Partnerships -> actions.push(ShellRoute.Partnerships(null, null, opened))
                             is NotificationGo.Task -> actions.openTask(go.id, opened)
                             // Never from the inbox itself.
                             NotificationGo.Inbox -> Unit
@@ -630,6 +635,15 @@ private fun RouteContent(
             )
         is ShellRoute.DoctorSchedule -> ClinicDoctorScheduleScreen(route.scope, actions)
         is ShellRoute.PlanDetail -> PlanDetailScreen(route.planId, route.clinicId, actions)
+        is ShellRoute.FindPartner ->
+            FindPartnerScreen(
+                route.patientId,
+                route.patientName,
+                route.opened,
+                actions,
+            )
+        is ShellRoute.Partnerships -> PartnershipsScreen(route.patientId, route.patientName, route.opened, actions)
+        is ShellRoute.Partnership -> PartnershipScreen(route.id, route.opened, actions)
         is ShellRoute.PlanWizard ->
             PlanWizardScreen(
                 route.clinicId,
@@ -719,6 +733,12 @@ private fun RouteContent(
                     actions.openChatWithPatient(
                         ShellRoute.PatientChat(p.id, p.name, p.photoUrl, currentInstant().toEpochMilliseconds()),
                     )
+                },
+                onFindPartner = { p ->
+                    actions.push(ShellRoute.FindPartner(p.id, p.name, currentInstant().toEpochMilliseconds()))
+                },
+                onPartnerships = { p ->
+                    actions.push(ShellRoute.Partnerships(p.id, p.name, currentInstant().toEpochMilliseconds()))
                 },
                 onNewPlan =
                     route.clinicId?.let { clinicId ->

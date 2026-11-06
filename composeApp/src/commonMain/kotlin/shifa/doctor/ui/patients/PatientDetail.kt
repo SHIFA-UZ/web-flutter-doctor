@@ -91,6 +91,7 @@ import shifa.doctor.generated.resources.appointmentsLoadFailed
 import shifa.doctor.generated.resources.back
 import shifa.doctor.generated.resources.birthDate
 import shifa.doctor.generated.resources.bloodGroup
+import shifa.doctor.generated.resources.carePartnerships
 import shifa.doctor.generated.resources.chronicDisease
 import shifa.doctor.generated.resources.chronicDiseaseUpdated
 import shifa.doctor.generated.resources.clinicalSummary
@@ -103,6 +104,7 @@ import shifa.doctor.generated.resources.dealingWithChronicDiseasePatient
 import shifa.doctor.generated.resources.documents
 import shifa.doctor.generated.resources.done
 import shifa.doctor.generated.resources.failedToUpdate
+import shifa.doctor.generated.resources.findTherapyPartner
 import shifa.doctor.generated.resources.forSecurityPasswordShownOnce
 import shifa.doctor.generated.resources.formsTab
 import shifa.doctor.generated.resources.gender
@@ -114,11 +116,13 @@ import shifa.doctor.generated.resources.ic_chat_18
 import shifa.doctor.generated.resources.ic_check_circle_20
 import shifa.doctor.generated.resources.ic_copy_16
 import shifa.doctor.generated.resources.ic_file_plus_18
+import shifa.doctor.generated.resources.ic_handshake_18
 import shifa.doctor.generated.resources.ic_layers_18
 import shifa.doctor.generated.resources.ic_sparkles_16
 import shifa.doctor.generated.resources.ic_sparkles_22
 import shifa.doctor.generated.resources.ic_star_24
 import shifa.doctor.generated.resources.ic_star_filled_24
+import shifa.doctor.generated.resources.ic_users_16
 import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.language
 import shifa.doctor.generated.resources.lastVisitOn
@@ -200,9 +204,11 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
+import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
+import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
 import shifa.doctor.ui.widgets.UnderlineTabs
 import shifa.doctor.ui.widgets.pressable
@@ -260,6 +266,8 @@ data class PatientDetailUiState(
     // PAT-07: this doctor's visits with the patient, newest first, on the practice clock; null until read.
     val visits: List<Visit>? = null,
     val visitsError: CodeBanner? = null,
+    // CARE-02/03: the ⋮ sheet (Find therapy partner, Care partnerships).
+    val moreOpen: Boolean = false,
     // The "New appointment" slot sheet (a nonce).
     val booking: Long? = null,
 ) {
@@ -703,6 +711,9 @@ data class PatientDetailActions(
     val message: () -> Unit = {},
     // TP-04: "Create treatment plan" (a clinic's patient only): the plan wizard with this patient.
     val newPlan: (() -> Unit)? = null,
+    // CARE-02/03: the ⋮ sheet's entries (doctors only).
+    val findPartner: (() -> Unit)? = null,
+    val partnerships: (() -> Unit)? = null,
     // AI-09: "AI summary" in the header; null hides it (below PRO, or clinic staff).
     val briefing: (() -> Unit)? = null,
     val retryVisits: () -> Unit = {},
@@ -727,6 +738,9 @@ fun PatientDetailScreen(
     onMessage: (Patient) -> Unit = {},
     // TP-04: "Create treatment plan" in a clinic's scope; the patient for the wizard.
     onNewPlan: ((Patient) -> Unit)? = null,
+    // CARE-02/03: the ⋮ sheet's "Find therapy partner" and "Care partnerships" (doctors only, flow 06/12 §2).
+    onFindPartner: ((Patient) -> Unit)? = null,
+    onPartnerships: ((Patient) -> Unit)? = null,
     viewModel: PatientDetailViewModel =
         viewModel(key = "patient-$id-$clinicId") { PatientDetailViewModel(id, clinicId = clinicId) },
     documents: PatientDocumentsViewModel =
@@ -785,6 +799,16 @@ fun PatientDetailScreen(
             book = viewModel::openBooking,
             message = { state.patient?.let(onMessage) },
             newPlan = onNewPlan?.let { go -> { state.patient?.let(go) } },
+            findPartner =
+                onFindPartner?.takeIf { session?.isClinicStaff == false }?.let {
+                        go ->
+                    { state.patient?.let(go) }
+                },
+            partnerships =
+                onPartnerships?.takeIf { session?.isClinicStaff == false }?.let {
+                        go ->
+                    { state.patient?.let(go) }
+                },
             briefing = { briefingOpen = true }.takeIf { briefingAllowed },
             retryVisits = viewModel::retryVisits,
             documents =
@@ -886,8 +910,15 @@ fun PatientDetailContent(
     // CLINIC-06: the clinic's prophylaxis card under Medical info; only in a clinic's scope.
     prophylaxis: (@Composable () -> Unit)? = null,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
-    // No title: the header below names the patient (flow 06/03 §3.1).
-    ShifaSubHeader("", Modifier.statusBarsPadding(), onBack = actions.back)
+    // No title: the header below names the patient (flow 06/03 §3.1). ⋮ once the patient is read (CARE-02/03).
+    val more = state.patient?.takeIf { actions.findPartner != null || actions.partnerships != null }
+    ShifaSubHeader(
+        "",
+        Modifier.statusBarsPadding(),
+        onBack = actions.back,
+        onMore = more?.let { { actions.ui { s -> s.copy(moreOpen = true) } } },
+    )
+    if (state.moreOpen && more != null) MoreSheet(more, actions)
     val patient = state.patient
     val error = state.error
     when {
@@ -1193,6 +1224,31 @@ private fun Sms(
     if (phone) {
         ShifaSecondaryButton(tr(Res.string.smsSendTest), actions.testSms, loading = state.testing)
         Text(tr(Res.string.smsSendTestHint), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    }
+}
+
+/** The record's ⋮ (board `DaPatients` more sheet): the care partnership entries; the rest are Quick Actions. */
+@Composable
+private fun MoreSheet(
+    patient: Patient,
+    actions: PatientDetailActions,
+) {
+    val close = { actions.ui { s -> s.copy(moreOpen = false) } }
+    ProfileSheet(close) {
+        ShifaTray(patient.name, close) {
+            actions.findPartner?.let { go ->
+                ShifaSettingsItem(tr(Res.string.findTherapyPartner), {
+                    close()
+                    go()
+                }, icon = Res.drawable.ic_handshake_18)
+            }
+            actions.partnerships?.let { go ->
+                ShifaSettingsItem(tr(Res.string.carePartnerships), {
+                    close()
+                    go()
+                }, icon = Res.drawable.ic_users_16, divider = false)
+            }
+        }
     }
 }
 

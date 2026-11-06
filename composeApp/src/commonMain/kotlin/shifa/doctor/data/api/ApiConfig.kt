@@ -207,6 +207,19 @@ object ApiConfig {
 
         fun notificationRead(id: Long) = "notifications/$id/read"
 
+        // CARE-01 (15 §2.7).
+        const val CARE_PARTNERSHIPS = "care-partnerships"
+        const val CARE_PARTNER_SEARCH = "care-partnerships/partners/search"
+
+        fun carePartnership(id: Long) = "care-partnerships/$id"
+
+        fun carePartnershipAction(
+            id: Long,
+            action: String,
+        ) = "care-partnerships/$id/$action"
+
+        fun carePartnershipProgress(id: Long) = "care-partnerships/$id/progress"
+
         // TASK-01 (15 §2.10; `TASKS` is above).
         const val TASK_TEMPLATES = "tasks/templates"
 

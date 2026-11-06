@@ -119,6 +119,9 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | CLIN-01 Clinical engine API | Done | Lenient models, groups / diseases / chips / occlusion / shared texts, synthesize, record-usage (new: Flutter never sent it). See patients.md. |
 | CLIN-02 Clinical engine panel | Done (hosted by FORM-04) | Disease picker and frequent diagnoses, chips per field with [X] values, search, occlusion and ready texts; Apply hands the texts over once (Flutter overwrote on every toggle). See patients.md. |
 | FORM-04 025-2 editor | Done (no speech yet) | New (prefilled, chart carried over) or existing form, ICD-10, clinical engine, dental chart editor, return visits, signature; save = form → PDF → document → link → usage, resumable at the failed step. See patients.md. |
+| CARE-01 Care partnership models + repository | Done | Search, mine, one, invite, accept / decline / cancel / complete, progress; statuses and the viewer's side (`viewerRole`, else the ids; never guessed). See patients.md. |
+| CARE-02 Find therapy partner | Done | Patient ⋮ → search by name and specialty as typed, "Already a partner", pick, specialty requested + message, Send invite → the partnership; 409 explained. See patients.md. |
+| CARE-03 Partnerships list + detail | Done | Chips, the patient's until Show all, my answers first; detail with Accept / Decline / Cancel / Mark completed after a question, updates chat-like with a composer while active; notification → list. See patients.md. |
 | FORM-05 Forms tab + template picker | Done | Forms with signature / PDF badges, error with Retry (no Create until loaded), template sheet, Edit form on a form's PDF; checked on the emulator with the editor. See patients.md. |
 | APPT-01 Appointment model + visit route | Done (no screen yet) | `AppointmentDetail` as the doctor's GET really is (patient, signature, plan; no video flag), `VisitKind`, `ShellRoute.Visit(id, kind)` from Start / Continue. See visits.md. |
 | APPT-02 Appointment detail + signature | Done (no screen yet) | Detail, request signature, a 10 s poll only while the signature is awaited, ending when signed; demo visits sign 15 s after the request. See visits.md. |
@@ -352,3 +355,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · TP-02, TP-03 · Treatment plans list and plan detail.
 - 2026-11-06 · TP-04 · Treatment plan wizard (board's five steps) with a resumable save.
 - 2026-11-06 · TP-05 · Treatment plan PDF made in the app and shared; the clinic's Plans tab gets its own label (ru/uz said "Tariffs").
+- 2026-11-06 · CARE-01…03 · Care partnerships: find a partner, the list and the partnership with its updates.
