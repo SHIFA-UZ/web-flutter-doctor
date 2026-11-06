@@ -154,6 +154,10 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | DENTAL-01 Tooth map and dental record | Done | FDI tooth map (free and plan modes, phone and wide tiles), the version 2 dental record codec with legacy keys, totals per currency. Used by DENTAL-02. See visits.md. |
 | DENTAL-02 Dental visit record | Done | Free mode: tooth map, services sheet, general services, dentition, discount, clinical notes, totals per currency; 1200 ms autosave and flush (nothing edited before the record is read); End saves it, its checklist row and the summary's dental section. Plan mode is DENTAL-03. See visits.md. |
 | APPT-05 Before/after photos | Done | Before / After Treatment from the notes menu (camera or gallery, compressed), removable chips, kept until End (leaving asks), Photos row in the End checklist, one summary PDF page each. See visits.md. |
+| CLINIC-01 Clinic memberships | Done | Shared clinics state, remembered selected clinic per user, sticky list, one permission helper. See clinic.md. |
+| CLINIC-02 Clinic workspace shell | Done | Clinic tab → workspace: header with the switcher, the board's section groups, Settings behind the gear. See clinic.md. |
+| CLINIC-03 Clinic list kit | Done (kit reused) | The design system's components cover it; tickets add what they need. See clinic.md. |
+| CLINIC-04 Overview + Settings | Done | Numbers with taps, quick actions, contact rows; read-only settings with the default share. See clinic.md. |
 | TP-01 Treatment plans data (visit part) | Done | Plans per patient (no cache yet), detail (nested or flat summary, line teeth), fulfilment candidates and fulfil; typed failures; selected clinic = first membership until CLINIC-01; demo plan. Dev has no plans (shapes from OpenAPI). See visits.md. |
 | DENTAL-03 + TP-06 Treatment plan in the visit | Done | Plan panel (linked/only plan chosen, progress), plan-mode chart and fulfil sheet, Plan finances with this visit's payment; End applies ticks then records the payment before completing (once each); checklist rows; one plan section in the summary; leaving asks. Demo only (no dev plans). See visits.md. |
 | DENTAL-04 Plan editor + read-only plan chart | Done (hosts in M11) | The visit's dental record UI and draft reused with plan services; plan lines with the discount spread per currency (Flutter's fixture ported); read-only plan chart. Wizard (TP-04) and plan detail (TP-03) host them. See visits.md. |
@@ -320,3 +324,5 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-06 · INTEL-08 · Intelligence open-visit card with auto-open over the conversation.
 - 2026-11-06 · AI-04, AI-07 · Speech player and the voice orb.
 - 2026-11-06 · AI-08, INTEL-09 · Shifa Intelligence by voice: the voice session, composer and orb panel.
+- 2026-11-06 · CLINIC-01 · Clinic memberships, the remembered clinic and one permission helper.
+- 2026-11-06 · CLINIC-02…04 · The clinic workspace: header, sections, Overview and Settings.

@@ -81,7 +81,14 @@ class ShellViewModelTest {
     private var scheduleReads = 0
 
     private fun vm(staff: Boolean = false) =
-        ShellViewModel(staff, profile, ClinicsRepository { client }, BadgesRepository { client }) { scheduleReads++ }
+        ShellViewModel(
+            staff,
+            profile,
+            ClinicsRepository({
+                client
+            }, com.russhwolf.settings.MapSettings(), { "u1" }),
+            BadgesRepository { client },
+        ) { scheduleReads++ }
 
     private fun ShellViewModel.settle() {
         repeat(200) {

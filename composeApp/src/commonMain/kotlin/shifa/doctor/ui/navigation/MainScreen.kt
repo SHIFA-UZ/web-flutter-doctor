@@ -107,6 +107,9 @@ import shifa.doctor.ui.calendar.CalendarScreen
 import shifa.doctor.ui.chat.ChatListScreen
 import shifa.doctor.ui.chat.PatientChatScreen
 import shifa.doctor.ui.chat.ThreadScreen
+import shifa.doctor.ui.clinic.ClinicActions
+import shifa.doctor.ui.clinic.ClinicSectionContent
+import shifa.doctor.ui.clinic.ClinicWorkspaceScreen
 import shifa.doctor.ui.debug.DebugMenuScreen
 import shifa.doctor.ui.documents.DocumentViewerScreen
 import shifa.doctor.ui.forms.FormEditorScreen
@@ -510,6 +513,11 @@ private fun RouteContent(
                         }
                     },
                 )
+            } else if (route.tab == ShellTab.Clinic) {
+                // M11: the clinic workspace (doctors with a clinic, and clinic staff).
+                ClinicWorkspaceScreen(staff, ClinicActions(openMyCalendar = actions.openCalendar)) { section, clinic ->
+                    ClinicSectionContent(section, clinic, staff, actions)
+                }
             } else {
                 TabPlaceholder(route.tab.label, route.tab.icon)
             }

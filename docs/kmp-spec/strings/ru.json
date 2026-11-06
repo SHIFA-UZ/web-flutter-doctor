@@ -2701,5 +2701,10 @@
   "allNotifications": "Все уведомления",
   "checkInsOf": "{done} из {total} отметок",
   "moreUnreadInInbox": "Ещё непрочитанные уведомления — во входящих.",
-  "aiUnavailable": "Shifa сейчас недоступна. Попробуйте ещё раз чуть позже."
+  "aiUnavailable": "Shifa сейчас недоступна. Попробуйте ещё раз чуть позже.",
+  "clinicGroupPeople": "Сотрудники",
+  "clinicYourClinics": "Ваши клиники",
+  "clinicSettingsTitle": "Настройки клиники",
+  "clinicLoadFailed": "Не удалось загрузить ваши клиники.",
+  "clinicStatsFailed": "Не удалось загрузить показатели клиники."
 }

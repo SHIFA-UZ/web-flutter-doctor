@@ -2701,5 +2701,10 @@
   "allNotifications": "Barcha bildirishnomalar",
   "checkInsOf": "{total} tadan {done} ta belgilash",
   "moreUnreadInInbox": "Boshqa o'qilmagan bildirishnomalar kiruvchilarda.",
-  "aiUnavailable": "Shifa hozir mavjud emas. Birozdan keyin qayta urinib ko'ring."
+  "aiUnavailable": "Shifa hozir mavjud emas. Birozdan keyin qayta urinib ko'ring.",
+  "clinicGroupPeople": "Xodimlar",
+  "clinicYourClinics": "Klinikalaringiz",
+  "clinicSettingsTitle": "Klinika sozlamalari",
+  "clinicLoadFailed": "Klinikalaringizni yuklab bo‘lmadi.",
+  "clinicStatsFailed": "Klinika ko‘rsatkichlarini yuklab bo‘lmadi."
 }

@@ -544,6 +544,7 @@
     <string name="clinicFinanceTotalRevenueHint">Collected revenue across billable visits</string>
     <string name="clinicFinanceTotalRevenueHintMonth">Collected from billable visits in the selected month (by visit date)</string>
     <string name="clinicFinanceVisitServices">Services on visit</string>
+    <string name="clinicGroupPeople">People</string>
     <string name="clinicIntelligence">Clinic Intelligence</string>
     <string name="clinicInviteConsumed">Used</string>
     <string name="clinicInviteCreateTitle">Invite receptionist</string>
@@ -567,6 +568,7 @@
     <string name="clinicLedgerPayMenu">Mark payment</string>
     <string name="clinicLedgerSearchHint">Search patient, doctor, treatment plan #…</string>
     <string name="clinicLedgerViewServices">View services</string>
+    <string name="clinicLoadFailed">Couldn't load your clinics.</string>
     <string name="clinicMembershipRoleClinicAdmin">Clinic admin</string>
     <string name="clinicMembershipRoleDoctor">Doctor</string>
     <string name="clinicMembershipRoleNurse">Nurse</string>
@@ -691,8 +693,10 @@
     <string name="clinicServicesSourceClinic">Clinic</string>
     <string name="clinicServicesSourceDoctor">Doctor</string>
     <string name="clinicSettingsReadOnly">Clinic details are managed by administrators. Contact your clinic admin to request changes.</string>
+    <string name="clinicSettingsTitle">Clinic settings</string>
     <string name="clinicStaffMobileBody">The clinic receptionist portal is available on the web. Please sign in at your clinic workspace in a browser.</string>
     <string name="clinicStaffMobileTitle">Clinic staff portal</string>
+    <string name="clinicStatsFailed">Couldn't load the clinic's numbers.</string>
     <string name="clinicTableNoFilteredResults">Nothing matches your search or filters.</string>
     <string name="clinicTreatmentPlanDetailDentalChart">Dental chart</string>
     <string name="clinicTreatmentPlanDetailNotFound">Treatment plan not found.</string>
@@ -749,6 +753,7 @@
     <string name="clinicWorkspaceSettings">Settings</string>
     <string name="clinicWorkspaceTreatmentPlans">Treatment plans</string>
     <string name="clinicWorkspaceYourRole">Your role</string>
+    <string name="clinicYourClinics">Your clinics</string>
     <string name="clinicalEngine">Clinical engine</string>
     <string name="clinicalEngineHint">Pick a disease to prefill the form. You can edit everything afterwards.</string>
     <string name="clinicalFindingsConclusion">Clinical findings &amp; conclusion</string>

@@ -171,7 +171,12 @@ class VisitViewModelTest {
             services = shifa.doctor.data.services.ServicesRepository(client),
             plans = shifa.doctor.data.treatmentplans.TreatmentPlansRepository(client),
             finance = shifa.doctor.data.finance.FinanceRepository(client),
-            clinics = shifa.doctor.data.clinics.ClinicsRepository(client),
+            clinics =
+                shifa.doctor.data.clinics.ClinicsRepository(
+                    client,
+                    com.russhwolf.settings.MapSettings(),
+                    { "u1" },
+                ),
         ).also {
             created += it
             it.load()

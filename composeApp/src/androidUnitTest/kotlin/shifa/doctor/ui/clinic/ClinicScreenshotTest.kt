@@ -1,0 +1,22 @@
+package shifa.doctor.ui.clinic
+
+import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [33], qualifiers = "w402dp-h1000dp-xhdpi")
+class ClinicScreenshotTest {
+    @Test
+    fun overview() = captureRoboImage("screenshots/Clinic_overview.png") { ClinicOverviewPreview() }
+
+    @Test
+    fun settings() = captureRoboImage("screenshots/Clinic_settings.png") { ClinicSettingsPreview() }
+
+    @Test
+    fun empty() = captureRoboImage("screenshots/Clinic_empty.png") { ClinicEmptyPreview() }
+}

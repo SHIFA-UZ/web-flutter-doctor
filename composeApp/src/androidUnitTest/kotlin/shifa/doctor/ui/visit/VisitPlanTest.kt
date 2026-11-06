@@ -111,7 +111,7 @@ class VisitPlanTest {
             scope,
             TreatmentPlansRepository(client),
             FinanceRepository(client),
-            ClinicsRepository(client),
+            ClinicsRepository(client, com.russhwolf.settings.MapSettings(), { "u1" }),
             fulfilledByVisit = { Result.success(ours) },
         ).also {
             it.load(14, linked, fulfilled)

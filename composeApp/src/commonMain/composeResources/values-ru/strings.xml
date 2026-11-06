@@ -544,6 +544,7 @@
     <string name="clinicFinanceTotalRevenueHint">Собранный доход по оплачиваемым визитам</string>
     <string name="clinicFinanceTotalRevenueHintMonth">Получено по оплачиваемым визитам за выбранный месяц (по дате визита)</string>
     <string name="clinicFinanceVisitServices">Услуги визита</string>
+    <string name="clinicGroupPeople">Сотрудники</string>
     <string name="clinicIntelligence">Клиническая аналитика</string>
     <string name="clinicInviteConsumed">Использовано</string>
     <string name="clinicInviteCreateTitle">Пригласить администратора регистратуры</string>
@@ -567,6 +568,7 @@
     <string name="clinicLedgerPayMenu">Отметить оплату</string>
     <string name="clinicLedgerSearchHint">Пациент, врач, план лечения №…</string>
     <string name="clinicLedgerViewServices">Посмотреть услуги</string>
+    <string name="clinicLoadFailed">Не удалось загрузить ваши клиники.</string>
     <string name="clinicMembershipRoleClinicAdmin">Администратор клиники</string>
     <string name="clinicMembershipRoleDoctor">Врач</string>
     <string name="clinicMembershipRoleNurse">Медсестра</string>
@@ -691,8 +693,10 @@
     <string name="clinicServicesSourceClinic">Клиника</string>
     <string name="clinicServicesSourceDoctor">Врач</string>
     <string name="clinicSettingsReadOnly">Данные клиники управляются администраторами. Обратитесь к администратору клиники для изменений.</string>
+    <string name="clinicSettingsTitle">Настройки клиники</string>
     <string name="clinicStaffMobileBody">Портал регистратуры клиники доступен в веб-версии. Войдите в рабочее пространство клиники через браузер.</string>
     <string name="clinicStaffMobileTitle">Портал сотрудников клиники</string>
+    <string name="clinicStatsFailed">Не удалось загрузить показатели клиники.</string>
     <string name="clinicTableNoFilteredResults">Ничего не подходит под поиск или фильтры.</string>
     <string name="clinicTreatmentPlanDetailDentalChart">Зубная схема</string>
     <string name="clinicTreatmentPlanDetailNotFound">План лечения не найден.</string>
@@ -749,6 +753,7 @@
     <string name="clinicWorkspaceSettings">Настройки</string>
     <string name="clinicWorkspaceTreatmentPlans">Планы лечения</string>
     <string name="clinicWorkspaceYourRole">Ваша роль</string>
+    <string name="clinicYourClinics">Ваши клиники</string>
     <string name="clinicalEngine">Клинический модуль</string>
     <string name="clinicalEngineHint">Выберите заболевание, чтобы заполнить форму. Потом всё можно изменить.</string>
     <string name="clinicalFindingsConclusion">Клинические данные и заключение</string>

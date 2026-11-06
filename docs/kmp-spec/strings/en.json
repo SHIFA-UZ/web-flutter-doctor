@@ -2701,5 +2701,10 @@
   "allNotifications": "All notifications",
   "checkInsOf": "{done} of {total} check-ins",
   "moreUnreadInInbox": "More unread notifications are in the inbox.",
-  "aiUnavailable": "Shifa is unavailable right now. Try again in a moment."
+  "aiUnavailable": "Shifa is unavailable right now. Try again in a moment.",
+  "clinicGroupPeople": "People",
+  "clinicYourClinics": "Your clinics",
+  "clinicSettingsTitle": "Clinic settings",
+  "clinicLoadFailed": "Couldn't load your clinics.",
+  "clinicStatsFailed": "Couldn't load the clinic's numbers."
 }

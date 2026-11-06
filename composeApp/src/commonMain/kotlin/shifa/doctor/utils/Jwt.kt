@@ -9,11 +9,14 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * The only JWT reader (01 §5.1): the app reads `exp` and `role`, nothing else, and never verifies the signature
+ * The only JWT reader (01 §5.1): the app reads `exp`, `role` and `sub`, nothing else, and never verifies the signature
  * (the backend does). A token that doesn't parse has neither.
  */
 object Jwt {
     fun expiresAtEpochSeconds(token: String?): Long? = claim(token, "exp") { it.jsonPrimitive.longOrNull }
+
+    /** The account the token is for (`sub`): keys what the app remembers per user (the selected clinic). */
+    fun subject(token: String?): String? = claim(token, "sub") { it.jsonPrimitive.content }
 
     /** `DOCTOR`, `CLINIC_STAFF` or `ADMIN`, upper-cased. */
     fun role(token: String?): String? = claim(token, "role") { it.jsonPrimitive.content.uppercase() }

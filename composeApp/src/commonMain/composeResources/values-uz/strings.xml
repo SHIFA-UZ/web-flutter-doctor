@@ -544,6 +544,7 @@
     <string name="clinicFinanceTotalRevenueHint">To'lovli tashriflar bo'yicha yig'ilgan daromad</string>
     <string name="clinicFinanceTotalRevenueHintMonth">Tanlangan oydagi to'lovli tashriflardan yig'ilgan (tashrif sanasi bo'yicha)</string>
     <string name="clinicFinanceVisitServices">Xizmatlar</string>
+    <string name="clinicGroupPeople">Xodimlar</string>
     <string name="clinicIntelligence">Klinika intellekti</string>
     <string name="clinicInviteConsumed">Ishlatilgan</string>
     <string name="clinicInviteCreateTitle">Resepsionist taklif qilish</string>
@@ -567,6 +568,7 @@
     <string name="clinicLedgerPayMenu">To'lovni belgilash</string>
     <string name="clinicLedgerSearchHint">Bemor, shifokor, davolanish rejasi # qidirash…</string>
     <string name="clinicLedgerViewServices">Xizmatlarni ko'rish</string>
+    <string name="clinicLoadFailed">Klinikalaringizni yuklab bo‘lmadi.</string>
     <string name="clinicMembershipRoleClinicAdmin">Klinika administratori</string>
     <string name="clinicMembershipRoleDoctor">Shifokor</string>
     <string name="clinicMembershipRoleNurse">Hamshira</string>
@@ -691,8 +693,10 @@
     <string name="clinicServicesSourceClinic">Klinika</string>
     <string name="clinicServicesSourceDoctor">Shifokor</string>
     <string name="clinicSettingsReadOnly">Klinika ma'lumotlarini administratorlar boshqaradi. O'zgartirish uchun klinika adminiga murojaat qiling.</string>
+    <string name="clinicSettingsTitle">Klinika sozlamalari</string>
     <string name="clinicStaffMobileBody">Klinika registratori portali vebda mavjud. Iltimos, brauzerda klinikangiz ish maydoniga kiring.</string>
     <string name="clinicStaffMobileTitle">Klinika xodimlari portali</string>
+    <string name="clinicStatsFailed">Klinika ko‘rsatkichlarini yuklab bo‘lmadi.</string>
     <string name="clinicTableNoFilteredResults">Qidiruv yoki filtrlarga mos yozuv yo‘q.</string>
     <string name="clinicTreatmentPlanDetailDentalChart">Tish sxemasi</string>
     <string name="clinicTreatmentPlanDetailNotFound">Davolash rejasi topilmadi.</string>
@@ -749,6 +753,7 @@
     <string name="clinicWorkspaceSettings">Sozlamalar</string>
     <string name="clinicWorkspaceTreatmentPlans">Davolash rejasi</string>
     <string name="clinicWorkspaceYourRole">Sizning rolingiz</string>
+    <string name="clinicYourClinics">Klinikalaringiz</string>
     <string name="clinicalEngine">Klinik dvigatel</string>
     <string name="clinicalEngineHint">Shaklni to'ldirish uchun kasallikni tanlang. Keyin hammasini tahrirlashingiz mumkin.</string>
     <string name="clinicalFindingsConclusion">Qayta kasallanib murojaat qilgan bemor anamnezi, statusi, tashxisi va davolanish kundaligi</string>

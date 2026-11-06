@@ -360,8 +360,9 @@ fun ContextSwitcher(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            // `.dr-context__role`: under the meta line, in the main column (the board; it sat on the right before).
+            role?.let { Text(it, style = ShifaTextStyles.tableHead(), color = ShifaColors.Text.Primary) }
         }
-        role?.let { Text(it, style = ShifaTextStyles.tableHead(), color = ShifaColors.Text.Primary) }
     }
 }
 

@@ -19,6 +19,7 @@ import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
 import shifa.doctor.data.chat.ChatReads
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.clinics.clinicsRepository
 import shifa.doctor.data.forms.Icd10Hit
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.VisitKind
@@ -239,7 +240,7 @@ data class ShellUiState(
 class ShellViewModel(
     staff: Boolean = false,
     private val profile: ProfileRepository = profileRepository,
-    private val clinics: ClinicsRepository = ClinicsRepository(),
+    private val clinics: ClinicsRepository = clinicsRepository,
     private val badges: BadgesRepository = BadgesRepository(),
     // Leaving Shifa Intelligence: bookings, moves and cancellations made in the chat change the schedule, so today's
     // calendar reads again and every screen showing visits hears of it (flow 03 README §4).
@@ -269,6 +270,10 @@ class ShellViewModel(
     private var pending: ShellTab? = null
 
     init {
+        // CLINIC-01: the Clinic entry follows every read of the memberships (the workspace's too), not only the shell's.
+        viewModelScope.launch {
+            clinics.state.collect { s -> if (s.known && !staff) _state.update { it.copy(hasClinic = s.hasWorkspace) } }
+        }
         // CHAT-07: a conversation read in the thread or the list drops the Chat badge at once.
         // NOTIF-02: read in the inbox, the bell's count again.
         viewModelScope.launch { NotificationReads.changed.collect { refreshNotifications() } }
