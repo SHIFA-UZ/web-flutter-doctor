@@ -119,3 +119,43 @@ Medical info's card style).
   `ProphylaxisViewModelTest` (empty answer = defaults, Save body, failed read blocks Save, failed save),
   `DemoBackendTest` (+1); screenshots `Clinic_patients`, `Clinic_patients_empty`, `PatientDetail_prophylaxis`.
 
+## CLINIC-07 · Services and the catalogue editor
+
+Built 2026-11-06. Spec 09 §2 row 4, flow 09/04, ticket CLINIC-07. Board `DaClinic` Services and the "svc" / "menu"
+sheets, phone layout (`ui/clinic/ClinicServices.kt`).
+- **List:** `GET /treatment-plans/plan-services?clinicId` (the clinic catalogue, inactive items too, and the doctors'
+  own services) with `GET /treatment-plans/catalog-items?clinicId` read beside it for editing. Search over title, code,
+  catalogue number and doctors' names; All / Active / Inactive; by title. A card: title (grey italic when inactive),
+  code chip, source chip (Clinic / Doctor), Inactive, the price (`Money.format`: "1 500 000 UZS", "25.50 USD"), "All
+  doctors at this clinic" / the names / "No doctors assigned". Clinic rows: ⋮ → Edit · Deactivate / Reactivate (at
+  once, no question; the banner says deactivated services stay on plans). A doctor's own row: ⓘ → "Defined by the
+  doctor in their profile · read-only here" as a banner (Flutter's hover tooltip). A failed catalogue read keeps the
+    list and says "Editing unavailable" + Retry (clinic rows lose their menu, also over a catalogue read before: it may be
+  out of date); a failed list read keeps the old rows.
+- **Editor sheet** ("Add clinic service" / "Edit clinic service"): name, code (upper-cased, unique among the clinic's
+  items), currency (UZS · USD · EUR · RUB; a new service starts in the clinic's; the flow's picker, not on the board),
+  price, Active, "Assign to all doctors at this clinic" or the clinic's doctors to tick (members with a doctor profile).
+  Checks: name, a price of 0 or more (0 is a free service with a soft note — the flow and the backend, over the board's
+  "> 0"), code not taken, a doctor when not for all. Price typed as whole sums for UZS (the app's money rule), "12.50"
+  otherwise (`Money.parse`, no float maths — quirk 25); an edited service's price is kept as stored while its price and
+  currency are untouched (UZS tiyin aren't shown). Create: `POST {clinicId, code?, title, defaultPriceMinor,
+  currency, active, appliesToAllDoctors, assignedDoctorProfileIds, sortOrder: 0}`; edit: `PATCH` with every field,
+  `code: ""` to clear (backend: blank → null), `appliesToAllDoctors: true` or the doctor ids. Then the banner ("Service
+  added" / "Service saved") and both lists read again (rows kept meanwhile). Cancel / Back with changes ask "Discard
+  changes?"; a drag or scrim tap closes only an untouched sheet.
+- **Who edits:** every member, staff too: the backend checks only clinic access (`TreatmentPlanController`, 2026-11-06),
+  as the board shows (`canEdit: owner || staff`).
+- **Codex review:** free services, the currency picker and no editing from a stale catalogue were added; UZS decimals
+  and the swipe veto were kept (answers in `codex/CLINIC-07.md`).
+- **Shared fix:** `ProfileSheet` read the first `confirmHide` lambda forever (the sheet state remembers it), so every
+  sheet's "busy / changed" check was stale; it now reads the latest (`rememberUpdatedState`).
+- **Demo:** the demo clinic's catalogue lives in `DemoClinic` (plan services follow it, filtered by `doctorIds`; writes
+  checked like the backend); the doctor service is offered by member 21.
+- New strings: validation, results, load / save failures, "Editing unavailable", "Price ({{currency}})", the menu label.
+- **Checked:** emulator, dev (reads): 9 doctor services, no catalogue items. Demo: added "Implant" for Bobur only
+  ("Pick at least one doctor" first), deactivated it, edited it (prefilled, code cleared), the discard question on
+  Back with changes. Not tried on dev: a created item can't be deleted (no DELETE) and is synced into doctor services.
+  iOS compiled, not run.
+- **Tests:** `ClinicServicesViewModelTest` (filters, create validation and body, edit prefill and PATCH bodies, toggle,
+  discard, failures), `DemoBackendTest` (+1); screenshots `Clinic_services`, `Clinic_service_editor`.
+

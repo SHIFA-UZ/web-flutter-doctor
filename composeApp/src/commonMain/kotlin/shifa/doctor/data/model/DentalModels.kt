@@ -214,9 +214,59 @@ data class PlanServiceOption(
     val defaultPriceMinor: Long = 0,
     val currency: String = "UZS",
     val active: Boolean = true,
+    // Who offers it: every practice doctor for an "all doctors" catalogue item, else the assigned ones / the owner.
+    val offeredByDoctorIds: List<Long> = emptyList(),
+    val offeredByDoctorNames: List<String?> = emptyList(),
     val groupId: Long? = null,
     val groupName: String? = null,
     val groupSortOrder: Int? = null,
+) {
+    /** A clinic catalogue item (editable in the workspace), not a doctor's own service. */
+    val isCatalog: Boolean get() = kind == "CLINIC_CATALOG" && catalogItemId != null
+}
+
+/** `CatalogItemDto` (`GET/POST/PATCH /treatment-plans/catalog-items`, dev OpenAPI 2026-11-06): a clinic service. */
+@Serializable
+data class CatalogItem(
+    val id: Long = 0,
+    val clinicId: Long? = null,
+    val code: String? = null,
+    val title: String = "",
+    val defaultPriceMinor: Long = 0,
+    val currency: String = "UZS",
+    val active: Boolean = true,
+    val sortOrder: Int = 0,
+    val appliesToAllDoctors: Boolean = true,
+    val assignedDoctorProfileIds: List<Long> = emptyList(),
+)
+
+/** `UpsertCatalogItemRequest`: a new clinic service (no ids when it applies to all doctors). */
+@Serializable
+data class NewCatalogItem(
+    val clinicId: Long,
+    val code: String?,
+    val title: String,
+    val defaultPriceMinor: Long,
+    val currency: String,
+    val active: Boolean,
+    val appliesToAllDoctors: Boolean,
+    val assignedDoctorProfileIds: List<Long>,
+    val sortOrder: Int = 0,
+)
+
+/**
+ * `PatchCatalogItemRequest`: only the fields set are sent. `code = ""` clears the code; `appliesToAllDoctors = true`
+ * switches to every doctor, else [assignedDoctorProfileIds] sets who offers it (the backend's two branches).
+ */
+@Serializable
+data class CatalogItemPatch(
+    val code: String? = null,
+    val title: String? = null,
+    val defaultPriceMinor: Long? = null,
+    val currency: String? = null,
+    val active: Boolean? = null,
+    val appliesToAllDoctors: Boolean? = null,
+    val assignedDoctorProfileIds: List<Long>? = null,
 )
 
 /** A treatment-plan line to create (`LineReq` of `POST /treatment-plans/{id}/lines`). */

@@ -2729,5 +2729,19 @@
   "clinicDefaultShareCleared": "Clinic default cleared. Doctors without their own share have none set.",
   "clinicShareFailed": "Couldn't save the revenue share.",
   "prophylaxisLoadFailed": "Could not load prophylaxis settings",
-  "prophylaxisSaveFailed": "Could not save prophylaxis settings"
+  "prophylaxisSaveFailed": "Could not save prophylaxis settings",
+  "clinicServiceNameRequired": "Service name is required",
+  "clinicServicePriceInvalid": "Enter a valid price",
+  "clinicServiceCodeTaken": "This code is already used",
+  "clinicServicePickDoctorsError": "Pick at least one doctor",
+  "clinicServiceAdded": "Service added",
+  "clinicServiceDeactivated": "Service deactivated. Deactivated services stay on existing plans.",
+  "clinicServiceReactivated": "Service reactivated",
+  "clinicServicesLoadFailed": "Couldn't load services.",
+  "clinicServiceSaveFailed": "Couldn't save service.",
+  "clinicServicesEditingUnavailable": "Editing unavailable",
+  "clinicServicePriceInCurrency": "Price ({{currency}})",
+  "clinicServiceOptions": "Service options",
+  "clinicServiceDoctorsLoadFailed": "Couldn't load the clinic's doctors.",
+  "clinicServicePriceZero": "Price is 0: a free service"
 }

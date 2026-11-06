@@ -168,6 +168,49 @@ class DemoBackendTest {
         }
 
     @Test
+    fun `the demo catalogue answers locally - plan services follow it, by doctor, writes checked like the backend`() =
+        runTest {
+            val plans = shifa.doctor.data.treatmentplans.TreatmentPlansRepository { client }
+            assertThat(
+                plans.planServices(1).getOrThrow().map {
+                    it.title
+                },
+            ).containsExactly("Root canal treatment", "Ceramic crown", "Cleaning").inOrder()
+            // Bobur (22) offers only the all-doctors item.
+            assertThat(
+                plans.planServices(1, listOf(22)).getOrThrow().map { it.title },
+            ).containsExactly("Root canal treatment")
+            val added =
+                plans.createCatalogItem(
+                    shifa.doctor.data.model.NewCatalogItem(
+                        1,
+                        "imp",
+                        "Implant",
+                        300_000_000,
+                        "UZS",
+                        true,
+                        false,
+                        listOf(22),
+                    ),
+                ).getOrThrow()
+            assertThat(plans.planServices(1, listOf(22)).getOrThrow().map { it.title }).contains("Implant")
+            plans.patchCatalogItem(
+                added.id,
+                shifa.doctor.data.model.CatalogItemPatch(code = "", active = false),
+            ).getOrThrow()
+            val item = plans.catalogItems(1).getOrThrow().single { it.id == added.id }
+            assertThat(item.code).isNull()
+            assertThat(item.active).isFalse()
+            // No doctor and not for all: refused, as the backend does.
+            assertThat(
+                plans.createCatalogItem(
+                    shifa.doctor.data.model.NewCatalogItem(1, null, "X", 1, "UZS", true, false, emptyList()),
+                ).isFailure,
+            ).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
+
+    @Test
     fun `professions, clinics and the profile PATCH answer locally`() =
         runTest {
             val catalog = CatalogRepository({ client })
@@ -539,7 +582,7 @@ class DemoBackendTest {
                 repo.planServices(1).getOrThrow().map {
                     it.key
                 },
-            ).containsExactly("catalog:1", "catalog:2", "doctor:1:service:3")
+            ).containsExactly("catalog:1", "catalog:2", "doctor:21:service:3")
             val detail = repo.detail(plan.id).getOrThrow()
             assertThat(detail.lines.map { it.tooth }).containsExactly("36", "36", "46", null).inOrder()
             val open = repo.candidates(plan.id, 102).getOrThrow()

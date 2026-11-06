@@ -102,6 +102,9 @@ object ApiConfig {
         const val VIDEO_TOKEN = "video/token"
         const val TREATMENT_PLANS = "treatment-plans"
         const val PLAN_SERVICES = "treatment-plans/plan-services"
+        const val CATALOG_ITEMS = "treatment-plans/catalog-items"
+
+        fun catalogItem(id: Long) = "treatment-plans/catalog-items/$id"
 
         fun clinicPayments(clinicId: Long) = "clinics/$clinicId/finance/payments"
 

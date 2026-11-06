@@ -24,6 +24,7 @@ internal fun ColumnScope.ClinicSectionContent(
     when (section) {
         ClinicSection.Doctors -> DoctorsSection(clinic)
         ClinicSection.Invitations -> InvitationsSection(clinic)
+        ClinicSection.Services -> ServicesSection(clinic)
         ClinicSection.Patients ->
             ClinicPatientsSection(clinic, onOpen = { actions.push(ShellRoute.Patient(it.patientId, clinic.clinicId)) })
         else -> Text(tr(sectionLabel(section)), style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Secondary)

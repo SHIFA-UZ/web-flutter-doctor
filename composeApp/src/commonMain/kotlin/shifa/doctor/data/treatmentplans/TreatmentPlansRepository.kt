@@ -3,6 +3,7 @@ package shifa.doctor.data.treatmentplans
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -13,8 +14,11 @@ import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.rows
 import shifa.doctor.data.model.ApiException
+import shifa.doctor.data.model.CatalogItem
+import shifa.doctor.data.model.CatalogItemPatch
 import shifa.doctor.data.model.FulfillRequest
 import shifa.doctor.data.model.FulfillmentCandidate
+import shifa.doctor.data.model.NewCatalogItem
 import shifa.doctor.data.model.PlanServiceOption
 import shifa.doctor.data.model.TreatmentPlanDetail
 import shifa.doctor.data.model.TreatmentPlanSummary
@@ -55,6 +59,33 @@ class TreatmentPlansRepository(
                 if (doctorIds.isNotEmpty()) parameter("doctorIds", doctorIds.joinToString(","))
             }
         }.map { it.rows(PlanServiceOption.serializer(), "plan services") }
+
+    /** The clinic's own catalogue (`GET /treatment-plans/catalog-items?clinicId`), with who each item applies to. */
+    suspend fun catalogItems(clinicId: Long): Result<List<CatalogItem>> =
+        apiCall<List<JsonElement>> {
+            client().get(ApiConfig.Endpoints.CATALOG_ITEMS) { parameter("clinicId", clinicId) }
+        }.map { it.rows(CatalogItem.serializer(), "catalog items") }
+
+    /** `POST /treatment-plans/catalog-items` (CLINIC-07). */
+    suspend fun createCatalogItem(item: NewCatalogItem): Result<CatalogItem> =
+        apiCall<CatalogItem> {
+            client().post(ApiConfig.Endpoints.CATALOG_ITEMS) {
+                contentType(ContentType.Application.Json)
+                setBody(item)
+            }
+        }
+
+    /** `PATCH /treatment-plans/catalog-items/{id}`: the fields set in [patch] only. */
+    suspend fun patchCatalogItem(
+        id: Long,
+        patch: CatalogItemPatch,
+    ): Result<CatalogItem> =
+        apiCall<CatalogItem> {
+            client().patch(ApiConfig.Endpoints.catalogItem(id)) {
+                contentType(ContentType.Application.Json)
+                setBody(patch)
+            }
+        }
 
     suspend fun detail(planId: Long): Result<TreatmentPlanDetail> =
         apiCall<JsonElement> { client().get(ApiConfig.Endpoints.treatmentPlanDetail(planId)) }

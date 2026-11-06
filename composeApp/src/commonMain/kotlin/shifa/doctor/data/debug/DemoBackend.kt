@@ -318,7 +318,7 @@ class DemoBackend(
             get && path == Endpoints.clinicPatients(1) -> ok(clinicPatientsPage(people, request.url.parameters))
             // The clinic workspace (M11): numbers, members and their shares, invitations; kept in memory.
             clinic.handles(path) ->
-                clinic.answer(request.method, path, body).let {
+                clinic.answer(request.method, path, body, request.url.parameters).let {
                         (status, json) ->
                     Reply(status, json)
                 }
@@ -655,8 +655,7 @@ class DemoBackend(
                 ok(JsonArray(if (mine) listOf(plan) else emptyList()))
             }
             get && path == Endpoints.treatmentPlanDetail(DEMO_PLAN_ID) -> ok(demoPlanDetail())
-            // The demo clinic's plan services (DENTAL-04), the shape of dev's (2026-11-05).
-            get && path == Endpoints.PLAN_SERVICES -> ok(apiJson.parseToJsonElement(DEMO_PLAN_SERVICES))
+
             get && path == Endpoints.fulfillmentCandidates(DEMO_PLAN_ID) -> ok(demoCandidates())
             request.method == HttpMethod.Post &&
                 path.matches(
@@ -1327,10 +1326,6 @@ class DemoBackend(
 
         private const val DEMO_PLAN_ID = 501L
 
-        private const val DEMO_PLAN_SERVICES =
-            """[{"key":"catalog:1","kind":"CLINIC_CATALOG","catalogItemId":1,"title":"Root canal treatment","defaultPriceMinor":80000000,"currency":"UZS","active":true,"offeredByDoctorIds":[],"offeredByDoctorNames":[],"groupName":"Endodontics","groupSortOrder":1},
-            {"key":"catalog:2","kind":"CLINIC_CATALOG","catalogItemId":2,"title":"Ceramic crown","defaultPriceMinor":150000000,"currency":"UZS","active":true,"offeredByDoctorIds":[],"offeredByDoctorNames":[],"groupName":"Prosthetics","groupSortOrder":2},
-            {"key":"doctor:1:service:3","kind":"DOCTOR_SERVICE","doctorServiceId":3,"title":"Cleaning","defaultPriceMinor":40000000,"currency":"UZS","active":true,"offeredByDoctorIds":[1],"offeredByDoctorNames":["Aziza Karimova"]}]"""
         private const val DEMO_PLAN_DONE_LINE = 13L
 
         // The plan's dental record (a JSON string): services planned on 36, 46 and one general.

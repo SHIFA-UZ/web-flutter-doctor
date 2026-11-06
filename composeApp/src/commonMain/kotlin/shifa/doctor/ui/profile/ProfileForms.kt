@@ -144,6 +144,18 @@ internal fun ProfileSheet(
     // Asked before a drag or a scrim tap hides the sheet: false keeps it (a form saving, or asking to discard first).
     confirmHide: () -> Boolean = { true },
     content: @Composable () -> Unit,
+) {
+    // The sheet state keeps its first lambda: read the caller's latest check (busy / changed now, not at first show).
+    val confirm by rememberUpdatedState(confirmHide)
+    ProfileSheetHost(onDismiss, { confirm() }, content)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProfileSheetHost(
+    onDismiss: () -> Unit,
+    confirmHide: () -> Boolean,
+    content: @Composable () -> Unit,
 ) = ModalBottomSheet(
     onDismiss,
     sheetState =

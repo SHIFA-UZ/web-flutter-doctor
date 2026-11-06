@@ -2729,5 +2729,19 @@
   "clinicDefaultShareCleared": "Klinika qiymati tozalandi. O‘z ulushi yo‘q shifokorlarda ulush belgilanmagan.",
   "clinicShareFailed": "Daromad ulushini saqlab bo‘lmadi.",
   "prophylaxisLoadFailed": "Profilaktika sozlamalarini yuklab bo‘lmadi",
-  "prophylaxisSaveFailed": "Profilaktika sozlamalarini saqlab bo‘lmadi"
+  "prophylaxisSaveFailed": "Profilaktika sozlamalarini saqlab bo‘lmadi",
+  "clinicServiceNameRequired": "Xizmat nomini kiriting",
+  "clinicServicePriceInvalid": "To'g'ri narx kiriting",
+  "clinicServiceCodeTaken": "Bu kod allaqachon ishlatilgan",
+  "clinicServicePickDoctorsError": "Kamida bitta shifokorni tanlang",
+  "clinicServiceAdded": "Xizmat qo'shildi",
+  "clinicServiceDeactivated": "Xizmat o'chirildi. Mavjud rejalarda u saqlanib qoladi.",
+  "clinicServiceReactivated": "Xizmat qayta yoqildi",
+  "clinicServicesLoadFailed": "Xizmatlarni yuklab bo'lmadi.",
+  "clinicServiceSaveFailed": "Xizmatni saqlab bo'lmadi.",
+  "clinicServicesEditingUnavailable": "Tahrirlash mavjud emas",
+  "clinicServicePriceInCurrency": "Narx ({{currency}})",
+  "clinicServiceOptions": "Xizmat amallari",
+  "clinicServiceDoctorsLoadFailed": "Klinika shifokorlarini yuklab bo'lmadi.",
+  "clinicServicePriceZero": "Narx 0: bepul xizmat"
 }
