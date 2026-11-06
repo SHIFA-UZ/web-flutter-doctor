@@ -130,6 +130,7 @@ import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationsScreen
 import shifa.doctor.ui.patients.PatientDetailScreen
 import shifa.doctor.ui.patients.PatientsScreen
+import shifa.doctor.ui.profile.AboutScreen
 import shifa.doctor.ui.profile.BillingScreen
 import shifa.doctor.ui.profile.ContactScreen
 import shifa.doctor.ui.profile.ExtendedProfileScreen
@@ -577,6 +578,8 @@ private fun RouteContent(
                             debug = { actions.push(ShellRoute.Debug) }.takeIf { isDebugBuild },
                         ),
                     )
+                // LEGAL-01: the app, its version and the privacy policy.
+                ProfileSection.About -> AboutScreen(actions.back)
                 else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section) }
             }
         ShellRoute.Schedule ->

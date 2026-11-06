@@ -9,4 +9,7 @@ actual val isDebugBuild: Boolean = Platform.isDebugBinary
 actual val appVersion: String =
     NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "0"
 
+actual val appBuild: String =
+    NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleVersion") as? String ?: "0"
+
 actual val platformName: String = "ios"

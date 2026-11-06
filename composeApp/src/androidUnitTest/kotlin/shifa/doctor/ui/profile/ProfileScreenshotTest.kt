@@ -62,4 +62,7 @@ class ProfileScreenshotTest {
 
     @Test
     fun language() = captureRoboImage("screenshots/Language_settings.png") { LanguagePreview() }
+
+    @Test
+    fun about() = captureRoboImage("screenshots/About.png") { AboutPreview() }
 }

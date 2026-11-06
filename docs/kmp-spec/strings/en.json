@@ -2876,5 +2876,13 @@
   "carePostFailed": "Couldn't send the update.",
   "careGone": "This partnership no longer exists",
   "careDoctorFallback": "Doctor",
-  "careStatusPending": "Pending"
+  "careStatusPending": "Pending",
+  "aboutLegal": "Legal",
+  "aboutPrivacyPolicy": "Privacy policy",
+  "aboutOpensSite": "Opens shifa.uz",
+  "aboutVersion": "Version {{version}}",
+  "aboutCopyDiagnostics": "Copy diagnostics",
+  "aboutCopyDiagnosticsHint": "Version, platform, language and time zone, for support. No patient data.",
+  "aboutDiagnosticsCopied": "Diagnostics copied",
+  "aboutOpenFailed": "Couldn't open the page"
 }

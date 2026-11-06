@@ -311,3 +311,7 @@ internal fun SettingsPreview() =
 
 @Composable
 internal fun LanguagePreview() = PreviewTheme { LanguageContent(shifa.doctor.data.storage.AppLanguage.Uzbek, {}, {}) }
+
+// LEGAL-01: About (the app, its version, the privacy policy, diagnostics).
+@Composable
+internal fun AboutPreview() = PreviewTheme { AboutContent({}, {}, {}, {}) }

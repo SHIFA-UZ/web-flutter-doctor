@@ -340,7 +340,7 @@ Built 2026-11-04. Flow `08/10-settings-root.md`; spec `08 §1.8`; board `DaProfi
     the shell's tabs; Tasks only when the plan has remote-care tasks) with the helper line.
   - Security: the Security screen (PROF-04: password and app lock), Two-factor Authentication and Encrypted Documents
     switches (stored flags only; no helper text promising behaviour the backend may not have, as the flow asks).
-  - Notifications → the OS settings for the app (no in-app preferences), About (placeholder until LEGAL), and in
+  - Notifications → the OS settings for the app (no in-app preferences), About (LEGAL-01), and in
     debug builds the debug menu.
 - **Writes:** every change shows at once and `PATCH /doctors/me/settings` sends the whole block (`country, language,
   twoFA, encryptedDocs, defaultStartTab`), built from the latest state when its turn comes in one queue, so two quick
@@ -406,3 +406,27 @@ Built 2026-11-06. Spec 08 §7, flow 08/14, ticket REPORT-01. Board `DaProfile` r
   `smsRemindersAllowed: false`, checked with a real GET), the trend for 31 Oct – 6 Nov (PREMIUM seed doctor).
 - **Tests:** `AnalyticsViewModelTest` (Reports reads SMS for the range and again for a new one, a 403 as not enabled,
   Home never reads it); screenshots `Reports`, `Reports_noSms`.
+
+## LEGAL-01 · Contract visibility spike and About (LEGAL-02 not built)
+
+Built 2026-11-06. Spec 08 §8, flow 08/13, tickets LEGAL-01, LEGAL-02; BE-16. Board `DaProfile` legalAbout
+(`ui/profile/AboutScreen.kt`).
+- **Spike result (LEGAL-01):** the early-partner contract is issued only by `POST
+  /admin/doctors/{id}/early-partner-contract/issue` (dev OpenAPI and the backend source: no other contract or legal
+  route). A doctor can't read their contract, and there is no legal-documents endpoint either. Decision as the master
+  plan set it: About ships with the public page; the contract card stays hidden; LEGAL-02 waits for BE-16 (`GET
+  /doctors/me/contract`).
+- **About:** Settings → About and the Profile version line (doctors and clinic staff). The app ("S" mark, "Shifa
+  Doctor", "Version 1.0.1"); Legal → Privacy policy (`https://shifa.uz/#privacy`, the page the patient app links, in
+  the in-app browser; "Couldn't open the page" when it can't); Copy diagnostics (also seven taps on the version, the
+  board's gesture): "Shifa Doctor 1.0.1 (12) · android release · production · uz-Cyrl · Asia/Tashkent" (version and
+  build, platform and build type, backend or demo, the app's language, practice zone; no names, ids or patient data) →
+  "Diagnostics copied".
+- **Left out, not invented:** terms of service, open-source licences, support contacts, Report a problem and Rate the
+  app (no published URLs or contacts; BE-16 asks for the legal URLs, support contacts need product). The version line shows
+  the version name (the build number is in the diagnostics).
+- **Codex review:** build number and environment in the diagnostics, the app's language tag, the tap counter in the
+  screen (answers in `codex/LEGAL-01.md`).
+- **Checked:** emulator: Profile → About, Copy diagnostics ("Diagnostics copied"), Privacy policy opened shifa.uz in a
+  Custom Tab, Back to About.
+- **Tests:** `AboutTest` (the diagnostics line, the URL); screenshot `About`.

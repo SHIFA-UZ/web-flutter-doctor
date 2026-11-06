@@ -2876,5 +2876,13 @@
   "carePostFailed": "Не удалось отправить обновление.",
   "careGone": "Этого партнёрства больше нет",
   "careDoctorFallback": "Врач",
-  "careStatusPending": "Ожидает ответа"
+  "careStatusPending": "Ожидает ответа",
+  "aboutLegal": "Правовая информация",
+  "aboutPrivacyPolicy": "Политика конфиденциальности",
+  "aboutOpensSite": "Откроется shifa.uz",
+  "aboutVersion": "Версия {{version}}",
+  "aboutCopyDiagnostics": "Скопировать диагностику",
+  "aboutCopyDiagnosticsHint": "Версия, платформа, язык и часовой пояс — для поддержки. Без данных пациентов.",
+  "aboutDiagnosticsCopied": "Диагностика скопирована",
+  "aboutOpenFailed": "Не удалось открыть страницу"
 }

@@ -2876,5 +2876,13 @@
   "carePostFailed": "Yangilanishni yuborib bo'lmadi.",
   "careGone": "Bu hamkorlik endi mavjud emas",
   "careDoctorFallback": "Shifokor",
-  "careStatusPending": "Kutilmoqda"
+  "careStatusPending": "Kutilmoqda",
+  "aboutLegal": "Huquqiy ma'lumot",
+  "aboutPrivacyPolicy": "Maxfiylik siyosati",
+  "aboutOpensSite": "shifa.uz ochiladi",
+  "aboutVersion": "Versiya {{version}}",
+  "aboutCopyDiagnostics": "Diagnostikani nusxalash",
+  "aboutCopyDiagnosticsHint": "Versiya, platforma, til va vaqt mintaqasi — yordam uchun. Bemor ma'lumotlarisiz.",
+  "aboutDiagnosticsCopied": "Diagnostika nusxalandi",
+  "aboutOpenFailed": "Sahifani ochib bo'lmadi"
 }
