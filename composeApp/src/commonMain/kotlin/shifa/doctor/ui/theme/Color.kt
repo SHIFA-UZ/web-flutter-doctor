@@ -111,6 +111,7 @@ object ShifaColors {
     // Colours the design sets as raw values (`--raw-*`), named <component><Part>.
     object Raw {
         val SplashBlob = Color(0xA600A39A)
+        val OrbHighlight = Color(0xFFA6E8E4) // voice orb gradient start: teal-50 35% in white (DaIntel `ai-orb`)
         val SplashLogo = Color(0xFF59C2BC)
         val GlassTile = Color(0x5CFFFFFF) // splash and login hero tile
         val GlassTileBorder = White

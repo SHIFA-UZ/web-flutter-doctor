@@ -437,3 +437,29 @@ only the planner and its tests, nothing wired).
 - **Tests:** `IntelCardsTest` (openable plans, cancelled, no-show, bad time, unknown route, refusals),
   `ThreadViewModelTest` (a live answer asks once, a closed visit doesn't), `DemoBackendTest`; screenshot
   `Intelligence_openVisitCards`.
+
+## AI-04 · Speech player
+
+Built 2026-11-06. Spec 02 §3.4, flow 03/06, ticket AI-04. `utils/SpeechPlayer` (expect/actual): plays one clip of
+`POST /ai/speak` (MP3, WAV for Uzbek) from memory, no file (Android `MediaPlayer` over a `MediaDataSource`, iOS
+`AVAudioPlayer(data:)` with the session on Playback, since the recorder leaves it on PlayAndRecord, which plays through
+the earpiece). `play` suspends until the clip ends, so the voice loop waits on the player's own end instead of
+Flutter's guessed duration and 120 ms polling; `stop` (barge-in, leaving) ends it. Failures are logged by code only.
+The existing `AudioPlayer` (URL streaming for chat voice notes) stays as it is. Checked through INTEL-09 on the
+emulator (the demo's silent WAV); iOS compiled, not run.
+
+## AI-07 · Voice orb
+
+Built 2026-11-06. Spec 02 §3.10, ticket AI-07. Board `DaIntel` orb panel (not Flutter's blob painter: the design is the
+source). `ui/widgets/VoiceOrb.kt`:
+- `VoiceOrb`: the board's 112 sphere (radial gradient from a light teal through the brand teal to the deep teal, the
+  sparkles mark, the default shadow) pulsing inside a 120 brand ring that ripples out and fades, both faster while
+  Shifa speaks (pulse 0.6 / 1.1 / 1.8 s, ripple 1 / 1.4 / 2.2 s). The pulse's size follows `orbIntensity` (Flutter's
+  `shifaOrbTargetIntensity`, ported with its tests: listening follows the mic above the 0.16 noise floor), smoothed,
+  so the orb answers the voice. Still with reduced motion (`rememberReduceMotion`: Android's animator scale at 0, iOS's
+  Reduce Motion) and in previews.
+- `VoiceOrbPanel`: the board's tinted card: the orb, the phase icon (mic, the speaking bars, a spinner while thinking)
+  with the status, the subtitle, Stop while recording; a polite live region (phases, not levels).
+- New tokens: `ShifaColors.Raw.OrbHighlight`, `ShifaDimens.VoiceOrbMark`; board icons `ic_voice_wave_16` and
+  `ic_dictate_18` drawn by hand from `DaIntel` (the generator now accepts such files instead of reporting them missing).
+- Tests: `VoiceOrbTest` (Flutter's intensity tests, plus reduced motion); screenshot `Intelligence_voice`.

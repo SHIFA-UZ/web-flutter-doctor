@@ -33,7 +33,8 @@ for (const id of used) {
   const bold = m[1].endsWith('_bold');
   const name = filled ? m[1].slice(0, -7) : bold ? m[1].slice(0, -5) : m[1];
   const d = bySnake[name];
-  if (!d) { missing.push(id); continue; }
+  // Not in the library: a hand-made vector from a board (no generator marker) is fine; anything else is missing.
+  if (!d) { if (!fs.existsSync(path.join(out, id + '.xml'))) missing.push(id); continue; }
   const paint = filled
     ? 'android:fillColor="#FF000000"'
     : `android:strokeWidth="${bold ? '2.5' : '2'}"\n        android:strokeColor="#FF000000"\n        android:strokeLineCap="round"\n        android:strokeLineJoin="round"`;
