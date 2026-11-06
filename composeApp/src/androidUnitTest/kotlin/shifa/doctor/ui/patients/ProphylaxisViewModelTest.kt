@@ -21,6 +21,7 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.patients.PatientsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.prophylaxisSaved
+import shifa.doctor.stopAll
 import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -50,7 +51,13 @@ class ProphylaxisViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    // Answers come back on the engine's threads: stop the ViewModels before the next test sets Main.
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -61,7 +68,7 @@ class ProphylaxisViewModelTest {
 
     @Test
     fun `no setting reads as 12 months on, Save sends both ids without lastSentAt and keeps Last sent`() {
-        val classToTest = ProphylaxisViewModel(15, 2, repo)
+        val classToTest = ProphylaxisViewModel(15, 2, repo).also { created += it }
         settle { classToTest.state.value.loaded }
         assertThat(queries.single()).isEqualTo("patientId=15&clinicId=2")
         assertThat(classToTest.state.value.interval).isEqualTo(12)
@@ -82,7 +89,7 @@ class ProphylaxisViewModelTest {
     @Test
     fun `a stored setting shows with Last sent, a failed read blocks Save, a failed save says so`() {
         getBody = """{"patientId":15,"clinicId":2,"intervalMonths":3,"enabled":true,"lastSentAt":"2026-10-01T05:00:00Z"}"""
-        val classToTest = ProphylaxisViewModel(15, 2, repo)
+        val classToTest = ProphylaxisViewModel(15, 2, repo).also { created += it }
         settle { classToTest.state.value.loaded }
         assertThat(classToTest.state.value.interval).isEqualTo(3)
         assertThat(classToTest.state.value.lastSentAt).isEqualTo("2026-10-01T05:00:00Z")
@@ -94,7 +101,7 @@ class ProphylaxisViewModelTest {
         assertThat(classToTest.state.value.lastSentAt).isEqualTo("2026-10-01T05:00:00Z")
 
         getStatus = HttpStatusCode.InternalServerError
-        val failed = ProphylaxisViewModel(16, 2, repo)
+        val failed = ProphylaxisViewModel(16, 2, repo).also { created += it }
         settle { failed.state.value.loadError != null }
         assertThat(failed.state.value.loaded).isFalse()
         val before = sent.size

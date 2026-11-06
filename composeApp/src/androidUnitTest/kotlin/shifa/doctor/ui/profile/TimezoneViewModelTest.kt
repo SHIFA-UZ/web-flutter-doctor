@@ -21,6 +21,7 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.practiceTimezoneSaved
+import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import java.io.File
 
@@ -49,7 +50,11 @@ class TimezoneViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    // Saves are answered on the engine's threads: stop the ViewModels before the next test sets Main.
     @After fun tearDown() {
+        created.stopAll()
         ShellNotice.pending.value = null
         Dispatchers.resetMain()
     }
@@ -61,7 +66,7 @@ class TimezoneViewModelTest {
                 if (zone == null) "\"timeZone\":null" else "\"timeZone\":\"$zone\"",
             )
         runBlocking { repo.refresh() }
-        return TimezoneViewModel(repo) { "Asia/Tashkent" }.apply { open() }
+        return TimezoneViewModel(repo) { "Asia/Tashkent" }.also { created += it }.apply { open() }
     }
 
     private fun settle(check: () -> Boolean) {

@@ -19,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.stopAll
 import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -57,7 +58,13 @@ class ClinicPatientsViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    // Answers come back on the engine's threads: stop the ViewModels before the next test sets Main.
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -68,7 +75,7 @@ class ClinicPatientsViewModelTest {
 
     @Test
     fun `the first page loads, Load more adds the next without repeats, and stops at the last`() {
-        val classToTest = ClinicPatientsViewModel(2, repo)
+        val classToTest = ClinicPatientsViewModel(2, repo).also { created += it }
         settle { classToTest.state.value.rows != null }
         assertThat(classToTest.state.value.rows!!.map { it.patientId }).containsExactly(11L, 12L).inOrder()
         assertThat(classToTest.state.value.total).isEqualTo(3)
@@ -84,7 +91,7 @@ class ClinicPatientsViewModelTest {
 
     @Test
     fun `a search asks the server once typing pauses, trimmed, and only when it changed`() {
-        val classToTest = ClinicPatientsViewModel(2, repo)
+        val classToTest = ClinicPatientsViewModel(2, repo).also { created += it }
         settle { classToTest.state.value.rows != null }
         classToTest.type("Gu")
         classToTest.type(" Gul ")
@@ -107,7 +114,7 @@ class ClinicPatientsViewModelTest {
     @Test
     fun `a failed first page offers Retry, a failed next page keeps the rows`() {
         fail = true
-        val classToTest = ClinicPatientsViewModel(2, repo)
+        val classToTest = ClinicPatientsViewModel(2, repo).also { created += it }
         settle { classToTest.state.value.error != null }
         assertThat(classToTest.state.value.rows).isNull()
         fail = false

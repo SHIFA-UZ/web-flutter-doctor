@@ -22,6 +22,7 @@ import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicLoadFailed
 import shifa.doctor.generated.resources.clinicStatsFailed
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicWorkspaceViewModelTest {
@@ -56,7 +57,13 @@ class ClinicWorkspaceViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    // Answers come back on the engine's threads: stop the ViewModels before the next test sets Main.
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -67,7 +74,7 @@ class ClinicWorkspaceViewModelTest {
 
     @Test
     fun `the clinics and the selected one's numbers load, switching reads the other clinic's`() {
-        val classToTest = ClinicWorkspaceViewModel(repo)
+        val classToTest = ClinicWorkspaceViewModel(repo).also { created += it }
         classToTest.load()
         settle { classToTest.state.value.stats != null }
         assertThat(classToTest.state.value.clinic!!.clinicId).isEqualTo(2)
@@ -91,7 +98,7 @@ class ClinicWorkspaceViewModelTest {
     @Test
     fun `no list yet and a failure is the error state, failing numbers leave the rest`() {
         clinics = HttpStatusCode.InternalServerError to "{}"
-        val classToTest = ClinicWorkspaceViewModel(repo)
+        val classToTest = ClinicWorkspaceViewModel(repo).also { created += it }
         classToTest.load()
         settle { classToTest.state.value.error != null }
         assertThat(classToTest.state.value.error!!.text).isEqualTo(Res.string.clinicLoadFailed)

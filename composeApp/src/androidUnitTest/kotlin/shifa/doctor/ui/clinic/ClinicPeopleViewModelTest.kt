@@ -27,6 +27,7 @@ import shifa.doctor.generated.resources.clinicInviteInviteSent
 import shifa.doctor.generated.resources.clinicShareFailed
 import shifa.doctor.generated.resources.clinicShareSaved
 import shifa.doctor.generated.resources.clinicShareUsesDefault
+import shifa.doctor.stopAll
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClinicPeopleViewModelTest {
@@ -67,7 +68,13 @@ class ClinicPeopleViewModelTest {
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    // Answers come back on the engine's threads: stop the ViewModels before the next test sets Main.
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
@@ -78,7 +85,7 @@ class ClinicPeopleViewModelTest {
 
     @Test
     fun `members load, search and role chips filter, sorted by name`() {
-        val classToTest = ClinicPeopleViewModel(2, repo)
+        val classToTest = ClinicPeopleViewModel(2, repo).also { created += it }
         classToTest.loadMembers()
         settle { classToTest.state.value.members != null }
         val state = classToTest.state.value
@@ -103,7 +110,7 @@ class ClinicPeopleViewModelTest {
 
     @Test
     fun `a doctor's share saves, clears back to the default, the clinic default re-reads the clinics, a failure stays in the sheet`() {
-        val classToTest = ClinicPeopleViewModel(2, repo)
+        val classToTest = ClinicPeopleViewModel(2, repo).also { created += it }
         classToTest.loadMembers()
         settle { classToTest.state.value.members != null }
         val bobur = classToTest.state.value.members!![1]
@@ -159,7 +166,7 @@ class ClinicPeopleViewModelTest {
 
     @Test
     fun `an invitation needs a valid new email, is sent lower-cased, revoke asks then deletes`() {
-        val classToTest = ClinicPeopleViewModel(2, repo)
+        val classToTest = ClinicPeopleViewModel(2, repo).also { created += it }
         classToTest.loadInvitations()
         settle { classToTest.state.value.invitations != null }
         // Every invitation, not only the live ones (the backend's default).

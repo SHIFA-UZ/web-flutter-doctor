@@ -120,8 +120,9 @@ class ThreadViewModelTest {
 
     @After fun tearDown() = Dispatchers.resetMain()
 
+    // Up to 10 s: streams are read on the engine's threads, slow while the other test forks run (returns at once when met).
     private fun settle(check: () -> Boolean) {
-        repeat(300) {
+        repeat(1000) {
             if (check()) return
             Thread.sleep(10)
         }

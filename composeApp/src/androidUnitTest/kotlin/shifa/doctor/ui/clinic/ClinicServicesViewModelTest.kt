@@ -25,6 +25,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.clinicServiceAdded
 import shifa.doctor.generated.resources.clinicServiceDeactivated
 import shifa.doctor.generated.resources.serviceSaved
+import shifa.doctor.stopAll
 import java.util.Collections
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -87,12 +88,18 @@ class ClinicServicesViewModelTest {
                 client
             },
             ClinicsRepository({ client }, MapSettings(), { "u1" }),
-        )
+        ).also { created += it }
     }
 
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
-    @After fun tearDown() = Dispatchers.resetMain()
+    private val created = mutableListOf<androidx.lifecycle.ViewModel>()
+
+    // Answers come back on the engine's threads: stop the ViewModels before the next test sets Main.
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
 
     private fun settle(check: () -> Boolean) {
         repeat(300) {
