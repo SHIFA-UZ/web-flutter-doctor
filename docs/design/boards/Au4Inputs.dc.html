@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>InputField, SearchField, Dropdown, OtpInput</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="shifa-ds.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.au-frame{container-type:inline-size;box-sizing:content-box}
+.au-frame h3,.au-frame h4,.au-frame p{margin-top:0}
+</style>
+</helmet>
+<div style="width: 2698px; min-height: 2180px; box-sizing: border-box; padding: 48px; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 32px">
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 1600px">
+<p style="margin: 0; font: 700 14px/20px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary)">Audit_4.11 · 03 · Inputs</p>
+<h1 style="margin: 0; font: 700 40px/44px var(--font-sans); letter-spacing: -1px">InputField, SearchField, Dropdown, OtpInput</h1>
+<p style="margin: 0; font: 500 18px/26px var(--font-sans); color: var(--text-secondary)">Text entry and pickers, including the bare and native skins added in October.</p>
+</header>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+<section style="flex: none; width: {{f.pw}}px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 4px">
+<h2 style="margin: 0; font: 700 22px/28px var(--font-sans); letter-spacing: -.5px">{{f.label}}</h2>
+<span style="font: 500 14px/20px var(--font-sans); color: var(--text-tertiary)">{{f.sub}}</span>
+</div>
+<div style="background: var(--bg-canvas); border-radius: 20px; padding: 16px">
+<div class="dr-frame au-frame" style="width: {{f.cw}}px">
+<div style="display:flex;flex-direction:column;gap:20px"><div class="dr-panel"><h3 class="dr-panel__title">InputField</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;align-items:start"><label class="sh-field "><span class="sh-field__box"><span class="sh-field__text"><span class="sh-field__label">Full name</span><input class="sh-field__input" value="Jasur Tursunov"></span></span><span class="sh-field__help">As in the passport</span></label><label class="sh-field is-focused"><span class="sh-field__box"><span class="sh-field__text"><span class="sh-field__label">Phone number</span><input class="sh-field__input" value="+998 90 123 45 67"></span></span><span class="sh-field__help"></span></label><label class="sh-field is-error"><span class="sh-field__box"><span class="sh-field__text"><span class="sh-field__label">Date of birth</span><input class="sh-field__input" value="31.02.1972" aria-invalid="true"></span></span><span class="sh-field__help">Enter a real date</span></label><label class="sh-field is-disabled"><span class="sh-field__box"><span class="sh-field__text"><span class="sh-field__label">Patient ID</span><input class="sh-field__input" value="P-100482" disabled></span></span><span class="sh-field__help"></span></label></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;align-items:end"><label style="display:flex;flex-direction:column;gap:6px;font:700 12px/16px var(--font-sans)">Bare .sh-input<input class="sh-input" placeholder="Diagnosis code"></label><label style="display:flex;flex-direction:column;gap:6px;font:700 12px/16px var(--font-sans)">Date<input class="sh-input" type="date" value="2026-11-04"></label><label style="display:flex;flex-direction:column;gap:6px;font:700 12px/16px var(--font-sans)">Notes<textarea class="sh-input sh-input--area">Morning headaches for two weeks.</textarea></label></div></div><div class="dr-panel"><h3 class="dr-panel__title">SearchField and Dropdown</h3><label class="sh-search"><svg class="sh-icon sh-search__glass" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg><input class="sh-search__input" placeholder="Search patients, ID or phone" aria-label="Search patients"></label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;align-items:start"><div class="sh-dropdown"><div class="sh-dropdown__head"><span class="sh-dropdown__value">Cardiology</span><svg class="sh-icon sh-dropdown__chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></div></div><div class="sh-dropdown is-open"><div class="sh-dropdown__head"><span class="sh-dropdown__value">Language</span><svg class="sh-icon sh-dropdown__chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"></path></svg></div><div class="sh-dropdown__opt"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>English</div><div class="sh-dropdown__opt" style="padding-left:32px">Русский</div><div class="sh-dropdown__opt" style="padding-left:32px">Oʻzbekcha</div></div><select class="sh-select" aria-label="Visit type"><option>In-person visit</option><option>Video visit</option></select><div class="dr-row" style="gap:8px;flex-wrap:wrap"><select class="sh-select sh-select--pill" aria-label="Sort"><option>Next visit</option></select><button class="dr-select">Status <small>All</small><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button></div></div></div><div class="dr-panel"><h3 class="dr-panel__title">OtpInput and PIN pad</h3><div class="dr-otp"><span>4</span><span>8</span><span class="is-focused">1</span><span></span><span></span><span></span></div><div class="dr-pindots"><i class="on"></i><i class="on"></i><i></i><i></i></div><div class="dr-pinpad"><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button><button>6</button><button>7</button><button>8</button><button>9</button><button class="is-ghost" aria-label="Face ID"><svg class="sh-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button><button>0</button><button class="is-ghost" aria-label="Delete"><svg class="sh-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></div></div></div>
+</div>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2698,"height":2180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = [["d", "Desktop web", "1440 viewport · sidebar 260 · content 1132", 1132], ["t", "Tablet", "1024 viewport · rail 72 · content 920", 920], ["p", "Phone", "390 viewport · 16 gutters · content 358", 358]];
+    return { frames: F.map((f) => ({ k: f[0], label: f[1], sub: f[2], cw: f[3], pw: f[3] + 32, isD: f[0] === 'd', isT: f[0] === 't', isP: f[0] === 'p', rail: f[0] === 't' ? 'dr-shell--rail' : '' })) };
+  }
+}
+</script>
+</body>
+</html>

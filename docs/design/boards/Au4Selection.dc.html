@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SelectionControls, Switch, Slider, SegmentedTabs</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="shifa-ds.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.au-frame{container-type:inline-size;box-sizing:content-box}
+.au-frame h3,.au-frame h4,.au-frame p{margin-top:0}
+</style>
+</helmet>
+<div style="width: 2698px; min-height: 1510px; box-sizing: border-box; padding: 48px; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 32px">
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 1600px">
+<p style="margin: 0; font: 700 14px/20px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary)">Audit_4.11 · 04 · Selection</p>
+<h1 style="margin: 0; font: 700 40px/44px var(--font-sans); letter-spacing: -1px">SelectionControls, Switch, Slider, SegmentedTabs</h1>
+<p style="margin: 0; font: 500 18px/26px var(--font-sans); color: var(--text-secondary)">Choosing values and switching views.</p>
+</header>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+<section style="flex: none; width: {{f.pw}}px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 4px">
+<h2 style="margin: 0; font: 700 22px/28px var(--font-sans); letter-spacing: -.5px">{{f.label}}</h2>
+<span style="font: 500 14px/20px var(--font-sans); color: var(--text-tertiary)">{{f.sub}}</span>
+</div>
+<div style="background: var(--bg-canvas); border-radius: 20px; padding: 16px">
+<div class="dr-frame au-frame" style="width: {{f.cw}}px">
+<div style="display:flex;flex-direction:column;gap:20px"><div class="dr-panel"><h3 class="dr-panel__title">SelectionControls and Switch</h3><div class="dr-row" style="flex-wrap:wrap;gap:20px"><label class="dr-check"><span class="dr-box is-on"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span>Send reminder</label><label class="dr-check"><span class="dr-box is-mixed"></span>All patients</label><label class="dr-check"><span class="dr-box"></span>Follow-up</label><label class="dr-check"><span class="dr-radio is-on"></span>In person</label><label class="dr-check"><span class="dr-radio"></span>Video</label></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;align-items:stretch"><button class="dr-choice" aria-pressed="true"><span>Clinic visit<small>Yunusobod branch</small></span></button><button class="dr-choice" aria-pressed="false"><span>Video visit<small>Shifa video room</small></span></button><button class="dr-choice" aria-pressed="false"><span>Home visit<small>Address required</small></span></button></div><div style="display:flex;flex-direction:column"><div class="sh-press sh-press--listrow dr-row" role="switch" aria-checked="true" style="padding:0 12px;justify-content:space-between"><span style="font:500 14px/20px var(--font-sans)">Appointment reminders</span><span class="sh-switch is-on"></span></div><div class="sh-press sh-press--listrow dr-row" role="switch" aria-checked="false" style="padding:0 12px;justify-content:space-between"><span style="font:500 14px/20px var(--font-sans)">Accept video visits</span><span class="sh-switch"></span></div></div></div><div class="dr-panel"><h3 class="dr-panel__title">Slider</h3><div class="dr-slider"><div class="dr-slider__row"><input type="range" min="0" max="100" value="70" aria-label="Doctor share"><input class="sh-input dr-slider__value" value="70 %" aria-label="Doctor share, percent"></div><div class="dr-slider__split"><i style="width:70%"></i></div><div class="dr-slider__legend"><span>Doctor <b>70%</b></span><span>Clinic <b>30%</b></span></div></div></div><div class="dr-panel"><h3 class="dr-panel__title">SegmentedTabs: pill, block, underline</h3><div class="dr-tabs" role="tablist"><button class="dr-tab" role="tab" aria-selected="true">All patients <span class="dr-count">248</span></button><button class="dr-tab" role="tab" aria-selected="false">Recent</button><button class="dr-tab" role="tab" aria-selected="false">Favorites</button><button class="dr-tab" role="tab" aria-selected="false">Follow-ups <span class="dr-count">7</span></button></div><div class="dr-tabs dr-tabs--block" role="radiogroup" aria-label="Range"><button class="dr-tab" role="radio" aria-checked="true">Day</button><button class="dr-tab" role="radio" aria-checked="false">Week</button><button class="dr-tab" role="radio" aria-checked="false">Month</button></div><div class="dr-underline dr-underline--fade" role="tablist"><button role="tab" aria-selected="true" class="is-selected">Overview</button><button role="tab" aria-selected="false">Visits <span class="dr-count">12</span></button><button role="tab" aria-selected="false">Documents</button><button role="tab" aria-selected="false">Prescriptions</button><button role="tab" aria-selected="false">Lab results</button><button role="tab" aria-selected="false">Treatment plans</button></div></div></div>
+</div>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2698,"height":1510}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = [["d", "Desktop web", "1440 viewport · sidebar 260 · content 1132", 1132], ["t", "Tablet", "1024 viewport · rail 72 · content 920", 920], ["p", "Phone", "390 viewport · 16 gutters · content 358", 358]];
+    return { frames: F.map((f) => ({ k: f[0], label: f[1], sub: f[2], cw: f[3], pw: f[3] + 32, isD: f[0] === 'd', isT: f[0] === 't', isP: f[0] === 'p', rail: f[0] === 't' ? 'dr-shell--rail' : '' })) };
+  }
+}
+</script>
+</body>
+</html>
