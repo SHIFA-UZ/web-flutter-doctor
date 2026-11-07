@@ -159,7 +159,8 @@ class VisitViewModelTest {
     }
 
     private fun settle(check: () -> Boolean) {
-        repeat(300) {
+        // Up to 10 s: a loaded CI runner can take more than a few seconds (it returns as soon as the check holds).
+        repeat(1000) {
             if (check()) return
             Thread.sleep(10)
         }

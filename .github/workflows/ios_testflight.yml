@@ -195,9 +195,11 @@ jobs:
       #########################
 
       # Xcode's "Compile Kotlin Framework" phase reuses this; building it here prints Kotlin errors in full
-      # (fastlane only shows Xcode's summary).
+      # (fastlane only shows Xcode's summary). The runner has 7 GB in all: with Kotlin 2.4 the release link fits in a
+      # 5 GB heap (measured 2026-11-07: 16 min, about 4.3 GB live); the project's 6 GB would leave too little for the
+      # native compiler and the system.
       - name: Build Kotlin framework
-        run: ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon
+        run: ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
 
       - name: Build, Sign and Upload to TestFlight with Fastlane
         working-directory: iosApp
