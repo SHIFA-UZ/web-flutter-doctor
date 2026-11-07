@@ -3,11 +3,13 @@ package shifa.doctor.ui.tasks
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -80,6 +83,7 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaDropdown
@@ -145,6 +149,7 @@ internal fun TasksContent(
     state: TasksUiState,
     actions: TasksActions,
 ) = Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
+    val wide = LocalWideLayout.current
     PullToRefreshBox(state.refreshing, actions.refresh, Modifier.fillMaxSize()) {
         LazyColumn(
             // A tablet keeps the board's page width, centred.
@@ -152,17 +157,18 @@ internal fun TasksContent(
             // The floating tab bar and the docked Create button cover the last part.
             contentPadding =
                 PaddingValues(
-                    start = ShifaSpacing.Inset.Md,
-                    end = ShifaSpacing.Inset.Md,
-                    top = ShifaSize.S16,
-                    bottom = ShifaSize.S120 + ShifaSize.S56,
+                    start = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                    end = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                    top = if (wide) ShifaSpacing.Inset.Lg else ShifaSize.S16,
+                    // Wide: no tab bar and Create sits in the header.
+                    bottom = if (wide) ShifaSpacing.Inset.Lg else ShifaSize.S120 + ShifaSize.S56,
                 ),
             verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
         ) {
-            item { Header(actions) }
+            item { Header(actions, wide) }
             item { Stats(state, actions) }
             // No tasks at all: nothing to filter (flow 07/11 §6); a filter that hides everything keeps them.
-            if (state.tasks == null || state.tasks.isNotEmpty()) item { Filters(state, actions) }
+            if (state.tasks == null || state.tasks.isNotEmpty()) item { Filters(state, actions, wide) }
             // Over a list read before (stale but real); without one, the failure takes the list's place below.
             val error = state.error
             if (state.tasks != null && error != null) {
@@ -186,24 +192,89 @@ internal fun TasksContent(
                 state.tasks == null -> item { ShifaListSkeleton(count = 4) }
                 state.tasks.isEmpty() -> item { EmptyAll(actions) }
                 shown.isEmpty() && state.filtered -> item { EmptyFilter(actions) }
+                // Wide (DaInbox web): two cards a row.
+                wide ->
+                    items(shown.chunked(2), key = { it.first().id }) { pair ->
+                        Row(
+                            Modifier.height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
+                        ) {
+                            pair.forEach {
+                                    t ->
+                                Box(Modifier.weight(1f).fillMaxHeight()) { TaskCard(t) { actions.open(t) } }
+                            }
+                            if (pair.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
                 else -> items(shown, key = { it.id }) { TaskCard(it) { actions.open(it) } }
             }
         }
     }
-    // `.sh-fab--docked`: above the floating tab bar, bottom right.
-    ShifaFab(
-        Res.drawable.ic_plus_16,
-        actions.create,
-        Modifier
-            .align(Alignment.BottomEnd)
-            .navigationBarsPadding()
-            .padding(end = ShifaSpacing.Inset.Md, bottom = ShifaSpacing.Inset.Md + ShifaDimens.FabDockedClear),
-        text = tr(Res.string.createTask),
-    )
+    // `.sh-fab--docked`: above the floating tab bar, bottom right (wide screens have Create in the header).
+    if (!wide) {
+        ShifaFab(
+            Res.drawable.ic_plus_16,
+            actions.create,
+            Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = ShifaSpacing.Inset.Md, bottom = ShifaSpacing.Inset.Md + ShifaDimens.FabDockedClear),
+            text = tr(Res.string.createTask),
+        )
+    }
 }
 
 @Composable
-private fun Header(actions: TasksActions) =
+private fun Header(
+    actions: TasksActions,
+    wide: Boolean,
+) = if (wide) {
+    // The title with the actions beside it (board) where they fit at the reader's text size, else the actions under it.
+    BoxWithConstraints {
+        val title = @Composable { m: Modifier ->
+            Column(m, verticalArrangement = Arrangement.spacedBy(ShifaSize.S4)) {
+                Text(
+                    tr(Res.string.remoteCareTasks),
+                    Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = ShifaColors.Text.Primary,
+                )
+                Text(
+                    tr(Res.string.remoteCareTasksSubtitle),
+                    style = ShifaTextStyles.dialogBody(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            }
+        }
+        val buttons = @Composable {
+            ShifaIconButton(
+                Res.drawable.ic_refresh_22,
+                tr(Res.string.refresh),
+                actions.refresh,
+                variant = ShifaIconButtonVariant.Secondary,
+            )
+            ShifaSecondaryButton(tr(Res.string.useTemplate), actions.templates)
+            ShifaPrimaryButton(tr(Res.string.createTask), actions.create, icon = Res.drawable.ic_plus_16)
+        }
+        if (maxWidth >= ShifaDimens.Layout.Document && LocalDensity.current.fontScale <= LARGE_TEXT) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                title(Modifier.weight(1f))
+                buttons()
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
+                title(Modifier)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+                ) { buttons() }
+            }
+        }
+    }
+} else {
     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
         Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S4)) {
             Text(
@@ -231,6 +302,7 @@ private fun Header(actions: TasksActions) =
             ShifaSecondaryButton(tr(Res.string.useTemplate), actions.templates, Modifier.weight(1f))
         }
     }
+}
 
 /** Three cards (board): a tap filters by its status, again turns it off; "Overdue" counts expired tasks. */
 @Composable
@@ -268,12 +340,29 @@ private fun Stats(
 private fun Filters(
     state: TasksUiState,
     actions: TasksActions,
+    wide: Boolean,
 ) = Column(
     Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg).padding(ShifaSize.S12),
     verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
 ) {
-    ShifaSearchField(state.query, actions.query, tr(Res.string.searchTasksOrPatients), Modifier.fillMaxWidth())
-    Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+    // Wide: the search and both filters in one row (board).
+    if (!wide) {
+        ShifaSearchField(
+            state.query,
+            actions.query,
+            tr(Res.string.searchTasksOrPatients),
+            Modifier.fillMaxWidth(),
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8), verticalAlignment = Alignment.CenterVertically) {
+        if (wide) {
+            ShifaSearchField(
+                state.query,
+                actions.query,
+                tr(Res.string.searchTasksOrPatients),
+                Modifier.weight(SEARCH_WEIGHT),
+            )
+        }
         var statusOpen by remember { mutableStateOf(false) }
         val statuses = listOf<TaskStatus?>(null) + TaskStatus.entries
         ShifaDropdown(
@@ -428,3 +517,6 @@ private fun EmptyFilter(actions: TasksActions) =
         )
         ShifaLink(tr(Res.string.clearFilters), actions.clear)
     }
+
+private const val SEARCH_WEIGHT = 1.6f
+private const val LARGE_TEXT = 1.3f
