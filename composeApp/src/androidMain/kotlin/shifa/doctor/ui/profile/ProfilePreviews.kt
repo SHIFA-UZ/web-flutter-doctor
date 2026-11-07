@@ -313,9 +313,27 @@ internal fun SettingsPreview() =
 @Composable
 internal fun LanguagePreview() = PreviewTheme { LanguageContent(shifa.doctor.data.storage.AppLanguage.Uzbek, {}, {}) }
 
-// LEGAL-01: About (the app, its version, the privacy policy, diagnostics).
+// LEGAL-01/02: About (the app, its version, the backend's legal pages, the doctor's contract, diagnostics).
 @Composable
-internal fun AboutPreview() = PreviewTheme { AboutContent({}, {}, {}, {}) }
+internal fun AboutPreview() =
+    PreviewTheme {
+        AboutContent(
+            {},
+            AboutUiState(
+                links =
+                    shifa.doctor.data.legal.LegalLinks(
+                        terms = "https://shifa.uz/#terms",
+                        privacy = "https://shifa.uz/#privacy",
+                        version = "1",
+                    ),
+                contract = shifa.doctor.data.legal.DoctorContract("SHIFA-0461", effectiveDate = "2026-06-01"),
+            ),
+            {},
+            {},
+            {},
+            {},
+        )
+    }
 
 // BE-02, flow 08/12: the screen, the code sheet after a wrong code, and a refusal with its reasons.
 @Preview(widthDp = 402, heightDp = 874)

@@ -417,6 +417,25 @@ internal fun VideoInCallPreview() =
         )
     }
 
+// BE-10 (board DaVisit "rm.alone"): alone in the call for six minutes: the waiting clock and Mark as no-show.
+@Composable
+internal fun VideoWaitingPreview() =
+    PreviewTheme {
+        VideoPane(
+            "Jasur Karimov",
+            VideoVisitState(
+                stage = VideoStage.InCall,
+                camera = true,
+                mic = true,
+                call = shifa.doctor.utils.VideoCallState(phase = shifa.doctor.utils.VideoCallState.Phase.Joined),
+                aloneSince = now - kotlin.time.Duration.parse("6m10s"),
+            ),
+            PreviewCall,
+            VideoActions(),
+            now = { now },
+        )
+    }
+
 // VIDEO-02: the doctor left the call; the visit stays open with Rejoin.
 @Composable
 internal fun VideoLeftPreview() =

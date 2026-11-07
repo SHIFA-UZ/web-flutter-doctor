@@ -203,3 +203,9 @@ Built 2026-11-05. Spec 07 §1.2 (badge), §1.6, ticket CHAT-07, flow 07/07, boar
 - **Emulator (demo):** Jasur (has a conversation) → his thread; Back: the badge 3 → 2 at once, the Patients tab still
   on Jasur. Malika (none) → "Say hello to Malika Tursunova", then in the list as "No messages". Demo mode is off again.
   Dev: the start request shape checked against `/v3/api-docs` (no write: a started conversation can't be deleted).
+
+## BE-14 · Newer messages only (2026-11-07)
+
+The open thread's 5 s polls ask `?after=<newest id held>` and merge the answer (the server's copy of a message wins); a
+full read every sixth poll keeps read ticks on older messages current. A backend that ignores `after` sends everything,
+which merges the same way. Push-driven refresh waits for PUSH-02. Test: `ThreadViewModelTest`.

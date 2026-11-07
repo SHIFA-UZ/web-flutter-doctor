@@ -316,4 +316,33 @@ class VideoVisitTest {
         assertThat(classToTest.state.value.patientInRoom).isNull()
         presenceScope.cancel()
     }
+
+    @Test
+    fun `the waiting clock runs while the doctor is in the call alone and stops when the patient joins`() {
+        val classToTest = opened()
+        classToTest.permissions(true, true)
+        classToTest.join()
+        settle { made.single().log.any { it.startsWith("join") } }
+        assertThat(classToTest.state.value.aloneSince).isNull()
+        made.single().state.value = VideoCallState(phase = VideoCallState.Phase.Joined)
+        assertThat(classToTest.state.value.aloneSince).isEqualTo(now)
+        val since = now
+        now = start + 7.minutes
+        made.single().state.value = VideoCallState(phase = VideoCallState.Phase.Joined, micOn = false)
+        assertThat(classToTest.state.value.aloneSince).isEqualTo(since) // still the first moment alone
+        made.single().state.value = VideoCallState(phase = VideoCallState.Phase.Joined, patientJoined = true)
+        assertThat(classToTest.state.value.aloneSince).isNull()
+    }
+
+    @Test
+    fun `once the patient has been in the call, a drop is not waiting for a no-show`() {
+        val classToTest = opened()
+        classToTest.permissions(true, true)
+        classToTest.join()
+        settle { made.single().log.any { it.startsWith("join") } }
+        made.single().state.value = VideoCallState(phase = VideoCallState.Phase.Joined, patientJoined = true)
+        made.single().state.value = VideoCallState(phase = VideoCallState.Phase.Joined, patientJoined = false)
+        assertThat(classToTest.state.value.patientSeen).isTrue()
+        assertThat(classToTest.state.value.aloneSince).isNull()
+    }
 }

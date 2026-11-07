@@ -1,6 +1,7 @@
 package shifa.doctor.ui.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -43,6 +44,7 @@ import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.appointments.AppointmentsRepository
+import shifa.doctor.data.appointments.CancelReason
 import shifa.doctor.data.appointments.Cta
 import shifa.doctor.data.appointments.CtaHint
 import shifa.doctor.data.appointments.CtaKind
@@ -51,6 +53,7 @@ import shifa.doctor.data.appointments.changeable
 import shifa.doctor.data.appointments.ctaFor
 import shifa.doctor.data.appointments.durationOptions
 import shifa.doctor.data.appointments.fits
+import shifa.doctor.data.appointments.mayMarkNoShow
 import shifa.doctor.data.calendar.CalendarCache
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
@@ -67,8 +70,13 @@ import shifa.doctor.generated.resources.appointmentCancelled
 import shifa.doctor.generated.resources.appointmentDetails
 import shifa.doctor.generated.resources.appointmentMoved
 import shifa.doctor.generated.resources.appointmentOver
+import shifa.doctor.generated.resources.blockReason
 import shifa.doctor.generated.resources.cancelAppointment
 import shifa.doctor.generated.resources.cancelAppointmentTitle
+import shifa.doctor.generated.resources.cancelReasonDoctorUnavailable
+import shifa.doctor.generated.resources.cancelReasonOtherHint
+import shifa.doctor.generated.resources.cancelReasonPatientRequest
+import shifa.doctor.generated.resources.cancelReasonRescheduled
 import shifa.doctor.generated.resources.continueAppointment
 import shifa.doctor.generated.resources.couldNotLoadThisDay
 import shifa.doctor.generated.resources.currentSlot
@@ -78,16 +86,21 @@ import shifa.doctor.generated.resources.encouragePayment
 import shifa.doctor.generated.resources.ic_sparkles_22
 import shifa.doctor.generated.resources.ic_trash_22
 import shifa.doctor.generated.resources.keepAppointment
+import shifa.doctor.generated.resources.markNoShow
 import shifa.doctor.generated.resources.moveTo
+import shifa.doctor.generated.resources.noShowMarked
 import shifa.doctor.generated.resources.noSlotsAvailable
 import shifa.doctor.generated.resources.openSummary
+import shifa.doctor.generated.resources.other
 import shifa.doctor.generated.resources.pastAppointmentsCannotBeChanged
+import shifa.doctor.generated.resources.patientNotArrived
 import shifa.doctor.generated.resources.patientWillBeNotified
 import shifa.doctor.generated.resources.paymentReminderSent
 import shifa.doctor.generated.resources.place
 import shifa.doctor.generated.resources.placeReadOnlyHint
 import shifa.doctor.generated.resources.reschedule
 import shifa.doctor.generated.resources.saveFailed
+import shifa.doctor.generated.resources.startAnyway
 import shifa.doctor.generated.resources.startAppointment
 import shifa.doctor.generated.resources.unknownPatient
 import shifa.doctor.generated.resources.videoCall
@@ -108,16 +121,19 @@ import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.profile.backStep
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.visit.BriefingSheet
 import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.ShifaAvatar
+import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaChipType
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaDropdown
+import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaLoadError
@@ -126,6 +142,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
+import shifa.doctor.ui.widgets.ShifaTertiaryButton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayTime
@@ -142,8 +159,14 @@ data class PanelUiState(
     val busy: Boolean = false,
     val banner: CodeBanner? = null,
     val askCancel: Boolean = false,
+    // The cancel sheet's optional reason (BE-10; board DaVisit "cancel") and the "Other" text.
+    val cancelReason: CancelReason? = null,
+    val cancelOther: String = "",
     val askDiscard: Boolean = false,
     val cancelError: CodeBanner? = null,
+    // "Mark as no-show" (BE-10; board DaVisit "noshow"): asked, and whether the patient is told.
+    val askNoShow: Boolean = false,
+    val notifyNoShow: Boolean = true,
     // The reschedule sheet: the chosen date, its free slots, and the chosen one.
     val rescheduleDate: LocalDate? = null,
     val rescheduleMonth: LocalDate = clock.local(appointment.start).date,
@@ -160,6 +183,9 @@ data class PanelUiState(
 ) {
     val current: Int get() = (appointment.end - appointment.start).inWholeMinutes.toInt()
     val changeable: Boolean get() = appointment.changeable(now)
+
+    // Board DaVisit "det.late": a confirmed visit whose start has passed, inside the backend's no-show window.
+    val late: Boolean get() = doctorId == null && appointment.mayMarkNoShow(now)
     val cta: Cta? get() = if (doctorId != null) null else ctaFor(appointment, clock, now)
 
     fun key(date: LocalDate) = DayKey(date, doctorId)
@@ -314,13 +340,17 @@ class AppointmentPanelViewModel(
         }
     }
 
-    /** The question stays open on failure with its error, so the doctor can retry (flow 04/08 §3). */
+    /**
+     * The question stays open on failure with its error, so the doctor can retry (flow 04/08 §3). A picked reason goes
+     * with it (BE-10); "Other" sends its text as the note.
+     */
     fun cancel() {
         val s = _state.value
         if (s.busy) return
         _state.update { it.copy(busy = true, cancelError = null) }
         viewModelScope.launch {
-            appointments.cancel(s.appointment.appointmentId).fold(
+            val note = s.cancelOther.takeIf { s.cancelReason == CancelReason.OTHER }
+            appointments.cancel(s.appointment.appointmentId, s.cancelReason, note).fold(
                 onSuccess = {
                     calendar.changed(s.clock, date, doctorId = doctorId)
                     ShellNotice.pending.value = Notice(Res.string.appointmentCancelled, success = true)
@@ -340,8 +370,19 @@ class AppointmentPanelViewModel(
         }
     }
 
+    /** "Mark as no-show" in its sheet: the status changes here and in the calendar; the panel stays open. */
+    fun noShow() {
+        val s = _state.value
+        _state.update { it.copy(askNoShow = false) }
+        run(
+            Res.string.noShowMarked,
+            after = { it.copy(appointment = it.appointment.copy(status = NO_SHOW)) },
+        ) { appointments.noShow(s.appointment.appointmentId, s.notifyNoShow) }
+    }
+
     private companion object {
         val TICK = 30.seconds
+        const val NO_SHOW = "NO_SHOW"
     }
 
     private fun run(
@@ -429,6 +470,7 @@ fun AppointmentPanelScreen(
             month = viewModel::rescheduleMonth,
             move = viewModel::move,
             cancel = viewModel::cancel,
+            noShow = viewModel::noShow,
             durations = { viewModel.durations },
             patient = onOpenPatient,
         ),
@@ -457,6 +499,8 @@ class PanelActions(
     val month: (Int) -> Unit = {},
     val move: () -> Unit = {},
     val cancel: () -> Unit = {},
+    // BE-10: the no-show sheet's "Mark as no-show".
+    val noShow: () -> Unit = {},
     // The visit itself (start, continue, summary) comes with the visit flows (M5).
     val primary: (CtaKind) -> Unit = {},
     // The visit briefing sheet (APPT-06).
@@ -483,6 +527,7 @@ fun AppointmentPanel(
             verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
         ) {
             codeBanner(state.banner) { actions.ui { it.copy(banner = null) } }?.invoke()
+            if (state.late) LateBanner(state, actions)
             // Patient, status, when.
             ShifaSection(null) {
                 Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
@@ -566,6 +611,7 @@ fun AppointmentPanel(
         ActionBox(state, actions)
     }
     if (state.askCancel) CancelSheet(state, actions)
+    if (state.askNoShow) NoShowSheet(state, actions)
     if (state.askDiscard) {
         DiscardChangesSheet(
             onDiscard = { actions.ui { it.copy(askDiscard = false, closed = true) } },
@@ -688,9 +734,100 @@ private fun CancelSheet(
             confirmLoading = state.busy,
             cancelText = tr(Res.string.keepAppointment),
             onCancel = { if (!state.busy) actions.ui { it.copy(askCancel = false) } },
+        ) { CancelReasons(state, actions) }
+    }
+}
+
+/** Board DaVisit "cancel": "Reason (optional)" chips, one at a time (a second tap clears it); Other asks for a text. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CancelReasons(
+    state: PanelUiState,
+    actions: PanelActions,
+) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+    Text(tr(Res.string.blockReason), style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+    ) {
+        CancelReason.entries.forEach { r ->
+            ShifaChip(tr(r.label()), state.cancelReason == r, {
+                if (!state.busy) actions.ui { it.copy(cancelReason = if (it.cancelReason == r) null else r) }
+            })
+        }
+    }
+    if (state.cancelReason == CancelReason.OTHER) {
+        ShifaInputField(
+            state.cancelOther,
+            { v -> actions.ui { it.copy(cancelOther = v.take(OTHER_MAX)) } },
+            tr(Res.string.cancelReasonOtherHint),
+            Modifier.fillMaxWidth(),
+            enabled = !state.busy,
         )
     }
 }
+
+private const val OTHER_MAX = 120
+
+private fun CancelReason.label() =
+    when (this) {
+        CancelReason.DOCTOR_UNAVAILABLE -> Res.string.cancelReasonDoctorUnavailable
+        CancelReason.PATIENT_REQUEST -> Res.string.cancelReasonPatientRequest
+        CancelReason.RESCHEDULED -> Res.string.cancelReasonRescheduled
+        CancelReason.OTHER -> Res.string.other
+    }
+
+/** Board DaVisit "det.late": "Started 12 min ago — patient not arrived", Start anyway and Mark as no-show. */
+@Composable
+private fun LateBanner(
+    state: PanelUiState,
+    actions: PanelActions,
+) {
+    val minutes = (state.now - state.appointment.start).inWholeMinutes.coerceAtLeast(0)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(ShifaColors.Bg.WarningSubtle, ShifaRadius.ControlMd)
+            .border(ShifaSize.S1, ShifaColors.Border.Warning, ShifaRadius.ControlMd)
+            .padding(horizontal = ShifaSize.S14, vertical = ShifaSize.S12),
+        verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+    ) {
+        Text(
+            tr(Res.string.patientNotArrived, minutes.toString()),
+            style = ShifaTextStyles.buttonCompact(),
+            color = ShifaColors.Text.Primary,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+            state.cta?.takeIf { it.kind == CtaKind.Start && it.enabled }?.let {
+                ShifaSecondaryButton(
+                    tr(Res.string.startAnyway),
+                    { actions.primary(CtaKind.Start) },
+                    size = ShifaButtonSize.Compact,
+                    enabled = !state.busy,
+                )
+            }
+            ShifaTertiaryButton(
+                tr(Res.string.markNoShow),
+                { actions.ui { it.copy(askNoShow = true, notifyNoShow = true) } },
+                size = ShifaButtonSize.Compact,
+                enabled = !state.busy,
+            )
+        }
+    }
+}
+
+/** Board DaVisit "noshow": what it means, "Notify patient" (on), Cancel and Mark as no-show. */
+@Composable
+internal fun NoShowSheet(
+    state: PanelUiState,
+    actions: PanelActions,
+) = NoShowQuestion(
+    notify = state.notifyNoShow,
+    busy = state.busy,
+    onNotify = { on -> actions.ui { it.copy(notifyNoShow = on) } },
+    onConfirm = actions.noShow,
+    onClose = { actions.ui { it.copy(askNoShow = false) } },
+)
 
 /**
  * Flow 04/07 target: the month (shaded like the calendar, past days closed) to pick any date, that day's free slots

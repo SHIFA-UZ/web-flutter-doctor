@@ -65,9 +65,18 @@ class ChatRepository(
                 rows.rows(ConversationDto.serializer(), "conversations") { Conversation.from(it, apiBase()) }
             }
 
-    /** `GET /messages/conversations/{id}`: the conversation and every message, oldest first. */
-    suspend fun thread(id: Long): Result<ConversationThread> =
-        apiCall<ThreadDto> { client().get(ApiConfig.Endpoints.conversation(id)) }.map { t ->
+    /**
+     * `GET /messages/conversations/{id}`: the conversation and every message, oldest first; with [after] (BE-14,
+     * backend 2026-11-07) only the messages newer than that id. A backend without the cursor sends them all, which the
+     * caller merges the same way.
+     */
+    suspend fun thread(
+        id: Long,
+        after: Long? = null,
+    ): Result<ConversationThread> =
+        apiCall<ThreadDto> {
+            client().get(ApiConfig.Endpoints.conversation(id)) { after?.let { parameter("after", it) } }
+        }.map { t ->
             ConversationThread(
                 t.conversation?.let { Conversation.from(it, apiBase()) },
                 t.messages.rows(

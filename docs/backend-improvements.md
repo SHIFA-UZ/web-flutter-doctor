@@ -75,6 +75,14 @@ Branch `feature/doctor-app-backend-asks` in `backend-kotlin-shifa` (2026-11-07),
 - **BE-02** Done for doctors (staff not yet: product call): request/confirm with an e-mailed code, 409 with the
   obligations, anonymisation that keeps clinical records; JSON export once a day. App: Privacy & data (flow 08/12).
 
+Branch `feature/doctor-app-second-round` in `backend-kotlin-shifa` (2026-11-07, from `main`): **BE-09** (`isVideo` on
+calendar entries, `isVideoConsultation` on the doctor's appointment), **BE-10** (`POST /appointments/{id}/cancel` with a
+reason that reaches the patient's notification; `POST /appointments/{id}/no-show {notify}`, 409 `NO_SHOW_NOT_ALLOWED`,
+type `APPOINTMENT_NO_SHOW`), **BE-14** (`after`/`limit` on a conversation, `since` on the list; the per-message
+`CHAT_MESSAGE` push already existed), **BE-16** (`GET /public/legal`, `GET /doctors/me/contract` and its PDF, rendered
+server-side from the admin panel's template), **BE-28** (coded video-token refusals with `joinWindow`, `joinWindow` on
+appointments).
+
 Branch `feature/doctor-sms-login-video-presence` in `backend-kotlin-shifa` (2026-11-07, from `main`):
 
 - **SMS sign-in** (AUTH-10): `POST /auth/send-login-sms-otp {phone}` and `POST /auth/verify-login-sms-otp {phone, code}`,

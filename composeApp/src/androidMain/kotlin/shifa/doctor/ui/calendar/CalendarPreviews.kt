@@ -94,12 +94,21 @@ private fun state(details: Boolean) =
 @Composable
 internal fun CalendarDayPreview() = PreviewTheme { CalendarContent(state(false), CalendarActions()) }
 
-// WEB-07c (DaCalendar web): the month card on the left, the chosen day's agenda beside it.
+// WEB-07c (DaCalendar web): Day picked: the month card on the left, the chosen day's agenda beside it.
 @androidx.compose.runtime.Composable
 internal fun CalendarWidePreview() =
     PreviewTheme {
         androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
-            CalendarContent(state(false), CalendarActions())
+            CalendarContent(state(false).copy(week = false), CalendarActions())
+        }
+    }
+
+// CAL-5 (DaCalendar CalendarWeek): the week grid, the selected day's rows placed by time, the now-line on today.
+@androidx.compose.runtime.Composable
+internal fun CalendarWeekPreview() =
+    PreviewTheme {
+        androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
+            CalendarContent(state(false).copy(week = true), CalendarActions())
         }
     }
 
@@ -191,6 +200,19 @@ internal fun AppointmentPanelPreview() =
                     ),
             ),
             PanelActions(durations = { listOf(30, 60) }),
+        )
+    }
+
+// BE-10 (board DaVisit "det.late"): a clinic visit that started at 10:00 (now 10:15), the patient not here yet.
+@Composable
+internal fun AppointmentPanelLatePreview() =
+    PreviewTheme {
+        AppointmentPanel(
+            PanelUiState(
+                video.copy(start = at(10, 0), end = at(10, 30), location = "Shifa Clinic", paymentStatus = null),
+                clock,
+            ),
+            PanelActions(durations = { listOf(30) }),
         )
     }
 

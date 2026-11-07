@@ -111,6 +111,13 @@ object ShifaDimens {
     // Shifa Intelligence's inline document viewer (flow 03/18 §3; not in the design: Flutter's 360).
     val IntelDocumentHeight = 360.dp
 
+    // The DaCalendar week grid (CAL-5): 64 px an hour, a 56 wide hour gutter, events at least 18 tall, a second line
+    // (the time) from 36.
+    val CalendarHour = 64.dp
+    val CalendarGutter = 56.dp
+    val CalendarEventMin = 18.dp
+    val CalendarEventTwoLines = 36.dp
+
     object Layout {
         val Sidebar = 260.dp
         val SidebarCompact = 72.dp

@@ -200,6 +200,8 @@ data class CalendarUiState(
     val staff: StaffCalendars? = null,
     // Colleagues' days that failed to read (their section offers Retry).
     val staffFailed: Set<DayKey> = emptySet(),
+    // CAL-5: wide panes show the week grid (the board's default there) or the month and the day's agenda.
+    val week: Boolean = true,
 ) {
     val today: LocalDate get() = clock.today()
 
@@ -375,7 +377,9 @@ class CalendarViewModel(
 
     private fun prefetch() {
         val month = _state.value.month
-        viewModelScope.launch { calendar.month(monthCells(month).filterNotNull(), scope?.doctorId) }
+        // The month's days, and the selected week's (the week grid crosses into the next or previous month).
+        val dates = (monthCells(month).filterNotNull() + weekOf(_state.value.selected)).distinct()
+        viewModelScope.launch { calendar.month(dates, scope?.doctorId) }
     }
 
     private companion object {
@@ -486,7 +490,7 @@ fun CalendarContent(
             val month = @Composable {
                 MonthPicker(state.month, state.selected, state.today, state::occupancy, actions.select, actions.month)
             }
-            val day = @Composable {
+            val failure = @Composable {
                 state.error?.let { e ->
                     if (state.day == null && !state.loading) {
                         // No day read: the agenda would be blank (and dismissing a banner took Retry with it).
@@ -498,6 +502,9 @@ fun CalendarContent(
                         }
                     }
                 }
+            }
+            val day = @Composable {
+                failure()
                 val staff = state.staff
                 // With colleagues shown, each calendar gets its head: "My schedule" first, then theirs (flow 04/14 §3.3).
                 if (staff != null && staff.colleagues.isNotEmpty()) {
@@ -509,7 +516,13 @@ fun CalendarContent(
                 Agenda(state, actions)
                 staff?.colleagues?.forEach { StaffSection(it, state, actions) }
             }
-            if (wide) {
+            // Colleagues shown (CAL-10 A): their sections live in the day view, so the week grid waits.
+            val weekable = wide && state.staff?.colleagues.isNullOrEmpty()
+            if (weekable) ViewToggle(state.week) { w -> actions.ui { it.copy(week = w) } }
+            if (weekable && state.week) {
+                failure()
+                WeekGrid(state, actions)
+            } else if (wide) {
                 // The month card at its phone size on the left, the chosen day's agenda beside it.
                 Row(horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Inset.Lg)) {
                     Column(Modifier.width(ShifaDimens.Layout.ListPane)) { month() }

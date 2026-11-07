@@ -2919,5 +2919,19 @@
   "smsSignInUzbekOnly": "SMS orqali kirish faqat O'zbekiston raqamlari (+998) bilan ishlaydi. Email orqali kiring.",
   "smsUnavailableUseEmail": "SMS yuborib bo'lmadi. Email orqali kiring.",
   "patientInRoom": "Xonada",
-  "patientNotInRoomYet": "Hali qo'shilmagan"
+  "patientNotInRoomYet": "Hali qo'shilmagan",
+  "cancelReasonDoctorUnavailable": "Shifokor band",
+  "cancelReasonPatientRequest": "Bemor so'rovi",
+  "cancelReasonRescheduled": "Boshqa vaqtga ko'chirildi",
+  "cancelReasonOtherHint": "Sabab",
+  "noShowNotAllowed": "Bu tashrifni hozir kelmagan deb belgilab bo'lmaydi.",
+  "aboutTermsOfService": "Foydalanish shartlari",
+  "aboutLicences": "Ochiq kodli litsenziyalar",
+  "aboutMyContract": "Hamkorlik shartnomam",
+  "aboutContractFrom": "{date} dan",
+  "contractLoadFailed": "Shartnomani ochib bo'lmadi.",
+  "calendarDayView": "Kun",
+  "calendarWeekView": "Hafta",
+  "previousWeek": "Oldingi hafta",
+  "nextWeek": "Keyingi hafta"
 }

@@ -84,6 +84,11 @@ object ApiConfig {
 
         fun appointment(id: Long) = "appointments/$id"
 
+        /** BE-10: cancel with a reason, and mark a missed visit. */
+        fun appointmentCancel(id: Long) = "appointments/$id/cancel"
+
+        fun appointmentNoShow(id: Long) = "appointments/$id/no-show"
+
         fun appointmentChange(id: Long) = "appointments/$id/change"
 
         fun appointmentPaymentReminder(id: Long) = "appointments/$id/notify-payment-reminder"
@@ -257,6 +262,11 @@ object ApiConfig {
         const val PUBLIC_CLINICS = "public/clinics"
         const val RESET_PASSWORD = "auth/reset-password"
         const val DOCTOR_ME = "doctors/me"
+
+        // BE-16: the legal pages, the doctor's contract and its PDF.
+        const val PUBLIC_LEGAL = "public/legal"
+        const val DOCTOR_CONTRACT = "doctors/me/contract"
+        const val DOCTOR_CONTRACT_PDF = "doctors/me/contract/pdf"
         const val DOCTOR_LANGUAGE = "doctors/me/language"
         const val PUBLIC_CONFIG = "public/config"
     }

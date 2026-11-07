@@ -27,6 +27,8 @@ data class CalendarEntryDto(
     val patientSignedAt: String? = null,
     val briefingStatus: String? = null,
     val attachmentCount: Int = 0,
+    // BE-09 (backend 2026-11-07): the visit's kind, for appointment rows.
+    val isVideo: Boolean? = null,
 )
 
 /** A calendar row on the doctor's day (03 §7): times are UTC instants; screens show them through `PracticeClock`. */
@@ -61,9 +63,10 @@ sealed interface CalendarEntry {
         val patientSignedAt: Instant? = null,
         val briefingStatus: String? = null,
         val attachmentCount: Int = 0,
+        // The backend's flag (BE-09); null from a backend without it.
+        val videoFlag: Boolean? = null,
     ) : CalendarEntry {
-        // The calendar has no video flag yet (BE-09): VisitKind reads the booked location.
-        val kind: VisitKind get() = VisitKind.of(null, location)
+        val kind: VisitKind get() = VisitKind.of(videoFlag, location)
 
         val isVideo: Boolean get() = kind == VisitKind.Video
 
@@ -107,6 +110,7 @@ sealed interface CalendarEntry {
                         PracticeClock.parseInstant(dto.patientSignedAt),
                         dto.briefingStatus,
                         dto.attachmentCount,
+                        dto.isVideo,
                     )
                 "BLOCKED" -> Blocked(start, end, dto.blockId, dto.blockReason, dto.locationId, dto.locationLabel)
                 else -> FreeSlot(start, end, dto.locationId, dto.locationLabel)

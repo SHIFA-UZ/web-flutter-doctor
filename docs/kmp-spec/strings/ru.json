@@ -2919,5 +2919,19 @@
   "smsSignInUzbekOnly": "Вход по SMS доступен только для номеров Узбекистана (+998). Войдите по email.",
   "smsUnavailableUseEmail": "Не удалось отправить SMS. Войдите по email.",
   "patientInRoom": "В комнате",
-  "patientNotInRoomYet": "Ещё не подключился"
+  "patientNotInRoomYet": "Ещё не подключился",
+  "cancelReasonDoctorUnavailable": "Врач недоступен",
+  "cancelReasonPatientRequest": "По просьбе пациента",
+  "cancelReasonRescheduled": "Перенесено",
+  "cancelReasonOtherHint": "Причина",
+  "noShowNotAllowed": "Сейчас нельзя отметить неявку на этот визит.",
+  "aboutTermsOfService": "Условия использования",
+  "aboutLicences": "Лицензии открытого ПО",
+  "aboutMyContract": "Мой договор о партнёрстве",
+  "aboutContractFrom": "с {date}",
+  "contractLoadFailed": "Не удалось открыть договор.",
+  "calendarDayView": "День",
+  "calendarWeekView": "Неделя",
+  "previousWeek": "Предыдущая неделя",
+  "nextWeek": "Следующая неделя"
 }

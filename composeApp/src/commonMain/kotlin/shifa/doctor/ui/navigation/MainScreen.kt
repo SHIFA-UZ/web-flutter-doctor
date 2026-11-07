@@ -656,7 +656,7 @@ private fun RouteContent(
                         ),
                     )
                 // LEGAL-01: the app, its version and the privacy policy.
-                ProfileSection.About -> AboutScreen(actions.back)
+                ProfileSection.About -> AboutScreen(actions.back, staff = staff)
                 // BE-02: a copy of the doctor's data and deleting the account (flow 08/12).
                 ProfileSection.Privacy -> PrivacyScreen(actions.back)
                 else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section) }

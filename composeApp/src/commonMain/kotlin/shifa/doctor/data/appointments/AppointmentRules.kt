@@ -46,6 +46,21 @@ fun ctaFor(
     }
 }
 
+/**
+ * The backend's no-show window (BE-10): a confirmed or started visit, from its start until a day after its end. The
+ * calendar offers it for a confirmed visit whose patient hasn't come; the video call while the doctor waits alone.
+ */
+fun mayMarkNoShow(
+    status: String?,
+    start: Instant,
+    end: Instant,
+    now: Instant,
+): Boolean = status?.uppercase() in setOf("CONFIRMED", "IN_PROGRESS") && now >= start && now <= end + 24.hours
+
+/** The calendar panel's late banner: confirmed, not started, inside the window. */
+fun CalendarEntry.Appointment.mayMarkNoShow(now: Instant) =
+    status.equals("CONFIRMED", ignoreCase = true) && mayMarkNoShow(status, start, end, now)
+
 /** Ended before now (its UTC end): no move, resize or cancel (flow 04/05 §3). */
 fun CalendarEntry.Appointment.past(now: Instant) = end <= now
 

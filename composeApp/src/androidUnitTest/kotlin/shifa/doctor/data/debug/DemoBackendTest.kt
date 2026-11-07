@@ -1009,4 +1009,18 @@ class DemoBackendTest {
                 .isInstanceOf(shifa.doctor.data.model.ApiException.NotFound::class.java)
             assertThat(forwarded).isEmpty()
         }
+
+    @Test
+    fun `the demo answers the legal pages, the contract, and a cancel with a reason or a no-show locally`() =
+        runTest {
+            val legal = shifa.doctor.data.legal.LegalRepository({ client })
+            assertThat(legal.links("en").getOrThrow()?.terms).isEqualTo("https://shifa.uz/#terms")
+            assertThat(legal.contract().getOrThrow()?.contractNumber).isEqualTo("SHIFA-0461")
+            val appointments = shifa.doctor.data.appointments.AppointmentsRepository({ client })
+            assertThat(
+                appointments.cancel(101, shifa.doctor.data.appointments.CancelReason.PATIENT_REQUEST).isSuccess,
+            ).isTrue()
+            assertThat(appointments.noShow(101, notify = true).isSuccess).isTrue()
+            assertThat(forwarded).isEmpty()
+        }
 }
