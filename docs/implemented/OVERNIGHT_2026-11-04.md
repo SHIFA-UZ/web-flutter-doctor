@@ -1,6 +1,6 @@
 # Overnight run 2026-11-04: milestone M0 (CORE-01 … CORE-09)
 
-Branch `doc-app2.0` (a worktree at `../web-flutter-doctor-app2`, created from `origin/main` after
+Branch `doc-app2.0` (a worktree at `../web-kmp-doctor-app`, created from `origin/main` after
 `git pull --ff-only`). Nothing was pushed, and `main` was not touched. One commit per ticket, plus one release-config
 commit you asked for mid-run. Every commit carries the repo's git identity only, with no attribution lines. Status per
 ticket: `docs/implemented/README.md`. Detail: `foundation.md` and `design-system.md`. Codex output:

@@ -1,6 +1,6 @@
 # Overnight run 2026-11-06/07: M14 web (WEB-04…08, WEB-10 part) and the UI audit
 
-Branch `doc-app2.0` in the worktree `../web-flutter-doctor-app2`. Nothing was pushed and `main` was not touched. One
+Branch `doc-app2.0` in the worktree `../web-kmp-doctor-app`. Nothing was pushed and `main` was not touched. One
 commit per ticket group, the repo's git identity only, no attribution lines. Status per ticket:
 `docs/implemented/README.md`; Codex reviews and the answers in `docs/implemented/codex/<TICKET>.md`.
 

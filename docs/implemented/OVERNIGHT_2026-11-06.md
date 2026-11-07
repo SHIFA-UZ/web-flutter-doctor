@@ -1,6 +1,6 @@
 # Overnight run 2026-11-05/06: M10 end, M11, M12, final double-check
 
-Branch `doc-app2.0` in the worktree `../web-flutter-doctor-app2`. Nothing was pushed (the branch has no upstream) and
+Branch `doc-app2.0` in the worktree `../web-kmp-doctor-app`. Nothing was pushed (the branch has no upstream) and
 `main` was not touched. One commit per ticket group; every commit carries only the repo's git identity, with no
 attribution lines. Status per ticket: `docs/implemented/README.md`; detail in the area files; Codex reviews and the
 answers in `docs/implemented/codex/<TICKET>.md`.
