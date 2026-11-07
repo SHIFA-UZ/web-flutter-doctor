@@ -37,6 +37,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Pushes shown by the system use the white Shifa mark (a full-colour launcher icon turns into a grey square). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/splash_logo" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+
         <service
             android:name=".utils.RecordingService"
             android:exported="false"

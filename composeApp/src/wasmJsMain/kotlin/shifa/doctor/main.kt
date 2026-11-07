@@ -2,6 +2,7 @@ package shifa.doctor
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
+import shifa.doctor.utils.fadeBootFrame
 
 // kotlinx-datetime knows only UTC on the web until this module registers the IANA zones (the practice time zone).
 @JsModule("@js-joda/timezone")
@@ -15,7 +16,11 @@ fun main() {
     ComposeViewport("composeApp") {
         App()
     }
+    // Normally ResourceWarmup lifts the loading frame once the splash can draw; this is the backstop.
+    fadeBootFrame(BOOT_FRAME_LIMIT_MS)
 }
+
+private const val BOOT_FRAME_LIMIT_MS = 10_000
 
 /**
  * WEB-10: the browser's Back works as the app's Back. One history entry is kept armed; its Back reaches the app as

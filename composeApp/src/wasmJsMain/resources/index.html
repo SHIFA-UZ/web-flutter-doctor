@@ -4,15 +4,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Shifa Doctor</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="theme-color" content="#00BBB0">
     <style>
         /* ShifaColors.Bg.Canvas until the app draws; the app scrolls itself, the page never does. */
         html, body { margin: 0; height: 100%; overflow: hidden; background: #F2F3F2; }
         #composeApp { width: 100%; height: 100%; }
         #composeApp canvas { display: block; } /* an inline canvas leaves a baseline gap that scrolls the page */
+        /* While the app downloads (about 7 MB): the splash's teal and its 96 px app icon, 24 px above the centre as in
+           the Compose splash. main() fades it out once the app draws. */
+        #boot { position: fixed; inset: 0; z-index: 1; background: #00BBB0; display: flex; align-items: center;
+                justify-content: center; transition: opacity .25s; }
+        #boot img { width: 96px; height: 96px; margin-bottom: 48px; }
     </style>
     <script type="application/javascript" src="composeApp.js"></script>
 </head>
 <body>
 <div id="composeApp"></div>
+<div id="boot"><img src="icon-192.png" alt=""></div>
 </body>
 </html>

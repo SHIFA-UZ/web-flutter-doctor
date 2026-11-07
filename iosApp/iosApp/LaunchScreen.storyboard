@@ -16,21 +16,21 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <!-- Logo Image View -->
+                            <!-- App icon (the design's doctor app icon) -->
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="tWc-Dq-wcI">
-                                <rect key="frame" x="107.66666666666669" y="336" width="178" height="178"/>
+                                <rect key="frame" x="148.66666666666666" y="354" width="96" height="96"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="178" id="2Z7-8c-gHg"/>
-                                    <constraint firstAttribute="height" constant="178" id="hQr-fK-jhM"/>
+                                    <constraint firstAttribute="width" constant="96" id="2Z7-8c-gHg"/>
+                                    <constraint firstAttribute="height" constant="96" id="hQr-fK-jhM"/>
                                 </constraints>
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
-                        <color key="backgroundColor" red="0.34901960784313724" green="0.76470588235294112" blue="0.74117647058823533" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.0" green="0.73333333333333328" blue="0.69019607843137254" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <!-- Center the logo horizontally and vertically -->
+                            <!-- The Compose splash's 96 pt app icon, 24 pt above the centre (it sits over the app name there) -->
                             <constraint firstItem="tWc-Dq-wcI" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="5fR-3K-8aH"/>
-                            <constraint firstItem="tWc-Dq-wcI" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="gzL-l9-4hN"/>
+                            <constraint firstItem="tWc-Dq-wcI" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-24" id="gzL-l9-4hN"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -40,6 +40,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchLogo" width="178" height="178"/>
+        <image name="LaunchLogo" width="96" height="96"/>
     </resources>
 </document>
