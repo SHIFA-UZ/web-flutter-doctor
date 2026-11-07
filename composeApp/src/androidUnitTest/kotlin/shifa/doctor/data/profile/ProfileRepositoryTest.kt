@@ -118,6 +118,7 @@ class ProfileRepositoryTest {
     fun `an older read that answers last can't overwrite a newer one`() =
         runTest {
             val first = CompletableDeferred<Unit>()
+            val firstArrived = CompletableDeferred<Unit>()
             var calls = 0
             val repo =
                 ProfileRepository {
@@ -125,7 +126,10 @@ class ProfileRepositoryTest {
                         { null },
                         MockEngine {
                             val n = ++calls
-                            if (n == 1) first.await() // the first read is slow
+                            if (n == 1) {
+                                firstArrived.complete(Unit)
+                                first.await() // the first read is slow
+                            }
                             val name = if (n == 1) "Old" else "New"
                             respond(
                                 """{"profile":{"firstName":"$name"}}""",
@@ -136,7 +140,8 @@ class ProfileRepositoryTest {
                     )
                 }
             val older = async { repo.refresh() }
-            yield()
+            // The engine answers on its own thread: the older read must have reached it before the newer one starts.
+            firstArrived.await()
             repo.refresh()
             first.complete(Unit)
             older.await()
