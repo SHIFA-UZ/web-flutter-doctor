@@ -194,3 +194,14 @@ Built 2026-11-04 on `doc-app2.0`.
 - **Not built: `sanitizeErrorMessage` port.** It matched English server text, which 17 §1 forbids ("never match English
   text"); CORE-05's `toUserMessage(fallback)` maps the backend's `code` instead. The plan row is corrected.
 - **Tests:** `PracticeClockTest` (4), `MoneyTest` (3), `PhoneE164Test` (3), `PasswordPolicyTest` (1).
+
+## iOS release build memory (2026-11-07)
+
+The TestFlight workflow's "Build Kotlin framework" (`linkReleaseFrameworkIosArm64`) ran out of memory (6 GB heap, 1 h 13 min,
+2026-11-06). Measured with GC logs: on Kotlin 2.3.0 the release link holds about 6.3 GB after collections (peaks near
+12.5 GB; it passed with a 14 GB heap in 13 min). On **Kotlin 2.4.21** it passes inside a **5 GB** heap in 16 min, about
+3–4.3 GB live after full collections, so it fits GitHub's standard macOS runner (7 GB in all). The user's call: shrink
+before paying for a larger runner; the Kotlin upgrade alone was enough (the unused-strings and debug-code levers were
+not needed). `ios_testflight.yml` passes `-Xmx5g` to that step (the project's 6 GB would leave too little for the native
+compiler and the system). The patient app moves to the same Kotlin (the two catalogs stay equal).
+
