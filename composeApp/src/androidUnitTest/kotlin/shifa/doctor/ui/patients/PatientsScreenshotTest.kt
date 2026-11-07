@@ -83,4 +83,8 @@ class PatientsScreenshotTest {
 
     @Test
     fun briefingEmpty() = captureRoboImage("screenshots/PatientBriefing_empty.png") { PatientBriefingEmptyPreview() }
+
+    @Test
+    @Config(qualifiers = "w1180dp-h900dp-mdpi")
+    fun wide() = captureRoboImage("screenshots/Patients_wide.png") { PatientsWidePreview() }
 }

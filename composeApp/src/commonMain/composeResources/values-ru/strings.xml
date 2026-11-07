@@ -879,6 +879,7 @@
     <string name="clinicalTimelineHint">Принятые факты визита, по шагам. Из того, что было сказано.</string>
     <string name="close">Закрыть</string>
     <string name="collapse">Свернуть</string>
+    <string name="columnStatus">Статус</string>
     <string name="complaints">Жалобы</string>
     <string name="complete">Завершить</string>
     <string name="completePartnership">Завершить</string>

@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -51,13 +53,16 @@ import shifa.doctor.data.patients.favoritesRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.age
 import shifa.doctor.generated.resources.allPatients
 import shifa.doctor.generated.resources.clearFilters
+import shifa.doctor.generated.resources.columnStatus
 import shifa.doctor.generated.resources.failedToLoadPatients
 import shifa.doctor.generated.resources.favorites
 import shifa.doctor.generated.resources.female
 import shifa.doctor.generated.resources.filterAllStatuses
 import shifa.doctor.generated.resources.followUps
+import shifa.doctor.generated.resources.gender
 import shifa.doctor.generated.resources.ic_chev_r_16
 import shifa.doctor.generated.resources.ic_sliders_22
 import shifa.doctor.generated.resources.ic_users_22
@@ -76,6 +81,7 @@ import shifa.doctor.generated.resources.patients
 import shifa.doctor.generated.resources.patientsCount
 import shifa.doctor.generated.resources.patientsFilterTitle
 import shifa.doctor.generated.resources.patientsPagination
+import shifa.doctor.generated.resources.phone
 import shifa.doctor.generated.resources.previous
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.searchPatientsDirectoryHint
@@ -86,12 +92,16 @@ import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.DataTable
 import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.OptionItem
+import shifa.doctor.ui.widgets.PersonCell
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaIconButton
@@ -99,10 +109,13 @@ import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
 import shifa.doctor.ui.widgets.ShifaOptionList
+import shifa.doctor.ui.widgets.ShifaPager
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaTray
+import shifa.doctor.ui.widgets.TableColumn
+import shifa.doctor.ui.widgets.initialsOf
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.tr
@@ -305,23 +318,39 @@ fun PatientsContent(
         { actions.load(true) },
         Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas),
     ) {
+        val wide = LocalWideLayout.current
         Column(
             Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .verticalScroll(scroll)
-                // Clear of the floating tab bar, like the other tab roots.
-                .padding(
-                    start = ShifaSpacing.Inset.Md,
-                    end = ShifaSpacing.Inset.Md,
-                    top = ShifaSpacing.Inset.Md,
-                    bottom = ShifaSize.S120,
-                ),
-            verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+                .verticalScroll(scroll),
         ) {
-            Header(state, actions)
-            codeBanner(state.error.takeIf { state.patients != null }) { actions.ui { it.copy(error = null) } }?.invoke()
-            Body(state, actions)
+            Column(
+                Modifier
+                    // Wide (DaPatients web): a page at most 1280 wide; phones: clear of the floating tab bar.
+                    .then(
+                        if (wide) {
+                            Modifier.align(
+                                Alignment.CenterHorizontally,
+                            ).widthIn(max = ShifaDimens.Layout.Page)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .padding(
+                        start = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                        end = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                        top = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                        bottom = if (wide) ShifaSpacing.Inset.Lg else ShifaSize.S120,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+            ) {
+                if (wide) WideHeader(state, actions) else Header(state, actions)
+                codeBanner(
+                    state.error.takeIf { state.patients != null },
+                ) { actions.ui { it.copy(error = null) } }?.invoke()
+                Body(state, actions, wide)
+            }
         }
     }
     if (state.choosingStatus) StatusSheet(state, actions)
@@ -380,6 +409,7 @@ private fun Header(
 private fun Body(
     state: PatientsUiState,
     actions: PatientsActions,
+    wide: Boolean,
 ) {
     val list = state.patients
     val error = state.error
@@ -406,6 +436,10 @@ private fun Body(
                 )
                 if (state.filtered) ShifaLink(tr(Res.string.clearFilters), actions.clearFilters)
             }
+        wide -> {
+            PatientsTable(state, actions)
+            WidePager(state, actions)
+        }
         else -> {
             Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
                 state.shown.forEach { PatientRow(it, state.today) { actions.open(it) } }
@@ -414,6 +448,133 @@ private fun Body(
         }
     }
 }
+
+/** DaPatients web: the title and count with New patient at the right, the search with the filter, the chips with the sort. */
+@Composable
+private fun WideHeader(
+    state: PatientsUiState,
+    actions: PatientsActions,
+) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
+            Text(
+                tr(Res.string.patients),
+                style = MaterialTheme.typography.headlineLarge,
+                color = ShifaColors.Text.Primary,
+            )
+            state.patients?.let {
+                ProfileChip(
+                    trPlural(Res.plurals.patientsCount, it.size, it.size),
+                    ShifaColors.Bg.Surface,
+                    ShifaColors.Text.Secondary,
+                )
+            }
+        }
+        actions.create?.let { ShifaPrimaryButton(tr(Res.string.newPatient), it) }
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ShifaSearchField(state.typed, actions.type, tr(Res.string.searchPatientsDirectoryHint), Modifier.weight(1f))
+        ShifaIconButton(
+            Res.drawable.ic_sliders_22,
+            tr(Res.string.patientsFilterTitle),
+            { actions.ui { it.copy(choosingStatus = true) } },
+            variant = if (state.status != null) ShifaIconButtonVariant.Primary else ShifaIconButtonVariant.Secondary,
+        )
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Wraps with large text or long (Russian) labels, as on the phone.
+        FlowRow(
+            Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+        ) {
+            listOf(
+                PatientTab.All to Res.string.allPatients,
+                PatientTab.Favorites to Res.string.favorites,
+                PatientTab.FollowUps to Res.string.followUps,
+            ).forEach {
+                    (tab, label) ->
+                ShifaChip(tr(label), state.tab == tab, { actions.filter { it.copy(tab = tab) } })
+            }
+        }
+        ShifaChip(
+            tr(if (state.descending) Res.string.sortNameDesc else Res.string.sortNameAsc),
+            false,
+            { actions.filter { it.copy(descending = !it.descending) } },
+        )
+    }
+}
+
+/** DaPatients web's table: the patient with their ID, age and gender, phone, status, and a chevron. */
+@Composable
+private fun PatientsTable(
+    state: PatientsUiState,
+    actions: PatientsActions,
+) = DataTable(
+    listOf(
+        TableColumn(tr(Res.string.patient), PERSON_WEIGHT),
+        TableColumn("${tr(Res.string.age)}, ${tr(Res.string.gender).lowercase()}"),
+        TableColumn(tr(Res.string.phone), PHONE_WEIGHT),
+        TableColumn(tr(Res.string.columnStatus)),
+        TableColumn("", CHEVRON_WEIGHT),
+    ),
+    state.shown,
+    onRowClick = actions.open,
+) { p, column ->
+    when (column) {
+        0 -> {
+            val name = p.name.takeIf { it.isNotBlank() } ?: tr(Res.string.patient)
+            PersonCell(name, p.displayId, initialsOf(name), photoUrl = p.photoUrl)
+        }
+        1 ->
+            TableText(
+                listOfNotNull(p.age(state.today)?.toString(), genderLabel(p.gender)).joinToString(", ").ifEmpty { "—" },
+            )
+        2 -> TableText(p.allPhones.firstOrNull() ?: "—")
+        3 -> StatusPill(p.status)
+        else ->
+            androidx.compose.material3.Icon(
+                org.jetbrains.compose.resources.painterResource(Res.drawable.ic_chev_r_16),
+                null,
+                tint = ShifaColors.Icon.Secondary,
+            )
+    }
+}
+
+@Composable
+private fun TableText(text: String) =
+    Text(
+        text,
+        style = ShifaTextStyles.tableCell(),
+        color = ShifaColors.Text.Primary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+
+/** The kit pager under the table ("1–10 of 12", numbered pages). */
+@Composable
+private fun WidePager(
+    state: PatientsUiState,
+    actions: PatientsActions,
+) {
+    val total = state.visible.size
+    val start = state.currentPage * PAGE + 1
+    ShifaPager(
+        trPlural(Res.plurals.patientsPagination, total, start, minOf(total, start + PAGE - 1), total),
+        state.currentPage + 1,
+        state.pages,
+        { actions.page(it - 1) },
+        tr(Res.string.previous),
+        tr(Res.string.next),
+    )
+}
+
+private const val PERSON_WEIGHT = 2.4f
+private const val PHONE_WEIGHT = 1.6f
+private const val CHEVRON_WEIGHT = 0.2f
 
 /** Avatar, name (or "Patient"), "34, Male · +998…" (parts left out when unknown), the status pill, chevron. */
 @Composable

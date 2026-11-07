@@ -2,6 +2,9 @@ package shifa.doctor.ui.widgets
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,12 +16,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
@@ -95,6 +102,66 @@ fun DataTableCard(
     }
 }
 
+/** A column of a [DataTable]: its heading and its share of the width. */
+class TableColumn(
+    val title: String,
+    val weight: Float = 1f,
+)
+
+/**
+ * `.dr-table` from `breakpoint-split-pane` up (WEB-07): the headings on the canvas tint, one row per item with a rule
+ * under it and the hover tint; [onRowClick] makes rows buttons. [cell] draws column [column] of [row].
+ */
+@Composable
+fun <T> DataTable(
+    columns: List<TableColumn>,
+    rows: List<T>,
+    onRowClick: ((T) -> Unit)?,
+    modifier: Modifier = Modifier,
+    cell: @Composable (row: T, column: Int) -> Unit,
+) = Column(modifier.fillMaxWidth().background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg).padding(ShifaSize.S8)) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(ShifaColors.Bg.Canvas, ShifaRadius.ControlMd)
+            .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSize.S10),
+        horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
+    ) {
+        columns.forEach {
+            Text(
+                it.title,
+                Modifier.weight(it.weight),
+                style = ShifaTextStyles.tableHead(),
+                color = ShifaColors.Text.Secondary,
+            )
+        }
+    }
+    rows.forEach { row ->
+        val hover = remember { MutableInteractionSource() }
+        val hovered by hover.collectIsHoveredAsState()
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .background(if (hovered && onRowClick != null) ShifaColors.Bg.Hover else Color.Transparent)
+                .hoverable(hover)
+                .then(
+                    onRowClick?.let {
+                        Modifier.pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button) { it(row) }
+                    } ?: Modifier,
+                ).padding(ShifaSpacing.Inset.Sm),
+            horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            columns.forEachIndexed { i, column -> Box(Modifier.weight(column.weight)) { cell(row, i) } }
+        }
+        HorizontalDivider(thickness = ShifaSize.S1, color = ShifaColors.Border.Default)
+    }
+}
+
+/** "Dilnoza Yusupova" → "DY": the first letters of the first two words. */
+fun initialsOf(name: String): String =
+    name.split(' ').filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
+
 /** The person cell of a [DataTableCard]: initials disc (or photo), name and a muted line (phone, ID). */
 @Composable
 fun PersonCell(
@@ -102,16 +169,21 @@ fun PersonCell(
     detail: String,
     initials: String,
     modifier: Modifier = Modifier,
+    photoUrl: String? = null,
 ) = Row(
     modifier,
     horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
     verticalAlignment = Alignment.CenterVertically,
 ) {
-    Box(
-        Modifier.size(ShifaSize.S32).background(ShifaColors.Alpha.Teal15, ShifaRadius.Full),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(initials, style = ShifaTextStyles.tableHead(), color = ShifaColors.Text.Primary)
+    if (photoUrl != null) {
+        ShifaAvatar(photoUrl, ShifaSize.S32)
+    } else {
+        Box(
+            Modifier.size(ShifaSize.S32).background(ShifaColors.Alpha.Teal15, ShifaRadius.Full),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(initials, style = ShifaTextStyles.tableHead(), color = ShifaColors.Text.Primary)
+        }
     }
     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
         Text(

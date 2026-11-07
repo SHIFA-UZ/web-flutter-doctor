@@ -2885,5 +2885,6 @@
   "aboutCopyDiagnosticsHint": "Версия, платформа, язык и часовой пояс — для поддержки. Без данных пациентов.",
   "aboutDiagnosticsCopied": "Диагностика скопирована",
   "aboutOpenFailed": "Не удалось открыть страницу",
-  "navPractice": "Практика"
+  "navPractice": "Практика",
+  "columnStatus": "Статус"
 }

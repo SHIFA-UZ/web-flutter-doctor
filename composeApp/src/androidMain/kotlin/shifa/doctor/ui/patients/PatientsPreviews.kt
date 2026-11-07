@@ -41,6 +41,15 @@ internal fun PatientsPreview() =
         PatientsContent(PatientsUiState(people, today = today), PatientsActions(create = {}))
     }
 
+// WEB-07d (DaPatients web): the table under the header with New patient at the right.
+@androidx.compose.runtime.Composable
+internal fun PatientsWidePreview() =
+    PreviewTheme {
+        androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
+            PatientsContent(PatientsUiState(people, today = today), PatientsActions(create = {}))
+        }
+    }
+
 @Composable
 internal fun PatientsEmptyPreview() =
     PreviewTheme {

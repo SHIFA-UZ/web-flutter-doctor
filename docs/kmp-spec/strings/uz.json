@@ -2885,5 +2885,6 @@
   "aboutCopyDiagnosticsHint": "Versiya, platforma, til va vaqt mintaqasi — yordam uchun. Bemor ma'lumotlarisiz.",
   "aboutDiagnosticsCopied": "Diagnostika nusxalandi",
   "aboutOpenFailed": "Sahifani ochib bo'lmadi",
-  "navPractice": "Amaliyot"
+  "navPractice": "Amaliyot",
+  "columnStatus": "Holat"
 }

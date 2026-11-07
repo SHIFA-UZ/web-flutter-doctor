@@ -879,6 +879,7 @@
     <string name="clinicalTimelineHint">Accepted visit facts, step by step. Sourced from what was spoken.</string>
     <string name="close">Close</string>
     <string name="collapse">Collapse</string>
+    <string name="columnStatus">Status</string>
     <string name="complaints">Complaints</string>
     <string name="complete">Complete</string>
     <string name="completePartnership">Mark completed</string>

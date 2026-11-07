@@ -879,6 +879,7 @@
     <string name="clinicalTimelineHint">Qabul qilingan tashrif faktlari, qadam-baqadam. Aytilganlardan olingan.</string>
     <string name="close">Yopish</string>
     <string name="collapse">Yig'ish</string>
+    <string name="columnStatus">Holat</string>
     <string name="complaints">Shikoyati</string>
     <string name="complete">Tugallandi</string>
     <string name="completePartnership">Yakunlash</string>
