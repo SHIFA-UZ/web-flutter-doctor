@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import org.jetbrains.compose.resources.DrawableResource
@@ -75,7 +77,15 @@ fun KpiCard(
                     Modifier
                 },
             )
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(ShifaSpacing.Inset.Md),
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
     ) {

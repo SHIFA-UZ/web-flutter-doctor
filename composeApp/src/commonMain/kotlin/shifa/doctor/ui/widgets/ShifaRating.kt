@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -58,7 +60,9 @@ fun ShifaRating(
                 Modifier
                     .size(ShifaSize.Touch)
                     .clip(ShifaRadius.Full)
-                    .selectable(star == rating, role = Role.RadioButton, onClick = { onRate(star) })
+                    .pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).selectable(star == rating, role = Role.RadioButton, onClick = { onRate(star) })
                     .semantics { contentDescription = describe(star) },
                 contentAlignment = Alignment.Center,
             ) {

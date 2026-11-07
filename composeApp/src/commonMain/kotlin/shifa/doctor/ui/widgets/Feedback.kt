@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
@@ -91,7 +93,7 @@ fun ShifaToast(
                 Modifier
                     .clip(ShifaRadius.Full)
                     .border(ShifaSize.S1, ShifaColors.Alpha.White70, ShifaRadius.Full)
-                    .clickable(role = Role.Button, onClick = onAction)
+                    .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = onAction)
                     .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),
             ) {
                 Text(it, style = ShifaTextStyles.buttonCompact(), color = ShifaColors.Text.Inverse, maxLines = 1)
@@ -99,7 +101,9 @@ fun ShifaToast(
         }
         onClose?.let {
             Box(
-                Modifier.size(ShifaSize.Touch).clip(ShifaRadius.Full).clickable(role = Role.Button, onClick = it),
+                Modifier.size(
+                    ShifaSize.Touch,
+                ).clip(ShifaRadius.Full).pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = it),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -299,7 +303,7 @@ fun LanguageToggle(
         .clip(ShifaRadius.Full)
         .background(ShifaColors.Bg.Surface)
         .border(ShifaSize.S1, ShifaColors.Border.Default, ShifaRadius.Full)
-        .clickable(role = Role.Button, onClickLabel = description, onClick = onClick)
+        .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClickLabel = description, onClick = onClick)
         .padding(horizontal = ShifaSpacing.Inset.Sm),
     horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs),
     verticalAlignment = Alignment.CenterVertically,

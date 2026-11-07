@@ -30,4 +30,16 @@ class ShellScreenshotTest {
 
     @Test
     fun intelligence() = captureRoboImage("screenshots/Shell_intelligence.png") { ShellIntelligencePreview() }
+
+    @Test
+    @Config(qualifiers = "w1440dp-h960dp-mdpi")
+    fun sidebar() = captureRoboImage("screenshots/Shell_sidebar.png") { ShellSidebarPreview() }
+
+    @Test
+    @Config(qualifiers = "w1024dp-h768dp-mdpi")
+    fun rail() = captureRoboImage("screenshots/Shell_rail.png") { ShellRailPreview() }
+
+    @Test
+    @Config(qualifiers = "w1440dp-h960dp-mdpi")
+    fun staffSidebar() = captureRoboImage("screenshots/Shell_staffSidebar.png") { ShellStaffSidebarPreview() }
 }

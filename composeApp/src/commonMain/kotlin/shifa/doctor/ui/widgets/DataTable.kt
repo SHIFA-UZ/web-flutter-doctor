@@ -19,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -56,7 +58,15 @@ fun DataTableCard(
             .fillMaxWidth()
             .clip(ShifaRadius.ControlMd)
             .background(if (selected) ShifaColors.Bg.Selected else ShifaColors.Bg.Canvas)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(ShifaSpacing.Inset.Sm),
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Sm),
     ) {
@@ -226,7 +236,9 @@ private fun PagerButton(
         .defaultMinSize(minWidth = ShifaSize.Touch, minHeight = ShifaSize.Touch)
         .clip(ShifaRadius.Full)
         .background(if (current) ShifaColors.Interactive.Primary else ShifaColors.Bg.Surface)
-        .clickable(enabled = enabled && !current, role = Role.Button, onClick = onClick)
+        .pointerHoverIcon(
+            PointerIcon.Hand,
+        ).clickable(enabled = enabled && !current, role = Role.Button, onClick = onClick)
         .semantics { description?.let { contentDescription = it } },
     contentAlignment = Alignment.Center,
 ) { content() }

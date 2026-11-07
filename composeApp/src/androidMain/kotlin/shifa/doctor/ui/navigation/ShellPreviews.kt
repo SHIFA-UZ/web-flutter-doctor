@@ -98,6 +98,47 @@ internal fun ShellIntelligencePreview() =
         )
     }
 
+// WEB-06: the sidebar from 1100 wide and the icon rail from 768 (DaApp `webNav`, boards Sidebar and ShellTablet).
+private val wideState =
+    ShellUiState(
+        gate = FeatureGate.forTier(DoctorTier.Premium),
+        hasClinic = true,
+        chatUnread = 3,
+        notificationsUnread = 46,
+        activeTasks = 1,
+    )
+private val wideIdentity = ShellIdentity("Dr. med. Nilufar Karimova", "Cardiologist")
+
+@Preview(widthDp = 1440, heightDp = 960)
+@Composable
+internal fun ShellSidebarPreview() =
+    PreviewTheme {
+        MainScreenContent(wideState, ShellActions(), route = { ShellRouteStandIn() }, identity = wideIdentity)
+    }
+
+@Preview(widthDp = 1024, heightDp = 768)
+@Composable
+internal fun ShellRailPreview() =
+    PreviewTheme {
+        MainScreenContent(
+            wideState.copy(tab = ShellTab.Calendar),
+            ShellActions(),
+            route = { ShellRouteStandIn() },
+            identity = wideIdentity,
+        )
+    }
+
+@Preview(widthDp = 1440, heightDp = 960)
+@Composable
+internal fun ShellStaffSidebarPreview() =
+    PreviewTheme {
+        MainScreenContent(
+            ShellUiState(staff = true, chatUnread = 2, notificationsUnread = 7),
+            ShellActions(),
+            route = { ShellRouteStandIn() },
+        )
+    }
+
 // The shell's frame only: the tab's own screen reads repositories and the clock (its own previews cover it).
 @Composable
 private fun ShellRouteStandIn() = Box(Modifier.fillMaxSize().background(shifa.doctor.ui.theme.ShifaColors.Bg.Canvas))

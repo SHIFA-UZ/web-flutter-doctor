@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -74,7 +76,9 @@ fun ShifaPickField(
             .clip(ShifaRadius.ControlMd)
             .background(if (enabled) ShifaColors.Bg.Surface else ShifaColors.Bg.Disabled)
             .border(ShifaSize.S2, border, ShifaRadius.ControlMd)
-            .clickable(enabled = enabled, role = Role.DropdownList, onClick = onClick)
+            .pointerHoverIcon(
+                PointerIcon.Hand,
+            ).clickable(enabled = enabled, role = Role.DropdownList, onClick = onClick)
             .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs)
             .defaultMinSize(minHeight = ShifaSize.S30),
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs),

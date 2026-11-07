@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -21,6 +23,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
+import shifa.doctor.data.catalog.Profession
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.data.subscription.DoctorFeature
@@ -144,12 +148,14 @@ import shifa.doctor.ui.profile.SecurityScreen
 import shifa.doctor.ui.profile.ServicesScreen
 import shifa.doctor.ui.profile.SettingsActions
 import shifa.doctor.ui.profile.SettingsScreen
+import shifa.doctor.ui.register.label
 import shifa.doctor.ui.schedule.LocationsScreen
 import shifa.doctor.ui.schedule.ScheduleScreen
 import shifa.doctor.ui.tasks.CreateTaskScreen
 import shifa.doctor.ui.tasks.TaskDetailScreen
 import shifa.doctor.ui.tasks.TasksScreen
 import shifa.doctor.ui.tasks.TemplatesScreen
+import shifa.doctor.ui.theme.ShifaBreakpoint
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
@@ -195,7 +201,7 @@ internal val ShellTab.icon: DrawableResource
             ShellTab.Profile -> Res.drawable.ic_user_22
         }
 
-private val ShellTab.selectedIcon: DrawableResource
+internal val ShellTab.selectedIcon: DrawableResource
     get() =
         when (this) {
             ShellTab.Home -> Res.drawable.ic_home_bold_22
@@ -242,8 +248,22 @@ fun MainScreen(
                 signOut.ask()
             },
         ),
+        identity = shellIdentity(),
     )
     SignOutSheet(question, signOut::confirm, signOut::cancel)
+}
+
+/** The doctor's name and first profession for the sidebar (WEB-06); staff have no doctor profile. */
+@Composable
+private fun shellIdentity(): ShellIdentity? {
+    val me by profileRepository.me.collectAsStateWithLifecycle()
+    val p = me?.profile ?: return null
+    val profession = p.profession?.split(",")?.map { it.trim() }?.firstOrNull { it.isNotEmpty() }
+    return ShellIdentity(
+        doctorDisplayName(p.firstName, p.lastName, tr(Res.string.drMedPrefix)),
+        profession?.let { Profession(it, null).label() },
+        p.photoUrl,
+    )
 }
 
 class ShellActions(
@@ -286,70 +306,94 @@ fun MainScreenContent(
     },
     // A route's screen; shell previews pass a stand-in (the tabs' screens read repositories and the clock).
     route: @Composable (ShellRoute) -> Unit = { RouteContent(it, actions, state.staff, state) },
+    // The sidebar's footer (WEB-06); null shows the photo only.
+    identity: ShellIdentity? = null,
 ) {
-    Box(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
-        Column(Modifier.fillMaxSize()) {
-            ShellNoticeBanner()
-            // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
-            val saved = rememberSaveableStateHolder()
-            Box(Modifier.weight(1f)) {
-                val overIntelligence = state.overIntelligence.lastOrNull()
-                if (state.intelligence && overIntelligence != null) {
-                    // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
-                    saved.SaveableStateProvider("intelligence/${state.overIntelligence.size}/$overIntelligence") {
-                        route(overIntelligence)
-                    }
-                } else if (state.intelligence) {
-                    // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
-                    // welcome returns to it. Its own state (the thread's scroll, an opened document) is kept while a
-                    // screen opened from it is on top.
-                    saved.SaveableStateProvider("intelligence") { intelligence() }
-                } else {
-                    saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
-                        route(state.route)
+    // WEB-06 (DaApp): below 768 the phone's bottom bar and More; from 768 the icon rail, from 1100 the sidebar.
+    BoxWithConstraints(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
+        val wide = maxWidth >= ShifaBreakpoint.Mobile
+        val rail = maxWidth < ShifaBreakpoint.Sidebar
+        Row(Modifier.fillMaxSize()) {
+            if (wide) {
+                ShellSidebar(
+                    state,
+                    actions,
+                    identity,
+                    rail = rail,
+                    search = {
+                        actions.select(ShellTab.Home)
+                        actions.push(ShellRoute.Search(currentInstant().toEpochMilliseconds()))
+                    },
+                )
+                VerticalDivider(thickness = ShifaSize.S1, color = ShifaColors.Border.Default)
+            }
+            Box(Modifier.weight(1f).fillMaxHeight()) {
+                Column(Modifier.fillMaxSize()) {
+                    ShellNoticeBanner()
+                    // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
+                    val saved = rememberSaveableStateHolder()
+                    Box(Modifier.weight(1f)) {
+                        val overIntelligence = state.overIntelligence.lastOrNull()
+                        if (state.intelligence && overIntelligence != null) {
+                            // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
+                            saved.SaveableStateProvider(
+                                "intelligence/${state.overIntelligence.size}/$overIntelligence",
+                            ) {
+                                route(overIntelligence)
+                            }
+                        } else if (state.intelligence) {
+                            // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
+                            // welcome returns to it. Its own state (the thread's scroll, an opened document) is kept while a
+                            // screen opened from it is on top.
+                            saved.SaveableStateProvider("intelligence") { intelligence() }
+                        } else {
+                            saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
+                                route(state.route)
+                            }
+                        }
                     }
                 }
-            }
-        }
-        if (state.barVisible) {
-            val barTabs = state.barTabs
-            val selected = barTabs.indexOf(state.tab).takeIf { it >= 0 } ?: barTabs.size
-            // Staff: four tabs, the last one their photo (flow 01/18 §3); doctors: four and More.
-            val items =
-                barTabs.map {
-                    val avatar = state.staff && it == ShellTab.Profile
-                    val count = state.count(it)
-                    val label = tr(it.label)
-                    NavBarItem(
-                        label,
-                        it.icon,
-                        it.selectedIcon,
-                        badge = count,
-                        // "Chat, 3 unread" (flow 01/16 §8); the badge itself is hidden from screen readers.
-                        description = if (count > 0) "$label, ${tr(Res.string.unreadBadge, count)}" else label,
-                        avatar = avatar,
-                        avatarUrl = state.avatarUrl,
+                if (!wide && state.barVisible) {
+                    val barTabs = state.barTabs
+                    val selected = barTabs.indexOf(state.tab).takeIf { it >= 0 } ?: barTabs.size
+                    // Staff: four tabs, the last one their photo (flow 01/18 §3); doctors: four and More.
+                    val items =
+                        barTabs.map {
+                            val avatar = state.staff && it == ShellTab.Profile
+                            val count = state.count(it)
+                            val label = tr(it.label)
+                            NavBarItem(
+                                label,
+                                it.icon,
+                                it.selectedIcon,
+                                badge = count,
+                                // "Chat, 3 unread" (flow 01/16 §8); the badge itself is hidden from screen readers.
+                                description = if (count > 0) "$label, ${tr(Res.string.unreadBadge, count)}" else label,
+                                avatar = avatar,
+                                avatarUrl = state.avatarUrl,
+                            )
+                        }
+                    ShifaNavBar(
+                        if (state.staff) {
+                            items
+                        } else {
+                            items +
+                                NavBarItem(
+                                    tr(Res.string.more),
+                                    Res.drawable.ic_more_22,
+                                    description = tr(Res.string.moreOptions),
+                                )
+                        },
+                        selected,
+                        onSelect = { i -> if (i < barTabs.size) actions.select(barTabs[i]) else actions.openMore() },
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
+                                .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSpacing.Inset.Xs),
                     )
                 }
-            ShifaNavBar(
-                if (state.staff) {
-                    items
-                } else {
-                    items +
-                        NavBarItem(
-                            tr(Res.string.more),
-                            Res.drawable.ic_more_22,
-                            description = tr(Res.string.moreOptions),
-                        )
-                },
-                selected,
-                onSelect = { i -> if (i < barTabs.size) actions.select(barTabs[i]) else actions.openMore() },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSpacing.Inset.Xs),
-            )
+            }
         }
     }
     if (state.moreOpen) {

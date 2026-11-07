@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -142,7 +144,15 @@ private fun Tooth(
                 .clip(shape)
                 .toothFill(mark.state, shape)
                 .then(if (selected) Modifier.border(ShifaSize.S2, ShifaColors.Border.Focus, shape) else Modifier)
-                .then(if (onTooth != null) Modifier.clickable(role = Role.Button) { onTooth(number) } else Modifier)
+                .then(
+                    if (onTooth != null) {
+                        Modifier.pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button) {
+                            onTooth(number)
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
                 .semantics { contentDescription = description }
                 .padding(vertical = ShifaSize.S4),
             contentAlignment = if (upper) Alignment.BottomCenter else Alignment.TopCenter,

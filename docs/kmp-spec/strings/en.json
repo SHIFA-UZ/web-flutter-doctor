@@ -2884,5 +2884,6 @@
   "aboutCopyDiagnostics": "Copy diagnostics",
   "aboutCopyDiagnosticsHint": "Version, platform, language and time zone, for support. No patient data.",
   "aboutDiagnosticsCopied": "Diagnostics copied",
-  "aboutOpenFailed": "Couldn't open the page"
+  "aboutOpenFailed": "Couldn't open the page",
+  "navPractice": "Practice"
 }

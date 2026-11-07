@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -141,7 +143,15 @@ fun TreatmentPlanCard(
             .fillMaxWidth()
             .clip(ShifaRadius.ControlLg)
             .background(ShifaColors.Bg.Surface)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(ShifaSpacing.Inset.Md),
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
     ) {
@@ -328,7 +338,15 @@ fun ContextSwitcher(
             .fillMaxWidth()
             .clip(ShifaRadius.ControlLg)
             .background(ShifaColors.Bg.SuccessSubtle)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSpacing.Inset.Sm),
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
         verticalAlignment = Alignment.CenterVertically,
@@ -456,7 +474,9 @@ fun CallControlBar(
                     .size(if (c.end) ShifaSize.S64 else ShifaSize.S48, ShifaSize.S48)
                     .clip(ShifaRadius.Full)
                     .background(bg)
-                    .clickable(role = Role.Button, onClickLabel = c.description, onClick = c.onClick),
+                    .pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClickLabel = c.description, onClick = c.onClick),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(painterResource(c.icon), c.description, tint = tint)

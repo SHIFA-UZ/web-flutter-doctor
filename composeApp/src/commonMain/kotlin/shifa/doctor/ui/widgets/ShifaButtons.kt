@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -86,7 +88,9 @@ fun ShifaPrimaryButton(
                 .then(if (enabled) Modifier.dropShadow(ShifaRadius.ControlMd, ShifaShadow.Default) else Modifier)
                 .clip(ShifaRadius.ControlMd)
                 .background(bg)
-                .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
+                .pointerHoverIcon(
+                    PointerIcon.Hand,
+                ).clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
     )
 }
 
@@ -119,7 +123,9 @@ fun ShifaSecondaryButton(
                 .clip(ShifaRadius.ControlMd)
                 .background(ShifaColors.Bg.Surface)
                 .border(ShifaSize.S2, border, ShifaRadius.ControlMd)
-                .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
+                .pointerHoverIcon(
+                    PointerIcon.Hand,
+                ).clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
     )
 }
 
@@ -149,7 +155,7 @@ fun ShifaTertiaryButton(
         modifier =
             modifier
                 .clip(ShifaRadius.ControlMd)
-                .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+                .pointerHoverIcon(PointerIcon.Hand).clickable(enabled = enabled, role = Role.Button, onClick = onClick),
     )
 }
 
@@ -174,7 +180,9 @@ fun ShifaAiButton(
             .then(if (enabled) Modifier.dropShadow(ShifaRadius.ControlMd, ShifaShadow.Dropdown) else Modifier)
             .clip(ShifaRadius.ControlMd)
             .background(if (enabled) ShifaColors.Text.Primary else ShifaColors.Interactive.DisabledBg)
-            .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
+            .pointerHoverIcon(
+                PointerIcon.Hand,
+            ).clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick),
 )
 
 // `.sh-action` variants: Primary (teal), Secondary (canvas), Surface (white lifted pill on the canvas), Tint (teal-subtle).
@@ -232,7 +240,7 @@ fun ShifaActionButton(
                         Modifier
                     },
                 )
-                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                .pointerHoverIcon(PointerIcon.Hand).clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                 .then(if (selected) Modifier.semantics { this.selected = true } else Modifier)
                 .padding(padding),
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs, Alignment.CenterHorizontally),
@@ -306,7 +314,7 @@ fun ShifaIconButton(
                         Modifier
                     },
                 )
-                .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+                .pointerHoverIcon(PointerIcon.Hand).clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                 .then(if (selected) Modifier.semantics { this.selected = true } else Modifier),
         contentAlignment = Alignment.Center,
     ) {
@@ -338,7 +346,7 @@ fun ShifaLink(
         modifier
             .defaultMinSize(minHeight = ShifaSize.Touch)
             .clip(ShifaRadius.Xs)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            .pointerHoverIcon(PointerIcon.Hand).clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
@@ -369,7 +377,7 @@ fun ShifaFab(
             .dropShadow(ShifaRadius.Full, ShifaShadow.Fab)
             .clip(ShifaRadius.Full)
             .background(ShifaColors.Interactive.Primary)
-            .clickable(role = Role.Button, onClick = onClick)
+            .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription?.let { this.contentDescription = it } }
             .then(
                 if (text == null) {

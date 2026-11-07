@@ -21,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -82,7 +84,7 @@ fun ShifaNavBar(
                 Modifier
                     .weight(1f)
                     .defaultMinSize(minHeight = ShifaSize.Touch)
-                    .selectable(
+                    .pointerHoverIcon(PointerIcon.Hand).selectable(
                         selected = isSelected,
                         role = Role.Tab,
                         onClick = { onSelect(i) },

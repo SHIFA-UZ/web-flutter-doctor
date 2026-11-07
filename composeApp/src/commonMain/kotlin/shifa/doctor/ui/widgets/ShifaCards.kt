@@ -24,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -140,7 +142,7 @@ fun ShifaSettingsItem(
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = ShifaSize.Touch)
                 .background(if (selected) ShifaColors.Bg.Selected else Color.Transparent)
-                .clickable(role = Role.Button, onClick = onClick)
+                .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = onClick)
                 .padding(vertical = ShifaSpacing.Inset.Xs),
             horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
             verticalAlignment = Alignment.CenterVertically,
@@ -273,7 +275,15 @@ internal fun CardChrome(
             .then(if (shadow && !onSurface) Modifier.dropShadow(ShifaRadius.ControlMd, ShifaShadow.Card) else Modifier)
             .clip(ShifaRadius.ControlMd)
             .background(if (onSurface) ShifaColors.Bg.Canvas else ShifaColors.Bg.Surface)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(ShifaSpacing.Inset.Sm),
         verticalArrangement = Arrangement.spacedBy(gap),
         content = content,

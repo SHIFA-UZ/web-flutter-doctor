@@ -28,6 +28,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -70,7 +72,7 @@ fun DayStrip(
                     .defaultMinSize(minWidth = ShifaSize.Touch)
                     .clip(ShifaRadius.ControlMd)
                     .background(if (sel) ShifaColors.Interactive.Primary else ShifaColors.Bg.Surface)
-                    .selectable(sel, role = Role.Tab, onClick = { onSelect(i) })
+                    .pointerHoverIcon(PointerIcon.Hand).selectable(sel, role = Role.Tab, onClick = { onSelect(i) })
                     .padding(vertical = ShifaSpacing.Inset.Xs, horizontal = ShifaSize.S4),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -168,7 +170,15 @@ fun AgendaSlot(
                         )
                     }
                 }
-                .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+                .then(
+                    if (onClick != null) {
+                        Modifier.pointerHoverIcon(
+                            PointerIcon.Hand,
+                        ).clickable(role = Role.Button, onClick = onClick)
+                    } else {
+                        Modifier
+                    },
+                )
                 .padding(ShifaSpacing.Inset.Sm),
             verticalArrangement = Arrangement.spacedBy(ShifaSize.S2),
         ) {
@@ -336,7 +346,9 @@ private fun DayCell(
                     Modifier
                 },
             )
-            .selectable(d.selected, enabled = !d.outside, role = Role.Button, onClick = onClick)
+            .pointerHoverIcon(
+                PointerIcon.Hand,
+            ).selectable(d.selected, enabled = !d.outside, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = d.description },
         contentAlignment = Alignment.Center,
     ) {

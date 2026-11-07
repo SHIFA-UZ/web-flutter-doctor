@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -127,7 +129,9 @@ fun ShifaChoiceCard(
                 if (selected) ShifaColors.Border.Focus else ShifaColors.Border.Default,
                 ShifaRadius.ControlMd,
             )
-            .selectable(selected, role = if (radio) Role.RadioButton else Role.Button, onClick = onClick)
+            .pointerHoverIcon(
+                PointerIcon.Hand,
+            ).selectable(selected, role = if (radio) Role.RadioButton else Role.Button, onClick = onClick)
             .padding(ShifaSpacing.Inset.Sm),
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -203,9 +207,13 @@ internal fun OptionRow(
         .background(if (item.selected) ShifaColors.Bg.Selected else Color.Transparent)
         .let {
             if (role == Role.RadioButton) {
-                it.selectable(selected = item.selected, role = role, onClick = onClick)
+                it.pointerHoverIcon(
+                    PointerIcon.Hand,
+                ).selectable(selected = item.selected, role = role, onClick = onClick)
             } else {
-                it.clickable(role = role, onClick = onClick).semantics { selected = item.selected }
+                it.pointerHoverIcon(
+                    PointerIcon.Hand,
+                ).clickable(role = role, onClick = onClick).semantics { selected = item.selected }
             }
         }
         .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),

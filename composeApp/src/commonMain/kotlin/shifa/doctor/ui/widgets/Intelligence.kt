@@ -27,6 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -381,7 +383,7 @@ fun AiCopilot(
                                 .clip(ShifaRadius.Full)
                                 .background(ShifaColors.Bg.Surface)
                                 .border(ShifaSize.S1, ShifaColors.Border.Brand, ShifaRadius.Full)
-                                .clickable(role = Role.Button) { onSuggestion(s) }
+                                .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button) { onSuggestion(s) }
                                 .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),
                             style = ShifaTextStyles.legend(),
                             color = ShifaColors.Text.BrandStrong,
@@ -440,7 +442,9 @@ fun AiOrbButton(
         .size(ShifaSize.S56)
         .clip(ShifaRadius.Full)
         .background(ShifaColors.Bg.Brand)
-        .clickable(role = Role.Button, onClickLabel = description, onClick = onClick),
+        .pointerHoverIcon(
+            PointerIcon.Hand,
+        ).clickable(role = Role.Button, onClickLabel = description, onClick = onClick),
     contentAlignment = Alignment.Center,
 ) {
     Icon(painterResource(Res.drawable.ic_sparkles_22), description, tint = ShifaColors.Icon.Inverse)

@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -173,7 +175,7 @@ private fun Modifier.notificationChrome(
 ) = fillMaxWidth()
     .clip(ShifaRadius.ControlMd)
     .background(bg)
-    .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+    .then(if (onClick != null) Modifier.pointerHoverIcon(PointerIcon.Hand).clickable(onClick = onClick) else Modifier)
 
 /** Figma title-bar: 22 high (the bubble's height), the [title], then the time and, when [unreadCount] > 0, the bubble. */
 @Composable

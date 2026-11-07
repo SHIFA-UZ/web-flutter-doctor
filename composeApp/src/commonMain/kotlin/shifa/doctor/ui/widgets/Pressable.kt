@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
@@ -51,7 +53,7 @@ fun Modifier.pressable(
             } else {
                 Modifier
             },
-        ).clickable(enabled = enabled, role = role, onClick = onClick)
+        ).pointerHoverIcon(PointerIcon.Hand).clickable(enabled = enabled, role = role, onClick = onClick)
 }
 
 private const val DISABLED_ALPHA = 0.55f // `.sh-press:disabled { opacity: .55 }`

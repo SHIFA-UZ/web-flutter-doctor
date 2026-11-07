@@ -2884,5 +2884,6 @@
   "aboutCopyDiagnostics": "Diagnostikani nusxalash",
   "aboutCopyDiagnosticsHint": "Versiya, platforma, til va vaqt mintaqasi — yordam uchun. Bemor ma'lumotlarisiz.",
   "aboutDiagnosticsCopied": "Diagnostika nusxalandi",
-  "aboutOpenFailed": "Sahifani ochib bo'lmadi"
+  "aboutOpenFailed": "Sahifani ochib bo'lmadi",
+  "navPractice": "Amaliyot"
 }

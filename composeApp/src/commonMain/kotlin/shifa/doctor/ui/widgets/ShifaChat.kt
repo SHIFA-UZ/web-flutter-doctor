@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.style.TextAlign
 import org.jetbrains.compose.resources.DrawableResource
@@ -104,7 +106,7 @@ fun ShifaChatBar(
             Icon(
                 painterResource(Res.drawable.ic_stop_filled_24),
                 tr(Res.string.stopRecording),
-                Modifier.clip(ShifaRadius.Full).clickable(onClick = onMic),
+                Modifier.clip(ShifaRadius.Full).pointerHoverIcon(PointerIcon.Hand).clickable(onClick = onMic),
                 tint = ShifaColors.Icon.Primary,
             )
         } else {
@@ -180,7 +182,7 @@ private fun BarIcon(
 ) = Icon(
     painterResource(icon),
     contentDescription,
-    Modifier.clip(ShifaRadius.Full).clickable(onClick = onClick),
+    Modifier.clip(ShifaRadius.Full).pointerHoverIcon(PointerIcon.Hand).clickable(onClick = onClick),
     tint = ShifaColors.Icon.Primary,
 )
 
@@ -318,7 +320,7 @@ fun ShifaChatVoiceBubble(
         Icon(
             painterResource(if (playing) Res.drawable.ic_pause_filled_24 else Res.drawable.ic_play_filled_24),
             tr(if (playing) Res.string.pause else Res.string.play),
-            Modifier.clip(ShifaRadius.Full).clickable(onClick = onToggle),
+            Modifier.clip(ShifaRadius.Full).pointerHoverIcon(PointerIcon.Hand).clickable(onClick = onToggle),
             tint = ShifaColors.Icon.Primary,
         )
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Xs)) {

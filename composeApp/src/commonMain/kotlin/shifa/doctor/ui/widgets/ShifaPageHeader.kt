@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -78,7 +80,7 @@ fun ShifaMainHeader(
                 ).then(
                     if (onAvatar != null) {
                         val label = tr(Res.string.profile)
-                        Modifier.clickable(
+                        Modifier.pointerHoverIcon(PointerIcon.Hand).clickable(
                             role = Role.Button,
                             onClick = onAvatar,
                         ).semantics { contentDescription = label }
@@ -147,7 +149,7 @@ fun ShifaSubHeader(
                 Box(
                     Modifier
                         .clip(ShifaRadius.Full)
-                        .clickable(role = Role.Button, onClick = it)
+                        .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = it)
                         .padding(ShifaSpacing.Inset.Xs),
                 ) {
                     Icon(

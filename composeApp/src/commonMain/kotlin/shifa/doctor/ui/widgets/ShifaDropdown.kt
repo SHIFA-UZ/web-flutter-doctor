@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import org.jetbrains.compose.resources.painterResource
@@ -76,7 +78,7 @@ fun ShifaDropdown(
                     ShifaSize.S2,
                     if (isError) ShifaColors.Border.Error else ShifaColors.Border.Default,
                     ShifaRadius.ControlMd,
-                ).clickable(role = Role.DropdownList) { onExpandedChange(!expanded) }
+                ).pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.DropdownList) { onExpandedChange(!expanded) }
                 .padding(horizontal = ShifaSpacing.Inset.Sm, vertical = ShifaSpacing.Inset.Xs),
             horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs),
             verticalAlignment = Alignment.CenterVertically,
@@ -106,7 +108,9 @@ fun ShifaDropdown(
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .selectable(option == selected, role = Role.RadioButton) {
+                            .pointerHoverIcon(
+                                PointerIcon.Hand,
+                            ).selectable(option == selected, role = Role.RadioButton) {
                                 onSelect(i)
                                 onExpandedChange(false)
                             }

@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
@@ -42,7 +44,7 @@ fun ShifaSwitch(
             .background(track)
             .then(
                 if (onCheckedChange != null) {
-                    Modifier.toggleable(
+                    Modifier.pointerHoverIcon(PointerIcon.Hand).toggleable(
                         checked,
                         role = Role.Switch,
                         onValueChange = onCheckedChange,
@@ -69,7 +71,9 @@ fun ShifaSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) = Row(
-    modifier.fillMaxWidth().toggleable(checked, role = Role.Switch, onValueChange = onCheckedChange),
+    modifier.fillMaxWidth().pointerHoverIcon(
+        PointerIcon.Hand,
+    ).toggleable(checked, role = Role.Switch, onValueChange = onCheckedChange),
     horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
     verticalAlignment = Alignment.CenterVertically,
 ) {

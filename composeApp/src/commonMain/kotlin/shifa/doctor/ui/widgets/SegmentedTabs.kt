@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,7 +74,9 @@ fun SegmentedTabs(
                     .then(if (isSelected) Modifier.dropShadow(cellShape, ShifaShadow.Dropdown) else Modifier)
                     .clip(cellShape)
                     .background(if (isSelected) ShifaColors.Bg.Surface else Color.Transparent)
-                    .selectable(isSelected, role = Role.Tab, onClick = { onSelect(i) })
+                    .pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).selectable(isSelected, role = Role.Tab, onClick = { onSelect(i) })
                     .padding(
                         horizontal = if (block) ShifaSize.S6 else ShifaSpacing.Inset.Md,
                         vertical = if (block) ShifaSize.S4 else ShifaSpacing.Inset.Xs,
@@ -123,7 +127,9 @@ fun UnderlineTabs(
                             val h = ShifaSize.S2.toPx()
                             drawRect(focus, Offset(0f, size.height - h), Size(size.width, h))
                         }
-                    }.selectable(isSelected, role = Role.Tab, onClick = { onSelect(i) })
+                    }.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).selectable(isSelected, role = Role.Tab, onClick = { onSelect(i) })
                     .padding(top = ShifaSpacing.Stack.Sm, bottom = ShifaSpacing.Inset.Sm),
                 horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,

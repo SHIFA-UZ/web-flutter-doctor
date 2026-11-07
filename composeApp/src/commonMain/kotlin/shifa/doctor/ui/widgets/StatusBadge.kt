@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -63,7 +65,15 @@ fun StatusBadge(
                 .size(ShifaSize.S28)
                 .clip(ShifaRadius.Full)
                 .background(tone.bg)
-                .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+                .then(
+                    if (onClick != null) {
+                        Modifier.pointerHoverIcon(
+                            PointerIcon.Hand,
+                        ).clickable(role = Role.Button, onClick = onClick)
+                    } else {
+                        Modifier
+                    },
+                )
                 .semantics { contentDescription = text },
             contentAlignment = Alignment.Center,
         ) {
@@ -77,7 +87,15 @@ fun StatusBadge(
             .height(ShifaSize.S24)
             .clip(ShifaRadius.Full)
             .background(tone.bg)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(
                 start = ShifaSize.S10,
                 end = if (onClick != null) ShifaSpacing.Inset.Xs else ShifaSpacing.Inset.Sm,
@@ -125,7 +143,15 @@ fun AlertChip(
             .clip(ShifaRadius.ControlMd)
             .background(tone.bg)
             .then(tone.border?.let { Modifier.border(ShifaSize.S1, it, ShifaRadius.ControlMd) } ?: Modifier)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.pointerHoverIcon(
+                        PointerIcon.Hand,
+                    ).clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(horizontal = ShifaSize.S10),
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Xs),
         verticalAlignment = Alignment.CenterVertically,

@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -215,7 +217,7 @@ fun RecordToggle(
             .fillMaxWidth()
             .defaultMinSize(minHeight = ShifaSize.Touch)
             .clip(ShifaRadius.ControlMd)
-            .clickable(role = Role.Button, onClick = onToggle)
+            .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = onToggle)
             .semantics { stateDescription = toggleLabel },
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -436,7 +438,7 @@ private fun FreeSlot(e: TimelineEntry.Free) {
             .defaultMinSize(minHeight = ShifaSize.S52)
             .clip(ShifaRadius.ControlMd)
             .border(ShifaSize.S1, ShifaColors.Border.Brand, ShifaRadius.ControlMd)
-            .clickable(role = Role.Button, onClick = e.onClick)
+            .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = e.onClick)
             .padding(horizontal = ShifaSpacing.Inset.Sm),
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
         verticalAlignment = Alignment.CenterVertically,

@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -161,7 +163,7 @@ private fun Key(
         .size(ShifaSize.S64)
         .clip(ShifaRadius.Full)
         .background(if (ghost) Color.Transparent else ShifaColors.Bg.Canvas)
-        .clickable(role = Role.Button, onClick = onClick)
+        .pointerHoverIcon(PointerIcon.Hand).clickable(role = Role.Button, onClick = onClick)
         .semantics { description?.let { contentDescription = it } },
     contentAlignment = Alignment.Center,
 ) { content() }

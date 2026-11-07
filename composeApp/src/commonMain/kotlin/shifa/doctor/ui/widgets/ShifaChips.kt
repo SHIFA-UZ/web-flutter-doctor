@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import shifa.doctor.ui.theme.ShifaColors
@@ -57,7 +59,7 @@ fun ShifaChip(
                 } else {
                     Modifier
                 },
-            ).selectable(selected, onClick = onClick)
+            ).pointerHoverIcon(PointerIcon.Hand).selectable(selected, onClick = onClick)
             .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSpacing.Stack.Sm),
         horizontalArrangement = Arrangement.spacedBy(ShifaDimens.InteractiveChipIconGap, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
