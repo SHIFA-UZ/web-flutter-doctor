@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -27,6 +28,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -91,6 +93,7 @@ import shifa.doctor.generated.resources.practiceTimezone
 import shifa.doctor.generated.resources.profile
 import shifa.doctor.generated.resources.schedule
 import shifa.doctor.generated.resources.security
+import shifa.doctor.generated.resources.selectConversation
 import shifa.doctor.generated.resources.servicesPricing
 import shifa.doctor.generated.resources.settings
 import shifa.doctor.generated.resources.shifaIntelligence
@@ -555,13 +558,15 @@ private fun RouteContent(
                 )
             } else if (route.tab == ShellTab.Chat) {
                 // CHAT-02: doctors and clinic staff alike (chat has no tier gate).
-                ChatListScreen(
-                    onOpen = {
-                        actions.push(
-                            ShellRoute.Conversation(it.id, currentInstant().toEpochMilliseconds(), it),
-                        )
-                    },
-                )
+                ChatPanes(null, actions) {
+                    ChatListScreen(
+                        onOpen = {
+                            actions.push(
+                                ShellRoute.Conversation(it.id, currentInstant().toEpochMilliseconds(), it),
+                            )
+                        },
+                    )
+                }
             } else if (route.tab == ShellTab.Patients && !staff) {
                 PatientsScreen(onOpen = { actions.push(ShellRoute.Patient(it.id)) })
             } else if (route.tab == ShellTab.Calendar && !staff) {
@@ -636,23 +641,33 @@ private fun RouteContent(
             ScheduleScreen(onClose = actions.back, onManageLocations = {
                 actions.push(ShellRoute.Locations)
             })
-        is ShellRoute.PatientChat ->
-            PatientChatScreen(
-                route.patientId,
-                route.name,
-                route.photoUrl,
-                route.opened,
-                onBack = actions.back,
-                onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
-            )
+        is ShellRoute.PatientChat -> {
+            val chat: @Composable () -> Unit = {
+                PatientChatScreen(
+                    route.patientId,
+                    route.name,
+                    route.photoUrl,
+                    route.opened,
+                    onBack = actions.back,
+                    onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
+                )
+            }
+            // CHAT-07 lands on the Chat tab: beside the list there too.
+            if (shell.tab == ShellTab.Chat) ChatPanes(null, actions, threadOpen = true, single = chat) else chat()
+        }
         // CHAT-03 builds the thread.
-        is ShellRoute.Conversation ->
-            ThreadScreen(
-                route.id,
-                route.known,
-                onBack = actions.back,
-                onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
-            )
+        is ShellRoute.Conversation -> {
+            val thread: @Composable () -> Unit = {
+                ThreadScreen(
+                    route.id,
+                    route.known,
+                    onBack = actions.back,
+                    onOpenPatient = { actions.push(ShellRoute.Patient(it)) },
+                )
+            }
+            // Beside the list on the Chat tab only; opened from elsewhere it is the whole screen.
+            if (shell.tab == ShellTab.Chat) ChatPanes(route, actions, single = thread) else thread()
+        }
         // REPORT-01: Profile → Reports, Back returns there.
         ShellRoute.Reports -> Reports(shell, actions, onBack = actions.back)
         is ShellRoute.Task ->
@@ -819,6 +834,48 @@ private fun RouteContent(
             DocumentViewerScreen(route.patientId, route.documentId, route.title, route.clinicId, onBack = actions.back)
         ShellRoute.Language -> LanguageScreen(onBack = actions.back)
         ShellRoute.Debug -> DebugMenuScreen(onBack = actions.back)
+    }
+}
+
+/**
+ * WEB-07e (DaChat web): from 720 wide in the wide shell, the Chat tab shows the list (360) beside the open
+ * conversation, or "Select a conversation"; another conversation replaces the open one instead of stacking.
+ * [open] is the open conversation (null on the tab's root); [single] is the phone's one-pane screen.
+ */
+@Composable
+private fun ChatPanes(
+    open: ShellRoute.Conversation?,
+    actions: ShellActions,
+    // A thread is open even when [open] is null: "Send message" (CHAT-07) resolves the conversation itself.
+    threadOpen: Boolean = open != null,
+    single: @Composable () -> Unit,
+) = BoxWithConstraints(Modifier.fillMaxSize()) {
+    if (!LocalWideLayout.current || maxWidth < ShifaBreakpoint.SplitPane) return@BoxWithConstraints single()
+    Row(Modifier.fillMaxSize()) {
+        Box(Modifier.width(ShifaDimens.Layout.DialogSm).fillMaxHeight()) {
+            ChatListScreen(
+                onOpen = {
+                    if (threadOpen) actions.back()
+                    actions.push(ShellRoute.Conversation(it.id, currentInstant().toEpochMilliseconds(), it))
+                },
+                selectedId = open?.id,
+            )
+        }
+        VerticalDivider(thickness = ShifaSize.S1, color = ShifaColors.Border.Default)
+        Box(
+            Modifier.weight(1f).fillMaxHeight().background(ShifaColors.Bg.Surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (!threadOpen) {
+                Text(
+                    tr(Res.string.selectConversation),
+                    style = ShifaTextStyles.dialogBody(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            } else {
+                key(open?.id) { single() }
+            }
+        }
     }
 }
 

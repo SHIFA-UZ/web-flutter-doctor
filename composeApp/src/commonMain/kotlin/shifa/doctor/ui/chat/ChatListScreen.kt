@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,6 +74,7 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.OptionItem
 import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
@@ -103,6 +106,8 @@ class ChatListActions(
 @Composable
 fun ChatListScreen(
     onOpen: (Conversation) -> Unit,
+    // WEB-07e: the conversation open beside the list (wide screens), marked selected.
+    selectedId: Long? = null,
     viewModel: ChatListViewModel = viewModel { ChatListViewModel() },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -132,6 +137,8 @@ fun ChatListScreen(
             viewModel::retrySearch,
         ),
         clock,
+        selectedId,
+        viewModel.listState,
     )
 }
 
@@ -141,6 +148,8 @@ internal fun ChatListContent(
     state: ChatListUiState,
     actions: ChatListActions,
     clock: PracticeClock,
+    selectedId: Long? = null,
+    listState: LazyListState = rememberLazyListState(),
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
     Column(
         Modifier.padding(horizontal = ShifaSpacing.Inset.Md).padding(top = ShifaSize.S16, bottom = ShifaSize.S12),
@@ -174,12 +183,13 @@ internal fun ChatListContent(
     PullToRefreshBox(state.refreshing, actions.refresh, Modifier.weight(1f)) {
         LazyColumn(
             Modifier.fillMaxSize(),
-            // The floating tab bar covers the last 120.
+            state = listState,
+            // The floating tab bar covers the last 120 (no bar on wide screens).
             contentPadding =
                 PaddingValues(
                     start = ShifaSpacing.Inset.Md,
                     end = ShifaSpacing.Inset.Md,
-                    bottom = ShifaSize.S120,
+                    bottom = if (LocalWideLayout.current) ShifaSpacing.Inset.Md else ShifaSize.S120,
                 ),
             verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
         ) {
@@ -225,7 +235,11 @@ internal fun ChatListContent(
                             Message(tr(Res.string.noConversations), tr(Res.string.chatEmptyHint))
                         }
                     }
-                else -> items(state.shown, key = { it.id }) { ConversationRow(it, clock) { actions.open(it) } }
+                else ->
+                    items(
+                        state.shown,
+                        key = { it.id },
+                    ) { ConversationRow(it, clock, it.id == selectedId) { actions.open(it) } }
             }
         }
     }
@@ -237,6 +251,7 @@ internal fun ChatListContent(
 private fun ConversationRow(
     c: Conversation,
     clock: PracticeClock,
+    selected: Boolean,
     onClick: () -> Unit,
 ) {
     val time = c.lastActivity?.let { timeText(activityTime(it, clock)) }
@@ -246,7 +261,7 @@ private fun ConversationRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .pressable(onClick, PressVariant.Card)
+            .pressable(onClick, PressVariant.Card, selected = selected)
             .clearAndSetSemantics { contentDescription = listOfNotNull(name, preview, time, unread).joinToString(", ") }
             .padding(ShifaSize.S12),
         horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),

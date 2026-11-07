@@ -1,5 +1,6 @@
 package shifa.doctor.ui.chat
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -58,6 +59,9 @@ class ChatListViewModel(
     private val debounce: Duration = 300.milliseconds,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChatListUiState())
+
+    // WEB-07e: the list's scroll, kept while the open conversation beside it changes (each change is a new route).
+    val listState = LazyListState()
     val state: StateFlow<ChatListUiState> = _state.asStateFlow()
     private var reading: Job? = null
     private var polling: Job? = null
