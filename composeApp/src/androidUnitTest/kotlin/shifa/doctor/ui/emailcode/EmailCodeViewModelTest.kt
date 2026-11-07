@@ -30,6 +30,8 @@ import shifa.doctor.generated.resources.enterEmail
 import shifa.doctor.generated.resources.invalidEmail
 import shifa.doctor.generated.resources.invalidOtp
 import shifa.doctor.generated.resources.invalidPhone
+import shifa.doctor.generated.resources.noAccountForEmail
+import shifa.doctor.generated.resources.noAccountForPhone
 import shifa.doctor.generated.resources.otpResent
 import shifa.doctor.generated.resources.phoneNumberRequired
 import shifa.doctor.generated.resources.smsSignInUzbekOnly
@@ -223,5 +225,24 @@ class EmailCodeViewModelTest {
         waitFor { vm.state.value.signedIn != null }
         assertThat(calls.single())
             .isEqualTo("/api/auth/verify-login-sms-otp {\"phone\":\"+998901234567\",\"code\":\"123456\"}")
+    }
+
+    @Test
+    fun `an address or number without an account says so, in every mode`() {
+        status = HttpStatusCode.NotFound
+        body = """{"status":404,"message":"No account found"}"""
+        for (mode in listOf(EmailCodeMode.Reset, EmailCodeMode.SignIn)) {
+            val vm = EmailEntryViewModel(mode, auth = auth, cooldown = cooldown).also { created += it }
+            vm.onEmail("nobody+${mode.name}@shifa.dev")
+            vm.submit()
+            waitFor { !vm.state.value.loading && vm.state.value.banner != null }
+            assertThat(vm.state.value.banner?.text).isEqualTo(Res.string.noAccountForEmail)
+            assertThat(vm.state.value.sentTo).isNull()
+        }
+        val sms = EmailEntryViewModel(EmailCodeMode.SmsSignIn, auth = auth, cooldown = cooldown).also { created += it }
+        sms.onEmail("+998901112233")
+        sms.submit()
+        waitFor { !sms.state.value.loading && sms.state.value.banner != null }
+        assertThat(sms.state.value.banner?.text).isEqualTo(Res.string.noAccountForPhone)
     }
 }

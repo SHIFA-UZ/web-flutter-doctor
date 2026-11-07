@@ -1810,6 +1810,8 @@
     <string name="nextPatient">Keyingi bemor</string>
     <string name="nextWeek">Keyingi hafta</string>
     <string name="no">Yo'q</string>
+    <string name="noAccountForEmail">Bu email bilan Shifa hisobi topilmadi. Manzilni tekshiring yoki hisob yarating.</string>
+    <string name="noAccountForPhone">Bu telefon raqam bilan Shifa hisobi topilmadi. Raqamni tekshiring yoki email orqali kiring.</string>
     <string name="noAccountYet">Hisob hali mavjud emas</string>
     <string name="noActivePlan">Faol davolash rejasi yo'q</string>
     <string name="noAppAccount">Ilova hisobi yo'q</string>

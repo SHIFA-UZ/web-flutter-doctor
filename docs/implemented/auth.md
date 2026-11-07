@@ -368,3 +368,12 @@ Built 2026-11-04. Flow `01/13-inactivity-timeout.md`; `01` §7.2. No screen of i
 - **Tests:** `SessionRepositoryTest` (+5: coming back counts and a late tap can't erase an overdue deadline, expired token on a cold start says why, 30 days on the next start, rare
   writes and the resume check, an expired token on a tap and fail-open), `LoginViewModelTest` (+1).
 
+## No account behind the address (2026-11-07)
+
+The user's report: a password reset for an address with no account showed only "Failed to send code". The backend
+answers 404 "No account found" on `send-forgot-password-otp`, `send-login-otp` and `send-login-sms-otp` when no account
+has that e-mail or phone (an unknown route answers 401, so 404 is never a missing route). The e-mail entry now says
+"There's no Shifa account with this email. Check the address or create an account." (reset and e-mail sign-in), and
+SMS sign-in "There's no Shifa account with this phone number. Check the number or sign in with email." Other failures
+keep "Failed to send code". Test: `EmailCodeViewModelTest`.
+

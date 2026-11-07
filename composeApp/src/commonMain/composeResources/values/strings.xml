@@ -1810,6 +1810,8 @@
     <string name="nextPatient">Next patient</string>
     <string name="nextWeek">Next week</string>
     <string name="no">No</string>
+    <string name="noAccountForEmail">There's no Shifa account with this email. Check the address or create an account.</string>
+    <string name="noAccountForPhone">There's no Shifa account with this phone number. Check the number or sign in with email.</string>
     <string name="noAccountYet">No account yet</string>
     <string name="noActivePlan">No active treatment plan</string>
     <string name="noAppAccount">No app account</string>

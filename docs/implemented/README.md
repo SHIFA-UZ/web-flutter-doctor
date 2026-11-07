@@ -406,3 +406,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-07 · BE-ASKS · Registration code, Privacy & data with account deletion and export, exact inbox targets.
 - 2026-11-07 · AUTH-10, NOTIF-04, VIDEO · SMS sign-in, approve/decline access in the inbox, the patient's presence before a call.
 - 2026-11-07 · CAL-5, LEGAL-02, BE-SECOND · Week grid; legal pages and the contract; cancel reasons, no-show, chat cursor, coded video errors.
+- 2026-11-07 · AUTH-03/04/10 · "No account with this email / phone" instead of "Failed to send code".

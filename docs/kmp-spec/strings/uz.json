@@ -2933,5 +2933,7 @@
   "calendarDayView": "Kun",
   "calendarWeekView": "Hafta",
   "previousWeek": "Oldingi hafta",
-  "nextWeek": "Keyingi hafta"
+  "nextWeek": "Keyingi hafta",
+  "noAccountForEmail": "Bu email bilan Shifa hisobi topilmadi. Manzilni tekshiring yoki hisob yarating.",
+  "noAccountForPhone": "Bu telefon raqam bilan Shifa hisobi topilmadi. Raqamni tekshiring yoki email orqali kiring."
 }
