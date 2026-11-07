@@ -6,7 +6,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,8 +29,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -59,6 +56,7 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.ShifaAppIcon
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.utils.tr
 
@@ -134,7 +132,7 @@ private fun Splash(onSkip: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(ShifaSize.S16),
         ) {
-            Mark(ShifaColors.Raw.GlassTile, ShifaColors.Raw.GlassTileBorder)
+            ShifaAppIcon(ShifaSize.S96)
             Text(
                 tr(Res.string.appName),
                 style = MaterialTheme.typography.headlineSmall,
@@ -166,21 +164,6 @@ private fun Blob(
     )
 }
 
-@Composable
-private fun Mark(
-    fill: Color,
-    border: Color?,
-) = Box(
-    Modifier
-        .size(ShifaSize.S96)
-        .clip(ShifaRadius.Xl)
-        .background(fill)
-        .then(if (border != null) Modifier.border(ShifaSize.S1, border, ShifaRadius.Xl) else Modifier),
-    contentAlignment = Alignment.Center,
-) {
-    Text("S", style = ShifaTextStyles.splashMark(), color = ShifaColors.Text.Inverse)
-}
-
 // DaApp "boot": the force-update and maintenance frames. No way past them but the one button. It scrolls, so a long
 // backend message or 200 % text never pushes the button off screen (flow §8); centred while it fits.
 @Composable
@@ -206,7 +189,7 @@ private fun BootContent(
     busy: Boolean,
     onAction: () -> Unit,
 ) {
-    Box(Modifier.clearAndSetSemantics { }) { Mark(ShifaColors.Interactive.Primary, null) } // decorative
+    Box(Modifier.clearAndSetSemantics { }) { ShifaAppIcon(ShifaSize.S96) } // decorative
     Text(
         title,
         Modifier.padding(top = ShifaSpacing.Gap.Sm),

@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -44,12 +43,12 @@ import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaFontSize
 import shifa.doctor.ui.theme.ShifaLetterSpacing
-import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.LanguageToggle
 import shifa.doctor.ui.widgets.OptionItem
+import shifa.doctor.ui.widgets.ShifaAppIcon
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaOptionList
@@ -128,17 +127,9 @@ fun AuthFrame(
     }
 }
 
-/** The "S" mark above an auth title ([size] 80 on Sign In, 120 on Verify). Decorative. */
+/** The app icon above an auth title ([size] 80 on Sign In, 120 on Verify). Decorative. */
 @Composable
-fun AuthLogo(size: Dp = ShifaSize.S80) =
-    Box(
-        Modifier
-            .clearAndSetSemantics { }
-            .size(size)
-            .clip(ShifaRadius.Xl)
-            .background(ShifaColors.Interactive.Primary),
-        contentAlignment = Alignment.Center,
-    ) { Text("S", style = ShifaTextStyles.splashMark(), color = ShifaColors.Text.Inverse) }
+fun AuthLogo(size: Dp = ShifaSize.S80) = ShifaAppIcon(size, Modifier.clearAndSetSemantics { })
 
 /** The screen title: 28 bold centred on Sign In / Create account, 24 bold left on the e-mail and code steps. */
 @Composable

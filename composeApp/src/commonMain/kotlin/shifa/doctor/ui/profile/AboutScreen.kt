@@ -3,12 +3,10 @@ package shifa.doctor.ui.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,10 +41,10 @@ import shifa.doctor.ui.auth.LocalLanguageSwitch
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.theme.ShifaColors
-import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.ShifaAppIcon
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
@@ -131,12 +129,7 @@ fun AboutContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
         ) {
-            Box(
-                Modifier.size(ShifaSize.S56).background(ShifaColors.Interactive.Primary, ShifaRadius.ControlLg),
-                Alignment.Center,
-            ) {
-                Text("S", style = MaterialTheme.typography.headlineSmall, color = ShifaColors.Text.Inverse)
-            }
+            ShifaAppIcon(ShifaSize.S56)
             Text(tr(Res.string.appName), style = MaterialTheme.typography.titleMedium, color = ShifaColors.Text.Primary)
             Text(
                 tr(Res.string.aboutVersion, appVersion),
