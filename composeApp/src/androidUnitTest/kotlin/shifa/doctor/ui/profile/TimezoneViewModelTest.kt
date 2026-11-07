@@ -70,7 +70,8 @@ class TimezoneViewModelTest {
     }
 
     private fun settle(check: () -> Boolean) {
-        repeat(200) {
+        // Up to 10 s: a loaded CI runner can take more than a second or two (it returns as soon as the check holds).
+        repeat(1000) {
             if (check()) return
             Thread.sleep(10)
         }
@@ -99,7 +100,7 @@ class TimezoneViewModelTest {
         assertThat(sent).isEmpty()
         classToTest.pick("Europe/Berlin")
         classToTest.confirm()
-        settle { classToTest.state.value.done }
+        settle { classToTest.state.value.done && sent.isNotEmpty() }
         assertThat(sent).containsExactly("""{"timeZone":"Europe/Berlin"}""")
     }
 
