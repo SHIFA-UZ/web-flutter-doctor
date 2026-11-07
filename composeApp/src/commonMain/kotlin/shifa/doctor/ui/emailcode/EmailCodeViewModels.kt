@@ -24,6 +24,8 @@ import shifa.doctor.generated.resources.failedToSendCode
 import shifa.doctor.generated.resources.invalidEmail
 import shifa.doctor.generated.resources.invalidOtp
 import shifa.doctor.generated.resources.invalidPhone
+import shifa.doctor.generated.resources.noAccountForEmail
+import shifa.doctor.generated.resources.noAccountForPhone
 import shifa.doctor.generated.resources.otpResent
 import shifa.doctor.generated.resources.phoneNumberRequired
 import shifa.doctor.generated.resources.requestTimeout
@@ -276,6 +278,9 @@ private fun sendError(
         // The SMS couldn't go out and the account has no e-mail to fall back to.
         mode == EmailCodeMode.SmsSignIn && e is ApiException && e.status == SERVICE_UNAVAILABLE ->
             Res.string.smsUnavailableUseEmail
+        // 404 from these routes is "No account found" (an unknown route answers 401): say so, not "failed".
+        e is ApiException.NotFound ->
+            if (mode == EmailCodeMode.SmsSignIn) Res.string.noAccountForPhone else Res.string.noAccountForEmail
         e is ApiException.NetworkError && e.timeout -> Res.string.requestTimeout
         e is ApiException.NetworkError || e is ApiException.RateLimit -> e.toUserMessage()
         else -> e.toUserMessage(Res.string.failedToSendCode)

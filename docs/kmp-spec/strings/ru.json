@@ -2933,5 +2933,7 @@
   "calendarDayView": "День",
   "calendarWeekView": "Неделя",
   "previousWeek": "Предыдущая неделя",
-  "nextWeek": "Следующая неделя"
+  "nextWeek": "Следующая неделя",
+  "noAccountForEmail": "Аккаунт Shifa с этим email не найден. Проверьте адрес или создайте аккаунт.",
+  "noAccountForPhone": "Аккаунт Shifa с этим номером телефона не найден. Проверьте номер или войдите по email."
 }

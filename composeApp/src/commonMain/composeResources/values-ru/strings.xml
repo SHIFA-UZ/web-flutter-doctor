@@ -1810,6 +1810,8 @@
     <string name="nextPatient">Следующий пациент</string>
     <string name="nextWeek">Следующая неделя</string>
     <string name="no">Нет</string>
+    <string name="noAccountForEmail">Аккаунт Shifa с этим email не найден. Проверьте адрес или создайте аккаунт.</string>
+    <string name="noAccountForPhone">Аккаунт Shifa с этим номером телефона не найден. Проверьте номер или войдите по email.</string>
     <string name="noAccountYet">Нет аккаунта</string>
     <string name="noActivePlan">Нет активного плана лечения</string>
     <string name="noAppAccount">Нет аккаунта в приложении</string>

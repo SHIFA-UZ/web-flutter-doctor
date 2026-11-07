@@ -2933,5 +2933,7 @@
   "calendarDayView": "Day",
   "calendarWeekView": "Week",
   "previousWeek": "Previous week",
-  "nextWeek": "Next week"
+  "nextWeek": "Next week",
+  "noAccountForEmail": "There's no Shifa account with this email. Check the address or create an account.",
+  "noAccountForPhone": "There's no Shifa account with this phone number. Check the number or sign in with email."
 }
