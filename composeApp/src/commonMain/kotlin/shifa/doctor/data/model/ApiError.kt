@@ -12,6 +12,8 @@ data class ApiError(
     val error: String? = null,
     val code: String? = null,
     val requestId: String? = null,
+    // Codes that say more about [code] (`HAS_ACTIVE_OBLIGATIONS`: `UPCOMING_APPOINTMENTS`, `ACTIVE_SUBSCRIPTION`).
+    val details: List<String> = emptyList(),
 )
 
 /**
@@ -24,6 +26,10 @@ sealed class ApiException(
     val code: String?,
     val requestId: String?,
 ) : Exception("HTTP $status ${code.orEmpty()} ${requestId.orEmpty()}".trim()) {
+    /** The body's `details` codes, when it sent any (never server text). */
+    var details: List<String> = emptyList()
+        internal set
+
     class ValidationError(status: Int, code: String?, requestId: String?) : ApiException(status, code, requestId)
 
     class Unauthorized(code: String?, requestId: String?) : ApiException(401, code, requestId)

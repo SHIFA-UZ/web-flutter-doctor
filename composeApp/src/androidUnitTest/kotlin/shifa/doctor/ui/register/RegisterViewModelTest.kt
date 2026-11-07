@@ -23,6 +23,7 @@ import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.api.jwt
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.auth.OtpCooldown
 import shifa.doctor.data.catalog.CatalogRepository
 import shifa.doctor.data.catalog.Clinic
 import shifa.doctor.data.catalog.Profession
@@ -42,9 +43,10 @@ import shifa.doctor.generated.resources.passwordRequired
 import shifa.doctor.generated.resources.passwordsDoNotMatch
 import shifa.doctor.generated.resources.profileExtrasNotSaved
 import shifa.doctor.generated.resources.registrationConflict
+import shifa.doctor.generated.resources.registrationExistingPassword
 import shifa.doctor.generated.resources.registrationIncomplete
-import shifa.doctor.generated.resources.staffEmailInUse
 import shifa.doctor.generated.resources.timezoneDetectionFailed
+import shifa.doctor.generated.resources.wrongOrExpiredCodeBackToCode
 import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
@@ -69,6 +71,7 @@ class RegisterViewModelTest {
             ),
             "register" to (HttpStatusCode.OK to """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""),
             "profile" to (HttpStatusCode.OK to """{}"""),
+            "send-email-otp" to (HttpStatusCode.OK to """{"sent":true}"""),
             "professions" to (HttpStatusCode.OK to """[{"id":59,"english":"Dentist","uzbek":"Stomatolog","name":"Dentist","category":"Dental","displayOrder":1},{"english":"Orthodontist","uzbek":"Ortodont"},{"english":"Cardiologist","uzbek":"Kardiolog"}]"""),
             "clinics" to (HttpStatusCode.OK to """[{"id":2,"name":"Shifa Dev Clinic"},{"id":1,"name":"Tashkent Med Center"}]"""),
         )
@@ -101,13 +104,21 @@ class RegisterViewModelTest {
         zone: String? = "Asia/Tashkent",
     ) = RegisterViewModel(invite, auth, sessions, {
         zone
-    }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository { client }).also { created += it }
+    }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository { client }, OtpCooldown()).also { created += it }
 
     private fun RegisterViewModel.settle() {
         repeat(200) {
             if (!state.value.loading) return
             Thread.sleep(10)
         }
+    }
+
+    /** A doctor's "Create account": the code is e-mailed, the sheet opens, the code goes with `register`. */
+    private fun RegisterViewModel.registerWithCode(code: String = "123456") {
+        register()
+        settle()
+        onCode(code)
+        settle()
     }
 
     private fun RegisterViewModel.fill(email: String = " Doctor@Example.UZ ") {
@@ -217,9 +228,17 @@ class RegisterViewModelTest {
         )
         vm.register()
         vm.settle()
+        assertThat(
+            calls.last(),
+        ).isEqualTo("send-email-otp" to """{"email":"doctor@example.uz","purpose":"REGISTRATION"}""")
+        assertThat(vm.state.value.code?.email).isEqualTo("doctor@example.uz")
+        assertThat(calls.map { it.first }).doesNotContain("register")
+        vm.onCode("12 34 56")
+        vm.settle()
         assertThat(calls.last().second).isEqualTo(
-            """{"firstName":"Aziza","lastName":"Karimova","email":"doctor@example.uz","password":" Secret1! ","key":"KEY-1","phone":"+998901234567","timeZone":"Asia/Tashkent"}""",
+            """{"firstName":"Aziza","lastName":"Karimova","email":"doctor@example.uz","password":" Secret1! ","key":"KEY-1","phone":"+998901234567","timeZone":"Asia/Tashkent","emailOtp":"123456"}""",
         )
+        assertThat(vm.state.value.code).isNull()
         assertThat(vm.state.value.signedIn).isNotNull()
         assertThat(vm.state.value.password).isEmpty()
     }
@@ -266,10 +285,10 @@ class RegisterViewModelTest {
         assertThat(vm.state.value.email).isEqualTo("invited@shifa.uz")
         vm.next()
         vm.settle()
-        vm.register()
-        vm.settle()
-        assertThat(vm.state.value.banner?.text).isEqualTo(Res.string.registrationConflict)
-        assertThat(vm.state.value.banner?.requestId).isEqualTo("req-9")
+        vm.registerWithCode()
+        // The sheet is open, so the reason shows in it.
+        assertThat(vm.state.value.code?.banner?.text).isEqualTo(Res.string.registrationConflict)
+        assertThat(vm.state.value.code?.banner?.requestId).isEqualTo("req-9")
         val offlineVm = vm()
         offlineVm.fill()
         offline = true
@@ -302,8 +321,7 @@ class RegisterViewModelTest {
         vm.pickClinic(Clinic(2, "Shifa Dev Clinic"))
         vm.toggleProfession(Profession("Dentist", "Stomatolog"))
         vm.toggleProfession(Profession("Orthodontist", "Ortodont"))
-        vm.register()
-        vm.settle()
+        vm.registerWithCode()
         assertThat(calls.takeLast(2).map { it.first }).containsExactly("register", "profile").inOrder()
         assertThat(calls.last().second).isEqualTo(
             """{"dob":"1990-03-12","gender":"Female","address":"Chilonzor 5","clinicId":2,"profession":"Dentist, Orthodontist"}""",
@@ -316,15 +334,13 @@ class RegisterViewModelTest {
         ShellNotice.pending.value = null
         val empty = vm()
         empty.toStep2()
-        empty.register()
-        empty.settle()
+        empty.registerWithCode()
         assertThat(calls.map { it.first }).doesNotContain("profile")
         replies["profile"] = HttpStatusCode.InternalServerError to """{"status":500,"code":"INTERNAL"}"""
         val vm = vm()
         vm.toStep2()
         vm.onAddress("Chilonzor 5")
-        vm.register()
-        vm.settle()
+        vm.registerWithCode()
         assertThat(vm.state.value.signedIn).isNotNull()
         assertThat(ShellNotice.pending.value).isEqualTo(Notice(Res.string.profileExtrasNotSaved))
         ShellNotice.pending.value = null
@@ -391,13 +407,23 @@ class RegisterViewModelTest {
     fun `a PATCH that ends the session does not open the shell`() {
         replies["profile"] = HttpStatusCode.Unauthorized to """{"status":401,"code":"SESSION_INVALID","requestId":"r7"}"""
         val vm =
-            RegisterViewModel(Invite("KEY-1", false), auth, sessions, {
-                "UTC"
-            }, CatalogRepository({ client }, { BUNDLED }), ProfileRepository(tokenClient)).also { created += it }
+            RegisterViewModel(
+                Invite("KEY-1", false),
+                auth,
+                sessions,
+                {
+                    "UTC"
+                },
+                CatalogRepository(
+                    { client },
+                    { BUNDLED },
+                ),
+                ProfileRepository(tokenClient),
+                OtpCooldown(),
+            ).also { created += it }
         vm.toStep2()
         vm.onAddress("Chilonzor 5")
-        vm.register()
-        vm.settle()
+        vm.registerWithCode()
         assertThat(sessions.session.value).isNull()
         assertThat(vm.state.value.signedIn).isNull()
         assertThat(vm.state.value.banner?.requestId).isEqualTo("r7")
@@ -451,18 +477,74 @@ class RegisterViewModelTest {
     }
 
     @Test
-    fun `a typed staff address that already has an account is refused before registering`() {
-        replies["check-existing-patient"] = HttpStatusCode.OK to """{"email":"someone@shifa.uz","found":true,"fullName":"S","photoUrl":null}"""
+    fun `a receptionist's existing account is confirmed with the e-mailed code`() {
         val vm = vm(Invite("STAFF-3", true))
         vm.onEmail("Someone@shifa.uz")
         vm.onFirstName("A")
         vm.onLastName("B")
         vm.onPassword("Secret1!")
         vm.onConfirm("Secret1!")
+        replies["register-clinic-staff"] =
+            HttpStatusCode.Conflict to """{"error":409,"status":409,"code":"OWNERSHIP_REQUIRED","requestId":"r3"}"""
         vm.register()
         vm.settle()
-        assertThat(vm.state.value.emailError).isEqualTo(Res.string.staffEmailInUse)
-        assertThat(calls.map { it.first }).containsExactly("check-existing-patient")
+        assertThat(calls.map { it.first }).containsExactly("register-clinic-staff", "send-email-otp").inOrder()
+        assertThat(vm.state.value.code?.email).isEqualTo("someone@shifa.uz")
+        replies["register-clinic-staff"] = HttpStatusCode.OK to """{"token":"${jwt(
+            4_000_000_000L,
+        )}","forcePasswordReset":false}"""
+        vm.onCode("654321")
+        vm.settle()
+        assertThat(calls.last().second).contains(""""emailOtp":"654321"""")
+        assertThat(vm.state.value.signedIn).isNotNull()
+    }
+
+    @Test
+    fun `an account found by phone asks its current password under the code`() {
+        replies["register"] =
+            HttpStatusCode.Conflict to """{"error":409,"status":409,"code":"OWNERSHIP_REQUIRED","requestId":"r6"}"""
+        val vm = vm()
+        vm.toStep2()
+        vm.registerWithCode()
+        val sheet = vm.state.value.code
+        assertThat(sheet?.needsPassword).isTrue()
+        assertThat(sheet?.banner?.text).isEqualTo(Res.string.registrationExistingPassword)
+        replies["register"] = HttpStatusCode.OK to """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""
+        vm.onCurrentPassword("Old-pass1!")
+        vm.verifyCode()
+        vm.settle()
+        assertThat(calls.last().second).contains(""""emailOtp":"123456","currentPassword":"Old-pass1!"""")
+        assertThat(vm.state.value.signedIn).isNotNull()
+    }
+
+    @Test
+    fun `a failure while the sheet is open shows in the sheet`() {
+        replies["register"] = HttpStatusCode.InternalServerError to """{"status":500,"code":"INTERNAL","requestId":"r8"}"""
+        val vm = vm()
+        vm.toStep2()
+        vm.registerWithCode()
+        assertThat(vm.state.value.code?.banner?.requestId).isEqualTo("r8")
+        assertThat(vm.state.value.banner).isNull()
+        assertThat(vm.state.value.loading).isFalse()
+    }
+
+    @Test
+    fun `a wrong code stays in the sheet, an existing doctor goes back to the form`() {
+        replies["register"] =
+            HttpStatusCode.BadRequest to """{"error":400,"status":400,"code":"EMAIL_OTP_INVALID","requestId":"r4"}"""
+        val vm = vm()
+        vm.toStep2()
+        vm.registerWithCode("000000")
+        assertThat(vm.state.value.code?.error).isEqualTo(Res.string.wrongOrExpiredCodeBackToCode)
+        assertThat(vm.state.value.code?.code).isEmpty()
+        assertThat(vm.state.value.signedIn).isNull()
+        replies["register"] =
+            HttpStatusCode.Conflict to """{"error":409,"status":409,"code":"DOCTOR_EXISTS","requestId":"r5"}"""
+        vm.onCode("123456")
+        vm.settle()
+        assertThat(vm.state.value.code).isNull()
+        assertThat(vm.state.value.step).isEqualTo(RegisterStep.Form)
+        assertThat(vm.state.value.emailError).isEqualTo(Res.string.doctorAccountExists)
     }
 
     @Test

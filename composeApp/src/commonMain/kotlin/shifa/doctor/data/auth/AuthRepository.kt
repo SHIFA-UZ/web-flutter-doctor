@@ -18,6 +18,7 @@ import shifa.doctor.data.model.CheckExistingPatientResponse
 import shifa.doctor.data.model.ForgotPasswordResetRequest
 import shifa.doctor.data.model.LoginRequest
 import shifa.doctor.data.model.RegisterRequest
+import shifa.doctor.data.model.SendEmailOtpRequest
 import shifa.doctor.data.model.SendForgotPasswordOtpRequest
 import shifa.doctor.data.model.SendLoginOtpRequest
 import shifa.doctor.data.model.TokenResponse
@@ -52,6 +53,15 @@ class AuthRepository(
             client().post(ApiConfig.Endpoints.SEND_LOGIN_OTP) {
                 contentType(ContentType.Application.Json)
                 setBody(SendLoginOtpRequest(email.trim()))
+            }
+        }
+
+    /** `POST /auth/send-email-otp {purpose: REGISTRATION}` (flow 01/09): the code that goes with `register`. */
+    suspend fun sendRegistrationOtp(email: String): Result<Unit> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.SEND_EMAIL_OTP) {
+                contentType(ContentType.Application.Json)
+                setBody(SendEmailOtpRequest(email.trim(), REGISTRATION))
             }
         }
 
@@ -174,6 +184,7 @@ class AuthRepository(
 
     private companion object {
         const val RECEPTIONIST_INVITE = "CLINIC_RECEPTIONIST_INVITE"
+        const val REGISTRATION = "REGISTRATION"
         const val APP = "doctor"
     }
 }

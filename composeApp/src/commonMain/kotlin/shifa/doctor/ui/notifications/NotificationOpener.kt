@@ -48,9 +48,11 @@ class NotificationOpener(
                     NotificationGo.Patient(target.id)
                 }
             NotificationTarget.Chat -> NotificationGo.Chat
+            is NotificationTarget.Conversation -> NotificationGo.Conversation(target.id)
             is NotificationTarget.Task -> NotificationGo.Task(target.id)
-            // The row carries no partnership id: the list, the newest change on top of its group.
+            // Without the partnership id (older backends): the list, the newest change on top of its group.
             NotificationTarget.Partnerships -> NotificationGo.Partnerships
+            is NotificationTarget.Partnership -> NotificationGo.Partnership(target.id)
             NotificationTarget.Inbox -> null
         }
 

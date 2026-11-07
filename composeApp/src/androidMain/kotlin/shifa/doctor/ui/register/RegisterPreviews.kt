@@ -14,6 +14,7 @@ import shifa.doctor.generated.resources.enterFirstName
 import shifa.doctor.generated.resources.invalidPhone
 import shifa.doctor.generated.resources.passwordsDoNotMatch
 import shifa.doctor.generated.resources.timezoneDetectionFailed
+import shifa.doctor.generated.resources.wrongOrExpiredCodeBackToCode
 import shifa.doctor.ui.theme.PreviewTheme
 
 // DaAuth `reg1` (flow 01/07 §3a), its existing-patient branch (§3b) and `reg2`'s timezone (flow 01/08).
@@ -151,6 +152,29 @@ internal fun RegisterStaffNoEmailPreview() =
     PreviewTheme {
         RegisterScreenContent(
             RegisterUiState(Invite("SHIFA-STAFF-2026", true)).copy(timeZoneError = Res.string.timezoneDetectionFailed),
+            RegisterActions(),
+        )
+    }
+
+// Flow 01/09: the code sheet, the resend countdown running, and after a wrong code.
+@Preview(widthDp = 402, heightDp = 480)
+@Composable
+internal fun RegisterCodePreview() =
+    PreviewTheme {
+        RegistrationCodeSheet(
+            RegistrationCode("doctor@example.uz", code = "1234", resendIn = 42),
+            false,
+            RegisterActions(),
+        )
+    }
+
+@Preview(widthDp = 402, heightDp = 480)
+@Composable
+internal fun RegisterCodeWrongPreview() =
+    PreviewTheme {
+        RegistrationCodeSheet(
+            RegistrationCode("doctor@example.uz", error = Res.string.wrongOrExpiredCodeBackToCode),
+            false,
             RegisterActions(),
         )
     }

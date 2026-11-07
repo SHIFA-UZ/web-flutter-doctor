@@ -21,6 +21,7 @@ import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.api.rows
+import shifa.doctor.data.model.FiledDocument
 import shifa.doctor.data.model.FormTemplates
 import shifa.doctor.data.model.PatientForm
 
@@ -107,6 +108,16 @@ class FormsRepository(
             }
         }.onSuccess { remember(it, session) }
     }
+
+    /**
+     * BE-01: the server renders the 025-2, files it as the patient's document (replacing an earlier one) and links it
+     * (`POST …/pdf-document`, idempotent). A backend without it answers 404 ([endpointMissing]): the app renders then.
+     */
+    suspend fun filePdfDocument(
+        patientId: Long,
+        formId: Long,
+    ): Result<FiledDocument> =
+        apiCall<FiledDocument> { client().post(ApiConfig.Endpoints.patientForm(patientId, formId) + "/pdf-document") }
 
     /** The ICD-10 search in [lang] (the app's language; dev answers en, ru and uz titles), at most [limit] hits. */
     suspend fun searchIcd10(

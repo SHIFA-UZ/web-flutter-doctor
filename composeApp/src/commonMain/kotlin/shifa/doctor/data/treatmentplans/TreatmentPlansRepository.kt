@@ -137,6 +137,13 @@ class TreatmentPlansRepository(
         apiCall<JsonElement> { client().get(ApiConfig.Endpoints.treatmentPlanDetail(planId)) }
             .mapCatching { TreatmentPlanDetail.read(it) ?: throw ApiException.ServerError(200, null, null) }
 
+    /** BE-01: the plan as a PDF rendered by the backend in [lang] (`en`, `uz`, `ru`); 404 on backends without it. */
+    suspend fun pdf(
+        planId: Long,
+        lang: String,
+    ): Result<ByteArray> =
+        apiCall<ByteArray> { client().get(ApiConfig.Endpoints.treatmentPlanPdf(planId)) { parameter("lang", lang) } }
+
     /** The open lines [appointmentId] may complete (`toothMatch` when the line's tooth fits the visit). */
     suspend fun candidates(
         planId: Long,

@@ -189,6 +189,13 @@ class SessionRepository(
             _ended.tryEmit(SessionEndReason.SignedOut)
         }
 
+    /** The doctor deleted the account (BE-02): signed out with "Your account has been deleted" on Sign In. */
+    fun accountDeleted() =
+        synchronized(this) {
+            if (_session.value == null) return@synchronized
+            endNow(SessionEndReason.AccountDeleted)
+        }
+
     /** The network ended the session that sent [token]; a report about any other (earlier) session is ignored. */
     fun end(
         reason: SessionEndReason,

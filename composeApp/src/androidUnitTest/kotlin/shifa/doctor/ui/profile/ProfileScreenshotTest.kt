@@ -65,4 +65,10 @@ class ProfileScreenshotTest {
 
     @Test
     fun about() = captureRoboImage("screenshots/About.png") { AboutPreview() }
+
+    @Test
+    fun privacy() = captureRoboImage("screenshots/Privacy.png") { PrivacyPreview() }
+
+    @Test
+    fun privacyCode() = captureRoboImage("screenshots/Privacy_code.png") { PrivacyCodePreview() }
 }

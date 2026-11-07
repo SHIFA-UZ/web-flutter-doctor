@@ -19,6 +19,7 @@
     <string name="accountCreateFailed">Couldn't create the account. Try again.</string>
     <string name="accountCreated">Account Created</string>
     <string name="accountCreatedPleaseSignIn">Account created! Please sign in.</string>
+    <string name="accountDeleted">Your account has been deleted.</string>
     <string name="accountDisabledBanner">This account has been disabled. Contact your clinic administrator.</string>
     <string name="accountInformation">Account Information</string>
     <string name="accountPending">Your account is pending approval.</string>
@@ -163,6 +164,8 @@
     <string name="appLockOn">App lock on</string>
     <string name="appLockSubtitle">Require PIN when reopening the app</string>
     <string name="appName">Shifa Doctor</string>
+    <string name="appPermissions">Permissions</string>
+    <string name="appPermissionsHint">Camera, photos, microphone, location, notifications</string>
     <string name="appVersionLabel">Shifa Doctor · Version %1$s</string>
     <string name="appliedCode">Applied: %1$s</string>
     <string name="apply">Apply</string>
@@ -888,6 +891,7 @@
     <string name="compressingImage">Compressing image...</string>
     <string name="configUpdated">Config updated</string>
     <string name="confirm">Confirm</string>
+    <string name="confirmItsYou">Confirm it's you</string>
     <string name="confirmLogout">Are you sure you want to log out?</string>
     <string name="confirmNewPassword">Confirm New Password</string>
     <string name="confirmPassword">Confirm password</string>
@@ -969,6 +973,9 @@
     <string name="customTimesLabel">Daily slot times</string>
     <string name="dashboard">Dashboard</string>
     <string name="dashboardSubtitle">Overview of your clinic activity</string>
+    <string name="dataExportFailed">Couldn't download your data</string>
+    <string name="dataExportOncePerDay">You can download your data once a day. Try again tomorrow.</string>
+    <string name="dataExportSaved">Your data was saved: %1$s</string>
     <string name="date">Date</string>
     <string name="dateAndTime">Date and Time</string>
     <string name="dateHoursFailed">Couldn't save these hours. Try again.</string>
@@ -983,7 +990,14 @@
     <string name="declineInvite">Decline</string>
     <string name="defaultVisitReason">Check-up</string>
     <string name="delete">Delete</string>
+    <string name="deleteAccount">Delete account</string>
+    <string name="deleteAccountBody">Deleting your account removes your profile and your sign-in on every device. Patient medical records stay with the patients and clinics, as the law requires. This cannot be undone.</string>
+    <string name="deleteAccountFailed">Couldn't delete your account</string>
+    <string name="deleteAccountQuestion">Delete your account?</string>
+    <string name="deleteAccountQuestionBody">Your profile and sign-in are removed and you are signed out everywhere. Patient records stay with the patients. This cannot be undone.</string>
+    <string name="deleteBlocked">Your account can't be deleted yet</string>
     <string name="deleteCertificateTitle">Delete certificate?</string>
+    <string name="deleteCodeSent">We sent a 6-digit code to %1$s. Enter it to delete your account.</string>
     <string name="deleteGroupBody">Its services stay and become ungrouped.</string>
     <string name="deleteGroupTitle">Delete group?</string>
     <string name="deleteLocation">Delete location</string>
@@ -1139,6 +1153,8 @@
     <string name="doneForToday">Done for today</string>
     <string name="doneForTodayBody">All of today's visits are finished. Nothing is booked for the next 14 days.</string>
     <string name="donutSummary">In-person %1$s, video %2$s</string>
+    <string name="downloadMyData">Download a copy of my data</string>
+    <string name="downloadMyDataHint">Profile, settings and locations, once a day</string>
     <string name="downloadSummary">Download</string>
     <string name="drMedPrefix">Dr. med.</string>
     <string name="draft">Draft</string>
@@ -1921,6 +1937,8 @@
     <string name="now">Now</string>
     <string name="numeric">Numeric</string>
     <string name="objectiveExam">Objective examination</string>
+    <string name="obligationAppointments">Cancel or hand over your upcoming appointments.</string>
+    <string name="obligationSubscription">Cancel your paid subscription.</string>
     <string name="occlusionBiteType">Occlusion / Bite type</string>
     <string name="of">of</string>
     <string name="off">Off</string>
@@ -2144,6 +2162,8 @@
     <string name="primary">Primary</string>
     <string name="primaryLocationHint">Patients see the primary location first. Make another one primary to change it.</string>
     <string name="printSummary">Print</string>
+    <string name="privacyAndData">Privacy &amp; data</string>
+    <string name="privacyAndDataHint">Download your data, permissions, delete account</string>
     <string name="proPlanRequired">PRO plan required</string>
     <string name="processAndLeave">Process and leave</string>
     <string name="processRecording">Process</string>
@@ -2193,8 +2213,10 @@
     <string name="regenerateSummary">Regenerate summary</string>
     <string name="region">Region</string>
     <string name="registrationConflict">This email or phone number belongs to another account. Use matching details or contact support.</string>
+    <string name="registrationExistingPassword">This phone number already has a Shifa account. Enter that account's current password to continue.</string>
     <string name="registrationFailed">Could not create the account. Please try again.</string>
     <string name="registrationIncomplete">Your account was created but sign-in failed. Please sign in with your new password.</string>
+    <string name="registrationOwnershipRequired">This email already has a Shifa account. Confirm it with the code we sent to that email.</string>
     <string name="reject">Reject</string>
     <string name="rejected">Rejected</string>
     <string name="rejoinCall">Rejoin</string>
@@ -2875,6 +2897,8 @@
     <string name="youLeftTheCall">You left the call</string>
     <string name="yourCameraPreview">Your camera preview</string>
     <string name="yourCurrentPlan">Your current plan</string>
+    <string name="yourData">Your data</string>
+    <string name="yourDataBody">Shifa stores your profile, schedule, appointments, chat messages and the documents you and your patients upload. Patient records belong to the patients and are kept according to medical record-keeping rules.</string>
     <string name="yourName">Your Name</string>
     <string name="youveSignedOut">You've signed out.</string>
 </resources>

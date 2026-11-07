@@ -17,6 +17,7 @@ import shifa.doctor.data.session.Session
 import shifa.doctor.data.session.SessionRepository
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.accountDeleted
 import shifa.doctor.generated.resources.accountDisabledBanner
 import shifa.doctor.generated.resources.enterEmailOrPhone
 import shifa.doctor.generated.resources.invalidCredentials
@@ -114,10 +115,11 @@ class LoginViewModel(
                 SessionEndReason.SignedOut -> Res.string.youveSignedOut
                 SessionEndReason.PinLockout -> Res.string.pinLockoutBanner
                 SessionEndReason.Inactivity -> Res.string.signedOutInactivity
+                SessionEndReason.AccountDeleted -> Res.string.accountDeleted
                 else -> Res.string.sessionExpiredBanner
             },
             error = reason == SessionEndReason.AccountDisabled || reason == SessionEndReason.PinLockout,
-            neutral = reason == SessionEndReason.SignedOut,
+            neutral = reason == SessionEndReason.SignedOut || reason == SessionEndReason.AccountDeleted,
         )
 
     private companion object {

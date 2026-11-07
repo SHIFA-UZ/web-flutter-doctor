@@ -134,6 +134,7 @@ enum class ProfileSection {
     Settings,
     Security,
     About,
+    Privacy,
 }
 
 data class ProfileUiState(

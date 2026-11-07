@@ -91,6 +91,7 @@ import shifa.doctor.generated.resources.personalInformation
 import shifa.doctor.generated.resources.planPremium
 import shifa.doctor.generated.resources.planPro
 import shifa.doctor.generated.resources.practiceTimezone
+import shifa.doctor.generated.resources.privacyAndData
 import shifa.doctor.generated.resources.profile
 import shifa.doctor.generated.resources.schedule
 import shifa.doctor.generated.resources.security
@@ -146,6 +147,7 @@ import shifa.doctor.ui.profile.ExtendedProfileScreen
 import shifa.doctor.ui.profile.LanguageScreen
 import shifa.doctor.ui.profile.PersonalInfoScreen
 import shifa.doctor.ui.profile.PracticeTimezoneSheet
+import shifa.doctor.ui.profile.PrivacyScreen
 import shifa.doctor.ui.profile.ProfileActions
 import shifa.doctor.ui.profile.ProfileScreen
 import shifa.doctor.ui.profile.ProfileSection
@@ -527,7 +529,9 @@ private fun RouteContent(
                                         ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
                                     )
                                 NotificationGo.Chat -> actions.select(ShellTab.Chat)
+                                is NotificationGo.Conversation -> actions.push(ShellRoute.Conversation(go.id, opened))
                                 NotificationGo.Partnerships -> actions.push(ShellRoute.Partnerships(null, null, opened))
+                                is NotificationGo.Partnership -> actions.push(ShellRoute.Partnership(go.id, opened))
                                 is NotificationGo.Task -> actions.push(ShellRoute.Task(go.id, opened))
                                 NotificationGo.Inbox -> actions.select(ShellTab.Notifications)
                             }
@@ -559,7 +563,9 @@ private fun RouteContent(
                                     ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
                                 )
                             NotificationGo.Chat -> actions.select(ShellTab.Chat)
+                            is NotificationGo.Conversation -> actions.push(ShellRoute.Conversation(go.id, opened))
                             NotificationGo.Partnerships -> actions.push(ShellRoute.Partnerships(null, null, opened))
+                            is NotificationGo.Partnership -> actions.push(ShellRoute.Partnership(go.id, opened))
                             is NotificationGo.Task -> actions.openTask(go.id, opened)
                             // Never from the inbox itself.
                             NotificationGo.Inbox -> Unit
@@ -646,10 +652,13 @@ private fun RouteContent(
                             security = { actions.push(ShellRoute.Profile(ProfileSection.Security)) },
                             about = { actions.push(ShellRoute.Profile(ProfileSection.About)) },
                             debug = { actions.push(ShellRoute.Debug) }.takeIf { isDebugBuild },
+                            privacy = { actions.push(ShellRoute.Profile(ProfileSection.Privacy)) }.takeIf { !staff },
                         ),
                     )
                 // LEGAL-01: the app, its version and the privacy policy.
                 ProfileSection.About -> AboutScreen(actions.back)
+                // BE-02: a copy of the doctor's data and deleting the account (flow 08/12).
+                ProfileSection.Privacy -> PrivacyScreen(actions.back)
                 else -> Pushed(route.section.title, actions) { ProfileSectionPlaceholder(route.section) }
             }
         ShellRoute.Schedule ->
@@ -948,6 +957,7 @@ private val ProfileSection.title: StringResource
             ProfileSection.Settings -> Res.string.settings
             ProfileSection.Security -> Res.string.security
             ProfileSection.About -> Res.string.about
+            ProfileSection.Privacy -> Res.string.privacyAndData
         }
 
 /**

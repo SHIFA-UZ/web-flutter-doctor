@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +20,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -45,6 +49,7 @@ import shifa.doctor.generated.resources.accountInformation
 import shifa.doctor.generated.resources.confirmPassword
 import shifa.doctor.generated.resources.confirmRegistration
 import shifa.doctor.generated.resources.createAccount
+import shifa.doctor.generated.resources.currentPassword
 import shifa.doctor.generated.resources.discard
 import shifa.doctor.generated.resources.discardRegistrationBody
 import shifa.doctor.generated.resources.discardRegistrationTitle
@@ -58,11 +63,17 @@ import shifa.doctor.generated.resources.keyVerified
 import shifa.doctor.generated.resources.lastName
 import shifa.doctor.generated.resources.next
 import shifa.doctor.generated.resources.optional
+import shifa.doctor.generated.resources.otpCode
+import shifa.doctor.generated.resources.otpSentToEmail
 import shifa.doctor.generated.resources.password
 import shifa.doctor.generated.resources.phoneNumber
 import shifa.doctor.generated.resources.practiceTimezone
 import shifa.doctor.generated.resources.practiceTimezonePlaceholder
+import shifa.doctor.generated.resources.resendCode
+import shifa.doctor.generated.resources.resendCodeIn
 import shifa.doctor.generated.resources.stepOfTotal
+import shifa.doctor.generated.resources.verify
+import shifa.doctor.generated.resources.verifyYourEmail
 import shifa.doctor.ui.auth.AuthFrame
 import shifa.doctor.ui.auth.AuthTitle
 import shifa.doctor.ui.auth.PasswordChecklist
@@ -78,10 +89,12 @@ import shifa.doctor.ui.widgets.DialogTone
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaInputField
+import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPickField
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaTag
 import shifa.doctor.ui.widgets.ShifaTagType
+import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.tr
 
 /** The callbacks of [RegisterScreenContent], so the stateless content takes one value instead of twenty lambdas. */
@@ -113,6 +126,11 @@ class RegisterActions(
     val onAddress: (String) -> Unit = {},
     val keepEditing: () -> Unit = {},
     val discard: () -> Unit = {},
+    val onCode: (String) -> Unit = {},
+    val verifyCode: () -> Unit = {},
+    val resendCode: () -> Unit = {},
+    val closeCode: () -> Unit = {},
+    val onCurrentPassword: (String) -> Unit = {},
 )
 
 /** AUTH-06 (DaAuth `reg1`, its existing-patient branch, and `reg2`'s timezone): a doctor's registration. */
@@ -159,6 +177,11 @@ fun RegisterScreen(
             onAddress = viewModel::onAddress,
             keepEditing = viewModel::keepEditing,
             discard = onExit,
+            onCode = viewModel::onCode,
+            verifyCode = viewModel::verifyCode,
+            resendCode = viewModel::resendCode,
+            closeCode = viewModel::closeCode,
+            onCurrentPassword = viewModel::onCurrentPassword,
         ),
     )
 }
@@ -201,6 +224,15 @@ fun RegisterScreenContent(
         }
     }
     if (state.pickingDob) DobPicker(state.dob, actions.pickDob)
+    state.code?.let { code ->
+        ModalBottomSheet(
+            actions.closeCode,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            shape = RectangleShape,
+            containerColor = Color.Transparent,
+            dragHandle = null,
+        ) { RegistrationCodeSheet(code, state.loading, actions) }
+    }
     if (state.askDiscard) {
         ModalBottomSheet(
             actions.keepEditing,
@@ -405,3 +437,61 @@ internal fun ColumnScope.StepDots(current: Int) {
 }
 
 private const val STEPS = 2
+
+/**
+ * Flow 01/09 as a sheet (its target): the address, the code, "Resend code (59 s)", Verify. A wrong or expired code
+ * stays here with the message under the field; resend outcomes show in the sheet, not behind it.
+ */
+@Composable
+internal fun RegistrationCodeSheet(
+    code: RegistrationCode,
+    loading: Boolean,
+    actions: RegisterActions,
+) = ShifaTray(tr(Res.string.verifyYourEmail), actions.closeCode) {
+    val busy = code.busy || loading
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = ShifaSpacing.Inset.Md).padding(bottom = ShifaSpacing.Inset.Md),
+        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+    ) {
+        codeBanner(code.banner)?.invoke()
+        Text(
+            tr(Res.string.otpSentToEmail, code.email),
+            style = ShifaTextStyles.dialogBody(),
+            color = ShifaColors.Text.Secondary,
+        )
+        ShifaInputField(
+            code.code,
+            actions.onCode,
+            tr(Res.string.otpCode),
+            Modifier.fillMaxWidth(),
+            supportingText = code.error?.let { tr(it) },
+            isError = code.error != null,
+            enabled = !busy,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { actions.verifyCode() }),
+        )
+        if (code.needsPassword) {
+            var visible by rememberSaveable { mutableStateOf(false) }
+            PasswordField(
+                code.currentPassword,
+                actions.onCurrentPassword,
+                tr(Res.string.currentPassword),
+                visible,
+                { visible = !visible },
+                null,
+                KeyboardActions(onDone = { actions.verifyCode() }),
+                ImeAction.Done,
+                Modifier.fillMaxWidth(),
+                enabled = !busy,
+            )
+        }
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            ShifaLink(
+                if (code.resendIn > 0) tr(Res.string.resendCodeIn, "${code.resendIn} s") else tr(Res.string.resendCode),
+                actions.resendCode,
+                enabled = code.resendIn == 0 && !busy,
+            )
+        }
+        ShifaPrimaryButton(tr(Res.string.verify), actions.verifyCode, Modifier.fillMaxWidth(), loading = busy)
+    }
+}

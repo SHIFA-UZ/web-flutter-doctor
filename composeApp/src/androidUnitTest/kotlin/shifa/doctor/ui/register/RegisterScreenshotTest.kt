@@ -34,6 +34,12 @@ class RegisterScreenshotTest {
     fun clinicPicker() = captureRoboImage("screenshots/Register_clinicPicker.png") { ClinicPickerPreview() }
 
     @Test
+    fun code() = captureRoboImage("screenshots/Register_code.png") { RegisterCodePreview() }
+
+    @Test
+    fun codeWrong() = captureRoboImage("screenshots/Register_codeWrong.png") { RegisterCodeWrongPreview() }
+
+    @Test
     fun clinicPickerFailed() =
         captureRoboImage("screenshots/Register_clinicPickerFailed.png") {
             ClinicPickerFailedPreview()

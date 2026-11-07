@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.StringResource
+import shifa.doctor.data.api.endpointMissing
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinical.ClinicalEngineRepository
@@ -413,6 +414,24 @@ class FormEditorViewModel(
             // Saved: the id is kept whatever happens next, so Retry never posts the form again.
             _state.update { it.copy(form = form, original = form) }
         }
+
+        suspend fun finish(done: PatientForm) {
+            // The doctor's frequent diagnoses (best effort: the form is saved either way). The disease is the edited
+            // form's: the link's answer needn't carry it.
+            (_state.value.form?.clinicalDiseaseId ?: done.clinicalDiseaseId)?.let { engine.recordUsage(it) }
+            madePdf = null
+            uploadedDocument = null
+            uploadedPdf = null
+            _state.update { it.copy(saving = false, failedAt = null, form = done, original = done, done = true) }
+        }
+        // BE-01: the server renders, files and links the PDF in one call; an older backend (no such route) leaves it
+        // to the app as before. A half-done app upload from an earlier attempt goes on the app's way.
+        if (uploadedDocument == null) {
+            val filed = forms.filePdfDocument(patientId, form.id!!)
+            filed.onSuccess { return finish(form.copy(documentId = it.documentId)) }
+            val e = filed.exceptionOrNull()
+            if (e != null && !e.endpointMissing) return failed(SaveStep.Pdf, Res.string.formPdfFailed, e)
+        }
         val bytes =
             (if (from <= SaveStep.Pdf || madePdf == null) pdf(form) else madePdf)
                 ?: return failed(SaveStep.Pdf, Res.string.formPdfFailed, null)
@@ -450,13 +469,7 @@ class FormEditorViewModel(
                     return failed(SaveStep.Link, Res.string.formDocumentFailed, it)
                 }
         }
-        // The doctor's frequent diagnoses (best effort: the form is saved either way). The disease is the edited
-        // form's: the link's answer needn't carry it.
-        (_state.value.form?.clinicalDiseaseId ?: form.clinicalDiseaseId)?.let { engine.recordUsage(it) }
-        madePdf = null
-        uploadedDocument = null
-        uploadedPdf = null
-        _state.update { it.copy(saving = false, failedAt = null, form = form, original = form, done = true) }
+        finish(form)
     }
 
     /** Asks the patient to sign; an unsaved form is saved first (as Flutter, silently: the form only, no PDF). */

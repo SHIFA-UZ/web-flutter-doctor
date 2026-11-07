@@ -302,6 +302,17 @@ class DemoBackend(
         }
         return when {
             get && path == Endpoints.DOCTOR_ME -> ok(doctorMe())
+            // BE-02 in demo: the export is the demo profile; a deletion "sends" a code, 000000 is a wrong one, any
+            // other confirms (the app then signs out of demo; nothing real is touched).
+            get && path == Endpoints.DATA_EXPORT -> ok(doctorMe())
+            request.method == HttpMethod.Post && path == Endpoints.DELETE_ACCOUNT_REQUEST ->
+                ok(apiJson.parseToJsonElement("""{"maskedEmail":"d***@shifa.dev","expiresInSeconds":600}"""))
+            request.method == HttpMethod.Post && path == Endpoints.DELETE_ACCOUNT_CONFIRM ->
+                if (body.contains("\"000000\"")) {
+                    fail(HttpStatusCode.BadRequest, "EMAIL_OTP_INVALID")
+                } else {
+                    ok(apiJson.parseToJsonElement("""{"success":true}"""))
+                }
             get && path == Endpoints.PUBLIC_CONFIG -> ok(publicConfig(bootGate()))
             request.method == HttpMethod.Put && path == Endpoints.DOCTOR_LANGUAGE -> setLanguage(body)
             request.method == HttpMethod.Post && path == Endpoints.VERIFY_KEY -> ok(verifyKey(body))

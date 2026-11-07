@@ -12,6 +12,8 @@ class NotificationRulesTest {
         patient: Long? = null,
         task: Long? = null,
         document: Long? = null,
+        conversation: Long? = null,
+        partnership: Long? = null,
     ) = AppNotification(
         id = 1,
         type = type,
@@ -24,6 +26,8 @@ class NotificationRulesTest {
         patientId = patient,
         taskId = task,
         documentId = document,
+        conversationId = conversation,
+        carePartnershipId = partnership,
     )
 
     // Every value of the backend's `Notification.Type` (2026-11-05) and what it becomes.
@@ -89,6 +93,14 @@ class NotificationRulesTest {
         assertThat(n("DOCUMENT_ACCESS_REQUEST").target(false)).isEqualTo(NotificationTarget.Inbox)
         assertThat(n("CHAT_MESSAGE", patient = 11).target(false)).isEqualTo(NotificationTarget.Chat)
         assertThat(n("CARE_PARTNERSHIP_INVITE", patient = 12).target(false)).isEqualTo(NotificationTarget.Partnerships)
+        // BE-06: with their ids the rows open the conversation and the partnership themselves.
+        assertThat(
+            n("CHAT_MESSAGE", patient = 11, conversation = 41).target(false),
+        ).isEqualTo(NotificationTarget.Conversation(41))
+        assertThat(n("CHAT_MESSAGE", conversation = 41).target(true)).isEqualTo(NotificationTarget.Conversation(41))
+        assertThat(
+            n("CARE_PARTNERSHIP_PROGRESS", partnership = 9).target(false),
+        ).isEqualTo(NotificationTarget.Partnership(9))
         assertThat(n("AI_SCRIBE_READY", appointment = 101, patient = 11).target(false))
             .isEqualTo(NotificationTarget.Appointment(101, null))
         assertThat(n("TASK_COMPLETED", patient = 14, task = 1).target(false)).isEqualTo(NotificationTarget.Task(1))

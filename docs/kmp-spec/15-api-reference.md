@@ -48,11 +48,11 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | POST | `/api/auth/verify-key` | pub, `{key}` → `{valid,purpose,clinicId,clinicName,emailSentTo}` |
 | POST | `/api/auth/check-existing-patient` | pub, `{firstName,lastName,email,phone?}` → `{found,fullName,photoUrl,email}` |
 | POST | `/api/auth/send-email-otp` | pub, `{email, purpose:'REGISTRATION'}` |
-| POST | `/api/auth/register` | pub → `{token}` |
-| POST | `/api/auth/register-clinic-staff` | pub → `{token}` |
+| POST | `/api/auth/register` | pub → `{token}`; optional `emailOtp` (the REGISTRATION code) and `currentPassword`. Codes: 409 `DOCTOR_EXISTS` (never re-keys a doctor), 409 `OWNERSHIP_REQUIRED` (an existing non-doctor account needs its code or current password), 400 `EMAIL_OTP_INVALID` / `EMAIL_OTP_EXPIRED` (BE-29, BE-03; backend 2026-11-07) |
+| POST | `/api/auth/register-clinic-staff` | pub → `{token}`; same `emailOtp`, `currentPassword` and codes |
 | POST | `/api/auth/admin/request-login-otp` | admin only (doc 10) |
 | POST | `/api/auth/admin/verify-login-otp` | admin only (doc 10) |
-| GET | `/api/public/config` | pub, `{transcriptionFeedbackEnabled, googleMapsApiKey}` |
+| GET | `/api/public/config` | pub, `{transcriptionFeedbackEnabled, googleMapsApiKey, doctorApp:{minVersion,latestVersion,storeUrl:{android,ios}, maintenance:{active,message:{en,uz,ru},until}}}`; unset values are `null` (BE-04, backend 2026-11-07, admin keys `doctor_app.*`) |
 | GET | `/api/public/clinics?search=` | pub, `[{id,name}]` |
 | GET | `/api/public/professions?lang=&search=` | pub, `[{english,uzbek}]` |
 
@@ -69,7 +69,12 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | PATCH | `/api/doctors/me/billing` | billing + echoed gateway ids |
 | PATCH | `/api/doctors/me/settings` | full `{country,language,twoFA,encryptedDocs,defaultStartTab}` |
 | PUT | `/api/doctors/me/language` | `{language}` |
-| PUT | `/api/doctors/me/fcm-token` | `{fcmToken}` (`""` on logout) |
+| PUT | `/api/doctors/me/fcm-token` | `{fcmToken}` (`""` on logout); the Flutter build's single token |
+| POST | `/api/doctors/me/fcm-tokens` | `{token, platform: android\|ios\|web}` → 204; one per device, idempotent (BE-05, backend 2026-11-07; the app sends it with PUSH-01) |
+| DELETE | `/api/doctors/me/fcm-tokens/{token}` | → 204 at sign-out; idempotent |
+| GET | `/api/doctors/me/export` | the doctor's data as a JSON download (every section of `GET /doctors/me` + locations), once a day (429) (BE-02) |
+| POST | `/api/doctors/me/delete-account/request` | → `{maskedEmail, expiresInSeconds}`, e-mails a code; 409 `HAS_ACTIVE_OBLIGATIONS` with `details` `UPCOMING_APPOINTMENTS` / `ACTIVE_SUBSCRIPTION` (BE-02) |
+| POST | `/api/doctors/me/delete-account/confirm` | `{code}` → `{success}`; closes and anonymises the account, signs out every session; 400 `EMAIL_OTP_INVALID` / `EMAIL_OTP_EXPIRED` |
 | POST | `/api/doctors/me/photo` | multipart `file` → `{photoUrl}` |
 | POST | `/api/doctors/me/certificate` | multipart `file` → `{photoUrl}` |
 | GET/POST | `/api/doctors/me/locations` | `DoctorLocationDto` |
@@ -119,6 +124,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | POST | `/api/appointments/{id}/briefing/retry` | |
 | POST | `/api/consultations/upload-recording` | multipart `audio` + `appointmentId`, `language`; 202 / 429 |
 | POST | `/api/video/token` | no-401, `{appointmentId, roomName?}` → `{token,roomUrl,roomName}` |
+| POST | `/api/appointments/{id}/summary-document?lang=` | re-renders and files the server's (notes-only) summary → `{documentId, url}`; 409 without notes (BE-01; the app keeps its own richer summary) |
 
 ### 2.5 AI (doc 02)
 
@@ -166,6 +172,8 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | PUT | `/api/patients/{id}/forms/{formId}/request-signature` | |
 | POST | `/api/patients/{id}/forms/{formId}/link-document?documentId=` | |
 | GET/PUT | `/api/prophylaxis/settings` | `?patientId&clinicId` / `{patientId,clinicId,intervalMonths,enabled}` |
+| GET | `/api/patients/{patientId}/forms/{formId}/pdf` | the 025-2 rendered by the server (`application/pdf`), read-only (BE-01, backend 2026-11-07) |
+| POST | `/api/patients/{patientId}/forms/{formId}/pdf-document` | renders, files as `FORM_025_2`, links → `{documentId, url}`; idempotent; 404 on older backends → the app renders |
 
 ### 2.7 Care partnerships (doc 06 §5)
 
@@ -194,7 +202,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/notifications` | full list |
+| GET | `/api/notifications` | full list; rows carry `conversationId` (chat) and `carePartnershipId` (partnership) since BE-06 (backend 2026-11-07); push `data` keys and every `type`: backend `docs/api/push-notifications.md` |
 | GET | `/api/notifications/unread/count` | |
 | PUT | `/api/notifications/{id}/read` | |
 | PUT | `/api/notifications/read-all` | |
@@ -251,6 +259,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | GET | `/api/treatment-plans/plan-services?clinicId=&doctorIds=` | |
 | GET | `/api/treatment-plans/doctor-locations?clinicId=&doctorId=` | |
 | GET | `/api/treatment-plans/free-slots?clinicId=&doctorId=&day=&locationId=` | |
+| GET | `/api/treatment-plans/{id}/pdf?lang=en\|uz\|ru` | the plan rendered by the server (BE-01, backend 2026-11-07); 404 on older backends → the app renders |
 
 ### 2.12 Admin (doc 10, parked)
 

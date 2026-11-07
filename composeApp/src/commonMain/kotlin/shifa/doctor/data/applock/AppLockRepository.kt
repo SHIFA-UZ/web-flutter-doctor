@@ -114,6 +114,12 @@ class AppLockRepository(
         return runCatching { storage().clear() }.map { result }
     }
 
+    /** The account is gone (deleted): its PIN and biometric choice must not stay on the device (flow 08/12 §10). */
+    fun forget() {
+        runCatching { storage().clear() }
+        onSessionEnded()
+    }
+
     fun setBiometric(on: Boolean) {
         read { it.biometricEnabled = on && it.hasPin }
     }

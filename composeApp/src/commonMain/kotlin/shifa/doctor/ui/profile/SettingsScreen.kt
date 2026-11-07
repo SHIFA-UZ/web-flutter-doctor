@@ -51,6 +51,8 @@ import shifa.doctor.generated.resources.legalAndSupport
 import shifa.doctor.generated.resources.notifications
 import shifa.doctor.generated.resources.notificationsSystemSettings
 import shifa.doctor.generated.resources.otherCountry
+import shifa.doctor.generated.resources.privacyAndData
+import shifa.doctor.generated.resources.privacyAndDataHint
 import shifa.doctor.generated.resources.saveFailed
 import shifa.doctor.generated.resources.security
 import shifa.doctor.generated.resources.settings
@@ -208,6 +210,8 @@ class SettingsActions(
     val debug: (() -> Unit)? = null,
     val change: ((DoctorSettings) -> DoctorSettings) -> Unit = {},
     val ui: ((SettingsUiState) -> SettingsUiState) -> Unit = {},
+    // Privacy & data (flow 08/12): doctors only, null for clinic staff (the account endpoints are DOCTOR-scoped).
+    val privacy: (() -> Unit)? = null,
 )
 
 @Composable
@@ -228,6 +232,7 @@ fun SettingsScreen(
             actions.debug,
             viewModel::change,
             viewModel::ui,
+            privacy = actions.privacy,
         ),
         languageStorage.language.collectAsStateWithLifecycle().value.displayName,
     )
@@ -320,6 +325,13 @@ fun SettingsContent(
                         ::openAppSettings,
                         subtitle = tr(Res.string.notificationsSystemSettings),
                     )
+                    actions.privacy?.let {
+                        ShifaSettingsItem(
+                            tr(Res.string.privacyAndData),
+                            it,
+                            subtitle = tr(Res.string.privacyAndDataHint),
+                        )
+                    }
                     ShifaSettingsItem(
                         tr(Res.string.about),
                         actions.about,

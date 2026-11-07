@@ -16,6 +16,8 @@ import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.auth.AuthRepository
 import shifa.doctor.data.auth.ExistingPatient
 import shifa.doctor.data.auth.Invite
+import shifa.doctor.data.auth.OtpCooldown
+import shifa.doctor.data.auth.otpCooldown
 import shifa.doctor.data.catalog.CatalogRepository
 import shifa.doctor.data.catalog.Clinic
 import shifa.doctor.data.catalog.Profession
@@ -35,14 +37,18 @@ import shifa.doctor.generated.resources.doctorPhoneExists
 import shifa.doctor.generated.resources.enterEmail
 import shifa.doctor.generated.resources.enterFirstName
 import shifa.doctor.generated.resources.enterLastName
+import shifa.doctor.generated.resources.failedToResendCode
+import shifa.doctor.generated.resources.invalidOtp
 import shifa.doctor.generated.resources.invalidPhone
+import shifa.doctor.generated.resources.otpResent
 import shifa.doctor.generated.resources.profileExtrasNotSaved
 import shifa.doctor.generated.resources.registrationConflict
+import shifa.doctor.generated.resources.registrationExistingPassword
 import shifa.doctor.generated.resources.registrationFailed
 import shifa.doctor.generated.resources.registrationIncomplete
 import shifa.doctor.generated.resources.requestTimeout
-import shifa.doctor.generated.resources.staffEmailInUse
 import shifa.doctor.generated.resources.timezoneDetectionFailed
+import shifa.doctor.generated.resources.wrongOrExpiredCodeBackToCode
 import shifa.doctor.ui.auth.newPasswordErrors
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.navigation.Notice
@@ -103,6 +109,8 @@ data class RegisterUiState(
     val signedIn: Session? = null,
     // The account exists but its token couldn't be used: only Back (to Sign In) is left (flow 01/10 §9).
     val completed: Boolean = false,
+    // Flow 01/09: the e-mailed code that goes with `register` (BE-03); open while it's being typed.
+    val code: RegistrationCode? = null,
 ) {
     val emailLocked get() = invite.email != null
 
@@ -126,10 +134,26 @@ data class RegisterUiState(
         )
 }
 
+/** Flow 01/09's sheet: the address the code went to, what's typed, and the resend countdown. */
+data class RegistrationCode(
+    val email: String,
+    val code: String = "",
+    val error: StringResource? = null,
+    val banner: CodeBanner? = null,
+    val resendIn: Int = 0,
+    val busy: Boolean = false,
+    // The backend still wants proof after a valid code (the account was found by its phone and has no e-mail): its
+    // current password is asked under the code.
+    val needsPassword: Boolean = false,
+    val currentPassword: String = "",
+)
+
 /**
  * AUTH-06 (flow 01/07, 01 §2.6). Next checks the form, then whether the address already has a doctor account (it
  * stops here, not two screens later), then whether a patient account exists: found → the confirmation view, otherwise
- * step 2. Both end in `POST /auth/register` and a signed-in session. No e-mail code until BE-03 (D-04).
+ * step 2. Both send a code to the address (flow 01/09) and end in `POST /auth/register` with it (BE-03) and a signed-in
+ * session. A receptionist registers without one unless the address already has an account (BE-29: then the code
+ * proves it is theirs).
  */
 class RegisterViewModel(
     invite: Invite,
@@ -138,6 +162,7 @@ class RegisterViewModel(
     private val deviceTimeZone: () -> String? = { TimeZones.device() },
     private val catalogs: CatalogRepository = CatalogRepository(),
     private val profile: ProfileRepository = ProfileRepository(),
+    private val cooldown: OtpCooldown = otpCooldown,
 ) : ViewModel() {
     private var lookup: Job? = null
 
@@ -380,7 +405,95 @@ class RegisterViewModel(
                 listOf(passwordError, confirmError, timeZoneError, firstNameError, lastNameError, emailError)
             }
         if (errors.any { it != null }) return _state.update { checked }
+        if (staff) submit(null) else sendCode()
+    }
+
+    /** Digits only, at most 6; the sixth verifies (as the sign-in code does). */
+    fun onCode(value: String) {
+        val code = value.filter(Char::isDigit).take(CODE_LENGTH)
+        _state.update { s -> s.copy(code = s.code?.copy(code = code, error = null)) }
+        // With the password asked too, Verify sends both; the sixth digit doesn't submit on its own.
+        if (code.length == CODE_LENGTH && _state.value.code?.needsPassword != true) verifyCode()
+    }
+
+    fun verifyCode() {
+        val c = _state.value.code ?: return
+        if (c.busy || _state.value.loading) return
+        if (c.code.length != CODE_LENGTH) return _state.update { it.copy(code = c.copy(error = Res.string.invalidOtp)) }
+        submit(c.code, c.currentPassword.takeIf { c.needsPassword && it.isNotEmpty() })
+    }
+
+    /** "Cancel" or Back on the sheet: nothing is sent; the code already e-mailed stays valid for a retry. */
+    fun closeCode() = _state.update { if (it.loading || it.code?.busy == true) it else it.copy(code = null) }
+
+    fun onCurrentPassword(v: String) =
+        _state.update { s ->
+            s.copy(
+                code = s.code?.copy(currentPassword = v, error = null),
+            )
+        }
+
+    fun resendCode() {
+        val c = _state.value.code ?: return
+        if (c.busy || cooldown.secondsLeft(c.email, PURPOSE) > 0) return
+        _state.update { it.copy(code = c.copy(busy = true, banner = null)) }
+        viewModelScope.launch {
+            val sent = auth.sendRegistrationOtp(c.email)
+            if (sent.isSuccess) cooldown.start(c.email, PURPOSE)
+            _state.update { s ->
+                s.copy(
+                    code =
+                        s.code?.copy(
+                            busy = false,
+                            banner =
+                                sent.fold(
+                                    { CodeBanner(Res.string.otpResent, error = false) },
+                                    { e -> CodeBanner(Res.string.failedToResendCode, requestId = e.requestId) },
+                                ),
+                        ),
+                )
+            }
+            tick()
+        }
+    }
+
+    /** Sends the registration code (unless one went out within the minute) and opens the sheet. */
+    private fun sendCode() {
+        val email = normalizedEmail(_state.value.email)
         _state.update { it.copy(loading = true, banner = null) }
+        viewModelScope.launch {
+            if (cooldown.secondsLeft(email, PURPOSE) == 0) {
+                auth.sendRegistrationOtp(email).onFailure { e ->
+                    return@launch _state.update { it.copy(loading = false, banner = banner(e)) }
+                }
+                cooldown.start(email, PURPOSE)
+            }
+            _state.update { it.copy(loading = false, code = RegistrationCode(email)) }
+            tick()
+        }
+    }
+
+    // "Resend code (59 s)", once a second while the sheet is open.
+    private fun tick() {
+        viewModelScope.launch {
+            while (true) {
+                val c = _state.value.code ?: break
+                val left = cooldown.secondsLeft(c.email, PURPOSE)
+                _state.update { s -> s.copy(code = s.code?.copy(resendIn = left)) }
+                if (left == 0) break
+                delay(SECOND_MS)
+            }
+        }
+    }
+
+    /** `register` (doctor) or `register-clinic-staff`, with the e-mailed code when there is one. */
+    private fun submit(
+        emailOtp: String?,
+        currentPassword: String? = null,
+    ) {
+        val s = _state.value
+        val staff = s.step == RegisterStep.Staff
+        _state.update { it.copy(loading = true, banner = null, code = it.code?.copy(busy = true, banner = null)) }
         viewModelScope.launch {
             val request =
                 RegisterRequest(
@@ -391,25 +504,12 @@ class RegisterViewModel(
                     key = s.invite.key,
                     phone = s.phone.trim().takeIf { it.isNotEmpty() }?.let(PhoneE164::normalize),
                     timeZone = s.timeZone,
+                    emailOtp = emailOtp,
+                    currentPassword = currentPassword,
                 )
-            // An invitation without an address lets the receptionist type any; the backend would then re-key whoever
-            // owns it (BE-29), so an address that already has an account is refused here (fails closed).
-            if (staff && !s.emailLocked) {
-                val taken =
-                    auth.existingPatient(
-                        CheckExistingPatientRequest(request.firstName, request.lastName, request.email),
-                    )
-                taken.exceptionOrNull()?.let {
-                        e ->
-                    return@launch _state.update { it.copy(loading = false, banner = banner(e)) }
-                }
-                if (taken.getOrNull() != null) {
-                    return@launch _state.update { it.copy(loading = false, emailError = Res.string.staffEmailInUse) }
-                }
-            }
             val token =
                 (if (staff) auth.registerClinicStaff(request) else auth.register(request)).getOrElse { e ->
-                    return@launch _state.update { it.copy(loading = false, banner = banner(e)) }
+                    return@launch refused(e, staff, emailOtp)
                 }
             // From here the account exists and the key is used: a retry can't help, so a token that can't be used
             // says so and leaves only the way back to Sign In.
@@ -421,6 +521,7 @@ class RegisterViewModel(
                         completed = true,
                         password = "",
                         confirm = "",
+                        code = null,
                         banner = CodeBanner(Res.string.registrationIncomplete),
                     )
                 }
@@ -447,21 +548,83 @@ class RegisterViewModel(
                     )
             }
             _state.update {
+                // Any failure from here (the PATCH ending the session) leaves the sheet: the account exists.
                 final.fold(
                     // The typed passwords are dropped once they are no longer needed (flow §12).
                     onSuccess = {
                             session ->
-                        it.copy(loading = false, password = "", confirm = "", signedIn = session)
+                        it.copy(loading = false, password = "", confirm = "", code = null, signedIn = session)
                     },
-                    onFailure = { e -> it.copy(loading = false, banner = banner(e)) },
+                    onFailure = { e -> it.copy(loading = false, code = null, banner = banner(e)) },
                 )
             }
+        }
+    }
+
+    /**
+     * A refused `register`: a wrong or expired code stays in the sheet to try again; an address that is already a
+     * doctor goes back to the form's e-mail; a receptionist's existing account gets the code sheet (the code proves it
+     * is theirs, BE-29); anything else is the banner.
+     */
+    private fun refused(
+        e: Throwable,
+        staff: Boolean,
+        emailOtp: String?,
+    ) {
+        val code = (e as? ApiException)?.code
+        when {
+            code == "EMAIL_OTP_INVALID" || code == "EMAIL_OTP_EXPIRED" ->
+                _state.update { s ->
+                    s.copy(
+                        loading = false,
+                        code = s.code?.copy(busy = false, code = "", error = Res.string.wrongOrExpiredCodeBackToCode),
+                    )
+                }
+            code == "DOCTOR_EXISTS" ->
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        code = null,
+                        step = if (staff) it.step else RegisterStep.Form,
+                        emailError = Res.string.doctorAccountExists,
+                    )
+                }
+            code == "OWNERSHIP_REQUIRED" && staff && emailOtp == null -> sendCode()
+            // A valid code didn't prove this account (found by phone, no e-mail): ask its current password too.
+            code == "OWNERSHIP_REQUIRED" && emailOtp != null ->
+                _state.update { s ->
+                    s.copy(
+                        loading = false,
+                        code =
+                            s.code?.copy(
+                                busy = false,
+                                needsPassword = true,
+                                error = Res.string.registrationExistingPassword.takeIf { s.code.needsPassword },
+                                banner =
+                                    CodeBanner(
+                                        Res.string.registrationExistingPassword,
+                                    ).takeIf { !s.code.needsPassword },
+                            ),
+                    )
+                }
+            // With the sheet open the reason shows in it (the page banner would sit behind it).
+            else ->
+                _state.update {
+                    if (it.code != null) {
+                        it.copy(loading = false, code = it.code.copy(busy = false, banner = banner(e)))
+                    } else {
+                        it.copy(loading = false, banner = banner(e))
+                    }
+                }
         }
     }
 
     private companion object {
         const val MIN_SEARCH = 2
         const val SEARCH_DEBOUNCE_MS = 300L
+        const val CODE_LENGTH = 6
+        const val SECOND_MS = 1_000L
+        const val PURPOSE = "REGISTRATION"
     }
 
     private fun banner(e: Throwable): CodeBanner {

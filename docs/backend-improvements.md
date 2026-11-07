@@ -47,6 +47,34 @@ Then: **Confirm with the backend** (questions, C-1…C-10) and **Already satisfi
 
 ---
 
+## Done on the backend (not yet merged or deployed)
+
+Branch `feature/doctor-app-backend-asks` in `backend-kotlin-shifa` (2026-11-07), one commit per item; the app side is on
+`doc-app2.0`. Production keeps the old behaviour until the branch is merged and released.
+
+- **BE-29** Done: an existing doctor gets 409 `DOCTOR_EXISTS` and keeps the password; any other existing account
+  needs the registration code sent to its own address or its current password (409 `OWNERSHIP_REQUIRED`), for doctor
+  and staff registration; `check-existing-doctor` and `check-identifier` match e-mails case-insensitively. App: the
+  code sheet (flow 01/09) and the codes' messages.
+- **BE-03** Done: optional `emailOtp` on both registrations, checked when present (`EMAIL_OTP_INVALID`/`_EXPIRED`).
+  Still optional for Flutter store builds; make it required after REL-05. App: sends it (D-04 lifted).
+- **BE-04** Done: the `doctorApp` block from `system_config` keys `doctor_app.*` (empty = not set), cached 60 s. App:
+  the splash already read it; unset values now arrive as `null` and are tolerated.
+- **BE-05** Done on the backend: `POST`/`DELETE /doctors/me/fcm-tokens`, pushes fan out to every device and the legacy
+  token, dead tokens dropped. App: waits for PUSH-01 (D-15).
+- **BE-06** Done: doctor pushes were already in the doctor's language; `data` now also carries `notificationId`,
+  `treatmentPlanId`, `patientFormId`, `installmentItemId`, the appointment's `patientId`, `conversationId` and
+  `carePartnershipId`, and the inbox rows carry the last two. Types and keys: backend `docs/api/push-notifications.md`.
+  App: chat and partnership rows open the conversation and the partnership.
+- **BE-01** Done (three of three on the backend): `GET /patients/{id}/forms/{formId}/pdf` and `POST …/pdf-document`
+  (renders, files as `FORM_025_2`, links; idempotent), `GET /treatment-plans/{id}/pdf?lang=`, `POST
+  /appointments/{id}/summary-document?lang=` (the server's existing summary, re-filed). Layouts ported from the app;
+  DejaVu fonts (Cyrillic; Uzbek Cyrillic not rendered). App: the 025-2 and the plan ask the server first and render
+  themselves only on a backend without the route (404/405). The visit summary stays the app's: the server's lacks
+  the dental record, photos, plan and signature, and both are filed today (open question for the user).
+- **BE-02** Done for doctors (staff not yet: product call): request/confirm with an e-mailed code, 409 with the
+  obligations, anonymisation that keeps clinical records; JSON export once a day. App: Privacy & data (flow 08/12).
+
 ## BE-01 Server-rendered PDFs
 
 **Needed by:** flows `05/13` (appointment summary), `06/10` (025-2 form), `09/16` and `09/13` (treatment plan);

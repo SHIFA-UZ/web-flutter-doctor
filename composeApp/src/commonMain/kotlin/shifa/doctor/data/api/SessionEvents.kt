@@ -5,7 +5,15 @@ package shifa.doctor.data.api
  * [PinLockout] five wrong app-lock PINs (LOCK-01), [Inactivity] 30 days untouched (LOCK-02), the others come from the
  * backend or the expiry checks.
  */
-enum class SessionEndReason { Expired, Unauthorized, AccountDisabled, SignedOut, PinLockout, Inactivity }
+enum class SessionEndReason {
+    Expired,
+    Unauthorized,
+    AccountDisabled,
+    SignedOut,
+    PinLockout,
+    Inactivity,
+    AccountDeleted,
+}
 
 /**
  * The one place a session ends from the network (17 §1): [apiCall] reports here with the token the failing request

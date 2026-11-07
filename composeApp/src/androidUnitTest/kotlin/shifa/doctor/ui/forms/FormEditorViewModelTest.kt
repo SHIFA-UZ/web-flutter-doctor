@@ -44,6 +44,9 @@ import shifa.doctor.utils.PracticeClock
 class FormEditorViewModelTest {
     private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var linkStatus = HttpStatusCode.OK
+
+    // BE-01's `pdf-document`: a backend without it (404, today's production) unless a test says otherwise.
+    private var serverPdf = HttpStatusCode.NotFound
     private var latest = true
     private var formsFail = false
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
@@ -83,6 +86,12 @@ class FormEditorViewModelTest {
                         )
                     } else {
                         respond("""{"status":500,"code":"X","requestId":"req-l"}""", linkStatus, json)
+                    }
+                path.endsWith("/pdf-document") ->
+                    if (serverPdf == HttpStatusCode.OK) {
+                        ok("""{"documentId":202,"url":"https://api/patientdocuments/14/form.pdf"}""")
+                    } else {
+                        respond("""{"status":${serverPdf.value},"code":"X","requestId":"req-p"}""", serverPdf, json)
                     }
                 path.endsWith(
                     "/request-signature",
@@ -178,13 +187,42 @@ class FormEditorViewModelTest {
         classToTest.save()
         settle { classToTest.state.value.done }
         val writes = calls.filter { !it.startsWith("GET") }.map { it.substringBefore('?') }
+        // Today's production has no `pdf-document` (404): the app renders, uploads and links as before.
         assertThat(writes).containsExactly(
             "POST patients/14/forms",
+            "POST patients/14/forms/9/pdf-document",
             "POST patients/14/documents",
             "POST patients/14/forms/9/link-document",
             "POST clinical-engine/record-usage",
         ).inOrder()
         assertThat(classToTest.state.value.form?.documentId).isEqualTo(101L)
+    }
+
+    @Test
+    fun `a backend that files the PDF itself replaces the app's render, upload and link`() {
+        serverPdf = HttpStatusCode.OK
+        val classToTest = opened()
+        classToTest.edit { it.copy(diagnosis = "Pulpit", clinicalDiseaseId = "dis.010") }
+        classToTest.save()
+        settle { classToTest.state.value.done }
+        val writes = calls.filter { !it.startsWith("GET") }.map { it.substringBefore('?') }
+        assertThat(writes).containsExactly(
+            "POST patients/14/forms",
+            "POST patients/14/forms/9/pdf-document",
+            "POST clinical-engine/record-usage",
+        ).inOrder()
+        assertThat(classToTest.state.value.form?.documentId).isEqualTo(202L)
+    }
+
+    @Test
+    fun `a failure filing on the server stops at the PDF step, not the app's fallback`() {
+        serverPdf = HttpStatusCode.InternalServerError
+        val classToTest = opened()
+        classToTest.edit { it.copy(diagnosis = "Pulpit") }
+        classToTest.save()
+        settle { !classToTest.state.value.saving }
+        assertThat(classToTest.state.value.failedAt).isEqualTo(SaveStep.Pdf)
+        assertThat(calls.none { it.startsWith("POST patients/14/documents") }).isTrue()
     }
 
     @Test
@@ -230,6 +268,7 @@ class FormEditorViewModelTest {
         val writes = calls.filter { !it.startsWith("GET") }.map { it.substringBefore('?') }
         assertThat(writes).containsExactly(
             "POST patients/14/forms",
+            "POST patients/14/forms/9/pdf-document",
             "POST patients/14/documents",
             "POST patients/14/forms/9/link-document",
             "PUT patients/14/forms/9",
@@ -276,7 +315,13 @@ class FormEditorViewModelTest {
         classToTest.save()
         settle { classToTest.state.value.done }
         val writes = calls.filter { !it.startsWith("GET") }.map { it.substringBefore('?') }
-        assertThat(writes).containsExactly("PUT patients/14/forms/5", "PUT patients/14/documents/77").inOrder()
+        assertThat(writes)
+            .containsExactly(
+                "PUT patients/14/forms/5",
+                "POST patients/14/forms/5/pdf-document",
+                "PUT patients/14/documents/77",
+            )
+            .inOrder()
     }
 
     @Test

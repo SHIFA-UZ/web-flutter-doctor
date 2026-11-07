@@ -63,6 +63,27 @@ class PublicConfigRepositoryTest {
         }
 
     @Test
+    fun `the backend's block as it ships (unset values are null) parses`() =
+        runTest {
+            // GET /api/public/config with the BE-04 rows seeded and nothing set (backend V125).
+            val shipped =
+                """{"googleMapsApiKey":"","transcriptionFeedbackEnabled":"false","doctorApp":{""" +
+                    """"minVersion":{"android":null,"ios":null},"latestVersion":{"android":null,"ios":null},""" +
+                    """"storeUrl":{"android":"https://play.google.com/store/apps/details?id=com.shifa.doc","ios":null},""" +
+                    """"maintenance":{"active":false,"message":{"en":null,"uz":null,"ru":null},"until":null}}}"""
+            assertThat(repo(shipped).bootGate("en").getOrNull()).isEqualTo(BootGate.None)
+            val down =
+                shipped.replace(
+                    """"active":false,"message":{"en":null""",
+                    """"active":true,"message":{"en":"Back soon"""",
+                )
+            assertThat(repo(down).bootGate("ru").getOrNull()).isEqualTo(BootGate.Maintenance("Back soon"))
+            val old = shipped.replace(""""minVersion":{"android":null""", """"minVersion":{"android":"9.0.0"""")
+            assertThat(repo(old).bootGate("en").getOrNull())
+                .isEqualTo(BootGate.Update("https://play.google.com/store/apps/details?id=com.shifa.doc"))
+        }
+
+    @Test
     fun `failures and slowness come back as failures (the splash ignores them)`() =
         runTest {
             assertThat(repo("<html>", HttpStatusCode.BadGateway).bootGate("en").isFailure).isTrue()

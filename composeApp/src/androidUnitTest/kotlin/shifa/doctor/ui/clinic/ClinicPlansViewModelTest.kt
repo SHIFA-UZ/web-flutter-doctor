@@ -30,6 +30,10 @@ class ClinicPlansViewModelTest {
     private val calls = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var detailMissing = false
     private val plan = """{"id":501,"clinicId":2,"patientId":12,"patientName":"Jasur","title":"Molars","status":"ACTIVE","totalMinor":160000000,"paidMinor":100000000,"owedMinor":60000000,"currency":"UZS","visitCount":2,"linesCompletedCount":1,"linesTotalCount":3}"""
+
+    // BE-01's `GET /treatment-plans/{id}/pdf`: missing (404, today's production) unless a test serves it.
+    private var serverPdf: String? = null
+
     private val client =
         createHttpClient(
             { null },
@@ -59,6 +63,15 @@ class ClinicPlansViewModelTest {
                             """{"summary":$plan,"lines":[{"id":1,"title":"Root canal","lineTotalMinor":80000000,"status":"COMPLETED","specialtyMetadata":"{\"fdi\":\"36\"}"}],"installmentPlans":[{"installmentPlanId":61,"status":"ACTIVE","totalAmountMinor":30000000,"currency":"UZS","numInstallments":1,"scheduleRows":[{"installmentItemId":801,"sequenceNumber":1,"amountMinor":30000000,"currency":"UZS","dueDate":"2026-12-01","status":"PENDING"}]}]}""",
                         )
                     path == "clinics/2/finance/payments" -> ok("""{"id":1}""")
+                    path == "treatment-plans/501/pdf" ->
+                        serverPdf?.let {
+                            respond(
+                                it,
+                                HttpStatusCode.OK,
+                                headersOf(HttpHeaders.ContentType, "application/pdf"),
+                            )
+                        }
+                            ?: respond("""{"status":404,"code":"NOT_FOUND"}""", HttpStatusCode.NotFound, json)
                     else -> ok("{}")
                 }
             },
@@ -172,7 +185,7 @@ class ClinicPlansViewModelTest {
             PlanDetailViewModel(501, 2, TreatmentPlansRepository { client }, FinanceRepository { client }, { d, _ ->
                 made = d
                 bytes
-            }).also { created += it }
+            }, language = { "en" }).also { created += it }
         // Nothing read yet: nothing to export.
         vm.exportPdf({ error("not called") }, shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels(), "2026-11-06")
         assertThat(vm.state.value.exporting).isFalse()
@@ -209,5 +222,25 @@ class ClinicPlansViewModelTest {
         assertThat(
             vm.state.value.banner!!.text,
         ).isEqualTo(Res.string.clinicTreatmentPlanExportPdfFailed)
+    }
+
+    @Test
+    fun `a backend that renders the plan's PDF is asked first, in the app's language`() {
+        serverPdf = "%PDF-server"
+        val vm =
+            PlanDetailViewModel(
+                501,
+                2,
+                TreatmentPlansRepository { client },
+                FinanceRepository { client },
+                { _, _ -> error("the app doesn't render it") },
+                language = { "ru" },
+            ).also { created += it }
+        vm.load()
+        settle { vm.state.value.detail != null }
+        vm.exportPdf({ error("not needed") }, shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels(), "2026-11-07")
+        settle { vm.state.value.pdf != null }
+        assertThat(vm.state.value.pdf!!.bytes.decodeToString()).isEqualTo("%PDF-server")
+        assertThat(calls).contains("GET treatment-plans/501/pdf?lang=ru")
     }
 }

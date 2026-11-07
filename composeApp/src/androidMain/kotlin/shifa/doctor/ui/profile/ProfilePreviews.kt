@@ -17,6 +17,7 @@ import shifa.doctor.generated.resources.networkError
 import shifa.doctor.generated.resources.photoUploadFailed
 import shifa.doctor.generated.resources.servicePriceInvalid
 import shifa.doctor.generated.resources.serviceTagDuplicate
+import shifa.doctor.generated.resources.wrongOrExpiredCodeBackToCode
 import shifa.doctor.ui.theme.PreviewTheme
 
 // DaProfile root (flow 08/01): complete, incomplete (with the completeness card), staff, and the error state.
@@ -315,3 +316,23 @@ internal fun LanguagePreview() = PreviewTheme { LanguageContent(shifa.doctor.dat
 // LEGAL-01: About (the app, its version, the privacy policy, diagnostics).
 @Composable
 internal fun AboutPreview() = PreviewTheme { AboutContent({}, {}, {}, {}) }
+
+// BE-02, flow 08/12: the screen, the code sheet after a wrong code, and a refusal with its reasons.
+@Preview(widthDp = 402, heightDp = 874)
+@Composable
+internal fun PrivacyPreview() = PreviewTheme { PrivacyContent(PrivacyUiState(), PrivacyActions()) }
+
+@Preview(widthDp = 402, heightDp = 480)
+@Composable
+internal fun PrivacyCodePreview() =
+    PreviewTheme {
+        DeleteCodeSheet(
+            PrivacyUiState(
+                step = DeleteStep.Code,
+                maskedEmail = "a***@example.uz",
+                codeError = Res.string.wrongOrExpiredCodeBackToCode,
+                resendIn = 37,
+            ),
+            PrivacyActions(),
+        )
+    }

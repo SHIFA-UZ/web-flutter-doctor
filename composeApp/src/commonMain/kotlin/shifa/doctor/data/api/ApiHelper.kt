@@ -43,6 +43,13 @@ suspend inline fun <reified T> apiCall(request: () -> HttpResponse): Result<T> {
     }
 }
 
+/**
+ * A newer endpoint this backend doesn't have yet (404 or 405 on a route the app knows the object exists for): the
+ * caller falls back to what it did before (BE-01: the PDFs it renders itself).
+ */
+val Throwable.endpointMissing: Boolean
+    get() = this is ApiException && (status == 404 || status == 405)
+
 /** Turns a non-2xx [response] into its [ApiException], ending the session when [endsSession] says so. */
 @PublishedApi
 internal suspend fun failure(response: HttpResponse): ApiException {
@@ -52,7 +59,7 @@ internal suspend fun failure(response: HttpResponse): ApiException {
     val sentToken = response.call.request.headers[HttpHeaders.Authorization]?.removePrefix("Bearer ")
     sentToken?.let { token -> endsSession(status, error?.code, sentToken = true)?.let { SessionEvents.end(it, token) } }
     logFailure(response, error, null)
-    return ApiException.of(status, error?.code, error?.requestId)
+    return ApiException.of(status, error?.code, error?.requestId).also { it.details = error?.details.orEmpty() }
 }
 
 /**

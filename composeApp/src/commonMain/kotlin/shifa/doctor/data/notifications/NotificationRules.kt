@@ -99,10 +99,21 @@ sealed interface NotificationTarget {
         val id: Long,
     ) : NotificationTarget
 
-    /** The Chat tab: the row carries no conversation id (BE-06), so the list, not a thread. */
+    /** The Chat tab, for a row without its conversation (older backends). */
     data object Chat : NotificationTarget
 
+    /** The row's conversation (BE-06). */
+    data class Conversation(
+        val id: Long,
+    ) : NotificationTarget
+
+    /** The partnership list, for a row without its partnership (older backends). */
     data object Partnerships : NotificationTarget
+
+    /** The row's partnership (BE-06). */
+    data class Partnership(
+        val id: Long,
+    ) : NotificationTarget
 
     /** Nothing to open: the tap only marks it read. */
     data object Inbox : NotificationTarget
@@ -117,12 +128,22 @@ fun AppNotification.target(staff: Boolean): NotificationTarget {
     val appointment = appointmentId
     val task = taskId
     return when {
-        kind == NotificationKind.Chat -> NotificationTarget.Chat
+        kind == NotificationKind.Chat ->
+            conversationId?.let {
+                NotificationTarget.Conversation(
+                    it,
+                )
+            } ?: NotificationTarget.Chat
         staff -> NotificationTarget.Inbox
         kind.isAccess && patient != null ->
             NotificationTarget.Patient(patient, documentId, openDocument = kind == NotificationKind.AccessApproved)
         kind.isAccess -> NotificationTarget.Inbox
-        kind.isPartnership -> NotificationTarget.Partnerships
+        kind.isPartnership ->
+            carePartnershipId?.let {
+                NotificationTarget.Partnership(
+                    it,
+                )
+            } ?: NotificationTarget.Partnerships
         appointment != null -> NotificationTarget.Appointment(appointment, appointmentStartAt)
         kind == NotificationKind.TaskCompleted && task != null -> NotificationTarget.Task(task)
         patient != null -> NotificationTarget.Patient(patient)

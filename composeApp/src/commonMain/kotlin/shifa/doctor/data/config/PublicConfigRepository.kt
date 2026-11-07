@@ -46,7 +46,8 @@ data class PerPlatform(
 @Serializable
 data class Maintenance(
     val active: Boolean = false,
-    val message: Map<String, String> = emptyMap(),
+    // The backend sends null for a language it has no text for.
+    val message: Map<String, String?> = emptyMap(),
 )
 
 /** What the splash must show before anything else (flow 01/01 §3, items 6–7). */

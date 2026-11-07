@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import org.jetbrains.compose.resources.StringResource
+import shifa.doctor.data.api.endpointMissing
 import shifa.doctor.data.api.requestId
 import shifa.doctor.data.api.toUserMessage
 import shifa.doctor.data.clinics.clinicsRepository
@@ -54,6 +55,7 @@ import shifa.doctor.data.model.PlanVisit
 import shifa.doctor.data.model.TreatmentPlanDetail
 import shifa.doctor.data.model.TreatmentPlanSummary
 import shifa.doctor.data.model.mayManageFinance
+import shifa.doctor.data.storage.languageStorage
 import shifa.doctor.data.treatmentplans.TreatmentPlanPdf
 import shifa.doctor.data.treatmentplans.TreatmentPlanPdfData
 import shifa.doctor.data.treatmentplans.TreatmentPlanPdfLabels
@@ -696,6 +698,8 @@ class PlanDetailViewModel(
     private val makePdf: (TreatmentPlanPdfData, TreatmentPlanPdfLabels) -> ByteArray? = { d, l ->
         TreatmentPlanPdf().pdf(d, l)
     },
+    // The language the server renders in (BE-01): the app's, as the backend names it (Cyrillic Uzbek is `uz`).
+    private val language: () -> String = { languageStorage.language.value.backendCode },
 ) : ViewModel() {
     private val _state = MutableStateFlow(PlanDetailUiState())
     val state: StateFlow<PlanDetailUiState> = _state.asStateFlow()
@@ -853,7 +857,8 @@ class PlanDetailViewModel(
     }
 
     /**
-     * Export PDF (TP-05): the plan as it was last read, made in the app (BE-01), named
+     * Export PDF (TP-05): rendered by the backend (BE-01), or, on a backend without that route, made in the app from
+     * the plan as it was last read; named
      * `treatment_plan_<id>_<yyyy-MM-dd>.pdf` (Flutter's), then handed to the share sheet ([pdfShared] after).
      */
     fun exportPdf(
@@ -865,14 +870,30 @@ class PlanDetailViewModel(
         if (_state.value.exporting) return
         _state.update { it.copy(menu = false, exporting = true, banner = null) }
         viewModelScope.launch {
-            // Let "Preparing PDF…" draw before the pages are laid out.
-            yield()
-            val bytes = runCatching { makePdf(data(detail), labels) }.getOrNull()?.takeIf { it.isNotEmpty() }
+            val server = repo.pdf(planId, language())
+            val failure = server.exceptionOrNull()?.takeIf { !it.endpointMissing }
+            val bytes =
+                server.getOrNull()?.takeIf { it.isNotEmpty() } ?: if (failure == null) {
+                    // Let "Preparing PDF…" draw before the pages are laid out.
+                    yield()
+                    runCatching { makePdf(data(detail), labels) }.getOrNull()?.takeIf { it.isNotEmpty() }
+                } else {
+                    null
+                }
             _state.update {
                 it.copy(
                     exporting = false,
                     pdf = bytes?.let { b -> PlanPdfFile("treatment_plan_${planId}_$day.pdf", b) },
-                    banner = if (bytes == null) CodeBanner(Res.string.clinicTreatmentPlanExportPdfFailed) else null,
+                    banner =
+                        if (bytes == null) {
+                            CodeBanner(
+                                failure?.toUserMessage(Res.string.clinicTreatmentPlanExportPdfFailed)
+                                    ?: Res.string.clinicTreatmentPlanExportPdfFailed,
+                                requestId = failure?.requestId,
+                            )
+                        } else {
+                            null
+                        },
                 )
             }
         }

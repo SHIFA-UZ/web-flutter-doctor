@@ -28,6 +28,9 @@ data class NotificationDto(
     val taskId: Long? = null,
     val treatmentPlanId: Long? = null,
     val patientFormId: Long? = null,
+    // BE-06 (backend 2026-11-07): the conversation of a chat row and the partnership of a care-partnership row.
+    val conversationId: Long? = null,
+    val carePartnershipId: Long? = null,
     val createdAt: String? = null,
     val readAt: String? = null,
 )
@@ -58,6 +61,8 @@ data class AppNotification(
     val documentAccessRequestId: Long? = null,
     val requestingDoctorName: String? = null,
     val taskId: Long? = null,
+    val conversationId: Long? = null,
+    val carePartnershipId: Long? = null,
 ) {
     companion object {
         /** Null without an id or a time (the row is skipped, not the page). */
@@ -80,6 +85,8 @@ data class AppNotification(
                 documentAccessRequestId = d.documentAccessRequestId,
                 requestingDoctorName = d.requestingDoctorName?.trim()?.takeIf { it.isNotEmpty() },
                 taskId = d.taskId,
+                conversationId = d.conversationId,
+                carePartnershipId = d.carePartnershipId,
             )
         }
     }

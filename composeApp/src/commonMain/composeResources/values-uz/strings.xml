@@ -19,6 +19,7 @@
     <string name="accountCreateFailed">Hisobni yaratib bo'lmadi. Qayta urinib ko'ring.</string>
     <string name="accountCreated">Hisob yaratildi</string>
     <string name="accountCreatedPleaseSignIn">Hisob yaratildi! Iltimos, tizimga kiring.</string>
+    <string name="accountDeleted">Hisobingiz o'chirildi.</string>
     <string name="accountDisabledBanner">Bu hisob o'chirilgan. Klinika administratoriga murojaat qiling.</string>
     <string name="accountInformation">Hisob ma'lumotlari</string>
     <string name="accountPending">Hisobingiz tasdiq kutyapti.</string>
@@ -163,6 +164,8 @@
     <string name="appLockOn">Ilova qulfi yoqilgan</string>
     <string name="appLockSubtitle">Ilova qayta ochilganda PIN kod so'ralsin</string>
     <string name="appName">Shifa Doctor</string>
+    <string name="appPermissions">Ruxsatlar</string>
+    <string name="appPermissionsHint">Kamera, rasmlar, mikrofon, joylashuv, bildirishnomalar</string>
     <string name="appVersionLabel">Shifa Doctor · Versiya %1$s</string>
     <string name="appliedCode">Qo'llandi: %1$s</string>
     <string name="apply">Qo'llash</string>
@@ -888,6 +891,7 @@
     <string name="compressingImage">Rasm siqilmoqda...</string>
     <string name="configUpdated">Sozlamalar yangilandi</string>
     <string name="confirm">Tasdiqlash</string>
+    <string name="confirmItsYou">Bu sizligingizni tasdiqlang</string>
     <string name="confirmLogout">Chiqishni xohlaysizmi?</string>
     <string name="confirmNewPassword">Yangi parolni tasdiqlash</string>
     <string name="confirmPassword">Parolni tasdiqlang</string>
@@ -969,6 +973,9 @@
     <string name="customTimesLabel">Kunlik vaqtlar</string>
     <string name="dashboard">Boshqaruv paneli</string>
     <string name="dashboardSubtitle">Klinikangiz faoliyati haqida umumiy ma'lumot</string>
+    <string name="dataExportFailed">Ma'lumotlarni yuklab bo'lmadi</string>
+    <string name="dataExportOncePerDay">Ma'lumotlarni kuniga bir marta yuklab olish mumkin. Ertaga qayta urinib ko'ring.</string>
+    <string name="dataExportSaved">Ma'lumotlaringiz saqlandi: %1$s</string>
     <string name="date">Sana</string>
     <string name="dateAndTime">Sana va vaqt</string>
     <string name="dateHoursFailed">Bu vaqtni saqlab bo'lmadi. Qayta urinib ko'ring.</string>
@@ -983,7 +990,14 @@
     <string name="declineInvite">Rad etish</string>
     <string name="defaultVisitReason">Ko'rik</string>
     <string name="delete">O'chirish</string>
+    <string name="deleteAccount">Hisobni o'chirish</string>
+    <string name="deleteAccountBody">Hisobni o'chirish profilingizni va barcha qurilmalardagi kirishingizni olib tashlaydi. Bemorlarning tibbiy yozuvlari qonun talabiga ko'ra bemorlar va klinikalarda qoladi. Buni qaytarib bo'lmaydi.</string>
+    <string name="deleteAccountFailed">Hisobni o'chirib bo'lmadi</string>
+    <string name="deleteAccountQuestion">Hisobingizni o'chirasizmi?</string>
+    <string name="deleteAccountQuestionBody">Profilingiz va kirishingiz o'chiriladi, barcha qurilmalardan chiqasiz. Bemor yozuvlari bemorlarda qoladi. Buni qaytarib bo'lmaydi.</string>
+    <string name="deleteBlocked">Hisobingizni hozircha o'chirib bo'lmaydi</string>
     <string name="deleteCertificateTitle">Sertifikat o'chirilsinmi?</string>
+    <string name="deleteCodeSent">%1$s manziliga 6 xonali kod yubordik. Hisobni o'chirish uchun uni kiriting.</string>
     <string name="deleteGroupBody">Uning xizmatlari qoladi va guruhsiz bo'ladi.</string>
     <string name="deleteGroupTitle">Guruh o'chirilsinmi?</string>
     <string name="deleteLocation">Joylashuvni o'chirish</string>
@@ -1139,6 +1153,8 @@
     <string name="doneForToday">Bugun uchun tamom</string>
     <string name="doneForTodayBody">Bugungi barcha tashriflar yakunlandi. Keyingi 14 kunga hech narsa band qilinmagan.</string>
     <string name="donutSummary">Klinikada %1$s, video %2$s</string>
+    <string name="downloadMyData">Ma'lumotlarim nusxasini yuklab olish</string>
+    <string name="downloadMyDataHint">Profil, sozlamalar va manzillar, kuniga bir marta</string>
     <string name="downloadSummary">Yuklab olish</string>
     <string name="drMedPrefix">Dr. med.</string>
     <string name="draft">Qoralama</string>
@@ -1921,6 +1937,8 @@
     <string name="now">Hozir</string>
     <string name="numeric">Raqamli</string>
     <string name="objectiveExam">Obyektiv tekshiruv</string>
+    <string name="obligationAppointments">Kelgusi qabullaringizni bekor qiling yoki boshqa shifokorga topshiring.</string>
+    <string name="obligationSubscription">Pullik obunangizni bekor qiling.</string>
     <string name="occlusionBiteType">Tish jipslanishi (pripkus)</string>
     <string name="of">/</string>
     <string name="off">O'chirilgan</string>
@@ -2144,6 +2162,8 @@
     <string name="primary">Asosiy</string>
     <string name="primaryLocationHint">Bemorlar avval asosiy manzilni ko'radi. O'zgartirish uchun boshqasini asosiy qiling.</string>
     <string name="printSummary">Chop etish</string>
+    <string name="privacyAndData">Maxfiylik va ma'lumotlar</string>
+    <string name="privacyAndDataHint">Ma'lumotlarni yuklab olish, ruxsatlar, hisobni o'chirish</string>
     <string name="proPlanRequired">PRO tarif kerak</string>
     <string name="processAndLeave">Qayta ishlash va chiqish</string>
     <string name="processRecording">Qayta ishlash</string>
@@ -2193,8 +2213,10 @@
     <string name="regenerateSummary">Xulosani qayta yaratish</string>
     <string name="region">Viloyat</string>
     <string name="registrationConflict">Bu email yoki telefon raqami boshqa hisobga tegishli. Mos ma'lumotlarni kiriting yoki qo'llab-quvvatlash xizmatiga murojaat qiling.</string>
+    <string name="registrationExistingPassword">Bu telefon raqami bilan Shifa hisobi allaqachon mavjud. Davom etish uchun o'sha hisobning joriy parolini kiriting.</string>
     <string name="registrationFailed">Hisob yaratilmadi. Qaytadan urinib ko'ring.</string>
     <string name="registrationIncomplete">Hisobingiz yaratildi, lekin tizimga kirib bo'lmadi. Iltimos, yangi parolingiz bilan kiring.</string>
+    <string name="registrationOwnershipRequired">Bu email bilan Shifa hisobi allaqachon mavjud. Shu emailga yuborilgan kod bilan tasdiqlang.</string>
     <string name="reject">Rad etish</string>
     <string name="rejected">Rad etildi</string>
     <string name="rejoinCall">Qayta qo'shilish</string>
@@ -2875,6 +2897,8 @@
     <string name="youLeftTheCall">Siz qo'ng'iroqdan chiqdingiz</string>
     <string name="yourCameraPreview">Kamerangizni oldindan ko'rish</string>
     <string name="yourCurrentPlan">Joriy tarifingiz</string>
+    <string name="yourData">Sizning ma'lumotlaringiz</string>
+    <string name="yourDataBody">Shifa sizning profilingiz, jadvalingiz, qabullaringiz, chat xabarlaringiz hamda siz va bemorlaringiz yuklagan hujjatlarni saqlaydi. Bemor yozuvlari bemorlarga tegishli va tibbiy hujjatlarni saqlash qoidalariga muvofiq saqlanadi.</string>
     <string name="yourName">Sizning ismingiz</string>
     <string name="youveSignedOut">Siz tizimdan chiqdingiz.</string>
 </resources>

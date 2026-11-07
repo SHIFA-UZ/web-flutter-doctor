@@ -12,6 +12,7 @@ object ApiConfig {
     object Endpoints {
         const val LOGIN = "auth/login"
         const val SEND_LOGIN_OTP = "auth/send-login-otp"
+        const val SEND_EMAIL_OTP = "auth/send-email-otp"
         const val VERIFY_EMAIL_OTP = "auth/verify-email-otp"
         const val SEND_FORGOT_PASSWORD_OTP = "auth/send-forgot-password-otp"
         const val FORGOT_PASSWORD_RESET = "auth/forgot-password-reset"
@@ -135,6 +136,8 @@ object ApiConfig {
 
         fun treatmentPlanDetail(id: Long) = "treatment-plans/$id/detail"
 
+        fun treatmentPlanPdf(id: Long) = "treatment-plans/$id/pdf"
+
         fun treatmentPlanVisits(id: Long) = "treatment-plans/$id/visits"
 
         fun treatmentPlanLines(id: Long) = "treatment-plans/$id/lines"
@@ -179,6 +182,9 @@ object ApiConfig {
         fun serviceGroup(id: Long) = "doctors/me/service-groups/$id"
 
         const val DOCTOR_PHOTO = "doctors/me/photo"
+        const val DATA_EXPORT = "doctors/me/export"
+        const val DELETE_ACCOUNT_REQUEST = "doctors/me/delete-account/request"
+        const val DELETE_ACCOUNT_CONFIRM = "doctors/me/delete-account/confirm"
         const val DOCTOR_CERTIFICATE = "doctors/me/certificate"
         const val DOCTOR_LOCATIONS = "doctors/me/locations"
 

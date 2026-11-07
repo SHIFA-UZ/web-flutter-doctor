@@ -89,4 +89,15 @@ data class RegisterRequest(
     val key: String,
     val phone: String? = null,
     val timeZone: String? = null,
+    /** The registration code sent to [email] (BE-03); it also proves an existing account at that address is yours. */
+    val emailOtp: String? = null,
+    /** An existing account's current password: its proof when the code can't be (an account found by phone, BE-29). */
+    val currentPassword: String? = null,
+)
+
+/** `POST /auth/send-email-otp`. */
+@Serializable
+data class SendEmailOtpRequest(
+    val email: String,
+    val purpose: String,
 )

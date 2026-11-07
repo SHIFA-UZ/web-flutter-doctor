@@ -19,6 +19,7 @@
     <string name="accountCreateFailed">Не удалось создать аккаунт. Попробуйте снова.</string>
     <string name="accountCreated">Аккаунт создан</string>
     <string name="accountCreatedPleaseSignIn">Аккаунт создан! Войдите в систему.</string>
+    <string name="accountDeleted">Ваш аккаунт удалён.</string>
     <string name="accountDisabledBanner">Этот аккаунт отключён. Обратитесь к администратору клиники.</string>
     <string name="accountInformation">Данные аккаунта</string>
     <string name="accountPending">Ваш аккаунт на модерации.</string>
@@ -163,6 +164,8 @@
     <string name="appLockOn">Блокировка включена</string>
     <string name="appLockSubtitle">Запрашивать PIN-код при повторном открытии приложения</string>
     <string name="appName">Shifa Doctor</string>
+    <string name="appPermissions">Разрешения</string>
+    <string name="appPermissionsHint">Камера, фото, микрофон, геолокация, уведомления</string>
     <string name="appVersionLabel">Shifa Doctor · Версия %1$s</string>
     <string name="appliedCode">Применено: %1$s</string>
     <string name="apply">Применить</string>
@@ -888,6 +891,7 @@
     <string name="compressingImage">Сжатие изображения...</string>
     <string name="configUpdated">Настройки обновлены</string>
     <string name="confirm">Подтвердить</string>
+    <string name="confirmItsYou">Подтвердите, что это вы</string>
     <string name="confirmLogout">Вы уверены, что хотите выйти?</string>
     <string name="confirmNewPassword">Подтвердите новый пароль</string>
     <string name="confirmPassword">Подтвердите пароль</string>
@@ -969,6 +973,9 @@
     <string name="customTimesLabel">Времена в день</string>
     <string name="dashboard">Панель управления</string>
     <string name="dashboardSubtitle">Обзор деятельности вашей клиники</string>
+    <string name="dataExportFailed">Не удалось скачать данные</string>
+    <string name="dataExportOncePerDay">Данные можно скачивать раз в день. Попробуйте завтра.</string>
+    <string name="dataExportSaved">Ваши данные сохранены: %1$s</string>
     <string name="date">Дата</string>
     <string name="dateAndTime">Дата и время</string>
     <string name="dateHoursFailed">Не удалось сохранить эти часы. Попробуйте снова.</string>
@@ -983,7 +990,14 @@
     <string name="declineInvite">Отклонить</string>
     <string name="defaultVisitReason">Осмотр</string>
     <string name="delete">Удалить</string>
+    <string name="deleteAccount">Удалить аккаунт</string>
+    <string name="deleteAccountBody">Удаление аккаунта удаляет ваш профиль и вход на всех устройствах. Медицинские записи пациентов остаются у пациентов и клиник, как требует закон. Это нельзя отменить.</string>
+    <string name="deleteAccountFailed">Не удалось удалить аккаунт</string>
+    <string name="deleteAccountQuestion">Удалить аккаунт?</string>
+    <string name="deleteAccountQuestionBody">Профиль и вход будут удалены, вы выйдете на всех устройствах. Записи пациентов останутся у пациентов. Это нельзя отменить.</string>
+    <string name="deleteBlocked">Аккаунт пока нельзя удалить</string>
     <string name="deleteCertificateTitle">Удалить сертификат?</string>
+    <string name="deleteCodeSent">Мы отправили 6-значный код на %1$s. Введите его, чтобы удалить аккаунт.</string>
     <string name="deleteGroupBody">Её услуги останутся и будут без группы.</string>
     <string name="deleteGroupTitle">Удалить группу?</string>
     <string name="deleteLocation">Удалить местоположение</string>
@@ -1139,6 +1153,8 @@
     <string name="doneForToday">На сегодня всё</string>
     <string name="doneForTodayBody">Все визиты на сегодня завершены. На ближайшие 14 дней записей нет.</string>
     <string name="donutSummary">Очно %1$s, видео %2$s</string>
+    <string name="downloadMyData">Скачать копию моих данных</string>
+    <string name="downloadMyDataHint">Профиль, настройки и адреса, раз в день</string>
     <string name="downloadSummary">Скачать</string>
     <string name="drMedPrefix">Dr. med.</string>
     <string name="draft">Черновик</string>
@@ -1921,6 +1937,8 @@
     <string name="now">Сейчас</string>
     <string name="numeric">Числовой</string>
     <string name="objectiveExam">Объективный осмотр</string>
+    <string name="obligationAppointments">Отмените или передайте предстоящие приёмы.</string>
+    <string name="obligationSubscription">Отмените платную подписку.</string>
     <string name="occlusionBiteType">Окклюзия / Тип прикуса</string>
     <string name="of">из</string>
     <string name="off">Выкл</string>
@@ -2144,6 +2162,8 @@
     <string name="primary">Основное</string>
     <string name="primaryLocationHint">Пациенты сначала видят основной адрес. Чтобы изменить его, сделайте основным другой.</string>
     <string name="printSummary">Печать</string>
+    <string name="privacyAndData">Конфиденциальность и данные</string>
+    <string name="privacyAndDataHint">Скачать данные, разрешения, удалить аккаунт</string>
     <string name="proPlanRequired">Нужен тариф PRO</string>
     <string name="processAndLeave">Обработать и выйти</string>
     <string name="processRecording">Обработать</string>
@@ -2193,8 +2213,10 @@
     <string name="regenerateSummary">Создать резюме заново</string>
     <string name="region">Регион</string>
     <string name="registrationConflict">Этот email или номер телефона принадлежит другому аккаунту. Укажите совпадающие данные или обратитесь в поддержку.</string>
+    <string name="registrationExistingPassword">С этим номером телефона уже есть аккаунт Shifa. Введите текущий пароль этого аккаунта, чтобы продолжить.</string>
     <string name="registrationFailed">Не удалось создать аккаунт. Попробуйте ещё раз.</string>
     <string name="registrationIncomplete">Аккаунт создан, но войти не удалось. Войдите с новым паролем.</string>
+    <string name="registrationOwnershipRequired">С этим email уже есть аккаунт Shifa. Подтвердите его кодом, отправленным на этот email.</string>
     <string name="reject">Отклонить</string>
     <string name="rejected">Отклонено</string>
     <string name="rejoinCall">Вернуться</string>
@@ -2875,6 +2897,8 @@
     <string name="youLeftTheCall">Вы вышли из звонка</string>
     <string name="yourCameraPreview">Предпросмотр вашей камеры</string>
     <string name="yourCurrentPlan">Ваш текущий тариф</string>
+    <string name="yourData">Ваши данные</string>
+    <string name="yourDataBody">Shifa хранит ваш профиль, расписание, приёмы, сообщения чата и документы, загруженные вами и вашими пациентами. Медицинские записи принадлежат пациентам и хранятся по правилам ведения медицинской документации.</string>
     <string name="yourName">Ваше имя</string>
     <string name="youveSignedOut">Вы вышли из аккаунта.</string>
 </resources>
