@@ -607,7 +607,7 @@ private val WEEKDAYS =
     )
 
 @Composable
-private fun dayName(weekday: Int) = tr(WEEKDAYS[weekday - 1])
+internal fun dayName(weekday: Int) = tr(WEEKDAYS[weekday - 1])
 
 private fun label(minute: Int) = displayTime(LocalTime(minute / 60, minute % 60))
 

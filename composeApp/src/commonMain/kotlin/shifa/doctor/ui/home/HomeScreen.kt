@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,9 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -43,6 +48,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.yearsUntil
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -73,21 +80,27 @@ import shifa.doctor.generated.resources.visitsCount
 import shifa.doctor.ui.analytics.AnalyticsActions
 import shifa.doctor.ui.analytics.AnalyticsSection
 import shifa.doctor.ui.analytics.AnalyticsViewModel
+import shifa.doctor.ui.calendar.longDate
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
+import shifa.doctor.ui.intelligence.greetingFor
 import shifa.doctor.ui.notifications.NotificationGo
+import shifa.doctor.ui.schedule.dayName
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
 import kotlin.time.Duration.Companion.seconds
@@ -268,49 +281,42 @@ internal fun HomeContent(
     // ANALYTICS-02: "Clinic performance", last on Home (a slot, so previews draw Home without its reads).
     analytics: @Composable () -> Unit = {},
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas).statusBarsPadding()) {
-    Header(shell, actions)
-    PullToRefreshBox(state.refreshing, actions.refresh, Modifier.weight(1f)) {
-        LazyColumn(
-            Modifier.fillMaxSize(),
-            // The floating tab bar covers the last 120 (as on the other tabs).
-            contentPadding =
-                PaddingValues(
-                    start = ShifaSpacing.Inset.Md,
-                    top = ShifaSpacing.Inset.Md,
-                    end = ShifaSpacing.Inset.Md,
-                    bottom = ShifaSize.S120,
-                ),
-            verticalArrangement = Arrangement.spacedBy(ShifaSize.S20),
-        ) {
-            if (!clock.zoneMissing && clock.deviceDiffers()) {
-                item { TimeZoneNote(clock) }
-            }
-            item { Metrics(state, shell, actions, unknownDay = shell.profileLoaded && clock.zoneMissing) }
+    val wide = LocalWideLayout.current
+    // Wide: inside the same capped page as the columns (DaHome web).
+    Header(
+        shell,
+        actions,
+        if (wide) clock.local(now) else null,
+        if (wide) Modifier.align(Alignment.CenterHorizontally).widthIn(max = ShifaDimens.Layout.Page) else Modifier,
+    )
+    // HOME-03: the next patient, the quick actions, today's timeline (flow 02/02 §3), as sections.
+    val zoneMissing = shell.profileLoaded && clock.zoneMissing
+    val schedule = state.schedule
+    val main =
+        buildList<@Composable () -> Unit> {
+            if (!clock.zoneMissing && clock.deviceDiffers()) add { TimeZoneNote(clock) }
+            add { Metrics(state, shell, actions, unknownDay = zoneMissing) }
             // No profile, no practice zone, no schedule: the same error as a failed schedule read.
             (state.error ?: CodeBanner(Res.string.homeLoadFailed).takeIf { shell.profileFailed })?.let { e ->
-                item {
+                add {
                     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
                         codeBanner(e)?.invoke()
                         ShifaLink(tr(Res.string.retry), actions.refresh)
                     }
                 }
             }
-            // HOME-03: the next patient, the quick actions, today's timeline (flow 02/02 §3).
-            val zoneMissing = shell.profileLoaded && clock.zoneMissing
-            val schedule = state.schedule
             when {
-                zoneMissing -> item { EmptyHero(schedule, zoneMissing = true, actions) }
+                zoneMissing -> add { EmptyHero(schedule, zoneMissing = true, actions) }
                 state.loading && !shell.profileFailed ->
-                    item { ShifaSkeleton(Modifier.fillMaxWidth().height(ShifaSize.S180), ShifaRadius.ControlLg) }
+                    add { ShifaSkeleton(Modifier.fillMaxWidth().height(ShifaSize.S180), ShifaRadius.ControlLg) }
                 schedule != null -> {
                     val look = heroLook(schedule, now)
-                    item {
+                    add {
                         if (look != null) {
                             HeroCard(
                                 schedule,
                                 look,
-                                state.heroBirth?.let {
-                                        b ->
+                                state.heroBirth?.let { b ->
                                     clock.local(now).date.takeIf { b <= it }?.let { b.yearsUntil(it) }
                                 },
                                 clock,
@@ -322,41 +328,104 @@ internal fun HomeContent(
                     }
                 }
             }
-            item { QuickActions(!state.findingSlot && shell.profileLoaded && !clock.zoneMissing, actions) }
-            if (schedule != null && !zoneMissing) item { Timeline(schedule, now, clock, actions) }
-            item { Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S16)) { attention() } }
-            item { analytics() }
+            add { QuickActions(!state.findingSlot && shell.profileLoaded && !clock.zoneMissing, actions) }
+            if (schedule != null && !zoneMissing) add { Timeline(schedule, now, clock, actions) }
+        }
+    PullToRefreshBox(state.refreshing, actions.refresh, Modifier.weight(1f)) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            // DaHome web: the main column (basis 520) and the side column (360) side by side when both fit.
+            if (wide && maxWidth >= ShifaDimens.Basis.B520 + ShifaDimens.Layout.DialogSm + ShifaSpacing.Inset.Lg * 3) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    Row(
+                        Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .widthIn(max = ShifaDimens.Layout.Page)
+                            .padding(ShifaSpacing.Inset.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Inset.Lg),
+                    ) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Inset.Lg)) {
+                            main.forEach { it() }
+                            analytics()
+                        }
+                        Column(
+                            Modifier.width(ShifaDimens.Layout.DialogSm),
+                            verticalArrangement = Arrangement.spacedBy(ShifaSize.S16),
+                        ) { attention() }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    // The floating tab bar covers the last 120 (as on the other tabs); none on wide screens.
+                    contentPadding =
+                        PaddingValues(
+                            start = ShifaSpacing.Inset.Md,
+                            top = ShifaSpacing.Inset.Md,
+                            end = ShifaSpacing.Inset.Md,
+                            bottom = if (wide) ShifaSpacing.Inset.Lg else ShifaSize.S120,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S20),
+                ) {
+                    main.forEach { section -> item { section() } }
+                    item { Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S16)) { attention() } }
+                    item { analytics() }
+                }
+            }
         }
     }
 }
 
+/** The header; [now] set (wide screens, DaHome web) shows the date and a greeting instead of the photo and "Home". */
 @Composable
 private fun Header(
     shell: HomeShell,
     actions: HomeActions,
+    now: LocalDateTime?,
+    modifier: Modifier = Modifier,
 ) = Row(
-    Modifier.fillMaxWidth().padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSize.S8),
+    // Wide: in line with the columns below (DaHome web's 24 page padding).
+    modifier.fillMaxWidth().padding(
+        horizontal = if (now != null) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+        vertical = ShifaSize.S8,
+    ),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
 ) {
-    val profile = tr(Res.string.profile)
-    ShifaAvatar(
-        shell.photoUrl,
-        ShifaSize.Touch,
-        Modifier
-            .clip(ShifaRadius.Full)
-            .clickable(role = Role.Button, onClick = actions.openProfile)
-            .semantics { contentDescription = profile },
-    )
-    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
-        Text(tr(Res.string.home), style = ShifaTextStyles.heroNamePhone(), color = ShifaColors.Text.Primary)
-        Text(
-            shell.name,
-            style = ShifaTextStyles.metaSmall(),
-            color = ShifaColors.Text.Secondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+    if (now != null) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
+            Text(
+                "${dayName(now.dayOfWeek.isoDayNumber)}, ${longDate(now.date)} · ${displayTime(now.time)}",
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Secondary,
+            )
+            Text(
+                listOf(tr(greetingFor(now.hour)), shell.name).filter { it.isNotEmpty() }.joinToString(", "),
+                style = MaterialTheme.typography.headlineLarge,
+                color = ShifaColors.Text.Primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    } else {
+        val profile = tr(Res.string.profile)
+        ShifaAvatar(
+            shell.photoUrl,
+            ShifaSize.Touch,
+            Modifier
+                .clip(ShifaRadius.Full)
+                .clickable(role = Role.Button, onClick = actions.openProfile)
+                .semantics { contentDescription = profile },
         )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
+            Text(tr(Res.string.home), style = ShifaTextStyles.heroNamePhone(), color = ShifaColors.Text.Primary)
+            Text(
+                shell.name,
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Secondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
     ShifaIconButton(
         Res.drawable.ic_refresh_22,

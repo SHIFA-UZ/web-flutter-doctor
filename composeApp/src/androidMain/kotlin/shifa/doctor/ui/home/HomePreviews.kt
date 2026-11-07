@@ -93,6 +93,29 @@ internal fun HomeLoadedPreview() =
         )
     }
 
+// WEB-07b (DaHome web): the date and greeting, the main column and the attention column side by side.
+@Composable
+internal fun HomeWidePreview() =
+    PreviewTheme {
+        androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
+            HomeContent(
+                HomeUiState(
+                    loading = false,
+                    schedule = busySchedule,
+                    heroBirth = day.minus(kotlinx.datetime.DatePeriod(years = 42)),
+                ),
+                shell,
+                HomeActions(),
+                clock,
+                attention = {
+                    val s = HomeAttentionUiState(inboxNotes, listOf(inboxTask))
+                    AttentionCard(s, inboxClock, HomeAttentionActions())
+                    ActivityCard(s, inboxClock, HomeAttentionActions())
+                },
+            )
+        }
+    }
+
 // HOME-03: the hero 48 minutes away on video: Start opens at 09:45; then the timeline, the done visit folded away.
 @Composable
 internal fun HomeHeroLaterPreview() =

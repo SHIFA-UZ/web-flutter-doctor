@@ -40,4 +40,8 @@ class HomeScreenshotTest {
 
     @Test
     fun attentionEmpty() = captureRoboImage("screenshots/Home_attentionEmpty.png") { HomeAttentionEmptyPreview() }
+
+    @Test
+    @Config(qualifiers = "w1180dp-h900dp-mdpi")
+    fun wide() = captureRoboImage("screenshots/Home_wide.png") { HomeWidePreview() }
 }

@@ -25,6 +25,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -164,6 +165,7 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.visit.VisitScreen
 import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.PracticeClock
@@ -328,27 +330,29 @@ fun MainScreenContent(
                 VerticalDivider(thickness = ShifaSize.S1, color = ShifaColors.Border.Default)
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
-                Column(Modifier.fillMaxSize()) {
-                    ShellNoticeBanner()
-                    // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
-                    val saved = rememberSaveableStateHolder()
-                    Box(Modifier.weight(1f)) {
-                        val overIntelligence = state.overIntelligence.lastOrNull()
-                        if (state.intelligence && overIntelligence != null) {
-                            // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
-                            saved.SaveableStateProvider(
-                                "intelligence/${state.overIntelligence.size}/$overIntelligence",
-                            ) {
-                                route(overIntelligence)
-                            }
-                        } else if (state.intelligence) {
-                            // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
-                            // welcome returns to it. Its own state (the thread's scroll, an opened document) is kept while a
-                            // screen opened from it is on top.
-                            saved.SaveableStateProvider("intelligence") { intelligence() }
-                        } else {
-                            saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
-                                route(state.route)
+                CompositionLocalProvider(LocalWideLayout provides wide) {
+                    Column(Modifier.fillMaxSize()) {
+                        ShellNoticeBanner()
+                        // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
+                        val saved = rememberSaveableStateHolder()
+                        Box(Modifier.weight(1f)) {
+                            val overIntelligence = state.overIntelligence.lastOrNull()
+                            if (state.intelligence && overIntelligence != null) {
+                                // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
+                                saved.SaveableStateProvider(
+                                    "intelligence/${state.overIntelligence.size}/$overIntelligence",
+                                ) {
+                                    route(overIntelligence)
+                                }
+                            } else if (state.intelligence) {
+                                // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
+                                // welcome returns to it. Its own state (the thread's scroll, an opened document) is kept while a
+                                // screen opened from it is on top.
+                                saved.SaveableStateProvider("intelligence") { intelligence() }
+                            } else {
+                                saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
+                                    route(state.route)
+                                }
                             }
                         }
                     }
