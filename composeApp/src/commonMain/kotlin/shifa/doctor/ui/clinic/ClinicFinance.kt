@@ -155,6 +155,18 @@ data class ClinicFinanceUiState(
     val busy: Boolean = false,
     val banner: CodeBanner? = null,
 ) {
+    /** Whether the open view has anything to show: a failed first read gets the error card, a failed refresh a banner. */
+    val viewLoaded: Boolean
+        get() =
+            when (view) {
+                FinanceView.Dashboard -> dashboard != null
+                FinanceView.Ledger -> ledger != null
+                FinanceView.Payments -> payments != null
+                FinanceView.Records -> records != null
+                FinanceView.Installments -> installments != null
+                FinanceView.Earnings -> earnings != null
+            }
+
     /** The month filter applies where the backend takes a range (payments and records have none: BE-36). */
     val byMonth: Boolean get() = view in setOf(FinanceView.Dashboard, FinanceView.Ledger, FinanceView.Earnings)
 

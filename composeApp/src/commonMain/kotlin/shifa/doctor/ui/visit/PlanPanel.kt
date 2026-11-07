@@ -75,6 +75,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.Money
@@ -110,18 +111,7 @@ internal fun PlanPanel(
     actions: PlanActions,
 ) {
     plan.loadError?.let {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-        ) {
-            Text(
-                tr(it.text),
-                Modifier.weight(1f),
-                style = ShifaTextStyles.metaSmall(),
-                color = ShifaColors.Text.Secondary,
-            )
-            ShifaLink(tr(Res.string.retry), actions.retry)
-        }
+        ShifaLoadError(tr(it.text), actions.retry, requestId = it.requestId, compact = true)
         return
     }
     val plans = plan.plans?.takeIf { it.isNotEmpty() } ?: return
@@ -193,8 +183,15 @@ internal fun ColumnScope.PlanChart(
         color = ShifaColors.Text.Secondary,
     )
     plan.linesError?.let {
-        codeBanner(it)?.invoke()
-        ShifaLink(tr(Res.string.retry), actions.retry)
+        // Nothing read yet: the failure takes the chart's place; over a chart read before, a banner above it.
+        if (plan.detail == null) {
+            ShifaLoadError(tr(it.text), actions.retry, requestId = it.requestId, compact = true)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                codeBanner(it)?.invoke()
+                ShifaLink(tr(Res.string.retry), actions.retry)
+            }
+        }
     }
     if (plan.detail == null) {
         if (plan.linesError == null) ShifaSkeleton(Modifier.fillMaxWidth().defaultMinSize(minHeight = ShifaSize.S120))

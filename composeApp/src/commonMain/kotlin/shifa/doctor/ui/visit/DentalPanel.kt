@@ -79,7 +79,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
-import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.TabItem
@@ -129,8 +129,7 @@ internal fun ColumnScope.DentalPanel(
         )
     }
     state.loadError?.let {
-        codeBanner(it)?.invoke()
-        ShifaLink(tr(Res.string.retry), actions.retry)
+        ShifaLoadError(tr(it.text), actions.retry, requestId = it.requestId, compact = true)
         return
     }
     if (!state.loaded) {
@@ -318,10 +317,13 @@ internal fun DentalServicesSheet(
         }
         val services = state.services
         when {
-            services == null && state.servicesError != null -> {
-                codeBanner(state.servicesError)?.invoke()
-                ShifaLink(tr(Res.string.retry), actions.retryServices)
-            }
+            services == null && state.servicesError != null ->
+                ShifaLoadError(
+                    tr(state.servicesError.text),
+                    actions.retryServices,
+                    requestId = state.servicesError.requestId,
+                    compact = true,
+                )
             services == null -> ShifaSkeleton(Modifier.fillMaxWidth().heightIn(min = ShifaSize.S48))
             services.isEmpty() ->
                 Text(

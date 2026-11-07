@@ -59,7 +59,6 @@ import shifa.doctor.generated.resources.createFirstRemoteTask
 import shifa.doctor.generated.resources.createTask
 import shifa.doctor.generated.resources.ic_plus_16
 import shifa.doctor.generated.resources.ic_refresh_22
-import shifa.doctor.generated.resources.ic_tasks_22
 import shifa.doctor.generated.resources.noTasksFound
 import shifa.doctor.generated.resources.noTasksMatchFilters
 import shifa.doctor.generated.resources.overdueTasks
@@ -82,7 +81,6 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
-import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
@@ -92,6 +90,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaProgressBar
 import shifa.doctor.ui.widgets.ShifaSearchField
@@ -183,11 +182,11 @@ internal fun TasksContent(
             when {
                 state.tasks == null && state.failed ->
                     item {
-                        EmptyState(
+                        ShifaLoadError(
                             tr(error?.text ?: Res.string.tasksLoadFailed),
-                            Res.drawable.ic_tasks_22,
-                            body = error?.requestId,
-                        ) { ShifaSecondaryButton(tr(Res.string.retry), actions.refresh) }
+                            actions.refresh,
+                            requestId = error?.requestId,
+                        )
                     }
                 state.tasks == null -> item { ShifaListSkeleton(count = 4) }
                 state.tasks.isEmpty() -> item { EmptyAll(actions) }

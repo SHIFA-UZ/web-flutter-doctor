@@ -36,7 +36,6 @@ import shifa.doctor.generated.resources.noPatientAppointments
 import shifa.doctor.generated.resources.noRecentActivity
 import shifa.doctor.generated.resources.patientAppointmentHistory
 import shifa.doctor.generated.resources.recentActivity
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.today
 import shifa.doctor.generated.resources.upcoming
 import shifa.doctor.generated.resources.upcomingVisit
@@ -52,7 +51,6 @@ import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.calendar.longDate
 import shifa.doctor.ui.calendar.monthTitle
 import shifa.doctor.ui.calendar.status
-import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
@@ -62,6 +60,7 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.utils.displayTime
 import shifa.doctor.utils.tr
@@ -79,7 +78,7 @@ internal fun RecentActivity(
     val error = state.visitsError
     val past = state.visits?.filterNot(Visit::upcoming)
     when {
-        error != null -> Failed(error, actions)
+        error != null -> Failed(error, actions, compact = true)
         past == null -> ShifaListSkeleton(count = 3)
         past.isEmpty() -> {
             Text(
@@ -166,7 +165,7 @@ private fun LazyListScope.visitRows(
     when {
         error != null ->
             item {
-                Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) { Failed(error, actions) }
+                Box(gap) { Failed(error, actions, compact = false) }
             }
         visits == null -> item { Box(gap) { ShifaListSkeleton(count = 3) } }
         else -> rows(visits)
@@ -177,10 +176,8 @@ private fun LazyListScope.visitRows(
 private fun Failed(
     error: shifa.doctor.ui.emailcode.CodeBanner,
     actions: PatientDetailActions,
-) {
-    codeBanner(error)?.invoke()
-    ShifaLink(tr(Res.string.retry), actions.retryVisits)
-}
+    compact: Boolean,
+) = ShifaLoadError(tr(error.text), actions.retryVisits, requestId = error.requestId, compact = compact)
 
 @Composable
 private fun Empty(text: String) =

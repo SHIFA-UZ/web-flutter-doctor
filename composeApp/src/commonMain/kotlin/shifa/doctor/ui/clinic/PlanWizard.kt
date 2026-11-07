@@ -152,6 +152,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
@@ -160,6 +161,7 @@ import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitchRow
 import shifa.doctor.ui.widgets.Stepper
 import shifa.doctor.utils.Money
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.tr
 import kotlin.time.Duration.Companion.milliseconds
@@ -835,7 +837,7 @@ private fun ColumnScope.PatientStep(
         ShifaSettingsItem(
             p.fullName ?: "#${p.patientId}",
             { actions.pickPatient(p) },
-            subtitle = (p.phone ?: p.email)?.takeIf(String::isNotBlank),
+            subtitle = (p.phone?.let(PhoneE164::display) ?: p.email)?.takeIf(String::isNotBlank),
         )
     }
 }
@@ -906,10 +908,13 @@ private fun ColumnScope.TeamStep(
     FormSection(tr(Res.string.doctors)) {
         val doctors = state.doctors
         when {
-            state.doctorsError != null -> {
-                codeBanner(state.doctorsError)?.invoke()
-                ShifaLink(tr(Res.string.retry), actions.retryDoctors)
-            }
+            state.doctorsError != null ->
+                ShifaLoadError(
+                    tr(state.doctorsError.text),
+                    actions.retryDoctors,
+                    requestId = state.doctorsError.requestId,
+                    compact = true,
+                )
             doctors == null -> ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S4))
             doctors.isEmpty() -> Hint(tr(Res.string.treatmentPlanWizardNoDoctors))
             else ->
@@ -929,10 +934,13 @@ private fun ColumnScope.TeamStep(
         val all = state.services
         val offered = state.offered
         when {
-            state.servicesError != null -> {
-                codeBanner(state.servicesError)?.invoke()
-                ShifaLink(tr(Res.string.retry), actions.retryServices)
-            }
+            state.servicesError != null ->
+                ShifaLoadError(
+                    tr(state.servicesError.text),
+                    actions.retryServices,
+                    requestId = state.servicesError.requestId,
+                    compact = true,
+                )
             all == null -> ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S4))
             all.none { it.active } -> Hint(tr(Res.string.treatmentPlanWizardNoCatalog))
             offered.isEmpty() && state.lines.isEmpty() -> Hint(tr(Res.string.treatmentPlanWizardNoServicesForDoctors))

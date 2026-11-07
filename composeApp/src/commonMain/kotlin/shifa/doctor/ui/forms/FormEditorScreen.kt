@@ -88,7 +88,6 @@ import shifa.doctor.generated.resources.fullName
 import shifa.doctor.generated.resources.gender
 import shifa.doctor.generated.resources.historyOtherTeethHidden
 import shifa.doctor.generated.resources.ic_edit_16
-import shifa.doctor.generated.resources.ic_file_22
 import shifa.doctor.generated.resources.ic_trash_22
 import shifa.doctor.generated.resources.ic_x_16
 import shifa.doctor.generated.resources.icd10SearchHint
@@ -137,7 +136,6 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
-import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.SegmentedTabs
 import shifa.doctor.ui.widgets.ShifaActionButton
 import shifa.doctor.ui.widgets.ShifaActionVariant
@@ -147,6 +145,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
@@ -449,9 +448,7 @@ fun FormEditorContent(
             }
         }
         error != null && !state.loading ->
-            EmptyState(tr(error.text), Res.drawable.ic_file_22, Modifier.weight(1f), body = error.requestId) {
-                ShifaSecondaryButton(tr(Res.string.retry), actions.retry)
-            }
+            ShifaLoadError(tr(error.text), actions.retry, Modifier.weight(1f), requestId = error.requestId)
         else -> Box(Modifier.padding(ShifaSpacing.Inset.Md)) { ShifaListSkeleton(count = 4) }
     }
 }

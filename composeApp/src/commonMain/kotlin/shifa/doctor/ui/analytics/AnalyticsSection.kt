@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -100,7 +101,6 @@ import shifa.doctor.generated.resources.reportsSmsRateHint
 import shifa.doctor.generated.resources.reportsSmsSent
 import shifa.doctor.generated.resources.reportsSmsSpent
 import shifa.doctor.generated.resources.reportsSmsTitle
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.save
 import shifa.doctor.generated.resources.seePlans
 import shifa.doctor.generated.resources.selectDateRange
@@ -114,6 +114,7 @@ import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
@@ -355,26 +356,25 @@ private fun EngagementBlock(
 ) = Block(tr(Res.string.engagementSummary)) {
     if (engagement?.isFailure == true) return@Block LoadFailed(onRetry)
     val e = engagement?.getOrNull()
-    Row(
-        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
-    ) {
-        Tile(
-            Res.drawable.ic_users_20,
-            e?.activePatients,
-            Res.string.activePatients,
-            actions.patients,
-            Modifier.weight(1f),
+    val tiles: List<@Composable (Modifier) -> Unit> =
+        listOf(
+            { m -> Tile(Res.drawable.ic_users_20, e?.activePatients, Res.string.activePatients, actions.patients, m) },
+            { m -> Tile(Res.drawable.ic_file_text_20, e?.documentsReceived, Res.string.documentsReceived, null, m) },
         )
-        Tile(
-            Res.drawable.ic_file_text_20,
-            e?.documentsReceived,
-            Res.string.documentsReceived,
-            null,
-            Modifier.weight(1f),
-        )
+    // Large text: half a phone's width breaks "Documents" mid-word, so the tiles stack (as Home's metrics do).
+    if (LocalDensity.current.fontScale >= LARGE_TEXT) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S12),
+        ) { tiles.forEach { it(Modifier.fillMaxWidth()) } }
+    } else {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
+        ) { tiles.forEach { it(Modifier.weight(1f)) } }
     }
 }
+
+private const val LARGE_TEXT = 1.5f
 
 /**
  * "SMS reminders" (REPORT-01, flow 08/14 §3, board `DaProfile` reports): sent and cost for the range, the price per SMS
@@ -501,20 +501,7 @@ private fun Teaser(seePlans: () -> Unit) =
 
 /** A block that couldn't be read: says so with Retry (Flutter printed "Error"). */
 @Composable
-internal fun LoadFailed(onRetry: () -> Unit) =
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = ShifaSize.S8),
-        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            tr(Res.string.couldNotLoad),
-            Modifier.weight(1f),
-            style = ShifaTextStyles.bodyText(),
-            color = ShifaColors.Text.Secondary,
-        )
-        ShifaLink(tr(Res.string.retry), onRetry)
-    }
+internal fun LoadFailed(onRetry: () -> Unit) = ShifaLoadError(tr(Res.string.couldNotLoad), onRetry, compact = true)
 
 internal fun shortMonth(month: Int) = SHORT_MONTHS[month - 1]
 

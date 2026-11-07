@@ -33,7 +33,6 @@ import shifa.doctor.generated.resources.prophylaxisRemindersTitle
 import shifa.doctor.generated.resources.prophylaxisSave
 import shifa.doctor.generated.resources.prophylaxisSaveFailed
 import shifa.doctor.generated.resources.prophylaxisSaved
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.theme.ShifaColors
@@ -42,7 +41,7 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaButtonSize
-import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaSwitchRow
@@ -183,10 +182,13 @@ internal fun ProphylaxisContent(
     )
     codeBanner(state.banner, actions.dismiss)?.let { it() }
     when {
-        !state.loaded && state.loadError != null -> {
-            codeBanner(state.loadError)?.let { it() }
-            ShifaLink(tr(Res.string.retry), actions.load)
-        }
+        !state.loaded && state.loadError != null ->
+            ShifaLoadError(
+                tr(state.loadError.text),
+                actions.load,
+                requestId = state.loadError.requestId,
+                compact = true,
+            )
         !state.loaded -> repeat(2) { ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S16)) }
         else -> {
             val enabled = !state.saving

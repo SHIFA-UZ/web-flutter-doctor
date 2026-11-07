@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -191,12 +192,14 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.Money
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.csv
 import shifa.doctor.utils.displayDate
@@ -319,8 +322,15 @@ internal fun ColumnScope.FinanceContent(
         }
     }
     state.error?.let { e ->
-        codeBanner(e)?.let { it() }
-        ShifaLink(tr(Res.string.retry), actions.load)
+        if (!state.viewLoaded) {
+            // Nothing read yet: the view would be blank, so the error takes its place.
+            ShifaLoadError(tr(e.text), actions.load, requestId = e.requestId)
+            return
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+            codeBanner(e)?.let { it() }
+            ShifaLink(tr(Res.string.retry), actions.load)
+        }
     }
     val canManage = clinic.mayManageFinance
     when (state.view) {
@@ -851,9 +861,10 @@ private fun ColumnScope.Installments(
             }
         val paid = scheduled.filter { it.status.uppercase() == "PAID" }.sumOf { it.amountMinor }
         val total = scheduled.sumOf { it.amountMinor }
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()),
+        // Totals are read, not picked: they wrap so none hides off the edge (a scroll row did on phones).
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+            verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
         ) {
             listOf(
                 "${tr(Res.string.clinicFinanceInstallTotalsItems)}: ${shown.size}",
@@ -1265,7 +1276,11 @@ private fun RecordSheetView(
                 ShifaSettingsItem(
                     p.fullName ?: "#${p.patientId}",
                     { actions.pickPatient(p) },
-                    subtitle = listOfNotNull(p.phone, p.email).joinToString(" · ").ifEmpty { null },
+                    subtitle =
+                        listOfNotNull(
+                            p.phone?.let(PhoneE164::display),
+                            p.email,
+                        ).joinToString(" · ").ifEmpty { null },
                 )
             }
         }

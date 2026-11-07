@@ -83,7 +83,6 @@ import shifa.doctor.generated.resources.patientsFilterTitle
 import shifa.doctor.generated.resources.patientsPagination
 import shifa.doctor.generated.resources.phone
 import shifa.doctor.generated.resources.previous
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.searchPatientsDirectoryHint
 import shifa.doctor.generated.resources.sortNameAsc
 import shifa.doctor.generated.resources.sortNameDesc
@@ -108,14 +107,15 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaOptionList
 import shifa.doctor.ui.widgets.ShifaPager
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSearchField
-import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TableColumn
 import shifa.doctor.ui.widgets.initialsOf
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.tr
@@ -415,9 +415,7 @@ private fun Body(
     val error = state.error
     when {
         list == null && error != null ->
-            EmptyState(tr(error.text), Res.drawable.ic_users_22, body = error.requestId) {
-                ShifaSecondaryButton(tr(Res.string.retry), { actions.load(true) })
-            }
+            ShifaLoadError(tr(error.text), { actions.load(true) }, requestId = error.requestId)
         list == null -> ShifaListSkeleton(count = 6)
         list.isEmpty() ->
             EmptyState(
@@ -533,7 +531,7 @@ private fun PatientsTable(
             TableText(
                 listOfNotNull(p.age(state.today)?.toString(), genderLabel(p.gender)).joinToString(", ").ifEmpty { "—" },
             )
-        2 -> TableText(p.allPhones.firstOrNull() ?: "—")
+        2 -> TableText(p.allPhones.firstOrNull()?.let(PhoneE164::display) ?: "—")
         3 -> StatusPill(p.status)
         else ->
             androidx.compose.material3.Icon(
@@ -601,7 +599,10 @@ internal fun PatientRow(
             overflow = TextOverflow.Ellipsis,
         )
         val who = listOfNotNull(p.age(today)?.toString(), genderLabel(p.gender)).joinToString(", ")
-        val line = listOf(who, p.allPhones.firstOrNull().orEmpty()).filter { it.isNotEmpty() }.joinToString(" · ")
+        val line =
+            listOf(who, p.allPhones.firstOrNull()?.let(PhoneE164::display).orEmpty()).filter {
+                it.isNotEmpty()
+            }.joinToString(" · ")
         if (line.isNotEmpty()) {
             Text(
                 line,

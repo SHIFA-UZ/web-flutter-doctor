@@ -25,7 +25,7 @@ private val conversations =
             Instant.parse("2026-11-05T08:40:00Z"),
             2,
         ),
-        Conversation(2, 12, "Jasur Karimov", null, false, "voice_1.m4a", Instant.parse("2026-11-04T07:00:00Z"), 120),
+        Conversation(2, 12, "Jasur Karimov", null, false, "Voice message", Instant.parse("2026-11-04T07:00:00Z"), 120),
         Conversation(3, 21, "Dr. med. Sardor Nazarov", null, true, null, null, 0),
         Conversation(
             4,

@@ -106,6 +106,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
@@ -430,8 +431,15 @@ internal fun ColumnScope.DoctorsContent(
     val members = state.members
     // A failed read says so, also over a list kept from before (it may be out of date).
     state.membersError?.let { e ->
-        codeBanner(e)?.let { it() }
-        ShifaLink(tr(Res.string.retry), { actions.loadMembers() })
+        // Nothing read yet: the failure takes the list's place; over a list read before, a banner above it.
+        if (members == null) {
+            ShifaLoadError(tr(e.text), { actions.loadMembers() }, requestId = e.requestId)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                codeBanner(e)?.let { it() }
+                ShifaLink(tr(Res.string.retry), { actions.loadMembers() })
+            }
+        }
     }
     when {
         members == null && state.membersError != null -> Unit
@@ -603,8 +611,15 @@ internal fun ColumnScope.InvitationsContent(
     val invitations = state.invitations
     val clock = PracticeClock(clinic.timeZone)
     state.invitationsError?.let { e ->
-        codeBanner(e)?.let { it() }
-        ShifaLink(tr(Res.string.retry), { actions.loadInvitations() })
+        // Nothing read yet: the failure takes the list's place; over a list read before, a banner above it.
+        if (invitations == null) {
+            ShifaLoadError(tr(e.text), { actions.loadInvitations() }, requestId = e.requestId)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                codeBanner(e)?.let { it() }
+                ShifaLink(tr(Res.string.retry), { actions.loadInvitations() })
+            }
+        }
     }
     when {
         invitations == null && state.invitationsError != null -> Unit

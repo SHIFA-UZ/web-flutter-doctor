@@ -47,6 +47,7 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.TimeZones
 import shifa.doctor.utils.currentInstant
@@ -120,8 +121,15 @@ internal fun ColumnScope.ClinicCalendarContent(
         )
     }
     state.membersError?.let { e ->
-        codeBanner(e)?.let { it() }
-        ShifaLink(tr(Res.string.retry), retry)
+        // Nothing read yet: the failure takes the list's place; over a list read before, a banner above it.
+        if (state.members == null) {
+            ShifaLoadError(tr(e.text), retry, requestId = e.requestId)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                codeBanner(e)?.let { it() }
+                ShifaLink(tr(Res.string.retry), retry)
+            }
+        }
     }
     val members = state.members
     when {

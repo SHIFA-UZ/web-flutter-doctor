@@ -242,6 +242,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
@@ -1139,16 +1140,8 @@ private fun General(
     scribe?.let { ScribeRecorder(state, it, scribeAllowed, actions) }
     notes.saveError?.let { codeBanner(it)?.invoke() }
     notes.loadError?.let {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-        ) {
-            Text(
-                tr(it.text),
-                Modifier.weight(1f),
-                style = ShifaTextStyles.metaSmall(),
-                color = ShifaColors.Text.Secondary,
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+            codeBanner(it)?.invoke()
             ShifaLink(tr(Res.string.retry), actions.retryNotes)
         }
     }
@@ -1364,10 +1357,13 @@ private fun LazyListScope.documentRows(
     when {
         state.error != null ->
             item {
-                Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                    codeBanner(state.error)?.invoke()
-                    ShifaLink(tr(Res.string.retry), actions.retry)
-                }
+                ShifaLoadError(
+                    tr(state.error.text),
+                    actions.retry,
+                    gap,
+                    requestId = state.error.requestId,
+                    compact = true,
+                )
             }
         docs == null -> item { Box(gap) { ShifaSkeleton(Modifier.fillMaxWidth().size(ShifaSize.S64)) } }
         docs.isEmpty() ->

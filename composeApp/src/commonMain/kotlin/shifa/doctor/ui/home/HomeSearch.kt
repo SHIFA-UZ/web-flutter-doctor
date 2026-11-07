@@ -71,6 +71,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.utils.PracticeClock
@@ -192,9 +193,14 @@ internal fun PatientSearchContent(
     ) {
         state.error?.let { e ->
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                    codeBanner(e)?.invoke()
-                    ShifaLink(tr(Res.string.retry), onRetry)
+                // No patients read: the failure takes the list's place; over a list, a banner above it.
+                if (state.patients == null && !state.loading) {
+                    ShifaLoadError(tr(e.text), onRetry, requestId = e.requestId)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                        codeBanner(e)?.invoke()
+                        ShifaLink(tr(Res.string.retry), onRetry)
+                    }
                 }
             }
         }

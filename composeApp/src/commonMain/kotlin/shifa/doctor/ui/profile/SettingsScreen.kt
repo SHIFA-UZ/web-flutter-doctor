@@ -46,9 +46,6 @@ import shifa.doctor.generated.resources.biometricUnlock
 import shifa.doctor.generated.resources.country
 import shifa.doctor.generated.resources.encryptedDocuments
 import shifa.doctor.generated.resources.germany
-import shifa.doctor.generated.resources.ic_globe_22
-import shifa.doctor.generated.resources.ic_info_22
-import shifa.doctor.generated.resources.ic_shield_22
 import shifa.doctor.generated.resources.language
 import shifa.doctor.generated.resources.legalAndSupport
 import shifa.doctor.generated.resources.notifications
@@ -268,7 +265,6 @@ fun SettingsContent(
                     ShifaSettingsItem(
                         tr(Res.string.language),
                         actions.language,
-                        icon = Res.drawable.ic_globe_22,
                         subtitle = languageName,
                     )
                     if (s != null) {
@@ -292,7 +288,6 @@ fun SettingsContent(
                     ShifaSettingsItem(
                         tr(Res.string.security),
                         actions.security,
-                        icon = Res.drawable.ic_shield_22,
                         subtitle =
                             if (state.appLock) {
                                 listOfNotNull(
@@ -328,7 +323,6 @@ fun SettingsContent(
                     ShifaSettingsItem(
                         tr(Res.string.about),
                         actions.about,
-                        icon = Res.drawable.ic_info_22,
                         subtitle = tr(Res.string.legalAndSupport),
                         divider = actions.debug != null,
                     )

@@ -181,8 +181,9 @@ private fun Tooth(
         if (count > 0) {
             Box(
                 Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(ShifaSize.S6, -ShifaSize.S6)
+                    // The corner away from the number (board: always top right, which hides a lower tooth's number).
+                    .align(if (upper) Alignment.TopEnd else Alignment.BottomEnd)
+                    .offset(ShifaSize.S6, if (upper) -ShifaSize.S6 else ShifaSize.S6)
                     .widthIn(min = ShifaSize.S16)
                     .height(ShifaSize.S16)
                     .background(ShifaColors.Text.Primary, androidx.compose.foundation.shape.CircleShape)

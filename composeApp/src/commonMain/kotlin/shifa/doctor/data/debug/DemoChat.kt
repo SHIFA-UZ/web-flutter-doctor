@@ -160,11 +160,16 @@ internal class DemoChat(
             put("participantName", c.name)
             put("unreadCount", c.unread)
             last?.let {
+                // As the backend's `lastMessagePreview`: the text, else the type's word (never a file name).
+                val type = it["type"]?.jsonPrimitive?.content?.lowercase()
                 put(
                     "lastMessage",
-                    content?.get(
-                        "text",
-                    )?.jsonPrimitive?.content ?: content?.get("fileName")?.jsonPrimitive?.content ?: "",
+                    content?.get("text")?.jsonPrimitive?.content?.takeIf(String::isNotBlank)
+                        ?: when (type) {
+                            "image" -> "Photo"
+                            "voice" -> "Voice message"
+                            else -> "Document"
+                        },
                 )
                 put("lastMessageAt", it["createdAt"]!!)
             }

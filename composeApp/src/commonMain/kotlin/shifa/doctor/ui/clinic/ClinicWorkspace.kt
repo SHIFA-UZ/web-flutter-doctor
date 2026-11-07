@@ -100,9 +100,7 @@ import shifa.doctor.generated.resources.ic_pin_16
 import shifa.doctor.generated.resources.ic_users_16
 import shifa.doctor.generated.resources.ic_users_20
 import shifa.doctor.generated.resources.phone
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.ui.emailcode.CodeBanner
-import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
@@ -118,13 +116,14 @@ import shifa.doctor.ui.widgets.OptionItem
 import shifa.doctor.ui.widgets.SegmentedTabs
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
-import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaOptionList
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.ui.widgets.TabItem
 import shifa.doctor.ui.widgets.UnderlineTabs
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.tr
 
 /** The workspace's sections, as the DaClinic board groups them (09 §2; Flutter had nine flat tabs). */
@@ -289,11 +288,7 @@ internal fun ClinicWorkspaceContent(
         Text(tr(Res.string.clinic), Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineSmall)
         when {
             clinic != null -> Header(clinic, state, staff, onSection, onSwitcher)
-            state.error != null ->
-                codeBanner(state.error)?.let {
-                    it()
-                    ShifaLink(tr(Res.string.retry), onRetry)
-                }
+            state.error != null -> ShifaLoadError(tr(state.error.text), onRetry, requestId = state.error.requestId)
             !state.clinics.known -> ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S30))
         }
     }
@@ -432,18 +427,12 @@ private fun ColumnScope.Overview(
             }
         state.statsError != null ->
             // The rest of the Overview stands (flow 09/01 §6 "partial data").
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-            ) {
-                Text(
-                    tr(state.statsError.text),
-                    Modifier.weight(1f),
-                    style = ShifaTextStyles.bodyText(),
-                    color = ShifaColors.Text.Error,
-                )
-                ShifaLink(tr(Res.string.retry), onRetryStats)
-            }
+            ShifaLoadError(
+                tr(state.statsError.text),
+                onRetryStats,
+                requestId = state.statsError.requestId,
+                compact = true,
+            )
         else ->
             Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
                 repeat(2) { ShifaSkeleton(Modifier.weight(1f).padding(vertical = ShifaSize.S36)) }
@@ -483,7 +472,7 @@ private fun ColumnScope.Overview(
             clinic.phone?.takeIf { it.isNotBlank() }?.let {
                 Triple(
                     Res.drawable.ic_phone_16,
-                    it,
+                    PhoneE164.display(it),
                     "tel:${it.filter {
                             c ->
                         c.isDigit() || c == '+'
@@ -524,7 +513,7 @@ private fun ColumnScope.Settings(clinic: MyClinic) {
         listOf(
             tr(Res.string.adminClinicNameLabel) to clinic.name,
             tr(Res.string.adminClinicTimezoneLabel) to (clinic.timeZone ?: UTC),
-            tr(Res.string.phone) to clinic.phone,
+            tr(Res.string.phone) to clinic.phone?.let(PhoneE164::display),
             tr(Res.string.email) to clinic.email,
             tr(Res.string.address) to clinic.address,
             tr(Res.string.clinicFinanceDefaultRevenueShare) to

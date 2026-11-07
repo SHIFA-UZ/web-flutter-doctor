@@ -62,7 +62,6 @@ import shifa.doctor.generated.resources.intelReject
 import shifa.doctor.generated.resources.intelScheduleHint
 import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.refresh
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.visitFactCards
 import shifa.doctor.generated.resources.visitFactCardsHint
 import shifa.doctor.generated.resources.visitFactsCommitted
@@ -77,7 +76,7 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
-import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.tr
@@ -282,18 +281,12 @@ internal fun VisitFactsCard(
         val facts = state.facts
         when {
             facts == null && state.loadError != null ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                ) {
-                    Text(
-                        tr(state.loadError.text),
-                        Modifier.weight(1f, fill = false),
-                        style = ShifaTextStyles.metaSmall(),
-                        color = ShifaColors.Text.Error,
-                    )
-                    ShifaLink(tr(Res.string.retry), actions.reload)
-                }
+                ShifaLoadError(
+                    tr(state.loadError.text),
+                    actions.reload,
+                    requestId = state.loadError.requestId,
+                    compact = true,
+                )
             facts == null -> repeat(3) { ShifaSkeleton(Modifier.fillMaxWidth().height(ShifaSize.S48)) }
             else -> {
                 Text(

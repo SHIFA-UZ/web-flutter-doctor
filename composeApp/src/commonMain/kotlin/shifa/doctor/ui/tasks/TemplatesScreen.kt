@@ -71,8 +71,8 @@ import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
-import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.pressable
 import shifa.doctor.utils.displayTime
@@ -177,12 +177,12 @@ internal fun TemplatesContent(
     val error = state.error
     when {
         templates == null && state.failed ->
-            EmptyState(
+            ShifaLoadError(
                 tr(error?.text ?: Res.string.templatesLoadFailed),
-                Res.drawable.ic_tasks_22,
+                actions.reload,
                 Modifier.padding(ShifaSpacing.Inset.Md),
-                body = error?.requestId,
-            ) { ShifaSecondaryButton(tr(Res.string.retry), actions.reload) }
+                requestId = error?.requestId,
+            )
         templates == null -> ShifaListSkeleton(Modifier.padding(ShifaSpacing.Inset.Md), count = 5)
         else ->
             PullToRefreshBox(state.refreshing, actions.reload, Modifier.weight(1f)) {

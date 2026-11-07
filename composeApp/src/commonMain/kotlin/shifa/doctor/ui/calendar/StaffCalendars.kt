@@ -34,7 +34,6 @@ import shifa.doctor.generated.resources.couldNotLoadThisDay
 import shifa.doctor.generated.resources.ic_check_12
 import shifa.doctor.generated.resources.mySchedule
 import shifa.doctor.generated.resources.noItemsForThisDay
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.ui.clinic.scheduleOf
 import shifa.doctor.ui.clinic.staffColor
 import shifa.doctor.ui.theme.ShifaColors
@@ -43,8 +42,8 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
-import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.tr
 
@@ -161,10 +160,8 @@ internal fun StaffSection(
     val day = state.cache.days[DayKey(state.selected, id)]
     val failed = DayKey(state.selected, id) in state.staffFailed
     when {
-        day == null && failed -> {
-            Text(tr(Res.string.couldNotLoadThisDay), style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Error)
-            ShifaLink(tr(Res.string.retry), { actions.retryStaff(id) })
-        }
+        day == null && failed ->
+            ShifaLoadError(tr(Res.string.couldNotLoadThisDay), { actions.retryStaff(id) }, compact = true)
         day == null -> ShifaListSkeleton(count = 2)
         else -> {
             val rows = day.filter(state.filter::shows)

@@ -497,8 +497,10 @@ internal fun UploadStatus(
     onDismiss: () -> Unit,
 ) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
     state.uploading?.let { UploadCard(it, state.progress, onCancel) }
-    codeBanner(state.banner, onDismiss)?.invoke()
-    if (state.failed != null && state.uploading == null) ShifaLink(tr(Res.string.retry), onRetry)
+    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+        codeBanner(state.banner, onDismiss)?.invoke()
+        if (state.failed != null && state.uploading == null) ShifaLink(tr(Res.string.retry), onRetry)
+    }
 }
 
 private const val MAX_TITLE = 120

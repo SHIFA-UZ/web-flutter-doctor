@@ -65,8 +65,8 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaButtonSize
-import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaTray
@@ -193,10 +193,7 @@ fun LazyListScope.formRows(
     when {
         error != null ->
             item {
-                Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                    codeBanner(error)?.invoke()
-                    ShifaLink(tr(Res.string.retry), actions.retry)
-                }
+                ShifaLoadError(tr(error.text), actions.retry, gap, requestId = error.requestId)
             }
         forms == null -> item { Box(gap) { ShifaListSkeleton(count = 3) } }
         forms.isEmpty() ->

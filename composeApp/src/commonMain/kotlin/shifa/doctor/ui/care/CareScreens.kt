@@ -112,6 +112,7 @@ import shifa.doctor.generated.resources.patient
 import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.sendPartnerInvite
 import shifa.doctor.generated.resources.unknown
+import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.ShellActions
 import shifa.doctor.ui.navigation.ShellRoute
@@ -132,6 +133,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
@@ -231,10 +233,12 @@ fun FindPartnerContent(
         codeBanner(state.banner) { actions.dismiss() }?.invoke()
         val hits = state.hits
         when {
-            state.error != null -> {
-                codeBanner(state.error)?.invoke()
-                ShifaLink(tr(Res.string.retry), actions.retry)
-            }
+            state.error != null ->
+                ShifaLoadError(
+                    tr(state.error.text),
+                    actions.retry,
+                    requestId = state.error.requestId,
+                )
             hits == null ->
                 repeat(
                     SKELETONS,
@@ -438,10 +442,8 @@ fun PartnershipsContent(
                 }
             }
             when {
-                state.error != null && state.all == null -> {
-                    codeBanner(state.error)?.invoke()
-                    ShifaLink(tr(Res.string.retry), actions.refresh)
-                }
+                state.error != null && state.all == null ->
+                    ShifaLoadError(tr(state.error.text), actions.refresh, requestId = state.error.requestId)
                 rows == null ->
                     repeat(
                         SKELETONS,
@@ -590,10 +592,8 @@ fun PartnershipContent(
         codeBanner(state.banner) { actions.dismiss() }?.invoke()
         when {
             state.notFound -> EmptyState(tr(Res.string.careGone), Res.drawable.ic_users_22)
-            p == null && state.error != null -> {
-                codeBanner(state.error)?.invoke()
-                ShifaLink(tr(Res.string.retry), actions.retry)
-            }
+            p == null && state.error != null ->
+                ShifaLoadError(tr(state.error.text), actions.retry, requestId = state.error.requestId)
             p == null -> repeat(SKELETONS) { ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S28)) }
             else -> {
                 HeaderCard(p, me, state.acting, actions)
@@ -741,14 +741,14 @@ private fun ColumnScope.Updates(
     val list = state.progress
     // A failed refresh says so above what was read before.
     if (state.progressFailed && list != null) {
-        Text(tr(Res.string.careUpdatesFailed), style = ShifaTextStyles.caption(), color = ShifaColors.Text.Error)
-        ShifaLink(tr(Res.string.retry), actions.retryProgress)
-    }
-    when {
-        state.progressFailed && list == null -> {
-            Text(tr(Res.string.careUpdatesFailed), style = ShifaTextStyles.caption(), color = ShifaColors.Text.Error)
+        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+            codeBanner(CodeBanner(Res.string.careUpdatesFailed))?.invoke()
             ShifaLink(tr(Res.string.retry), actions.retryProgress)
         }
+    }
+    when {
+        state.progressFailed && list == null ->
+            ShifaLoadError(tr(Res.string.careUpdatesFailed), actions.retryProgress, compact = true)
         list == null -> repeat(2) { ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S20)) }
         list.isEmpty() ->
             EmptyState(

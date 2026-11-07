@@ -75,8 +75,8 @@ import shifa.doctor.ui.widgets.ShifaActionVariant
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
-import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.utils.displayDate
@@ -227,10 +227,7 @@ fun LazyListScope.documentRows(
     when {
         error != null ->
             item {
-                Column(gap, verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-                    codeBanner(error)?.invoke()
-                    ShifaLink(tr(Res.string.retry), actions.retry)
-                }
+                ShifaLoadError(tr(error.text), actions.retry, gap, requestId = error.requestId)
             }
         documents == null -> item { Box(gap) { ShifaListSkeleton(count = 3) } }
         documents.isEmpty() ->

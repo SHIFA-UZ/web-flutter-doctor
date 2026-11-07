@@ -26,8 +26,9 @@ object PhoneE164 {
         return if (full.length in 8..15 && full[0] != '0') "+$full" else null
     }
 
-    /** "+998901234567" → "+998 90 123 45 67"; other countries stay as stored. */
-    fun display(e164: String): String {
+    /** "+998901234567" (or "998901234567") → "+998 90 123 45 67"; other countries and non-numbers stay as given. */
+    fun display(raw: String): String {
+        val e164 = normalize(raw) ?: return raw
         if (!e164.startsWith("+$UZ") || e164.length != 13) return e164
         val d = e164.removePrefix("+$UZ")
         return "+$UZ ${d.take(2)} ${d.substring(2, 5)} ${d.substring(5, 7)} ${d.substring(7)}"

@@ -28,5 +28,9 @@ class PhoneE164Test {
     fun `display groups Uzbek numbers only`() {
         assertThat(PhoneE164.display("+998901234567")).isEqualTo("+998 90 123 45 67")
         assertThat(PhoneE164.display("+4915123456789")).isEqualTo("+4915123456789")
+        // Stored without the plus, already grouped, or not a number at all.
+        assertThat(PhoneE164.display("998901234567")).isEqualTo("+998 90 123 45 67")
+        assertThat(PhoneE164.display("+998 90 123 45 67")).isEqualTo("+998 90 123 45 67")
+        assertThat(PhoneE164.display("ask reception")).isEqualTo("ask reception")
     }
 }

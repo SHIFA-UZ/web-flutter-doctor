@@ -43,7 +43,6 @@ import shifa.doctor.generated.resources.failedToLoadPatients
 import shifa.doctor.generated.resources.ic_chev_r_16
 import shifa.doctor.generated.resources.ic_users_22
 import shifa.doctor.generated.resources.patient
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.theme.ShifaColors
@@ -53,9 +52,10 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaInputField
-import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.tr
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -190,10 +190,8 @@ internal fun ColumnScope.ClinicPatientsContent(
     ShifaInputField(state.typed, actions.type, tr(Res.string.clinicPatientsSearchHint), Modifier.fillMaxWidth())
     val rows = state.rows
     when {
-        rows == null && state.error != null -> {
-            codeBanner(state.error)?.let { it() }
-            ShifaLink(tr(Res.string.retry), actions.load)
-        }
+        rows == null && state.error != null ->
+            ShifaLoadError(tr(state.error.text), actions.load, requestId = state.error.requestId)
         rows == null ->
             repeat(SKELETON_ROWS) { ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S24)) }
         // Empty only when no page follows: a page whose rows were all unreadable still offers the next.
@@ -241,8 +239,10 @@ private fun PatientCard(
         )
         // "+998… · mail@…": a dash when there's no phone, the email only when there is one (the board's line).
         val line =
-            listOfNotNull(p.phone?.takeIf { it.isNotBlank() } ?: "—", p.email?.takeIf { it.isNotBlank() })
-                .joinToString(" · ")
+            listOfNotNull(
+                p.phone?.takeIf { it.isNotBlank() }?.let(PhoneE164::display),
+                p.email?.takeIf { it.isNotBlank() },
+            ).joinToString(" · ").ifEmpty { "—" }
         Text(
             line,
             style = ShifaTextStyles.metaSmall(),

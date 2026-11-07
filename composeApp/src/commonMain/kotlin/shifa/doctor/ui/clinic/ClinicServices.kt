@@ -118,6 +118,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSkeleton
@@ -480,8 +481,15 @@ internal fun ColumnScope.ServicesContent(
     val services = state.services
     // A failed read says so, also over a list kept from before.
     state.error?.let { e ->
-        codeBanner(e)?.let { it() }
-        ShifaLink(tr(Res.string.retry), actions.load)
+        // Nothing read yet: the failure takes the list's place; over a list read before, a banner above it.
+        if (services == null) {
+            ShifaLoadError(tr(e.text), actions.load, requestId = e.requestId)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                codeBanner(e)?.let { it() }
+                ShifaLink(tr(Res.string.retry), actions.load)
+            }
+        }
     }
     when {
         services == null && state.error != null -> Unit
@@ -491,15 +499,8 @@ internal fun ColumnScope.ServicesContent(
         else -> {
             // The unified list read, the catalogue didn't: clinic rows can't be edited until it's read.
             if (state.catalogFailed) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                ) {
-                    Text(
-                        tr(Res.string.clinicServicesEditingUnavailable),
-                        style = ShifaTextStyles.metaSmall(),
-                        color = ShifaColors.Text.Secondary,
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                    codeBanner(CodeBanner(Res.string.clinicServicesEditingUnavailable))?.invoke()
                     ShifaLink(tr(Res.string.retry), actions.load)
                 }
             }
@@ -756,14 +757,8 @@ private fun ColumnScope.DoctorChecks(
     )
     val doctors = state.doctors
     when {
-        state.doctorsFailed && doctors == null -> {
-            Text(
-                tr(Res.string.clinicServiceDoctorsLoadFailed),
-                style = ShifaTextStyles.bodyText(),
-                color = ShifaColors.Text.Error,
-            )
-            ShifaLink(tr(Res.string.retry), actions.loadDoctors)
-        }
+        state.doctorsFailed && doctors == null ->
+            ShifaLoadError(tr(Res.string.clinicServiceDoctorsLoadFailed), actions.loadDoctors, compact = true)
         doctors == null -> ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S16))
         doctors.isEmpty() ->
             Text(

@@ -65,6 +65,7 @@ import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.pressable
@@ -119,15 +120,7 @@ private fun Loading(rows: Int) =
     }
 
 @Composable
-private fun Failed(retry: () -> Unit) =
-    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-        Text(
-            tr(Res.string.notificationsLoadFailed),
-            style = ShifaTextStyles.dialogBody(),
-            color = ShifaColors.Text.Secondary,
-        )
-        ShifaLink(tr(Res.string.retry), retry)
-    }
+private fun Failed(retry: () -> Unit) = ShifaLoadError(tr(Res.string.notificationsLoadFailed), retry, compact = true)
 
 /**
  * "Attention required" (HOME-04, 02 §1.5, flow 02/03, board `DaHome`): up to 4 unread notifications (each with Mark as

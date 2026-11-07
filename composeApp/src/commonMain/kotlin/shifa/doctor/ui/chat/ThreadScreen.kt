@@ -84,6 +84,7 @@ import shifa.doctor.generated.resources.chatStatusSending
 import shifa.doctor.generated.resources.chatStatusSent
 import shifa.doctor.generated.resources.chatVoicePlayFailed
 import shifa.doctor.generated.resources.close
+import shifa.doctor.generated.resources.couldNotLoad
 import shifa.doctor.generated.resources.discard
 import shifa.doctor.generated.resources.doctor
 import shifa.doctor.generated.resources.document
@@ -119,6 +120,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.utils.DocumentKinds
 import shifa.doctor.utils.Playback
 import shifa.doctor.utils.PracticeClock
@@ -313,10 +315,12 @@ internal fun ThreadContent(
         when {
             messages == null && state.error == null -> ShifaListSkeleton(Modifier.padding(ShifaSize.S12), count = 5)
             messages == null ->
-                Column(Modifier.padding(ShifaSize.S12), verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                    state.error?.let { codeBanner(it)?.invoke() }
-                    ShifaLink(tr(Res.string.retry), actions.reload)
-                }
+                ShifaLoadError(
+                    tr(state.error?.text ?: Res.string.couldNotLoad),
+                    actions.reload,
+                    Modifier.padding(ShifaSize.S12),
+                    requestId = state.error?.requestId,
+                )
             messages.isEmpty() && state.pending.isEmpty() -> Empty(state.conversation)
             else -> Messages(state, messages, actions, clock, overlays.playback) { actions.view(it) }
         }

@@ -89,6 +89,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
@@ -392,15 +393,15 @@ fun LocationsContent(
                 val error = state.error
                 val list = state.locations
                 if (list != null && error != null) {
-                    codeBanner(error) { actions.ui { it.copy(error = null) } }?.invoke()
-                    ShifaLink(tr(Res.string.retry), actions.retry)
+                    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                        codeBanner(error) { actions.ui { it.copy(error = null) } }?.invoke()
+                        ShifaLink(tr(Res.string.retry), actions.retry)
+                    }
                 }
                 when {
                     list == null && state.loading -> ShifaListSkeleton(count = 2)
                     list == null && error != null ->
-                        EmptyState(tr(error.text), Res.drawable.ic_pin_22, body = error.requestId) {
-                            ShifaSecondaryButton(tr(Res.string.retry), actions.retry)
-                        }
+                        ShifaLoadError(tr(error.text), actions.retry, requestId = error.requestId)
                     list.isNullOrEmpty() -> EmptyState(tr(Res.string.noLocationsYet), Res.drawable.ic_pin_22)
                     else -> list.forEach { LocationCard(it) { actions.open(it) } }
                 }

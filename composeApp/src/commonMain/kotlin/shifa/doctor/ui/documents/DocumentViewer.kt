@@ -58,6 +58,7 @@ import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.widgets.EmptyState
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
@@ -284,9 +285,7 @@ fun DocumentViewerContent(
                 ShifaSecondaryButton(tr(Res.string.back), actions.back)
             }
         is Viewed.Failed ->
-            EmptyState(tr(v.error.text), Res.drawable.ic_file_22, body, body = v.error.requestId) {
-                ShifaSecondaryButton(tr(Res.string.retry), actions.retry)
-            }
+            ShifaLoadError(tr(v.error.text), actions.retry, body, requestId = v.error.requestId)
         is Viewed.Ready -> Shown(v.file, title, body, actions)
     }
 }

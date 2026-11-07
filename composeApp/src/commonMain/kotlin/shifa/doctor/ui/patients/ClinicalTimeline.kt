@@ -54,7 +54,7 @@ import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.visit.Patterns
 import shifa.doctor.ui.visit.factTypeLabel
-import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.displayTime
@@ -128,18 +128,7 @@ internal fun ClinicalTimelineCard(
     val timeline = state.timeline
     when {
         timeline == null && state.error != null ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-            ) {
-                Text(
-                    tr(state.error.text),
-                    Modifier.weight(1f, fill = false),
-                    style = ShifaTextStyles.metaSmall(),
-                    color = ShifaColors.Text.Error,
-                )
-                ShifaLink(tr(Res.string.retry), retry)
-            }
+            ShifaLoadError(tr(state.error.text), retry, requestId = state.error.requestId, compact = true)
         timeline == null -> repeat(3) { ShifaSkeleton(Modifier.fillMaxWidth().height(ShifaSize.S20)) }
         timeline.facts.isEmpty() ->
             Text(

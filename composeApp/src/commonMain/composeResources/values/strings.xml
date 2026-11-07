@@ -2150,7 +2150,7 @@
     <string name="profession">Profession</string>
     <string name="professional">Professional</string>
     <string name="profile">Profile</string>
-    <string name="profileCompletePct">Profile %1$s % complete</string>
+    <string name="profileCompletePct">Profile %1$s% complete</string>
     <string name="profileCreated">Profile created</string>
     <string name="profileExtrasNotSaved">Some profile details could not be saved. You can edit them in Profile.</string>
     <string name="profileId">Profile ID</string>
@@ -2463,7 +2463,7 @@
     <string name="startsIn">Starts in</string>
     <string name="status">Status</string>
     <string name="statusCancelled">Cancelled</string>
-    <string name="statusCompleted">Complete</string>
+    <string name="statusCompleted">Completed</string>
     <string name="statusConfirmed">Confirmed</string>
     <string name="statusFailed">FAILED</string>
     <string name="statusInProgress">In progress</string>

@@ -43,6 +43,7 @@ import shifa.doctor.generated.resources.ic_chev_d_16
 import shifa.doctor.generated.resources.ic_cloud_off_16
 import shifa.doctor.generated.resources.ic_info_20
 import shifa.doctor.generated.resources.ic_x_16
+import shifa.doctor.generated.resources.retry
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
@@ -134,7 +135,8 @@ fun EmptyState(
             .background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg)
             .padding(horizontal = ShifaSpacing.Inset.Md, vertical = ShifaSpacing.Inset.Lg),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
+        // Centred when a screen stretches it (`weight(1f)`): the message sits mid-card, not at its top.
+        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm, Alignment.CenterVertically),
     ) {
         Box(
             Modifier.size(ShifaSize.S64).background(ShifaColors.Bg.SuccessSubtle, ShifaRadius.Full),
@@ -159,6 +161,65 @@ fun EmptyState(
             )
         }
         action?.invoke()
+    }
+}
+
+/**
+ * The one way the app says "this didn't load" (UI audit 2026-11-07: errors and Retry were placed five different ways).
+ * A whole screen or list that failed: the card form, centred, with the request id when there is one and a Retry
+ * button. A part of a screen that failed (a section, a panel, a sheet's list): [compact], no card, the message and
+ * Retry centred in the space the content would take. [onRetry] null: nothing to retry (the message only).
+ */
+@Composable
+fun ShifaLoadError(
+    message: String,
+    onRetry: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    requestId: String? = null,
+    compact: Boolean = false,
+) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .then(if (compact) Modifier else Modifier.background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg))
+            .padding(
+                horizontal = ShifaSpacing.Inset.Md,
+                vertical = if (compact) ShifaSpacing.Inset.Sm else ShifaSpacing.Inset.Lg,
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // Centred when a screen stretches it (`weight(1f)`): the message sits mid-card, not at its top.
+        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm, Alignment.CenterVertically),
+    ) {
+        if (!compact) {
+            Box(
+                Modifier.size(ShifaSize.S64).background(ShifaColors.Bg.ErrorSubtle, ShifaRadius.Full),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(painterResource(Res.drawable.ic_alert_circle_20), null, tint = ShifaColors.Icon.Error)
+            }
+        }
+        Text(
+            message,
+            Modifier.widthIn(max = ShifaSize.S320),
+            style = if (compact) ShifaTextStyles.dialogBody() else ShifaTextStyles.panelTitle(),
+            color = if (compact) ShifaColors.Text.Secondary else ShifaColors.Text.Primary,
+            textAlign = TextAlign.Center,
+        )
+        requestId?.let {
+            Text(
+                it,
+                style = ShifaTextStyles.metaSmall(),
+                color = ShifaColors.Text.Tertiary,
+                textAlign = TextAlign.Center,
+            )
+        }
+        onRetry?.let {
+            if (compact) {
+                ShifaLink(tr(Res.string.retry), it)
+            } else {
+                ShifaSecondaryButton(tr(Res.string.retry), it, size = ShifaButtonSize.Compact)
+            }
+        }
     }
 }
 

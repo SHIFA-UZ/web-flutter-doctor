@@ -175,6 +175,7 @@ import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSkeleton
@@ -468,8 +469,15 @@ internal fun ColumnScope.PlansContent(
         PLAN_STATUSES.forEach { s -> ShifaChip(tr(planStatusLabel(s)), state.status == s, { actions.status(s) }) }
     }
     state.error?.let { e ->
-        codeBanner(e)?.let { it() }
-        ShifaLink(tr(Res.string.retry), actions.load)
+        // Nothing read yet: the failure takes the list's place; over a list read before, a banner above it.
+        if (state.plans == null) {
+            ShifaLoadError(tr(e.text), actions.load, requestId = e.requestId)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                codeBanner(e)?.let { it() }
+                ShifaLink(tr(Res.string.retry), actions.load)
+            }
+        }
     }
     val plans = state.plans
     when {
@@ -561,10 +569,7 @@ private fun VisitList(
     open: (PlanVisit) -> Unit,
 ) = Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
     when {
-        failed && visits == null -> {
-            Text(tr(Res.string.planVisitsFailed), style = ShifaTextStyles.bodyText(), color = ShifaColors.Text.Error)
-            ShifaLink(tr(Res.string.retry), retry)
-        }
+        failed && visits == null -> ShifaLoadError(tr(Res.string.planVisitsFailed), retry, compact = true)
         visits == null -> ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S16))
         visits.isEmpty() ->
             Text(
@@ -1057,8 +1062,15 @@ fun PlanDetailContent(
             )
         }
         state.error?.let { e ->
-            codeBanner(e)?.let { it() }
-            ShifaLink(tr(Res.string.retry), actions.load)
+            // Nothing read yet: the failure takes the plan's place; over a plan read before, a banner above it.
+            if (state.detail == null) {
+                ShifaLoadError(tr(e.text), actions.load, requestId = e.requestId)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                    codeBanner(e)?.let { it() }
+                    ShifaLink(tr(Res.string.retry), actions.load)
+                }
+            }
         }
         val detail = state.detail
         when {
@@ -1207,14 +1219,8 @@ private fun ColumnScope.PlanBody(
     Section(tr(Res.string.clinicTreatmentPlansVisits)) {
         val visits = state.visits
         when {
-            visits == null && state.visitsFailed -> {
-                Text(
-                    tr(Res.string.planVisitsFailed),
-                    style = ShifaTextStyles.bodyText(),
-                    color = ShifaColors.Text.Error,
-                )
-                ShifaLink(tr(Res.string.retry), actions.load)
-            }
+            visits == null && state.visitsFailed ->
+                ShifaLoadError(tr(Res.string.planVisitsFailed), actions.load, compact = true)
             visits == null -> ShifaSkeleton(Modifier.fillMaxWidth().padding(vertical = ShifaSize.S16))
             visits.isEmpty() ->
                 Text(

@@ -70,6 +70,7 @@ import shifa.doctor.generated.resources.ic_refresh_22
 import shifa.doctor.generated.resources.ic_search_22
 import shifa.doctor.generated.resources.metricFollowUp
 import shifa.doctor.generated.resources.metricToday
+import shifa.doctor.generated.resources.notificationUnread
 import shifa.doctor.generated.resources.notifications
 import shifa.doctor.generated.resources.profile
 import shifa.doctor.generated.resources.refresh
@@ -511,9 +512,10 @@ private fun Metrics(
                     Res.drawable.ic_bell_16,
                     ShifaColors.Bg.InfoSubtle,
                     ShifaColors.Icon.Info,
-                    tr(Res.string.notifications),
+                    // The board's words: "Unread" fits a phone's third of the row, "Notifications" doesn't.
+                    tr(Res.string.notificationUnread),
                     countText(shell.unread, shell.unreadFailed),
-                    tr(Res.string.unreadCountLabel),
+                    tr(Res.string.notifications).lowercase(),
                     actions.notifications,
                     m,
                 )
@@ -590,6 +592,7 @@ private fun Metric(
             label,
             style = ShifaTextStyles.legend(),
             color = ShifaColors.Text.Secondary,
+            // One line, cut with "…" like the board (two lines broke "Follow-up" mid-word on Android).
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

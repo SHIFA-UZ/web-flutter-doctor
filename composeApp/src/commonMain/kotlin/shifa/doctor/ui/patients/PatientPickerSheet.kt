@@ -21,10 +21,8 @@ import shifa.doctor.generated.resources.ic_check_16
 import shifa.doctor.generated.resources.newPatient
 import shifa.doctor.generated.resources.noPatientsFound
 import shifa.doctor.generated.resources.patientIdLabel
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.searchByNameOrId
 import shifa.doctor.ui.emailcode.CodeBanner
-import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
@@ -33,6 +31,7 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaAvatar
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.tr
@@ -81,10 +80,7 @@ internal fun PatientPickerTray(
     onNew?.let { ShifaLink(tr(Res.string.newPatient), it) }
     ShifaSearchField(query, onQuery, tr(Res.string.searchByNameOrId), Modifier.fillMaxWidth())
     when {
-        error != null -> {
-            codeBanner(error)?.invoke()
-            ShifaLink(tr(Res.string.retry), onRetry)
-        }
+        error != null -> ShifaLoadError(tr(error.text), onRetry, requestId = error.requestId, compact = true)
         patients == null -> ShifaListSkeleton(count = 4)
         patients.isEmpty() ->
             Text(

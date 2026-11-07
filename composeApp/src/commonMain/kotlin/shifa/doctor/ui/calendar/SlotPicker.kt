@@ -42,9 +42,7 @@ import shifa.doctor.generated.resources.couldNotLoadThisDay
 import shifa.doctor.generated.resources.newAppointment
 import shifa.doctor.generated.resources.next
 import shifa.doctor.generated.resources.noSlotsAvailable
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.ui.emailcode.CodeBanner
-import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
@@ -52,8 +50,8 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaChipType
-import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
@@ -209,10 +207,8 @@ fun SlotPickTray(
         val slots = state.slots
         val error = state.error
         when {
-            error != null -> {
-                codeBanner(error)?.invoke()
-                ShifaLink(tr(Res.string.retry), { pick(state.date) })
-            }
+            error != null ->
+                ShifaLoadError(tr(error.text), { pick(state.date) }, requestId = error.requestId, compact = true)
             slots == null -> ShifaListSkeleton(count = 2)
             slots.isEmpty() ->
                 Text(

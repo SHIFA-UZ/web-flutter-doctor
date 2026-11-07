@@ -87,7 +87,6 @@ import shifa.doctor.generated.resources.paymentReminderSent
 import shifa.doctor.generated.resources.place
 import shifa.doctor.generated.resources.placeReadOnlyHint
 import shifa.doctor.generated.resources.reschedule
-import shifa.doctor.generated.resources.retry
 import shifa.doctor.generated.resources.saveFailed
 import shifa.doctor.generated.resources.startAppointment
 import shifa.doctor.generated.resources.unknownPatient
@@ -121,6 +120,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
@@ -744,10 +744,8 @@ private fun RescheduleBody(
     val own = state.clock.local(a.start).date == date
     val error = state.rescheduleError
     when {
-        error != null -> {
-            codeBanner(error)?.invoke()
-            ShifaLink(tr(Res.string.retry), { actions.reschedule(date) })
-        }
+        error != null ->
+            ShifaLoadError(tr(error.text), { actions.reschedule(date) }, requestId = error.requestId, compact = true)
         slots == null -> ShifaListSkeleton(count = 2)
         slots.isEmpty() && !own ->
             Text(

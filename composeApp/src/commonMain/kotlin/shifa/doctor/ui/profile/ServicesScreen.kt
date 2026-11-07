@@ -111,6 +111,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
@@ -550,9 +551,7 @@ fun ServicesContent(
             when {
                 state.loading -> ShifaListSkeleton(count = 4)
                 error != null ->
-                    EmptyState(tr(error.text), Res.drawable.ic_card_22, body = error.requestId) {
-                        ShifaSecondaryButton(tr(Res.string.retry), actions.retry)
-                    }
+                    ShifaLoadError(tr(error.text), actions.retry, requestId = error.requestId)
                 state.services.isEmpty() -> {
                     GroupsRow(state, actions)
                     EmptyState(tr(Res.string.noServicesYet), Res.drawable.ic_card_22)

@@ -108,7 +108,6 @@ import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
-import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.ShifaActionButton
 import shifa.doctor.ui.widgets.ShifaActionVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
@@ -116,6 +115,8 @@ import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.TimeZones
 import shifa.doctor.utils.appVersion
 import shifa.doctor.utils.displayDate
@@ -281,17 +282,10 @@ fun ProfileScreenContent(
         state.failed ->
             // Sign Out stays reachable with a broken profile (flow §6).
             Column(verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Sm)) {
-                EmptyState(
+                ShifaLoadError(
                     tr(state.error ?: Res.string.somethingWentWrong),
-                    Res.drawable.ic_info_22,
-                    body = state.requestId?.let { tr(Res.string.errorRequestId, it) },
-                    action = {
-                        ShifaActionButton(
-                            actions.retry,
-                            text = tr(Res.string.retry),
-                            variant = ShifaActionVariant.Secondary,
-                        )
-                    },
+                    actions.retry,
+                    requestId = state.requestId?.let { tr(Res.string.errorRequestId, it) },
                 )
                 Rows(listOf(signOutRow(actions)))
             }
@@ -355,7 +349,13 @@ private fun DoctorProfile(
     val dob = p.dob?.let { runCatching { displayDate(LocalDate.parse(it)) }.getOrNull() }
     val personal = listOfNotNull(name.ifBlank { null }, dob, professionLabel.ifBlank { null }).joinToString(" · ")
     val contact =
-        listOfNotNull(me.contact.phone, me.contact.email, address.ifBlank { null }).filter { it.isNotBlank() }
+        listOfNotNull(
+            me.contact.phone?.let(PhoneE164::display),
+            me.contact.email,
+            address.ifBlank {
+                null
+            },
+        ).filter { it.isNotBlank() }
             .joinToString(" · ")
     val zone = p.timeZone?.let { z -> TimeZones.utcLabel(z)?.let { "$z ($it)" } ?: z }
     Rows(
@@ -429,7 +429,7 @@ private fun StaffProfile(
     IdentityCard(
         me.photoUrl,
         name,
-        listOfNotNull(me.email, me.phone).joinToString(" · "),
+        listOfNotNull(me.email, me.phone?.let(PhoneE164::display)).joinToString(" · "),
         me.timeZone,
         null,
         onClick = null,

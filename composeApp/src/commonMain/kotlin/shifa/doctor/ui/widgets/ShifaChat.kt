@@ -311,7 +311,8 @@ fun ShifaChatVoiceBubble(
     modifier: Modifier = Modifier,
     received: Boolean = false,
     time: String? = null,
-) = Bubble(if (received) ShifaChatBubbleType.Received else ShifaChatBubbleType.Sent, modifier, time) {
+) = Bubble(if (received) ShifaChatBubbleType.Received else ShifaChatBubbleType.Sent, modifier) {
+    // [time] sits inside, after the bar (board DaChat `isVoice`), like a text bubble's footer, not under the bubble.
     Row(
         Modifier.width(ShifaDimens.ChatVoiceWidth),
         horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm),
@@ -338,6 +339,7 @@ fun ShifaChatVoiceBubble(
                 Text(clock(duration), style = style, color = ShifaColors.Text.Tertiary)
             }
         }
+        time?.let { Text(it, style = ShifaTextStyles.caption(), color = ShifaColors.Text.Tertiary, maxLines = 1) }
     }
 }
 

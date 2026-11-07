@@ -124,6 +124,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
@@ -635,10 +636,8 @@ fun ScheduleContent(
             Locations(state, actions)
             val error = state.loadError
             when {
-                state.saved == null && error != null -> {
-                    codeBanner(error)?.invoke()
-                    ShifaLink(tr(Res.string.retry), actions.retry)
-                }
+                state.saved == null && error != null ->
+                    ShifaLoadError(tr(error.text), actions.retry, requestId = error.requestId, compact = true)
                 state.locations?.isEmpty() == true -> Unit // the hint and Add location are above
                 state.saved == null -> ShifaListSkeleton(count = 4)
                 else -> {

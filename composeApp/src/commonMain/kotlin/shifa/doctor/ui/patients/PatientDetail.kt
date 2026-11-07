@@ -202,6 +202,7 @@ import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaDropdown
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSettingsItem
@@ -979,9 +980,7 @@ fun PatientDetailContent(
                 }
             }
         error != null && !state.loading ->
-            EmptyState(tr(error.text), Res.drawable.ic_users_22, Modifier.weight(1f), body = error.requestId) {
-                ShifaSecondaryButton(tr(Res.string.retry), actions.refresh)
-            }
+            ShifaLoadError(tr(error.text), actions.refresh, Modifier.weight(1f), requestId = error.requestId)
         else -> Skeleton()
     }
 }
@@ -1086,7 +1085,7 @@ private fun Stats(
         listOf(
             Res.string.age to (p.age(today)?.toString() ?: dash),
             Res.string.gender to (genderLabel(p.gender) ?: dash),
-            Res.string.phone to (p.allPhones.firstOrNull() ?: dash),
+            Res.string.phone to (p.allPhones.firstOrNull()?.let(PhoneE164::display) ?: dash),
             Res.string.birthDate to (p.birth?.let(::displayDate) ?: dash),
             Res.string.patientId to p.displayId,
             Res.string.language to (languageLabel(p.language) ?: dash),

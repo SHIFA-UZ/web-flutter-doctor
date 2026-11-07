@@ -125,6 +125,7 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSkeleton
 import shifa.doctor.utils.LocalAppLocale
 import shifa.doctor.utils.LocalUzbekCyrillic
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.tr
 import shifa.doctor.utils.trPlural
 
@@ -744,7 +745,12 @@ private fun ColumnScope.SearchBody(card: IntelCard.PatientSearch) {
         Line(card.query?.let { tr(Res.string.intelNoExactMatchFor, it) } ?: tr(Res.string.intelDidYouMean), bold = true)
     }
     card.matches.forEach { m ->
-        Line(listOfNotNull(LocalCardText.current.patientLabel(m.name), m.phone).joinToString(" · "))
+        Line(
+            listOfNotNull(
+                LocalCardText.current.patientLabel(m.name),
+                m.phone?.let(PhoneE164::display),
+            ).joinToString(" · "),
+        )
     }
 }
 

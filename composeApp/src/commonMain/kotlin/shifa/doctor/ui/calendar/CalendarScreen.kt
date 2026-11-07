@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -140,6 +141,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaTray
 import shifa.doctor.utils.PracticeClock
@@ -485,8 +487,17 @@ fun CalendarContent(
                 MonthPicker(state.month, state.selected, state.today, state::occupancy, actions.select, actions.month)
             }
             val day = @Composable {
-                codeBanner(state.error) { actions.ui { it.copy(error = null) } }?.invoke()
-                state.error?.let { ShifaLink(tr(Res.string.retry), actions.retry) }
+                state.error?.let { e ->
+                    if (state.day == null && !state.loading) {
+                        // No day read: the agenda would be blank (and dismissing a banner took Retry with it).
+                        ShifaLoadError(tr(e.text), actions.retry, requestId = e.requestId, compact = true)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                            codeBanner(e) { actions.ui { it.copy(error = null) } }?.invoke()
+                            ShifaLink(tr(Res.string.retry), actions.retry)
+                        }
+                    }
+                }
                 val staff = state.staff
                 // With colleagues shown, each calendar gets its head: "My schedule" first, then theirs (flow 04/14 §3.3).
                 if (staff != null && staff.colleagues.isNotEmpty()) {
@@ -771,7 +782,11 @@ private fun place(entry: CalendarEntry): String? =
 private fun Chips(
     entry: CalendarEntry,
     place: String?,
-) = Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+) = FlowRow(
+    // Wraps: three chips beside the time column squeezed the last one into "Pa / id" on phones.
+    horizontalArrangement = Arrangement.spacedBy(ShifaSize.S6),
+    verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
+) {
     val video = entry is CalendarEntry.Appointment && entry.isVideo
     place?.let {
         ProfileChip(

@@ -86,6 +86,7 @@ import shifa.doctor.generated.resources.value
 import shifa.doctor.generated.resources.yes
 import shifa.doctor.generated.resources.yesCancel
 import shifa.doctor.ui.analytics.shortMonth
+import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
@@ -101,6 +102,7 @@ import shifa.doctor.ui.widgets.PressVariant
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaProgressBar
 import shifa.doctor.ui.widgets.ShifaSecondaryButton
@@ -176,14 +178,12 @@ internal fun TaskDetailContent(
                 ShifaSecondaryButton(tr(Res.string.back), actions.back)
             }
         task == null && error != null ->
-            EmptyState(
+            ShifaLoadError(
                 tr(error.text),
-                Res.drawable.ic_tasks_22,
+                actions.reload,
                 Modifier.padding(ShifaSpacing.Inset.Md),
-                body = error.requestId,
-            ) {
-                ShifaSecondaryButton(tr(Res.string.retry), actions.reload)
-            }
+                requestId = error.requestId,
+            )
         task == null -> ShifaListSkeleton(Modifier.padding(ShifaSpacing.Inset.Md), count = 4)
         else -> {
             val patientZone = task.patientTimeZone?.let { runCatching { TimeZone.of(it) }.getOrNull() }
@@ -219,16 +219,8 @@ internal fun TaskDetailContent(
                     // A refresh of them failed over an older list: say so, keep the list.
                     if (state.checkInsFailed && checks != null) {
                         item {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    tr(Res.string.checkInsLoadFailed),
-                                    Modifier.weight(1f),
-                                    style = ShifaTextStyles.metaSmall(),
-                                    color = ShifaColors.Text.Error,
-                                )
+                            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                                codeBanner(CodeBanner(Res.string.checkInsLoadFailed))?.invoke()
                                 ShifaLink(tr(Res.string.retry), actions.reload)
                             }
                         }
@@ -236,14 +228,7 @@ internal fun TaskDetailContent(
                     when {
                         state.checkInsFailed && checks == null ->
                             item {
-                                Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                                    Text(
-                                        tr(Res.string.checkInsLoadFailed),
-                                        style = ShifaTextStyles.dialogBody(),
-                                        color = ShifaColors.Text.Secondary,
-                                    )
-                                    ShifaLink(tr(Res.string.retry), actions.reload)
-                                }
+                                ShifaLoadError(tr(Res.string.checkInsLoadFailed), actions.reload, compact = true)
                             }
                         checks == null -> item { ShifaListSkeleton(count = 3) }
                         checks.isEmpty() ->

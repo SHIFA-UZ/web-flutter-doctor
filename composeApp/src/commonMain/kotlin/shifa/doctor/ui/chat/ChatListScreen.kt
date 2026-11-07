@@ -47,9 +47,11 @@ import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.chat
 import shifa.doctor.generated.resources.chatEmptyHint
+import shifa.doctor.generated.resources.chatPhoto
 import shifa.doctor.generated.resources.chatUnreadEmptyHint
 import shifa.doctor.generated.resources.couldNotLoad
 import shifa.doctor.generated.resources.doctor
+import shifa.doctor.generated.resources.document
 import shifa.doctor.generated.resources.filterConversations
 import shifa.doctor.generated.resources.ic_chat_16
 import shifa.doctor.generated.resources.ic_sliders_22
@@ -65,6 +67,7 @@ import shifa.doctor.generated.resources.searchDoctorsAndPatients
 import shifa.doctor.generated.resources.unreadBadge
 import shifa.doctor.generated.resources.unreadOnlyNewest
 import shifa.doctor.generated.resources.unreadOnlyOldest
+import shifa.doctor.generated.resources.voiceMessage
 import shifa.doctor.generated.resources.yesterday
 import shifa.doctor.ui.analytics.shortMonth
 import shifa.doctor.ui.emailcode.codeBanner
@@ -82,6 +85,7 @@ import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaListSkeleton
+import shifa.doctor.ui.widgets.ShifaLoadError
 import shifa.doctor.ui.widgets.ShifaOptionList
 import shifa.doctor.ui.widgets.ShifaSearchField
 import shifa.doctor.ui.widgets.ShifaTray
@@ -195,9 +199,14 @@ internal fun ChatListContent(
         ) {
             state.error?.let { e ->
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
-                        codeBanner(e)?.invoke()
-                        ShifaLink(tr(Res.string.retry), actions.refresh)
+                    // No list read yet: the failure takes the list's place; over a list, a banner above it.
+                    if (state.conversations == null && !state.searching) {
+                        ShifaLoadError(tr(e.text), actions.refresh, requestId = e.requestId)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S6)) {
+                            codeBanner(e)?.invoke()
+                            ShifaLink(tr(Res.string.retry), actions.refresh)
+                        }
                     }
                 }
             }
@@ -208,16 +217,7 @@ internal fun ChatListContent(
                         results == null -> item { ShifaListSkeleton(count = 3) }
                         // A failed search says so, with Retry (not "No users found").
                         state.searchFailed ->
-                            item {
-                                Column(
-                                    Modifier.fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(ShifaSize.S6),
-                                ) {
-                                    Message(tr(Res.string.couldNotLoad), null)
-                                    ShifaLink(tr(Res.string.retry), actions.retrySearch)
-                                }
-                            }
+                            item { ShifaLoadError(tr(Res.string.couldNotLoad), actions.retrySearch) }
                         results.isEmpty() -> item { Message(tr(Res.string.noUsersFound), null) }
                         else ->
                             items(
@@ -256,7 +256,15 @@ private fun ConversationRow(
 ) {
     val time = c.lastActivity?.let { timeText(activityTime(it, clock)) }
     val name = c.name.ifBlank { tr(if (c.isDoctor) Res.string.doctor else Res.string.patient) }
-    val preview = c.lastMessage ?: tr(Res.string.noMessages)
+    // An attachment's preview is the backend's English word (`lastMessagePreview`): say it in the doctor's language.
+    val preview =
+        when (c.lastMessage) {
+            null -> tr(Res.string.noMessages)
+            "Photo" -> tr(Res.string.chatPhoto)
+            "Voice message" -> tr(Res.string.voiceMessage)
+            "Document" -> tr(Res.string.document)
+            else -> c.lastMessage
+        }
     val unread = if (c.unread > 0) tr(Res.string.unreadBadge, c.unread.toString()) else null
     Row(
         Modifier
