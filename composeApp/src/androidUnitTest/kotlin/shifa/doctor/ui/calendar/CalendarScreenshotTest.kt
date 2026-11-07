@@ -46,4 +46,8 @@ class CalendarScreenshotTest {
 
     @Test
     fun blockPanel() = captureRoboImage("screenshots/Calendar_blockPanel.png") { BlockPanelPreview() }
+
+    @Test
+    @Config(qualifiers = "w1180dp-h900dp-mdpi")
+    fun wide() = captureRoboImage("screenshots/Calendar_wide.png") { CalendarWidePreview() }
 }

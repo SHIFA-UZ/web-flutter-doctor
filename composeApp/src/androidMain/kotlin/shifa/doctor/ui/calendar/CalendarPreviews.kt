@@ -94,6 +94,15 @@ private fun state(details: Boolean) =
 @Composable
 internal fun CalendarDayPreview() = PreviewTheme { CalendarContent(state(false), CalendarActions()) }
 
+// WEB-07c (DaCalendar web): the month card on the left, the chosen day's agenda beside it.
+@androidx.compose.runtime.Composable
+internal fun CalendarWidePreview() =
+    PreviewTheme {
+        androidx.compose.runtime.CompositionLocalProvider(shifa.doctor.ui.widgets.LocalWideLayout provides true) {
+            CalendarContent(state(false), CalendarActions())
+        }
+    }
+
 // CAL-10 A (flow 04/14 §3 A, board DaCalendar "Staff calendars"): the doctor's own day under "My schedule", a
 // colleague's under their name and colour; the third doctor's chip off.
 @Composable

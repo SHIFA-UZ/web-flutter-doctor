@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -122,11 +123,13 @@ import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.profile.ProfileChip
 import shifa.doctor.ui.profile.ProfileSheet
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaActionButton
 import shifa.doctor.ui.widgets.ShifaActionVariant
 import shifa.doctor.ui.widgets.ShifaAvatar
@@ -440,44 +443,75 @@ fun CalendarContent(
     state: CalendarUiState,
     actions: CalendarActions,
 ) {
+    val wide = LocalWideLayout.current
     Column(
         Modifier
             .fillMaxSize()
             .background(ShifaColors.Bg.Canvas)
             .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            // Clear of the floating tab bar, like the Profile root.
-            .padding(
-                start = ShifaSpacing.Inset.Md,
-                end = ShifaSpacing.Inset.Md,
-                top = ShifaSpacing.Inset.Md,
-                bottom = ShifaSize.S120,
-            ),
-        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+            .verticalScroll(rememberScrollState()),
     ) {
-        if (state.showMismatch) MismatchBanner(state.clock) { actions.ui { it.copy(mismatchDismissed = true) } }
-        Header(state, actions)
-        if (state.scope != null) {
-            Text(
-                tr(Res.string.clinicSchedulePreviewHint),
-                style = ShifaTextStyles.metaSmall(),
-                color = ShifaColors.Text.Secondary,
-            )
+        Column(
+            Modifier
+                // Wide (DaCalendar web): a page at most 1280 wide; phones: clear of the floating tab bar.
+                .then(
+                    if (wide) {
+                        Modifier.align(
+                            Alignment.CenterHorizontally,
+                        ).widthIn(max = ShifaDimens.Layout.Page)
+                    } else {
+                        Modifier
+                    },
+                )
+                .padding(
+                    start = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                    end = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                    top = if (wide) ShifaSpacing.Inset.Lg else ShifaSpacing.Inset.Md,
+                    bottom = if (wide) ShifaSpacing.Inset.Lg else ShifaSize.S120,
+                ),
+            verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+        ) {
+            if (state.showMismatch) MismatchBanner(state.clock) { actions.ui { it.copy(mismatchDismissed = true) } }
+            Header(state, actions, wide)
+            if (state.scope != null) {
+                Text(
+                    tr(Res.string.clinicSchedulePreviewHint),
+                    style = ShifaTextStyles.metaSmall(),
+                    color = ShifaColors.Text.Secondary,
+                )
+            }
+            state.staff?.let { StaffChips(it, actions.staff) }
+            val month = @Composable {
+                MonthPicker(state.month, state.selected, state.today, state::occupancy, actions.select, actions.month)
+            }
+            val day = @Composable {
+                codeBanner(state.error) { actions.ui { it.copy(error = null) } }?.invoke()
+                state.error?.let { ShifaLink(tr(Res.string.retry), actions.retry) }
+                val staff = state.staff
+                // With colleagues shown, each calendar gets its head: "My schedule" first, then theirs (flow 04/14 §3.3).
+                if (staff != null && staff.colleagues.isNotEmpty()) {
+                    StaffHeader(
+                        tr(Res.string.mySchedule),
+                        staff.color(staff.ownId),
+                    )
+                }
+                Agenda(state, actions)
+                staff?.colleagues?.forEach { StaffSection(it, state, actions) }
+            }
+            if (wide) {
+                // The month card at its phone size on the left, the chosen day's agenda beside it.
+                Row(horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Inset.Lg)) {
+                    Column(Modifier.width(ShifaDimens.Layout.ListPane)) { month() }
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
+                    ) { day() }
+                }
+            } else {
+                month()
+                day()
+            }
         }
-        state.staff?.let { StaffChips(it, actions.staff) }
-        MonthPicker(state.month, state.selected, state.today, state::occupancy, actions.select, actions.month)
-        codeBanner(state.error) { actions.ui { it.copy(error = null) } }?.invoke()
-        state.error?.let { ShifaLink(tr(Res.string.retry), actions.retry) }
-        val staff = state.staff
-        // With colleagues shown, each calendar gets its head: "My schedule" first, then theirs (flow 04/14 §3.3).
-        if (staff != null && staff.colleagues.isNotEmpty()) {
-            StaffHeader(
-                tr(Res.string.mySchedule),
-                staff.color(staff.ownId),
-            )
-        }
-        Agenda(state, actions)
-        staff?.colleagues?.forEach { StaffSection(it, state, actions) }
     }
     state.filterDraft?.let { FilterSheet(it, colleague = state.scope != null, actions) }
 }
@@ -486,6 +520,7 @@ fun CalendarContent(
 private fun Header(
     state: CalendarUiState,
     actions: CalendarActions,
+    wide: Boolean,
 ) = Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     actions.back?.let {
         ShifaActionButton(
@@ -501,7 +536,7 @@ private fun Header(
         Text(
             state.scope?.let { it.name ?: tr(Res.string.clinicMemberFallback, it.doctorId.toString()) }
                 ?: tr(Res.string.calendar),
-            style = ShifaTextStyles.trayTitle(),
+            style = if (wide) MaterialTheme.typography.headlineLarge else ShifaTextStyles.trayTitle(),
             color = ShifaColors.Text.Primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
