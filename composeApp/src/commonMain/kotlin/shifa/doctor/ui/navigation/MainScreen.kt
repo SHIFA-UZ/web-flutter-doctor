@@ -302,7 +302,8 @@ fun MainScreenContent(
     intelligence: @Composable () -> Unit = {
         IntelligenceScreen(
             onLeave = actions.leaveIntelligence,
-            bottomInset = ShifaSpacing.Inset.Md + ShifaDimens.FabDockedClear,
+            // Clear of the phone's floating bar; wide screens have none.
+            bottomInset = if (LocalWideLayout.current) ShifaSpacing.Inset.Md else ShifaSpacing.Inset.Md + ShifaDimens.FabDockedClear,
             onOpenCalendar = { day ->
                 day?.let { CalendarFocus.day.value = it }
                 actions.openCalendar()

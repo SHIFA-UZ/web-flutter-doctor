@@ -100,6 +100,11 @@ object ShifaTextStyles {
     @Composable
     fun trayTitle() = manrope(manropeFontFamily(), FontWeight.Bold, 16, 22, -1)
 
+    // A pushed screen's centred header title: the phone page-title size everywhere (wide screens enlarge
+    // headlineSmall for page titles, not for these).
+    @Composable
+    fun subHeaderTitle() = manrope(manropeFontFamily(), FontWeight.Bold, 24, 28, -1)
+
     // tag
     @Composable
     fun tag() = manrope(manropeFontFamily(), FontWeight.Bold, 12, 12)

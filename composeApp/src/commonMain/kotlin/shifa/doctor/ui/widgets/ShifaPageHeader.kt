@@ -39,6 +39,7 @@ import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
+import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.utils.tr
 
 /** Figma page-header, page = main: the 32 title on every tab. */
@@ -127,10 +128,10 @@ fun ShifaSubHeader(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ShifaAvatar(avatarUrl, ShifaDimens.SubHeaderAvatar, placeholder = ShifaColors.Icon.Primary)
-                HeaderTitle(title, MaterialTheme.typography.headlineSmall, Modifier.weight(1f, fill = false))
+                HeaderTitle(title, ShifaTextStyles.subHeaderTitle(), Modifier.weight(1f, fill = false))
             }
         } else {
-            HeaderTitle(title, MaterialTheme.typography.headlineSmall, Modifier.weight(1f, fill = false))
+            HeaderTitle(title, ShifaTextStyles.subHeaderTitle(), Modifier.weight(1f, fill = false))
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Md),
