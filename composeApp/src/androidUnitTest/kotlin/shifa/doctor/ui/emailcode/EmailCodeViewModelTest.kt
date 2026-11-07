@@ -29,7 +29,11 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.enterEmail
 import shifa.doctor.generated.resources.invalidEmail
 import shifa.doctor.generated.resources.invalidOtp
+import shifa.doctor.generated.resources.invalidPhone
 import shifa.doctor.generated.resources.otpResent
+import shifa.doctor.generated.resources.phoneNumberRequired
+import shifa.doctor.generated.resources.smsSignInUzbekOnly
+import shifa.doctor.generated.resources.smsUnavailableUseEmail
 import shifa.doctor.generated.resources.tooManyRequests
 import shifa.doctor.stopAll
 
@@ -144,5 +148,80 @@ class EmailCodeViewModelTest {
         waitFor { vm.state.value.banner != null }
         assertThat(vm.state.value.banner).isEqualTo(CodeBanner(Res.string.otpResent, error = false))
         assertThat(calls.single()).contains("send-forgot-password-otp")
+    }
+
+    @Test
+    fun `sms sign-in takes an uzbek mobile only, sends it in e164, and says when the code went by e-mail`() {
+        val vm = EmailEntryViewModel(EmailCodeMode.SmsSignIn, auth = auth, cooldown = cooldown).also { created += it }
+        vm.submit()
+        assertThat(vm.state.value.error).isEqualTo(Res.string.phoneNumberRequired)
+        vm.onEmail("12ab")
+        vm.submit()
+        assertThat(vm.state.value.error).isEqualTo(Res.string.invalidPhone)
+        vm.onEmail("+49 151 1234 5678")
+        vm.submit()
+        assertThat(vm.state.value.error).isEqualTo(Res.string.smsSignInUzbekOnly)
+        assertThat(calls).isEmpty()
+
+        body = """{"sent":true,"channel":"sms"}"""
+        vm.onEmail("90 123 45 67")
+        vm.submit()
+        waitFor { vm.state.value.sentTo != null }
+        assertThat(vm.state.value.sentTo).isEqualTo("+998901234567")
+        assertThat(cooldown.hint("+998901234567", "SmsSignIn")).isNull()
+        assertThat(calls.single()).isEqualTo("/api/auth/send-login-sms-otp {\"phone\":\"+998901234567\"}")
+
+        // The SMS couldn't go out: the code went to the account's e-mail, and the code screen says where.
+        body = """{"sent":true,"channel":"email","smsFallbackUsed":true,"emailHint":"d***@shifa.dev"}"""
+        val other =
+            EmailEntryViewModel(
+                EmailCodeMode.SmsSignIn,
+                auth = auth,
+                cooldown = cooldown,
+            ).also { created += it }
+        other.onEmail("+998 93 000 00 00")
+        other.submit()
+        waitFor { other.state.value.sentTo != null }
+        // The code screen (opened now, or again after Back within the minute) says where it went.
+        val code =
+            CodeViewModel(
+                "+998930000000",
+                EmailCodeMode.SmsSignIn,
+                auth,
+                sessions,
+                cooldown,
+            ).also { created += it }
+        assertThat(code.state.value.emailHint).isEqualTo("d***@shifa.dev")
+        // A resend that goes by SMS again is described so too, and is what a later code screen shows.
+        now += 60_000
+        body = """{"sent":true,"channel":"sms"}"""
+        code.resend()
+        waitFor { code.state.value.banner != null }
+        assertThat(code.state.value.emailHint).isNull()
+        assertThat(cooldown.hint("+998930000000", "SmsSignIn")).isNull()
+    }
+
+    @Test
+    fun `sms unavailable without an e-mail to fall back to says to use e-mail`() {
+        status = HttpStatusCode.ServiceUnavailable
+        body = """{"status":503}"""
+        val vm = EmailEntryViewModel(EmailCodeMode.SmsSignIn, auth = auth, cooldown = cooldown).also { created += it }
+        vm.onEmail("+998901234567")
+        vm.submit()
+        waitFor { !vm.state.value.loading && vm.state.value.banner != null }
+        assertThat(vm.state.value.banner?.text).isEqualTo(Res.string.smsUnavailableUseEmail)
+    }
+
+    @Test
+    fun `the sms code signs in through the sms route`() {
+        cooldown.start("+998901234567", "SmsSignIn")
+        val vm =
+            CodeViewModel("+998901234567", EmailCodeMode.SmsSignIn, auth, sessions, cooldown).also { created += it }
+        assertThat(vm.state.value.bySms).isTrue()
+        body = """{"token":"${jwt(4_000_000_000L)}","forcePasswordReset":false}"""
+        vm.onCode("123456")
+        waitFor { vm.state.value.signedIn != null }
+        assertThat(calls.single())
+            .isEqualTo("/api/auth/verify-login-sms-otp {\"phone\":\"+998901234567\",\"code\":\"123456\"}")
     }
 }

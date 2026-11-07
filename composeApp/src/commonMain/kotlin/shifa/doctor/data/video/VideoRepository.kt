@@ -1,6 +1,7 @@
 package shifa.doctor.data.video
 
 import io.ktor.client.HttpClient
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -32,6 +33,13 @@ data class VideoToken(
     val roomName: String = "",
 )
 
+/** `VideoPresenceResponse`: the visit's patient in its room right now (Daily's presence, read by the backend). */
+@Serializable
+data class VideoPresence(
+    val patientInRoom: Boolean = false,
+    val patientJoinedAt: String? = null,
+)
+
 /** The Daily room of a video visit (VIDEO-01, 05 §3.1): `POST /video/token {appointmentId}`. */
 class VideoRepository(
     private val client: () -> HttpClient = { httpClient },
@@ -43,6 +51,10 @@ class VideoRepository(
                 setBody(TokenRequest(appointmentId))
             }
         }
+
+    /** `GET /video/appointments/{id}/presence`: the visit's own doctor only; 503 when Daily can't be asked. */
+    suspend fun presence(appointmentId: Long): Result<VideoPresence> =
+        apiCall<VideoPresence> { client().get(ApiConfig.Endpoints.videoPresence(appointmentId)) }
 }
 
 val videoRepository = VideoRepository()

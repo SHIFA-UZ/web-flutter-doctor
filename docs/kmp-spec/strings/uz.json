@@ -2910,5 +2910,14 @@
   "obligationSubscription": "Pullik obunangizni bekor qiling.",
   "deleteAccountFailed": "Hisobni o'chirib bo'lmadi",
   "accountDeleted": "Hisobingiz o'chirildi.",
-  "registrationExistingPassword": "Bu telefon raqami bilan Shifa hisobi allaqachon mavjud. Davom etish uchun o'sha hisobning joriy parolini kiriting."
+  "registrationExistingPassword": "Bu telefon raqami bilan Shifa hisobi allaqachon mavjud. Davom etish uchun o'sha hisobning joriy parolini kiriting.",
+  "accessApprovedBanner": "Ruxsat berildi",
+  "accessDeclinedBanner": "Ruxsat rad etildi",
+  "accessDecisionFailed": "So'rovni yangilab bo'lmadi. Qayta urinib ko'ring.",
+  "enterPhoneForOtp": "SMS orqali tasdiqlash kodini olish uchun telefon raqamingizni kiriting.",
+  "otpSentToPhone": "6 xonali kod {phone} raqamiga SMS orqali yuborildi.",
+  "smsSignInUzbekOnly": "SMS orqali kirish faqat O'zbekiston raqamlari (+998) bilan ishlaydi. Email orqali kiring.",
+  "smsUnavailableUseEmail": "SMS yuborib bo'lmadi. Email orqali kiring.",
+  "patientInRoom": "Xonada",
+  "patientNotInRoomYet": "Hali qo'shilmagan"
 }

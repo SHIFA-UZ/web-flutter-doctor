@@ -91,6 +91,33 @@ and `otp`.
 - **Deviation:** the envelope sits at the field's end (the kit field has a trailing slot only), not as a prefix.
 - **Tests:** `EmailCodeViewModelTest` (5), `EmailCodeScreenshotTest` (5).
 
+## AUTH-10 · Sign in with an SMS code
+
+Built 2026-11-07 (the user's call: "the same design as the e-mail one, just adjusted"; reverses that part of D-07).
+Board `DaAuth`, the `email` and `otp` branches with a phone number; no board of its own.
+
+- **Sign In:** a third secondary button, "Sign in with Phone Number" (phone icon), under "Sign in with Email".
+- **Screens:** `EmailEntryScreen` and `CodeScreen` in a third mode, `EmailCodeMode.SmsSignIn`: the title "Sign in with
+  Phone Number", "Enter your phone number to receive a verification code by SMS.", the Phone Number field (phone
+  keyboard, phone icon); the code screen says "A 6-digit code has been sent by SMS to +998 90 123 45 67."
+- **Number:** required, normalised with `PhoneE164` (a 9-digit local number gets +998), and Uzbek only (the backend
+  sends sign-in SMS to +998 numbers): otherwise "SMS sign-in works with Uzbek numbers (+998). Sign in with email
+  instead." before any request.
+- **Requests:** `POST /auth/send-login-sms-otp {phone}`; when the SMS can't go out the backend sends the code to the
+  account's e-mail and answers `channel: "email"` with a masked `emailHint`: the code screen then says it went there
+  (also after Back and Continue within the minute, and after a resend). 503 (no SMS and no e-mail) → "The SMS couldn't
+  be sent. Sign in with email instead."; other failures as the e-mail flow. `POST /auth/verify-login-sms-otp {phone,
+  code}` → token → session → shell; a wrong code clears the field as before. The 60 s resend cooldown is per number.
+- **Back keeps the address:** going back from the code screen now refills the e-mail or phone and keeps where the code
+  went (flow 01/03 §2 said so; each screen's fresh ViewModel had been starting empty). Applies to the e-mail modes too.
+- **Backend:** the two routes are new (branch `feature/doctor-sms-login-video-presence`, unmerged); production answers
+  404 until it ships, which shows as "Failed to send code". The sign-in SMS text needs DevSMS approval; until then
+  DevSMS refuses it and the code goes by e-mail.
+- **Not in demo:** sign-in calls are never demo'd (the e-mail code sign-in isn't either).
+- **Tests:** `EmailCodeViewModelTest` (+3: checks before sending, E.164 body, the e-mail fallback's hint, 503, the
+  verify route), screenshots `EmailCode_phone`, `EmailCode_phone_code`; the five `Login_*` shots re-recorded (the new
+  button).
+
 ## AUTH-04 · Forgot password
 
 Built 2026-11-04. Flows `01/03`, `01/04` (reset mode), `01/05-reset-password.md`; board `DaAuth.dc.html`, branches

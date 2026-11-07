@@ -24,15 +24,20 @@ import shifa.doctor.generated.resources.`continue`
 import shifa.doctor.generated.resources.email
 import shifa.doctor.generated.resources.enterEmailForOtp
 import shifa.doctor.generated.resources.enterOtp
+import shifa.doctor.generated.resources.enterPhoneForOtp
 import shifa.doctor.generated.resources.ic_alert_circle_16
 import shifa.doctor.generated.resources.ic_check_circle_16
 import shifa.doctor.generated.resources.ic_mail_20
+import shifa.doctor.generated.resources.ic_phone_20
 import shifa.doctor.generated.resources.otpCode
 import shifa.doctor.generated.resources.otpSentToEmail
+import shifa.doctor.generated.resources.otpSentToPhone
+import shifa.doctor.generated.resources.phoneNumber
 import shifa.doctor.generated.resources.resendCode
 import shifa.doctor.generated.resources.resendCodeIn
 import shifa.doctor.generated.resources.resetPassword
 import shifa.doctor.generated.resources.signInWithEmail
+import shifa.doctor.generated.resources.signInWithPhone
 import shifa.doctor.generated.resources.verify
 import shifa.doctor.ui.auth.AuthFrame
 import shifa.doctor.ui.auth.AuthTitle
@@ -44,6 +49,7 @@ import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaInputField
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.tr
 
 /** [banner] as a [ShifaBanner]; without [onDismiss] it has no ✕ (one that does nothing would mislead). */
@@ -64,12 +70,15 @@ internal fun codeBanner(
         }
     }
 
-/** AUTH-03/04, flow 01/03 (DaAuth "email"): the address the code goes to. */
+/**
+ * AUTH-03/04, flow 01/03 (DaAuth "email"): the address the code goes to. AUTH-10 (SMS sign-in) is the same screen with
+ * a phone number.
+ */
 @Composable
 fun EmailEntryScreen(
     mode: EmailCodeMode,
     onBack: () -> Unit,
-    onSent: (email: String) -> Unit,
+    onSent: (address: String) -> Unit,
     initialEmail: String = "",
     viewModel: EmailEntryViewModel = viewModel { EmailEntryViewModel(mode, initialEmail) },
 ) {
@@ -93,22 +102,43 @@ fun EmailEntryScreenContent(
     onDismissBanner: () -> Unit,
     onBack: () -> Unit,
 ) = AuthFrame(onBack = onBack, banner = codeBanner(state.banner, onDismissBanner)) {
+    val sms = mode == EmailCodeMode.SmsSignIn
     AuthTitle(
-        tr(if (mode == EmailCodeMode.Reset) Res.string.resetPassword else Res.string.signInWithEmail),
+        tr(
+            when (mode) {
+                EmailCodeMode.Reset -> Res.string.resetPassword
+                EmailCodeMode.SmsSignIn -> Res.string.signInWithPhone
+                EmailCodeMode.SignIn -> Res.string.signInWithEmail
+            },
+        ),
         size = ShifaFontSize.F24,
         align = TextAlign.Start,
     )
-    Text(tr(Res.string.enterEmailForOtp), style = ShifaTextStyles.dialogBody(), color = ShifaColors.Text.Secondary)
+    Text(
+        tr(if (sms) Res.string.enterPhoneForOtp else Res.string.enterEmailForOtp),
+        style = ShifaTextStyles.dialogBody(),
+        color = ShifaColors.Text.Secondary,
+    )
     ShifaInputField(
         state.email,
         onEmail,
-        tr(Res.string.email),
+        tr(if (sms) Res.string.phoneNumber else Res.string.email),
         Modifier.fillMaxWidth(),
         supportingText = state.error?.let { tr(it) },
         isError = state.error != null,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = if (sms) KeyboardType.Phone else KeyboardType.Email,
+                imeAction = ImeAction.Done,
+            ),
         keyboardActions = KeyboardActions(onDone = { onSubmit() }),
-        trailingIcon = { Icon(painterResource(Res.drawable.ic_mail_20), null, tint = ShifaColors.Icon.Secondary) },
+        trailingIcon = {
+            Icon(
+                painterResource(if (sms) Res.drawable.ic_phone_20 else Res.drawable.ic_mail_20),
+                null,
+                tint = ShifaColors.Icon.Secondary,
+            )
+        },
     )
     ShifaPrimaryButton(tr(Res.string.`continue`), onSubmit, Modifier.fillMaxWidth(), loading = state.loading)
 }
@@ -142,7 +172,12 @@ fun CodeScreenContent(
 ) = AuthFrame(onBack = onBack, banner = codeBanner(state.banner, onDismissBanner)) {
     AuthTitle(tr(Res.string.enterOtp), size = ShifaFontSize.F24, align = TextAlign.Start)
     Text(
-        tr(Res.string.otpSentToEmail, state.email),
+        when {
+            // SMS sign-in: by SMS to the phone, or to the account's e-mail when the SMS couldn't go out.
+            state.emailHint != null -> tr(Res.string.otpSentToEmail, state.emailHint)
+            state.bySms -> tr(Res.string.otpSentToPhone, PhoneE164.display(state.email))
+            else -> tr(Res.string.otpSentToEmail, state.email)
+        },
         style = ShifaTextStyles.dialogBody(),
         color = ShifaColors.Text.Secondary,
     )

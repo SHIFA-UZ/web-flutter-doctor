@@ -47,14 +47,21 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.model.AppNotification
+import shifa.doctor.data.notifications.AccessDecision
 import shifa.doctor.data.notifications.NotificationFilter
 import shifa.doctor.data.notifications.NotificationKind
 import shifa.doctor.data.notifications.NotificationTime
+import shifa.doctor.data.notifications.accessDecision
+import shifa.doctor.data.notifications.awaitsAccessDecision
 import shifa.doctor.data.notifications.notificationDays
 import shifa.doctor.data.notifications.notificationTime
 import shifa.doctor.data.profile.profileRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.approve
+import shifa.doctor.generated.resources.approved
+import shifa.doctor.generated.resources.careStatusDeclined
 import shifa.doctor.generated.resources.couldNotLoadRetry
+import shifa.doctor.generated.resources.declineInvite
 import shifa.doctor.generated.resources.ic_bell_22
 import shifa.doctor.generated.resources.ic_check_16
 import shifa.doctor.generated.resources.ic_refresh_22
@@ -114,6 +121,8 @@ class NotificationsActions(
     val settings: () -> Unit = {},
     // "Open Calendar" on a cancellation: the row read, then the Calendar tab.
     val calendar: (AppNotification) -> Unit = {},
+    // NOTIF-04: Approve (true) or Decline (false) on a document-access request.
+    val decideAccess: (AppNotification, Boolean) -> Unit = { _, _ -> },
 )
 
 /**
@@ -154,6 +163,7 @@ fun NotificationsScreen(
             open = { viewModel.open(it, staff, clock) },
             markAll = viewModel::markAll,
             settings = onSettings,
+            decideAccess = viewModel::decide,
             calendar = {
                 viewModel.read(it)
                 onCalendar(it.appointmentStartAt?.let { at -> clock.local(at).date } ?: clock.today())
@@ -272,7 +282,7 @@ internal fun NotificationsContent(
                     notificationDays(shown, clock).forEach { (day, rows) ->
                         item(key = "d$day") { DayLabel(day, clock) }
                         items(rows, key = { "n${it.id}" }) { n ->
-                            NotificationCard(n, staff, clock, state.opening == n.id, actions)
+                            NotificationCard(n, staff, clock, state.opening == n.id, state.deciding == n.id, actions)
                         }
                     }
             }
@@ -351,11 +361,19 @@ private fun NotificationCard(
     staff: Boolean,
     clock: PracticeClock,
     opening: Boolean,
+    deciding: Boolean,
     actions: NotificationsActions,
 ) {
     val look = n.kind.look()
     val (icon, ink) = look.tone.colors()
-    val label = tr(look.label)
+    // A decided request says so after its type (board: "Document access request · Approved").
+    val decided =
+        when (n.accessDecision) {
+            AccessDecision.Approved -> tr(Res.string.approved)
+            AccessDecision.Declined -> tr(Res.string.careStatusDeclined)
+            null -> null
+        }
+    val label = listOfNotNull(tr(look.label), decided).joinToString(" · ")
     val time = timeLabel(notificationTime(n.createdAt, clock))
     val body = bodyText(n, clock)
     val unreadText = tr(Res.string.notificationUnread)
@@ -425,7 +443,7 @@ private fun NotificationCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (!staff) CardActions(n, actions)
+            if (!staff) CardActions(n, deciding, actions)
         }
         if (!n.read) {
             Box(
@@ -440,13 +458,34 @@ private fun NotificationCard(
 
 /**
  * The board's actions: a booking → View Appointment and Reschedule (its panel); a cancellation → Open Calendar; a
- * completed task → View Result.
+ * completed task → View Result; a document-access request still waiting → Approve and Decline (NOTIF-04).
  */
 @Composable
 private fun CardActions(
     n: AppNotification,
+    deciding: Boolean,
     actions: NotificationsActions,
 ) {
+    if (n.awaitsAccessDecision) {
+        Row(
+            Modifier.padding(start = ShifaSize.S22, end = ShifaSize.S14, bottom = ShifaSize.S12),
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
+        ) {
+            ShifaSecondaryButton(
+                tr(Res.string.approve),
+                { actions.decideAccess(n, true) },
+                size = ShifaButtonSize.Compact,
+                enabled = !deciding,
+            )
+            ShifaTertiaryButton(
+                tr(Res.string.declineInvite),
+                { actions.decideAccess(n, false) },
+                size = ShifaButtonSize.Compact,
+                enabled = !deciding,
+            )
+        }
+        return
+    }
     // A finished task opens its result (TASK-03).
     if (n.kind == NotificationKind.TaskCompleted && n.taskId != null) {
         Row(Modifier.padding(start = ShifaSize.S22, end = ShifaSize.S14, bottom = ShifaSize.S12)) {

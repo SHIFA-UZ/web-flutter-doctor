@@ -113,4 +113,19 @@ class NotificationRulesTest {
         ).isEqualTo(NotificationTarget.Inbox)
         assertThat(n("CHAT_MESSAGE").target(true)).isEqualTo(NotificationTarget.Chat)
     }
+
+    @Test
+    fun `a request waits for a decision until it is approved or declined, other rows never do`() {
+        val request = n("DOCUMENT_ACCESS_REQUEST").copy(documentAccessRequestId = 3)
+        assertThat(request.awaitsAccessDecision).isTrue() // older rows carry no status
+        assertThat(request.copy(accessStatus = "pending").awaitsAccessDecision).isTrue()
+        assertThat(request.copy(accessStatus = "approved").accessDecision).isEqualTo(AccessDecision.Approved)
+        assertThat(request.copy(accessStatus = "rejected").accessDecision).isEqualTo(AccessDecision.Declined)
+        assertThat(request.copy(accessStatus = "rejected").awaitsAccessDecision).isFalse()
+        // Without a request id there is nothing to answer; an approval notice is not a request.
+        assertThat(n("DOCUMENT_ACCESS_REQUEST").awaitsAccessDecision).isFalse()
+        val approvedNotice = n("DOCUMENT_ACCESS_APPROVED").copy(documentAccessRequestId = 3, accessStatus = "approved")
+        assertThat(approvedNotice.awaitsAccessDecision).isFalse()
+        assertThat(approvedNotice.accessDecision).isNull()
+    }
 }

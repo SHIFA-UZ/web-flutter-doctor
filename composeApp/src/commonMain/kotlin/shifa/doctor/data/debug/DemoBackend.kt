@@ -47,6 +47,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.isDebugBuild
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /** Debug menu → Demo data: the shared client talks to [DemoBackend.shared]. Kept across launches; debug builds only. */
@@ -685,6 +686,14 @@ class DemoBackend(
                 briefingRetried[id] = currentInstant()
                 ok(demoBriefing(id, briefingRetried[id]))
             }
+            // The pre-join page's presence: the demo patient of the video visit is already waiting in the room.
+            get && path == Endpoints.videoPresence(101) ->
+                ok(
+                    buildJsonObject {
+                        put("patientInRoom", true)
+                        put("patientJoinedAt", currentInstant().minus(1.minutes).toString())
+                    },
+                )
             // A video visit's room (VIDEO-01): the demo has no Daily room, so joining fails as a real call error would;
             // a visit outside its window is refused like the backend's bare 403.
             request.method == HttpMethod.Post && path == Endpoints.VIDEO_TOKEN -> {

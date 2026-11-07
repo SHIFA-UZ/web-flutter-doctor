@@ -190,6 +190,7 @@ private fun AppScreens() {
                         LoginScreen(
                             onSignedIn = { go(Screen.SignIn, Screen.Shell) },
                             onEmailSignIn = { screen = Screen.EmailEntry(EmailCodeMode.SignIn) },
+                            onPhoneSignIn = { screen = Screen.EmailEntry(EmailCodeMode.SmsSignIn) },
                             onForgotPassword = { screen = Screen.EmailEntry(EmailCodeMode.Reset) },
                             onCreateAccount = { screen = Screen.VerifyKey },
                             debugMenu = if (isDebugBuild) debugLink { screen = Screen.Debug } else null,
@@ -199,10 +200,10 @@ private fun AppScreens() {
                     val back = { screen = Screen.SignIn }
                     BackHandler(onBack = back)
                     ScopedViewModels {
-                        EmailEntryScreen(it.mode, back, onSent = {
-                                email ->
-                            screen = Screen.EmailCode(email, it.mode)
-                        })
+                        // Back from the code screen keeps the address (flow 01/03 §2).
+                        EmailEntryScreen(it.mode, back, onSent = { address ->
+                            screen = Screen.EmailCode(address, it.mode)
+                        }, initialEmail = it.email)
                     }
                 }
                 is Screen.EmailCode -> {

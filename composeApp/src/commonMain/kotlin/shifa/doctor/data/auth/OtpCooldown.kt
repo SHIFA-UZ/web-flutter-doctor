@@ -12,6 +12,15 @@ class OtpCooldown(
 ) {
     private val until = mutableMapOf<String, Long>()
 
+    // SMS sign-in: the masked e-mail the last code went to instead of the phone (null: by SMS).
+    private val hints = mutableMapOf<String, String?>()
+
+    /** Where the code still running for [email] went ([start]'s hint); null once it may be sent again. */
+    fun hint(
+        email: String,
+        purpose: String,
+    ): String? = if (secondsLeft(email, purpose) > 0) hints[key(email, purpose)] else null
+
     /** Whole seconds left before [email] may get another code for [purpose]; 0 when it may. */
     fun secondsLeft(
         email: String,
@@ -24,8 +33,10 @@ class OtpCooldown(
     fun start(
         email: String,
         purpose: String,
+        hint: String? = null,
     ) {
         until[key(email, purpose)] = nowMs() + COOLDOWN_MS
+        hints[key(email, purpose)] = hint
     }
 
     private fun key(

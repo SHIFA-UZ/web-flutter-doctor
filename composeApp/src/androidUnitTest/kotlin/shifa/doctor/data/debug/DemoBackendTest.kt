@@ -874,6 +874,13 @@ class DemoBackendTest {
             assertThat(count()).isEqualTo("4")
             repo.markAllRead().getOrThrow()
             assertThat(count()).isEqualTo("0")
+
+            // NOTIF-04: the request waits, is declined, and can't then be approved (as the backend).
+            suspend fun request() = repo.page(1, size = 4).getOrThrow().items.first()
+            assertThat(request().accessStatus).isEqualTo("pending")
+            repo.decideAccess(3, approve = false).getOrThrow()
+            assertThat(request().accessStatus).isEqualTo("rejected")
+            assertThat(repo.decideAccess(3, approve = true).isFailure).isTrue()
             assertThat(forwarded).isEmpty()
         }
 

@@ -2910,5 +2910,14 @@
   "obligationSubscription": "Отмените платную подписку.",
   "deleteAccountFailed": "Не удалось удалить аккаунт",
   "accountDeleted": "Ваш аккаунт удалён.",
-  "registrationExistingPassword": "С этим номером телефона уже есть аккаунт Shifa. Введите текущий пароль этого аккаунта, чтобы продолжить."
+  "registrationExistingPassword": "С этим номером телефона уже есть аккаунт Shifa. Введите текущий пароль этого аккаунта, чтобы продолжить.",
+  "accessApprovedBanner": "Доступ разрешён",
+  "accessDeclinedBanner": "В доступе отказано",
+  "accessDecisionFailed": "Не удалось обновить запрос. Попробуйте ещё раз.",
+  "enterPhoneForOtp": "Введите номер телефона, чтобы получить код подтверждения по SMS.",
+  "otpSentToPhone": "6-значный код отправлен по SMS на номер {phone}.",
+  "smsSignInUzbekOnly": "Вход по SMS доступен только для номеров Узбекистана (+998). Войдите по email.",
+  "smsUnavailableUseEmail": "Не удалось отправить SMS. Войдите по email.",
+  "patientInRoom": "В комнате",
+  "patientNotInRoomYet": "Ещё не подключился"
 }

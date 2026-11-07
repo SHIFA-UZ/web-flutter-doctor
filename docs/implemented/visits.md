@@ -623,8 +623,15 @@ the call on top.
     only once the token is there.
   - The screen stays awake while joining and in the call (`KeepScreenOn`: Android `keepScreenOn`, iOS
     `idleTimerDisabled`).
-- **VIDEO-03 (waiting room): not built**, per D-07 (the spec's recommendation). Flutter's page was unreachable, and
-  the backend has no patient-presence endpoint.
+- **VIDEO-03 (waiting room): not built**, per D-07 (the spec's recommendation). Flutter's page was unreachable.
+- **Patient presence on the pre-join page** (2026-11-07, the user's call; not in the design): while the page is on
+  screen and the visit's join window is open, `GET /video/appointments/{id}/presence` every 5 s (the backend asks
+  Daily who is in the room; the patient's token names them `patient-{id}`). The patient row gets a tag where the
+  board's row has its payment pill: "In the room" (green) or "Not joined yet" (blue); nothing while unknown (not
+  asked yet, 503, an error), never a guessed "not here". A backend without the route (404/405, production until the
+  backend branch ships) is asked once. Leaving the page, joining or freeing the call stops the asking. Demo: the
+  video visit's patient is in the room. Tests `VideoVisitTest` (the window, the interval, unknown on 503, stops when
+  the page goes; an old backend asked once); screenshot `Video_preJoin_patientWaiting`.
 - **Not built:** the visit facts panel (AI, its own ticket); Flutter's notes full-screen overlay (focus mode covers it);
   the scribe recorder stays offered on video visits too (Flutter had none there, 05 §10.16).
 - **Not run:** a real call. It needs a dev video visit inside its window (minting a token creates a Daily room).

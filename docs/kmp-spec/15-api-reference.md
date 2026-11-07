@@ -41,6 +41,8 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | POST | `/api/auth/login` | `{username,password}` → `{token}`; `?app=admin` on the admin host |
 | POST | `/api/auth/send-login-otp` | pub, `{email}` |
 | POST | `/api/auth/verify-email-otp` | pub, `{email,code}` → `{token}` |
+| POST | `/api/auth/send-login-sms-otp` | pub, `{phone}` (E.164, +998 only; DOCTOR accounts) → `{sent, channel:"sms"\|"email", smsFallbackUsed, emailHint?}`: when the SMS can't go out the code goes to the account's e-mail (`emailHint` masked); 404 unknown number, 403 not a doctor / disabled / locked, 503 no SMS and no e-mail (AUTH-10, backend 2026-11-07, unmerged) |
+| POST | `/api/auth/verify-login-sms-otp` | pub, `{phone,code}` → `{token}` (DOCTOR); accepts the SMS code or the e-mailed fallback; 401 wrong or expired |
 | POST | `/api/auth/send-forgot-password-otp` | pub, `{identifier, app}` |
 | POST | `/api/auth/forgot-password-reset` | pub, `{email,emailOtp,app,newPassword}` → `{token}` (legacy `{idToken,…}`) |
 | POST | `/api/auth/reset-password` | **token required**, `{currentPassword,newPassword}` (change password) |
@@ -124,6 +126,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | POST | `/api/appointments/{id}/briefing/retry` | |
 | POST | `/api/consultations/upload-recording` | multipart `audio` + `appointmentId`, `language`; 202 / 429 |
 | POST | `/api/video/token` | no-401, `{appointmentId, roomName?}` → `{token,roomUrl,roomName}` |
+| GET | `/api/video/appointments/{id}/presence` | the visit's own doctor → `{patientInRoom, patientJoinedAt?}` (Daily's room presence); 403 anyone else, 503 when Daily can't be asked (backend 2026-11-07, unmerged; the pre-join page asks every 5 s inside the join window) |
 | POST | `/api/appointments/{id}/summary-document?lang=` | re-renders and files the server's (notes-only) summary → `{documentId, url}`; 409 without notes (BE-01; the app keeps its own richer summary) |
 
 ### 2.5 AI (doc 02)
@@ -165,8 +168,8 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | PUT | `/api/patients/{id}/documents/{docId}[?clinicId=]` | multipart replace (form PDF) |
 | GET | `/api/patients/{id}/documents/{docId}/download[?clinicId=]` | bytes + Content-Disposition |
 | POST | `/api/patients/{id}/documents/{docId}/request-access[?clinicId=]` | |
-| POST | `/api/document-access-requests/{id}/approve` | no UI caller today |
-| POST | `/api/document-access-requests/{id}/reject` | no UI caller today |
+| POST | `/api/document-access-requests/{id}/approve` | the owner (NOTIF-04) → `{id, status, …}`; twice is fine; after a rejection 400 |
+| POST | `/api/document-access-requests/{id}/reject` | the owner (NOTIF-04); the row's `documentAccessRequestStatus` is `pending\|approved\|rejected` |
 | GET/POST | `/api/patients/{id}/forms` | 025-2 |
 | PUT | `/api/patients/{id}/forms/{formId}` | |
 | PUT | `/api/patients/{id}/forms/{formId}/request-signature` | |
@@ -282,7 +285,7 @@ mobile app; the doctor-scoped client must refuse them.
 
 Keep out of the KMP app until a screen needs them: `GET /api/practice/me`, `GET /api/tasks/{id}/progress`,
 `GET /api/clinics/{id}/finance/overdue`, `GET /api/clinics/{id}/finance/audit`, `PATCH /api/treatment-plans/{id}`,
-`POST /api/document-access-requests/{id}/approve|reject` (controller only), `POST /api/schedule/blocks` duplicates
+`POST /api/schedule/blocks` duplicates
 in `schedule_actions.dart`.
 
 ## 4. Backend requests to raise (collect in `docs/backend-improvements.md`)

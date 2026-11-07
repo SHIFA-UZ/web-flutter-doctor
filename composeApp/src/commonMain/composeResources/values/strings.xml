@@ -11,6 +11,9 @@
     <string name="aboutPrivacyPolicy">Privacy policy</string>
     <string name="aboutVersion">Version %1$s</string>
     <string name="acceptInvite">Accept</string>
+    <string name="accessApprovedBanner">Access approved</string>
+    <string name="accessDecisionFailed">Couldn't update the request. Try again.</string>
+    <string name="accessDeclinedBanner">Access declined</string>
     <string name="accessDenied">Access denied</string>
     <string name="accessRestricted">Access restricted to doctors.</string>
     <string name="accountActive">Account active</string>
@@ -1239,6 +1242,7 @@
     <string name="enterNotes">Enter appointment notes...</string>
     <string name="enterNotesLabel">e.g., Additional notes</string>
     <string name="enterOtp">Enter OTP</string>
+    <string name="enterPhoneForOtp">Enter your phone number to receive a verification code by SMS.</string>
     <string name="enterPhoneNumber">Enter phone number</string>
     <string name="enterPin">Enter PIN</string>
     <string name="enterService">Enter service name</string>
@@ -1977,6 +1981,7 @@
     <string name="otpResent">Code resent.</string>
     <string name="otpSent">Verification code sent.</string>
     <string name="otpSentToEmail">A 6-digit code has been sent to %1$s. Check your inbox.</string>
+    <string name="otpSentToPhone">A 6-digit code has been sent by SMS to %1$s.</string>
     <string name="overdueTasks">Overdue tasks</string>
     <string name="overview">Overview</string>
     <string name="page">Page</string>
@@ -2046,12 +2051,14 @@
     <string name="patientId">Patient ID</string>
     <string name="patientIdLabel">ID #%1$s</string>
     <string name="patientIdNotAvailable">Patient ID not available</string>
+    <string name="patientInRoom">In the room</string>
     <string name="patientList">Patient List</string>
     <string name="patientLoadFailed">Couldn't load this patient.</string>
     <string name="patientName">Patient Name</string>
     <string name="patientNoSubmissionsYet">The patient hasn't submitted anything yet</string>
     <string name="patientNotArrived">Started %1$s min ago — patient not arrived</string>
     <string name="patientNotFound">Patient not found</string>
+    <string name="patientNotInRoomYet">Not joined yet</string>
     <string name="patientNumber">Patient #%1$s</string>
     <string name="patientPhoneExists">A patient with this phone number already exists.</string>
     <string name="patientRecordUnavailable">Patient record unavailable</string>
@@ -2446,7 +2453,9 @@
     <string name="smsSendTest">Send test SMS now</string>
     <string name="smsSendTestHint">Sends one SMS immediately (500 UZS). Real reminders follow the selected time above.</string>
     <string name="smsServiceUnavailable">The SMS service isn't available right now. Try again later.</string>
+    <string name="smsSignInUzbekOnly">SMS sign-in works with Uzbek numbers (+998). Sign in with email instead.</string>
     <string name="smsTestSent">Test SMS sent. Check the patient phone.</string>
+    <string name="smsUnavailableUseEmail">The SMS couldn't be sent. Sign in with email instead.</string>
     <string name="soapAssessment">Assessment</string>
     <string name="soapNotesSectionSubtitle">Optional sections — included in the saved consultation PDF.</string>
     <string name="soapNotesSectionTitle">Structured notes (SOAP)</string>

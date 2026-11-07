@@ -28,4 +28,10 @@ class EmailCodeScreenshotTest {
 
     @Test
     fun `code resent`() = captureRoboImage("screenshots/EmailCode_code_resent.png") { CodeResentPreview() }
+
+    @Test
+    fun phone() = captureRoboImage("screenshots/EmailCode_phone.png") { PhoneEntryPreview() }
+
+    @Test
+    fun `phone code`() = captureRoboImage("screenshots/EmailCode_phone_code.png") { PhoneCodePreview() }
 }

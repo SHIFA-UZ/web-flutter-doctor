@@ -62,7 +62,7 @@ Built 2026-11-05. Spec 07 §2.1, ticket NOTIF-02, flow 07/08, board `DaInbox` ("
   was moved." While it looks, the row shows a spinner and ignores taps (flow §8). Document access → the patient's
   record, approved → the document viewer; chat → the Chat tab (no conversation id, BE-06). Tasks and partnerships
   have no screens yet (M9, CARE): the tap only reads them. A read refreshes the shell's count (`NotificationReads`).
-- **Not built:** NOTIF-04 (approve / decline access inline, D-07), "View Result" (task details, M9), the "notifications
+- **Not built:** "View Result" (task details, M9), the "notifications
   off" banner (07/09, with push at the end), selecting the document on the patient's Documents tab, focusing the
   calendar root under an opened appointment panel (the panel opens over the inbox instead).
 - **Tests:** `NotificationsViewModelTest` (paging without repeats, chips, a booking's panel from its calendar day with
@@ -85,3 +85,24 @@ Built 2026-11-05 (with NOTIF-02). Spec 07 §2.4, ticket NOTIF-03.
   answer can't put an old count back. No "token hack" (Flutter retried every 5 s without a token, fix #19).
 - **Left for PUSH-02:** a foreground push reading it again (push is at the very end, D-15).
 - **Tests:** `ShellViewModelTest` (a read signal reads the count again; the resume read in the polling test).
+
+## NOTIF-04 · Approve or decline a document-access request
+
+Built 2026-11-07 (the user's call, reversing that part of D-07). Board `DaInbox` "notifications", the `docAccess` row.
+
+- **Who sees it:** the owner of a private document, when another doctor asks for it (`DOCUMENT_ACCESS_REQUEST`). A
+  doctor-owned request had no way to be answered before: Flutter never called the routes, so the asking doctor's
+  lock stayed for good. Clinic staff get no buttons (they own no documents).
+- **Card:** Approve (secondary, compact) and Decline (tertiary, compact) under the text while the request waits
+  (`documentAccessRequestStatus` `pending`, or none on older rows). Once answered the buttons go and the label reads
+  "Document access request · Approved" / "· Declined", from the server's status after a refresh too.
+- **Request:** `POST /document-access-requests/{id}/approve|reject`; one at a time (the buttons are off meanwhile).
+  Success: the row is read (`PUT /notifications/{id}/read`), the banner says "Access approved" / "Access declined"
+  (both shown as success: the shell's notice has no info style; the board's decline is info). A refusal (e.g.
+  approving a request declined elsewhere) leaves the row waiting under "Couldn't update the request. Try again." with
+  its request id. A tap on the row still opens the patient's record, as before.
+- **Demo:** the inbox's request (row 505, request 3) waits; deciding it works locally and approving after a decline is
+  refused, as on the backend.
+- **Tests:** `NotificationsViewModelTest` (approve: one request for two taps, the row read and marked, the success
+  notice; a refused decline leaves it waiting), `NotificationRulesTest` (when the buttons show), `DemoBackendTest`.
+  Screenshot `Notifications_inbox` re-recorded (the request now has its buttons).

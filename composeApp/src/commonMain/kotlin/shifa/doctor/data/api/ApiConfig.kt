@@ -14,6 +14,8 @@ object ApiConfig {
         const val SEND_LOGIN_OTP = "auth/send-login-otp"
         const val SEND_EMAIL_OTP = "auth/send-email-otp"
         const val VERIFY_EMAIL_OTP = "auth/verify-email-otp"
+        const val SEND_LOGIN_SMS_OTP = "auth/send-login-sms-otp"
+        const val VERIFY_LOGIN_SMS_OTP = "auth/verify-login-sms-otp"
         const val SEND_FORGOT_PASSWORD_OTP = "auth/send-forgot-password-otp"
         const val FORGOT_PASSWORD_RESET = "auth/forgot-password-reset"
         const val VERIFY_KEY = "auth/verify-key"
@@ -101,6 +103,10 @@ object ApiConfig {
         fun dentalDocumentation(id: Long) = "appointments/$id/dental-documentation"
 
         const val VIDEO_TOKEN = "video/token"
+
+        /** Whether the visit's patient is in its video room now (backend 2026-11-07). */
+        fun videoPresence(appointmentId: Long) = "video/appointments/$appointmentId/presence"
+
         const val TREATMENT_PLANS = "treatment-plans"
         const val PLAN_SERVICES = "treatment-plans/plan-services"
         const val CATALOG_ITEMS = "treatment-plans/catalog-items"
@@ -212,6 +218,12 @@ object ApiConfig {
         const val NOTIFICATIONS_READ_ALL = "notifications/read-all"
 
         fun notificationRead(id: Long) = "notifications/$id/read"
+
+        /** NOTIF-04: the owner's answer to a document-access request. */
+        fun accessRequestDecision(
+            requestId: Long,
+            approve: Boolean,
+        ) = "document-access-requests/$requestId/${if (approve) "approve" else "reject"}"
 
         // CARE-01 (15 §2.7).
         const val CARE_PARTNERSHIPS = "care-partnerships"

@@ -2,6 +2,7 @@ package shifa.doctor.ui.visit
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,6 +10,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import org.jetbrains.compose.resources.StringResource
+import shifa.doctor.data.api.endpointMissing
+import shifa.doctor.data.video.JOIN_AFTER
+import shifa.doctor.data.video.JOIN_BEFORE
 import shifa.doctor.data.video.VideoRepository
 import shifa.doctor.data.video.videoJoinError
 import shifa.doctor.data.video.videoRepository
@@ -32,6 +36,8 @@ data class VideoVisitState(
     val call: VideoCallState = VideoCallState(),
     // "Leave call?" asked.
     val confirmLeave: Boolean = false,
+    // The pre-join page's "is the patient here?": null while unknown (not asked yet, or the backend couldn't say).
+    val patientInRoom: Boolean? = null,
 ) {
     val canJoin: Boolean get() = mic == true
 
@@ -64,6 +70,7 @@ class VideoVisit(
     private var released = false
     private var watching: Job? = null
     private var joining: Job? = null
+    private var presence: Job? = null
 
     // The join on its way started from "left" (a Rejoin), so a refusal goes back there, not to the pre-join page.
     private var wasLeft = false
@@ -214,6 +221,7 @@ class VideoVisit(
     }
 
     private fun free() {
+        presence?.cancel()
         joining?.cancel()
         joining = null
         if (released) return
@@ -223,4 +231,33 @@ class VideoVisit(
     }
 
     fun dismissError() = _state.update { it.copy(error = null) }
+
+    /**
+     * The pre-join page is on screen ([on]) or gone. While it is and the visit's join window is open, the backend is
+     * asked every few seconds whether the patient is already in the room; an answer it can't give shows nothing (never
+     * a wrong "not here yet"), and a backend without the route is not asked again.
+     */
+    fun watchPresence(on: Boolean) {
+        presence?.cancel()
+        presence = null
+        if (!on) return
+        presence =
+            scope.launch {
+                while (true) {
+                    val (start, end) = window()
+                    val t = now()
+                    val open = (start == null || t >= start - JOIN_BEFORE) && (end == null || t <= end + JOIN_AFTER)
+                    if (open && _state.value.stage == VideoStage.PreJoin) {
+                        val asked = repo.presence(appointmentId)
+                        _state.update { it.copy(patientInRoom = asked.getOrNull()?.patientInRoom) }
+                        if (asked.exceptionOrNull()?.endpointMissing == true) return@launch
+                    }
+                    delay(PRESENCE_POLL_MS)
+                }
+            }
+    }
+
+    private companion object {
+        const val PRESENCE_POLL_MS = 5_000L
+    }
 }

@@ -11,6 +11,9 @@
     <string name="aboutPrivacyPolicy">Политика конфиденциальности</string>
     <string name="aboutVersion">Версия %1$s</string>
     <string name="acceptInvite">Принять</string>
+    <string name="accessApprovedBanner">Доступ разрешён</string>
+    <string name="accessDecisionFailed">Не удалось обновить запрос. Попробуйте ещё раз.</string>
+    <string name="accessDeclinedBanner">В доступе отказано</string>
     <string name="accessDenied">Доступ запрещен</string>
     <string name="accessRestricted">Доступ только для врачей.</string>
     <string name="accountActive">Аккаунт активен</string>
@@ -1239,6 +1242,7 @@
     <string name="enterNotes">Введите примечания к записи...</string>
     <string name="enterNotesLabel">Например: Дополнительные примечания</string>
     <string name="enterOtp">Введите код</string>
+    <string name="enterPhoneForOtp">Введите номер телефона, чтобы получить код подтверждения по SMS.</string>
     <string name="enterPhoneNumber">Введите номер телефона</string>
     <string name="enterPin">Введите PIN-код</string>
     <string name="enterService">Введите название услуги</string>
@@ -1977,6 +1981,7 @@
     <string name="otpResent">Код отправлен снова.</string>
     <string name="otpSent">Код подтверждения отправлен.</string>
     <string name="otpSentToEmail">6-значный код отправлен на %1$s. Проверьте почту.</string>
+    <string name="otpSentToPhone">6-значный код отправлен по SMS на номер %1$s.</string>
     <string name="overdueTasks">Просроченные задачи</string>
     <string name="overview">Обзор</string>
     <string name="page">Страница</string>
@@ -2046,12 +2051,14 @@
     <string name="patientId">ID пациента</string>
     <string name="patientIdLabel">ID №%1$s</string>
     <string name="patientIdNotAvailable">ID пациента недоступен</string>
+    <string name="patientInRoom">В комнате</string>
     <string name="patientList">Список пациентов</string>
     <string name="patientLoadFailed">Не удалось загрузить пациента.</string>
     <string name="patientName">Имя пациента</string>
     <string name="patientNoSubmissionsYet">Пациент пока ничего не отправил</string>
     <string name="patientNotArrived">Началось %1$s мин назад — пациент не пришёл</string>
     <string name="patientNotFound">Пациент не найден</string>
+    <string name="patientNotInRoomYet">Ещё не подключился</string>
     <string name="patientNumber">Пациент №%1$s</string>
     <string name="patientPhoneExists">Пациент с этим номером телефона уже есть.</string>
     <string name="patientRecordUnavailable">Карта пациента недоступна</string>
@@ -2446,7 +2453,9 @@
     <string name="smsSendTest">Отправить тестовое SMS</string>
     <string name="smsSendTestHint">Отправляет одно SMS сейчас (500 UZS). Настоящие напоминания — по выбранному выше времени.</string>
     <string name="smsServiceUnavailable">SMS-сервис сейчас недоступен. Попробуйте позже.</string>
+    <string name="smsSignInUzbekOnly">Вход по SMS доступен только для номеров Узбекистана (+998). Войдите по email.</string>
     <string name="smsTestSent">Тестовое SMS отправлено. Проверьте телефон пациента.</string>
+    <string name="smsUnavailableUseEmail">Не удалось отправить SMS. Войдите по email.</string>
     <string name="soapAssessment">Оценка</string>
     <string name="soapNotesSectionSubtitle">Необязательные поля — включаются в сохранённый PDF приёма.</string>
     <string name="soapNotesSectionTitle">Структурированные записи (SOAP)</string>

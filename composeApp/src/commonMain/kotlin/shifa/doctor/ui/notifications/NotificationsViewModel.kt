@@ -16,6 +16,9 @@ import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.notifications.shows
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.accessApprovedBanner
+import shifa.doctor.generated.resources.accessDecisionFailed
+import shifa.doctor.generated.resources.accessDeclinedBanner
 import shifa.doctor.generated.resources.notificationsLoadFailed
 import shifa.doctor.generated.resources.notificationsMarkFailed
 import shifa.doctor.ui.emailcode.CodeBanner
@@ -73,6 +76,8 @@ data class NotificationsUiState(
     // A tapped row whose target is being looked up (one at a time, flow §8 "tap twice").
     val opening: Long? = null,
     val markingAll: Boolean = false,
+    // A document-access request being approved or declined (one at a time).
+    val deciding: Long? = null,
     val go: NotificationGo? = null,
 ) {
     val shown: List<AppNotification> get() = items.orEmpty().filter { filter.shows(it.kind) }
@@ -184,6 +189,44 @@ class NotificationsViewModel(
         if (!n.read) markRead(n)
     }
 
+    /**
+     * NOTIF-04 (board `DaInbox` docAccess): Approve or Decline on a request the doctor owns. Once the server agrees the
+     * row is read, its label says what was decided and its buttons go; a refusal leaves it as it was under a banner.
+     */
+    fun decide(
+        n: AppNotification,
+        approve: Boolean,
+    ) {
+        val requestId = n.documentAccessRequestId ?: return
+        if (_state.value.deciding != null) return
+        _state.update { it.copy(deciding = n.id) }
+        viewModelScope.launch {
+            repo.decideAccess(requestId, approve).fold(
+                {
+                    val status = if (approve) ACCESS_APPROVED else ACCESS_REJECTED
+                    decidedHere[n.id] = status
+                    _state.update { s ->
+                        s.copy(
+                            deciding = null,
+                            items = s.items?.map { if (it.id == n.id) it.copy(accessStatus = status) else it },
+                        )
+                    }
+                    if (!n.read) markRead(n)
+                    ShellNotice.pending.value =
+                        Notice(
+                            if (approve) Res.string.accessApprovedBanner else Res.string.accessDeclinedBanner,
+                            success = true,
+                        )
+                },
+                { e ->
+                    _state.update { it.copy(deciding = null) }
+                    ShellNotice.pending.value =
+                        Notice(e.toUserMessage(Res.string.accessDecisionFailed), requestId = e.requestId)
+                },
+            )
+        }
+    }
+
     /** "Mark all as read": every row read once the server agrees. */
     fun markAll() {
         if (_state.value.markingAll) return
@@ -217,7 +260,13 @@ class NotificationsViewModel(
     // Rows read here: a page answering after the read (asked before it) shows them read too.
     private val readHere = mutableSetOf<Long>()
 
-    private fun reconcile(n: AppNotification) = if (n.id in readHere) n.copy(read = true) else n
+    // Requests answered here (NOTIF-04): a page asked before the answer doesn't bring the buttons back.
+    private val decidedHere = mutableMapOf<Long, String>()
+
+    private fun reconcile(n: AppNotification): AppNotification {
+        val read = if (n.id in readHere) n.copy(read = true) else n
+        return decidedHere[n.id]?.let { read.copy(accessStatus = it) } ?: read
+    }
 
     private fun markRead(n: AppNotification) {
         setRead(n.id, true)
@@ -239,4 +288,9 @@ class NotificationsViewModel(
         id: Long,
         read: Boolean,
     ) = _state.update { s -> s.copy(items = s.items?.map { if (it.id == id) it.copy(read = read) else it }) }
+
+    private companion object {
+        const val ACCESS_APPROVED = "approved"
+        const val ACCESS_REJECTED = "rejected"
+    }
 }

@@ -25,6 +25,8 @@ import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.notifications.NotificationFilter
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.accessApprovedBanner
+import shifa.doctor.generated.resources.accessDecisionFailed
 import shifa.doctor.generated.resources.appointmentGone
 import shifa.doctor.generated.resources.notificationsMarkFailed
 import shifa.doctor.stopAll
@@ -39,6 +41,10 @@ class NotificationsViewModelTest {
     private var readStatus = HttpStatusCode.OK
     private var pageFails = false
     private var holdPageOne: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+    // NOTIF-04: page 0 is a document-access request only; its decision answers [decisionStatus].
+    private var requestOnly = false
+    private var decisionStatus = HttpStatusCode.OK
 
     private fun row(
         id: Long,
@@ -58,6 +64,18 @@ class NotificationsViewModelTest {
             ) + (req.url.parameters["day"]?.let { "?day=$it" } ?: "")
             val json = headersOf(HttpHeaders.ContentType, "application/json")
             when {
+                path == "notifications/page" && requestOnly ->
+                    respond(
+                        """{"content":[${row(
+                            7,
+                            "DOCUMENT_ACCESS_REQUEST",
+                            ""","patientId":11,"documentId":7,"documentAccessRequestId":3,"documentAccessRequestStatus":"PENDING"""",
+                        )}],"number":0,"last":true}""",
+                        HttpStatusCode.OK,
+                        json,
+                    )
+                path.startsWith("document-access-requests/") ->
+                    respond("""{"id":3,"status":"approved"}""", decisionStatus, json)
                 path == "notifications/page" && pageFails ->
                     respond(
                         """{"status":500,"requestId":"r-1"}""",
@@ -273,5 +291,41 @@ class NotificationsViewModelTest {
         fresh.refresh()
         settle { !fresh.state.value.refreshing }
         assertThat(fresh.state.value.items!!.first { it.id == 3L }.read).isTrue()
+    }
+
+    @Test
+    fun `approving a request reads the row, records the decision and says so`() {
+        requestOnly = true
+        val classToTest = loaded()
+        val request = classToTest.state.value.items!!.single()
+        assertThat(request.accessStatus).isEqualTo("pending")
+        classToTest.decide(request, approve = true)
+        classToTest.decide(request, approve = false) // a second tap while the first is out does nothing
+        settle { classToTest.state.value.deciding == null && ShellNotice.pending.value != null }
+        assertThat(asked.filter { it.startsWith("POST") }).containsExactly("POST document-access-requests/3/approve")
+        assertThat(asked).contains("PUT notifications/7/read")
+        val decided = classToTest.state.value.items!!.single()
+        assertThat(decided.accessStatus).isEqualTo("approved")
+        assertThat(decided.read).isTrue()
+        assertThat(ShellNotice.pending.value?.text).isEqualTo(Res.string.accessApprovedBanner)
+        assertThat(ShellNotice.pending.value?.success).isTrue()
+        // A page that still says "pending" (asked before the answer) doesn't bring the buttons back.
+        classToTest.refresh()
+        settle { !classToTest.state.value.refreshing }
+        assertThat(classToTest.state.value.items!!.single().accessStatus).isEqualTo("approved")
+    }
+
+    @Test
+    fun `a refused decline leaves the request waiting under a banner`() {
+        requestOnly = true
+        decisionStatus = HttpStatusCode.BadRequest
+        val classToTest = loaded()
+        classToTest.decide(classToTest.state.value.items!!.single(), approve = false)
+        settle { classToTest.state.value.deciding == null && ShellNotice.pending.value != null }
+        assertThat(asked).contains("POST document-access-requests/3/reject")
+        assertThat(asked.none { it.endsWith("/read") }).isTrue()
+        assertThat(classToTest.state.value.items!!.single().accessStatus).isEqualTo("pending")
+        assertThat(ShellNotice.pending.value?.text).isEqualTo(Res.string.accessDecisionFailed)
+        assertThat(ShellNotice.pending.value?.success).isFalse()
     }
 }

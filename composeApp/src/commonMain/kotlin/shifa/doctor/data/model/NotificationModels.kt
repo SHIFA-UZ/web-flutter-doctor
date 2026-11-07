@@ -59,6 +59,8 @@ data class AppNotification(
     val documentId: Long? = null,
     val documentTitle: String? = null,
     val documentAccessRequestId: Long? = null,
+    // The request's state, lower case: pending, approved or rejected (null on older rows: treated as pending).
+    val accessStatus: String? = null,
     val requestingDoctorName: String? = null,
     val taskId: Long? = null,
     val conversationId: Long? = null,
@@ -83,6 +85,7 @@ data class AppNotification(
                 documentId = d.documentId,
                 documentTitle = d.documentTitle?.trim()?.takeIf { it.isNotEmpty() },
                 documentAccessRequestId = d.documentAccessRequestId,
+                accessStatus = d.documentAccessRequestStatus?.trim()?.lowercase()?.takeIf { it.isNotEmpty() },
                 requestingDoctorName = d.requestingDoctorName?.trim()?.takeIf { it.isNotEmpty() },
                 taskId = d.taskId,
                 conversationId = d.conversationId,

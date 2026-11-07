@@ -379,6 +379,19 @@ internal fun VideoPreJoinPreview() =
         )
     }
 
+// The pre-join page once the patient is already in the room (presence, backend 2026-11-07).
+@Composable
+internal fun VideoPreJoinPatientWaitingPreview() =
+    PreviewTheme {
+        PreJoin(
+            state,
+            VideoVisitState(camera = true, mic = true, patientInRoom = true),
+            PreviewCall,
+            "10:00–10:30",
+            VisitActions(),
+        )
+    }
+
 // VIDEO-02: the workspace in a call: the patient joined (their tile, name, the doctor's corner), the controls; the
 // microphone off.
 @Composable

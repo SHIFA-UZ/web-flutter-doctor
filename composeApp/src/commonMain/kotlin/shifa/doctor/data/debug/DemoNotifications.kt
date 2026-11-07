@@ -29,6 +29,8 @@ internal class DemoNotifications(
         val message: String,
         val fields: Map<String, Any> = emptyMap(),
         var read: Boolean = false,
+        // A document-access request's state (NOTIF-04): pending until the doctor approves or declines it.
+        var accessStatus: String? = null,
     )
 
     private val rows: MutableList<Row> = seed()
@@ -61,6 +63,7 @@ internal class DemoNotifications(
                 rows.forEach { it.read = true }
                 JsonObject(emptyMap())
             }
+            method == "POST" && ACCESS_DECISION.matches(path) -> decide(path)
             method == "PUT" && path.matches(Regex("notifications/\\d+/read")) -> {
                 val id = path.removePrefix("notifications/").removeSuffix("/read").toLong()
                 rows.firstOrNull { it.id == id }?.read = true
@@ -68,6 +71,19 @@ internal class DemoNotifications(
             }
             else -> null
         }
+
+    // As the backend: approving twice is fine, approving a declined request is refused (null: refused).
+    private fun decide(path: String): JsonElement? {
+        val (id, verb) = ACCESS_DECISION.matchEntire(path)?.destructured ?: return null
+        val row = rows.firstOrNull { it.fields["documentAccessRequestId"]?.toString() == id } ?: return null
+        val status = if (verb == "approve") "approved" else "rejected"
+        if (row.accessStatus == "rejected" && status == "approved") return null
+        row.accessStatus = status
+        return buildJsonObject {
+            put("id", id.toLong())
+            put("status", status)
+        }
+    }
 
     private fun json(r: Row): JsonObject {
         val at = now() - r.ago
@@ -87,6 +103,7 @@ internal class DemoNotifications(
                         kotlinx.serialization.json.JsonNull
                     },
             ) +
+                listOfNotNull(r.accessStatus?.let { "documentAccessRequestStatus" to JsonPrimitive(it) }).toMap() +
                 r.fields.mapValues { (_, v) ->
                     when (v) {
                         is Number -> JsonPrimitive(v)
@@ -159,6 +176,7 @@ internal class DemoNotifications(
                     "documentAccessRequestId" to 3,
                     "requestingDoctorName" to DemoChat.DEMO_DOCTORS.getValue(21),
                 ),
+                accessStatus = "pending",
             ),
             Row(
                 506,
@@ -196,5 +214,9 @@ internal class DemoNotifications(
                 read = true,
             ),
         )
+    }
+
+    private companion object {
+        val ACCESS_DECISION = Regex("document-access-requests/(\\d+)/(approve|reject)")
     }
 }

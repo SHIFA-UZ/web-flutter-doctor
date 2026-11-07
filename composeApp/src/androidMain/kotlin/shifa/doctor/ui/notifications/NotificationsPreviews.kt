@@ -25,6 +25,7 @@ private fun n(
     message: String = "",
     document: String? = null,
     doctor: String? = null,
+    accessRequest: Long? = null,
 ) = AppNotification(
     id = id,
     type = type,
@@ -39,6 +40,8 @@ private fun n(
     patientName = name,
     documentTitle = document,
     requestingDoctorName = doctor,
+    documentAccessRequestId = accessRequest,
+    accessStatus = accessRequest?.let { "pending" },
 )
 
 private val inbox =
@@ -60,6 +63,7 @@ private val inbox =
             name = "Dilnoza Rahimova",
             document = "Blood test results",
             doctor = "Dr. med. Sardor Nazarov",
+            accessRequest = 3,
         ),
         n(
             5,

@@ -54,3 +54,18 @@ internal fun CodeResentPreview() =
             {},
         )
     }
+
+// AUTH-10: sign in by SMS, the e-mail code screens with a phone number.
+@Preview(widthDp = 402, heightDp = 874)
+@Composable
+internal fun PhoneEntryPreview() =
+    PreviewTheme {
+        EmailEntryScreenContent(EmailCodeMode.SmsSignIn, EmailEntryUiState("+998 90 123 45 67"), {}, {}, {}, {})
+    }
+
+@Preview(widthDp = 402, heightDp = 874)
+@Composable
+internal fun PhoneCodePreview() =
+    PreviewTheme {
+        CodeScreenContent(CodeUiState("+998901234567", bySms = true, resendIn = 42), {}, {}, {}, {}, {})
+    }

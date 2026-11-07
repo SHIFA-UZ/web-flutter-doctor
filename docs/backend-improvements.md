@@ -75,6 +75,15 @@ Branch `feature/doctor-app-backend-asks` in `backend-kotlin-shifa` (2026-11-07),
 - **BE-02** Done for doctors (staff not yet: product call): request/confirm with an e-mailed code, 409 with the
   obligations, anonymisation that keeps clinical records; JSON export once a day. App: Privacy & data (flow 08/12).
 
+Branch `feature/doctor-sms-login-video-presence` in `backend-kotlin-shifa` (2026-11-07, from `main`):
+
+- **SMS sign-in** (AUTH-10): `POST /auth/send-login-sms-otp {phone}` and `POST /auth/verify-login-sms-otp {phone, code}`,
+  the e-mail code sign-in by phone (Uzbek mobiles, DOCTOR accounts). When the SMS can't go out the code goes to the
+  account's e-mail (`channel: "email"`, `emailHint`). **Open:** the sign-in SMS text (`SmsOtpFormatting.loginOtpBody`)
+  must be approved by DevSMS before SMS actually arrive.
+- **Video presence:** `GET /video/appointments/{id}/presence` → `{patientInRoom, patientJoinedAt}` for the visit's own
+  doctor, from Daily's room presence; 503 when Daily can't be asked.
+
 ## BE-01 Server-rendered PDFs
 
 **Needed by:** flows `05/13` (appointment summary), `06/10` (025-2 form), `09/16` and `09/13` (treatment plan);

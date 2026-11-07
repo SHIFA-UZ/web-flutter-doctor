@@ -11,6 +11,9 @@
     <string name="aboutPrivacyPolicy">Maxfiylik siyosati</string>
     <string name="aboutVersion">Versiya %1$s</string>
     <string name="acceptInvite">Qabul qilish</string>
+    <string name="accessApprovedBanner">Ruxsat berildi</string>
+    <string name="accessDecisionFailed">So'rovni yangilab bo'lmadi. Qayta urinib ko'ring.</string>
+    <string name="accessDeclinedBanner">Ruxsat rad etildi</string>
     <string name="accessDenied">Kirish taqiqlangan</string>
     <string name="accessRestricted">Faqat shifokorlar uchun ruxsat.</string>
     <string name="accountActive">Hisob faol</string>
@@ -1239,6 +1242,7 @@
     <string name="enterNotes">Uchrashuv izohlarini kiriting...</string>
     <string name="enterNotesLabel">Masalan: Qo'shimcha izohlar</string>
     <string name="enterOtp">OTP kiriting</string>
+    <string name="enterPhoneForOtp">SMS orqali tasdiqlash kodini olish uchun telefon raqamingizni kiriting.</string>
     <string name="enterPhoneNumber">Telefon raqamini kiriting</string>
     <string name="enterPin">PIN kodni kiriting</string>
     <string name="enterService">Xizmat nomini kiriting</string>
@@ -1977,6 +1981,7 @@
     <string name="otpResent">Kod qayta yuborildi.</string>
     <string name="otpSent">Tasdiqlash kodi yuborildi.</string>
     <string name="otpSentToEmail">6 xonali kod %1$s manziliga yuborildi. Pochtangizni tekshiring.</string>
+    <string name="otpSentToPhone">6 xonali kod %1$s raqamiga SMS orqali yuborildi.</string>
     <string name="overdueTasks">Muddati o'tgan vazifalar</string>
     <string name="overview">Umumiy</string>
     <string name="page">Sahifa</string>
@@ -2046,12 +2051,14 @@
     <string name="patientId">Bemorning shaxsiy raqami</string>
     <string name="patientIdLabel">ID #%1$s</string>
     <string name="patientIdNotAvailable">Bemor ID mavjud emas</string>
+    <string name="patientInRoom">Xonada</string>
     <string name="patientList">Bemorlar ro'yxati</string>
     <string name="patientLoadFailed">Bemorni yuklab bo'lmadi.</string>
     <string name="patientName">Bemor ismi</string>
     <string name="patientNoSubmissionsYet">Bemor hali hech narsa yubormadi</string>
     <string name="patientNotArrived">Boshlanganiga %1$s daqiqa bo'ldi — bemor kelmadi</string>
     <string name="patientNotFound">Bemor topilmadi</string>
+    <string name="patientNotInRoomYet">Hali qo'shilmagan</string>
     <string name="patientNumber">Bemor #%1$s</string>
     <string name="patientPhoneExists">Bu telefon raqamli bemor allaqachon mavjud.</string>
     <string name="patientRecordUnavailable">Bemor kartasi mavjud emas</string>
@@ -2446,7 +2453,9 @@
     <string name="smsSendTest">Test SMS yuborish</string>
     <string name="smsSendTestHint">Bir SMS darhol yuboriladi (500 UZS). Haqiqiy eslatmalar yuqorida tanlangan vaqt bo'yicha ketadi.</string>
     <string name="smsServiceUnavailable">SMS xizmati hozir ishlamayapti. Keyinroq urinib ko'ring.</string>
+    <string name="smsSignInUzbekOnly">SMS orqali kirish faqat O'zbekiston raqamlari (+998) bilan ishlaydi. Email orqali kiring.</string>
     <string name="smsTestSent">Test SMS yuborildi. Bemor telefonini tekshiring.</string>
+    <string name="smsUnavailableUseEmail">SMS yuborib bo'lmadi. Email orqali kiring.</string>
     <string name="soapAssessment">Baholash</string>
     <string name="soapNotesSectionSubtitle">Ixtiyoriy maydonlar — yakuniy konsultatsiya PDF fayliga qo'shiladi.</string>
     <string name="soapNotesSectionTitle">Tuzilgan izohlar (SOAP)</string>

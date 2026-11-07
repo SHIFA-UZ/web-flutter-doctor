@@ -49,6 +49,10 @@ class VisitScreenshotTest {
     fun videoPreJoin() = captureRoboImage("screenshots/Video_preJoin.png") { VideoPreJoinPreview() }
 
     @Test
+    fun videoPreJoinPatientWaiting() =
+        captureRoboImage("screenshots/Video_preJoin_patientWaiting.png") { VideoPreJoinPatientWaitingPreview() }
+
+    @Test
     fun videoInCall() = captureRoboImage("screenshots/Video_inCall.png") { VideoInCallPreview() }
 
     @Test

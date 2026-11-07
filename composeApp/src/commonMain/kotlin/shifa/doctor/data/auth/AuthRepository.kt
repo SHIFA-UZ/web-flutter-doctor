@@ -21,10 +21,13 @@ import shifa.doctor.data.model.RegisterRequest
 import shifa.doctor.data.model.SendEmailOtpRequest
 import shifa.doctor.data.model.SendForgotPasswordOtpRequest
 import shifa.doctor.data.model.SendLoginOtpRequest
+import shifa.doctor.data.model.SendLoginSmsOtpRequest
+import shifa.doctor.data.model.SendOtpChannelResponse
 import shifa.doctor.data.model.TokenResponse
 import shifa.doctor.data.model.VerifyEmailOtpRequest
 import shifa.doctor.data.model.VerifyKeyRequest
 import shifa.doctor.data.model.VerifyKeyResponse
+import shifa.doctor.data.model.VerifyLoginSmsOtpRequest
 
 /** The sign-in calls (01 §2). They go without a token (`auth/` is public); the session repository keeps the result. */
 class AuthRepository(
@@ -55,6 +58,30 @@ class AuthRepository(
                 setBody(SendLoginOtpRequest(email.trim()))
             }
         }
+
+    /**
+     * `POST /auth/send-login-sms-otp {phone}` (E.164): a sign-in code by SMS. The answer is null when it went by SMS,
+     * else the masked e-mail it went to instead (the backend falls back when the SMS can't go out).
+     */
+    suspend fun sendLoginSmsOtp(phone: String): Result<String?> =
+        apiCall<SendOtpChannelResponse> {
+            client().post(ApiConfig.Endpoints.SEND_LOGIN_SMS_OTP) {
+                contentType(ContentType.Application.Json)
+                setBody(SendLoginSmsOtpRequest(phone))
+            }
+        }.map { if (it.channel == "email") it.emailHint ?: "" else null }
+
+    /** `POST /auth/verify-login-sms-otp {phone, code}` → token (the SMS code, or the e-mailed one it fell back to). */
+    suspend fun verifyLoginSmsOtp(
+        phone: String,
+        code: String,
+    ): Result<String> =
+        apiCall<TokenResponse> {
+            client().post(ApiConfig.Endpoints.VERIFY_LOGIN_SMS_OTP) {
+                contentType(ContentType.Application.Json)
+                setBody(VerifyLoginSmsOtpRequest(phone, code))
+            }
+        }.map { it.token }
 
     /** `POST /auth/send-email-otp {purpose: REGISTRATION}` (flow 01/09): the code that goes with `register`. */
     suspend fun sendRegistrationOtp(email: String): Result<Unit> =

@@ -200,3 +200,19 @@ fun notificationDays(
     items: List<AppNotification>,
     clock: PracticeClock,
 ): List<Pair<LocalDate, List<AppNotification>>> = items.groupBy { clock.local(it.createdAt).date }.toList()
+
+/** What the owner decided on a document-access request (NOTIF-04); null while it waits (or on another kind of row). */
+enum class AccessDecision { Approved, Declined }
+
+val AppNotification.accessDecision: AccessDecision?
+    get() =
+        when {
+            kind != NotificationKind.AccessRequest -> null
+            accessStatus == "approved" -> AccessDecision.Approved
+            accessStatus == "rejected" -> AccessDecision.Declined
+            else -> null
+        }
+
+/** Approve and Decline show on a request with an id that is still waiting (a row without a status counts as waiting). */
+val AppNotification.awaitsAccessDecision: Boolean
+    get() = kind == NotificationKind.AccessRequest && documentAccessRequestId != null && accessDecision == null

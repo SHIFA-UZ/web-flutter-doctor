@@ -25,6 +25,24 @@ data class SendLoginOtpRequest(
 )
 
 @Serializable
+data class SendLoginSmsOtpRequest(
+    val phone: String,
+)
+
+/** `send-login-sms-otp`: `channel` "sms", or "email" when the SMS couldn't go out and the code went to [emailHint]. */
+@Serializable
+data class SendOtpChannelResponse(
+    val channel: String? = null,
+    val emailHint: String? = null,
+)
+
+@Serializable
+data class VerifyLoginSmsOtpRequest(
+    val phone: String,
+    val code: String,
+)
+
+@Serializable
 data class VerifyEmailOtpRequest(
     val email: String,
     val code: String,

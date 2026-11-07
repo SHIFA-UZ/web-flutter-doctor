@@ -21,10 +21,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
@@ -47,6 +50,8 @@ import shifa.doctor.generated.resources.microphoneLabel
 import shifa.doctor.generated.resources.off
 import shifa.doctor.generated.resources.on
 import shifa.doctor.generated.resources.openSettings
+import shifa.doctor.generated.resources.patientInRoom
+import shifa.doctor.generated.resources.patientNotInRoomYet
 import shifa.doctor.generated.resources.rejoinCall
 import shifa.doctor.generated.resources.videoCall
 import shifa.doctor.generated.resources.videoCallConnecting
@@ -68,6 +73,8 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
+import shifa.doctor.ui.widgets.ShifaTag
+import shifa.doctor.ui.widgets.ShifaTagType
 import shifa.doctor.utils.VideoCall
 import shifa.doctor.utils.VideoTile
 import shifa.doctor.utils.openAppSettings
@@ -82,6 +89,8 @@ class VideoActions(
     val askLeave: (Boolean) -> Unit = {},
     val leave: () -> Unit = {},
     val dismissError: () -> Unit = {},
+    // The pre-join page shown (true) or gone: whether the patient is in the room is asked meanwhile.
+    val presence: (Boolean) -> Unit = {},
 )
 
 /**
@@ -97,6 +106,12 @@ internal fun PreJoin(
     schedule: String,
     actions: VisitActions,
 ) = Column(Modifier.fillMaxSize().background(ShifaColors.Bg.Canvas)) {
+    // Asked only while the page is in front: not in the background or under the lock screen.
+    val presence by rememberUpdatedState(actions.video.presence)
+    LifecycleResumeEffect(Unit) {
+        presence(true)
+        onPauseOrDispose { presence(false) }
+    }
     ShifaSubHeader(tr(Res.string.videoCall), Modifier.statusBarsPadding(), onBack = actions.back)
     Column(
         Modifier
@@ -164,16 +179,25 @@ internal fun PreJoin(
                     color = ShifaColors.Text.Primary,
                 )
         }
-        Column(
+        Row(
             Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg).padding(ShifaSize.S14),
-            verticalArrangement = Arrangement.spacedBy(ShifaSize.S2),
+            horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                state.visit?.patientName.orEmpty(),
-                style = ShifaTextStyles.panelTitle(),
-                color = ShifaColors.Text.Primary,
-            )
-            Text(schedule, style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ShifaSize.S2)) {
+                Text(
+                    state.visit?.patientName.orEmpty(),
+                    style = ShifaTextStyles.panelTitle(),
+                    color = ShifaColors.Text.Primary,
+                )
+                Text(schedule, style = ShifaTextStyles.caption(), color = ShifaColors.Text.Secondary)
+            }
+            // Not in the design: where the board's patient row has its payment pill, whether the patient is here.
+            when (video.patientInRoom) {
+                true -> ShifaTag(tr(Res.string.patientInRoom), type = ShifaTagType.Primary)
+                false -> ShifaTag(tr(Res.string.patientNotInRoomYet), type = ShifaTagType.Secondary)
+                null -> Unit
+            }
         }
         ShifaPrimaryButton(
             tr(Res.string.joinCall),

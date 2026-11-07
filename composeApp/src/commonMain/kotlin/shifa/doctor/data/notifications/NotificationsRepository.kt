@@ -3,6 +3,7 @@ package shifa.doctor.data.notifications
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
 import io.ktor.client.request.put
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -51,6 +52,18 @@ class NotificationsRepository(
         apiCall<Unit> {
             client().put(ApiConfig.Endpoints.NOTIFICATIONS_READ_ALL)
         }.onSuccess { NotificationReads.changed.tryEmit(Unit) }
+
+    /**
+     * NOTIF-04: approve or decline a document-access request the doctor owns (`POST /document-access-requests/{id}/
+     * approve|reject`). Approving twice is fine; approving a declined request is a 400.
+     */
+    suspend fun decideAccess(
+        requestId: Long,
+        approve: Boolean,
+    ): Result<Unit> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.accessRequestDecision(requestId, approve))
+        }
 
     companion object {
         const val PAGE_SIZE = 20

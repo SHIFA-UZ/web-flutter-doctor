@@ -2910,5 +2910,14 @@
   "obligationSubscription": "Cancel your paid subscription.",
   "deleteAccountFailed": "Couldn't delete your account",
   "accountDeleted": "Your account has been deleted.",
-  "registrationExistingPassword": "This phone number already has a Shifa account. Enter that account's current password to continue."
+  "registrationExistingPassword": "This phone number already has a Shifa account. Enter that account's current password to continue.",
+  "accessApprovedBanner": "Access approved",
+  "accessDeclinedBanner": "Access declined",
+  "accessDecisionFailed": "Couldn't update the request. Try again.",
+  "enterPhoneForOtp": "Enter your phone number to receive a verification code by SMS.",
+  "otpSentToPhone": "A 6-digit code has been sent by SMS to {phone}.",
+  "smsSignInUzbekOnly": "SMS sign-in works with Uzbek numbers (+998). Sign in with email instead.",
+  "smsUnavailableUseEmail": "The SMS couldn't be sent. Sign in with email instead.",
+  "patientInRoom": "In the room",
+  "patientNotInRoomYet": "Not joined yet"
 }

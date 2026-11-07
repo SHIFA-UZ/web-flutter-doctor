@@ -493,6 +493,7 @@ fun VisitScreen(
                         mic = v::toggleMic,
                         flip = v::flip,
                         askLeave = v::askLeave,
+                        presence = v::watchPresence,
                         leave = v::leave,
                         dismissError = v::dismissError,
                     )

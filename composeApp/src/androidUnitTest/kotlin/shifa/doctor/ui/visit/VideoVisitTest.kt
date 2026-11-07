@@ -24,6 +24,7 @@ import shifa.doctor.generated.resources.videoCallJoinWindowClosedMessage
 import shifa.doctor.utils.VideoCall
 import shifa.doctor.utils.VideoCallState
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 /** A call that records what it was asked and changes state when told. */
 private class FakeCall : VideoCall {
@@ -230,5 +231,89 @@ class VideoVisitTest {
         assertThat(made[0].log.last()).isEqualTo("release")
         assertThat(made[1].log).containsExactly("camera true", "mic true").inOrder()
         assertThat(classToTest.call).isSameInstanceAs(made[1])
+    }
+
+    @Test
+    fun `while the pre-join page shows, the patient's presence is asked every few seconds, in the window only`() {
+        val scheduler = TestCoroutineScheduler()
+        val presenceScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher(scheduler))
+        val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
+        var inRoom = false
+        var answer = HttpStatusCode.OK
+        val presenceEngine =
+            MockEngine { req ->
+                asked += req.url.encodedPath.substringAfter("/api/")
+                if (answer == HttpStatusCode.OK) {
+                    respond("""{"patientInRoom":$inRoom}""", answer, json)
+                } else {
+                    respond("""{"status":${answer.value}}""", answer, json)
+                }
+            }
+        now = start - 10.minutes // before the window: nothing is asked
+        val classToTest =
+            VideoVisit(
+                7,
+                presenceScope,
+                { FakeCall().also { made += it } },
+                { start to start + 1.hours },
+                VideoRepository { createHttpClient({ null }, presenceEngine) },
+                { now },
+            )
+        classToTest.watchPresence(true)
+        assertThat(asked).isEmpty()
+        assertThat(classToTest.state.value.patientInRoom).isNull()
+
+        now = start - 4.minutes // inside the window
+        scheduler.advanceTimeBy(5_001)
+        settle { classToTest.state.value.patientInRoom != null }
+        assertThat(asked.single()).isEqualTo("video/appointments/7/presence")
+        assertThat(classToTest.state.value.patientInRoom).isFalse()
+
+        // Each answer comes back on the HTTP engine's thread, so the next wait starts a little after the clock's step.
+        inRoom = true
+        scheduler.advanceTimeBy(6_000)
+        settle { classToTest.state.value.patientInRoom == true }
+        assertThat(asked).hasSize(2)
+
+        // Daily can't be asked: unknown, not "not here".
+        answer = HttpStatusCode.ServiceUnavailable
+        scheduler.advanceTimeBy(6_000)
+        settle { classToTest.state.value.patientInRoom == null }
+        assertThat(classToTest.state.value.patientInRoom).isNull()
+
+        // The page goes: no more questions.
+        classToTest.watchPresence(false)
+        scheduler.advanceTimeBy(20_000)
+        Thread.sleep(50)
+        assertThat(asked).hasSize(3)
+        presenceScope.cancel()
+    }
+
+    @Test
+    fun `a backend without the presence route is asked once`() {
+        val scheduler = TestCoroutineScheduler()
+        val presenceScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher(scheduler))
+        val asked = java.util.concurrent.CopyOnWriteArrayList<String>()
+        val presenceEngine =
+            MockEngine { req ->
+                asked += req.url.encodedPath
+                respond("""{"status":404}""", HttpStatusCode.NotFound, json)
+            }
+        val classToTest =
+            VideoVisit(
+                7,
+                presenceScope,
+                { FakeCall().also { made += it } },
+                { start to start + 1.hours },
+                VideoRepository { createHttpClient({ null }, presenceEngine) },
+                { now },
+            )
+        classToTest.watchPresence(true)
+        settle { asked.isNotEmpty() }
+        scheduler.advanceTimeBy(30_000)
+        Thread.sleep(50)
+        assertThat(asked).hasSize(1)
+        assertThat(classToTest.state.value.patientInRoom).isNull()
+        presenceScope.cancel()
     }
 }

@@ -32,10 +32,12 @@ import shifa.doctor.generated.resources.ic_eye_20
 import shifa.doctor.generated.resources.ic_eye_off_20
 import shifa.doctor.generated.resources.ic_info_16
 import shifa.doctor.generated.resources.ic_mail_20
+import shifa.doctor.generated.resources.ic_phone_20
 import shifa.doctor.generated.resources.password
 import shifa.doctor.generated.resources.showPassword
 import shifa.doctor.generated.resources.signIn
 import shifa.doctor.generated.resources.signInWithEmail
+import shifa.doctor.generated.resources.signInWithPhone
 import shifa.doctor.ui.auth.AuthFrame
 import shifa.doctor.ui.auth.AuthLogo
 import shifa.doctor.ui.auth.AuthTitle
@@ -57,6 +59,7 @@ fun LoginScreen(
     onEmailSignIn: () -> Unit,
     onForgotPassword: () -> Unit,
     onCreateAccount: () -> Unit,
+    onPhoneSignIn: () -> Unit = {},
     viewModel: LoginViewModel = viewModel { LoginViewModel() },
     debugMenu: (@Composable () -> Unit)? = null,
 ) {
@@ -71,6 +74,7 @@ fun LoginScreen(
         onDismissBanner = viewModel::dismissBanner,
         onTogglePassword = viewModel::togglePasswordVisible,
         onEmailSignIn = onEmailSignIn,
+        onPhoneSignIn = onPhoneSignIn,
         onForgotPassword = onForgotPassword,
         onCreateAccount = onCreateAccount,
         debugMenu = debugMenu,
@@ -89,6 +93,8 @@ fun LoginScreenContent(
     onForgotPassword: () -> Unit,
     onCreateAccount: () -> Unit,
     debugMenu: (@Composable () -> Unit)? = null,
+    // AUTH-10: the e-mail code sign-in's twin, by SMS.
+    onPhoneSignIn: () -> Unit = {},
 ) {
     val visible = state.passwordVisible
     val passwordFocus = remember { FocusRequester() }
@@ -155,6 +161,13 @@ fun LoginScreenContent(
                 guard(onEmailSignIn),
                 Modifier.fillMaxWidth(),
                 icon = Res.drawable.ic_mail_20,
+                enabled = !state.loading,
+            )
+            ShifaSecondaryButton(
+                tr(Res.string.signInWithPhone),
+                guard(onPhoneSignIn),
+                Modifier.fillMaxWidth(),
+                icon = Res.drawable.ic_phone_20,
                 enabled = !state.loading,
             )
             ShifaSecondaryButton(
