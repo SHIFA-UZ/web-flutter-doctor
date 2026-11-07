@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
+import shifa.doctor.data.api.endpointMissing
 import shifa.doctor.data.api.httpClient
 import shifa.doctor.data.model.ApiException
 import shifa.doctor.data.model.AppointmentBriefing
@@ -62,8 +63,42 @@ class AppointmentsRepository(
             }
         }
 
-    /** `DELETE /appointments/{id}` (no reason yet: BE-10). */
-    suspend fun cancel(id: Long): Result<Unit> = apiCall<Unit> { client().delete(ApiConfig.Endpoints.appointment(id)) }
+    /**
+     * Cancels a visit: `POST /appointments/{id}/cancel {reasonCode, note?}` with a reason (BE-10), else (no reason
+     * picked, or a backend without the route: 404/405) the plain `DELETE /appointments/{id}`.
+     */
+    suspend fun cancel(
+        id: Long,
+        reason: CancelReason? = null,
+        note: String? = null,
+    ): Result<Unit> {
+        if (reason != null) {
+            val withReason =
+                apiCall<Unit> {
+                    client().post(ApiConfig.Endpoints.appointmentCancel(id)) {
+                        contentType(ContentType.Application.Json)
+                        setBody(CancelRequest(reason.name, note?.trim()?.takeIf { it.isNotEmpty() }))
+                    }
+                }
+            if (withReason.exceptionOrNull()?.endpointMissing != true) return withReason
+        }
+        return apiCall<Unit> { client().delete(ApiConfig.Endpoints.appointment(id)) }
+    }
+
+    /**
+     * `POST /appointments/{id}/no-show {notify}` (BE-10): a confirmed or started visit, from its start until a day after
+     * its end, is recorded as missed; 409 `NO_SHOW_NOT_ALLOWED` otherwise.
+     */
+    suspend fun noShow(
+        id: Long,
+        notify: Boolean,
+    ): Result<Unit> =
+        apiCall<Unit> {
+            client().post(ApiConfig.Endpoints.appointmentNoShow(id)) {
+                contentType(ContentType.Application.Json)
+                setBody(NoShowRequest(notify))
+            }
+        }
 
     /**
      * `PUT /appointments/{id}/change {startAt, slotMinutes, locationId?}`: a new start, or the same start with a new
@@ -172,3 +207,17 @@ val SIGNATURE_POLL = 10.seconds
 val BRIEFING_POLL = 3.seconds
 val BRIEFING_SLOW_AFTER = 60.seconds
 val BRIEFING_SLOW_POLL = 10.seconds
+
+/** The reason codes of `POST /appointments/{id}/cancel` (BE-10), in the board's chip order. */
+enum class CancelReason { DOCTOR_UNAVAILABLE, PATIENT_REQUEST, RESCHEDULED, OTHER }
+
+@Serializable
+private data class CancelRequest(
+    val reasonCode: String,
+    val note: String? = null,
+)
+
+@Serializable
+private data class NoShowRequest(
+    val notify: Boolean,
+)

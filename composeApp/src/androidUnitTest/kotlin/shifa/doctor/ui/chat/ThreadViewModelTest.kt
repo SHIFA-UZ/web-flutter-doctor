@@ -35,6 +35,9 @@ class ThreadViewModelTest {
     private val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
     private var failRead = false
     private var holdThread: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+    // BE-14: the `after` each thread read asked with (null: a full read).
+    private val cursors = java.util.concurrent.CopyOnWriteArrayList<Long?>()
     private var nextId = 100
     private var thread =
         mutableListOf(
@@ -87,8 +90,14 @@ class ThreadViewModelTest {
                         respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
                     }
                 "messages/conversations/7" -> {
-                    // The thread as it was when asked: a slow answer can miss a send that finishes meanwhile.
-                    val snapshot = thread.toList()
+                    // The thread as it was when asked: a slow answer can miss a send that finishes meanwhile. With
+                    // `after`, only newer messages (BE-14).
+                    val after = req.url.parameters["after"]?.toLong()
+                    cursors += after
+                    val snapshot =
+                        thread.toList().filter { m ->
+                            after == null || Regex("\"id\":(\\d+)").find(m)!!.groupValues[1].toLong() > after
+                        }.let { if (after != null) it.take(100) else it } // the backend's default page
                     holdThread?.await()
                     respond(
                         """{"conversation":{"id":7,"participantId":11,"participantName":"Dilnoza"},"messages":[${snapshot.joinToString(
@@ -325,5 +334,47 @@ class ThreadViewModelTest {
                 ?.text,
         ).isEqualTo(Res.string.errorRecordingVoice)
         shifa.doctor.ui.navigation.ShellNotice.pending.value = null
+    }
+
+    @Test
+    fun `polls ask only for newer messages and merge them, with a full read every sixth time`() {
+        val classToTest = opened()
+        classToTest.foreground(true)
+        settle { cursors.size >= 3 }
+        // The first read is full; the next ones start after the newest message held.
+        assertThat(cursors.first()).isNull()
+        assertThat(cursors[1]).isEqualTo(1L)
+        thread += """{"id":2,"chatId":7,"senderRole":"patient","type":"text","content":{"text":"Are you there?"},"status":"sent","createdAt":"2026-11-05T05:05:00Z"}"""
+        settle { classToTest.state.value.messages?.size == 2 }
+        assertThat(classToTest.state.value.messages!!.map { it.id }).containsExactly(1L, 2L).inOrder()
+        settle { cursors.size >= 9 }
+        classToTest.foreground(false)
+        // Every sixth poll after the first reads everything again (read ticks on older messages).
+        assertThat(cursors.count { it == null }).isAtLeast(2)
+    }
+
+    @Test
+    fun `the cursor follows what the server sent, never a send, and a full page is read on`() {
+        val classToTest = opened()
+        classToTest.refresh()
+        settle { classToTest.state.value.messages != null }
+        // 150 messages from the patient arrive, then the doctor sends one (it gets the next id).
+        (2..151).forEach { n ->
+            thread += """{"id":$n,"chatId":7,"senderRole":"patient","type":"text","content":{"text":"m$n"},"status":"sent","createdAt":"2026-11-05T05:${(n % 60).toString().padStart(
+                2,
+                '0',
+            )}:00Z"}"""
+        }
+        nextId = 152
+        classToTest.draft("reply")
+        classToTest.send()
+        settle { classToTest.state.value.pending.isEmpty() }
+        cursors.clear()
+        classToTest.refresh()
+        settle { (classToTest.state.value.messages?.size ?: 0) >= 152 }
+        // Started after message 1 (not after the send), and read on after the full first page.
+        assertThat(cursors.first()).isEqualTo(1L)
+        assertThat(cursors.size).isAtLeast(2)
+        assertThat(classToTest.state.value.messages!!.map { it.id }).containsAtLeastElementsIn((1L..152L).toList())
     }
 }

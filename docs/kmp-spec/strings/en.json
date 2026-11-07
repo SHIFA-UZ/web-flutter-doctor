@@ -2919,5 +2919,19 @@
   "smsSignInUzbekOnly": "SMS sign-in works with Uzbek numbers (+998). Sign in with email instead.",
   "smsUnavailableUseEmail": "The SMS couldn't be sent. Sign in with email instead.",
   "patientInRoom": "In the room",
-  "patientNotInRoomYet": "Not joined yet"
+  "patientNotInRoomYet": "Not joined yet",
+  "cancelReasonDoctorUnavailable": "Doctor unavailable",
+  "cancelReasonPatientRequest": "Patient request",
+  "cancelReasonRescheduled": "Rescheduled elsewhere",
+  "cancelReasonOtherHint": "Reason",
+  "noShowNotAllowed": "This visit can't be marked as missed now.",
+  "aboutTermsOfService": "Terms of service",
+  "aboutLicences": "Open-source licences",
+  "aboutMyContract": "My partnership contract",
+  "aboutContractFrom": "from {date}",
+  "contractLoadFailed": "Couldn't open the contract.",
+  "calendarDayView": "Day",
+  "calendarWeekView": "Week",
+  "previousWeek": "Previous week",
+  "nextWeek": "Next week"
 }

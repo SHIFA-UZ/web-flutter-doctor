@@ -104,4 +104,38 @@ class AppointmentRulesTest {
         assertThat(fits(day[1] as CalendarEntry.FreeSlot, day, 60)).isFalse()
         assertThat(fits(day[2] as CalendarEntry.FreeSlot, day, 30)).isTrue()
     }
+
+    @Test
+    fun `no-show is offered from the start of a confirmed visit until a day after its end`() {
+        val a = appt("2026-11-04T05:00:00Z", "2026-11-04T05:30:00Z")
+        assertThat(a.mayMarkNoShow(at("2026-11-04T04:59:00Z"))).isFalse()
+        assertThat(a.mayMarkNoShow(at("2026-11-04T05:00:00Z"))).isTrue()
+        assertThat(a.mayMarkNoShow(at("2026-11-05T05:30:00Z"))).isTrue()
+        assertThat(a.mayMarkNoShow(at("2026-11-05T05:31:00Z"))).isFalse()
+        // Started (the call): the rule allows it; the calendar's banner is for a confirmed visit only.
+        assertThat(mayMarkNoShow("IN_PROGRESS", a.start, a.end, at("2026-11-04T05:10:00Z"))).isTrue()
+        assertThat(
+            appt(
+                "2026-11-04T05:00:00Z",
+                "2026-11-04T05:30:00Z",
+                status = "IN_PROGRESS",
+            ).mayMarkNoShow(at("2026-11-04T05:10:00Z")),
+        ).isFalse()
+        assertThat(
+            appt(
+                "2026-11-04T05:00:00Z",
+                "2026-11-04T05:30:00Z",
+                status = "COMPLETED",
+            ).mayMarkNoShow(at("2026-11-04T05:10:00Z")),
+        ).isFalse()
+    }
+
+    @Test
+    fun `the backend's video flag wins over the booked location (BE-09)`() {
+        val inClinicByWord = appt("2026-11-04T05:00:00Z", "2026-11-04T05:30:00Z", video = true).copy(videoFlag = false)
+        assertThat(inClinicByWord.isVideo).isFalse()
+        assertThat(appt("2026-11-04T05:00:00Z", "2026-11-04T05:30:00Z").copy(videoFlag = true).isVideo).isTrue()
+        // A backend without the flag: the word.
+        assertThat(appt("2026-11-04T05:00:00Z", "2026-11-04T05:30:00Z", video = true).isVideo).isTrue()
+    }
 }

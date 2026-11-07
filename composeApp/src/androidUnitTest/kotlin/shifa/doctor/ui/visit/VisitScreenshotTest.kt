@@ -59,6 +59,9 @@ class VisitScreenshotTest {
     fun videoLeft() = captureRoboImage("screenshots/Video_left.png") { VideoLeftPreview() }
 
     @Test
+    fun videoWaiting() = captureRoboImage("screenshots/Video_waiting.png") { VideoWaitingPreview() }
+
+    @Test
     fun endDone() = captureRoboImage("screenshots/End_done.png") { EndDonePreview() }
 
     @Test

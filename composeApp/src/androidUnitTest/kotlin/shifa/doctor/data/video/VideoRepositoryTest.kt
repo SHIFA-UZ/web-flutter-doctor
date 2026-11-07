@@ -72,4 +72,17 @@ class VideoRepositoryTest {
             videoJoinError(ApiException.NetworkError(false), start, end, start),
         ).isEqualTo(Res.string.callErrorOccurred)
     }
+
+    @Test
+    fun `the backend's codes win over the guess from the window (BE-28)`() {
+        val start = Instant.parse("2026-11-05T10:00:00Z")
+        val end = start + 30.minutes
+        // Inside the window by the app's clock, yet the backend says too early / too late: the backend is right.
+        assertThat(videoJoinError(ApiException.Forbidden("VIDEO_TOO_EARLY", null), start, end, start))
+            .isEqualTo(Res.string.videoCallNotYetAvailableMessage)
+        assertThat(videoJoinError(ApiException.Forbidden("VIDEO_TOO_LATE", null), start, end, start))
+            .isEqualTo(Res.string.videoCallJoinWindowClosedMessage)
+        assertThat(videoJoinError(ApiException.of(402, "VIDEO_PAYMENT_REQUIRED", null), start, end, start))
+            .isEqualTo(Res.string.videoCallPaymentRequiredMessage)
+    }
 }

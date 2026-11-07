@@ -11,9 +11,8 @@ enum class VisitKind {
 
     companion object {
         /**
-         * The backend's flag when it sends one; else the booked location's "Video Consultation".
-         * ponytail: the doctor's `GET /appointments/{id}` and the calendar carry no flag yet (BE-09); drop the word
-         * check when they do.
+         * The backend's flag when it sends one (BE-09, backend 2026-11-07: the calendar's `isVideo`, the appointment's
+         * `isVideoConsultation`); else the booked location's "Video Consultation" (a backend from before BE-09).
          */
         fun of(
             isVideo: Boolean?,
@@ -56,6 +55,9 @@ data class AppointmentDetail(
     val notes: String? = null,
     val reason: String? = null,
     val isVideoConsultation: Boolean? = null,
+    // BE-10: why it was cancelled (DOCTOR_UNAVAILABLE, PATIENT_REQUEST, RESCHEDULED, OTHER) and the note.
+    val cancelReasonCode: String? = null,
+    val cancelNote: String? = null,
 ) {
     val start: Instant? get() = startAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
 

@@ -33,6 +33,8 @@ import shifa.doctor.generated.resources.dentalLoadFailed
 import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.noItemsToSave
+import shifa.doctor.generated.resources.noShowMarked
+import shifa.doctor.generated.resources.noShowNotAllowed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.generated.resources.photoLimit
 import shifa.doctor.generated.resources.summaryNotSaved
@@ -57,6 +59,10 @@ class VisitViewModelTest {
     private var dentalReadFails = false
     private var planOn = false
     private var payStatus = HttpStatusCode.OK
+
+    // BE-10: the no-show answer and what was sent.
+    private var noShowStatus = HttpStatusCode.OK
+    private val noShowBodies = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val planSummary =
         """{"id":5,"clinicId":2,"patientId":14,"title":"Upper jaw","status":"ACTIVE","planKind":"COMPREHENSIVE","totalMinor":30000000,"paidMinor":0,"owedMinor":30000000,"currency":"UZS","linesCompletedCount":0,"linesTotalCount":1}"""
     private val planDetail =
@@ -75,6 +81,18 @@ class VisitViewModelTest {
                     respond("""{"status":404,"code":"NOT_FOUND"}""", visitStatus, json)
                 path == "appointments/7" -> ok(visit)
                 path == "appointments/7/complete" -> respond(completeBody, completeStatus, json)
+                path == "appointments/7/no-show" -> {
+                    noShowBodies += req.body.toByteArray().decodeToString()
+                    if (noShowStatus == HttpStatusCode.OK) {
+                        respond("{}", noShowStatus, json)
+                    } else {
+                        respond(
+                            """{"status":409,"code":"NO_SHOW_NOT_ALLOWED","requestId":"r-ns"}""",
+                            noShowStatus,
+                            json,
+                        )
+                    }
+                }
                 path == "appointments/7/scribe-status" ->
                     ok("""{"status":"processing","hasScribeNote":${!scribePending}}""")
                 path == "patients/14/documents" && method == "POST" ->
@@ -550,5 +568,34 @@ class VisitViewModelTest {
         assertThat(classToTest.state.value.mode).isEqualTo(VisitMode.Form0252)
         assertThat(classToTest.state.value.icd?.code).isEqualTo("K04.0")
         assertThat(classToTest.state.value.banner?.args).containsExactly("K04.0")
+    }
+
+    @Test
+    fun `a no-show from the call tells the patient as chosen, goes back with a notice and reads the day again`() {
+        val classToTest = opened()
+        classToTest.askNoShow(true)
+        classToTest.notifyNoShow(false)
+        classToTest.noShow()
+        settle { classToTest.state.value.left != null }
+        assertThat(noShowBodies.single()).isEqualTo("""{"notify":false}""")
+        assertThat(classToTest.state.value.left).isEqualTo(VisitExit.Back)
+        assertThat(classToTest.state.value.visit?.status).isEqualTo("NO_SHOW")
+        assertThat(shifa.doctor.ui.navigation.ShellNotice.pending.value?.text).isEqualTo(Res.string.noShowMarked)
+        settle { completedDays.isNotEmpty() }
+        assertThat(completedDays).isNotEmpty()
+        shifa.doctor.ui.navigation.ShellNotice.pending.value = null
+    }
+
+    @Test
+    fun `a refused no-show stays in the visit with its reason`() {
+        noShowStatus = HttpStatusCode.Conflict
+        val classToTest = opened()
+        classToTest.askNoShow(true)
+        classToTest.noShow()
+        settle { classToTest.state.value.banner != null }
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.noShowNotAllowed)
+        assertThat(classToTest.state.value.banner?.requestId).isEqualTo("r-ns")
+        assertThat(classToTest.state.value.askNoShow).isFalse()
+        assertThat(classToTest.state.value.left).isNull()
     }
 }

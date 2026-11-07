@@ -78,13 +78,17 @@ import shifa.doctor.generated.resources.endFailed
 import shifa.doctor.generated.resources.icdAppliedOnOpen
 import shifa.doctor.generated.resources.noForm0252Yet
 import shifa.doctor.generated.resources.noItemsToSave
+import shifa.doctor.generated.resources.noShowMarked
 import shifa.doctor.generated.resources.notesSaveFailed
 import shifa.doctor.generated.resources.patientSignatureRequestSent
 import shifa.doctor.generated.resources.photoLimit
+import shifa.doctor.generated.resources.saveFailed
 import shifa.doctor.generated.resources.scribeUploadFailed
 import shifa.doctor.generated.resources.signatureRequestFailed
 import shifa.doctor.generated.resources.summaryNotSaved
 import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.navigation.Notice
+import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.ui.patients.chronicWarned
 import shifa.doctor.utils.PickedImage
 import shifa.doctor.utils.PracticeClock
@@ -180,6 +184,10 @@ data class VisitUiState(
     val askLeave: VisitExit? = null,
     // Ready to go there (the screen navigates, then calls [VisitViewModel.leaving]).
     val left: VisitExit? = null,
+    // BE-10: "Mark as no-show" from a call the patient never joined: asked, the patient told, on its way.
+    val askNoShow: Boolean = false,
+    val notifyNoShow: Boolean = true,
+    val markingNoShow: Boolean = false,
     // SCRIBE-01: a recording went to the AI scribe (End waits for its notes, SCRIBE-02).
     val awaitingScribe: Boolean = false,
     // A recording that couldn't be uploaded is kept for another try.
@@ -817,6 +825,48 @@ class VisitViewModel(
             _state.update { it.copy(photos = emptyList()) }
         }
         _state.update { it.copy(askLeave = null, left = to) }
+    }
+
+    fun askNoShow(ask: Boolean) =
+        _state.update { if (it.markingNoShow) it else it.copy(askNoShow = ask, notifyNoShow = true) }
+
+    fun notifyNoShow(on: Boolean) = _state.update { it.copy(notifyNoShow = on) }
+
+    /**
+     * The visit recorded as missed (BE-10): the call is left, the notes saved, the calendar day read again, and the
+     * doctor goes back with "Marked as no-show"; a refusal (e.g. 409 outside the window) stays here as a banner.
+     */
+    fun noShow() {
+        val s = _state.value
+        if (s.markingNoShow) return
+        // The patient joined while the question was open: not a no-show.
+        if (video?.state?.value?.patientSeen == true) return _state.update { it.copy(askNoShow = false) }
+        _state.update { it.copy(markingNoShow = true) }
+        viewModelScope.launch {
+            appointments.noShow(appointmentId, s.notifyNoShow).fold(
+                {
+                    _state.update {
+                        it.copy(
+                            markingNoShow = false,
+                            askNoShow = false,
+                            visit = it.visit?.copy(status = "NO_SHOW"),
+                        )
+                    }
+                    s.visit?.start?.let { start -> launch { completedOn(clock(), clock().local(start).date) } }
+                    ShellNotice.pending.value = Notice(Res.string.noShowMarked, success = true)
+                    leave(VisitExit.Back)
+                },
+                { e ->
+                    _state.update {
+                        it.copy(
+                            markingNoShow = false,
+                            askNoShow = false,
+                            banner = CodeBanner(e.toUserMessage(Res.string.saveFailed), requestId = e.requestId),
+                        )
+                    }
+                },
+            )
+        }
     }
 
     /** The screen went where [VisitUiState.left] said. */

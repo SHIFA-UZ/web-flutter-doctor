@@ -44,9 +44,12 @@ import shifa.doctor.data.api.ApiConfig.Endpoints
 import shifa.doctor.data.api.apiJson
 import shifa.doctor.data.api.createHttpEngine
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.utils.PdfOp
+import shifa.doctor.utils.PdfPage
 import shifa.doctor.utils.PhoneE164
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.isDebugBuild
+import shifa.doctor.utils.renderPdf
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -686,6 +689,47 @@ class DemoBackend(
                 briefingRetried[id] = currentInstant()
                 ok(demoBriefing(id, briefingRetried[id]))
             }
+            // BE-16: the legal pages and the demo doctor's early-partner contract (a one-page stand-in PDF).
+            get && path == Endpoints.PUBLIC_LEGAL ->
+                ok(
+                    buildJsonObject {
+                        put("terms", "https://shifa.uz/#terms")
+                        put("privacy", "https://shifa.uz/#privacy")
+                        put("version", "1")
+                        put("updatedAt", "2026-11-07")
+                    },
+                )
+            get && path == Endpoints.DOCTOR_CONTRACT ->
+                ok(
+                    buildJsonObject {
+                        put("contractNumber", DEMO_CONTRACT)
+                        put("effectiveDate", "2026-06-01")
+                        put("endDate", "2026-12-01")
+                        put("termMonths", 6)
+                        put("issuedAt", "2026-05-28T09:00:00Z")
+                        put("status", "ACTIVE")
+                    },
+                )
+            get && path == Endpoints.DOCTOR_CONTRACT_PDF ->
+                renderPdf(
+                    listOf(
+                        PdfPage(
+                            PDF_A4_WIDTH,
+                            PDF_A4_HEIGHT,
+                            listOf(
+                                PdfOp.Text(
+                                    PDF_MARGIN,
+                                    PDF_MARGIN,
+                                    PDF_A4_WIDTH - 2 * PDF_MARGIN,
+                                    "$DEMO_CONTRACT (demo)",
+                                    PDF_TITLE,
+                                    bold = true,
+                                ),
+                            ),
+                        ),
+                    ),
+                )?.let { Reply(HttpStatusCode.OK, "", file = it) }
+                    ?: Reply(HttpStatusCode.NotFound, """{"status":404,"code":"NO_CONTRACT"}""")
             // The pre-join page's presence: the demo patient of the video visit is already waiting in the room.
             get && path == Endpoints.videoPresence(101) ->
                 ok(
@@ -934,7 +978,10 @@ class DemoBackend(
                 (
                     request.method == HttpMethod.Delete ||
                         path.endsWith("/change") ||
-                        path.endsWith("/notify-payment-reminder")
+                        path.endsWith("/notify-payment-reminder") ||
+                        // BE-10: a cancel with a reason, a visit marked as missed.
+                        path.endsWith("/cancel") ||
+                        path.endsWith("/no-show")
                 ) -> Reply(HttpStatusCode.OK, "")
             // The schedule (SCHED-1) in memory: rules per location, validity periods, date-specific hours.
             get && path == Endpoints.SCHEDULE_RULES ->
@@ -2138,3 +2185,9 @@ private const val DEMO_CLINICAL =
 
 // The paths the in-memory demos (chat, inbox, tasks) own entirely.
 private val DEMO_OWNED = listOf("messages", "notifications", "tasks")
+
+private const val DEMO_CONTRACT = "SHIFA-0461"
+private const val PDF_A4_WIDTH = 595f
+private const val PDF_A4_HEIGHT = 842f
+private const val PDF_MARGIN = 56f
+private const val PDF_TITLE = 18f

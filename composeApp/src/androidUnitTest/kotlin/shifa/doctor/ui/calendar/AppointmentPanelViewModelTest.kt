@@ -27,6 +27,7 @@ import org.junit.Before
 import org.junit.Test
 import shifa.doctor.data.api.createHttpClient
 import shifa.doctor.data.appointments.AppointmentsRepository
+import shifa.doctor.data.appointments.CancelReason
 import shifa.doctor.data.calendar.CalendarRepository
 import shifa.doctor.data.calendar.DayKey
 import shifa.doctor.data.model.CalendarEntry
@@ -34,6 +35,7 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appointmentCancelled
 import shifa.doctor.generated.resources.appointmentMoved
 import shifa.doctor.generated.resources.durationChanged
+import shifa.doctor.generated.resources.noShowMarked
 import shifa.doctor.stopAll
 import shifa.doctor.ui.navigation.ShellNotice
 import shifa.doctor.utils.PracticeClock
@@ -236,5 +238,34 @@ class AppointmentPanelViewModelTest {
         runBlocking { calendar.day(DayKey(today), force = true) }
         settle { classToTest.state.value.closed }
         assertThat(classToTest.state.value.closed).isTrue()
+    }
+
+    @Test
+    fun `a picked reason goes with the cancel, Other with its text, none is the plain delete`() {
+        val classToTest = opened()
+        classToTest.ui { it.copy(askCancel = true, cancelReason = CancelReason.OTHER, cancelOther = " Out of town ") }
+        classToTest.cancel()
+        settle { classToTest.state.value.closed }
+        assertThat(writes.last())
+            .isEqualTo("POST /api/appointments/7/cancel {\"reasonCode\":\"OTHER\",\"note\":\"Out of town\"}")
+
+        val plain = opened()
+        plain.ui { it.copy(askCancel = true) }
+        plain.cancel()
+        settle { plain.state.value.closed }
+        assertThat(writes.last()).isEqualTo("DELETE /api/appointments/7 ")
+    }
+
+    @Test
+    fun `mark as no-show sends whether to tell the patient, closes the question and records the status`() {
+        val classToTest = opened()
+        classToTest.ui { it.copy(askNoShow = true, notifyNoShow = false) }
+        classToTest.noShow()
+        settle { !classToTest.state.value.busy && classToTest.state.value.banner != null }
+        assertThat(writes.last()).isEqualTo("POST /api/appointments/7/no-show {\"notify\":false}")
+        assertThat(classToTest.state.value.askNoShow).isFalse()
+        assertThat(classToTest.state.value.banner?.text).isEqualTo(Res.string.noShowMarked)
+        // The day is read again: the calendar (and this panel, which follows it) shows the backend's NO_SHOW.
+        assertThat(read).contains(today.toString())
     }
 }

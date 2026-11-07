@@ -281,3 +281,38 @@ B, the colleague's calendar from the clinic workspace, is in clinic.md with CLIN
   `CalendarRepositoryTest` (+1: a read after `clear` asks again);
   screenshot `Calendar_staff`.
 
+## CAL-5 · Week grid (wide panes)
+
+Built 2026-11-07. Board DaCalendar `CalendarWeek` (web and wide panes; not on the phone board). `ui/calendar/WeekGrid.kt`.
+
+- **Where:** `LocalWideLayout` (tablet and web widths) shows "Day | Week" chips under the header; Week is the default
+  there, as on the board. Phones keep the day view.
+- **Grid:** Monday–Sunday of the selected day's week, ‹ › page a week, the range "02.11.2026 – 08.11.2026". The hour
+  gutter spans 08:00–18:00, widened to whole hours around every row of the week (an all-day block doesn't widen it), at
+  least four hours; 64 per hour (`ShifaDimens.CalendarHour`). Each day column: appointments (info tint, short name
+  "M. Tursunova", the time when tall enough; cancelled struck through), free slots ("+ 09:00", brand tint), blocks
+  (reason or "Blocked", error tint); today's head in brand, the selected day shaded, the now-line on today. A tap opens
+  the row as the agenda does (panel, booking, block); a day head selects that day and switches to Day. The filters apply.
+- **Data:** the week's days come from the shared calendar cache, which the month prefetch already fills.
+- **Colleagues:** with a colleague's calendar shown (CAL-10 A) the toggle hides and the day view (with their sections) is
+  used. A failed day read shows its error and Retry above the grid; the selected week's seven days are loaded with the
+  month (a week crossing into the next month too). An entry ending at midnight reads 00:00.
+- **Not built:** colleagues' lanes in the grid (the board splits a column per visible doctor), drag to move.
+- **Tests:** `WeekGridTest` (week bounds, hour span, short names); screenshots `Calendar_week`, `Calendar_wide`
+  re-recorded (Day picked, the toggle above).
+
+## BE-10 · Cancel reasons and no-show (app side)
+
+Built 2026-11-07 (backend branch `feature/doctor-app-second-round`). Board DaVisit "cancel", "noshow", "det.late".
+
+- **Cancel sheet:** "Reason (optional)" chips (Doctor unavailable, Patient request, Rescheduled elsewhere, Other; a
+  second tap clears), Other asks for a text (120). With a reason `POST /appointments/{id}/cancel {reasonCode, note?}`;
+  without one, or when that route is missing (404/405), the plain `DELETE`.
+- **Late banner** (panel): a confirmed visit whose start has passed, until a day after its end (the backend's window):
+  "Started 15 min ago — patient not arrived", Start anyway (when Start is allowed) and Mark as no-show.
+- **No-show sheet** (`NoShowQuestion`, shared with the video call): the board's text, "Notify patient" (on), Cancel and
+  the destructive Mark as no-show → `POST /appointments/{id}/no-show {notify}`; the day is read again and the panel says
+  "Marked as no-show". The board's Undo is left out (no way back on the backend). 409 `NO_SHOW_NOT_ALLOWED` → "This
+  visit can't be marked as missed now."
+- **Tests:** `AppointmentPanelViewModelTest` (reason body, plain delete, no-show body), `AppointmentRulesTest` (window,
+  video flag); screenshot `Calendar_appointmentPanelLate`.

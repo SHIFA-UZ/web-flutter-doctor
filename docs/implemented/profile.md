@@ -430,3 +430,16 @@ Built 2026-11-06. Spec 08 §8, flow 08/13, tickets LEGAL-01, LEGAL-02; BE-16. Bo
 - **Checked:** emulator: Profile → About, Copy diagnostics ("Diagnostics copied"), Privacy policy opened shifa.uz in a
   Custom Tab, Back to About.
 - **Tests:** `AboutTest` (the diagnostics line, the URL); screenshot `About`.
+
+## LEGAL-02 · Legal pages and "My partnership contract" (BE-16)
+
+Built 2026-11-07. Board `DaProfile` legalAbout. `AboutViewModel` + `data/legal/LegalRepository`.
+
+- **Legal:** Terms of service, Privacy policy and Open-source licences as `GET /public/legal?lang=` lists them (the
+  backend language of the app), each "Version {version}", opened in the in-app browser. A backend without the route (or
+  a failed read): the public privacy page only, as before.
+- **Contract:** doctors only (`GET /doctors/me/contract`; 404 `NO_CONTRACT` or an older backend: no section). The row
+  shows the number and "from 01.06.2026"; it opens the backend's PDF (`/doctors/me/contract/pdf`) full screen (skeleton,
+  then the pages; a failure with its request id and Retry). Clinic staff never ask.
+- **Demo:** the legal links, contract SHIFA-0461 and a one-page stand-in PDF.
+- **Tests:** `AboutViewModelTest`, `DemoBackendTest`; screenshot `About` re-recorded (Terms, Privacy, the contract).

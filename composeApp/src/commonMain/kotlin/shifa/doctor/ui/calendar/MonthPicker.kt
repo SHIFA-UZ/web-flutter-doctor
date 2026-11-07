@@ -293,7 +293,7 @@ private val MONTHS: List<StringResource> =
         Res.string.monthDecember,
     )
 
-private val WEEKDAYS: List<StringResource> =
+internal val WEEKDAYS: List<StringResource> =
     DayOfWeek.entries.map {
         when (it) {
             DayOfWeek.MONDAY -> Res.string.monday

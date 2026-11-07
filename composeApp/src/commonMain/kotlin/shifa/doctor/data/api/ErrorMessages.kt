@@ -7,6 +7,7 @@ import shifa.doctor.generated.resources.accountDisabledBanner
 import shifa.doctor.generated.resources.doctorAccountExists
 import shifa.doctor.generated.resources.maintenanceBody
 import shifa.doctor.generated.resources.networkError
+import shifa.doctor.generated.resources.noShowNotAllowed
 import shifa.doctor.generated.resources.registrationOwnershipRequired
 import shifa.doctor.generated.resources.sessionExpiredBanner
 import shifa.doctor.generated.resources.somethingWentWrong
@@ -40,6 +41,8 @@ private val CODE_MESSAGES: Map<String, StringResource> =
         "OWNERSHIP_REQUIRED" to Res.string.registrationOwnershipRequired,
         "EMAIL_OTP_INVALID" to Res.string.wrongOrExpiredCodeBackToCode,
         "EMAIL_OTP_EXPIRED" to Res.string.wrongOrExpiredCodeBackToCode,
+        // BE-10: a visit outside its no-show window (from its start to a day after its end) or not confirmed.
+        "NO_SHOW_NOT_ALLOWED" to Res.string.noShowNotAllowed,
     )
 
 /** The backend's trace id of a failed call, for the error banner's detail (17 §1); null for network failures. */

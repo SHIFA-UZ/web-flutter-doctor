@@ -681,3 +681,17 @@ pre-filled (D-14: booking is slot-first).
 - **Emulator (demo):** End visit 102 → Book follow-up → the picker → 20 November 11:00 → Next → "Slot Details… Selected:
   Jasur Karimov". Back returned to the completed visit; nothing booked. Demo mode is off again.
 - **Screenshot:** `End_done`.
+
+## Video call: waiting clock and no-show (BE-10)
+
+Built 2026-11-07. Board DaVisit "rm.alone".
+
+- In the call with nobody else: "Waiting for {name} to join…" and "Waiting 06:10" (`VideoVisitState.aloneSince`, set
+  when the doctor is in the call alone, cleared when the patient joins); after 5 minutes (`NO_SHOW_AFTER`; the board's
+  prototype offers it after a few seconds) "Mark as no-show" opens the same sheet as the calendar. Confirmed: the call
+  is left, the notes saved, the day read again, back to where the visit was opened with "Marked as no-show"; refused:
+  a banner in the visit.
+- **Coded refusals (BE-28):** `VIDEO_TOO_EARLY`, `VIDEO_TOO_LATE`, `VIDEO_PAYMENT_REQUIRED` map straight to their
+  messages; the window guess stays for an older backend.
+- **Tests:** `VideoVisitTest` (the clock), `VisitViewModelTest` (no-show sent and refused), `VideoRepositoryTest`
+  (codes); screenshot `Video_waiting`.

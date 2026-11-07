@@ -60,11 +60,11 @@ class VideoRepository(
 val videoRepository = VideoRepository()
 
 /**
- * Why a room can't be joined, in the doctor's words (the backend's `VideoController`): an unpaid paid visit is 402
- * PAYMENT_REQUIRED; a visit outside its window is a bare 403 FORBIDDEN, the reason only in English text, which isn't
- * shown (BE-28 asks for codes), so it comes from the visit's own window, which matches the backend's: from 5 minutes
- * before the start to 15 minutes after the end. A 403 inside the window (not this doctor's visit) and anything else
- * is the generic call error.
+ * Why a room can't be joined, in the doctor's words (the backend's `VideoController`). The backend's codes first (BE-28,
+ * backend 2026-11-07): `VIDEO_TOO_EARLY`, `VIDEO_TOO_LATE`, `VIDEO_PAYMENT_REQUIRED`. A backend without them answers an
+ * unpaid visit with a bare 402 and a visit outside its window with a bare 403, so the reason comes from the visit's own
+ * window, which matches the backend's: from 5 minutes before the start to 15 minutes after the end. A 403 inside the
+ * window (not this doctor's visit) and anything else is the generic call error.
  */
 fun videoJoinError(
     e: Throwable,
@@ -74,6 +74,9 @@ fun videoJoinError(
 ): StringResource {
     if (e !is ApiException) return Res.string.callErrorOccurred
     return when {
+        e.code == "VIDEO_TOO_EARLY" -> Res.string.videoCallNotYetAvailableMessage
+        e.code == "VIDEO_TOO_LATE" -> Res.string.videoCallJoinWindowClosedMessage
+        e.code == "VIDEO_PAYMENT_REQUIRED" -> Res.string.videoCallPaymentRequiredMessage
         e.status == 402 -> Res.string.videoCallPaymentRequiredMessage
         e !is ApiException.Forbidden -> Res.string.callErrorOccurred
         start != null && now < start - JOIN_BEFORE -> Res.string.videoCallNotYetAvailableMessage

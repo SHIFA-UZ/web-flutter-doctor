@@ -22,12 +22,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Instant
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.generated.resources.Res
@@ -45,6 +48,7 @@ import shifa.doctor.generated.resources.ic_video_off_22
 import shifa.doctor.generated.resources.joinCall
 import shifa.doctor.generated.resources.leaveCall
 import shifa.doctor.generated.resources.leaveCallBody
+import shifa.doctor.generated.resources.markNoShow
 import shifa.doctor.generated.resources.micDeniedPatientCantHear
 import shifa.doctor.generated.resources.microphoneLabel
 import shifa.doctor.generated.resources.off
@@ -56,6 +60,7 @@ import shifa.doctor.generated.resources.rejoinCall
 import shifa.doctor.generated.resources.videoCall
 import shifa.doctor.generated.resources.videoCallConnecting
 import shifa.doctor.generated.resources.videoCallReady
+import shifa.doctor.generated.resources.waiting
 import shifa.doctor.generated.resources.waitingForPatient
 import shifa.doctor.generated.resources.youLeftTheCall
 import shifa.doctor.generated.resources.yourCameraPreview
@@ -66,19 +71,25 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
+import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaIconButton
 import shifa.doctor.ui.widgets.ShifaIconButtonVariant
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaSwitch
 import shifa.doctor.ui.widgets.ShifaTag
 import shifa.doctor.ui.widgets.ShifaTagType
 import shifa.doctor.utils.VideoCall
 import shifa.doctor.utils.VideoTile
+import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.tr
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class VideoActions(
     val join: () -> Unit = {},
@@ -91,6 +102,8 @@ class VideoActions(
     val dismissError: () -> Unit = {},
     // The pre-join page shown (true) or gone: whether the patient is in the room is asked meanwhile.
     val presence: (Boolean) -> Unit = {},
+    // BE-10: "Mark as no-show" once the doctor has waited alone long enough (the visit asks first).
+    val noShow: () -> Unit = {},
 )
 
 /**
@@ -238,6 +251,57 @@ private fun Toggle(
 }
 
 /**
+ * Board DaVisit "rm.alone": "Waiting for Malika to join…", "Waiting 03:12", and after [NO_SHOW_AFTER] alone the
+ * "Mark as no-show" action (the board offers it after a short wait; 5 minutes here).
+ */
+@Composable
+private fun Waiting(
+    patientName: String,
+    since: Instant?,
+    now: () -> Instant,
+    onNoShow: () -> Unit,
+) {
+    val waited by produceState(Duration.ZERO, since) {
+        while (since != null) {
+            value = now() - since
+            delay(1.seconds)
+        }
+    }
+    Column(
+        Modifier
+            .background(ShifaColors.Alpha.Black50, ShifaRadius.ControlMd)
+            .padding(horizontal = ShifaSize.S14, vertical = ShifaSize.S10),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(ShifaSize.S4),
+    ) {
+        Text(
+            tr(Res.string.waitingForPatient, patientName),
+            style = ShifaTextStyles.buttonCompact(),
+            color = ShifaColors.Text.Inverse,
+        )
+        if (since != null) {
+            Text(
+                "${tr(Res.string.waiting)} ${minutesSeconds(waited)}",
+                style = ShifaTextStyles.caption(),
+                color = ShifaColors.Text.Inverse,
+            )
+        }
+        if (since != null && waited >= NO_SHOW_AFTER) {
+            ShifaSecondaryButton(tr(Res.string.markNoShow), onNoShow, size = ShifaButtonSize.Compact)
+        }
+    }
+}
+
+/** "03:12" (minutes over an hour keep counting: "75:02"). */
+internal fun minutesSeconds(d: Duration): String {
+    val total = d.inWholeSeconds.coerceAtLeast(0)
+    return "${(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}"
+}
+
+/** How long the doctor waits alone in the call before Mark as no-show is offered. */
+internal val NO_SHOW_AFTER = 5.minutes
+
+/**
  * The call in the workspace (board `DaVisit` video pane, flow 05/11): connecting; the doctor alone ("Waiting for … to
  * join"); the patient with the doctor's camera in a corner and the patient's name; left ("You left the call", the visit
  * stays open, Rejoin). Controls: microphone, camera, flip, leave (asked first).
@@ -248,6 +312,7 @@ internal fun VideoPane(
     video: VideoVisitState,
     call: VideoCall,
     actions: VideoActions,
+    now: () -> Instant = ::currentInstant,
 ) = Column(
     Modifier.fillMaxWidth().background(ShifaColors.Bg.Surface, ShifaRadius.ControlLg).padding(ShifaSize.S8),
     verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
@@ -296,15 +361,7 @@ internal fun VideoPane(
                 }
             !video.call.patientJoined -> {
                 VideoTile(call, remote = false, Modifier.fillMaxSize())
-                Text(
-                    tr(Res.string.waitingForPatient, patientName),
-                    Modifier.background(
-                        ShifaColors.Alpha.Black50,
-                        ShifaRadius.Full,
-                    ).padding(horizontal = ShifaSize.S12, vertical = ShifaSize.S6),
-                    style = ShifaTextStyles.buttonCompact(),
-                    color = ShifaColors.Text.Inverse,
-                )
+                Waiting(patientName, video.aloneSince, now, actions.noShow)
             }
             else -> {
                 VideoTile(call, remote = true, Modifier.fillMaxSize())

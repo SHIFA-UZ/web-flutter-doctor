@@ -54,6 +54,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | POST | `/api/auth/register-clinic-staff` | pub → `{token}`; same `emailOtp`, `currentPassword` and codes |
 | POST | `/api/auth/admin/request-login-otp` | admin only (doc 10) |
 | POST | `/api/auth/admin/verify-login-otp` | admin only (doc 10) |
+| GET | `/api/public/legal?lang=en\|uz\|ru` | pub → `{terms, privacy, licences, version, updatedAt}` (nullable strings; BE-16, backend 2026-11-07, `legal.*` in system config) |
 | GET | `/api/public/config` | pub, `{transcriptionFeedbackEnabled, googleMapsApiKey, doctorApp:{minVersion,latestVersion,storeUrl:{android,ios}, maintenance:{active,message:{en,uz,ru},until}}}`; unset values are `null` (BE-04, backend 2026-11-07, admin keys `doctor_app.*`) |
 | GET | `/api/public/clinics?search=` | pub, `[{id,name}]` |
 | GET | `/api/public/professions?lang=&search=` | pub, `[{english,uzbek}]` |
@@ -102,7 +103,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/calendar?day=YYYY-MM-DD[&doctorId=]` | entries `FREE_SLOT` \| `APPOINTMENT` \| `BLOCKED` |
+| GET | `/api/calendar?day=YYYY-MM-DD[&doctorId=]` | entries `FREE_SLOT` \| `APPOINTMENT` \| `BLOCKED`; appointment rows carry `isVideo` (BE-09, backend 2026-11-07) |
 | POST | `/api/schedule/book` | `{startAt,slotMinutes,patientId,location,reason,isVideo,locationId?,resourceDoctorId?}` |
 | GET/PUT | `/api/schedule/rules[?locationId=]` | weekly rules |
 | PATCH | `/api/schedule/valid-range` | `{validUntil, validFrom?}` |
@@ -113,7 +114,11 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | GET | `/api/schedule/blocks/overlapping-count?startAt=&endAt=[&doctorId=]` | |
 | DELETE | `/api/schedule/blocks/{id}[?doctorId=]` | |
 | GET | `/api/appointments/{id}` | signature + linked plan fields |
-| DELETE | `/api/appointments/{id}` | cancel |
+| DELETE | `/api/appointments/{id}` | cancel (no reason) |
+| POST | `/api/appointments/{id}/cancel` | `{reasonCode: DOCTOR_UNAVAILABLE\|PATIENT_REQUEST\|RESCHEDULED\|OTHER, note? ≤500}` → 200, same rules as DELETE; the patient's notification carries the reason (BE-10) |
+| POST | `/api/appointments/{id}/no-show` | `{notify?: Boolean = true}` → the doctor's `AppointmentDto`; CONFIRMED or IN_PROGRESS, from the start to 24 h after the end, else 409 `NO_SHOW_NOT_ALLOWED`; the patient gets `APPOINTMENT_NO_SHOW` unless `notify:false` (BE-10) |
+| GET | `/api/doctors/me/contract` | `{contractNumber, effectiveDate, endDate, termMonths, issuedAt, status: ACTIVE\|EXPIRED}` or 404 `NO_CONTRACT` (BE-16) |
+| GET | `/api/doctors/me/contract/pdf` | `application/pdf`, the early-partner contract rendered by the backend; 404 `NO_CONTRACT` |
 | PUT | `/api/appointments/{id}/change` | `{startAt, slotMinutes}` |
 | PUT | `/api/appointments/{id}/complete` | `{clinicId?, doctorNotes?, awaitingScribe?}` → `{scribePending,…}` |
 | PUT | `/api/appointments/{id}/request-signature` | |
@@ -125,7 +130,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | GET | `/api/appointments/{id}/briefing` | poll 3 s while PENDING/GENERATING |
 | POST | `/api/appointments/{id}/briefing/retry` | |
 | POST | `/api/consultations/upload-recording` | multipart `audio` + `appointmentId`, `language`; 202 / 429 |
-| POST | `/api/video/token` | no-401, `{appointmentId, roomName?}` → `{token,roomUrl,roomName}` |
+| POST | `/api/video/token` | no-401, `{appointmentId, roomName?}` → `{token,roomUrl,roomName}`; refusals carry `code`: 403 `VIDEO_TOO_EARLY` / `VIDEO_TOO_LATE` with `joinWindow:{from,to}`, 402 `VIDEO_PAYMENT_REQUIRED` (BE-28). The doctor's `GET /api/appointments/{id}` gains `isVideoConsultation`, `cancelReasonCode`, `cancelNote`, `joinWindow`. |
 | GET | `/api/video/appointments/{id}/presence` | the visit's own doctor → `{patientInRoom, patientJoinedAt?}` (Daily's room presence); 403 anyone else, 503 when Daily can't be asked (backend 2026-11-07, unmerged; the pre-join page asks every 5 s inside the join window) |
 | POST | `/api/appointments/{id}/summary-document?lang=` | re-renders and files the server's (notes-only) summary → `{documentId, url}`; 409 without notes (BE-01; the app keeps its own richer summary) |
 
@@ -193,7 +198,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/messages/conversations` | |
-| GET | `/api/messages/conversations/{id}` | all messages, no paging |
+| GET | `/api/messages/conversations/{id}[?after=<messageId>&limit=≤200]` | all messages; with `after` only newer ones, oldest first, `limit` default 100 (BE-14). The list takes `?since=<instant>` |
 | POST | `/api/messages/conversations/start` | `{recipientDoctorId}` or `{recipientPatientId}` |
 | POST | `/api/messages/conversations/{id}/read` | |
 | POST | `/api/messages/send` | text / image / voice / document |

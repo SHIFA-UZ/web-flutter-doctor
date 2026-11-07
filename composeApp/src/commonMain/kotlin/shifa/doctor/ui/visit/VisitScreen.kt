@@ -204,6 +204,7 @@ import shifa.doctor.generated.resources.videoCall
 import shifa.doctor.generated.resources.visitTime
 import shifa.doctor.generated.resources.voiceRecordingFinishHint
 import shifa.doctor.generated.resources.waitingForPatientSignature
+import shifa.doctor.ui.calendar.NoShowQuestion
 import shifa.doctor.ui.calendar.SlotPickSheet
 import shifa.doctor.ui.calendar.status
 import shifa.doctor.ui.documents.DocumentCard
@@ -494,6 +495,7 @@ fun VisitScreen(
                         flip = v::flip,
                         askLeave = v::askLeave,
                         presence = v::watchPresence,
+                        noShow = { viewModel.askNoShow(true) },
                         leave = v::leave,
                         dismissError = v::dismissError,
                     )
@@ -559,6 +561,15 @@ fun VisitScreen(
                 key ->
             ProfileSheet({ actions.plan.open(null) }) { PlanFulfilSheet(key, planState, actions.plan) }
         }
+    }
+    if (state.askNoShow) {
+        NoShowQuestion(
+            notify = state.notifyNoShow,
+            busy = state.markingNoShow,
+            onNotify = viewModel::notifyNoShow,
+            onConfirm = viewModel::noShow,
+            onClose = { viewModel.askNoShow(false) },
+        )
     }
     state.askLeave?.let { to ->
         // Photos, ticks or a payment would be lost (APPT-05, DENTAL-03); otherwise the notes couldn't be saved.
@@ -772,7 +783,7 @@ internal fun VisitContent(
             ) {
                 item { Box(gap) { Chips(state, actions) } }
                 video?.let { v ->
-                    item { Box(gap) { VideoPane(visit.patientName.orEmpty(), v.state, v.call, actions.video) } }
+                    item { Box(gap) { VideoPane(visit.patientName.orEmpty(), v.state, v.call, actions.video, now) } }
                 }
                 listOfNotNull(state.banner, notes.banner, heard, scribed).forEach { b ->
                     item {

@@ -74,8 +74,9 @@ data class ThreadUiState(
 }
 
 /**
- * One conversation (CHAT-03, 07 §1.2–1.3, flow 07/02): every message read on open and every 5 s after each answer
- * while in front (BE-14: no push append yet); marked read on open and whenever something new comes from the other
+ * One conversation (CHAT-03, 07 §1.2–1.3, flow 07/02): every message read on open, then every 5 s after each answer
+ * while in front only the newer ones (BE-14's `after`), with a full read every [FULL_EVERY] polls so the read ticks of
+ * older messages catch up (no push refresh until PUSH-02); marked read on open and whenever something new comes from the other
  * side (Flutter only on open). A text shows at once and is sent in order; a failure keeps it with "Tap to retry"
  * (Flutter: a SnackBar with the raw error).
  */
@@ -103,27 +104,49 @@ class ThreadViewModel(
         reading = viewModelScope.launch { load() }
     }
 
+    private var polls = 0
+
+    // The newest message a read returned (never one this screen sent: messages before it may still be unread).
+    private var fetchedUpTo: Long? = null
+
     private suspend fun load() {
-        repo.thread(id).fold(
+        val full = polls++ % FULL_EVERY == 0 || fetchedUpTo == null
+        // A newer-only read that came back full has more behind it: read on until a page isn't full.
+        var after = if (full) null else fetchedUpTo
+        do {
+            val page = read(after) ?: return
+            after = fetchedUpTo
+        } while (page >= CURSOR_PAGE && after != null)
+    }
+
+    /** One read; the number of messages it returned, or null when it failed. */
+    private suspend fun read(after: Long?): Int? =
+        repo.thread(id, after).fold(
             { t ->
-                val incoming = t.messages.lastOrNull { !it.isMine }?.id
+                t.messages.maxOfOrNull { it.id }?.let { top -> fetchedUpTo = maxOf(fetchedUpTo ?: top, top) }
                 val fetched = t.messages.map { it.id }.toSet()
                 // A read started before a send answered may not have it yet: the sent message stays until a read has it.
                 sentIds.removeAll(fetched)
                 _state.update { s ->
-                    val keep = s.messages.orEmpty().filter { it.id in sentIds }
+                    // A full read replaces the list (keeping sends it hasn't seen); a newer-only read adds to it. Either
+                    // way the server's copy of a message wins (a backend that ignores `after` sends them all).
+                    val held = s.messages.orEmpty()
+                    val base = if (after == null) held.filter { it.id in sentIds } else held
+                    val merged = (base + t.messages).associateBy { it.id }.values.sortedBy { it.sentAt }
                     s.copy(
                         conversation = t.conversation ?: s.conversation,
-                        messages = (t.messages + keep).sortedBy { it.sentAt },
+                        messages = merged,
                         error = null,
-                        newestIncoming = incoming,
+                        newestIncoming = merged.lastOrNull { !it.isMine }?.id,
                     )
                 }
+                val incoming = _state.value.newestIncoming
                 // Read on open and on each new message from them; a failed read is tried again at the next answer.
-                val newest = t.messages.lastOrNull()?.id
+                val newest = _state.value.messages?.lastOrNull()?.id
                 if (newest != null && (readUpTo == null || (incoming != null && incoming > (readUpTo ?: 0)))) {
                     repo.markRead(id).onSuccess { readUpTo = newest }
                 }
+                t.messages.size
             },
             {
                     e ->
@@ -132,9 +155,9 @@ class ThreadViewModel(
                         error = CodeBanner(e.toUserMessage(Res.string.chatLoadFailed), requestId = e.requestId),
                     )
                 }
+                null
             },
         )
-    }
 
     /** The app in front: read now and [every] after each answer; behind it: nothing. */
     fun foreground(inFront: Boolean) {
@@ -321,3 +344,9 @@ internal fun mimeOf(fileName: String) =
         "m4a" -> "audio/mp4"
         else -> "image/jpeg"
     }
+
+/** Every sixth poll (about 30 s) reads the whole thread, so read ticks on older messages catch up. */
+private const val FULL_EVERY = 6
+
+/** The backend's default page for a newer-only read (BE-14). */
+private const val CURSOR_PAGE = 100

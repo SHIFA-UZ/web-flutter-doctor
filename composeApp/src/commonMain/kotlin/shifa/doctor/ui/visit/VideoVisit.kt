@@ -38,6 +38,10 @@ data class VideoVisitState(
     val confirmLeave: Boolean = false,
     // The pre-join page's "is the patient here?": null while unknown (not asked yet, or the backend couldn't say).
     val patientInRoom: Boolean? = null,
+    // In the call with nobody else in it since then (board DaVisit "rm.alone": "Waiting 03:12"); null otherwise.
+    val aloneSince: Instant? = null,
+    // The patient has been in this visit's call: a later drop is not a no-show.
+    val patientSeen: Boolean = false,
 ) {
     val canJoin: Boolean get() = mic == true
 
@@ -110,7 +114,11 @@ class VideoVisit(
                                 dropped -> if (c.failed) Res.string.callErrorOccurred else Res.string.videoCallEnded
                                 else -> s.error
                             }
-                        s.copy(call = c, stage = stage, error = error)
+                        // The waiting clock starts when the doctor is in the call alone and stops when the patient joins.
+                        val seen = s.patientSeen || c.patientJoined
+                        val alone = stage == VideoStage.InCall && !seen
+                        val since = if (alone) s.aloneSince ?: now() else null
+                        s.copy(call = c, stage = stage, error = error, aloneSince = since, patientSeen = seen)
                     }
                     // A refused join or a dropped call ends this call: it is freed (no media left running behind
                     // "You left the call"), and on the pre-join page a fresh one shows the preview again.
