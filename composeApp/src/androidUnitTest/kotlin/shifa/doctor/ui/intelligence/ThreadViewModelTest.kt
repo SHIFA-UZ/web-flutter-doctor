@@ -109,7 +109,8 @@ class ThreadViewModelTest {
     ) {
         answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"propose_appointment\",\"payload\":$payload}\n\ndata:Here.\n\n"
         classToTest.send("Book Jasur tomorrow")
-        settle { store.state.value.active!!.messages.size == 2 }
+        // The turn is saved before the state that ends it (busy off, autoOpen) is set.
+        settle { store.state.value.active!!.messages.size == 2 && !classToTest.state.value.busy }
     }
 
     private fun savedCard() = store.state.value.active!!.messages[1].cardPayload!!
@@ -453,12 +454,12 @@ class ThreadViewModelTest {
             "CANCELLED",
         )}}\n\ndata:Cancelled.\n\n"
         classToTest.send("Open it again")
-        settle { store.state.value.active!!.messages.size == 4 }
+        settle { store.state.value.active!!.messages.size == 4 && !classToTest.state.value.busy }
         assertThat(classToTest.state.value.autoOpen).isNull()
         // The same visit asked for again in this run doesn't open again.
         answers += HttpStatusCode.OK to "event:tool\ndata:{\"name\":\"open_appointment\",\"payload\":$visit}\n\ndata:Again.\n\n"
         classToTest.send("Open my 10:30 again")
-        settle { store.state.value.active!!.messages.size == 6 }
+        settle { store.state.value.active!!.messages.size == 6 && !classToTest.state.value.busy }
         assertThat(classToTest.state.value.autoOpen).isNull()
     }
 }

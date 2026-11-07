@@ -217,7 +217,7 @@ class VoiceSession(
     fun discard() {
         if (!_state.value.recording) return
         take?.cancel()
-        recorder?.stop()
+        recorder?.cancel()
         _state.update { VoiceUiState() }
     }
 
@@ -309,7 +309,7 @@ class VoiceSession(
         take?.cancel()
         work?.cancel()
         kept = null
-        if (_state.value.recording) recorder?.stop()
+        if (_state.value.recording) recorder?.cancel()
         player().stop()
         _state.update { VoiceUiState(banner = it.banner) }
     }
@@ -363,7 +363,7 @@ class VoiceSession(
 
     // Nothing heard in 20 s: the take goes, hands-free stops (flow 03/04 §5).
     private fun giveUp() {
-        recorder?.stop()
+        recorder?.cancel()
         _state.update { VoiceUiState() }
         banner(CodeBanner(Res.string.intelNoSpeech))
     }
@@ -374,7 +374,6 @@ class VoiceSession(
         take?.cancel()
         val dictation = _state.value.dictating
         val id = rec.recordingId
-        val audio = rec.stop()
         _state.update {
             it.copy(
                 phase = VoicePhase.Thinking,
@@ -383,8 +382,12 @@ class VoiceSession(
                 handsFree = it.handsFree && keepHandsFree,
             )
         }
-        if (audio == null) return noSpeech(emptyMessage(dictation))
-        upload(audio, id, dictation)
+        // Its own job, not the take's: finish() also runs from inside the take, which it has just cancelled.
+        work =
+            scope.launch {
+                val audio = rec.stop()
+                if (audio == null) noSpeech(emptyMessage(dictation)) else transcribeAndAsk(audio, id, dictation)
+            }
     }
 
     private fun emptyMessage(dictation: Boolean) =
@@ -395,30 +398,36 @@ class VoiceSession(
         id: String?,
         dictation: Boolean,
     ) {
-        work =
-            scope.launch {
-                // No language hint: the server detects it, and the reply follows (02 §3.5).
-                val result = transcription.transcribe(audio, null, id)
-                val transcript = result.getOrNull()
-                when {
-                    transcript == null -> {
-                        // Kept for "Retry" unless the plan or the mic refuses it (flow 03/05 §6 target).
-                        val e = result.exceptionOrNull()
-                        kept = Triple(audio, id, dictation).takeUnless { e is ApiException.Forbidden }
-                        failed(e)
-                    }
-                    transcript.empty -> noSpeech(emptyMessage(dictation))
-                    isSignOff(transcript.text) -> signOff(transcript.text)
-                    else -> {
-                        _state.update { it.copy(transcribing = false) }
-                        // The words decide the reply language, else what the server heard, else the conversation's.
-                        val language =
-                            ChatTitles.detectReplyLanguage(transcript.text)
-                                ?: transcript.language?.uppercase()?.takeIf { it in setOf("EN", "UZ", "RU") }
-                        if (!ask(transcript.text, language)) afterTurn(RELISTEN_MS)
-                    }
-                }
+        work = scope.launch { transcribeAndAsk(audio, id, dictation) }
+    }
+
+    // Runs inside [work] (the take's stop and this share one job, so leave() cancels both).
+    private suspend fun transcribeAndAsk(
+        audio: ByteArray,
+        id: String?,
+        dictation: Boolean,
+    ) {
+        // No language hint: the server detects it, and the reply follows (02 §3.5).
+        val result = transcription.transcribe(audio, null, id)
+        val transcript = result.getOrNull()
+        when {
+            transcript == null -> {
+                // Kept for "Retry" unless the plan or the mic refuses it (flow 03/05 §6 target).
+                val e = result.exceptionOrNull()
+                kept = Triple(audio, id, dictation).takeUnless { e is ApiException.Forbidden }
+                failed(e)
             }
+            transcript.empty -> noSpeech(emptyMessage(dictation))
+            isSignOff(transcript.text) -> signOff(transcript.text)
+            else -> {
+                _state.update { it.copy(transcribing = false) }
+                // The words decide the reply language, else what the server heard, else the conversation's.
+                val language =
+                    ChatTitles.detectReplyLanguage(transcript.text)
+                        ?: transcript.language?.uppercase()?.takeIf { it in setOf("EN", "UZ", "RU") }
+                if (!ask(transcript.text, language)) afterTurn(RELISTEN_MS)
+            }
+        }
     }
 
     private fun noSpeech(message: StringResource) {

@@ -7,8 +7,19 @@ package shifa.doctor.utils
  * 1.4 MB a page). The pickers already give upright JPEGs (quality 85, at most 1600 px). Anything that isn't a
  * baseline/progressive JPEG with 1 or 3 colour channels is skipped; null when no page is left.
  */
-fun imagesToPdf(pages: List<ByteArray>): ByteArray? {
-    val images = pages.mapNotNull { bytes -> jpegSize(bytes)?.let { bytes to it } }
+fun imagesToPdf(pages: List<ByteArray>): ByteArray? = jpegPagesPdf(pages.map { JpegPage(it) })
+
+/** One JPEG on a page of [width] × [height] points inside [margin] (the web's drawn PDFs fill their page, margin 0). */
+class JpegPage(
+    val jpeg: ByteArray,
+    val width: Int = PDF_PAGE_WIDTH,
+    val height: Int = PDF_PAGE_HEIGHT,
+    val margin: Int = PDF_PAGE_MARGIN,
+)
+
+/** [imagesToPdf] with each page's own size; null when no page is left. */
+fun jpegPagesPdf(pages: List<JpegPage>): ByteArray? {
+    val images = pages.mapNotNull { page -> jpegSize(page.jpeg)?.let { page to it } }
     if (images.isEmpty()) return null
     val out = PdfBytes()
     out.text("%PDF-1.4\n%âãÏÓ\n")
@@ -16,15 +27,16 @@ fun imagesToPdf(pages: List<ByteArray>): ByteArray? {
     val pageIds = images.indices.map { 3 + it * 3 }
     out.obj(1, "<< /Type /Catalog /Pages 2 0 R >>")
     out.obj(2, "<< /Type /Pages /Kids [${pageIds.joinToString(" ") { "$it 0 R" }}] /Count ${images.size} >>")
-    images.forEachIndexed { i, (jpeg, size) ->
+    images.forEachIndexed { i, (page, size) ->
+        val jpeg = page.jpeg
         val (w, h, channels) = size
         val id = pageIds[i]
-        val (left, top, boxW, boxH) = pdfImageBox(w, h)
+        val (left, top, boxW, boxH) = pdfImageBox(w, h, page.width, page.height, page.margin)
         // PDF's origin is bottom-left.
-        val bottom = PDF_PAGE_HEIGHT - top - boxH
+        val bottom = page.height - top - boxH
         out.obj(
             id,
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 $PDF_PAGE_WIDTH $PDF_PAGE_HEIGHT] /Contents ${id + 1} 0 R " +
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Contents ${id + 1} 0 R " +
                 "/Resources << /XObject << /Im0 ${id + 2} 0 R >> >> >>",
         )
         val draw = "q ${num(boxW)} 0 0 ${num(boxH)} ${num(left)} ${num(bottom)} cm /Im0 Do Q"
@@ -84,13 +96,16 @@ const val PDF_PAGE_MARGIN = 24
 fun pdfImageBox(
     width: Int,
     height: Int,
+    pageWidth: Int = PDF_PAGE_WIDTH,
+    pageHeight: Int = PDF_PAGE_HEIGHT,
+    margin: Int = PDF_PAGE_MARGIN,
 ): List<Double> {
-    val boxW = (PDF_PAGE_WIDTH - 2 * PDF_PAGE_MARGIN).toDouble()
-    val boxH = (PDF_PAGE_HEIGHT - 2 * PDF_PAGE_MARGIN).toDouble()
+    val boxW = (pageWidth - 2 * margin).toDouble()
+    val boxH = (pageHeight - 2 * margin).toDouble()
     val scale = minOf(boxW / width, boxH / height)
     val w = width * scale
     val h = height * scale
-    return listOf((PDF_PAGE_WIDTH - w) / 2, (PDF_PAGE_HEIGHT - h) / 2, w, h)
+    return listOf((pageWidth - w) / 2, (pageHeight - h) / 2, w, h)
 }
 
 /** Two decimals, dot separated, whatever the locale. */

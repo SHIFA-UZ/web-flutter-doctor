@@ -93,7 +93,7 @@ class Dictation(
     fun cancel() {
         if (_state.value.transcribing) return
         ticking?.cancel()
-        recorder.stop()
+        recorder.cancel()
         _state.update { DictationState() }
     }
 
@@ -104,14 +104,14 @@ class Dictation(
         if (s.transcribing) return
         ticking?.cancel()
         val id = recorder.recordingId
-        val audio = recorder.stop()
-        if (audio == null) {
-            return _state.update {
-                DictationState(banner = CodeBanner(Res.string.noSpeechDetected, error = false))
-            }
-        }
         _state.update { it.copy(transcribing = true, level = 0f) }
         scope.launch {
+            val audio = recorder.stop()
+            if (audio == null) {
+                return@launch _state.update {
+                    DictationState(banner = CodeBanner(Res.string.noSpeechDetected, error = false))
+                }
+            }
             val result = repo.transcribe(audio, language(), id)
             val transcript = result.getOrNull()
             if (transcript != null && !transcript.empty) {
@@ -147,12 +147,14 @@ class Dictation(
         if (s.field == null || s.transcribing) return
         ticking?.cancel()
         val id = recorder.recordingId
-        val audio = recorder.stop()
-        if (audio == null) {
-            return _state.update { DictationState(banner = CodeBanner(Res.string.noSpeechDetected, error = false)) }
-        }
         _state.update { it.copy(transcribing = true, level = 0f) }
         scope.launch {
+            val audio = recorder.stop()
+            if (audio == null) {
+                return@launch _state.update {
+                    DictationState(banner = CodeBanner(Res.string.noSpeechDetected, error = false))
+                }
+            }
             val banner = process(audio, id)
             _state.update { DictationState(banner = banner) }
         }

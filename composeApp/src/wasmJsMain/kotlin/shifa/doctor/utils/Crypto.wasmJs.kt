@@ -3,17 +3,9 @@ package shifa.doctor.utils
 // SHA-256 in Kotlin: the browser's Web Crypto digest is asynchronous, and the app-lock PIN hash is not.
 actual fun sha256(bytes: ByteArray): ByteArray = Sha256.digest(bytes)
 
-actual fun secureRandomBytes(size: Int): ByteArray {
-    val values = randomValues(size)
-    return ByteArray(size) { byteAt(values, it).toByte() }
-}
+actual fun secureRandomBytes(size: Int): ByteArray = toByteArray(randomValues(size))
 
 private fun randomValues(size: Int): JsAny = js("crypto.getRandomValues(new Uint8Array(size))")
-
-private fun byteAt(
-    array: JsAny,
-    index: Int,
-): Int = js("array[index]")
 
 /** FIPS 180-4 SHA-256. */
 internal object Sha256 {

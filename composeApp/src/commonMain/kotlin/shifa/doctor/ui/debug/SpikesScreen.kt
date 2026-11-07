@@ -16,9 +16,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
@@ -88,6 +90,7 @@ fun SpikesScreen(modifier: Modifier = Modifier) {
 private fun AudioSpike() =
     ShifaSection("AAC record and play") {
         val recorder = rememberVoiceRecorder()
+        val scope = rememberCoroutineScope()
         val player = rememberAudioPlayer()
         var recording by remember { mutableStateOf(false) }
         var file by remember { mutableStateOf<String?>(null) }
@@ -123,9 +126,11 @@ private fun AudioSpike() =
             } else {
                 ShifaPrimaryButton("Stop", {
                     recording = false
-                    val bytes = recorder.stop()
-                    status = if (bytes == null) "Nothing recorded" else "Recorded ${bytes.size} bytes (.m4a)"
-                    file = bytes?.let { writeCacheFile("spike.m4a", it) }
+                    scope.launch {
+                        val bytes = recorder.stop()
+                        status = if (bytes == null) "Nothing recorded" else "Recorded ${bytes.size} bytes (.m4a)"
+                        file = bytes?.let { writeCacheFile("spike.m4a", it) }
+                    }
                 })
             }
             file?.let {

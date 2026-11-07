@@ -2,6 +2,16 @@ package shifa.doctor.utils
 
 // The browser calls the web actuals share. Kotlin/Wasm passes no ByteArray to JavaScript, so bytes go over one by one.
 
+/** A JavaScript `Uint8Array` (or any array of bytes) as a [ByteArray]. */
+internal fun toByteArray(array: JsAny): ByteArray = ByteArray(lengthOf(array)) { byteAt(array, it).toByte() }
+
+private fun lengthOf(array: JsAny): Int = js("array.length")
+
+internal fun byteAt(
+    array: JsAny,
+    index: Int,
+): Int = js("array[index]")
+
 internal fun toUint8Array(bytes: ByteArray): JsAny {
     val array = newUint8Array(bytes.size)
     for (i in bytes.indices) setByte(array, i, bytes[i].toInt() and 0xff)

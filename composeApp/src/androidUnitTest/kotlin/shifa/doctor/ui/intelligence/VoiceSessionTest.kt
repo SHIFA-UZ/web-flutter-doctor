@@ -9,8 +9,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -50,9 +52,13 @@ class VoiceSessionTest {
             return true
         }
 
-        override fun stop(): ByteArray {
+        override suspend fun stop(): ByteArray {
             stops++
             return byteArrayOf(1, 2, 3)
+        }
+
+        override fun cancel() {
+            stops++
         }
 
         override fun level() = level(clock() - started)
@@ -81,12 +87,16 @@ class VoiceSessionTest {
     // The server: the transcript to answer (status, JSON) and the speech clip.
     private var transcript: Pair<HttpStatusCode, String> = HttpStatusCode.OK to """{"text":"what is my day","language":"en"}"""
     private var transcribed = 0
+
+    // Holds the transcription's answer until completed (a slow server).
+    private var transcribeGate: CompletableDeferred<Unit>? = null
     private val client =
         createHttpClient(
             { null },
             MockEngine { req ->
                 if (req.url.encodedPath.endsWith("ai/transcribe")) {
                     transcribed++
+                    transcribeGate?.await()
                     respond(transcript.second, transcript.first, headersOf(HttpHeaders.ContentType, "application/json"))
                 } else {
                     respond(byteArrayOf(9, 9), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "audio/mpeg"))
@@ -99,9 +109,12 @@ class VoiceSessionTest {
     private var typedReply = false
     private val player = FakePlayer()
 
-    private fun TestScope.session(recorder: FakeRecorder): VoiceSession =
+    private fun TestScope.session(
+        recorder: FakeRecorder,
+        scope: CoroutineScope = backgroundScope,
+    ): VoiceSession =
         VoiceSession(
-            backgroundScope,
+            scope,
             TranscriptionRepository { client },
             AiRepository { client },
             player = { player },
@@ -345,6 +358,29 @@ class VoiceSessionTest {
             classToTest.replied("Answer.", "EN")
             settle { classToTest.state.value.banner?.text == Res.string.intelVoiceSkipped }
             assertThat(classToTest.state.value.phase).isEqualTo(VoicePhase.Idle)
+        }
+
+    @Test
+    fun `leaving while a take is being transcribed asks nothing`() =
+        runTest {
+            val rec = recorder()
+            // Dispatched at once, as viewModelScope's Main.immediate is: the order the bug needed.
+            val classToTest =
+                session(rec, CoroutineScope(backgroundScope.coroutineContext + UnconfinedTestDispatcher(testScheduler)))
+            val gate = CompletableDeferred<Unit>()
+            transcribeGate = gate
+            classToTest.record()
+            advanceTimeBy(2_000)
+            classToTest.record()
+            settle { transcribed == 1 }
+            classToTest.leave()
+            gate.complete(Unit)
+            advanceTimeBy(5_000)
+            repeat(20) {
+                runCurrent()
+                Thread.sleep(10)
+            }
+            assertThat(asked).isEmpty()
         }
 
     @Test

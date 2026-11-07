@@ -11,7 +11,7 @@ actual class FileSaver actual constructor() {
     ): Result<String> =
         runCatching {
             val name = safeFileName(fileName)
-            downloadBytes(name, "application/octet-stream", fileBytes)
+            downloadBytes(name, mimeTypeOf(name), fileBytes)
             name
         }
 }

@@ -39,7 +39,7 @@ private class IosVoiceRecorder : VoiceRecorder {
     override var lastDurationSeconds = 0
 
     override fun start(): Boolean {
-        stop()
+        end()
         val session = AVAudioSession.sharedInstance()
         session.setCategory(AVAudioSessionCategoryPlayAndRecord, error = null)
         session.setActive(true, error = null)
@@ -64,7 +64,13 @@ private class IosVoiceRecorder : VoiceRecorder {
         return true
     }
 
-    override fun stop(): ByteArray? {
+    override suspend fun stop(): ByteArray? = end()
+
+    override fun cancel() {
+        end()
+    }
+
+    private fun end(): ByteArray? {
         val r = recorder ?: return null
         recorder = null
         lastDurationSeconds = (NSDate().timeIntervalSince1970 - startedAt).toInt()
@@ -84,7 +90,7 @@ private class IosVoiceRecorder : VoiceRecorder {
 @Composable
 actual fun rememberVoiceRecorder(): VoiceRecorder {
     val recorder = remember { IosVoiceRecorder() }
-    DisposableEffect(recorder) { onDispose { recorder.stop() } }
+    DisposableEffect(recorder) { onDispose { recorder.cancel() } }
     return recorder
 }
 

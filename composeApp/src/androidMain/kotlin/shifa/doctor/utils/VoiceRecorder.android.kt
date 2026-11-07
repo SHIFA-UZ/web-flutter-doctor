@@ -28,7 +28,7 @@ private class AndroidVoiceRecorder(
     override var lastDurationSeconds = 0
 
     override fun start(): Boolean {
-        stop()
+        end()
         val out = File(context.cacheDir, "voice_${System.currentTimeMillis()}.m4a")
         return runCatching {
             @Suppress("DEPRECATION")
@@ -50,11 +50,17 @@ private class AndroidVoiceRecorder(
             RecordingService.start(context)
         }.onFailure {
             httpLogger.log("FAILED to start recording: ${it::class.simpleName}")
-            stop()
+            end()
         }.isSuccess
     }
 
-    override fun stop(): ByteArray? {
+    override suspend fun stop(): ByteArray? = end()
+
+    override fun cancel() {
+        end()
+    }
+
+    private fun end(): ByteArray? {
         val r = recorder ?: return null
         val f = file
         recorder = null
@@ -86,7 +92,7 @@ private const val SAMPLE_RATE = 16_000
 actual fun rememberVoiceRecorder(): VoiceRecorder {
     val context = LocalContext.current.applicationContext
     val recorder = remember { AndroidVoiceRecorder(context) }
-    DisposableEffect(recorder) { onDispose { recorder.stop() } }
+    DisposableEffect(recorder) { onDispose { recorder.cancel() } }
     return recorder
 }
 

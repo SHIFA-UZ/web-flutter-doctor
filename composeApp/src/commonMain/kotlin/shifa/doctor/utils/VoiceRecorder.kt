@@ -8,8 +8,14 @@ interface VoiceRecorder {
     /** False when it couldn't start. */
     fun start(): Boolean
 
-    /** The recording, or null when there's none; the temp file is deleted either way. */
-    fun stop(): ByteArray?
+    /**
+     * The recording, or null when there's none; the temp file is deleted either way. Suspends on the web, where the
+     * browser hands the file over asynchronously; returns at once on the phones.
+     */
+    suspend fun stop(): ByteArray?
+
+    /** Drops the recording (✕, leaving the screen): nothing is kept. */
+    fun cancel()
 
     /** How loud the microphone is now (AI-03: the recording pill's wave): [levelFromDb]; 0 when not recording. */
     fun level(): Float

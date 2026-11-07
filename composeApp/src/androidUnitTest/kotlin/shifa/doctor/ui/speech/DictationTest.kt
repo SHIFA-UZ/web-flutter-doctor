@@ -41,7 +41,11 @@ class DictationTest {
             return starts
         }
 
-        override fun stop(): ByteArray? = audio.takeIf { recording }.also { recording = false }
+        override suspend fun stop(): ByteArray? = audio.takeIf { recording }.also { recording = false }
+
+        override fun cancel() {
+            recording = false
+        }
 
         override fun level() = 0.5f
     }

@@ -197,6 +197,7 @@ fun ThreadScreen(
     var denied by remember { mutableStateOf<StringResource?>(null) }
     // CHAT-06: one recording at a time, dropped when the thread closes; one voice note playing at a time.
     val recorder = rememberVoiceRecorder()
+    val recorderScope = rememberCoroutineScope()
     val player = rememberAudioPlayer { ShellNotice.pending.value = Notice(Res.string.chatVoicePlayFailed) }
     var recording by remember { mutableStateOf(false) }
     var level by remember { mutableStateOf(0f) }
@@ -206,12 +207,14 @@ fun ThreadScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         if (!recording) return@LifecycleEventEffect
         recording = false
-        val audio = recorder.stop()
-        val length = recorder.lastDurationSeconds
-        when {
-            length < 1 -> Unit
-            audio == null -> ShellNotice.pending.value = Notice(Res.string.errorRecordingVoice)
-            else -> held = audio to length
+        recorderScope.launch {
+            val audio = recorder.stop()
+            val length = recorder.lastDurationSeconds
+            when {
+                length < 1 -> Unit
+                audio == null -> ShellNotice.pending.value = Notice(Res.string.errorRecordingVoice)
+                else -> held = audio to length
+            }
         }
     }
     LaunchedEffect(recording) {
@@ -268,12 +271,14 @@ fun ThreadScreen(
             recordVoice = mic,
             cancelVoice = {
                 recording = false
-                recorder.stop()
+                recorder.cancel()
             },
             sendVoice = {
                 recording = false
-                val audio = recorder.stop()
-                viewModel.sendVoice(audio, recorder.lastDurationSeconds)
+                recorderScope.launch {
+                    val audio = recorder.stop()
+                    viewModel.sendVoice(audio, recorder.lastDurationSeconds)
+                }
             },
             // While recording the microphone has the audio session (iOS: playing would switch it to playback only).
             togglePlay = { if (!recording) player.toggle(it) },
