@@ -57,6 +57,7 @@ import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
+import shifa.doctor.utils.ResourceWarmup
 import shifa.doctor.utils.isDebugBuild
 import kotlin.time.Duration.Companion.hours
 
@@ -86,6 +87,8 @@ fun App() {
         appLockRepository.onForeground()
     }
     ProvideAppLocale(language.resourceCode) {
+        // Web: every string and icon loaded once by a composable that never leaves (CMP 1.10 cache bug).
+        ResourceWarmup()
         CompositionLocalProvider(
             LocalUzbekCyrillic provides language.cyrillic,
             LocalLanguageSwitch provides LanguageSwitch(language, languageStorage::set),

@@ -373,3 +373,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-07 · WEB-04 · The app compiles for the web and signs in against dev in Chrome (phone layout; desktop layouts are WEB-06/07).
 - 2026-11-07 · WEB-05 · The web records, plays, picks files and photos, draws and shows PDFs, and shows the map.
 - 2026-11-07 · WEB-06 · The responsive shell: sidebar from 1100, icon rail from 768, the phone bar below.
+- 2026-11-07 · Web fix · Random blank labels and icons on the web (a Compose Multiplatform 1.10 resource cache bug): every resource is loaded once from the root.

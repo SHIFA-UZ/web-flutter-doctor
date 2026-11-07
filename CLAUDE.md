@@ -48,6 +48,9 @@ fixed and identical to the patient app's. Follow them for every new feature.
   exists only in this development build); `wasmJsBrowserDistribution` writes the production bundle. The wasm link
   needs about 6 GB: `~/.gradle/gradle.properties` on the user's Mac caps the Kotlin daemon at 4 GB and overrides the
   project file, hence the `-P`. After changing an npm dependency run `./gradlew kotlinWasmUpgradeYarnLock`.
+- Web resources: Compose Multiplatform 1.10 leaves a string or icon blank for good when the first composable that asked
+  for it leaves mid-load (its `AsyncCache` load belongs to that caller). `utils/ResourceWarmup` (web only) loads every
+  resource once from the app's root; delete it when upgrading to Compose Multiplatform 1.12.2 or later (fixed there).
 - The **admin panel** (`/admin`, hostname-based) is **not** part of the KMP app (`ADMIN-*` tickets are parked); it
   stays a web product.
 - Doctor roles in the JWT (`DOCTOR`, `CLINIC_STAFF`, …) and clinic workspace mode are in scope; a clinic-staff user
