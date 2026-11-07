@@ -33,16 +33,16 @@ fixed and identical to the patient app's. Follow them for every new feature.
   update it (status table, the area file, one log line) at the end of every job, in the same commit.
 - `docs/backend-improvements.md` lists what the app needs from the backend team: what happens now, the change, and
   what the app does until then. Add to it instead of working around a backend gap silently.
-- The Flutter code stays readable on `main` until the merge; when the spec says UNVERIFIED, read the Dart file it
-  cites (`git show main:lib/...`) before deciding.
+- The Flutter code is in the history before the 2026-11-07 merge; when the spec says UNVERIFIED, read the Dart file it
+  cites (`git show 078af42:lib/...`, the last Flutter `main`) before deciding.
 
 ## Scope decisions (the user's calls; update when they change)
 
 - Targets: **Android + iOS**, and **web** from the same code (milestone M14, `docs/kmp-spec/18-web-milestone.md`, the
   user's call 2026-11-06). Web reuses the ViewModels, repositories and kit; desktop widths get their own arrangements of
   the same content composables (shell: bottom bar below 768, icon rail 768–1099, sidebar from 1100, board `DaApp`),
-  never copied screens. The Flutter web build (doctor web + admin host) keeps running from `main` until `doc-app2.0`
-  is merged; web hosting moves to cPanel (WEB-09).
+  never copied screens. The Flutter web build last deployed to Firebase Hosting keeps serving `doctor.shifa.uz` until
+  the domain points to the cPanel deploy (WEB-09).
 - Web build (WEB-04): `wasmJsMain` holds the web actuals and `index.html`. Run it with
   `./gradlew :composeApp:wasmJsBrowserDevelopmentRun -Pkotlin.daemon.jvmargs=-Xmx8g` (localhost:8080; the debug menu
   exists only in this development build); `wasmJsBrowserDistribution` writes the production bundle. The wasm link
@@ -84,22 +84,19 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
 
 ## Git
 
-- Remote: `SHIFA-UZ/web-flutter-doctor`. `main` holds the released Flutter app until the KMP app replaces it.
-- The whole rewrite happens on ONE branch, `doc-app2.0`, created from `main`. Every feature, fix and doc change goes
-  there until the full app is done and the user merges it into `main` through a pull request (the user decides when).
-  Do not create per-feature branches during the rewrite (D-00, the user's call 2026-11-04, overriding the per-ticket
-  branches `17-master-plan.md` §2 proposed).
-- The Flutter code is gone from this branch (WEB-01); `main` still has it, and its `deploy_web.yml` keeps building the
-    Flutter web app until the merge. Gradle only sees `composeApp/`; Xcode only `iosApp/`.
-- After that merge, switch to the patient app's rule: before making any change, check the current branch; if the task
-  has no branch yet, create one from `main` named `feature/<feature-name>` (kebab-case, e.g.
-  `feature/schedule-management`) and do all the work there. Update this section when that happens.
+- Remote: `SHIFA-UZ/web-flutter-doctor`. The KMP app replaced the Flutter app on `main` (`doc-app2.0` merged
+  2026-11-07, PR #27); the Flutter code stays readable in the history before that merge. Gradle only sees
+  `composeApp/`; Xcode only `iosApp/`.
+- Before making any change, check the current branch; if the task has no branch yet, create one from a fresh `main`
+  named `<type>/<kebab-case-name>` (`feature/`, `fix/`, `refactor/`, `chore/`, `docs/`) and do all the work there.
+- The repository rules allow changes only through pull requests, on every existing branch: a branch that already has
+  an open PR can't take more pushes. A later fix goes on a new branch (for example `<name>-v2`) with a new PR.
 - Never push to `main` directly or merge into it unless the user asks; changes reach `main` through a pull request.
 - `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme` is committed (the user's call, 2026-11-04) because
   fastlane needs it for TestFlight. The IDE rewrites it locally: never commit those local edits, and keep its
   `ArchiveAction` (Release).
 - Never commit or push on your own. Show the user the finished work (what changed, screenshots, test results), and
-  only commit and push once they approve. Standing permission for `doc-app2.0` is not approval for a given change.
+  only commit and push once they approve. Approval covers only the changes the user has seen.
 - Commits are authored by the user only, with the repo's git identity (`git config user.name` / `user.email`). Never
   add `Co-Authored-By`, "Generated with" or any other Claude or agent attribution to commit messages or PR
   descriptions, and never set Claude or an agent as the author or committer.
@@ -262,8 +259,9 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   the user tests the UI and asks for a full run when they want one.
 
 ### CI/CD (GitHub Actions, ported from this repo's Flutter workflows like the patient app's; deploys are manual `workflow_dispatch`)
-- `ci.yml`: runs on every pull request (and by hand): ktlint, unit tests, Roborazzi verify. The deploy workflows
-  don't run tests.
+- `ci.yml`: runs on every pull request (and by hand): ktlint and unit tests on Linux, Roborazzi verify on macOS (the
+  goldens are recorded on macOS). The deploy workflows don't run tests.
+- `web_cpanel_deploy.yml` (WEB-09): builds the wasm bundle and rsyncs it to the cPanel folder of the doctor site.
 - `google_play_deploy.yml`: signed `bundleRelease` → Google Play (`com.shifa.doc`). Signing via root
   `keystore.properties` written by CI (gitignored); versionCode = `VERSION_CODE_OFFSET + run_number` (set the offset
   above the Flutter app's last versionCode, which was `1 + run_number`). Keep the existing `track` input
