@@ -43,6 +43,11 @@ fixed and identical to the patient app's. Follow them for every new feature.
   the same content composables (shell: bottom bar below 768, icon rail 768–1099, sidebar from 1100, board `DaApp`),
   never copied screens. The Flutter web build (doctor web + admin host) keeps running from `main` until `doc-app2.0`
   is merged; web hosting moves to cPanel (WEB-09).
+- Web build (WEB-04): `wasmJsMain` holds the web actuals and `index.html`. Run it with
+  `./gradlew :composeApp:wasmJsBrowserDevelopmentRun -Pkotlin.daemon.jvmargs=-Xmx8g` (localhost:8080; the debug menu
+  exists only in this development build); `wasmJsBrowserDistribution` writes the production bundle. The wasm link
+  needs about 6 GB: `~/.gradle/gradle.properties` on the user's Mac caps the Kotlin daemon at 4 GB and overrides the
+  project file, hence the `-P`. After changing an npm dependency run `./gradlew kotlinWasmUpgradeYarnLock`.
 - The **admin panel** (`/admin`, hostname-based) is **not** part of the KMP app (`ADMIN-*` tickets are parked); it
   stays a web product.
 - Doctor roles in the JWT (`DOCTOR`, `CLINIC_STAFF`, …) and clinic workspace mode are in scope; a clinic-staff user

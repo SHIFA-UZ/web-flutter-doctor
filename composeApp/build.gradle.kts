@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -30,7 +31,29 @@ kotlin {
         }
     }
 
+    // M14 (WEB-04): the same app in the browser.
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        outputModuleName.set("composeApp")
+        browser {
+            commonWebpackConfig {
+                outputFileName = "composeApp.js"
+            }
+        }
+        binaries.executable()
+    }
+
     sourceSets {
+        // The version for the web build (no platform bundle to read it from at run time).
+        wasmJsMain {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/webBuildInfo"))
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+            // kotlinx-datetime's IANA time zones on the web (main.kt loads them).
+            implementation(npm("@js-joda/timezone", "2.23.0"))
+        }
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -65,7 +88,6 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -120,6 +142,32 @@ val versionBuild =
 val appVersionCode = versionBuild
 
 println("Building Shifa Doctor v$appVersionName (Build $appVersionCode)")
+
+// WEB-04: the web build's version and build number as Kotlin constants (Android has BuildConfig, iOS its bundle).
+val generateWebBuildInfo =
+    tasks.register("generateWebBuildInfo") {
+        val out = layout.buildDirectory.file("generated/webBuildInfo/shifa/doctor/utils/WebBuildInfo.kt")
+        val version = appVersionName
+        val build = appVersionCode.toString()
+        // The debug menu and the console logger only in the development build (wasmJsBrowserDevelopmentRun/-Webpack).
+        val debug = gradle.startParameter.taskNames.any { it.contains("Development") }
+        inputs.property("version", version)
+        inputs.property("build", build)
+        inputs.property("debug", debug)
+        outputs.file(out)
+        doLast {
+            out.get().asFile.apply {
+                parentFile.mkdirs()
+                writeText(
+                    "package shifa.doctor.utils\n\n" +
+                        "internal const val WEB_VERSION = \"$version\"\n" +
+                        "internal const val WEB_BUILD = \"$build\"\n" +
+                        "internal const val WEB_DEBUG = $debug\n",
+                )
+            }
+        }
+    }
+tasks.matching { it.name == "compileKotlinWasmJs" }.configureEach { dependsOn(generateWebBuildInfo) }
 
 // Written by CI (google_play_deploy.yml); absent locally, so a local release build is debug-signed (see below).
 val keystoreProperties =
