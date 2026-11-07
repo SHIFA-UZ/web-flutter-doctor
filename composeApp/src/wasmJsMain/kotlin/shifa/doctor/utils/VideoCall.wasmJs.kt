@@ -225,7 +225,8 @@ private fun joinCall(
     mic: Boolean,
 ) {
     js(
-        "d.call.join({ url: url, token: token, startVideoOff: !camera, startAudioOff: !mic }).then(function () { d.inputs() }, function () { d.joinFailed() })",
+        "d.call.join({ url: url, token: token, startVideoOff: !camera, startAudioOff: !mic })" +
+            ".then(function () { d.inputs() }, function () { d.joinFailed() })",
     )
 }
 
@@ -266,6 +267,7 @@ private fun showTrack(
 ) {
     js(
         "(function () { var cur = video.srcObject && video.srcObject.getVideoTracks()[0];" +
-            " if (!track) { video.srcObject = null } else if (cur !== track) { video.srcObject = new MediaStream([track]) } })()",
+            " if (!track) { video.srcObject = null }" +
+            " else if (cur !== track) { video.srcObject = new MediaStream([track]) } })()",
     )
 }

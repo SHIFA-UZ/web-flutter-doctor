@@ -185,7 +185,11 @@ internal fun ShellSidebar(
                     ).clickable(role = Role.Button) { actions.select(ShellTab.Profile) }
                     // The name is the label when shown; the rail and staff show the photo only.
                     .then(
-                        if (rail || identity == null) Modifier.semantics { contentDescription = profileLabel } else Modifier,
+                        if (rail || identity == null) {
+                            Modifier.semantics { contentDescription = profileLabel }
+                        } else {
+                            Modifier
+                        },
                     ),
                 horizontalArrangement = Arrangement.spacedBy(ShifaSize.S10),
                 verticalAlignment = Alignment.CenterVertically,
