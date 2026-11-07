@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -104,10 +105,12 @@ import shifa.doctor.generated.resources.save
 import shifa.doctor.generated.resources.seePlans
 import shifa.doctor.generated.resources.selectDateRange
 import shifa.doctor.ui.theme.ShifaColors
+import shifa.doctor.ui.theme.ShifaDimens
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaShadow
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaLink
@@ -182,23 +185,29 @@ internal fun AnalyticsContent(
             color = ShifaColors.Text.Secondary,
         )
     }
-    // The toolbar, stacked full width on phones (board `DaHome`).
-    Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
-        val label = rangeLabel(state.range)
-        val described = tr(Res.string.analyticsDateRange, label)
+    // The toolbar, stacked full width on phones (board `DaHome`); side by side at their own width on wide screens.
+    val wide = LocalWideLayout.current
+    val label = rangeLabel(state.range)
+    val described = tr(Res.string.analyticsDateRange, label)
+    val toolbar = @Composable { fill: Modifier ->
         ShifaSecondaryButton(
             label,
             { picking = true },
-            Modifier.fillMaxWidth().semantics { contentDescription = described },
+            fill.semantics { contentDescription = described },
             icon = Res.drawable.ic_calendar_18,
         )
         ShifaPrimaryButton(
             tr(Res.string.export),
             onExport,
-            Modifier.fillMaxWidth(),
+            fill,
             icon = Res.drawable.ic_download_18,
             loading = state.exporting,
         )
+    }
+    if (wide) {
+        Row(horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) { toolbar(Modifier) }
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S8)) { toolbar(Modifier.fillMaxWidth()) }
     }
     Kpis(state.overview, onRetry, actions)
     if (sms) SmsBlock(state.sms, onRetry)
@@ -229,6 +238,53 @@ private fun Kpis(
 ) {
     if (overview?.isFailure == true) return LoadFailed(onRetry)
     val o = overview?.getOrNull()
+    val tiles =
+        listOf<@Composable () -> Unit>(
+            {
+                KpiTile(
+                    Res.drawable.ic_calendar_20,
+                    KpiTone.Brand,
+                    o?.appointmentsToday,
+                    Res.string.appointmentsToday,
+                    actions.calendar,
+                )
+            },
+            {
+                KpiTile(
+                    Res.drawable.ic_check_circle_20,
+                    KpiTone.Brand,
+                    o?.completedToday,
+                    Res.string.completedToday,
+                    null,
+                )
+            },
+            { KpiTile(Res.drawable.ic_block_20, KpiTone.Warn, o?.cancelledToday, Res.string.cancelledToday, null) },
+            {
+                KpiTile(
+                    Res.drawable.ic_user_plus_20,
+                    KpiTone.Info,
+                    o?.newPatientsToday,
+                    Res.string.newPatientsToday,
+                    actions.patients,
+                )
+            },
+        )
+    // Wide (DaApp Reports): the four side by side where they fit, else two by two.
+    if (LocalWideLayout.current) {
+        return BoxWithConstraints {
+            val perRow = if (maxWidth >= ShifaDimens.Layout.Document) 4 else 2
+            Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
+                tiles.chunked(perRow).forEach { row ->
+                    Row(
+                        Modifier.height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(ShifaSize.S12),
+                    ) {
+                        row.forEach { Box(Modifier.weight(1f).fillMaxHeight()) { it() } }
+                    }
+                }
+            }
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(ShifaSize.S12)) {
         KpiTile(
             Res.drawable.ic_calendar_20,

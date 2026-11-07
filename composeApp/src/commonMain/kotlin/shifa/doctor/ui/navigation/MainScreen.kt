@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -333,28 +334,36 @@ fun MainScreenContent(
                 VerticalDivider(thickness = ShifaSize.S1, color = ShifaColors.Border.Default)
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
-                CompositionLocalProvider(LocalWideLayout provides wide) {
-                    Column(Modifier.fillMaxSize()) {
-                        ShellNoticeBanner()
-                        // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
-                        val saved = rememberSaveableStateHolder()
-                        Box(Modifier.weight(1f)) {
-                            val overIntelligence = state.overIntelligence.lastOrNull()
-                            if (state.intelligence && overIntelligence != null) {
-                                // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
-                                saved.SaveableStateProvider(
-                                    "intelligence/${state.overIntelligence.size}/$overIntelligence",
-                                ) {
-                                    route(overIntelligence)
-                                }
-                            } else if (state.intelligence) {
-                                // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
-                                // welcome returns to it. Its own state (the thread's scroll, an opened document) is kept while a
-                                // screen opened from it is on top.
-                                saved.SaveableStateProvider("intelligence") { intelligence() }
-                            } else {
-                                saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
-                                    route(state.route)
+                // Wide (DaApp web): page titles at the desktop size (32/40) instead of the phone's 24/28.
+                val typography = MaterialTheme.typography
+                MaterialTheme(
+                    MaterialTheme.colorScheme,
+                    MaterialTheme.shapes,
+                    if (wide) typography.copy(headlineSmall = typography.headlineLarge) else typography,
+                ) {
+                    CompositionLocalProvider(LocalWideLayout provides wide) {
+                        Column(Modifier.fillMaxSize()) {
+                            ShellNoticeBanner()
+                            // Each route keeps its own UI state (scroll, fields) while another tab or screen is shown (flow 01/16 §5).
+                            val saved = rememberSaveableStateHolder()
+                            Box(Modifier.weight(1f)) {
+                                val overIntelligence = state.overIntelligence.lastOrNull()
+                                if (state.intelligence && overIntelligence != null) {
+                                    // A visit or document opened from Intelligence (INTEL-07/08); Back returns to the thread.
+                                    saved.SaveableStateProvider(
+                                        "intelligence/${state.overIntelligence.size}/$overIntelligence",
+                                    ) {
+                                        route(overIntelligence)
+                                    }
+                                } else if (state.intelligence) {
+                                    // INTEL-02: Shifa Intelligence over the tab, which keeps its stack and state; back from the
+                                    // welcome returns to it. Its own state (the thread's scroll, an opened document) is kept while a
+                                    // screen opened from it is on top.
+                                    saved.SaveableStateProvider("intelligence") { intelligence() }
+                                } else {
+                                    saved.SaveableStateProvider("${state.tab.key}/${state.stack.size}/${state.route}") {
+                                        route(state.route)
+                                    }
                                 }
                             }
                         }
