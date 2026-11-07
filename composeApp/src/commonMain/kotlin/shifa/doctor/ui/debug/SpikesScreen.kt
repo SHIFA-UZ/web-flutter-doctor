@@ -12,7 +12,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,9 +33,13 @@ import shifa.doctor.ui.widgets.ShifaSecondaryButton
 import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.utils.MapPin
 import shifa.doctor.utils.PdfView
+import shifa.doctor.utils.VideoCall
+import shifa.doctor.utils.VideoTile
 import shifa.doctor.utils.currentPushToken
 import shifa.doctor.utils.rememberAudioPlayer
+import shifa.doctor.utils.rememberCallPermissions
 import shifa.doctor.utils.rememberMicPermission
+import shifa.doctor.utils.rememberVideoCallFactory
 import shifa.doctor.utils.rememberVoiceRecorder
 import shifa.doctor.utils.writeCacheFile
 
@@ -60,6 +66,7 @@ fun SpikesScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(ShifaSpacing.Stack.Md),
     ) {
         AudioSpike()
+        VideoSpike()
         ShifaSection("PDF render") {
             var pdf by remember { mutableStateOf<ByteArray?>(null) }
             LaunchedEffect(Unit) { pdf = Res.readBytes("files/spike.pdf") }
@@ -85,6 +92,37 @@ fun SpikesScreen(modifier: Modifier = Modifier) {
         }
     }
 }
+
+/** WEB-08: the camera preview through the platform's call (no room is joined): permissions, the local tile, flip. */
+@Composable
+private fun VideoSpike() =
+    ShifaSection("Camera preview") {
+        val factory = rememberVideoCallFactory()
+        var call by remember { mutableStateOf<VideoCall?>(null) }
+        var status by remember { mutableStateOf("Idle") }
+        val ask = rememberCallPermissions { camera, mic -> status = "Camera $camera, microphone $mic" }
+        DisposableEffect(Unit) { onDispose { call?.release() } }
+        Row(horizontalArrangement = Arrangement.spacedBy(ShifaSpacing.Gap.Sm)) {
+            if (call == null) {
+                ShifaPrimaryButton("Start preview", {
+                    ask(true)
+                    call = factory().also { it.startPreview() }
+                })
+            } else {
+                ShifaSecondaryButton("Flip", { call?.flipCamera() })
+                ShifaSecondaryButton("Stop", {
+                    call?.release()
+                    call = null
+                })
+            }
+        }
+        call?.let { c ->
+            val state by c.state.collectAsState()
+            VideoTile(c, remote = false, modifier = Modifier.fillMaxWidth().height(ShifaSize.S240))
+            Text("${state.phase} · camera ${state.cameraOn} · mic ${state.micOn}", style = ShifaTextStyles.metaSmall())
+        }
+        Text(status, style = ShifaTextStyles.metaSmall(), color = ShifaColors.Text.Secondary)
+    }
 
 @Composable
 private fun AudioSpike() =

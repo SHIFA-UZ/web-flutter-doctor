@@ -52,6 +52,8 @@ kotlin {
             implementation(libs.ktor.client.js)
             // kotlinx-datetime's IANA time zones on the web (main.kt loads them).
             implementation(npm("@js-joda/timezone", "2.23.0"))
+            // WEB-08: Daily's call object for video visits (the phones use Daily's native SDKs).
+            implementation(npm("@daily-co/daily-js", "0.94.0"))
         }
 
         androidMain.dependencies {
