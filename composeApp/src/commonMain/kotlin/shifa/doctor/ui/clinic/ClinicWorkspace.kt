@@ -113,6 +113,7 @@ import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ContextSwitcher
 import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.KpiCard
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.OptionItem
 import shifa.doctor.ui.widgets.SegmentedTabs
 import shifa.doctor.ui.widgets.ShifaIconButton
@@ -403,7 +404,8 @@ private fun ColumnScope.Overview(
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8),
                 verticalArrangement = Arrangement.spacedBy(ShifaSize.S8),
-                maxItemsInEachRow = 2,
+                // Wide (DaClinic web): all three in a row.
+                maxItemsInEachRow = if (LocalWideLayout.current) 3 else 2,
             ) {
                 val cell = Modifier.weight(1f)
                 KpiCard(

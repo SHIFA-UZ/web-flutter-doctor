@@ -181,6 +181,7 @@ import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaTextStyles
+import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaButtonSize
 import shifa.doctor.ui.widgets.ShifaChip
 import shifa.doctor.ui.widgets.ShifaDatePickerDialog
@@ -451,7 +452,8 @@ private fun ColumnScope.Dashboard(
             Triple(FinanceKpi.Overdue, Res.string.clinicFinanceOverdueCount, d.overdueCount.toString()),
             Triple(FinanceKpi.Rate, Res.string.clinicFinanceCollectionRate, percent(d.collectionPercent)),
         )
-    cards.chunked(2).forEach { pair ->
+    // Wide: the four in a row.
+    cards.chunked(if (LocalWideLayout.current) 4 else 2).forEach { pair ->
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShifaSize.S8)) {
             pair.forEach { (k, label, value) ->
                 KpiTile(
