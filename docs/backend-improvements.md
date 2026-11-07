@@ -40,10 +40,57 @@ Flyway migration only, regenerate `docs/api/openapi.json`, then add a "Done (dat
 | BE-26 | Pre-verify the forgot-password code | Low | M1 | Small |
 | BE-27 | Rolling validity; bulk shift on timezone change | Low | M3 | Small |
 | BE-28 | Coded `/video/token` errors; explicit join window | Low | M5 | Small |
+| BE-29 | `register` must not re-key an existing doctor account | **High (security)** | M1 AUTH-06 | Small |
+| BE-30 | Remove the profile photo | Low | M2 PROF-03 | Small |
 
 Then: **Confirm with the backend** (questions, C-1…C-10) and **Already satisfied** (do not request again).
 
 ---
+
+## Done on the backend (not yet merged or deployed)
+
+Branch `feature/doctor-app-backend-asks` in `backend-kotlin-shifa` (2026-11-07), one commit per item; the app side is on
+`doc-app2.0`. Production keeps the old behaviour until the branch is merged and released.
+
+- **BE-29** Done: an existing doctor gets 409 `DOCTOR_EXISTS` and keeps the password; any other existing account
+  needs the registration code sent to its own address or its current password (409 `OWNERSHIP_REQUIRED`), for doctor
+  and staff registration; `check-existing-doctor` and `check-identifier` match e-mails case-insensitively. App: the
+  code sheet (flow 01/09) and the codes' messages.
+- **BE-03** Done: optional `emailOtp` on both registrations, checked when present (`EMAIL_OTP_INVALID`/`_EXPIRED`).
+  Still optional for Flutter store builds; make it required after REL-05. App: sends it (D-04 lifted).
+- **BE-04** Done: the `doctorApp` block from `system_config` keys `doctor_app.*` (empty = not set), cached 60 s. App:
+  the splash already read it; unset values now arrive as `null` and are tolerated.
+- **BE-05** Done on the backend: `POST`/`DELETE /doctors/me/fcm-tokens`, pushes fan out to every device and the legacy
+  token, dead tokens dropped. App: waits for PUSH-01 (D-15).
+- **BE-06** Done: doctor pushes were already in the doctor's language; `data` now also carries `notificationId`,
+  `treatmentPlanId`, `patientFormId`, `installmentItemId`, the appointment's `patientId`, `conversationId` and
+  `carePartnershipId`, and the inbox rows carry the last two. Types and keys: backend `docs/api/push-notifications.md`.
+  App: chat and partnership rows open the conversation and the partnership.
+- **BE-01** Done (three of three on the backend): `GET /patients/{id}/forms/{formId}/pdf` and `POST …/pdf-document`
+  (renders, files as `FORM_025_2`, links; idempotent), `GET /treatment-plans/{id}/pdf?lang=`, `POST
+  /appointments/{id}/summary-document?lang=` (the server's existing summary, re-filed). Layouts ported from the app;
+  DejaVu fonts (Cyrillic; Uzbek Cyrillic not rendered). App: the 025-2 and the plan ask the server first and render
+  themselves only on a backend without the route (404/405). The visit summary stays the app's: the server's lacks
+  the dental record, photos, plan and signature, and both are filed today (open question for the user).
+- **BE-02** Done for doctors (staff not yet: product call): request/confirm with an e-mailed code, 409 with the
+  obligations, anonymisation that keeps clinical records; JSON export once a day. App: Privacy & data (flow 08/12).
+
+Branch `feature/doctor-app-second-round` in `backend-kotlin-shifa` (2026-11-07, from `main`): **BE-09** (`isVideo` on
+calendar entries, `isVideoConsultation` on the doctor's appointment), **BE-10** (`POST /appointments/{id}/cancel` with a
+reason that reaches the patient's notification; `POST /appointments/{id}/no-show {notify}`, 409 `NO_SHOW_NOT_ALLOWED`,
+type `APPOINTMENT_NO_SHOW`), **BE-14** (`after`/`limit` on a conversation, `since` on the list; the per-message
+`CHAT_MESSAGE` push already existed), **BE-16** (`GET /public/legal`, `GET /doctors/me/contract` and its PDF, rendered
+server-side from the admin panel's template), **BE-28** (coded video-token refusals with `joinWindow`, `joinWindow` on
+appointments).
+
+Branch `feature/doctor-sms-login-video-presence` in `backend-kotlin-shifa` (2026-11-07, from `main`):
+
+- **SMS sign-in** (AUTH-10): `POST /auth/send-login-sms-otp {phone}` and `POST /auth/verify-login-sms-otp {phone, code}`,
+  the e-mail code sign-in by phone (Uzbek mobiles, DOCTOR accounts). When the SMS can't go out the code goes to the
+  account's e-mail (`channel: "email"`, `emailHint`). **Open:** the sign-in SMS text (`SmsOtpFormatting.loginOtpBody`)
+  must be approved by DevSMS before SMS actually arrive.
+- **Video presence:** `GET /video/appointments/{id}/presence` → `{patientInRoom, patientJoinedAt}` for the visit's own
+  doctor, from Daily's room presence; 503 when Daily can't be asked.
 
 ## BE-01 Server-rendered PDFs
 
@@ -117,7 +164,7 @@ both as strings. A breaking backend change cannot be communicated to installed a
 ```json
 {
   "doctorApp": {
-    "minVersion": { "android": "1.1.0", "ios": "1.1.0" },
+    "minVersion": { "android": "1.0.1", "ios": "1.0.1" },
     "latestVersion": { "android": "1.1.3", "ios": "1.1.3" },
     "storeUrl": { "android": "https://play.google.com/store/apps/details?id=com.shifa.doc", "ios": "https://apps.apple.com/app/id<ID>" },
     "maintenance": { "active": false, "message": { "en": "", "uz": "", "ru": "" }, "until": null }
@@ -195,13 +242,16 @@ banner, anything else to a generic retry.
 
 **Needed by:** flows `04/02`, `04/05`, `02/02`; tickets CAL-1, HOME-01. Spec `15` §4 row 4 (half done).
 
-**Now:** `AppointmentDto` has `isVideoConsultation` (done); the calendar `EntryDto` has `location`, `locationId`,
-`locationLabel` but no kind flag, so a day list still has to guess from the word "video".
+**Now:** only the patient-side `AppointmentDto` has `isVideoConsultation`. The doctor's `GET /api/appointments/{id}`
+(`AppointmentController.AppointmentDto`, checked on dev 2026-11-04) has no kind flag, and neither has the calendar
+`EntryDto` (`location`, `locationId`, `locationLabel`), so the doctor app still guesses from the word "video".
 
-**Change:** add `isVideo: Boolean` to `EntryDto` (and `consultationType` if a third kind ever exists).
+**Change:** add `isVideo: Boolean` to `EntryDto` and `isVideoConsultation` to the doctor's `AppointmentDto` (and
+`consultationType` if a third kind ever exists).
 
-**App until then:** one mapper function `EntryDto.isVideoFallback()` = `locationId == null && location contains
-"video"` (case-insensitive, three languages), marked `ponytail:`; the appointment detail uses the real flag.
+**App until then:** one function, `VisitKind.of(flag, location)` (`data/model/AppointmentModels.kt`, marked
+`ponytail:`): the flag when sent, else `location` containing "video" (case-insensitive). The calendar and the
+appointment detail both go through it.
 
 ## BE-10 Cancel reason; mark no-show
 
@@ -422,6 +472,35 @@ error body, and `joinWindow` on `AppointmentDto` for video visits.
 
 **App until then:** the window is computed in the app with the backend's constants; errors map by message.
 
+## BE-29 `register` must not re-key an existing doctor account
+
+**Needed by:** flow `01/07` §8; ticket AUTH-06. Found 2026-11-04 reading `AuthController.register`.
+
+**Now:** when the e-mail (or phone) already belongs to a user, `register` adds the DOCTOR role if missing and then
+**always** sets `passwordHash` to the new password, also when the user is already a doctor. Anyone holding an unused
+doctor invitation key without `emailSentTo` can therefore take over an existing doctor's account by registering
+with that doctor's address. The invitation key is consumed, so the doctor only notices when the old password fails.
+
+Also, `check-existing-doctor` matches the e-mail case-sensitively (`users.findByEmail`) while `register` matches it
+case-insensitively (`findByEmailIgnoreCase`), and contact updates keep the casing typed. A doctor stored as
+`Doctor@example.uz` is therefore "not found" for `doctor@example.uz` but merged (and re-keyed) by `register`.
+
+`register-clinic-staff` does the same for an existing user (it adds CLINIC_STAFF and sets the new password); when the
+invitation has no `emailSentTo` (C-4), any address can be typed. And a locked address proves nothing: the clinic
+invitation endpoint (`ClinicInvitationController`) returns the key to the inviter, who can register with it and set
+the password of whoever owns the invited address.
+
+**Change:** if the existing user already has the DOCTOR role, reject with 409 `code: DOCTOR_EXISTS` before touching the
+password; and make `check-existing-doctor` use `findByEmailIgnoreCase` like `register`. In general, adding a role to an
+**existing** account must prove ownership (the account's password, or an e-mail code sent to it: BE-03), never just a
+key; the registration endpoints should only create new accounts. For an existing patient, keep today's merge (it is the flow's "existing patient" branch) but require the
+patient's current password or the registration e-mail code (BE-03), since a doctor key must not reset a patient's
+password either.
+
+**App until then:** step 1 calls `POST /auth/check-existing-doctor {email}` and stops with "A doctor account with this
+email already exists. Sign in instead." under the e-mail field. This only protects honest users; the endpoint is
+still open to direct calls.
+
 ---
 
 ## Confirm with the backend (no change expected, answer recorded in `docs/implemented/README.md`)
@@ -454,3 +533,110 @@ Checked on 2026-11-04 against `openapi.json` and the backend source; do not requ
 - `DELETE /patients/{id}/forms/{formId}`, `GET /schedule/blocks?day`, `PUT /schedule/date-specific/{id}`, `GET /calendar?locationId`.
 - Development backend `https://api-dev.shifa.uz` with seed accounts (patient app item 3).
 - Rate limits answer 429 `RATE_LIMITED`.
+
+## BE-30 Remove the profile photo
+
+**Needed by:** flow `08/02` §3 (photo sheet: "Remove photo"); ticket PROF-03.
+
+**Now:** `POST /doctors/me/photo` replaces the photo, but nothing removes it: `PATCH /doctors/me/profile` would run an
+empty `avatarUrl` through the URL signer.
+
+**Change:** `DELETE /doctors/me/photo` → 204, clearing `avatarUrl` (and the stored file).
+
+**App until then:** the photo sheet offers Take photo and Choose from gallery only.
+
+
+## BE-31 A new photo needs a new URL
+
+**Needed by:** flow `08/02` §3 (the new photo shows at once everywhere); ticket PROF-03.
+
+**Now:** `POST /doctors/me/photo` stores every upload under the same key (`doctors/<name>-<id>.<ext>`), so the
+`photoUrl` it returns, and every later `GET /doctors/me`, is the URL of the previous picture. Image caches keep the old
+picture (the app's for the rest of the run, and patients' apps too).
+
+**Change:** put a version in the key or the URL (a hash of the content, or `?v=<updatedAt>` added by `PublicUrls`).
+
+**App until then:** the upload answer gets `?v=<time>` on the device, so the doctor sees the new picture right after
+uploading; a later profile refresh brings back the plain URL, and the cache may show the old picture until the app
+restarts.
+
+## BE-32 Tell a wrong current password apart from a weak new one
+
+**Needed by:** flow `08/11` §8 (wrong current password shown under that field); ticket PROF-04.
+
+**Now:** `POST /auth/reset-password` answers 400 with the generic code `BAD_REQUEST` both when the current password is
+wrong and when the new one fails `PasswordPolicy`; only the English `message` differs, and the app never shows or
+parses server text.
+
+**Change:** a distinct `code`, e.g. `CURRENT_PASSWORD_INCORRECT` and `PASSWORD_POLICY`.
+
+**App until then:** the form checks the same policy before sending, so a 400 is read as a wrong current password
+(field cleared, inline error). If the two policies ever drift, that message would be wrong.
+
+## BE-33 Search the booking patient list
+
+**Needed by:** flow `04/06` §8 (500 patients: server search with a 300 ms debounce); ticket CAL-7.
+
+**Now:** `GET /patients/for-assignment` takes only `page`, `size`, `sort` (`sort=fullName,asc` works and is already
+the default order; `name,asc` answers 500); there is no name or id filter, so the app reads every page before the
+picker can search.
+
+**Change:** a `q` parameter matching name or id (the directory's search may already have the query).
+
+**App until then:** reads the pages (500 each, at most 20) once per booking form and filters locally.
+
+## BE-34 Tell why a location can't be deleted
+
+**Needed by:** flow `04/13` §8 (deleting the primary, the last, or a location with rules or appointments); ticket LOC-1.
+
+**Now:** `DELETE /doctors/me/locations/{id}` answers 409 for three different reasons (the only location, schedule rules
+at it, upcoming appointments at it); only the English `message` differs, and the app never shows server text.
+
+**Change:** a `code` per reason, e.g. `LOCATION_LAST`, `LOCATION_HAS_RULES`, `LOCATION_HAS_APPOINTMENTS` (with the
+appointment count).
+
+**App until then:** one message names all three: "This location can't be deleted: it's your only one, or it still
+has working hours or upcoming appointments."
+
+## BE-35 Answer "no prophylaxis setting" as JSON
+
+**Needed by:** flow `06/05` §6 (the clinic's prophylaxis card); ticket CLINIC-06.
+
+**Now:** `GET /prophylaxis/settings?patientId&clinicId` answers 200 with an empty body and no `Content-Type` when the
+patient has no setting (dev, 2026-11-06); the OpenAPI says `SettingDto`. A JSON client can't decode that as "nothing".
+`SettingDto.patientId` is also nullable in the OpenAPI although the request requires it.
+
+**Change:** 204, or 200 with `null` / the defaults (`{"intervalMonths":12,"enabled":true,...}`) as JSON; always echo
+`patientId`.
+
+**App until then:** reads the answer as text: blank is "no setting" (12 months, on), anything else must decode or the
+card says it couldn't load (never falls back to defaults that Save would write over the server's values).
+
+## BE-36 A date range on the payments and records lists
+
+**Needed by:** flow `09/09`, `09/10` (a month's payments and records); tickets FIN-03 (quirk 1).
+
+**Now:** `GET /clinics/{id}/finance/payments` takes only `page` and `size` (a bare list), `…/finance/records` only
+`status`, `page`, `size`. Flutter filtered the first 50 by month on the device, so older months looked empty.
+
+**Change:** `from` and `to` (ISO instants, both or neither) on both, as the dashboard, ledger and earnings take; and
+the payments list as a page (`content`, `totalElements`) like the others.
+
+**App until then:** Payments and Records have no month picker: they list all time, newest first, page by page (Load
+more), with chips and search over what is loaded.
+
+## BE-37 The month-scoped appointment ledger answers 500
+
+**Needed by:** flow `09/08` (By appointment, a month); ticket FIN-04, FIN-02 (Outstanding list).
+
+**Now:** `GET /clinics/{id}/finance/appointment-ledger?from&to&page&size` answers 500 `INTERNAL` on dev
+(2026-11-06; without `from`/`to` it answers 200). `TreatmentPlanLineRepository.findDistinctLinkedAppointmentIdsForClinicInRange`
+(and the `…AndPatientsInRange` twin) run `SELECT DISTINCT l.linked_appointment_id … ORDER BY a.start_at DESC`, which
+Postgres refuses: with `DISTINCT`, every `ORDER BY` expression must be selected.
+
+**Change:** select `a.start_at` too (and map the first column), or `GROUP BY l.linked_appointment_id` with
+`ORDER BY MAX(a.start_at) DESC`.
+
+**App until then:** the month's ledger and the dashboard's Outstanding list show "Couldn't load finance data." with the
+request id and Retry; "All time" works.
+

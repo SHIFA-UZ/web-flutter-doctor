@@ -1,5 +1,13 @@
 # UI strings (extracted from the Flutter doctor app)
 
+> **Status 2026-11-04 (CORE-04):** these JSON files plus `plurals.json` are now the source of the KMP app's strings;
+> `scripts/strings_from_json.py` generates the resources. All gaps below are filled: the 1 `en`, 10 `uz`, 92 `ru` and
+> 41 nowhere-defined keys, and the NEW keys from the flow files' §11: 257 as strings, 7 as plurals (en/uz/ru written for the port; 19 extracted
+> names were data fields and were dropped). 2218 keys per locale. The hand-written Russian plural sites, the
+> one/other pairs and `intelCancelPreview` (`{visitWord}`) are `<plurals>` in `plurals.json` (16), which lists the
+> keys each one replaces. Uzbek Cyrillic: the transliterator is ported (`utils/UzbekCyrillic.kt`, golden tests) and
+> applied at runtime by `tr()`; one `values-uz/` folder.
+
 Source: `assets/localization/{en,uz,ru}.json` merged over the embedded `_localizedValues` map in
 `lib/core/localization/app_localizations.dart:25-6276` (JSON wins at runtime, see `translate()` at `:6278`).
 Export date: 2026-10-24, commit `4d05e61` (refreshed after PR #16, which added 63 `intel*` / visit-fact / cancellation keys).
@@ -71,10 +79,12 @@ composeResources/values-ru/strings.xml   <- ru.json
 Rules:
 
 1. Keys stay camelCase (all are valid identifiers already).
-2. Escaping: `&` → `&amp;`, `<` → `&lt;`, `'` → `\'`, `"` → `\"`; a value starting with `@` or `?` needs a leading `\`.
-   Newlines are `\n`. CMP does not unescape `%%`, so write a literal percent as `%` unless the string has placeholders.
-3. Placeholders: convert all three styles to positional `%1$s`, `%2$s`, … in first-appearance order per key (verified
-   that all locales use the same placeholder names in the same order). Call as
+2. Escaping: only `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`, backslash → `\\`, newline → `\n`. CMP's resource plugin
+   unescapes nothing else (checked in 1.9.3: `\n`, `\t`, `\uXXXX`, `\\`), so `'`, `"` and `%` stay literal; `\'`
+   would show the backslash. (Corrected 2026-11-04, CORE-04.)
+3. Placeholders: convert all three styles to positional `%1$s`, `%2$s`, … numbered by their order in the **English**
+   text and mapped by name in the others (`patientsPagination` puts `total` first in Uzbek, so per-locale order
+   would swap the arguments). Call as
    `stringResource(Res.string.otpSentToEmail, email)`.
 4. Convert the six plural sites above to `<plurals>`.
 5. Backend-returned strings (error messages) are not keys; map them through `ErrorMessages.kt` (see

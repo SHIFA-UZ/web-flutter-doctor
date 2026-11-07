@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keys the KMP UI kit added (CORE-03); not in the Flutter app. Hand-written: the generated strings.xml never holds these. -->
+<resources>
+    <string name="attach">Biriktirish</string>
+    <string name="clear">Tozalash</string>
+    <string name="pause">Pauza</string>
+    <string name="play">Ijro etish</string>
+    <string name="recordVoiceMessage">Ovozli xabar yozish</string>
+    <string name="seeAll">Barchasini ko'rish</string>
+    <string name="select">Tanlash</string>
+    <string name="share">Ulashish</string>
+    <string name="stopRecording">Yozishni to'xtatish</string>
+    <string name="verified">Tasdiqlangan</string>
+    <string name="notIncluded">Kirmaydi</string>
+</resources>

@@ -1,0 +1,10 @@
+- **[P2] Dismissing during Retry can restart polling after closure.** [Briefing.kt:124](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/visit/Briefing.kt:124) cancels only `reading`; the retry coroutine remains in the retained ViewModel’s scope and calls `follow()` on success at line 140. Tap Retry, then dismiss before POST completes: a new polling loop starts without a visible sheet. Cancel the retry job or guard polling with the sheet’s active state.
+
+- **[P2] SKIPPED hides the attached originals.** [Briefing.kt:243](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/visit/Briefing.kt:243) suppresses documents whenever the mapped status is `None`, which includes `SKIPPED`. Even successfully fetched attachments disappear, contrary to flow 05/02 §6’s document-only fallback for skipped AI briefings. Render available documents independently of briefing status.
+
+- **[P2] Polling slows after 60 seconds of delays, not elapsed time.** [AppointmentsRepository.kt:142](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/data/appointments/AppointmentsRepository.kt:142) counts only `delay(step)`, excluding request duration. With each GET taking three seconds, the ten-second interval begins around two minutes after opening, although the ViewModel already shows “Still generating” after one minute. Use elapsed time for the polling threshold; the immediate-response test misses this discrepancy.
+---
+**Answers (round 1, all fixed; small, so no second round):**
+1. *Retry restarts the reads after the sheet closed:* fixed; closing cancels a Retry on its way too.
+2. *SKIPPED hides the originals:* fixed; the attached documents show whatever the briefing's state.
+3. *Slower after a minute of waiting, not of time:* fixed; elapsed time from the start, slow reads included (time source injectable; the test runs on the virtual clock).

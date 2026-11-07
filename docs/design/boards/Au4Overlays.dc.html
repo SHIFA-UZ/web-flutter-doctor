@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ResponsiveDialog, Tray, ActionBar</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="shifa-ds.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.au-frame{container-type:inline-size;box-sizing:content-box}
+.au-frame h3,.au-frame h4,.au-frame p{margin-top:0}
+</style>
+</helmet>
+<div style="width: 2698px; min-height: 1620px; box-sizing: border-box; padding: 48px; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 32px">
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 1600px">
+<p style="margin: 0; font: 700 14px/20px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary)">Audit_4.11 · 16 · Overlays</p>
+<h1 style="margin: 0; font: 700 40px/44px var(--font-sans); letter-spacing: -1px">ResponsiveDialog, Tray, ActionBar</h1>
+<p style="margin: 0; font: 500 18px/26px var(--font-sans); color: var(--text-secondary)">Confirmations, short choices and the commit footer.</p>
+</header>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+<section style="flex: none; width: {{f.pw}}px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 4px">
+<h2 style="margin: 0; font: 700 22px/28px var(--font-sans); letter-spacing: -.5px">{{f.label}}</h2>
+<span style="font: 500 14px/20px var(--font-sans); color: var(--text-tertiary)">{{f.sub}}</span>
+</div>
+<div style="background: var(--bg-canvas); border-radius: 20px; padding: 16px">
+<div class="dr-frame au-frame" style="width: {{f.cw}}px">
+<div style="display:flex;flex-direction:column;gap:20px"><div class="dr-scrim"><div class="dr-dialog" role="dialog" aria-modal="true" aria-label="Cancel this appointment?"><span class="dr-dialog__icon"><svg class="sh-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"></path></svg></span><h3 class="dr-dialog__title">Cancel this appointment?</h3><p class="dr-dialog__body">Dilnoza Yusupova will get a message and a full refund. This cannot be undone.</p><div class="dr-dialog__actions"><button class="sh-btn sh-btn--secondary">Keep Appointment</button><button class="sh-btn sh-btn--primary is-destructive">Cancel Appointment</button></div></div></div><div class="sh-scrim" style="border-radius:16px;overflow:hidden"><div class="sh-tray"><div class="sh-tray__head"><span style="width:32px;flex:none"></span><h3 class="sh-tray__title" style="margin:0">Move appointment</h3><button class="sh-icon-btn sh-icon-btn--secondary sh-icon-btn--sm" aria-label="Close"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></div><div class="sh-tray__chips"><button class="sh-chip" aria-pressed="true">Today</button><button class="sh-chip">Tomorrow</button><button class="sh-chip">Fri 6</button><button class="sh-chip">Sat 7</button><button class="sh-chip">Mon 9</button><button class="sh-chip">Tue 10</button><button class="sh-chip">Wed 11</button></div><div class="sh-chip-grid"><button class="sh-chip sh-chip--slot">14:00</button><button class="sh-chip sh-chip--slot" aria-pressed="true">14:30</button><button class="sh-chip sh-chip--slot">15:00</button><button class="sh-chip sh-chip--slot">16:30</button></div><button class="sh-btn sh-btn--primary sh-btn--block">Move to 14:30</button></div></div><div style="background:var(--bg-canvas);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-height:200px;box-shadow:inset 0 0 0 2px var(--border-default)"><div style="padding:16px;font:500 14px/20px var(--font-sans);color:var(--text-secondary)">Form content above the ActionBar</div><div class="dr-actionbar"><div class="dr-actionbar__inner"><span class="dr-footer__state"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>All changes saved</span><button class="sh-btn sh-btn--secondary">Cancel</button><button class="sh-btn sh-btn--primary">Save Schedule</button></div></div></div></div>
+</div>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2698,"height":1620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = [["d", "Desktop web", "1440 viewport · sidebar 260 · content 1132", 1132], ["t", "Tablet", "1024 viewport · rail 72 · content 920", 920], ["p", "Phone", "390 viewport · 16 gutters · content 358", 358]];
+    return { frames: F.map((f) => ({ k: f[0], label: f[1], sub: f[2], cw: f[3], pw: f[3] + 32, isD: f[0] === 'd', isT: f[0] === 't', isP: f[0] === 'p', rail: f[0] === 't' ? 'dr-shell--rail' : '' })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+@file:Suppress("ktlint:standard:max-line-length") // JSON fixtures
+
+package shifa.doctor.ui.calendar
+
+import com.google.common.truth.Truth.assertThat
+import com.russhwolf.settings.MapSettings
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.LocalDate
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import shifa.doctor.data.api.createHttpClient
+import shifa.doctor.data.calendar.CalendarRepository
+import shifa.doctor.data.calendar.DayKey
+import shifa.doctor.data.clinics.ClinicsRepository
+import shifa.doctor.data.model.CalendarEntry
+import shifa.doctor.data.profile.ProfileRepository
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.couldNotLoadThisDay
+import shifa.doctor.stopAll
+import java.io.File
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class CalendarViewModelTest {
+    private val me = File("src/commonMain/composeResources/files/demo/doctors-me.json").readText()
+    private val requested = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val doctors = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private var failing = false
+    private val engine =
+        MockEngine { req ->
+            val json = headersOf(HttpHeaders.ContentType, "application/json")
+            val path = req.url.encodedPath
+            // CAL-10 A: the doctor (9001) owns clinic 2 with a colleague (22) and a receptionist.
+            if (path.endsWith("me/clinics")) {
+                return@MockEngine respond(
+                    """[{"clinicId":2,"name":"Dev","timeZone":"Asia/Tashkent","membershipRole":"OWNER"}]""",
+                    HttpStatusCode.OK,
+                    json,
+                )
+            }
+            if (path.endsWith("clinics/2/members")) {
+                return@MockEngine respond(
+                    """[{"doctorProfileId":9001,"displayName":"Ulugbek","membershipRole":"OWNER"},{"doctorProfileId":22,"displayName":"Bobur","membershipRole":"DOCTOR"},{"displayName":"Desk","membershipRole":"RECEPTIONIST"}]""",
+                    HttpStatusCode.OK,
+                    json,
+                )
+            }
+            if (!path.endsWith("calendar")) return@MockEngine respond(me, HttpStatusCode.OK, json)
+            val day = req.url.parameters["day"]!!
+            requested += day
+            req.url.parameters["doctorId"]?.let { doctors += it }
+            if (failing) {
+                return@MockEngine respond(
+                    """{"status":500,"code":"INTERNAL","requestId":"req-cal"}""",
+                    HttpStatusCode.InternalServerError,
+                    json,
+                )
+            }
+            // Each day: a free slot, a cancelled appointment and a block (UTC; Tashkent is +5).
+            respond(
+                """[{"type":"FREE_SLOT","startAt":"${day}T04:00:00Z","endAt":"${day}T04:30:00Z"},
+                {"type":"APPOINTMENT","startAt":"${day}T05:00:00Z","endAt":"${day}T05:30:00Z","appointmentId":1,"patientName":"A","status":"CANCELLED"},
+                {"type":"BLOCKED","startAt":"${day}T08:00:00Z","endAt":"${day}T09:00:00Z","blockReason":"Lunch"}]""",
+                HttpStatusCode.OK,
+                json,
+            )
+        }
+    private val calendar = CalendarRepository({ createHttpClient({ null }, engine) })
+    private val profile = ProfileRepository { createHttpClient({ null }, engine) }
+    private val clinics = ClinicsRepository({ createHttpClient({ null }, engine) }, MapSettings(), { "u1" })
+    private val settings = MapSettings()
+
+    @Before fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        runBlocking { profile.refresh() }
+    }
+
+    private val created = mutableListOf<CalendarViewModel>()
+
+    // A month prefetch still running would resume on Main while the next test sets it: stop them first.
+    @After fun tearDown() {
+        created.stopAll()
+        Dispatchers.resetMain()
+    }
+
+    private fun opened() =
+        CalendarViewModel(calendar, profile, clinics = clinics, settings = settings).also {
+            created += it
+        }
+
+    private fun settle(check: () -> Boolean) {
+        repeat(300) {
+            if (check()) return
+            Thread.sleep(10)
+        }
+    }
+
+    @Test
+    fun `opens on today in the practice zone, the day and the month read`() {
+        val classToTest = opened()
+        settle { classToTest.state.value.day != null && requested.size > 20 }
+        val s = classToTest.state.value
+        assertThat(s.clock.zoneId).isEqualTo("Asia/Tashkent")
+        assertThat(s.selected).isEqualTo(s.today)
+        assertThat(s.rows.map { it::class.simpleName }).containsExactly("FreeSlot", "Appointment", "Blocked").inOrder()
+        assertThat(requested).contains(s.today.toString())
+        // The month is prefetched for the shading.
+        assertThat(s.occupancy(LocalDate(s.today.year, s.today.monthNumber, 1))).isNotNull()
+    }
+
+    @Test
+    fun `a colleague's calendar reads their days in the clinic's zone, apart from the doctor's own, blocks always shown`() {
+        val classToTest =
+            CalendarViewModel(
+                calendar,
+                profile,
+                CalendarScope(22, "Bobur Aliyev", "Europe/Moscow"),
+                clinics,
+                settings,
+            ).also { created += it }
+        settle { classToTest.state.value.day != null && requested.size > 20 }
+        val s = classToTest.state.value
+        assertThat(s.clock.zoneId).isEqualTo("Europe/Moscow")
+        assertThat(doctors.toSet()).containsExactly("22")
+        assertThat(calendar.state.value.days.keys.map { it.doctorId }.toSet()).containsExactly(22L)
+        assertThat(s.occupancy(LocalDate(s.today.year, s.today.monthNumber, 1))).isNotNull()
+        // The filter can't hide a colleague's blocks (two options there).
+        classToTest.ui { it.copy(filter = AgendaFilter(blocked = false)) }
+        assertThat(classToTest.state.value.rows.map { it::class.simpleName }).contains("Blocked")
+    }
+
+    @Test
+    fun `staff calendars - two doctors in the clinic show the chips, a colleague's day reads under them, the choice is remembered`() {
+        runBlocking { clinics.mine() }
+        val classToTest = opened()
+        settle { classToTest.state.value.staff != null }
+        val staff = classToTest.state.value.staff!!
+        assertThat(staff.ownId).isEqualTo(9001L)
+        // Doctors and owners only, by name.
+        assertThat(staff.roster.map { it.doctorProfileId }).containsExactly(22L, 9001L).inOrder()
+        assertThat(staff.colleagues).isEmpty()
+        // The doctor's own calendar can't be hidden.
+        classToTest.toggleStaff(9001)
+        assertThat(classToTest.state.value.staff!!.visible).isEmpty()
+        classToTest.toggleStaff(22)
+        settle { classToTest.state.value.cache.days.keys.any { it.doctorId == 22L } }
+        assertThat(classToTest.state.value.staff!!.colleagues.map { it.doctorProfileId }).containsExactly(22L)
+        assertThat(doctors).contains("22")
+        assertThat(settings.getStringOrNull("calendar_visible_staff_v1:9001:2")).isEqualTo("22")
+        // Another visit to the calendar brings the colleague back.
+        val again = opened()
+        settle { again.state.value.staff != null }
+        assertThat(again.state.value.staff!!.visible).containsExactly(22L)
+        again.toggleStaff(22)
+        assertThat(settings.getStringOrNull("calendar_visible_staff_v1:9001:2")).isEmpty()
+    }
+
+    @Test
+    fun `filters hide row kinds and say so when everything is hidden`() {
+        val classToTest = opened()
+        settle { classToTest.state.value.day != null }
+        classToTest.ui { it.copy(filter = AgendaFilter(appointments = false, free = false, blocked = true)) }
+        assertThat(classToTest.state.value.rows.single()).isInstanceOf(CalendarEntry.Blocked::class.java)
+        classToTest.ui { it.copy(filter = AgendaFilter(false, false, false)) }
+        assertThat(classToTest.state.value.rows).isEmpty()
+        assertThat(classToTest.state.value.day).isNotEmpty() // "Hidden by filters", not "No items"
+    }
+
+    @Test
+    fun `selecting a day reads it, a failure keeps the request id, Retry forces it`() {
+        val classToTest = opened()
+        settle { classToTest.state.value.day != null }
+        failing = true
+        classToTest.select(LocalDate(2030, 1, 15))
+        settle { classToTest.state.value.error != null }
+        assertThat(classToTest.state.value.error?.text).isEqualTo(Res.string.couldNotLoadThisDay)
+        assertThat(classToTest.state.value.error?.requestId).isEqualTo("req-cal")
+        failing = false
+        classToTest.load(force = true)
+        settle { classToTest.state.value.day != null }
+        assertThat(classToTest.state.value.error).isNull()
+        assertThat(calendar.state.value.days[DayKey(LocalDate(2030, 1, 15))]).hasSize(3)
+    }
+
+    @Test
+    fun `paging the month keeps the selected day, a blocked day from midnight is a day off`() {
+        val classToTest = opened()
+        settle { classToTest.state.value.day != null }
+        val selected = classToTest.state.value.selected
+        classToTest.month(1)
+        assertThat(classToTest.state.value.selected).isEqualTo(selected)
+        assertThat(classToTest.state.value.month.monthNumber).isNotEqualTo(selected.monthNumber)
+    }
+
+    @Test
+    fun `a profile that arrives after opening moves today to the practice zone and reads the days again`() {
+        val fresh = ProfileRepository { createHttpClient({ null }, engine) } // not read yet: no zone
+        val classToTest =
+            CalendarViewModel(
+                calendar,
+                fresh,
+                clinics = clinics,
+                settings = settings,
+            ).also { created += it }
+        settle { classToTest.state.value.day != null }
+        assertThat(classToTest.state.value.clock.zoneMissing).isTrue()
+        val before = requested.size
+        runBlocking { fresh.refresh() }
+        settle { classToTest.state.value.clock.zoneId == "Asia/Tashkent" && classToTest.state.value.day != null }
+        val s = classToTest.state.value
+        assertThat(s.selected).isEqualTo(s.clock.today())
+        assertThat(requested.size).isGreaterThan(before) // the cache was dropped and the day read again
+    }
+
+    @Test
+    fun `the filter sheet edits a draft, Apply commits, dismissing drops it`() {
+        val classToTest = opened()
+        settle { classToTest.state.value.day != null }
+        classToTest.ui { it.copy(filterDraft = it.filter) }
+        classToTest.ui { it.copy(filterDraft = it.filterDraft?.copy(free = false)) }
+        classToTest.ui { it.copy(filterDraft = null) } // dismissed
+        assertThat(classToTest.state.value.filter.free).isTrue()
+    }
+}

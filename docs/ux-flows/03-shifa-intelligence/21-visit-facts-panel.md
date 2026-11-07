@@ -136,7 +136,7 @@ timeline in one tap. Then show that timeline on the patient chart. Per visit for
 | `clinicalTimeline` / `clinicalTimelineHint` | Clinical timeline / Accepted visit facts, step by step. Sourced from what was spoken. |
 | commit sentence (localiser, no key) | Documented {n} facts and drafted {m} medication tasks. They are on the patient timeline. |
 | **NEW** `visitFactsCommitted` (plural-aware) | Documented {n} facts. They are on the patient timeline. |
-| **NEW** `visitFactsCommittedWithTasks` | Documented {n} facts and drafted {m} medication tasks. They are on the patient timeline. |
+| **NEW** `visitFactsCommittedWithTasks` | Facts documented: {n}. Medication tasks drafted: {m}. They are on the patient timeline. (Built 2026-11-04: two counts in one sentence can't take plural forms, so the counts sit after colons.) |
 | **NEW** `visitFactsLoadFailed` / `visitFactsDocumentFailed` / `clinicalTimelineEmpty` | Could not load visit facts. / Could not document the facts. Check your connection and try again. / No documented visit facts yet. |
 | **NEW** `factTypeSymptom` / `factTypeDiagnosis` / `factTypeTherapy` / `factTypeMedication` | Symptom / Diagnosis / Therapy / Medication |
 

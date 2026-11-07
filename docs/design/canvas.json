@@ -2,6 +2,158 @@
   "v": 3,
   "attachments": {},
   "boards": {
+    "Artboard-t5wx.dc.html": {
+      "h": 600,
+      "page": "page-n4upr2",
+      "title": "Artboard 1",
+      "w": 800,
+      "x": 0,
+      "y": 0
+    },
+    "Au4AI.dc.html": {
+      "h": 1620,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 14 · Shifa AI: AiInsightCard, AiCopilot",
+      "w": 2698,
+      "x": 0,
+      "y": 28010
+    },
+    "Au4Actions.dc.html": {
+      "h": 1680,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 01 · Actions: Button, IconButton, ActionButton, FAB",
+      "w": 2698,
+      "x": 0,
+      "y": 1960
+    },
+    "Au4Chat.dc.html": {
+      "h": 1850,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 13 · Chat: ConversationList, ChatBubble, ChatAttachments, ChatBar",
+      "w": 2698,
+      "x": 0,
+      "y": 26000
+    },
+    "Au4Clinic.dc.html": {
+      "h": 2800,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 17 · Clinic: TaskCard, TreatmentPlanCard, Stepper, InstallmentSchedule, TierCard",
+      "w": 2698,
+      "x": 0,
+      "y": 33750
+    },
+    "Au4Data.dc.html": {
+      "h": 2300,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 08 · Data: KpiCard, ChartCard, DataTable",
+      "w": 2698,
+      "x": 0,
+      "y": 14610
+    },
+    "Au4Docs.dc.html": {
+      "h": 1790,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 12 · Documents: DocumentTile, DocumentViewer",
+      "w": 2698,
+      "x": 0,
+      "y": 24050
+    },
+    "Au4Feedback.dc.html": {
+      "h": 2020,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 15 · Feedback: Banner, Toast, EmptyState, Notification, NotificationCenter",
+      "w": 2698,
+      "x": 0,
+      "y": 29790
+    },
+    "Au4Forms.dc.html": {
+      "h": 1570,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 18 · Forms: FormSection, MapPicker",
+      "w": 2698,
+      "x": 0,
+      "y": 36710
+    },
+    "Au4Inputs.dc.html": {
+      "h": 2180,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 03 · Inputs: InputField, SearchField, Dropdown, OtpInput",
+      "w": 2698,
+      "x": 0,
+      "y": 5420
+    },
+    "Au4Overlays.dc.html": {
+      "h": 1620,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 16 · Overlays: ResponsiveDialog, Tray, ActionBar",
+      "w": 2698,
+      "x": 0,
+      "y": 31970
+    },
+    "Au4Patient.dc.html": {
+      "h": 1960,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 09 · Patient: NextPatientHero, PatientHeader, PatientRow",
+      "w": 2698,
+      "x": 0,
+      "y": 17070
+    },
+    "Au4Pills.dc.html": {
+      "h": 1460,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 02 · Pills: Chip, Tag, StatusBadge, AlertChip",
+      "w": 2698,
+      "x": 0,
+      "y": 3800
+    },
+    "Au4Press.dc.html": {
+      "h": 1790,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 05 · Pressables: Pressable, Link, OptionList, Menu",
+      "w": 2698,
+      "x": 0,
+      "y": 9430
+    },
+    "Au4Schedule.dc.html": {
+      "h": 2410,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 10 · Scheduling: AppointmentTimeline, CalendarWeek, MonthCalendar, ScheduleEditor",
+      "w": 2698,
+      "x": 0,
+      "y": 19190
+    },
+    "Au4Selection.dc.html": {
+      "h": 1510,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 04 · Selection: SelectionControls, Switch, Slider, SegmentedTabs",
+      "w": 2698,
+      "x": 0,
+      "y": 7760
+    },
+    "Au4Shell.dc.html": {
+      "h": 1340,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 06 · Navigation: AppShell and NavBar",
+      "w": 3142,
+      "x": 0,
+      "y": 11380
+    },
+    "Au4Toolbar.dc.html": {
+      "h": 1570,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 07 · Page structure: PageToolbar, FilterBar, ContextSwitcher, PageHeader, Section",
+      "w": 2698,
+      "x": 0,
+      "y": 12880
+    },
+    "Au4Visit.dc.html": {
+      "h": 2130,
+      "page": "page-hgcmu4",
+      "title": "Audit_4.11 · 11 · Visit: VideoCallBar, ConsultationSection, DentalChart",
+      "w": 2698,
+      "x": 0,
+      "y": 21760
+    },
     "AuBugs.dc.html": {
       "h": 3890,
       "is_interactive": true,
@@ -295,6 +447,30 @@
       "x": 1520,
       "y": 0
     },
+    "IcoContext.dc.html": {
+      "h": 1000,
+      "page": "page-n4upr2",
+      "title": "App icons · In context (home screens)",
+      "w": 1340,
+      "x": 2920,
+      "y": 0
+    },
+    "IcoExplore.dc.html": {
+      "h": 2146,
+      "page": "page-n4upr2",
+      "title": "App icons · 9 directions (Patient + Doctor)",
+      "w": 1880,
+      "x": 920,
+      "y": 0
+    },
+    "IcoRound2.dc.html": {
+      "h": 3200,
+      "page": "page-n4upr2",
+      "title": "App icons · Round 2: grain on white, badge symbols",
+      "w": 1880,
+      "x": 4380,
+      "y": 0
+    },
     "Insight.dc.html": {
       "h": 340,
       "is_interactive": true,
@@ -435,7 +611,550 @@
   "launch": {
     "view": "canvas"
   },
+  "noteOrder": [
+    "au4Title",
+    "au4x1",
+    "au4x2",
+    "au4x3",
+    "au4x4",
+    "au4-01c",
+    "au4-01u",
+    "au4-01r",
+    "au4-02c",
+    "au4-02u",
+    "au4-02r",
+    "au4-03c",
+    "au4-03u",
+    "au4-03r",
+    "au4-04c",
+    "au4-04u",
+    "au4-04r",
+    "au4-05c",
+    "au4-05u",
+    "au4-05r",
+    "au4-06c",
+    "au4-06u",
+    "au4-06r",
+    "au4-07c",
+    "au4-07u",
+    "au4-07r",
+    "au4-08c",
+    "au4-08u",
+    "au4-08r",
+    "au4-09c",
+    "au4-09u",
+    "au4-09r",
+    "au4-10c",
+    "au4-10u",
+    "au4-10r",
+    "au4-11c",
+    "au4-11u",
+    "au4-11r",
+    "au4-12c",
+    "au4-12u",
+    "au4-12r",
+    "au4-13c",
+    "au4-13u",
+    "au4-13r",
+    "au4-14c",
+    "au4-14u",
+    "au4-14r",
+    "au4-15c",
+    "au4-15u",
+    "au4-15r",
+    "au4-16c",
+    "au4-16u",
+    "au4-16r",
+    "au4-17c",
+    "au4-17u",
+    "au4-17r",
+    "au4-18c",
+    "au4-18u",
+    "au4-18r",
+    "auTitle",
+    "daFlows",
+    "daProto",
+    "rowComponents",
+    "rowHome",
+    "rowPatient",
+    "rowPatients",
+    "rowShell",
+    "rowStates"
+  ],
   "notes": {
+    "au4-01c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Five action shapes at different heights: Button 46/36, IconButton 44/32, ActionButton pill 32, FAB 56, legacy .dr-iconbtn 32. Pills and Buttons overlap in role (Confirm vs Start).\n• .sh-btn--ai (charcoal) adds a second accent for AI, but the DS says AI is sparkles + alpha-teal-15. Pick one.\n• .sh-icon-btn is defined twice (42 with padding, then a 44 square) and .dr-iconbtn duplicates the sm size. Merge them into one IconButton.\n• Secondary ActionButton (canvas fill) disappears on bg-canvas, which is why --surface was added. Let the fill follow the ground automatically.",
+      "w": 600,
+      "x": 3240,
+      "y": 1960
+    },
+    "au4-01r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Only compact Buttons and sm IconButtons react below 560. Regular Buttons never go full width unless the parent asks, so rows of 3 or 4 buttons wrap raggedly on phones (see the phone column).\n• FAB is phone-only, but nothing stops it rendering on web. Hide it at 768 and up, or document the rule.\n• Suggest one Button with size (36 / 46) and a full-width-below-560 option.",
+      "w": 600,
+      "x": 4520,
+      "y": 1960
+    },
+    "au4-01u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• P1: white labels on teal-50 are 2.4:1, which fails AA on every primary Button, pill and FAB. Darken interactive-primary or use dark labels.\n• Disabled state is drawn two ways: .is-disabled keeps the shadow, aria-disabled removes it. Standardise on aria-disabled and give a reason.\n• Tertiary Button has asymmetric padding (10 / 16 / 10 / 10), so its label sits off-centre in a row of buttons.\n• The legacy .dr-iconbtn has no 44px phone rule. It is still used for Remove in ScheduleEditor.",
+      "w": 600,
+      "x": 3880,
+      "y": 1960
+    },
+    "au4-02c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• The last row shows six pill heights in one family: Chip 34, Action 32, Tag 28, AlertChip 28, Status 24, counts 20 to 22. Suggest three: 24 (status, count), 28 (tag, alert) and 36 (interactive).\n• AlertChip has a radius of 10 while every other pill is full, so it reads as a different family next to StatusBadge in the patient header.\n• Pending payment is drawn three ways: amber Tag, warn StatusBadge and a filter Chip. Use StatusBadge for state and keep Tag for categories.\n• The selected chip ring is 1px; choice and row selection rings are 2px.",
+      "w": 600,
+      "x": 3240,
+      "y": 3800
+    },
+    "au4-02r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Pills don't change between widths, which matches the one-line rule. But rows grow to 3 or 4 lines at 358; a filter row should become a carousel (sh-carousel) on phones.\n• The slot grid keeps 4 columns at every width; at 1132 that gives 270px-wide time chips. Cap the grid width or use auto-fill.\n• Only button.dr-alert gets the 44px phone hit area; AlertChips written as spans don't.",
+      "w": 600,
+      "x": 4520,
+      "y": 3800
+    },
+    "au4-02u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• P1: unselected chips are white (prototype glue), so inside a white panel they disappear (row 1). The ground rule only covers role=dialog and .sh-on-surface. Add panels, trays and SOAP sections, or give chips an outline.\n• The solid In progress badge is white on teal-50 (2.4:1).\n• Icon-only status keeps its word for screen readers, but sighted phone users lose it. Keep the word in agenda rows.\n• Tag uses a 12px line box for 12px text, which clips descenders in Uzbek and Russian (q, y, g, у, д).",
+      "w": 600,
+      "x": 3880,
+      "y": 3800
+    },
+    "au4-03c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Four field skins: InputField (floating label, 46, inset ring), bare .sh-input (44, real border, outline focus), .dr-time (ScheduleEditor) and .dr-textarea (SOAP). Focus is drawn three different ways.\n• Four dropdown skins: Dropdown (radius 10, custom list), native .sh-select (44), .sh-select--pill (36) and .dr-select (pill, weight 600). The two pills differ in padding and weight.\n• Labels sit in two places: a 10px floating caption inside the box, or 12px bold above bare inputs. Mixed in one form, it looks unfinished.",
+      "w": 600,
+      "x": 3240,
+      "y": 5420
+    },
+    "au4-03r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Fields fill their grid cells: 4, then 3, then 1 column. That works.\n• Only .sh-input and .sh-select grow to 44 on phones; InputField is already 46, so heights differ by 2px side by side.\n• Suggest one Field component: label above on doctor web, floating label on phones, same box and focus everywhere.",
+      "w": 600,
+      "x": 4520,
+      "y": 5420
+    },
+    "au4-03u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• The floating label and help text are 10px, below the doctor app's 12px minimum.\n• Help text uses text-primary, so it reads with the same weight as the value. Error help has no icon, only colour.\n• Open Dropdown options have no hover or focus state, and unchecked options need manual indentation to line up.\n• OTP: 6 × 48 boxes fit 358 but nothing narrower. The PIN pad's 64px keys are good.",
+      "w": 600,
+      "x": 3880,
+      "y": 5420
+    },
+    "au4-04c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Selection is drawn four ways on this board: teal fill (checkbox, radio, switch), tint + 2px ring (choice), raised white pill (tabs) and teal underline. That's fine as roles, but write the rule down: fill = value, tint + ring = option card, raised = view switch.\n• An empty checkbox uses border-disabled (grey-400), the same token as disabled, so it looks unavailable.\n• The prototype's own Calendar (ShellTablet) styles Day / Week / Month as chips, not SegmentedTabs.",
+      "w": 600,
+      "x": 3240,
+      "y": 7760
+    },
+    "au4-04r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Pill tabs overflow at 358: Follow-ups is cut with no cue. Below 560, switch to the block variant, a Dropdown or an edge fade.\n• The block variant wraps labels to two lines under 560 (Nov fix), which is good for Russian and Uzbek.\n• Choice cards go 3, 3, then 1 column. That works.",
+      "w": 600,
+      "x": 4520,
+      "y": 7760
+    },
+    "au4-04u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• The Switch is 40 × 22 with no on or off cue apart from colour, and the white knob on teal-50 is 2.4:1. Add a check glyph in the knob.\n• The Slider value is a free text field showing 70 %. Use a number input with a % suffix. The split bar repeats the track.\n• Pill tabs scroll sideways with the scrollbar hidden and no fade. The underline variant has --fade; the pill variant doesn't.",
+      "w": 600,
+      "x": 3880,
+      "y": 7760
+    },
+    "au4-05c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Six Pressable skins with mixed radii (card and brand 16, row, tile and tint 10).\n• Three looks for the chosen option: OptionList uses a tint, Menu draws a tick after the label, Dropdown puts a check icon in front.\n• The aria-pressed ring rule also fires on Pressables used for navigation, which aren't choices.\n• Focus: Pressable, Link and Menu use the teal border-focus; Buttons use a charcoal 2px ring. doctor-workspace.md itself says teal fails 3:1 for focus (2.4:1). P1.",
+      "w": 600,
+      "x": 3240,
+      "y": 9430
+    },
+    "au4-05r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Pressables, links and options grow to 44 under 560. Good.\n• Menu has a fixed 200 minimum width and anchors right: 0, so at 358 it can open off-screen. Swap it for a Tray below 560 inside the component itself.\n• OptionList is the right row for both menus and trays. Make it the single source.",
+      "w": 600,
+      "x": 4520,
+      "y": 9430
+    },
+    "au4-05u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• sh-link--quiet is charcoal with no underline, so it can't be told apart from body text. Names in tables won't look clickable.\n• Menu items are 36 tall with no phone rule. Menus should become Trays on phones, but nothing enforces it; make sure the Tray rows use OptionList (44).\n• The tooltip carries the rail labels on tablet, and touch has no hover.",
+      "w": 600,
+      "x": 3880,
+      "y": 9430
+    },
+    "au4-06c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• The tablet rail is a class the screen has to add (.dr-shell--rail), while hiding the sidebar on phones is a container query. That's two mechanisms for one component. Make the rail automatic from 768 to 1099.\n• Nav selection: the sidebar uses a tint + bold + teal icon; the NavBar uses teal text + bold with no tint. Same destinations, two looks.\n• Sidebar section labels and NavBar labels are 10px.\n• The S mark is a teal tile here, but the Shifa Doctor app icon is charcoal (Nov). Decide which colour says Shifa Doctor.",
+      "w": 600,
+      "x": 3240,
+      "y": 11380
+    },
+    "au4-06r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• The sidebar appears at 1100, and from 1100 to 1280 content gets only about 800px. Test Home and Calendar at 1100.\n• The sticky sidebar height comes from 100vh, which mis-sizes on iOS Safari and in embedded views. Use dvh.\n• The bottom nav switch is keyed to a 767px container while the rail is keyed to the viewport. Align them on one rule.",
+      "w": 600,
+      "x": 4520,
+      "y": 11380
+    },
+    "au4-06u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• The rail hides the unread badge (.sh-bubble-count display: none), so unread chats vanish on tablet. Show a dot.\n• The rail hides the Shifa AI card with nothing in its place.\n• Rail labels exist only as tooltips, which touch tablets can't reach. Consider short labels under the icons, as the NavBar does.\n• NavBar tabs are 65 wide; 5 tabs plus padding come to 373 on a 358 bar, so the tabs squeeze below spec. Russian labels (Календарь, Пациенты) will touch. Use flex: 1 with a 56 minimum.",
+      "w": 600,
+      "x": 3880,
+      "y": 11380
+    },
+    "au4-07c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Two title systems: PageToolbar (32/40, then 24 below 980) and PageHeader (100 tall at 32, or a 64 sub header with a centred 24 title). The same screen can switch title style at a breakpoint.\n• Three search widths: 280 fixed in the toolbar, 260 to 360 in the FilterBar, full width on phones.\n• Three section-heading sizes on one page: Section and Panel 20/22, Form and Chart 16/22.\n• ContextSwitcher is a green tinted block, while the patient context (PatientHeader) is white.",
+      "w": 600,
+      "x": 3240,
+      "y": 12880
+    },
+    "au4-07r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• The toolbar has three states (980 and up, 720 to 979, under 720). Between 720 and 979 the search drops below the actions, the reverse of the FilterBar, where search comes first. Align the order.\n• ContextSwitcher truncates the clinic name at 358 but keeps the role. Long Russian names will cut early; let the name wrap to two lines.",
+      "w": 600,
+      "x": 4520,
+      "y": 12880
+    },
+    "au4-07u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• Under 720 the compact toolbar swaps Import and New Patient for two unlabelled glyphs. Keep the primary action labelled, or use the FAB.\n• The FilterBar packs search, 3 chips and 2 selects into one wrapping row. At tablet the selects land on their own line, pushed right by the spacer, and read like a separate toolbar.\n• The main PageHeader is 100 tall, about 12% of a phone screen for a title.",
+      "w": 600,
+      "x": 3880,
+      "y": 12880
+    },
+    "au4-08c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• The CSS has three pager implementations (span 32, button 36, .dr-pager__btn 36). On white panels the pager buttons are white too, so they have no visible edge.\n• Chart legends are written twice (.dr-legend and .dr-donut__list), with the same dots.\n• The KPI value drops to 24 below 560 while page titles shrink at 980: type scales change at different breakpoints.",
+      "w": 600,
+      "x": 3240,
+      "y": 14610
+    },
+    "au4-08r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• KPIs go 4, 2, 2 and charts 2, 2, 1. Both work.\n• The table becomes cards under 720. Tablet (920) keeps 6 columns, which works.\n• Phone cards put a label in front of every cell, so Status · sits before a badge that already says the status, and Age gets its own line. Give the card a designed layout: name and status on top, next visit and balance below.",
+      "w": 600,
+      "x": 4520,
+      "y": 14610
+    },
+    "au4-08u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• The KPI delta colour follows the arrow's direction, not the meaning: two fewer no-shows is good news but shows a red down arrow. Add a tone (positive or negative) separate from the arrow.\n• 3 400 000 nearly fills a phone KPI card; 12 450 000 will overflow. Allow the value to shrink, or abbreviate it and give the full value in the label.\n• Line chart axis labels are SVG text scaled by the viewBox, so at phone width 12px labels render at about 6 to 7px. Use HTML labels or a fixed-pixel SVG.\n• Table headers show no sort affordance.",
+      "w": 600,
+      "x": 3880,
+      "y": 14610
+    },
+    "au4-09c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Three patient identities with three name sizes: Hero 24 (20 under 560), PatientHeader 24 (20 under 720), PatientRow 16. The Hero and header shrink at different breakpoints.\n• The Hero has a 2px teal border; no other card does (AI cards use 1px). Decide whether next or live earns a border and document it.\n• The Hero uses regular 46 buttons; PatientHeader uses compact 36.\n• The Hero's status pill appears twice in the markup (a top row for phones, inline for wide): two sources to keep in sync.",
+      "w": 600,
+      "x": 3240,
+      "y": 17070
+    },
+    "au4-09r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Hero at 358: the pills move to the top row and the actions share one row at 14px with icons dropped. That works well.\n• PatientHeader under 720 goes to two columns with full-width actions and a 2 × 2 facts grid. At 920 the actions sit beside the name. Good.\n• On desktop the Hero and header both show flags and facts; check the pair together on the Visit screen so they don't repeat.",
+      "w": 600,
+      "x": 4520,
+      "y": 17070
+    },
+    "au4-09u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• P1 clinical: under 560 the Medical record starts collapsed, which hides the penicillin allergy. Always show error-tone (allergy) chips and collapse the rest.\n• PatientRow is a div with a chevron, so it isn't focusable or clickable as a unit. Make it a Pressable.\n• PatientRow hides the status badge under 560 with nothing in its place.\n• Fact labels (Blood type, Last visit) are 10px tertiary.",
+      "w": 600,
+      "x": 3880,
+      "y": 17070
+    },
+    "au4-10c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Three calendars mark today and selected differently: the week header uses a solid teal disc for today; the month uses a ring for today and solid teal for selected; the day strip uses a teal square for selected.\n• CalendarWeek has a fixed 5 columns (Mon to Fri), but the phone day strip and MonthCalendar include weekends. Many clinics work Saturdays; make the days a prop.\n• ScheduleEditor brings yet another field (.dr-time) and the legacy 32px remove button.\n• Timeline status is a 24 word pill on wide containers and a 28 icon disc on phones, so rows jump in height.",
+      "w": 600,
+      "x": 3240,
+      "y": 19190
+    },
+    "au4-10r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• P1: under 560, MonthCalendar days grow to 44 but the card is capped at 340 (308 inside). 7 × 44 plus gaps = 332, so the grid overflows on phones (see the phone column).\n• Week grid to agenda below 720 is right. At 920 the columns are about 165 wide. That works.\n• ScheduleEditor goes 4, 3, then 1 column. At 358 a range row holds two time fields, a dash and a 32px remove button that should be 44.",
+      "w": 600,
+      "x": 4520,
+      "y": 19190
+    },
+    "au4-10u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• P1: free slots have transparent text that only shows on hover or focus (Oct revision). In the phone agenda, Free renders as an empty white box. This breaks the DS's own rule against hover-only information.\n• The now line is error red, which competes with no-show and risk. Use charcoal or teal.\n• Past timeline cards drop to 72% opacity, which takes the text below AA.\n• At 920, half-hour events lose their second line.",
+      "w": 600,
+      "x": 3880,
+      "y": 19190
+    },
+    "au4-11c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Two sticky footers: the visit's .dr-footer (a 90% white card, radius 16, tray shadow) and ActionBar (a white bar with a hairline). The DS says commit actions live in ActionBar, so retire .dr-footer.\n• Draft with AI is a tint pill here; elsewhere AI actions use the charcoal .sh-btn--ai.\n• Call controls (48 discs, a 64 end button) and the on-dark IconButton are two sets of dark-ground buttons. Make them one media-controls set.",
+      "w": 600,
+      "x": 3240,
+      "y": 21760
+    },
+    "au4-11r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• The video stage goes from 16:9 to 3:4 under 560. Good. The screen recipe says the phone stage is full-screen, but the component keeps its radius and never goes full-bleed.\n• DentalChart uses 679 and 379 breakpoints, which aren't tokens (the tokens are 560, 720, 768, 980 and 1100).\n• The footer wraps under 560 (status on its own row, buttons share the next). That works.",
+      "w": 600,
+      "x": 4520,
+      "y": 21760
+    },
+    "au4-11u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• Teeth are 36 × 40 on desktop, 19 × 30 under 560 and 18 wide under 380, far below 44. Make the scroll mode (.dr-teeth--scroll) the default for editing on phones.\n• Tooth state is colour and fill only. Add a glyph or pattern for colour-blind users; tooth numbers are 10px.\n• The collapsed SOAP header is a div. Make the whole header a button with aria-expanded.\n• The REC pill (white on 50% black) can drop below AA over bright video.",
+      "w": 600,
+      "x": 3880,
+      "y": 21760
+    },
+    "au4-12c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• DocumentTile (.dr-dtile, card with shadow) and the chat document (.dr-doc, flat, 220 minimum) are the same object drawn twice, with different icons and padding. Merge them.\n• File types are image thumbnails on tiles and coloured icon squares in chat.\n• .dr-cat (10px uppercase) is a third overline style, alongside the sidebar section and the preview frame label.",
+      "w": 600,
+      "x": 3240,
+      "y": 24050
+    },
+    "au4-12r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• The tile grid uses a raw 300px minimum (not a token): 3, 2, then 1 column. That works.\n• The viewer loses its radius under 560 to go full screen. Inside a panel that looks broken; make full-bleed a prop.",
+      "w": 600,
+      "x": 4520,
+      "y": 24050
+    },
+    "au4-12u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• The upload strip has no button. Add a real Browse Files button and a drag state; phones have no drag and drop.\n• The viewer hides Share under 560 (.dr-viewer__extra) with no overflow menu in its place.\n• Zoom buttons are 32px ghost buttons; they need 44 on phones.",
+      "w": 600,
+      "x": 3880,
+      "y": 24050
+    },
+    "au4-13c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Bubble colours flip meaning between the apps: teal is always the other party, so it's the doctor in the patient app and the patient here. Consider teal = clinician in both, or a role label.\n• Sent bubbles right-align their text, giving multi-line messages a ragged left edge. Keep the text left-aligned inside a right-aligned bubble.\n• Three composers in the CSS: .sh-chatbar (pill with ring), .sh-chatbar__input (canvas-filled, radius 24) and the AI copilot input. Make one ChatBar.\n• On a white panel, unread (canvas fill) and hover (5% black) look nearly the same.",
+      "w": 600,
+      "x": 3240,
+      "y": 26000
+    },
+    "au4-13r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Below 720 the split shows only the list; the thread becomes its own screen (the phone column shows both, one after the other). At 920 the 320 list plus 550 thread works.\n• Bubbles cap at 360 at every width: narrow and readable on desktop, edge to edge on phones.\n• Attachments have a 220 minimum, so two side by side won't fit on a phone.",
+      "w": 600,
+      "x": 4520,
+      "y": 26000
+    },
+    "au4-13u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• The unread count bubble and the voice play button are white on teal-50 (2.4:1).\n• Message status shows one tick with no read state.\n• The conversation role tag (Clinic) is 10px.\n• The message composer is fine; the attach button is a secondary IconButton while send is primary. Good hierarchy.",
+      "w": 600,
+      "x": 3880,
+      "y": 26000
+    },
+    "au4-14c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Two AI surfaces: AiInsightCard is a flat teal tint with a 1px brand line (per the DS); AiCopilot is a white card with shadow-card, without the AI marking the DS asks for.\n• The disclaimer differs: the full README text in the Copilot, a short Check before acting in insights. Use one.\n• Three AI-button looks across the app: teal pill, tint pill and charcoal.",
+      "w": 600,
+      "x": 3240,
+      "y": 28010
+    },
+    "au4-14r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• The cards are fluid. The Copilot has no docked or floating state in the component, even though the recipe docks it on desktop and opens it from the orb on phones. Add both states to the DS.\n• Suggestions wrap to 3 lines on phones. A carousel would keep the panel short.",
+      "w": 600,
+      "x": 4520,
+      "y": 28010
+    },
+    "au4-14u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• Copilot suggestions are spans, so they can't be clicked or focused. Make them Chips.\n• The risk card turns the primary destructive red (red-means-red rule), but Review Prescription doesn't delete anything; red suggests it does. Consider a charcoal primary inside risk containers.\n• The disclaimer is the smallest text on screen (10px tertiary) for the most important caveat. Use 12px.\n• The orb's white sparkles on teal are 2.4:1.",
+      "w": 600,
+      "x": 3880,
+      "y": 28010
+    },
+    "au4-15c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Alerts come in three strengths: Banner (subtle fill + 2px ring), Toast (charcoal) and the feedback Notification (amber fill + 2px ring). A warning notification looks exactly like a warning banner.\n• The Toast success icon uses raw-splash-logo, an illustration colour, not a status token.\n• Banner text is 12/12 and Toast text is 14/20: the same message at two sizes.\n• Read notifications are white cards on a white panel, with no edge (see the board).",
+      "w": 600,
+      "x": 3240,
+      "y": 29790
+    },
+    "au4-15r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Toasts cap at 480 and fill the width at 358. With Retry and close, the text squeezes to 2 or 3 lines; move actions under the text on phones.\n• The notification list never changes layout; at 1132, cards 1100 wide are hard to scan. Cap it at layout-reading (720).",
+      "w": 600,
+      "x": 4520,
+      "y": 29790
+    },
+    "au4-15u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• Retry in an error banner turns red (red-means-red), but retry isn't destructive.\n• The Toast close button is a 16px glyph with no padding, a tiny target.\n• Notification bodies clamp to 2 lines with no way to read more.\n• EmptyState with one action, and shimmer skeletons that respect reduced motion: both good.",
+      "w": 600,
+      "x": 3880,
+      "y": 29790
+    },
+    "au4-16c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Three overlay shells: ResponsiveDialog (radius 24, padding 24, title 20), .sh-sheet (padding 20) and the patient Tray (padding 16, title 16). Only the Tray has a close button.\n• Dialog and ActionBar both right-align actions on web and stack them, primary last, on phones. The Tray uses one block button instead.\n• The destructive dialog centres its icon and text but right-aligns its actions on web.",
+      "w": 600,
+      "x": 3240,
+      "y": 31970
+    },
+    "au4-16r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• The dialog becomes a bottom tray under 560 with full-width stacked buttons. Good. From 560 to 720 it stays centred, which works.\n• ActionBar goes from right-aligned with 160 minimum buttons to full-width, primary at the bottom. Good.\n• The patient Tray has no width rule: at 1132 it is an 1100px bottom sheet. Doctor web should only reach it through ResponsiveDialog.",
+      "w": 600,
+      "x": 4520,
+      "y": 31970
+    },
+    "au4-16u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• Tray date chips are clipped (overflow: hidden) with no scroll or fade, so Tue 10 and Wed 11 disappear. Use sh-carousel.\n• Chips in the Tray are white on white unless the Tray has role=dialog.\n• The dialog has no close (×) and no Esc hint. The Tray has no grab handle, so swipe to dismiss isn't discoverable.",
+      "w": 600,
+      "x": 3880,
+      "y": 31970
+    },
+    "au4-17c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• Progress is drawn three ways: the progress bar (6), stepper segments (4) and the slider split (8).\n• Three card treatments on one board: TaskCard (radius 10 + shadow), TreatmentPlanCard (16, flat) and TierCard (16 + 2px border).\n• Overdue is red text on the plan and an amber bar on the KPI. Pick one tone.\n• The current tier uses the same tint + teal ring as a selected chip or choice, so current and selected look identical.",
+      "w": 600,
+      "x": 3240,
+      "y": 33750
+    },
+    "au4-17r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• Tiers go 3, 3, then 1 at 720. At 920 three columns are about 290 wide and fit.\n• InstallmentSchedule stacks date over amount under 560, with remove spanning both rows. Check the focus order (date, amount, remove).\n• The task grid (auto-fill, 280 minimum) goes 3, 3, then 1. That works.",
+      "w": 600,
+      "x": 4520,
+      "y": 33750
+    },
+    "au4-17u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• Task tiles put white glyphs on solid amber and teal discs; amber with white is about 2.1:1.\n• Installment amounts are text inputs (3 000 000). Use inputmode=numeric with a UZS suffix and a live total.\n• Under 560 the Stepper hides step names, leaving Step 3 of 4 · Payment schedule. That's fine, but add a way back to earlier steps.\n• Current Plan is a dead disabled button. Show Your plan as text instead.",
+      "w": 600,
+      "x": 3880,
+      "y": 33750
+    },
+    "au4-18c": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency\n\n• FormSection has its own footer buttons, although the DS says commit actions live in the ActionBar. Pick a rule: section Save for settings, ActionBar for flows. Write it down.\n• One form mixes a floating-label InputField (46), a native select with no visible label (44), a country-code box and a checkbox row, with labels in two places.\n• The map pin is destructive red, the only red in a neutral flow, and it reads as an error.",
+      "w": 600,
+      "x": 3240,
+      "y": 36710
+    },
+    "au4-18r": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness\n\n• The form grid goes 2, 2, then 1 at 560, with footer buttons full width on phones. That works.\n• The MapPicker sheet becomes a bottom sheet under 560. Good. With a 360 minimum height, the map and sheet compete on phones; consider a full-screen map.",
+      "w": 600,
+      "x": 4520,
+      "y": 36710
+    },
+    "au4-18u": {
+      "fill": "orange",
+      "page": "page-hgcmu4",
+      "text": "Usability\n\n• The District select has only an aria-label, so sighted users lose the label once a value is picked. Use the field label pattern.\n• The country code (+998) is a span, not a control.\n• MapPicker needs a Use My Location button and keyboard nudging for the pin.",
+      "w": 600,
+      "x": 3880,
+      "y": 36710
+    },
+    "au4Title": {
+      "kind": "title1",
+      "maxW": 4800,
+      "page": "page-hgcmu4",
+      "text": "Every Doctor App component at desktop, tablet and phone",
+      "w": 240,
+      "x": 0,
+      "y": 740
+    },
+    "au4x1": {
+      "fill": "gray",
+      "page": "page-hgcmu4",
+      "text": "How to read this page\n\nEach board is one component family, drawn with the canvas's own copy of the Shifa DS (shifa-ds.css) inside three containers:\n• Desktop 1132 = 1440 viewport minus the 260 sidebar and padding\n• Tablet 920 = 1024 viewport minus the 72 rail\n• Phone 358 = 390 viewport minus the 16 gutters\nThe components switch at 560 / 720 / 980 of container width, so each column shows what that breakpoint really does. The content is example data.\n\nNotes to the right of each board: blue = consistency, orange = usability, teal = responsiveness. P1 = fix first. Add your own notes beside them.\n\nLeft out because the doctor app doesn't use them: AppIcon, DoctorCard, AppointmentCard, Rating.",
+      "w": 600,
+      "x": 0,
+      "y": 1000
+    },
+    "au4x2": {
+      "fill": "red",
+      "page": "page-hgcmu4",
+      "text": "P1 across the system\n\n• White on teal-50 is 2.4:1 wherever it appears: primary Button, ActionButton, FAB, solid StatusBadge, selected day, pager, orb, count bubbles. One token decision fixes all of them.\n• Focus rings: teal (2.4:1) on Pressable, links, days, choices and teeth; charcoal on Buttons. Use one ring everywhere: 2px text-primary at a 2px offset.\n• Information that only shows on hover: CalendarWeek free slots render as empty boxes on touch, and the rail's labels are tooltips only.\n• Clinical flags start collapsed on phones, which hides allergies.\n• Unselected chips are white, so they disappear on white panels, trays and SOAP sections.\n• MonthCalendar overflows on phones.",
+      "w": 600,
+      "x": 640,
+      "y": 1000
+    },
+    "au4x3": {
+      "fill": "blue",
+      "page": "page-hgcmu4",
+      "text": "Consistency patterns\n\n• Six pill heights (20 to 34) and two radii (AlertChip 10, the rest full).\n• Duplicates: 4 input skins, 4 dropdown skins, 3 pagers, 2 spinners (.sh-spinner and .da-spin), 2 sticky footers (ActionBar and .dr-footer), 3 overlay shells, 2 icon-button classes.\n• Selected is drawn 6 ways, and current (TierCard) looks exactly like selected.\n• Three looks for AI actions: teal pill, tint pill and charcoal button.\n• 10px text in about 15 places, even though doctor-workspace.md sets 12px as the minimum.\n• Raw px values are still in the CSS: 65 nav tab, 300 tile grid, 340 month, 200 menu, 84 slider field, 19 tooth, 34 chip, plus 679 and 379 breakpoints that aren't tokens.",
+      "w": 600,
+      "x": 1280,
+      "y": 1000
+    },
+    "au4x4": {
+      "fill": "teal",
+      "page": "page-hgcmu4",
+      "text": "Responsiveness patterns\n\n• Switching on container width (560 / 720 / 980) is a strong model and mostly works.\n• Tablet is the least designed width: DS previews show desktop and 360 only. Add a tablet frame to every preview card.\n• Gaps: the AppShell rail is a manual class; MonthCalendar overflows at 44px days; pill tabs and Tray chips clip with no cue; SVG chart labels shrink with the viewBox.\n• On phones, tables become cards with a label in front of every cell. Give the cards a designed layout instead.\n• Phone-only parts (FAB, NavBar, Tray) have no rule that keeps them off web.",
+      "w": 600,
+      "x": 1920,
+      "y": 1000
+    },
     "auTitle": {
       "kind": "title1",
       "maxW": 4000,
@@ -563,7 +1282,29 @@
     "AuTokens.dc.html",
     "AuBugs.dc.html",
     "AuImprove.dc.html",
-    "AuRecommend.dc.html"
+    "AuRecommend.dc.html",
+    "Artboard-t5wx.dc.html",
+    "IcoExplore.dc.html",
+    "IcoContext.dc.html",
+    "IcoRound2.dc.html",
+    "Au4Actions.dc.html",
+    "Au4Pills.dc.html",
+    "Au4Inputs.dc.html",
+    "Au4Selection.dc.html",
+    "Au4Press.dc.html",
+    "Au4Shell.dc.html",
+    "Au4Toolbar.dc.html",
+    "Au4Data.dc.html",
+    "Au4Patient.dc.html",
+    "Au4Schedule.dc.html",
+    "Au4Visit.dc.html",
+    "Au4Docs.dc.html",
+    "Au4Chat.dc.html",
+    "Au4AI.dc.html",
+    "Au4Feedback.dc.html",
+    "Au4Overlays.dc.html",
+    "Au4Clinic.dc.html",
+    "Au4Forms.dc.html"
   ],
   "pages": [
     {
@@ -577,6 +1318,14 @@
     {
       "id": "page-brb11j",
       "name": "UI Audit"
+    },
+    {
+      "id": "page-n4upr2",
+      "name": "App icon Exploration"
+    },
+    {
+      "id": "page-hgcmu4",
+      "name": "Audit_4.11"
     }
   ],
   "title": "Shifa Doctor Components Review"

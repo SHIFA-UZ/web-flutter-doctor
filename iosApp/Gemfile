@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+# ruby/setup-ruby's bundler-cache restores this from cache instead of
+# recompiling native gems on every macOS run (each billed at 10x).
+gem "fastlane", "2.237.0"

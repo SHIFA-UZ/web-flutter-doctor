@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keys the KMP UI kit added (CORE-03); not in the Flutter app. Hand-written: the generated strings.xml never holds these. -->
+<resources>
+    <string name="attach">Прикрепить</string>
+    <string name="clear">Очистить</string>
+    <string name="pause">Пауза</string>
+    <string name="play">Воспроизвести</string>
+    <string name="recordVoiceMessage">Записать голосовое сообщение</string>
+    <string name="seeAll">Смотреть все</string>
+    <string name="select">Выбрать</string>
+    <string name="share">Поделиться</string>
+    <string name="stopRecording">Остановить запись</string>
+    <string name="verified">Проверен</string>
+    <string name="notIncluded">Не входит</string>
+</resources>

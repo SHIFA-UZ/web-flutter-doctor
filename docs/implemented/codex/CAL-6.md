@@ -1,0 +1,26 @@
+- **[P2] Time-dependent controls never update while idle.** [AppointmentPanel.kt:128](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:128): `cta` and `changeable` read the clock, but no timer emits state or triggers recomposition. A panel opened before the video window stays disabled when it opens; cancellation can remain available after the appointment ends.
+
+- **[P2] Background cache updates discard duration edits.** [AppointmentPanel.kt:163](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:163): every calendar-cache emission resets `minutes` whenever no write is running—even when another day's request changes only cache metadata. Month prefetch or loading reschedule slots can silently replace the doctor's unapplied selection.
+
+- **[P2] Shortening uses the wrong schedule grain.** [AppointmentRules.kt:65](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/data/appointments/AppointmentRules.kt:65): the minimum free-slot duration replaces the specified GCD clamped to 5–240 minutes. With 20- and 30-minute free slots, a 60-minute appointment offers 20/40/60 instead of 10-minute increments. The `> 0` cutoff also permits durations below the required five-minute minimum.
+
+- **[P2] Reschedule offers slots that cannot accommodate the retained length.** [AppointmentPanel.kt:193](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:193) filters only by entry type and future start; [line 208](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:208) always submits the original duration. A 60-minute appointment can select an isolated 30-minute slot followed by another booking. Check contiguous availability before offering the move, or request an explicit shorter duration.
+
+- **[P2] Slot-loading failures appear as “No slots available.”** [AppointmentPanel.kt:193](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:193): `getOrNull().orEmpty()` discards network and API failures. The sheet provides neither an error nor Retry, reproducing the swallowed-load-error defect identified in flow 07.
+
+- **[P2] Failed cancellation leaves the calendar stale.** [AppointmentPanel.kt:224](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:224): the failure branch only updates the dialog; it never refreshes the affected day. If DELETE succeeds server-side but its response is lost, the appointment remains actionable and retry sends another cancellation. Flow 08 explicitly requires refreshing this failure path.
+
+- **[P2] Rescheduling is limited to the next fourteen days.** [AppointmentPanel.kt:519](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:519): the fixed strip has no paging or date picker. Doctors cannot move appointments to later dates despite available schedules; flow 07 specifies a full-date picker alongside the strip.
+
+- **[P2] Panel state survives closing and reopening the route.** [AppointmentPanel.kt:272](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/AppointmentPanel.kt:272): the appointment-keyed ViewModel belongs to the shell's shared store, with no route-level disposal or reset. Returning with system Back while a confirmation is open and reopening the appointment restores that confirmation. After successful cancellation, any still-visible cancelled row reopens with `closed = true` and immediately navigates back.
+---
+**Answers (round 1, all fixed):**
+1. *Time-dependent controls never update:* the ViewModel ticks `now` every 30 s; the main button and the change actions read it.
+2. *Cache updates discard the duration pick:* the pick is reset only when the visit's length itself changed. Tested.
+3. *Wrong grain:* the GCD of the free-slot lengths at the visit's location, clamped 5–240; shorter options never go under 5 minutes. Tested.
+4. *Slots that can't hold the length:* only slots where free slots chained without a gap cover the whole length are offered (`fits`). Tested.
+5. *Slot read failures shown as "No slots":* the sheet shows the error with the request id and Retry. Tested.
+6. *Failed cancel leaves the calendar stale:* a failed cancel reads the day again too. Tested.
+7. *Only fourteen days:* the sheet uses the month picker (shaded from the cache, paging, past days closed) instead of the strip.
+8. *State survives reopening:* each open is a new route (`opened` stamp), so the panel's ViewModel starts fresh.
+Also from flow 04/07: a slot at another location is labelled with it; the current slot shows greyed as "current".

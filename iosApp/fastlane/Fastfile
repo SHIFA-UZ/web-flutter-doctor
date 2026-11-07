@@ -1,0 +1,94 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    # Set up App Store Connect API authentication
+    key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
+    key_filepath = File.expand_path("~/private_keys/AuthKey_#{key_id}.p8")
+
+    api_key = app_store_connect_api_key(
+      key_id: key_id,
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_filepath: key_filepath,
+      in_house: false
+    )
+
+    build_number = ENV["BUILD_NUMBER"] || "1"
+
+    puts "Building build #{build_number} (version from Configuration/Config.xcconfig MARKETING_VERSION)"
+
+    # Download existing provisioning profile from App Store Connect
+    FileUtils.mkdir_p("./fastlane/profiles")
+
+    sigh(
+      api_key: api_key,
+      app_identifier: "uz.shifa.doc",
+      team_id: "NH97PGA9PT",
+      readonly: true,
+      platform: "ios",
+      filename: "appstore.mobileprovision",
+      output_path: "./fastlane/profiles"
+    )
+    main_profile_name = ENV['SIGH_NAME']
+    puts "Provisioning profile downloaded: #{main_profile_name}"
+    puts "Profile UUID: #{ENV['SIGH_UUID']}"
+
+    # Configure Xcode project to use the downloaded provisioning profile
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      targets: ["iosApp"],
+      path: "iosApp.xcodeproj",
+      team_id: "NH97PGA9PT",
+      code_sign_identity: "Apple Distribution",
+      build_configurations: ["Release"],
+      profile_name: main_profile_name
+    )
+    puts "Signing configured with profile: #{main_profile_name}"
+
+    # Build, archive and sign. The "Compile Kotlin Framework" build phase runs Gradle.
+    gym(
+      project: "iosApp.xcodeproj",
+      scheme: "iosApp",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        teamID: "NH97PGA9PT",
+        uploadBitcode: false,
+        uploadSymbols: true,
+        compileBitcode: false,
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "uz.shifa.doc" => main_profile_name
+        }
+      },
+      xcargs: "CURRENT_PROJECT_VERSION=#{build_number}",
+      output_directory: "./build/ipa",
+      output_name: "shifa_doctor.ipa",
+      clean: false,
+      skip_build_archive: false,
+      skip_codesigning: false,
+      build_path: "./build",
+      archive_path: "./build/iosApp.xcarchive",
+      verbose: false,
+      buildlog_path: "./build/logs"
+    )
+
+    puts "Build complete: shifa_doctor.ipa"
+
+    # Upload to TestFlight — skip processing wait to save CI minutes.
+    # NOTE: do NOT pass `changelog:` here. When a changelog is supplied,
+    # fastlane must wait for the build to appear on App Store Connect to
+    # attach it, which defeats `skip_waiting_for_build_processing`.
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+      ipa: "./build/ipa/shifa_doctor.ipa",
+      wait_for_uploaded_build: false
+    )
+
+    puts "Successfully uploaded to TestFlight! Build #{build_number}"
+  end
+end

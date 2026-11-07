@@ -1,0 +1,11 @@
+- **[P2] Round-one storage fallback remains incomplete.** [AppLockRepository.kt:81](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/data/applock/AppLockRepository.kt:81) assumes every failed verification increments the stored counter. However, `AppLockStorage.kt:50–51` returns `false` without incrementing when salt/hash is missing. With the enabled flag and hash present but salt missing, the app locks and every submission returns `Wrong(5)` indefinitely. Treat incomplete credentials as `LockedOut`.
+
+- **[P2] Failed PIN replacement can invalidate the existing PIN.** [AppLockRepository.kt:103](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/data/applock/AppLockRepository.kt:103) catches save failures without restoring previous credentials. `AppLockStorage.kt:42–43` writes the new salt before the new hash; if the second write fails during Change PIN, the old hash remains paired with the new salt. Cancelling the displayed retry sheet leaves neither PIN usable. Persist the credential pair atomically or restore it on failure.
+
+- **[P2] Disabling the lock silently swallows deletion failures.** [AppLockRepository.kt:111](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/data/applock/AppLockRepository.kt:111) returns `Unlocked` even when `clear()` throws because `read` suppresses the exception. `AppLockSection.kt:138` consequently closes the sheet without an error although the lock remains enabled. Return a `Result` for the mutation and keep the sheet open with failure feedback.
+---
+**Answers (round 2, all fixed in `AppLockStorage`):**
+1. *Incomplete credentials:* salt and hash are now one value (`salt.hash`); a credential that is missing or can't be decoded sets the attempts to the maximum, so the next check is `LockedOut` → sign-out. Tested.
+2. *Half-written PIN change:* the single value is written in one `put`, so there is no state with a new salt next to the old hash.
+3. *Silent delete failure:* `turnOff` returns `Result<PinCheck>`; a failed delete keeps the sheet open with "Couldn't change the app lock. Try again." and the switch stays on.
+Local, covered by tests; no third round.

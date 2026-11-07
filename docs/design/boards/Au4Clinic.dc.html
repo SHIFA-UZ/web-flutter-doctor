@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TaskCard, TreatmentPlanCard, Stepper, InstallmentSchedule, TierCard</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="shifa-ds.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.au-frame{container-type:inline-size;box-sizing:content-box}
+.au-frame h3,.au-frame h4,.au-frame p{margin-top:0}
+</style>
+</helmet>
+<div style="width: 2698px; min-height: 2800px; box-sizing: border-box; padding: 48px; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 32px">
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 1600px">
+<p style="margin: 0; font: 700 14px/20px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary)">Audit_4.11 · 17 · Clinic and remote care</p>
+<h1 style="margin: 0; font: 700 40px/44px var(--font-sans); letter-spacing: -1px">TaskCard, TreatmentPlanCard, Stepper, InstallmentSchedule, TierCard</h1>
+<p style="margin: 0; font: 500 18px/26px var(--font-sans); color: var(--text-secondary)">Remote-care tasks, treatment plans with payments, and the subscription picker. Tier prices are placeholders.</p>
+</header>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+<section style="flex: none; width: {{f.pw}}px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 4px">
+<h2 style="margin: 0; font: 700 22px/28px var(--font-sans); letter-spacing: -.5px">{{f.label}}</h2>
+<span style="font: 500 14px/20px var(--font-sans); color: var(--text-tertiary)">{{f.sub}}</span>
+</div>
+<div style="background: var(--bg-canvas); border-radius: 20px; padding: 16px">
+<div class="dr-frame au-frame" style="width: {{f.cw}}px">
+<div style="display:flex;flex-direction:column;gap:20px"><div class="dr-tasks"><div class="dr-task"><div class="dr-task__top"><span class="dr-task__tile dr-task__tile--med"><i><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 20.5a7 7 0 0 1-9.9-9.9l10-10a7 7 0 0 1 9.9 9.9z"></path><path d="M8.5 8.5l7 7"></path></svg></i></span><div class="dr-grow"><div class="dr-task__name">Amlodipine 5 mg</div><div class="dr-task__meta">Jasur Tursunov · daily, 08:00</div></div><span class="dr-status dr-status--brand">On track</span></div><div class="dr-task__prog"><span class="dr-progress"><i style="width:86%"></i></span>86%</div></div><div class="dr-task"><div class="dr-task__top"><span class="dr-task__tile "><i><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg></i></span><div class="dr-grow"><div class="dr-task__name">Blood pressure check</div><div class="dr-task__meta">Dilnoza Yusupova · twice a day</div></div><span class="dr-status dr-status--warn">Missed 2</span></div><div class="dr-task__prog"><span class="dr-progress"><i style="width:64%"></i></span>64%</div></div><div class="dr-task"><div class="dr-task__top"><span class="dr-task__tile dr-task__tile--ex"><i><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4" r="2"></circle><path d="M9 20l3-6 3 3v4M7 12l3-4 4 1 3 3"></path></svg></i></span><div class="dr-grow"><div class="dr-task__name">Walk 30 minutes</div><div class="dr-task__meta">Nodira Xasanova · 5 times a week</div></div><span class="dr-status dr-status--muted">Paused</span></div><div class="dr-task__prog"><span class="dr-progress"><i style="width:40%"></i></span>40%</div></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start"><div class="dr-plan"><div class="dr-plan__head"><h3 class="dr-plan__title">Orthodontic treatment · 18 months</h3><span class="dr-status dr-status--brand">Active</span></div><span class="dr-plan__who">Nodira Xasanova · Dr. Karimova</span><div class="dr-plan__progress"><span class="dr-progress"><i style="width:35%"></i></span>Stage 2 of 6</div><div class="dr-plan__money"><span>Total <b>18 000 000 UZS</b></span><span>Paid <b>6 300 000</b></span><span class="is-owed">Overdue 1 500 000</span></div><div class="dr-plan__foot"><button class="sh-btn sh-btn--secondary sh-btn--compact">Open Plan</button><button class="sh-btn sh-btn--tertiary sh-btn--compact">Send Reminder</button></div></div><div class="dr-panel"><div class="dr-stepper"><div class="dr-stepper__meta">Step 3 of 4<span class="dr-stepper__title">Payment schedule</span></div><div class="dr-stepper__bar"><i class="is-done"></i><i class="is-done"></i><i class="is-current"></i><i></i></div><div class="dr-stepper__steps"><span>Patient</span><span>Procedures</span><span class="is-current">Payment</span><span>Review</span></div></div><div class="dr-inst"><div class="dr-inst__row"><span class="dr-inst__n">1</span><input class="sh-input" type="date" value="2026-11-15" aria-label="Due date 1"><input class="sh-input" value="3 000 000" aria-label="Amount 1"><button class="sh-icon-btn sh-icon-btn--danger sh-icon-btn--sm" aria-label="Remove installment 1"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"></path></svg></button></div><div class="dr-inst__row"><span class="dr-inst__n">2</span><input class="sh-input" type="date" value="2026-12-15" aria-label="Due date 2"><input class="sh-input" value="3 000 000" aria-label="Amount 2"><button class="sh-icon-btn sh-icon-btn--danger sh-icon-btn--sm" aria-label="Remove installment 2"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"></path></svg></button></div><div class="dr-inst__row"><span class="dr-inst__n">3</span><input class="sh-input" type="date" value="2027-01-15" aria-label="Due date 3"><input class="sh-input" value="3 000 000" aria-label="Amount 3"><button class="sh-icon-btn sh-icon-btn--danger sh-icon-btn--sm" aria-label="Remove installment 3"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"></path></svg></button></div><div class="dr-inst__sum"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>9 000 000 of 9 000 000 UZS scheduled</div></div></div></div><div class="dr-tiers"><div class="dr-tier"><div class="dr-tier__name">Basic</div><div class="dr-tier__price">[PRICE] <small>UZS / month</small></div><ul><li>Calendar and bookings</li><li>Chat with patients</li><li class="is-off">Shifa AI</li><li class="is-off">Clinic workspace</li></ul><button class="sh-btn sh-btn--secondary sh-btn--compact">Downgrade</button></div><div class="dr-tier is-current"><div class="dr-tier__name">Pro <span class="dr-status dr-status--solid">Current</span></div><div class="dr-tier__price">[PRICE] <small>UZS / month</small></div><ul><li>Everything in Basic</li><li>Shifa AI notes</li><li>Video visits</li><li class="is-off">Clinic workspace</li></ul><button class="sh-btn sh-btn--secondary sh-btn--compact" aria-disabled="true">Current Plan</button></div><div class="dr-tier"><div class="dr-tier__name">Clinic</div><div class="dr-tier__price">[PRICE] <small>UZS / month</small></div><ul><li>Everything in Pro</li><li>Several doctors</li><li>Finance and reports</li><li>Treatment plans</li></ul><button class="sh-btn sh-btn--primary sh-btn--compact">Upgrade</button></div></div></div>
+</div>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2698,"height":2800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = [["d", "Desktop web", "1440 viewport · sidebar 260 · content 1132", 1132], ["t", "Tablet", "1024 viewport · rail 72 · content 920", 920], ["p", "Phone", "390 viewport · 16 gutters · content 358", 358]];
+    return { frames: F.map((f) => ({ k: f[0], label: f[1], sub: f[2], cw: f[3], pw: f[3] + 32, isD: f[0] === 'd', isT: f[0] === 't', isP: f[0] === 'p', rail: f[0] === 't' ? 'dr-shell--rail' : '' })) };
+  }
+}
+</script>
+</body>
+</html>

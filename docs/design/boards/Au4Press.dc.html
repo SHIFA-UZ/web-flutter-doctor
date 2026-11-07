@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pressable, Link, OptionList, Menu</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="shifa-ds.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.au-frame{container-type:inline-size;box-sizing:content-box}
+.au-frame h3,.au-frame h4,.au-frame p{margin-top:0}
+</style>
+</helmet>
+<div style="width: 2698px; min-height: 1790px; box-sizing: border-box; padding: 48px; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 32px">
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 1600px">
+<p style="margin: 0; font: 700 14px/20px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary)">Audit_4.11 · 05 · Pressables</p>
+<h1 style="margin: 0; font: 700 40px/44px var(--font-sans); letter-spacing: -1px">Pressable, Link, OptionList, Menu</h1>
+<p style="margin: 0; font: 500 18px/26px var(--font-sans); color: var(--text-secondary)">Everything clickable that is not a Button: rows, cards, tiles, links, option rows and menus.</p>
+</header>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+<section style="flex: none; width: {{f.pw}}px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 4px">
+<h2 style="margin: 0; font: 700 22px/28px var(--font-sans); letter-spacing: -.5px">{{f.label}}</h2>
+<span style="font: 500 14px/20px var(--font-sans); color: var(--text-tertiary)">{{f.sub}}</span>
+</div>
+<div style="background: var(--bg-canvas); border-radius: 20px; padding: 16px">
+<div class="dr-frame au-frame" style="width: {{f.cw}}px">
+<div style="display:flex;flex-direction:column;gap:20px"><div class="dr-panel"><h3 class="dr-panel__title">Pressable and Link</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;align-items:stretch"><button class="sh-press sh-press--row dr-row" style="padding:12px"><svg class="sh-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="dr-grow" style="font:700 14px/16px var(--font-sans)">Row · All patients</span><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button><button class="sh-press sh-press--card" style="padding:16px;box-shadow:var(--shadow-card)"><b style="display:block;font:700 16px/22px var(--font-sans)">Card</b><span style="font:500 12px/16px var(--font-sans);color:var(--text-secondary)">Opens the visit</span></button><button class="sh-press sh-press--tile" style="padding:16px"><b style="display:block;font:700 16px/22px var(--font-sans)">Tile</b><span style="font:500 12px/16px var(--font-sans);color:var(--text-secondary)">On white surfaces</span></button><button class="sh-press sh-press--tint" style="padding:16px"><b style="display:block;font:700 16px/22px var(--font-sans)">Tint</b><span style="font:500 12px/16px var(--font-sans);color:var(--text-secondary)">Quick action</span></button><button class="sh-press sh-press--brand" style="padding:16px"><b style="display:block;font:700 16px/22px var(--font-sans)">Brand</b><span style="font:500 12px/16px var(--font-sans);color:var(--text-secondary)">Promoted entry</span></button><button class="sh-press sh-press--tile" aria-pressed="true" style="padding:16px"><b style="display:block;font:700 16px/22px var(--font-sans)">Selected</b><span style="font:500 12px/16px var(--font-sans);color:var(--text-secondary)">aria-pressed</span></button></div><p style="margin:0;font:500 14px/20px var(--font-sans)">Inline: <button class="sh-link">See all</button> · <button class="sh-link sh-link--plain">Plain link</button> · <button class="sh-link sh-link--quiet">Dilnoza Yusupova</button> · <button class="sh-link sh-link--danger">Remove</button></p></div><div class="dr-panel"><h3 class="dr-panel__title">OptionList, Menu and Tooltip</h3><div class="dr-row" style="align-items:flex-start;gap:24px;flex-wrap:wrap"><div role="listbox" aria-label="Language" style="flex:1 1 260px;display:flex;flex-direction:column;gap:2px"><button class="sh-option" role="option" aria-selected="true">English<span style="margin-left:auto;color:var(--icon-brand)"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></button><button class="sh-option" role="option" aria-selected="false">Русский</button><button class="sh-option" role="option" aria-selected="false">Oʻzbekcha</button></div><div class="dr-menu" role="menu" aria-label="Appointment actions"><p class="dr-menu__head" style="margin:0">Appointment</p><button class="dr-menu__item" role="menuitem"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Reschedule<kbd>R</kbd></button><button class="dr-menu__item is-hover" role="menuitem"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Message patient</button><button class="dr-menu__item is-selected" role="menuitem"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>Mark arrived</button><div class="dr-menu__sep"></div><button class="dr-menu__item dr-menu__item--danger" role="menuitem"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"></path></svg>Cancel appointment</button></div><div style="padding-top:12px"><span class="dr-tooltip">Calendar · ⌘2</span></div></div></div></div>
+</div>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2698,"height":1790}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = [["d", "Desktop web", "1440 viewport · sidebar 260 · content 1132", 1132], ["t", "Tablet", "1024 viewport · rail 72 · content 920", 920], ["p", "Phone", "390 viewport · 16 gutters · content 358", 358]];
+    return { frames: F.map((f) => ({ k: f[0], label: f[1], sub: f[2], cw: f[3], pw: f[3] + 32, isD: f[0] === 'd', isT: f[0] === 't', isP: f[0] === 'p', rail: f[0] === 't' ? 'dr-shell--rail' : '' })) };
+  }
+}
+</script>
+</body>
+</html>

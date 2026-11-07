@@ -1,0 +1,399 @@
+{
+  "aiInsightNotifications": {
+    "en": {
+      "one": "{count} item requires your attention.",
+      "other": "{count} items require your attention."
+    },
+    "replaces": [
+      "aiInsightNotifications",
+      "aiInsightNotificationsOne"
+    ],
+    "ru": {
+      "few": "{count} элемента требуют внимания.",
+      "many": "{count} элементов требуют внимания.",
+      "one": "{count} элемент требует внимания.",
+      "other": "{count} элемента требуют внимания."
+    },
+    "uz": {
+      "other": "{count} ta element sizning e'tiboringizni talab qiladi."
+    }
+  },
+  "attemptsLeft": {
+    "en": {
+      "one": "{count} attempt left",
+      "other": "{count} attempts left"
+    },
+    "ru": {
+      "few": "Осталось {count} попытки",
+      "many": "Осталось {count} попыток",
+      "one": "Осталась {count} попытка",
+      "other": "Осталось {count} попытки"
+    },
+    "uz": {
+      "other": "{count} ta urinish qoldi"
+    }
+  },
+  "consultationUploadSuccess": {
+    "en": {
+      "one": "Uploaded {count} file.",
+      "other": "Uploaded {count} files."
+    },
+    "replaces": [
+      "consultationUploadSuccess"
+    ],
+    "ru": {
+      "few": "Загружено {count} файла.",
+      "many": "Загружено {count} файлов.",
+      "one": "Загружен {count} файл.",
+      "other": "Загружено {count} файла."
+    },
+    "uz": {
+      "other": "{count} ta fayl muvaffaqiyatli yuklandi."
+    }
+  },
+  "customTimesCount": {
+    "en": {
+      "one": "{count} slot per day",
+      "other": "{count} slots per day"
+    },
+    "replaces": [
+      "customTimesCount"
+    ],
+    "ru": {
+      "few": "{count} слота в день",
+      "many": "{count} слотов в день",
+      "one": "{count} слот в день",
+      "other": "{count} слота в день"
+    },
+    "uz": {
+      "other": "Kuniga {count} ta vaqt"
+    }
+  },
+  "dentalHiddenLines": {
+    "en": {
+      "one": "Hidden: {count} primary-teeth line",
+      "other": "Hidden: {count} primary-teeth lines"
+    },
+    "ru": {
+      "other": "Скрыто строк по молочным зубам: {count}"
+    },
+    "uz": {
+      "other": "Yashirilgan: sut tishlari bo'yicha {count} ta qator"
+    }
+  },
+  "dentalSwitchToPlanConfirm": {
+    "en": {
+      "one": "Switch to plan mode? Your {count} free line stays saved but is not billed.",
+      "other": "Switch to plan mode? Your {count} free lines stay saved but are not billed."
+    },
+    "ru": {
+      "other": "Перейти в режим плана? Ваши свободные строки ({count}) сохранятся, но не будут выставлены к оплате."
+    },
+    "uz": {
+      "other": "Reja rejimiga o'tilsinmi? {count} ta erkin qatoringiz saqlanib qoladi, lekin hisobga kiritilmaydi."
+    }
+  },
+  "discardTicks": {
+    "en": {
+      "one": "Discard {count} ticked item?",
+      "other": "Discard {count} ticked items?"
+    },
+    "ru": {
+      "other": "Снять отметки с пунктов ({count})?"
+    },
+    "uz": {
+      "other": "Belgilangan {count} ta band bekor qilinsinmi?"
+    }
+  },
+  "followUpTasksCount": {
+    "en": {
+      "one": "{count} follow-up task",
+      "other": "{count} follow-up tasks"
+    },
+    "ru": {
+      "few": "{count} задачи на контроль",
+      "many": "{count} задач на контроль",
+      "one": "{count} задача на контроль",
+      "other": "{count} задачи на контроль"
+    },
+    "uz": {
+      "other": "{count} kuzatuv vazifasi"
+    }
+  },
+  "hoursAgo": {
+    "en": {
+      "one": "{count} hour ago",
+      "other": "{count} hours ago"
+    },
+    "replaces": [
+      "hoursAgo"
+    ],
+    "ru": {
+      "few": "{count} часа назад",
+      "many": "{count} часов назад",
+      "one": "{count} час назад",
+      "other": "{count} часа назад"
+    },
+    "uz": {
+      "other": "{count} soat oldin"
+    }
+  },
+  "intelCancelPreview": {
+    "en": {
+      "one": "I can cancel {count} upcoming visit: {names}. Say yes to cancel it. Nothing has been cancelled yet.",
+      "other": "I can cancel {count} upcoming visits: {names}. Say yes to cancel them. Nothing has been cancelled yet."
+    },
+    "replaces": [
+      "intelCancelPreview"
+    ],
+    "ru": {
+      "few": "Могу отменить {count} предстоящих визита: {names}. Скажите «да», чтобы отменить. Пока ничего не отменено.",
+      "many": "Могу отменить {count} предстоящих визитов: {names}. Скажите «да», чтобы отменить. Пока ничего не отменено.",
+      "one": "Могу отменить {count} предстоящий визит: {names}. Скажите «да», чтобы отменить. Пока ничего не отменено.",
+      "other": "Могу отменить {count} предстоящих визита: {names}. Скажите «да», чтобы отменить. Пока ничего не отменено."
+    },
+    "uz": {
+      "other": "Men yaqinlashib kelayotgan {count} ta qabulni bekor qila olaman: {names}. Ularni bekor qilish uchun «ha» deng. Hali hech narsa bekor qilinmadi."
+    }
+  },
+  "lastDaysCount": {
+    "en": {
+      "one": "Last {count} day",
+      "other": "Last {count} days"
+    },
+    "ru": {
+      "few": "Последние {count} дня",
+      "many": "Последние {count} дней",
+      "one": "Последний {count} день",
+      "other": "Последние {count} дня"
+    },
+    "uz": {
+      "other": "Oxirgi {count} kun"
+    }
+  },
+  "minutesAgo": {
+    "en": {
+      "one": "{count} minute ago",
+      "other": "{count} minutes ago"
+    },
+    "replaces": [
+      "minutesAgo"
+    ],
+    "ru": {
+      "few": "{count} минуты назад",
+      "many": "{count} минут назад",
+      "one": "{count} минуту назад",
+      "other": "{count} минуты назад"
+    },
+    "uz": {
+      "other": "{count} daqiqa oldin"
+    }
+  },
+  "patientsCount": {
+    "en": {
+      "one": "{count} patient",
+      "other": "{count} patients"
+    },
+    "replaces": [
+      "patientsCountLabel",
+      "patientsCountLabelOne"
+    ],
+    "ru": {
+      "few": "{count} пациента",
+      "many": "{count} пациентов",
+      "one": "{count} пациент",
+      "other": "{count} пациента"
+    },
+    "uz": {
+      "other": "{count} bemor"
+    }
+  },
+  "patientsPagination": {
+    "en": {
+      "one": "Showing {start} to {end} of {total} patient",
+      "other": "Showing {start} to {end} of {total} patients"
+    },
+    "replaces": [
+      "patientsPagination"
+    ],
+    "ru": {
+      "few": "Показано {start}–{end} из {total} пациентов",
+      "many": "Показано {start}–{end} из {total} пациентов",
+      "one": "Показано {start}–{end} из {total} пациента",
+      "other": "Показано {start}–{end} из {total} пациентов"
+    },
+    "uz": {
+      "other": "{total} bemordan {start}–{end} ko'rsatilmoqda"
+    }
+  },
+  "showEarlierCount": {
+    "en": {
+      "one": "Show {count} earlier",
+      "other": "Show {count} earlier"
+    },
+    "ru": {
+      "few": "Показать {count} прошедших",
+      "many": "Показать {count} прошедших",
+      "one": "Показать {count} прошедший",
+      "other": "Показать {count} прошедших"
+    },
+    "uz": {
+      "other": "Oldingi {count} tasini ko'rsatish"
+    }
+  },
+  "toothA11y": {
+    "en": {
+      "one": "Tooth {fdi}, {count} service",
+      "other": "Tooth {fdi}, {count} services"
+    },
+    "ru": {
+      "other": "Зуб {fdi}, услуг: {count}"
+    },
+    "uz": {
+      "other": "{fdi}-tish, {count} ta xizmat"
+    }
+  },
+  "visitBriefingMeta": {
+    "en": {
+      "one": "{count} document · generated {time}",
+      "other": "{count} documents · generated {time}"
+    },
+    "ru": {
+      "few": "{count} документа · создано в {time}",
+      "many": "{count} документов · создано в {time}",
+      "one": "{count} документ · создано в {time}",
+      "other": "{count} документа · создано в {time}"
+    },
+    "uz": {
+      "other": "{count} ta hujjat · {time} da yaratilgan"
+    }
+  },
+  "visitFactsCommitted": {
+    "en": {
+      "one": "Documented {count} fact. It is on the patient timeline.",
+      "other": "Documented {count} facts. They are on the patient timeline."
+    },
+    "ru": {
+      "few": "Задокументировано {count} факта. Всё на временной шкале пациента.",
+      "many": "Задокументировано {count} фактов. Всё на временной шкале пациента.",
+      "one": "Задокументирован {count} факт. Всё на временной шкале пациента.",
+      "other": "Задокументировано {count} факта. Всё на временной шкале пациента."
+    },
+    "uz": {
+      "other": "{count} ta fakt hujjatlashtirildi. Ular bemorning vaqt chizig'ida."
+    }
+  },
+  "visitsCount": {
+    "en": {
+      "one": "{count} visit",
+      "other": "{count} visits"
+    },
+    "replaces": [
+      "visitsCountLabel",
+      "visitsCountLabelOne"
+    ],
+    "ru": {
+      "few": "{count} визита",
+      "many": "{count} визитов",
+      "one": "{count} визит",
+      "other": "{count} визита"
+    },
+    "uz": {
+      "other": "{count} tashrif"
+    }
+  },
+  "scannedDocumentPages": {
+    "en": {
+      "one": "Scanned document ({count} page)",
+      "other": "Scanned document ({count} pages)"
+    },
+    "replaces": [],
+    "ru": {
+      "one": "Скан документа ({count} страница)",
+      "few": "Скан документа ({count} страницы)",
+      "many": "Скан документа ({count} страниц)",
+      "other": "Скан документа ({count} страницы)"
+    },
+    "uz": {
+      "other": "Skanerlangan hujjat ({count} sahifa)"
+    }
+  },
+  "pagesScannedCount": {
+    "en": {
+      "one": "{count} page scanned",
+      "other": "{count} pages scanned"
+    },
+    "replaces": [],
+    "ru": {
+      "one": "Отсканирована {count} страница",
+      "few": "Отсканировано {count} страницы",
+      "many": "Отсканировано {count} страниц",
+      "other": "Отсканировано {count} страницы"
+    },
+    "uz": {
+      "other": "{count} sahifa skanerlandi"
+    }
+  },
+  "formsCount": {
+    "en": {
+      "one": "{count} form",
+      "other": "{count} forms"
+    },
+    "replaces": [],
+    "ru": {
+      "few": "{count} формы",
+      "many": "{count} форм",
+      "one": "{count} форма",
+      "other": "{count} формы"
+    },
+    "uz": {
+      "other": "{count} forma"
+    }
+  },
+  "visitBriefingRowDocs": {
+    "en": {
+      "one": "AI summary of {count} attached document",
+      "other": "AI summary of {count} attached documents"
+    },
+    "replaces": [],
+    "ru": {
+      "few": "Сводка ИИ по {count} прикреплённым документам",
+      "many": "Сводка ИИ по {count} прикреплённым документам",
+      "one": "Сводка ИИ по {count} прикреплённому документу",
+      "other": "Сводка ИИ по {count} прикреплённым документам"
+    },
+    "uz": {
+      "other": "{count} ta biriktirilgan hujjat bo'yicha AI xulosasi"
+    }
+  },
+  "taskTimesPerDay": {
+    "en": {
+      "one": "{count}× per day",
+      "other": "{count}× per day"
+    },
+    "ru": {
+      "one": "{count} раз в день",
+      "few": "{count} раза в день",
+      "many": "{count} раз в день",
+      "other": "{count} раза в день"
+    },
+    "uz": {
+      "other": "Kuniga {count} marta"
+    }
+  },
+  "taskDaysCount": {
+    "en": {
+      "one": "{count} day",
+      "other": "{count} days"
+    },
+    "ru": {
+      "one": "{count} день",
+      "few": "{count} дня",
+      "many": "{count} дней",
+      "other": "{count} дня"
+    },
+    "uz": {
+      "other": "{count} kun"
+    }
+  }
+}

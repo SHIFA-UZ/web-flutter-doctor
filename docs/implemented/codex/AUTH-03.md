@@ -1,0 +1,17 @@
+- **[P2] Cooldown incorrectly reuses codes across purposes.** [EmailCodeViewModels.kt:72](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/emailcode/EmailCodeViewModels.kt:72) skips sending whenever that address has a cooldown, regardless of mode. Request a reset code, then switch to email login within 60 seconds: no login code is sent, and the reset code cannot authenticate. Backend `AuthController.kt:275,340` uses separate purposes. Key cooldown/reuse by address **and purpose**.
+
+- **[P2] Back from OTP loses the email address.** [App.kt:135](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/App.kt:135) constructs a fresh email-entry screen carrying only the mode. Its previous ViewModel store was cleared when it left composition, so the field returns empty. Flow `03-email-input.md` §2 explicitly requires the address to remain. Preserve the entry state across the OTP step.
+
+- **[P2] An outgoing screen can undo Back navigation.** [App.kt:128](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/App.kt:128) unconditionally navigates when sending completes. `Crossfade` keeps the outgoing screen and its effects alive during the transition. If the user presses Back while sending and the response arrives during that fade, `onSent` reopens OTP from Login. Guard completion callbacks against the currently active destination.
+
+- **[P2] OTP remains editable during requests, losing corrections.** [EmailCodeScreens.kt:146](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/emailcode/EmailCodeScreens.kt:146) leaves the field enabled while loading. Entering a corrected code during verification updates state, but `verify()` ignores its auto-submit; the previous request’s failure then clears the correction (`EmailCodeViewModels.kt:128,138`). Disable editing while verification/resend is pending, as flow `04-email-otp-code.md` §6 requires.
+
+- **[P3] Email normalization omits lowercasing.** [EmailCodeViewModels.kt:63](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/emailcode/EmailCodeViewModels.kt:63) only trims, so mixed-case addresses are sent and displayed unchanged. AUTH-03’s Build line and flow `03-email-input.md` §4 require lowercase before sending. Normalize once before validation, requests, and navigation.
+---
+**Answers (all fixed):**
+1. *Cooldown across purposes:* `OtpCooldown` is keyed by address **and** purpose (`SignIn` / `Reset`), matching the backend's separate code purposes. A test sends a reset code right after a sign-in code for the same address.
+2. *Address lost on Back:* `Screen.EmailEntry` carries the address; Back from the code screen reopens the entry with it filled in.
+3. *Late callbacks undoing Back:* `AppScreens.go(from, to)` only navigates while `from` is still the current screen; the e-mail, code and Sign In completions use it.
+4. *Code editable during a request:* the code field is disabled while verifying or resending.
+5. *Lower-case:* the address is trimmed and lower-cased once (`normalized`) before checking, sending, the cooldown and the code screen. Tested.
+These are local fixes covered by tests, so no second round.

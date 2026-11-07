@@ -1,0 +1,4 @@
+<resources>
+    <string name="recording_channel">Запись</string>
+    <string name="recording_now">Идёт запись приёма</string>
+</resources>

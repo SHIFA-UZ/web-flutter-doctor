@@ -1,459 +1,297 @@
-# CLAUDE.md
+# Project rules
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This repo is the Shifa doctor app. It is being rebuilt from the Flutter doctor app in Kotlin Multiplatform, in this
+same repository, the way the patient app was (`SHIFA-UZ/apps-flutter-patient`, branch `shifa2.0` → `main` v1.2.0).
+API and UI come from the spec in `docs/kmp-spec/`, the flows in `docs/ux-flows/` and the design in `docs/design/`; the tech stack, architecture and workflow below are
+fixed and identical to the patient app's. Follow them for every new feature.
 
-## Project Overview
+| Value | Doctor app |
+|---|---|
+| Repo | `SHIFA-UZ/web-flutter-doctor` (keeps its name and history) |
+| Kotlin package | `shifa.doctor` (the patient app uses `shifa.uz`) |
+| Android application id | `com.shifa.doc` (already on Google Play; `minSdk 24`) |
+| iOS bundle id | `uz.shifa.doc`, team `NH97PGA9PT` |
+| Firebase project | `shifa-doctor-staging` (production uses it too; `shifa-doctor-qa` exists) |
+| Backend | `https://api.shifa.uz/api` in `ApiConfig.BASE_URL` (paths written without `/api`); debug builds can switch to `https://api-dev.shifa.uz` (seeded, `seed.doctor1@shifa.dev` / `Dev12345!`). The Railway host stays alive for old store builds. |
+| Design source | `docs/design/` (a verbatim copy of the Claude Design canvas: `tokens.json`, `shifa-ds.css`, 51 boards); read `docs/design/README.md` first. No Figma. |
+| First `MARKETING_VERSION` | `1.0.1` (Flutter shipped `1.0.0`). Build number = offset + `run_number` of the same workflow files, offsets Play 1 and iOS 4, so both start at 10: last Flutter uploads were Play run 8 (versionCode 9) and TestFlight run 5 (build 6) (D-10, 2026-11-04). |
+| Locales | `en` (default), `uz` (+ runtime Latin→Cyrillic transliteration), `ru` |
 
-**Shifa Doctor App** — A Flutter web/mobile application for doctors to manage appointments, patients, schedules, and consultations. Built with **Flutter Riverpod** (v2.5.1, manual providers) and integrates with a **Spring Boot (Kotlin)** backend via REST API.
+## Sources of truth
 
-**Dart SDK:** `^3.9.2` | **Package:** `shifa_doc_app_v1` | **Version:** `1.0.0+3`
+- `docs/kmp-spec/` is the source of truth for API and features; `docs/kmp-spec/15-api-reference.md` wins for request
+  and response shapes. Each feature doc ends with "Quirks / tech debt": fix bugs, keep only what backend compatibility
+  needs. Do not reproduce bugs listed in `docs/kmp-spec/00-README.md`.
+- The backend publishes its OpenAPI spec at `<BASE_URL>/v3/api-docs` (no token). Check it before claiming an endpoint
+  or field is missing; it can lag real responses, so confirm with a real GET when it matters. Plain GETs against
+  production are fine; never write to production data while developing (use the demo backend).
+- UI comes from `docs/design/`: `tokens.json` and `shifa-ds.css` map into `ui/theme/`, the `.sh-*` component blocks
+  into `ui/widgets/`, and each screen is a branch of a module board (`boards/Da*.dc.html`); `docs/design/README.md`
+  names the board for every flow area. Light mode only; the theme has no dark scheme. Record the board and screen
+  branch you implemented in `docs/implemented/`. There is no Figma file.
+- `docs/implemented/` records what's already built. Read `docs/implemented/README.md` before starting a task, and
+  update it (status table, the area file, one log line) at the end of every job, in the same commit.
+- `docs/backend-improvements.md` lists what the app needs from the backend team: what happens now, the change, and
+  what the app does until then. Add to it instead of working around a backend gap silently.
+- The Flutter code stays readable on `main` until the merge; when the spec says UNVERIFIED, read the Dart file it
+  cites (`git show main:lib/...`) before deciding.
 
-**Platforms:** Web (primary, Firebase Hosting), Android, iOS, Windows
+## Scope decisions (the user's calls; update when they change)
 
-**Key Features:**
-- Firebase phone authentication (OTP) for doctor login
-- Video calling via Daily.co (daily_flutter on mobile, JS embed on web)
-- Real-time chat with patients (text, voice recording, image/document uploads)
-- Patient management with medical forms and document uploads
-- Appointment scheduling with timezone-aware handling
-- Calendar with table_calendar widget
-- Admin panel (same build, hostname-based routing)
-- AI-powered consultation notes
-- Analytics dashboard with fl_chart
-- Push notifications via FCM with deep linking
-- PDF generation with Cyrillic font support (en/uz/ru)
+- Targets: **Android + iOS**, and **web** from the same code (milestone M14, `docs/kmp-spec/18-web-milestone.md`, the
+  user's call 2026-11-06). Web reuses the ViewModels, repositories and kit; desktop widths get their own arrangements of
+  the same content composables (shell: bottom bar below 768, icon rail 768–1099, sidebar from 1100, board `DaApp`),
+  never copied screens. The Flutter web build (doctor web + admin host) keeps running from `main` until `doc-app2.0`
+  is merged; web hosting moves to cPanel (WEB-09).
+- Web build (WEB-04): `wasmJsMain` holds the web actuals and `index.html`. Run it with
+  `./gradlew :composeApp:wasmJsBrowserDevelopmentRun -Pkotlin.daemon.jvmargs=-Xmx8g` (localhost:8080; the debug menu
+  exists only in this development build); `wasmJsBrowserDistribution` writes the production bundle. The wasm link
+  needs about 6 GB: `~/.gradle/gradle.properties` on the user's Mac caps the Kotlin daemon at 4 GB and overrides the
+  project file, hence the `-P`. After changing an npm dependency run `./gradlew kotlinWasmUpgradeYarnLock`.
+- Web resources: Compose Multiplatform 1.10 leaves a string or icon blank for good when the first composable that asked
+  for it leaves mid-load (its `AsyncCache` load belongs to that caller). `utils/ResourceWarmup` (web only) loads every
+  resource once from the app's root; delete it when upgrading to Compose Multiplatform 1.12.2 or later (fixed there).
+- The **admin panel** (`/admin`, hostname-based) is **not** part of the KMP app (`ADMIN-*` tickets are parked); it
+  stays a web product.
+- Doctor roles in the JWT (`DOCTOR`, `CLINIC_STAFF`, …) and clinic workspace mode are in scope; a clinic-staff user
+  gets the reduced shell described in `01-architecture-core-auth-shell.md` §6 and flow `01/18`.
 
-## Git Workflow Rules
+## Rewrite in place: what stays, what goes
 
-**NEVER commit or push directly to the `main` branch.** When the user is on `main` and wants to commit/push changes:
+The rewrite happens inside the Flutter doctor app's repository, so GitHub history, settings, secrets and CI/CD are
+reused, not recreated. Nothing is force-pushed or rewritten.
 
-1. Create a new branch named after the feature or change (e.g., `feature/add-patient-search`, `fix/appointment-timezone-bug`).
-2. Switch to that branch.
-3. Stage and commit the changes on the new branch.
-4. Push the new branch to the remote.
-5. Suggest creating a PR from the new branch into `main`.
+Keep, and reuse as they are:
+- The GitHub repository, its history, branches, tags, releases and Actions secrets.
+- `.github/workflows/` (`flutter_ci.yml` → `ci.yml`, `google_play_deploy.yml`, `ios_testflight.yml`): port them from
+  the Flutter workflows the way the patient app did (same job shapes, same secret names, same version offsets), so the
+  deploys keep working for the same Play app and the same TestFlight app.
+- Firebase: the same project, `google-services.json` and `GoogleService-Info.plist` (from the same base64 secrets),
+  the same push setup. Firebase Auth (phone OTP) is used by the Flutter doctor login; the KMP login keeps the backend
+  OTP paths (see `05-auth.md`) and uses Firebase Auth only where the spec says so.
+- Store identities: `com.shifa.doc` / `uz.shifa.doc`, team `NH97PGA9PT`, signing keystore, provisioning,
+  App Store Connect key. The KMP app is an update of the Flutter app, not a new listing, so `versionCode`,
+  the build number and `MARKETING_VERSION` continue above the Flutter app's last values.
+- Backend: the same base URL, endpoints and auth; `docs/kmp-spec/` describes them.
+- Anything else from the Flutter repo that is not Dart or design: store assets, legal texts (`docs/contracts`), the
+  thesis docs under `docs/`, `scripts/` that still apply.
 
-If the user is already on a non-main branch, commit and push normally on that branch.
+Deleted on `doc-app2.0` (WEB-01, 2026-11-06): the Flutter code (`lib/`, `android/`, `ios/`, `windows/`, `web/`,
+`pubspec.*`, `test/`, `assets/`, `firebase.json` and the Firebase Hosting workflow `deploy_web.yml`, Flutter build
+scripts). The admin panel moves to its own repository (`SHIFA-UZ/web-flutter-admin`, WEB-00, which the user does).
+Design comes only from `docs/design/`; do not port Flutter styles, colours or widgets (the legacy tokens are
+listed in `04-design-system-and-ui-kit.md` §A only for comparison).
 
-### Commit Message Convention
+## Git
 
-Follow **Conventional Commits** format:
+- Remote: `SHIFA-UZ/web-flutter-doctor`. `main` holds the released Flutter app until the KMP app replaces it.
+- The whole rewrite happens on ONE branch, `doc-app2.0`, created from `main`. Every feature, fix and doc change goes
+  there until the full app is done and the user merges it into `main` through a pull request (the user decides when).
+  Do not create per-feature branches during the rewrite (D-00, the user's call 2026-11-04, overriding the per-ticket
+  branches `17-master-plan.md` §2 proposed).
+- The Flutter code is gone from this branch (WEB-01); `main` still has it, and its `deploy_web.yml` keeps building the
+    Flutter web app until the merge. Gradle only sees `composeApp/`; Xcode only `iosApp/`.
+- After that merge, switch to the patient app's rule: before making any change, check the current branch; if the task
+  has no branch yet, create one from `main` named `feature/<feature-name>` (kebab-case, e.g.
+  `feature/schedule-management`) and do all the work there. Update this section when that happens.
+- Never push to `main` directly or merge into it unless the user asks; changes reach `main` through a pull request.
+- `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme` is committed (the user's call, 2026-11-04) because
+  fastlane needs it for TestFlight. The IDE rewrites it locally: never commit those local edits, and keep its
+  `ArchiveAction` (Release).
+- Never commit or push on your own. Show the user the finished work (what changed, screenshots, test results), and
+  only commit and push once they approve. Standing permission for `doc-app2.0` is not approval for a given change.
+- Commits are authored by the user only, with the repo's git identity (`git config user.name` / `user.email`). Never
+  add `Co-Authored-By`, "Generated with" or any other Claude or agent attribution to commit messages or PR
+  descriptions, and never set Claude or an agent as the author or committer.
+- Commit messages follow Conventional Commits (`feat(calendar): …`, `fix(auth): …`), imperative, lowercase, ≤ 72 chars.
+- Pull requests: push the branch, then hand over the compare URL plus a ready title and body for the user to paste.
+  If `gh` is missing, say so and stop. Never control the user's browser (no Chrome tools), not even to open a PR.
 
-```
-<type>(<scope>): <short description>
+## Tech stack (do not swap without asking)
 
-<optional body — explain WHY, not WHAT>
-```
+- Kotlin Multiplatform (Android + iOS: `iosArm64`, `iosSimulatorArm64`), single module `composeApp`, package `shifa.doctor`
+- Compose Multiplatform + Material 3 for all UI (shared in `commonMain`)
+- Ktor Client (OkHttp on Android, Darwin on iOS) + ContentNegotiation, HttpTimeout; the Bearer token is added by an
+  `HttpSend` interceptor (no Auth plugin, no refresh token). No Ktor `Logging` plugin: its default logger goes through
+  SLF4J, which has no binding on Android, so nothing reaches Logcat. SSE (AI streams) goes through
+  `HttpClient.streamEvents` (`data/api/Sse.kt`), a reader on the same client: Ktor 2.3's SSE plugin can't POST a body.
+- kotlinx.serialization (JSON), kotlinx.coroutines, kotlinx.datetime
+- Multiplatform Settings (`no-arg`) for local key/value; the token uses `secureSettings` (`KeychainSettings` on iOS,
+  EncryptedSharedPreferences from `androidx.security:security-crypto` on Android)
+- Kamel for async image loading
+- JetBrains `lifecycle-viewmodel-compose` for ViewModels
+- Firebase (google-services, Messaging for push, App Distribution for debug builds)
+- Daily for video calls: `co.daily:client` on Android, Daily's Swift package on iOS behind
+  `iosApp/iosApp/DailyVideoCall.swift` (it implements the Kotlin `NativeVideoCall`)
+- Charts (home analytics, finance): hand-drawn Compose `Canvas` (no chart library; the boards draw bars, a line and a
+  donut, all within a few dozen lines each). PDF: backend rendering is requested (BE-01, D-05); until then the
+  appointment summary and 025-2 use the platform PDF APIs behind `expect/actual` (Android `PdfDocument`, iOS
+  `UIGraphicsPDFRenderer`; generation not spiked yet). Viewing is `utils/PdfView` (Android `PdfRenderer`, iOS
+  PDFKit), verified on both by the CORE-07 spike.
+- Native pieces proven by the CORE-07 spikes (debug Spikes screen, `ui/debug/SpikesScreen.kt`;
+  `docs/implemented/foundation.md`): voice is `utils/VoiceRecorder` (AAC-LC `.m4a`, 16 kHz mono, 32 kbps:
+  `MediaRecorder` / `AVAudioRecorder`) and `utils/AudioPlayer` (`MediaPlayer` / `AVPlayer`, one at a time); maps are
+  `utils/MapPin` (osmdroid with OpenStreetMap tiles on Android, MapKit on iOS; no Google key, D-06); the FCM token is
+  `utils/currentPushToken()` (Android; iOS gets it in Swift with PUSH-01). Not spiked: Daily (needs a video
+  appointment's room token and the SDKs) and push delivery (needs the release key / a device).
+- Tests (`androidUnitTest`): JUnit4, Mockito-Kotlin, Turbine, Truth, kotlinx-coroutines-test, Roborazzi + Robolectric
+  for screenshots, `multiplatform-settings-test` (`MapSettings`) for storage
+- ktlint (`./gradlew ktlintFormat`); it fails the build. `.editorconfig` allows PascalCase `@Composable`s, trailing
+  parameter comments, Figma-named theme files and on-demand `Res` imports.
+- All versions live in `gradle/libs.versions.toml`; add deps there, never inline. Copy the catalog from the patient
+  app and keep the two apps on the same versions.
+- kotlinx-datetime is 0.7.1 on every platform (WEB-02, 2026-11-06; it used to resolve differently on iOS). 0.7 has no
+  `kotlinx.datetime.Clock`: read now through `utils/currentInstant()` (the stdlib `kotlin.time.Clock`).
+- No DI framework and no navigation library (deferred on purpose; ask before adding either).
 
-**Types:**
-- `feat` — new feature or functionality
-- `fix` — bug fix
-- `refactor` — code restructuring without behavior change
-- `style` — formatting, whitespace, missing semicolons (no logic change)
-- `docs` — documentation changes
-- `test` — adding or updating tests
-- `chore` — build config, dependencies, CI/CD, tooling
-- `perf` — performance improvement
-
-**Scope** (optional): the feature area affected (e.g., `auth`, `appointments`, `chat`, `calendar`, `patients`, `admin`, `video`, `profile`, `tasks`, `schedule`, `notifications`, `shell`, `home`).
-
-**Rules:**
-- Subject line: imperative mood, lowercase, no period, max 72 characters (e.g., `feat(chat): add voice message playback`)
-- Body: explain the motivation/context when the change is non-trivial
-- One logical change per commit — don't mix unrelated changes
-- Never use generic messages like "update", "fix", "changes", or "WIP"
-
-## Development Commands
-
-### Running the App
-
-```bash
-flutter run -d chrome                                                    # Dev (localhost:8080)
-flutter run -d chrome --dart-define=API_BASE_URL=https://api.example.com # Custom backend
-flutter run -d ios                                                       # iOS
-flutter run -d android                                                   # Android
-```
-
-### Building
-
-```bash
-flutter build web                         # Dev build
-flutter build web --release \             # Production build (--pwa-strategy=none: no stale SW cache on deploy)
-  --pwa-strategy=none \
-  --dart-define=API_BASE_URL=https://api.example.com \
-  --dart-define=ENVIRONMENT=production \
-  --dart-define=GOOGLE_MAPS_API_KEY=your_key_here
-flutter build ios --release               # iOS release
-flutter build apk --release               # Android release
-```
-
-### Testing & Analysis
-
-```bash
-flutter test                # Run all tests
-flutter test --coverage     # With coverage
-flutter analyze             # Static analysis
-```
-
-### Firebase Deployment
-
-```bash
-flutter build web --release --pwa-strategy=none
-firebase deploy --only hosting:doctor --project staging   # Doctor app
-firebase deploy --only hosting:admin --project staging    # Admin panel
-```
-
-### Dependencies
-
-```bash
-flutter pub get       # Install
-flutter pub upgrade   # Upgrade
-flutter clean         # Clean build artifacts
-```
-
-## Code Architecture
-
-### Project Structure
-
-```
-lib/
-├── main.dart                    # Entry point (Firebase, timezones, i18n, FCM init)
-├── firebase_options.dart        # Auto-generated Firebase config (web only)
-├── app/
-│   ├── app.dart                 # Root ConsumerStatefulWidget (MaterialApp + Riverpod)
-│   ├── router.dart              # Named routes via onGenerateRoute + AppRoutes constants
-│   └── theme.dart               # ThemeData (SF Pro Display, teal primary, 12dp radius)
-├── core/
-│   ├── api/                     # ApiClient (JWT injection, scope-based), AI API
-│   ├── config/                  # AppConfig (reads --dart-define env vars)
-│   ├── constants/               # Asset paths
-│   ├── localization/            # AppLocalizations (manual i18n: en/uz/ru JSON files)
-│   ├── models/                  # Shared models (profession)
-│   ├── providers/               # languageProvider
-│   ├── services/                # Timezone, Daily.co video, geocoding, FCM, inactivity timer
-│   ├── theme/                   # AppColors (teal primary, semantic color system)
-│   ├── utils/                   # Image, phone E.164, password, text cleaner, error formatter
-│   └── widgets/                 # ShifaButton, PersonAvatar, analytics charts, AI panel
-├── features/                    # 14 feature modules (see Feature Module Pattern)
-│   ├── admin/                   # Admin panel (login, dashboard, users, tokens, audit logs)
-│   ├── appointments/            # Appointments, video calls (Daily.co), PDF export
-│   ├── auth/                    # Phone OTP login, email login, account creation
-│   ├── calendar/                # Calendar view (table_calendar)
-│   ├── chat/                    # Messaging (text, voice, image, document, typing indicator)
-│   ├── debug/                   # Timezone debug screen
-│   ├── home/                    # Dashboard with KPI cards and analytics charts
-│   ├── notifications/           # Notification center
-│   ├── patients/                # Patient records, forms, document viewer
-│   ├── profile/                 # Doctor profile (location picker, timezone, profession)
-│   ├── schedule/                # Doctor availability setup
-│   ├── shell/                   # Main navigation shell (6 tabs: Chat, Home, Calendar, Patients, Tasks, Profile)
-│   └── tasks/                   # Remote care task management (templates, assignments)
-└── state/                       # Riverpod providers (one folder per feature)
-    ├── auth/                    # AuthController, registration state
-    ├── appointments/            # Appointment invalidation
-    ├── calendar/                # Calendar controller
-    ├── chat/                    # Conversations, messages, unread count
-    ├── admin/                   # Admin providers and actions
-    ├── notifications/           # Doctor notifications
-    ├── patients/                # Patient list, documents, forms
-    ├── profile/                 # ProfileAll (profile + contact + billing + settings)
-    ├── shell/                   # Tab index state
-    └── tasks/                   # Task list and actions
-```
-
-### Feature Module Pattern
-
-Each feature follows a layered structure:
+## Architecture: MVVM + Repository
 
 ```
-features/<feature_name>/
-├── domain/              # Models and entities
-├── presentation/        # Screens and widgets (UI)
-├── application/         # Feature-specific providers (optional)
-├── services/            # External integrations (optional)
-└── data/                # Repositories (optional)
+composeApp/src/
+├── commonMain/kotlin/shifa/doctor/
+│   ├── App.kt              # root: locale + theme + top-level screen switching (Splash → Login → shell)
+│   ├── data/
+│   │   ├── api/            # HttpClient.kt, ApiHelper.kt, ApiConfig.kt, ErrorMessages.kt, Sse.kt
+│   │   ├── model/          # @Serializable DTOs, one file per domain (XxxModels.kt), ApiError.kt
+│   │   ├── storage/        # TokenStorage, SecureSettings (expect/actual secure store), LanguageStorage, AppLockStorage
+│   │   ├── debug/          # DemoBackend.kt (MockEngine) + DemoMode, debug builds only
+│   │   └── <feature>/      # XxxRepository.kt
+│   ├── ui/
+│   │   ├── theme/          # Color.kt, Typography.kt, Dimens.kt, Theme.kt (tokens from docs/design/)
+│   │   ├── widgets/        # reusable design-system components (ShifaButton, ShifaInputField…)
+│   │   ├── navigation/     # MainScreen.kt (tab shell) + ShifaNavBar.kt
+│   │   ├── debug/          # Debug menu (demo data, fake pushes)
+│   │   └── <feature>/      # XxxScreen.kt, XxxViewModel.kt, XxxUiState.kt
+│   └── utils/              # expect/actual platform helpers (pickers, files, push, video, audio, browser, dates, timezone)
+├── commonMain/composeResources/   # values{,-ru,-uz}/strings.xml, drawable (design exports), font
+├── androidMain/            # actuals, MainActivity, MessagingService, @Preview files (ui/<feature>/XxxPreviews.kt)
+├── iosMain/                # actuals, MainViewController
+└── androidUnitTest/        # ViewModel + repository tests, widget and screen screenshot tests
+iosApp/                     # Xcode host app (Swift bridges for Daily and push, fastlane, Configuration/Config.xcconfig)
 ```
 
-### State Management — Riverpod (v2.5.1, No Code Generation)
-
-Providers live in `lib/state/<feature>/`. No `freezed` or `riverpod_generator` — all providers are manual.
-
-**Provider types used in this project:**
-- `StateProvider<T>` — simple reactive values (JWT token, language, tab index)
-- `StateNotifierProvider<N, S>` — mutable state with controller logic (auth, patients, shell)
-- `FutureProvider<T>` — async one-time fetches (profile, notifications)
-- `FutureProvider.family<T, Arg>` — parameterized async (patient by ID, user search)
-- `StreamProvider<T>` — continuous streams (unread chat count, polls every 10s)
-- `Provider<T>` — computed/readonly (API client, services)
-
-**Key providers:**
-
-| Provider | Type | Purpose |
-|----------|------|---------|
-| `authTokenProvider` | StateProvider | JWT token storage |
-| `authProvider` | StateNotifierProvider | Auth state & login/logout |
-| `apiClientProvider` | Provider | Scoped HTTP client (doctor vs admin) |
-| `profileAllProvider` | FutureProvider | Doctor profile (profile + contact + billing + settings) |
-| `patientsProvider` | StateNotifierProvider | Patient list |
-| `conversationsProvider` | FutureProvider | Chat conversations |
-| `unreadCountProvider` | StreamProvider | Chat unread count (polls every 10s) |
-| `shellProvider` | StateNotifierProvider | Current navigation tab |
-| `languageProvider` | StateProvider | App language (en/uz/ru) |
-
-**Consumption patterns:**
-```dart
-// Widgets extend ConsumerWidget or ConsumerStatefulWidget
-final authState = ref.watch(authProvider);              // Reactive
-ref.read(authProvider.notifier).login(user, pass);      // One-time action
-ref.listen(authProvider, (prev, next) { ... });         // Side effects
-ref.invalidate(profileAllProvider);                     // Force refresh
-```
-
-### API Client
-
-**Location:** `lib/core/api/api_client.dart`
-
-- Automatic JWT injection from `authTokenProvider`
-- Scope-based access: `doctorApiClientProvider` (blocks `/api/admin/**`), `adminApiClientProvider` (only `/api/admin/**`)
-- Auto-logout on 401/403 via callback
-- Methods: `get`, `post`, `put`, `patch`, `delete`, `postMultipart`, `postWithBearer`, `postNoUnauthorizedCheck`
-
-### Navigation
-
-Named routes via `MaterialApp.onGenerateRoute` in `lib/app/router.dart`:
-- `AppRoutes` — string constants for all routes
-- `AppRouter.onGenerateRoute()` — main router with switch statement
-- `ShellScope.pushNamed()` — nested navigation inside the authenticated shell
-- `GlobalKey<NavigatorState>` — programmatic navigation from services (FCM tap handling)
-- Arguments passed via `settings.arguments`
-
-### Configuration
-
-`lib/core/config/app_config.dart` reads `--dart-define` values:
-- `API_BASE_URL` (default: `http://localhost:8080`)
-- `ENVIRONMENT` (default: `development`)
-- `GOOGLE_MAPS_API_KEY` (default: empty)
-
-## Important Technical Details
-
-### Timezone Handling (Critical)
-
-"Shifa Global Time Architecture v2":
-- **Backend:** UTC timestamps (`TIMESTAMPTZ` in PostgreSQL, `Instant` in Kotlin)
-- **Doctor timezone:** IANA string in `doctor_profiles.practice_time_zone` (e.g., "Asia/Tashkent")
-- **Frontend:** All display times converted to doctor's practice timezone via `timezone` package
-- **Services:** `lib/core/services/timezone_service.dart`, `lib/core/utils/timezone_utils.dart`
-
-**Rules when working with dates/times:**
-1. Always use IANA timezone identifiers (never UTC offsets)
-2. Convert to doctor's practice timezone for display
-3. Send UTC timestamps to backend
-4. Use `TZDateTime` from the `timezone` package, never raw `DateTime` for display
-
-### Admin vs Doctor Entry Points
-
-Same web build serves both interfaces:
-- **Doctor:** Hostname without "admin" → splash → login → shell
-- **Admin:** Hostname containing "admin" → admin login → admin shell
-- **Detection:** `lib/core/util/admin_host.dart` (`isAdminHost`)
-
-### Video Calling (Daily.co)
-
-- **Mobile:** `daily_flutter` package (CallClient)
-- **Web:** JavaScript embed via `daily_video_embed_web.dart`
-- **Platform stubs:** `daily_flutter_stub.dart`, `daily_video_embed_stub.dart`
-- **Token flow:** Backend `/api/video/token` → join Daily.co room
-
-### Chat System
-
-- Text, voice recording (`record` package), image uploads (`flutter_image_compress`), document sharing
-- Audio playback via `audioplayers`
-- Cached images via `cached_network_image`
-- Unread count polled every 10 seconds via StreamProvider
-
-### Localization
-
-- **Languages:** English (en), Uzbek (uz), Russian (ru)
-- **Implementation:** Manual maps in `lib/core/localization/app_localizations.dart`
-- **Assets:** `assets/localization/{en,uz,ru}.json`
-- **Usage:** `AppLocalizations.of(context)!.translate('key')`
-- **No ARB files** — all strings in a Dart map with JSON file backing
-
-### Firebase Services
-
-- **Auth:** Phone OTP login
-- **Cloud Messaging:** Push notifications with deep linking (appointments, patients, documents, tasks)
-- **Config:** `lib/firebase_options.dart` (web only — Android/iOS throw UnsupportedError)
-- **Projects:** staging (`shifa-doctor-staging`), QA (`shifa-doctor-qa`)
-
-### PDF Generation
-
-- `pdf` package with `DejaVuSans.ttf` font (Cyrillic support)
-- Appointment consultation notes: `lib/features/appointments/services/appointment_pdf_service.dart`
-
-## Flutter & Dart Best Practices
-
-These rules apply to ALL new code written in this project. Follow them every time. When modifying existing code, follow these rules for the code you write — but do not refactor surrounding legacy code unless explicitly asked.
-
-### Riverpod Rules
-
-1. **Use manual providers only** — this project does NOT use `riverpod_generator`, `@riverpod`, or `freezed`. Never introduce code generation for providers.
-2. **Provider placement follows a tiered pattern:**
-   - Shared/cross-feature state → `lib/state/<feature>/` (auth, patients, chat, profile, shell, etc.)
-   - Feature-specific application providers → `lib/features/<feature>/application/` (analytics, consultation notes, today's appointments)
-   - Auth-specific providers → `lib/features/auth/presentation/providers/`
-   - Core infrastructure → `lib/core/providers/` (language) and `lib/core/api/` (API client providers)
-   - For new providers: prefer `lib/state/<feature>/`. Only place in `lib/features/<feature>/application/` if the provider is tightly coupled to a single feature's UI logic.
-3. **Use `ref.watch()` in `build()` methods** for reactive UI. Use `ref.read()` only in callbacks, event handlers, and `initState`.
-4. **Never call `ref.watch()` inside async functions, callbacks, or `onPressed`.** Always use `ref.read()` there.
-5. **Cache invalidation:** Use `ref.invalidate(provider)` to discard and refetch. Use `ref.refresh(provider.future)` when you need to `await` the refreshed value. Both patterns are used in this codebase.
-6. **Use `ConsumerWidget`** for stateless widgets needing providers. Use `ConsumerStatefulWidget` when you need `TextEditingController`, `AnimationController`, form state, or other lifecycle-dependent state. `setState()` is acceptable in `ConsumerStatefulWidget` for local UI state (selection, visibility toggles, form field values) — not every piece of state needs a provider.
-7. **Keep providers small and focused.** One provider per concern. Compose them rather than building monolithic controllers.
-8. **Use `.when(data:, loading:, error:)` on `AsyncValue`** for rendering async state. Always handle all three cases.
-9. **Provider types in use:** `StateProvider`, `StateNotifierProvider`, `FutureProvider`, `FutureProvider.family`, `StreamProvider`, `Provider`. The project does NOT use `AsyncNotifierProvider` or `NotifierProvider` (newer Riverpod API) — do not introduce them.
-10. **`autoDispose`:** Used selectively (~10% of providers) for data that should not persist when the widget is unmounted (e.g., notifications, analytics). Do not add `autoDispose` to providers that should retain state across navigation (auth, profile, patient list).
-
-### Widget & UI Rules
-
-1. **Prefer `ConsumerWidget` over `StatelessWidget`** when the widget reads providers. Use `StatelessWidget` only for pure UI components with no provider dependency.
-2. **Use `const` constructors** wherever possible — the codebase has strong `const` adoption; maintain it.
-3. **Extract reusable widgets into `lib/core/widgets/`** — never duplicate UI across features.
-4. **Colors:** Use `AppColors` from `lib/core/theme/app_colors.dart` for the project's semantic colors (primary teal, destructive red, etc.). Material `Colors.*` (e.g., `Colors.grey.shade300`, `Colors.white`) is also used extensively throughout the codebase and is acceptable for standard Material colors. For new code: **never hardcode raw hex values** (e.g., `Color(0xFF1976D2)`) — use `AppColors` constants or standard `Colors.*` instead.
-5. **Text styles:** The codebase predominantly uses inline `TextStyle(fontSize:, fontWeight:, color:)`. This is the established pattern. For new code, continue using inline `TextStyle` for consistency. Use `Theme.of(context).textTheme` only when the theme already defines the exact style you need.
-6. **Buttons:** `ShifaButton` is used for primary actions. `TextButton` is used directly for secondary/tertiary actions (cancel, links, inline actions). For new code: use `ShifaButton` for prominent actions, `TextButton` for lightweight actions — avoid raw `ElevatedButton` or `OutlinedButton`.
-7. **Forms:** Use `Form` + `GlobalKey<FormState>` + `TextFormField` with validators. Initialize controllers in `initState()`, dispose in `dispose()`.
-8. **Never nest `Scaffold` widgets.** Each screen has exactly one Scaffold.
-9. **Prefer `SizedBox` over `Container`** when you only need width/height spacing.
-10. **Use `EdgeInsets.symmetric()` or `EdgeInsets.all()`** — keep spacing consistent (multiples of 4: 4, 8, 12, 16, 24, 32).
-
-### Model & Data Rules
-
-1. **Models are plain Dart classes** with manual `fromJson()` factory constructors. No `freezed`, no `json_serializable`, no code generation.
-2. **Always provide null-safe parsing** in `fromJson()` — use `(json['field'] ?? defaultValue) as Type` pattern. Use helper methods like `_stringOrNull()` for safe type conversions when the backend contract is inconsistent.
-3. **Implement `copyWith()`** on models that need immutable updates.
-4. **Place models in `features/<feature>/domain/`** or `lib/core/models/` for shared models.
-5. **Use enum types** for status fields (e.g., `AppointmentStatus`, `MessageType`, `TaskCategory`).
-
-### API & Networking Rules
-
-1. **Use the existing `ApiClient`** from `lib/core/api/api_client.dart` for all backend API calls. Access via `ref.read(apiClientProvider)` — never construct `ApiClient` directly. Exception: raw `http.get/post` is acceptable for external third-party APIs (Google Geocoding, blob downloads) and streaming SSE connections (AI API).
-2. **Check response status codes explicitly:** handle 200, 4xx, 5xx distinctly.
-3. **Validate response content-type before JSON parsing** — the backend may return HTML error pages. Check `response.headers['content-type']` for `application/json` before calling `jsonDecode()`. The auth controller (`lib/state/auth/auth_controller.dart`) has the reference implementation for this.
-4. **Error messages:** Use `sanitizeErrorMessage()` from `lib/core/utils/error_formatter.dart` for user-facing error messages. The existing codebase has inconsistent error handling (most files do manual string manipulation), but all new code should use `sanitizeErrorMessage()`.
-5. **Wrap API calls in try-catch** — catch network errors separately from API errors.
-6. **Use `postWithBearer()`** for Firebase token verification, `postNoUnauthorizedCheck()` for video tokens.
-
-### Navigation Rules
-
-1. **Define all routes as constants in `AppRoutes`** in `lib/app/router.dart`.
-2. **For new screens:** Use `Navigator.pushNamed()` or `ShellScope.pushNamed()` with route constants. Register the route in `AppRouter.onGenerateRoute()`. Note: some existing screens use `MaterialPageRoute` directly (auth flows, profile, chat image viewer) — this is legacy but functional.
-3. **Pass data via `arguments` parameter** — never pass data through global state for navigation.
-4. **Use `ShellScope.pushNamed()` for in-shell navigation** (screens within the authenticated shell's nested navigator). It falls back to `Navigator.pushNamed()` if no shell scope is found.
-5. **For full-page transitions (auth flows), use `pushNamedAndRemoveUntil()`** to clear the stack.
-
-### Error Handling Rules
-
-1. **Use Riverpod's `FutureProvider` / `AsyncValue`** for async data — avoid `FutureBuilder` (one legacy usage exists in `calendar_screen.dart`).
-2. **Always handle loading, data, and error states** — never show a blank screen on loading.
-3. **Show `SnackBar` for user-facing errors** via `ScaffoldMessenger.of(context).showSnackBar()`. The codebase uses inline SnackBar construction — follow this pattern for consistency.
-4. **Use `debugPrint()` for debug logging in new code** — do not add new `print()` statements (existing `print()` calls are legacy).
-5. **Fire-and-forget operations** (like FCM token upload) can use `.then().catchError()` but must log failures.
-
-### Localization Rules
-
-1. **All user-facing strings must be localized** — use `AppLocalizations.of(context)!.translate('key')`. Do not add hardcoded English strings as fallback values in the `?? 'fallback'` pattern — if a key is missing, add it to the JSON files instead.
-2. **Add new keys to all three JSON files** (`en.json`, `uz.json`, `ru.json`) in `assets/localization/`.
-3. **Use the existing localization pattern** — don't introduce ARB files, `intl_utils`, or other i18n systems.
-4. **Date/time formatting must respect locale** — use `intl` package with `initializeDateFormatting()`.
-
-### Timezone Rules
-
-1. **`DateTime.now()` usage:** Acceptable for non-display purposes (file naming, rate limiting, cache timestamps). **Never use `DateTime.now()` for displaying times to the user** — convert through `TimezoneService` / `timezone_utils.dart` to the doctor's practice timezone.
-2. **Send UTC to backend, display in practice timezone** — this is the core invariant.
-3. **Use `TZDateTime` from the `timezone` package** for timezone-aware display operations.
-4. **Test timezone logic with non-UTC timezones** (e.g., "Asia/Tashkent", "America/New_York").
-
-### File & Naming Conventions
-
-1. **File names:** `snake_case.dart` — always.
-2. **Suffixes:** `*_screen.dart` (full pages), `*_widget.dart` (reusable components), `*_provider.dart` / `*_providers.dart` (Riverpod providers), `*_controller.dart` (StateNotifiers), `*_service.dart` (business logic), `*_models.dart` (data classes), `*_actions.dart` (pure API action functions).
-3. **Class names:** `PascalCase`. Private classes prefixed with `_`.
-4. **Variables:** `camelCase`. Private fields prefixed with `_`.
-5. **Provider names:** descriptive + `Provider` suffix (e.g., `patientsProvider`, `unreadCountProvider`).
-6. **Imports:** Use absolute package imports (`package:shifa_doc_app_v1/...`). The codebase is predominantly absolute imports with some relative imports in older files — all new code must use absolute imports.
-
-### Platform-Specific Code Rules
-
-1. **Use conditional imports** for web vs mobile (see `daily_video_embed_web.dart` / `daily_video_embed_stub.dart` pattern).
-2. **Never import `dart:html` or `dart:js` directly** — use stub files with conditional imports.
-3. **Test on Chrome (web) first** — web is the primary platform.
-
-### Image & Media Rules
-
-1. **Always compress images before upload** using `flutter_image_compress`.
-2. **Use `cached_network_image` for network images** — never load images with raw `Image.network` (the codebase follows this correctly).
-3. **Use `image_utils.dart`** for URL normalization and image processing.
-4. **Voice messages:** Record with `record` package, play with `audioplayers`.
-
-### Security Rules
-
-1. **Never hardcode API keys, tokens, or secrets** in Dart code — use `--dart-define` or environment config.
-2. **JWT tokens are stored in `SharedPreferences`** — follow the existing `authTokenProvider` pattern. `SharedPreferences` is also used for language preference and OTP rate-limiting — this is acceptable for non-sensitive local data.
-3. **API client handles 401 automatically** — don't add custom unauthorized handling in feature code.
-4. **Validate all user input** before sending to the backend.
-5. **Never log sensitive data** (tokens, passwords, patient data) even in debug mode.
-6. **HIPAA awareness:** This is a healthcare app with patient data. Never expose patient information in logs, error messages, or analytics. Use patient IDs, not names, in debug output.
-
-### Performance Rules
-
-1. **Use `const` widgets** wherever possible to prevent unnecessary rebuilds.
-2. **Keep `build()` methods lightweight** — move computation to providers or separate methods.
-3. **Use `ref.watch()` on the narrowest provider possible** — don't watch a parent provider when you only need a child field.
-4. **Compress images before upload** — never send full-resolution photos.
-5. **Dispose controllers, subscriptions, and timers** in `dispose()` — prevent memory leaks. The codebase has good disposal discipline; maintain it.
-
-## Common Tasks
-
-### Adding a New Feature
-
-1. Create `lib/features/<feature_name>/` with `domain/`, `presentation/` subfolders.
-2. Add models in `domain/<feature>_models.dart`.
-3. Create screen in `presentation/<feature>_screen.dart` extending `ConsumerWidget` or `ConsumerStatefulWidget`.
-4. Add providers in `lib/state/<feature_name>/` — controller, actions, providers.
-5. Register route in `lib/app/router.dart` (add constant to `AppRoutes`, add case to `onGenerateRoute`).
-6. Add navigation from shell or related screens.
-7. Add all user-facing strings to `en.json`, `uz.json`, `ru.json`.
-
-### Adding a New API Endpoint
-
-1. Use `ref.read(apiClientProvider)` to get the API client.
-2. Create action function in `lib/state/<feature>/<feature>_actions.dart`.
-3. Call from StateNotifier or directly from widget callbacks.
-4. Handle response: check status code, parse JSON, show error on failure.
-5. Invalidate related providers if data changed.
-
-### Modifying Existing Feature
-
-1. Read existing code in `lib/features/<feature>/` and `lib/state/<feature>/`.
-2. Understand data flow: UI → Provider/Controller → ApiClient → Backend.
-3. Follow existing patterns in that feature — don't introduce new patterns.
-4. Test on Chrome first.
-
-## Backend Integration
-
-- **Backend:** Spring Boot (Kotlin) REST API
-- **Database:** PostgreSQL (UTC timestamps with `TIMESTAMPTZ`)
-- **Auth:** JWT tokens from `/api/auth/login`
-- **API Base:** `--dart-define=API_BASE_URL` (default: `http://localhost:8080`)
-- **Endpoints:** REST conventions (`/api/<resource>`)
-- **Doctor endpoints:** `/api/doctors/**`, `/api/patients/**`, `/api/appointments/**`
-- **Admin endpoints:** `/api/admin/**` (requires admin-scoped API client)
-
-## Environments
-
-| Environment | Firebase Project | API URL | Deploy Command |
-|-------------|-----------------|---------|----------------|
-| Development | — | `http://localhost:8080` | `flutter run -d chrome` |
-| Staging | `shifa-doctor-staging` | Set via `--dart-define` | `firebase deploy --project staging` |
-| QA | `shifa-doctor-qa` | Set via `--dart-define` | `firebase deploy --project qa` |
-| Production | TBD | Set via `--dart-define` | `firebase deploy --project production` |
+### Data layer
+- `ApiConfig` holds `BASE_URL` (production; paths are written without `/api`), `TIMEOUT_MS` (30 s), `Endpoints`
+  (consts, or functions for path params) and `PUBLIC_AUTH_PATHS`.
+- `createHttpClient(token, engine)` builds the Ktor client (engine defaults to `expect fun createHttpEngine()`); the
+  app uses the shared `httpClient` (production, or the development backend from the debug menu). The token goes only
+  to the backend's `/api/` paths that need it (`ApiConfig.needsToken`: not `auth/**` except `auth/reset-password`, not
+  `public/**`, never file URLs) and never over an Authorization header the caller set (Firebase bearer). A token more
+  than 30 s past `exp` ends the session before the request is sent.
+- Calls go through `apiCall<T> { client.get(…) }` from `ApiHelper.kt`: returns `Result<T>`; a non-2xx becomes an
+  `ApiException` with the backend's `status`, `code` and `requestId` (no server text: it can name a patient); no
+  response becomes `NetworkError`. HTML error pages and a numeric `error` are read safely. **Session rule (17 §1), applied
+  only in `apiCall`: a 401 to a request that carried a token, or `code = ACCOUNT_DISABLED`, ends the session through
+  `SessionEvents`; a 403 never does** (clinic staff legitimately get 403 on doctor-only routes; the feature shows its
+  own message). Screens show `e.toUserMessage(Res.string.<featureFallback>)`, which maps the `code`, never English
+  text; show `requestId` in the error banner's detail.
+- The session lives in `SessionRepository` (`data/session/`): `restore()` on cold start, `signIn(token)`, `signOut()`;
+  the shell reacts to `session` turning null. Nothing else writes the token, and the HTTP client reads it from
+  `session`. A network session end names the token it was about, so a late 401 can't end a newer session. The app-lock PIN is stored only as a
+  salted hash (`AppLockStorage`).
+- Repositories take `HttpClient` (and `TokenStorage` if needed) via constructor and return `Result<T>`. Map HTTP
+  errors to the sealed `ApiException` (ValidationError, Unauthorized, NotFound, Conflict, RateLimit, ServerError,
+  NetworkError…). DTOs tolerate `null` in list fields and unknown keys; one bad item must not drop the whole list.
+- **Times:** sent as UTC ISO-8601; **displayed in the doctor's practice time zone** (`doctor_profiles.practiceTimeZone`,
+  IANA id), never in device-local time unless the spec says so. `utils/PracticeClock` takes the zone explicitly; money is `utils/Money`. Device zone
+  is only used for the "your device differs from the schedule zone" hint.
+- Debug builds have Profile → Debug menu: demo data (`data/debug/DemoBackend.kt`, a `MockEngine` behind
+  `httpClient`, writes never reach production) and fake pushes of each type. A new endpoint gets a `DemoBackend`
+  handler too; without one, demo GETs read production and other calls are refused. `DemoBackendTest` covers it.
+- Logging: errors only, never successes. Every failed backend call is logged through `httpLogger` (Logcat tag
+  `HttpClient` on Android, the Xcode console on iOS). `apiCall` already does it: `FAILED <status> <method> <path with ids
+  masked> <code> requestId=<id>`, `FAILED no response: <exception class>`, or an unreadable body. Network code outside
+  `apiCall` (SSE streams, polling) logs its failures the same way. Debug builds only (release logs nothing); never log
+  tokens, passwords, headers, request bodies or patient data (HIPAA: patient ids only).
+- Push: Firebase Messaging on both platforms; the token is sent (`PUT /doctors/me/fcm-token`) after login and on every
+  refresh, logout sends `""`. Taps (foreground, background and cold start) route like the inbox tray. Real time is
+  REST polling, no websockets.
+
+### UI layer
+- One `XxxUiState` `@Stable data class` per screen with defaults; derived flags as properties (`isInputValid`).
+- ViewModel: constructor-injected deps with default values (no DI framework), `private val _state =
+  MutableStateFlow(XxxUiState())`, `val state: StateFlow<…> = _state.asStateFlow()`, updates via
+  `_state.value = _state.value.copy(...)`, async work in `viewModelScope.launch`, `result.fold(onSuccess, onFailure)`
+  mapping the failure to a localized `StringResource` with `e.toUserMessage()`.
+- Screen split in two:
+  - `XxxScreen(viewModel = viewModel { XxxViewModel() }, onNavigate… callbacks)` — collects state, wires callbacks.
+  - `internal fun XxxScreenContent(state, onXxx: () -> Unit, …)` — stateless, used by previews and screenshot tests.
+- Navigation: simple state (`rememberSaveable`) in `App.kt` / `MainScreen` + `Scaffold` bottom bar. No nav library.
+  Back goes page → first tab → exit.
+- No raw hex/dp/sp in screens or widgets. Tokens live in `ui/theme/` and are named 1:1 after the tokens in
+  `docs/design/tokens.json` and `shifa-ds.css` (the same names the patient app's theme uses):
+  `ShifaColors.<Text|Icon|Bg|Border|Interactive|Alpha>.X` (`semantic/color/*`), `ShifaColors.Raw.<Component><Part>`
+  for values the design sets without a token, `MaterialTheme.typography.*` + `ShifaTextStyles`,
+  `ShifaSpacing.<Inset|Gap|Stack>.X` (`semantic/space/*`), `ShifaSize`, `ShifaRadius.*`, `ShifaShadow.*` (via
+  `Modifier.dropShadow(shape, shadow)`), `ShifaDimens.<Component><Part>` for raw design sizes. Shared components come
+  from `ui/widgets`. Use `Modifier.lineBox(style)` where text height must match the design's line boxes.
+- Icons come from the design's icon library: reference `Res.drawable.ic_<name>_<size>` (`_filled`, `_bold`) and run
+  `node scripts/design_icons.js`, which writes the vectors from the `ic` map in `docs/design/boards/DaApp.dc.html` and
+  deletes unused ones. Images (`img_*`) are exports in `composeResources/drawable`.
+- Strings: the source is `docs/kmp-spec/strings/{en,uz,ru}.json` + `plurals.json`; `python3 scripts/strings_from_json.py`
+  generates `composeResources/values{,-ru,-uz}/strings.xml` and `plurals.xml` (never edit those by hand). Kit-only
+  labels that are not in the JSON live in the hand-written `strings_kit.xml`. Keys are camelCase, placeholders become
+  `%1$s` numbered in English order. CMP doesn't unescape `\'`, `\"` or `%%`, so the generator writes them literally;
+  only `&`, `<`, `>` are XML-escaped. **Resolve strings with `tr(Res.string.x, args)` / `trPlural(Res.plurals.x, n,
+  args)` from `utils/AppLocale.kt`, never `stringResource`**: they transliterate `uz` to Cyrillic when the doctor picked
+  Ўзбекча (`LocalUzbekCyrillic`), template first, arguments after. Screen-reader labels come from strings too.
+  `StringsTest` checks keys, plurals and placeholders across locales. The language (`LanguageStorage`: en, uz,
+  uz-Cyrl, ru; Uzbekistan defaults to uz) is applied by `ProvideAppLocale` in `App.kt` and synced to the backend
+  with `PUT /doctors/me/language` (wired with the HTTP client).
+- Loading: every first load shows skeletons (`ShifaSkeleton`, `ShifaCardSkeleton`, `ShifaListSkeleton`…), not a
+  spinner. Errors show inline in a `ShifaBanner`, never a SnackBar. Lists pull to refresh.
+- Avatars without a photo, or whose photo fails to load, show the brand fallback picture (`ShifaAvatar`).
+- Keyboard: `MainActivity` is `adjustResize` and screens pad for the keyboard themselves (`imePadding`).
+- Trays and pop-ups (`ShifaTray`, `ShifaPopUp`) only draw; host them in `ModalBottomSheet` / `Dialog`.
+- When the design boards lack a state or component the spec needs (lockout banner, empty state, error), build the
+  smallest thing in the existing style and note "not in the design" in `docs/implemented/`.
+
+### Tests
+- Every ViewModel gets `XxxViewModelTest`: `StandardTestDispatcher` + `Dispatchers.setMain`, mocked repositories,
+  `runTest` + `advanceUntilIdle`, assert with Turbine `state.test { awaitItem() }` + Truth. Class under test named
+  `classToTest`, backtick test names.
+- Every widget gets `XxxScreenshotTest` (`@RunWith(RobolectricTestRunner)`, `@GraphicsMode(NATIVE)`,
+  `@Config(sdk = [33])`, `captureRoboImage("screenshots/Xxx_state.png")`). Previews live in
+  `androidMain/.../ui/<feature>/XxxPreviews.kt` (widgets use `Gallery`, screens use `PreviewTheme`); both force
+  inspection mode so Compose resources load under Robolectric. Screenshots are committed in `composeApp/screenshots/`.
+- Pure logic ported from Dart tests (`consecutive_slot_range`, dental chart codec, treatment-plan initial payment,
+  profession catalog, doctor display name) gets plain JUnit tests first; they are the behavioural contract.
+- Commands: `./gradlew :composeApp:testDebugUnitTest`, `verifyRoborazziDebug`, `recordRoborazziDebug`.
+- After a feature: compile both platforms (`assembleDebug`, `linkDebugFrameworkIosSimulatorArm64`), run only that
+  feature's tests and record only its new screenshots, then report. Don't run the full screenshot suite unprompted;
+  the user tests the UI and asks for a full run when they want one.
+
+### CI/CD (GitHub Actions, ported from this repo's Flutter workflows like the patient app's; deploys are manual `workflow_dispatch`)
+- `ci.yml`: runs on every pull request (and by hand): ktlint, unit tests, Roborazzi verify. The deploy workflows
+  don't run tests.
+- `google_play_deploy.yml`: signed `bundleRelease` → Google Play (`com.shifa.doc`). Signing via root
+  `keystore.properties` written by CI (gitignored); versionCode = `VERSION_CODE_OFFSET + run_number` (set the offset
+  above the Flutter app's last versionCode, which was `1 + run_number`). Keep the existing `track` input
+  (internal / beta) and add alpha / production, defaulting to `internal`, so a run does not replace the Flutter app
+  for every doctor before testers have it.
+- `ios_testflight.yml`: builds the Kotlin framework (`linkReleaseFrameworkIosArm64`) in its own step so Kotlin errors
+  show in full, then the fastlane `beta` lane in `iosApp/fastlane` → TestFlight (`uz.shifa.doc`, team `NH97PGA9PT`).
+  Build number = `BUILD_NUMBER_OFFSET + run_number`; version from `MARKETING_VERSION`. Keep the "Prepare App Store
+  Connect API key" whitespace-trimming step from the Flutter workflow.
+- Version name lives in one place: `MARKETING_VERSION` in `iosApp/Configuration/Config.xcconfig`;
+  `composeApp/build.gradle.kts` reads it for Android's `versionName`. Bump it there only.
+- iOS: `ITSAppUsesNonExemptEncryption = false` in Info.plist (already set); the app icon has no alpha channel
+  (App Store Connect rejects transparent corners). Keep the usage descriptions: camera, microphone, photo library
+  (+ add), location when-in-use, Face ID; `UIBackgroundModes` as in the Flutter plist.
+- Android permissions as in the Flutter manifest: INTERNET, CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS,
+  POST_NOTIFICATIONS, USE_BIOMETRIC.
+- Secrets: the ones already in this repo (note the `DOCTOR_` prefix on the Android/Firebase/Play ones):
+  `DOCTOR_FIREBASE_ANDROID_CONFIG_BASE64`, `DOCTOR_FIREBASE_IOS_CONFIG_BASE64`, `DOCTOR_ANDROID_KEYSTORE_BASE64`,
+  `DOCTOR_ANDROID_KEYSTORE_PASSWORD`, `DOCTOR_ANDROID_KEY_ALIAS`, `DOCTOR_ANDROID_KEY_PASSWORD`,
+  `DOCTOR_GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64`, `IOS_CERTIFICATE_P12_BASE64`, `IOS_CERTIFICATE_PASSWORD`,
+  `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_P8`.
+
+## Working with the user
+
+- Read `docs/implemented/README.md`, `17-master-plan.md` (the milestone row), the flow files, the feature's spec doc,
+  `15-api-reference.md`, `16-implementation-plan.md` (the ticket) and the design board before writing code.
+  Implement one ticket group at a time.
+- Decisions the user makes (a dropped feature, a chip removed, a flow changed) are recorded in
+  `docs/implemented/README.md` with the date and "the user's call", so they aren't rebuilt later.
+- End every job with: what changed, which design boards and flow files it covers, what's not built and why, the
+  targeted test results, and the question whether to commit.

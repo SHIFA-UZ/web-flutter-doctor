@@ -15,13 +15,13 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 
 | Topic | Rule |
 |---|---|
-| Base URL | `https://shifa-doc-backend-mvp-production.up.railway.app`; paths below include the `/api` prefix as the Flutter code writes them. In Kotlin, `ApiConfig.BASE_URL` ends with `/api` and `Endpoints` omit it. |
+| Base URL | Production `https://api.shifa.uz` (17 §1; the Railway host stays alive for old store builds), development `https://api-dev.shifa.uz`; paths below include the `/api` prefix as the Flutter code writes them. In Kotlin, `ApiConfig.BASE_URL` ends with `/api` and `Endpoints` omit it. |
 | Auth | `Authorization: Bearer <jwt>`. No refresh token. JWT claims read: `exp`, `role` (`DOCTOR` \| `CLINIC_STAFF` \| `ADMIN`). |
 | Public paths | `/api/auth/**` (login, OTP, register, verify-key, check-existing-patient, forgot-password…), `/api/public/**`. `POST /api/auth/reset-password` (change password while signed in) needs the token. |
-| 401 / 403 | 401 ⇒ logout (only if a token was sent). 403 ⇒ logout **only** when the JWT is expired, or the body contains `"error":"Account is disabled"` / `"Session invalid"` / `"Session expired or signed out"`, or it is a `/api/doctors/me*` `Forbidden` for a non-`CLINIC_STAFF` role. Everything else (clinic staff on doctor-only routes, video token business rules) is a normal error. Doc 01 §3. |
+| 401 / 403 | **Superseded by 17 §1 (built in CORE-05):** a 401 to a request that carried a token, or `code = ACCOUNT_DISABLED`, ends the session; a 403 never does. Verified on dev 2026-11-04: a missing or invalid token gets `401 {"error":"Authentication required","code":"UNAUTHORIZED","requestId":…}` (not `TOKEN_INVALID`). The old Flutter rule (403 on English body strings) is in 01 §3 for reference only. |
 | Pre-flight expiry | Flutter rejects requests locally when `exp + 30 s < now` and logs out. Keep. |
 | Timeout | 30 s (Flutter applied it only to GET/POST; apply to all). |
-| Content type | JSON. The backend can return HTML error pages: check `Content-Type` before decoding. Error bodies: `{message}` or `{error}` (sometimes numeric). |
+| Content type | JSON. The backend can return HTML error pages: check `Content-Type` before decoding. Error bodies (dev, 2026-11-04): `{error, message?, status?, code, requestId}`; `error` is the status number on some routes (`{"error":404,"message":"Appointment not found: 9",…}`), and `message` can name records, so it is never logged or shown. |
 | Times | Instants are ISO-8601 UTC with `Z`. Dates are `YYYY-MM-DD`. Times of day are `HH:mm`. Display in the doctor's practice time zone (`profile.timeZone`), clinic time zone for clinic-scoped screens, patient time zone for task check-ins. |
 | Money | Integer minor units (`*Minor`) + `currency` (`UZS`, `USD`, `EUR`, `RUB`). |
 | IDs | Numeric on the wire; the Flutter app stringifies patient ids. Tolerate `int`/`double`/`String`. |
@@ -41,6 +41,8 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | POST | `/api/auth/login` | `{username,password}` → `{token}`; `?app=admin` on the admin host |
 | POST | `/api/auth/send-login-otp` | pub, `{email}` |
 | POST | `/api/auth/verify-email-otp` | pub, `{email,code}` → `{token}` |
+| POST | `/api/auth/send-login-sms-otp` | pub, `{phone}` (E.164, +998 only; DOCTOR accounts) → `{sent, channel:"sms"\|"email", smsFallbackUsed, emailHint?}`: when the SMS can't go out the code goes to the account's e-mail (`emailHint` masked); 404 unknown number, 403 not a doctor / disabled / locked, 503 no SMS and no e-mail (AUTH-10, backend 2026-11-07, unmerged) |
+| POST | `/api/auth/verify-login-sms-otp` | pub, `{phone,code}` → `{token}` (DOCTOR); accepts the SMS code or the e-mailed fallback; 401 wrong or expired |
 | POST | `/api/auth/send-forgot-password-otp` | pub, `{identifier, app}` |
 | POST | `/api/auth/forgot-password-reset` | pub, `{email,emailOtp,app,newPassword}` → `{token}` (legacy `{idToken,…}`) |
 | POST | `/api/auth/reset-password` | **token required**, `{currentPassword,newPassword}` (change password) |
@@ -48,11 +50,12 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | POST | `/api/auth/verify-key` | pub, `{key}` → `{valid,purpose,clinicId,clinicName,emailSentTo}` |
 | POST | `/api/auth/check-existing-patient` | pub, `{firstName,lastName,email,phone?}` → `{found,fullName,photoUrl,email}` |
 | POST | `/api/auth/send-email-otp` | pub, `{email, purpose:'REGISTRATION'}` |
-| POST | `/api/auth/register` | pub → `{token}` |
-| POST | `/api/auth/register-clinic-staff` | pub → `{token}` |
+| POST | `/api/auth/register` | pub → `{token}`; optional `emailOtp` (the REGISTRATION code) and `currentPassword`. Codes: 409 `DOCTOR_EXISTS` (never re-keys a doctor), 409 `OWNERSHIP_REQUIRED` (an existing non-doctor account needs its code or current password), 400 `EMAIL_OTP_INVALID` / `EMAIL_OTP_EXPIRED` (BE-29, BE-03; backend 2026-11-07) |
+| POST | `/api/auth/register-clinic-staff` | pub → `{token}`; same `emailOtp`, `currentPassword` and codes |
 | POST | `/api/auth/admin/request-login-otp` | admin only (doc 10) |
 | POST | `/api/auth/admin/verify-login-otp` | admin only (doc 10) |
-| GET | `/api/public/config` | pub, `{transcriptionFeedbackEnabled, googleMapsApiKey}` |
+| GET | `/api/public/legal?lang=en\|uz\|ru` | pub → `{terms, privacy, licences, version, updatedAt}` (nullable strings; BE-16, backend 2026-11-07, `legal.*` in system config) |
+| GET | `/api/public/config` | pub, `{transcriptionFeedbackEnabled, googleMapsApiKey, doctorApp:{minVersion,latestVersion,storeUrl:{android,ios}, maintenance:{active,message:{en,uz,ru},until}}}`; unset values are `null` (BE-04, backend 2026-11-07, admin keys `doctor_app.*`) |
 | GET | `/api/public/clinics?search=` | pub, `[{id,name}]` |
 | GET | `/api/public/professions?lang=&search=` | pub, `[{english,uzbek}]` |
 
@@ -69,7 +72,12 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | PATCH | `/api/doctors/me/billing` | billing + echoed gateway ids |
 | PATCH | `/api/doctors/me/settings` | full `{country,language,twoFA,encryptedDocs,defaultStartTab}` |
 | PUT | `/api/doctors/me/language` | `{language}` |
-| PUT | `/api/doctors/me/fcm-token` | `{fcmToken}` (`""` on logout) |
+| PUT | `/api/doctors/me/fcm-token` | `{fcmToken}` (`""` on logout); the Flutter build's single token |
+| POST | `/api/doctors/me/fcm-tokens` | `{token, platform: android\|ios\|web}` → 204; one per device, idempotent (BE-05, backend 2026-11-07; the app sends it with PUSH-01) |
+| DELETE | `/api/doctors/me/fcm-tokens/{token}` | → 204 at sign-out; idempotent |
+| GET | `/api/doctors/me/export` | the doctor's data as a JSON download (every section of `GET /doctors/me` + locations), once a day (429) (BE-02) |
+| POST | `/api/doctors/me/delete-account/request` | → `{maskedEmail, expiresInSeconds}`, e-mails a code; 409 `HAS_ACTIVE_OBLIGATIONS` with `details` `UPCOMING_APPOINTMENTS` / `ACTIVE_SUBSCRIPTION` (BE-02) |
+| POST | `/api/doctors/me/delete-account/confirm` | `{code}` → `{success}`; closes and anonymises the account, signs out every session; 400 `EMAIL_OTP_INVALID` / `EMAIL_OTP_EXPIRED` |
 | POST | `/api/doctors/me/photo` | multipart `file` → `{photoUrl}` |
 | POST | `/api/doctors/me/certificate` | multipart `file` → `{photoUrl}` |
 | GET/POST | `/api/doctors/me/locations` | `DoctorLocationDto` |
@@ -95,7 +103,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/calendar?day=YYYY-MM-DD[&doctorId=]` | entries `FREE_SLOT` \| `APPOINTMENT` \| `BLOCKED` |
+| GET | `/api/calendar?day=YYYY-MM-DD[&doctorId=]` | entries `FREE_SLOT` \| `APPOINTMENT` \| `BLOCKED`; appointment rows carry `isVideo` (BE-09, backend 2026-11-07) |
 | POST | `/api/schedule/book` | `{startAt,slotMinutes,patientId,location,reason,isVideo,locationId?,resourceDoctorId?}` |
 | GET/PUT | `/api/schedule/rules[?locationId=]` | weekly rules |
 | PATCH | `/api/schedule/valid-range` | `{validUntil, validFrom?}` |
@@ -106,7 +114,11 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | GET | `/api/schedule/blocks/overlapping-count?startAt=&endAt=[&doctorId=]` | |
 | DELETE | `/api/schedule/blocks/{id}[?doctorId=]` | |
 | GET | `/api/appointments/{id}` | signature + linked plan fields |
-| DELETE | `/api/appointments/{id}` | cancel |
+| DELETE | `/api/appointments/{id}` | cancel (no reason) |
+| POST | `/api/appointments/{id}/cancel` | `{reasonCode: DOCTOR_UNAVAILABLE\|PATIENT_REQUEST\|RESCHEDULED\|OTHER, note? ≤500}` → 200, same rules as DELETE; the patient's notification carries the reason (BE-10) |
+| POST | `/api/appointments/{id}/no-show` | `{notify?: Boolean = true}` → the doctor's `AppointmentDto`; CONFIRMED or IN_PROGRESS, from the start to 24 h after the end, else 409 `NO_SHOW_NOT_ALLOWED`; the patient gets `APPOINTMENT_NO_SHOW` unless `notify:false` (BE-10) |
+| GET | `/api/doctors/me/contract` | `{contractNumber, effectiveDate, endDate, termMonths, issuedAt, status: ACTIVE\|EXPIRED}` or 404 `NO_CONTRACT` (BE-16) |
+| GET | `/api/doctors/me/contract/pdf` | `application/pdf`, the early-partner contract rendered by the backend; 404 `NO_CONTRACT` |
 | PUT | `/api/appointments/{id}/change` | `{startAt, slotMinutes}` |
 | PUT | `/api/appointments/{id}/complete` | `{clinicId?, doctorNotes?, awaitingScribe?}` → `{scribePending,…}` |
 | PUT | `/api/appointments/{id}/request-signature` | |
@@ -118,7 +130,9 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | GET | `/api/appointments/{id}/briefing` | poll 3 s while PENDING/GENERATING |
 | POST | `/api/appointments/{id}/briefing/retry` | |
 | POST | `/api/consultations/upload-recording` | multipart `audio` + `appointmentId`, `language`; 202 / 429 |
-| POST | `/api/video/token` | no-401, `{appointmentId, roomName?}` → `{token,roomUrl,roomName}` |
+| POST | `/api/video/token` | no-401, `{appointmentId, roomName?}` → `{token,roomUrl,roomName}`; refusals carry `code`: 403 `VIDEO_TOO_EARLY` / `VIDEO_TOO_LATE` with `joinWindow:{from,to}`, 402 `VIDEO_PAYMENT_REQUIRED` (BE-28). The doctor's `GET /api/appointments/{id}` gains `isVideoConsultation`, `cancelReasonCode`, `cancelNote`, `joinWindow`. |
+| GET | `/api/video/appointments/{id}/presence` | the visit's own doctor → `{patientInRoom, patientJoinedAt?}` (Daily's room presence); 403 anyone else, 503 when Daily can't be asked (backend 2026-11-07, unmerged; the pre-join page asks every 5 s inside the join window) |
+| POST | `/api/appointments/{id}/summary-document?lang=` | re-renders and files the server's (notes-only) summary → `{documentId, url}`; 409 without notes (BE-01; the app keeps its own richer summary) |
 
 ### 2.5 AI (doc 02)
 
@@ -159,13 +173,15 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | PUT | `/api/patients/{id}/documents/{docId}[?clinicId=]` | multipart replace (form PDF) |
 | GET | `/api/patients/{id}/documents/{docId}/download[?clinicId=]` | bytes + Content-Disposition |
 | POST | `/api/patients/{id}/documents/{docId}/request-access[?clinicId=]` | |
-| POST | `/api/document-access-requests/{id}/approve` | no UI caller today |
-| POST | `/api/document-access-requests/{id}/reject` | no UI caller today |
+| POST | `/api/document-access-requests/{id}/approve` | the owner (NOTIF-04) → `{id, status, …}`; twice is fine; after a rejection 400 |
+| POST | `/api/document-access-requests/{id}/reject` | the owner (NOTIF-04); the row's `documentAccessRequestStatus` is `pending\|approved\|rejected` |
 | GET/POST | `/api/patients/{id}/forms` | 025-2 |
 | PUT | `/api/patients/{id}/forms/{formId}` | |
 | PUT | `/api/patients/{id}/forms/{formId}/request-signature` | |
 | POST | `/api/patients/{id}/forms/{formId}/link-document?documentId=` | |
 | GET/PUT | `/api/prophylaxis/settings` | `?patientId&clinicId` / `{patientId,clinicId,intervalMonths,enabled}` |
+| GET | `/api/patients/{patientId}/forms/{formId}/pdf` | the 025-2 rendered by the server (`application/pdf`), read-only (BE-01, backend 2026-11-07) |
+| POST | `/api/patients/{patientId}/forms/{formId}/pdf-document` | renders, files as `FORM_025_2`, links → `{documentId, url}`; idempotent; 404 on older backends → the app renders |
 
 ### 2.7 Care partnerships (doc 06 §5)
 
@@ -182,7 +198,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/messages/conversations` | |
-| GET | `/api/messages/conversations/{id}` | all messages, no paging |
+| GET | `/api/messages/conversations/{id}[?after=<messageId>&limit=≤200]` | all messages; with `after` only newer ones, oldest first, `limit` default 100 (BE-14). The list takes `?since=<instant>` |
 | POST | `/api/messages/conversations/start` | `{recipientDoctorId}` or `{recipientPatientId}` |
 | POST | `/api/messages/conversations/{id}/read` | |
 | POST | `/api/messages/send` | text / image / voice / document |
@@ -194,7 +210,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/notifications` | full list |
+| GET | `/api/notifications` | full list; rows carry `conversationId` (chat) and `carePartnershipId` (partnership) since BE-06 (backend 2026-11-07); push `data` keys and every `type`: backend `docs/api/push-notifications.md` |
 | GET | `/api/notifications/unread/count` | |
 | PUT | `/api/notifications/{id}/read` | |
 | PUT | `/api/notifications/read-all` | |
@@ -251,6 +267,7 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | GET | `/api/treatment-plans/plan-services?clinicId=&doctorIds=` | |
 | GET | `/api/treatment-plans/doctor-locations?clinicId=&doctorId=` | |
 | GET | `/api/treatment-plans/free-slots?clinicId=&doctorId=&day=&locationId=` | |
+| GET | `/api/treatment-plans/{id}/pdf?lang=en\|uz\|ru` | the plan rendered by the server (BE-01, backend 2026-11-07); 404 on older backends → the app renders |
 
 ### 2.12 Admin (doc 10, parked)
 
@@ -273,7 +290,7 @@ mobile app; the doctor-scoped client must refuse them.
 
 Keep out of the KMP app until a screen needs them: `GET /api/practice/me`, `GET /api/tasks/{id}/progress`,
 `GET /api/clinics/{id}/finance/overdue`, `GET /api/clinics/{id}/finance/audit`, `PATCH /api/treatment-plans/{id}`,
-`POST /api/document-access-requests/{id}/approve|reject` (controller only), `POST /api/schedule/blocks` duplicates
+`POST /api/schedule/blocks` duplicates
 in `schedule_actions.dart`.
 
 ## 4. Backend requests to raise (collect in `docs/backend-improvements.md`)

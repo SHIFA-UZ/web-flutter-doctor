@@ -1,0 +1,352 @@
+package shifa.doctor.ui.chat
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Instant
+import shifa.doctor.data.api.requestId
+import shifa.doctor.data.api.toUserMessage
+import shifa.doctor.data.chat.ChatRepository
+import shifa.doctor.data.chat.chatRepository
+import shifa.doctor.data.model.Conversation
+import shifa.doctor.data.model.Message
+import shifa.doctor.data.model.SendMessageRequest
+import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.chatFileTypeNotAllowed
+import shifa.doctor.generated.resources.chatLoadFailed
+import shifa.doctor.generated.resources.chatRecordingTooShort
+import shifa.doctor.generated.resources.errorRecordingVoice
+import shifa.doctor.generated.resources.errorUploadingFile
+import shifa.doctor.generated.resources.fileTooLarge
+import shifa.doctor.ui.emailcode.CodeBanner
+import shifa.doctor.ui.navigation.Notice
+import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.utils.CHAT_DOCUMENT_EXTENSIONS
+import shifa.doctor.utils.DocumentPickerResult
+import shifa.doctor.utils.PickedImage
+import shifa.doctor.utils.currentInstant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+/** A text on its way, or one that failed (it keeps its text for Retry); shown at once, before the server answers. */
+data class PendingMessage(
+    val localId: Long,
+    val text: String,
+    val at: Instant,
+    val failed: Boolean = false,
+    // CHAT-04: a photo on its way (shown from these bytes until the server's message takes its place).
+    val image: ByteArray? = null,
+    val fileName: String? = null,
+    // The photo's URL once uploaded: a retry after a failed send only sends again (flow 07/03 §6), never a second file.
+    val uploadedUrl: String? = null,
+    // CHAT-05: a document on its way (pdf, doc, docx).
+    val document: ByteArray? = null,
+    // CHAT-06: a voice note on its way (AAC .m4a) and its length in seconds.
+    val voice: ByteArray? = null,
+    val durationSeconds: Int? = null,
+) {
+    val file: ByteArray? get() = image ?: document ?: voice
+}
+
+data class ThreadUiState(
+    val conversation: Conversation? = null,
+    // Oldest first; null until the first answer (a skeleton).
+    val messages: List<Message>? = null,
+    val pending: List<PendingMessage> = emptyList(),
+    val draft: String = "",
+    val error: CodeBanner? = null,
+    // The newest message from the other side: the screen shows "New message" when it changes while scrolled up.
+    val newestIncoming: Long? = null,
+) {
+    val canSend: Boolean get() = draft.isNotBlank() && messages != null
+
+    // An attachment is uploading (the strip above the composer, flow 07/03 §3).
+    val uploading: Boolean get() = pending.any { it.file != null && !it.failed }
+}
+
+/**
+ * One conversation (CHAT-03, 07 §1.2–1.3, flow 07/02): every message read on open, then every 5 s after each answer
+ * while in front only the newer ones (BE-14's `after`), with a full read every [FULL_EVERY] polls so the read ticks of
+ * older messages catch up (no push refresh until PUSH-02); marked read on open and whenever something new comes from the other
+ * side (Flutter only on open). A text shows at once and is sent in order; a failure keeps it with "Tap to retry"
+ * (Flutter: a SnackBar with the raw error).
+ */
+class ThreadViewModel(
+    private val id: Long,
+    private val repo: ChatRepository = chatRepository,
+    private val every: Duration = 5.seconds,
+    private val now: () -> Instant = { currentInstant() },
+) : ViewModel() {
+    private val _state = MutableStateFlow(ThreadUiState())
+    val state: StateFlow<ThreadUiState> = _state.asStateFlow()
+    private var reading: Job? = null
+    private var polling: Job? = null
+    private var lastLocalId = 0L
+
+    // The newest message read on the server's side, so each new one from the other side is marked read once.
+    private var readUpTo: Long? = null
+
+    // Messages this screen sent that no read has returned yet.
+    private val sentIds = mutableSetOf<Long>()
+
+    /** Retry, and each poll; a read already out is left to finish. */
+    fun refresh() {
+        if (reading?.isActive == true) return
+        reading = viewModelScope.launch { load() }
+    }
+
+    private var polls = 0
+
+    // The newest message a read returned (never one this screen sent: messages before it may still be unread).
+    private var fetchedUpTo: Long? = null
+
+    private suspend fun load() {
+        val full = polls++ % FULL_EVERY == 0 || fetchedUpTo == null
+        // A newer-only read that came back full has more behind it: read on until a page isn't full.
+        var after = if (full) null else fetchedUpTo
+        do {
+            val page = read(after) ?: return
+            after = fetchedUpTo
+        } while (page >= CURSOR_PAGE && after != null)
+    }
+
+    /** One read; the number of messages it returned, or null when it failed. */
+    private suspend fun read(after: Long?): Int? =
+        repo.thread(id, after).fold(
+            { t ->
+                t.messages.maxOfOrNull { it.id }?.let { top -> fetchedUpTo = maxOf(fetchedUpTo ?: top, top) }
+                val fetched = t.messages.map { it.id }.toSet()
+                // A read started before a send answered may not have it yet: the sent message stays until a read has it.
+                sentIds.removeAll(fetched)
+                _state.update { s ->
+                    // A full read replaces the list (keeping sends it hasn't seen); a newer-only read adds to it. Either
+                    // way the server's copy of a message wins (a backend that ignores `after` sends them all).
+                    val held = s.messages.orEmpty()
+                    val base = if (after == null) held.filter { it.id in sentIds } else held
+                    val merged = (base + t.messages).associateBy { it.id }.values.sortedBy { it.sentAt }
+                    s.copy(
+                        conversation = t.conversation ?: s.conversation,
+                        messages = merged,
+                        error = null,
+                        newestIncoming = merged.lastOrNull { !it.isMine }?.id,
+                    )
+                }
+                val incoming = _state.value.newestIncoming
+                // Read on open and on each new message from them; a failed read is tried again at the next answer.
+                val newest = _state.value.messages?.lastOrNull()?.id
+                if (newest != null && (readUpTo == null || (incoming != null && incoming > (readUpTo ?: 0)))) {
+                    repo.markRead(id).onSuccess { readUpTo = newest }
+                }
+                t.messages.size
+            },
+            {
+                    e ->
+                _state.update {
+                    it.copy(
+                        error = CodeBanner(e.toUserMessage(Res.string.chatLoadFailed), requestId = e.requestId),
+                    )
+                }
+                null
+            },
+        )
+
+    /** The app in front: read now and [every] after each answer; behind it: nothing. */
+    fun foreground(inFront: Boolean) {
+        polling?.cancel()
+        if (!inFront) return
+        polling =
+            viewModelScope.launch {
+                while (isActive) {
+                    refresh()
+                    reading?.join()
+                    delay(every)
+                }
+            }
+    }
+
+    fun draft(text: String) = _state.update { it.copy(draft = text) }
+
+    /**
+     * Send: the trimmed text shows at once with its spinner and the field clears (a second tap has nothing to send);
+     * on success the server's message takes its place.
+     */
+    fun send() {
+        val text = _state.value.draft.trim()
+        if (text.isEmpty() || _state.value.messages == null) return
+        val pending = PendingMessage(++lastLocalId, text, now())
+        _state.update { it.copy(draft = "", pending = it.pending + pending) }
+        deliver(pending)
+    }
+
+    /**
+     * A photo from the library or the camera (CHAT-04, flow 07/05): already a JPEG of at most 1600 px (the picker), so
+     * nothing to compress here; shown at once, uploaded, then sent as an image message. Over 20 MB it isn't sent.
+     */
+    fun sendImage(photo: PickedImage) {
+        if (_state.value.messages == null) return
+        if (photo.bytes.size > MAX_ATTACHMENT_BYTES) {
+            ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            return
+        }
+        val pending = PendingMessage(++lastLocalId, "", now(), image = photo.bytes, fileName = photo.fileName)
+        _state.update { it.copy(pending = it.pending + pending) }
+        deliver(pending)
+    }
+
+    /**
+     * A file from "Select Document" (CHAT-05, flow 07/06): pdf, doc and docx go as a document, jpg/jpeg/png as an image
+     * (07 §1.4); anything else, or over 20 MB, isn't sent and the banner says why.
+     */
+    fun sendDocument(file: DocumentPickerResult) {
+        if (_state.value.messages == null) return
+        val ext = file.fileName.substringAfterLast('.', "").lowercase()
+        when {
+            file.readFailed -> ShellNotice.pending.value = Notice(Res.string.errorUploadingFile)
+            ext !in CHAT_DOCUMENT_EXTENSIONS -> ShellNotice.pending.value = Notice(Res.string.chatFileTypeNotAllowed)
+            file.fileBytes.size > MAX_ATTACHMENT_BYTES ->
+                ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            ext in IMAGE_EXTENSIONS ->
+                enqueue(
+                    PendingMessage(++lastLocalId, "", now(), image = file.fileBytes, fileName = file.fileName),
+                )
+            else ->
+                enqueue(
+                    PendingMessage(++lastLocalId, "", now(), fileName = file.fileName, document = file.fileBytes),
+                )
+        }
+    }
+
+    /**
+     * A voice note from the recorder bar (CHAT-06, flow 07/04): AAC .m4a at 16 kHz mono 32 kbps (the shared recorder),
+     * `voice_<epoch ms>.m4a`, sent with its length; under a second it isn't sent ("Recording too short", flow §6). A
+     * recorder that couldn't finish the file ([audio] null or empty) says so (flow §9), never a silent drop.
+     */
+    fun sendVoice(
+        audio: ByteArray?,
+        seconds: Int,
+    ) {
+        if (_state.value.messages == null) return
+        when {
+            seconds < 1 -> ShellNotice.pending.value = Notice(Res.string.chatRecordingTooShort)
+            audio == null || audio.isEmpty() -> ShellNotice.pending.value = Notice(Res.string.errorRecordingVoice)
+            audio.size > MAX_ATTACHMENT_BYTES ->
+                ShellNotice.pending.value = Notice(Res.string.fileTooLarge, args = listOf(MAX_ATTACHMENT_MB.toString()))
+            else -> {
+                val at = now()
+                enqueue(
+                    PendingMessage(
+                        ++lastLocalId,
+                        "",
+                        at,
+                        fileName = "voice_${at.toEpochMilliseconds()}.m4a",
+                        voice = audio,
+                        durationSeconds = seconds,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun enqueue(p: PendingMessage) {
+        _state.update { it.copy(pending = it.pending + p) }
+        deliver(p)
+    }
+
+    /** A failed text, tapped: sent again, once. */
+    fun retry(localId: Long) {
+        val p = _state.value.pending.firstOrNull { it.localId == localId && it.failed } ?: return
+        _state.update {
+                s ->
+            s.copy(pending = s.pending.map { if (it.localId == localId) it.copy(failed = false) else it })
+        }
+        deliver(p.copy(failed = false))
+    }
+
+    // A text as it is; a photo uploaded first, then sent with its URL, name and size (07 §1.4).
+    private suspend fun request(p: PendingMessage): Result<SendMessageRequest> {
+        val bytes = p.file ?: return Result.success(SendMessageRequest(id, "text", text = p.text))
+        val name = p.fileName ?: "photo.jpg"
+        val type =
+            when {
+                p.image != null -> "image"
+                p.voice != null -> "voice"
+                else -> "document"
+            }
+        val url =
+            p.uploadedUrl ?: repo.upload(bytes, name, mimeOf(name)).getOrElse { return Result.failure(it) }.also {
+                    url ->
+                _state.update {
+                        s ->
+                    s.copy(pending = s.pending.map { if (it.localId == p.localId) it.copy(uploadedUrl = url) else it })
+                }
+            }
+        return Result.success(
+            SendMessageRequest(
+                id,
+                type,
+                attachmentUrl = url,
+                attachmentName = name,
+                fileSize = bytes.size.toLong(),
+                duration = p.durationSeconds,
+            ),
+        )
+    }
+
+    // One send at a time, so texts arrive in the order they were written.
+    private val sending = Mutex()
+
+    private fun deliver(p: PendingMessage) {
+        viewModelScope.launch {
+            sending.withLock { request(p).mapCatching { repo.send(it).getOrThrow() } }.fold(
+                { sent ->
+                    sentIds += sent.id
+                    _state.update { s ->
+                        val messages = s.messages.orEmpty()
+                        s.copy(
+                            pending = s.pending.filter { it.localId != p.localId },
+                            messages = if (messages.any { it.id == sent.id }) messages else messages + sent,
+                        )
+                    }
+                },
+                {
+                    _state.update {
+                            s ->
+                        s.copy(pending = s.pending.map { if (it.localId == p.localId) it.copy(failed = true) else it })
+                    }
+                },
+            )
+        }
+    }
+}
+
+// The attachment cap (flow 07/03 §4 target; the backend takes 25 MB).
+private const val MAX_ATTACHMENT_MB = 20
+private const val MAX_ATTACHMENT_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024
+
+private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png")
+
+/** The upload's content type by extension (the backend checks the extension; a camera photo is a JPEG). */
+internal fun mimeOf(fileName: String) =
+    when (fileName.substringAfterLast('.', "").lowercase()) {
+        "pdf" -> "application/pdf"
+        "doc" -> "application/msword"
+        "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        "png" -> "image/png"
+        "m4a" -> "audio/mp4"
+        else -> "image/jpeg"
+    }
+
+/** Every sixth poll (about 30 s) reads the whole thread, so read ticks on older messages catch up. */
+private const val FULL_EVERY = 6
+
+/** The backend's default page for a newer-only read (BE-14). */
+private const val CURSOR_PAGE = 100

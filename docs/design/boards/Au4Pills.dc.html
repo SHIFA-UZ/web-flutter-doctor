@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chip, Tag, StatusBadge, AlertChip</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="shifa-ds.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.au-frame{container-type:inline-size;box-sizing:content-box}
+.au-frame h3,.au-frame h4,.au-frame p{margin-top:0}
+</style>
+</helmet>
+<div style="width: 2698px; min-height: 1460px; box-sizing: border-box; padding: 48px; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 32px">
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 1600px">
+<p style="margin: 0; font: 700 14px/20px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary)">Audit_4.11 · 02 · Pills</p>
+<h1 style="margin: 0; font: 700 40px/44px var(--font-sans); letter-spacing: -1px">Chip, Tag, StatusBadge, AlertChip</h1>
+<p style="margin: 0; font: 500 18px/26px var(--font-sans); color: var(--text-secondary)">The one-line pill family. Last panel lines every pill up in one row to compare heights.</p>
+</header>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+<section style="flex: none; width: {{f.pw}}px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 4px">
+<h2 style="margin: 0; font: 700 22px/28px var(--font-sans); letter-spacing: -.5px">{{f.label}}</h2>
+<span style="font: 500 14px/20px var(--font-sans); color: var(--text-tertiary)">{{f.sub}}</span>
+</div>
+<div style="background: var(--bg-canvas); border-radius: 20px; padding: 16px">
+<div class="dr-frame au-frame" style="width: {{f.cw}}px">
+<div style="display:flex;flex-direction:column;gap:20px"><div class="dr-panel"><h3 class="dr-panel__title">Chip</h3><div class="dr-row" style="flex-wrap:wrap;gap:8px"><button class="sh-chip" aria-pressed="true">All</button><button class="sh-chip" aria-pressed="false">Today</button><button class="sh-chip" aria-pressed="false">Video</button><button class="sh-chip" aria-pressed="false">In person</button><button class="sh-chip" aria-pressed="false">Pending payment</button></div><div class="sh-chip-grid"><button class="sh-chip sh-chip--slot">09:00</button><button class="sh-chip sh-chip--slot" aria-pressed="true">09:30</button><button class="sh-chip sh-chip--slot">10:00</button><button class="sh-chip sh-chip--slot">10:30</button><button class="sh-chip sh-chip--slot">11:00</button><button class="sh-chip sh-chip--slot">11:30</button><button class="sh-chip sh-chip--slot">14:00</button><button class="sh-chip sh-chip--slot">14:30</button></div></div><div class="dr-panel"><h3 class="dr-panel__title">Tag, StatusBadge, AlertChip</h3><div class="dr-row" style="flex-wrap:wrap;gap:8px"><span class="sh-tag">Cardiology</span><span class="sh-tag sh-tag--primary">Verified</span><span class="sh-tag sh-tag--tertiary">Pending payment</span></div><div class="dr-row" style="flex-wrap:wrap;gap:8px;align-items:center"><span class="dr-status dr-status--brand">Confirmed</span><span class="dr-status dr-status--solid">In progress</span><span class="dr-status dr-status--info">Video</span><span class="dr-status dr-status--warn">Pending payment</span><span class="dr-status dr-status--err">No-show</span><span class="dr-status dr-status--muted">Cancelled</span><button class="dr-status dr-status--menu dr-status--brand">Arrived</button><span class="dr-status dr-status--icon dr-status--brand" role="img" aria-label="Confirmed"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div><div class="dr-row" style="flex-wrap:wrap;gap:8px"><span class="dr-alert"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>Penicillin allergy</span><span class="dr-alert dr-alert--warn"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>Type 2 diabetes</span><span class="dr-alert dr-alert--info"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>Pregnant · 24 weeks</span><span class="dr-alert dr-alert--ai"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"></path><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"></path></svg>AI: BP trending up</span><span class="dr-alert dr-alert--neutral"><svg class="sh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>Last visit 18 Oct</span></div></div><div class="dr-panel"><h3 class="dr-panel__title">Every pill in one row</h3><div class="dr-row" style="flex-wrap:wrap;gap:8px;align-items:center"><button class="sh-chip" aria-pressed="false">Chip 34</button><button class="sh-action">Action 32</button><span class="sh-tag">Tag 28</span><span class="dr-alert dr-alert--warn">AlertChip 28</span><span class="dr-status dr-status--brand">Status 24</span><span class="dr-hero__count">Count 24</span><span class="dr-record__count">Flags 20</span><span class="sh-bubble-count">3</span></div></div></div>
+</div>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2698,"height":1460}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = [["d", "Desktop web", "1440 viewport · sidebar 260 · content 1132", 1132], ["t", "Tablet", "1024 viewport · rail 72 · content 920", 920], ["p", "Phone", "390 viewport · 16 gutters · content 358", 358]];
+    return { frames: F.map((f) => ({ k: f[0], label: f[1], sub: f[2], cw: f[3], pw: f[3] + 32, isD: f[0] === 'd', isT: f[0] === 't', isP: f[0] === 'p', rail: f[0] === 't' ? 'dr-shell--rail' : '' })) };
+  }
+}
+</script>
+</body>
+</html>

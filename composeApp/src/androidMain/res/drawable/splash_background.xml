@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First frame before Compose (API 24-30): the Compose splash's teal and its 96 dp app icon, 24 dp above the centre
+     where the icon sits over the app name. API 31+ uses the system splash (values-v31). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00BBB0" />
+        </shape>
+    </item>
+
+    <item
+        android:width="96dp"
+        android:height="96dp"
+        android:bottom="48dp"
+        android:drawable="@drawable/splash_icon"
+        android:gravity="center" />
+</layer-list>

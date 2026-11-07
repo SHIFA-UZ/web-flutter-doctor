@@ -1439,6 +1439,14 @@ input.sh-input[type="date"], input.sh-input[type="time"], input.sh-input[type="d
 /* ActionBar always at the bottom of the screen (Nov 2026): on a short page it is pushed down by margin-top: auto; on a long page it sticks to the bottom while the content scrolls. Its parent must be a flex column at least as tall as the viewport. */
 .dr-actionbar { margin-top: auto; }
 
+/* AppIcon (Nov 2026): the Shifa app icons. Grain shader: a diagonal gradient with a fractal-noise grain overlay, and the white Shifa mark at 55% width.
+   Patient: brand teal gradient. Doctor: charcoal gradient. The mark (S and both dots) is white on both. Size it with width/height; corners scale with it. */
+.sh-appicon { position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center; box-sizing: border-box; width: var(--size-64); height: var(--size-64); border-radius: 22.37%; overflow: hidden; isolation: isolate; color: var(--white); background: linear-gradient(150deg, var(--raw-splash-logo) 0%, var(--teal-50) 45%, var(--teal-70) 100%); }
+.sh-appicon--doctor { background: linear-gradient(150deg, var(--raw-video-preview) 0%, var(--charcoal) 55%, var(--bg-media) 100%); }
+.sh-appicon::after { content: ""; position: absolute; inset: 0; z-index: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: cover; mix-blend-mode: overlay; opacity: .55; pointer-events: none; }
+.sh-appicon__mark { position: relative; z-index: 1; width: 55%; height: auto; display: block; fill: currentColor; }
+.sh-appicon--raised { box-shadow: var(--shadow-default); }
+
 /* ===== Prototype glue: only what the static DS renditions leave to the app (interactive states, buttons as <button>). ===== */
 .sh-btn, .sh-action, .sh-chip, .sh-icon-btn, .sh-fab, .dr-select, .dr-menu__item, .dr-tab { font-family: var(--font-sans); cursor: pointer; border: 0; text-decoration: none; }
 button.sh-btn, button.sh-action, button.sh-chip, button.sh-icon-btn, button.dr-select, button.dr-menu__item, button.dr-tab, button.dr-status { -webkit-appearance: none; appearance: none; margin: 0; }

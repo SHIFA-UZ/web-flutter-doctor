@@ -1,0 +1,11 @@
+- **[P1] Demo mode can change production passwords.** [DemoBackend.kt:107](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/data/debug/DemoBackend.kt:107) forwards every `auth/` request regardless of method. With Production selected, `POST auth/reset-password` carries the real session token and changes the real password; registration and forgot-password writes also pass through. Replace the prefix exemption with an explicit allowlist and mock or refuse mutating auth endpoints.
+
+- **[P2] Opening Native spikes traps users outside the debug menu.** [DebugMenuScreen.kt:32](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/debug/DebugMenuScreen.kt:32) switches to `SpikesScreen` and returns, but provides no callback, back handler, or control that clears `spikes`. Users must restart the app to reach the backend and demo switches again.
+
+- **[P2] The new screen bypasses the required presentation architecture.** [DebugMenuScreen.kt:37](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/debug/DebugMenuScreen.kt:37) collects global data state directly, while lines 46–64 mutate settings and sign out from UI callbacks. There is no ViewModel or stateless `DebugMenuScreenContent(state, callbacks)`, contrary to the specified screen split. Move actions into a ViewModel and expose the rendering through a stateless content composable.
+---
+**Answers (all fixed):**
+1. *Production writes through `auth/`:* only `auth/login` passes through now; every other `auth/` call (reset-password, register, OTP) is refused like any write. A test covers `auth/reset-password`.
+2. *No way back from the spikes:* the spikes open under a `ShifaSubHeader` with Back. Checked on the emulator: Back returns to the menu.
+3. *Screen split:* `DebugMenuScreenContent(state, callbacks)` is stateless; `DebugMenuScreen` holds the state and the actions. No ViewModel: the three toggles write global debug settings, so a ViewModel would only forward them.
+These are small and covered by tests, so no second round.

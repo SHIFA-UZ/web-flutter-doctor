@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DocumentTile, DocumentViewer</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="shifa-ds.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.au-frame{container-type:inline-size;box-sizing:content-box}
+.au-frame h3,.au-frame h4,.au-frame p{margin-top:0}
+</style>
+</helmet>
+<div style="width: 2698px; min-height: 1790px; box-sizing: border-box; padding: 48px; background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); display: flex; flex-direction: column; gap: 32px">
+<header style="display: flex; flex-direction: column; gap: 8px; max-width: 1600px">
+<p style="margin: 0; font: 700 14px/20px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-tertiary)">Audit_4.11 · 12 · Documents</p>
+<h1 style="margin: 0; font: 700 40px/44px var(--font-sans); letter-spacing: -1px">DocumentTile, DocumentViewer</h1>
+<p style="margin: 0; font: 500 18px/26px var(--font-sans); color: var(--text-secondary)">Uploading, listing and reading patient documents.</p>
+</header>
+<div style="display: flex; gap: 48px; align-items: flex-start">
+<sc-for list="{{frames}}" as="f" hint-placeholder-count="3">
+<section style="flex: none; width: {{f.pw}}px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 4px">
+<h2 style="margin: 0; font: 700 22px/28px var(--font-sans); letter-spacing: -.5px">{{f.label}}</h2>
+<span style="font: 500 14px/20px var(--font-sans); color: var(--text-tertiary)">{{f.sub}}</span>
+</div>
+<div style="background: var(--bg-canvas); border-radius: 20px; padding: 16px">
+<div class="dr-frame au-frame" style="width: {{f.cw}}px">
+<div style="display:flex;flex-direction:column;gap:20px"><div class="dr-panel"><h3 class="dr-panel__title">DocumentTile</h3><div class="dr-upload"><svg class="sh-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path></svg>Drop files here or browse<small>PDF, JPG or PNG, up to 20 MB</small></div><p class="dr-cat" style="margin:0">Lab results</p><div class="dr-docs"><button class="dr-dtile sh-press"><span style="width:44px;height:38px;flex:none;border-radius:6px;background:var(--bg-error-subtle);display:grid;place-items:center;color:var(--icon-error);font:700 10px/1 var(--font-sans)">PDF</span><span class="dr-grow"><span class="dr-doc__name" style="display:block">Complete blood count</span><span class="dr-doc__meta" style="display:block">18 Oct 2026 · 240 KB</span></span><span class="dr-status dr-status--brand">Reviewed</span></button><button class="dr-dtile sh-press"><span style="width:44px;height:38px;flex:none;border-radius:6px;background:var(--bg-error-subtle);display:grid;place-items:center;color:var(--icon-error);font:700 10px/1 var(--font-sans)">PDF</span><span class="dr-grow"><span class="dr-doc__name" style="display:block">Lipid panel</span><span class="dr-doc__meta" style="display:block">18 Oct 2026 · 180 KB</span></span><span class="dr-status dr-status--warn">New</span></button><button class="dr-dtile sh-press"><span style="width:44px;height:38px;flex:none;border-radius:6px;background:var(--bg-info-subtle);display:grid;place-items:center;color:var(--icon-info);font:700 10px/1 var(--font-sans)">JPG</span><span class="dr-grow"><span class="dr-doc__name" style="display:block">ECG strip</span><span class="dr-doc__meta" style="display:block">2 Nov 2026 · 1.2 MB</span></span><span class="dr-status dr-status--warn">New</span></button><button class="dr-dtile sh-press"><span style="width:44px;height:38px;flex:none;border-radius:6px;background:var(--bg-error-subtle);display:grid;place-items:center;color:var(--icon-error);font:700 10px/1 var(--font-sans)">PDF</span><span class="dr-grow"><span class="dr-doc__name" style="display:block">Discharge summary, City Hospital No. 1</span><span class="dr-doc__meta" style="display:block">12 Aug 2026 · 640 KB</span></span></button></div></div><div class="dr-viewer"><div class="dr-viewer__bar"><button class="sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" aria-label="Back"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button><span class="dr-viewer__title">Complete blood count<small>18 Oct 2026 · page 1 of 2</small></span><button class="sh-btn sh-btn--secondary sh-btn--compact dr-viewer__extra"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path></svg>Share</button><button class="sh-icon-btn sh-icon-btn--secondary sh-icon-btn--sm" aria-label="Download"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg></button></div><div class="dr-viewer__stage"><div class="dr-viewer__page"></div></div><div class="dr-viewer__foot"><span class="dr-viewer__zoom"><button class="sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" aria-label="Zoom out">−</button>100%<button class="sh-icon-btn sh-icon-btn--ghost sh-icon-btn--sm" aria-label="Zoom in"><svg class="sh-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></span></div></div></div>
+</div>
+</div>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2698,"height":1790}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const F = [["d", "Desktop web", "1440 viewport · sidebar 260 · content 1132", 1132], ["t", "Tablet", "1024 viewport · rail 72 · content 920", 920], ["p", "Phone", "390 viewport · 16 gutters · content 358", 358]];
+    return { frames: F.map((f) => ({ k: f[0], label: f[1], sub: f[2], cw: f[3], pw: f[3] + 32, isD: f[0] === 'd', isT: f[0] === 't', isP: f[0] === 'p', rail: f[0] === 't' ? 'dr-shell--rail' : '' })) };
+  }
+}
+</script>
+</body>
+</html>

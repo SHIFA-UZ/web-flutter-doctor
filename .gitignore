@@ -8,47 +8,12 @@
 .buildlog/
 .history
 .svn/
-migrate_working_dir/
 
 # IntelliJ related
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-/build/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Firebase
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-.firebaserc.local
 
 # Environment files
 .env
@@ -63,11 +28,38 @@ build/
 *.dmg
 *.app
 
-# Web
-/web/index.html.bak
-
 # Markdown files (except CLAUDE.md and README.md)
 *.md
 !CLAUDE.md
 !README.md
 !docs/**/*.md
+
+# Kotlin Multiplatform app
+.kotlin/
+.gradle/
+local.properties
+xcuserdata
+!src/**/build/
+iosApp/Configuration/Secrets.xcconfig
+iosApp/build/
+iosApp/fastlane/profiles/
+iosApp/fastlane/report.xml
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+captures
+.externalNativeBuild
+.cxx
+keystore.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+google-play-service-account.json
+# Roborazzi comparison files (temporary)
+composeApp/screenshots/*_compare.png
+composeApp/screenshots/*_actual.png
+composeApp/screenshots/*_diff.png

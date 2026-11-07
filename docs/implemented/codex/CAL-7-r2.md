@@ -1,0 +1,7 @@
+- **[P2] An empty refreshed day re-enables an unavailable slot.** [BookingScreen.kt:164](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/BookingScreen.kt:164) treats `day.isEmpty()` as free, while line 157 falls back to the original end. If availability is removed and the conflict refresh returns `[]`, `rangeFree` becomes true and Book retries the removed slot. Distinguish unloaded data from a successfully loaded empty day.
+
+- **[P2] A conflict can leave the remaining free start inaccessible.** [BookingScreen.kt:529](/Users/sheroziy.saidkhodjaev/Projects/Private/shifa/web-kmp-doctor-app/composeApp/src/commonMain/kotlin/shifa/doctor/ui/calendar/BookingScreen.kt:529) hides the start selector when only one option remains. Open slot A, select B, then let B become occupied while A remains the only free slot. Refresh retains B, disables Book, and hides the selector needed to return to A. Keep the selector available when the selected start is no longer valid, or explicitly reset the selection.
+---
+**Answers (round 2, all fixed):**
+1. *An empty refreshed day re-enables the slot:* the day is null until read; a day read as empty frees nothing, so Book stays off. Tested.
+2. *A taken start strands the doctor:* when the picked start is taken, the form moves to a start that is still free (the tapped slot first), resets the end and says "Selected time range is no longer fully available"; an error banner from a failed save (with its request id) is kept. Tested.
