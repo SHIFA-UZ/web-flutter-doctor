@@ -1,14 +1,14 @@
 name: Deploy Doctor Web to cPanel
 
-# WEB-09: the web app (Kotlin/Wasm) built and copied over SSH to the doctor site's folder on cPanel. Run by hand from the
-# Actions tab; tests run on pull requests (ci.yml), not here. Replaces the Flutter app's Firebase Hosting deploy.
+# WEB-09: the web app (Kotlin/Wasm) built and copied over FTPS (FTP with TLS) to the doctor site's folder on cPanel. Run
+# by hand from the Actions tab; tests run on pull requests (ci.yml), not here. Replaces the Flutter app's Firebase Hosting
+# deploy. FTPS rather than SSH: the host (ahost, de.ahost.cloud) doesn't open SSH to the outside.
 #
 # Repository secrets:
-#   CPANEL_SSH_HOST         the cPanel server's host name
-#   CPANEL_SSH_PORT         its SSH port (cPanel often uses a non-standard one)
-#   CPANEL_SSH_USER         the cPanel account user
-#   CPANEL_SSH_PRIVATE_KEY  a private key whose public key is authorised in cPanel → SSH Access
-#   CPANEL_DOCTOR_WEB_PATH  the site's folder on the server, e.g. /home/<user>/doctor.shifa.uz
+#   CPANEL_FTP_HOST      the cPanel server, de.ahost.cloud (its certificate is checked)
+#   CPANEL_FTP_USER      an FTP account whose directory is the site's folder (cPanel → FTP Accounts), e.g.
+#                        deploy@shifa.uz with directory doctor.shifa.uz: the deploy can't reach anything outside it
+#   CPANEL_FTP_PASSWORD  that account's password
 on:
   workflow_dispatch:
 
@@ -45,39 +45,28 @@ jobs:
           test -f "$DIST/.htaccess"
           ls -la "$DIST" | head -40
 
-      - name: Prepare SSH
-        env:
-          SSH_KEY: ${{ secrets.CPANEL_SSH_PRIVATE_KEY }}
-          SSH_HOST: ${{ secrets.CPANEL_SSH_HOST }}
-          SSH_PORT: ${{ secrets.CPANEL_SSH_PORT }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/cpanel
-          chmod 600 ~/.ssh/cpanel
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
       # --delete removes files of the previous build that this one no longer has. It only runs on a folder that is
-      # empty or carries the marker an earlier deploy left, so a wrong path (home, public_html) fails instead of
-      # being emptied.
+      # empty or carries the marker an earlier deploy left, so an FTP account pointed at the wrong folder (home,
+      # public_html) fails instead of being emptied.
       - name: Upload
         env:
-          SSH_HOST: ${{ secrets.CPANEL_SSH_HOST }}
-          SSH_PORT: ${{ secrets.CPANEL_SSH_PORT }}
-          SSH_USER: ${{ secrets.CPANEL_SSH_USER }}
-          TARGET: ${{ secrets.CPANEL_DOCTOR_WEB_PATH }}
+          FTP_HOST: ${{ secrets.CPANEL_FTP_HOST }}
+          FTP_USER: ${{ secrets.CPANEL_FTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD }}
         run: |
           set -euo pipefail
-          case "$TARGET" in
-            /*) ;;
-            *) echo "::error::CPANEL_DOCTOR_WEB_PATH must be an absolute path"; exit 1 ;;
-          esac
-          SSH="ssh -p $SSH_PORT -i $HOME/.ssh/cpanel"
-          $SSH "$SSH_USER@$SSH_HOST" "mkdir -p '$TARGET' && cd '$TARGET' && { test -f .shifa-doctor-web || test -z \"\$(ls -A)\"; }" \
-            || { echo "::error::The target folder is neither empty nor an earlier Shifa Doctor deploy; nothing was changed."; exit 1; }
+          FTPS="set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate true; set net:max-retries 3; set net:timeout 30"
+          # A failed login or listing stops here (set -e) rather than reading as an empty folder.
+          RAW=$(lftp --env-password -u "$FTP_USER" -e "$FTPS; cls -1a; bye" "$FTP_HOST")
+          LISTING=$(printf '%s\n' "$RAW" | grep -vxE '(\.{1,2}/?)?' || true)
+          if [ -n "$LISTING" ] && ! printf '%s\n' "$LISTING" | grep -qx '\.shifa-doctor-web'; then
+            echo "::error::The FTP account's folder is neither empty nor an earlier Shifa Doctor deploy; nothing was changed."
+            exit 1
+          fi
           touch composeApp/build/dist/wasmJs/productionExecutable/.shifa-doctor-web
-          rsync -az --delete -e "$SSH" \
-            composeApp/build/dist/wasmJs/productionExecutable/ "$SSH_USER@$SSH_HOST:$TARGET/"
-
-      - name: Remove the key
-        if: always()
-        run: rm -f ~/.ssh/cpanel
+          lftp --env-password -u "$FTP_USER" \
+            -e "$FTPS; mirror --reverse --delete --no-perms --parallel=4 composeApp/build/dist/wasmJs/productionExecutable/ /; bye" \
+            "$FTP_HOST"
