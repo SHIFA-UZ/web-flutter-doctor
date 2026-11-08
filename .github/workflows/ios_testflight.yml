@@ -217,6 +217,11 @@ jobs:
           APP_STORE_CONNECT_API_KEY_ID: ${{ env.ASC_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ env.ASC_ISSUER_ID }}
           BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+          # gym first asks `xcodebuild -showBuildSettings`, by default for 3 s (doubling over 4 tries, 45 s in all).
+          # On the Intel runner, right after resolving the Swift packages, that ran out (2026-11-08): 2 minutes, and
+          # 4 more on one retry (each retry doubles the time).
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: '120'
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: '1'
         run: bundle exec fastlane beta
 
       #########################
