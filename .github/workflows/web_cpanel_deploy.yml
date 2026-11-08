@@ -1,16 +1,16 @@
 name: Deploy Doctor Web to cPanel
 
-# WEB-09: the web app (Kotlin/Wasm) built and copied over FTPS (FTP with TLS) to the doctor site's folder on cPanel. Run
+# WEB-09: the web app (Kotlin/Wasm) built and copied over FTPS (FTP with TLS) to the chosen site's folder on cPanel. Run
 # by hand from the Actions tab; tests run on pull requests (ci.yml), not here. Replaces the Flutter app's Firebase Hosting
 # deploy. FTPS rather than SSH: the host (ahost, de.ahost.cloud) doesn't open SSH to the outside.
 #
 # Repository secrets:
 #   CPANEL_FTP_HOST      the cPanel server, de.ahost.cloud (its certificate is checked)
-#   CPANEL_FTP_USER      an FTP account whose directory is the site's folder (cPanel → FTP Accounts), e.g.
-#                        deploy@shifa.uz with directory doctor.shifa.uz: the deploy can't reach anything outside it
+#   CPANEL_FTP_USER      one FTP account for both sites (cPanel → FTP Accounts), e.g. deploy@shifa.uz with directory
+#                        doctor-web: the deploy can't reach anything outside it
 #   CPANEL_FTP_PASSWORD  that account's password
-#   CPANEL_FTP_USER_DEV, CPANEL_FTP_PASSWORD_DEV  the same for the development site (doctor-dev.shifa.uz), e.g.
-#                        deploy-dev@shifa.uz with directory doctor-dev.shifa.uz
+#
+# In that directory, production/ is the document root of doctor.shifa.uz and development/ that of doctor-dev.shifa.uz.
 #
 # Both sites get the same bundle: the web app opened at doctor-dev.shifa.uz talks to the development backend
 # (isDevelopmentSite), everywhere else to production.
@@ -66,32 +66,24 @@ jobs:
         env:
           FTP_HOST: ${{ secrets.CPANEL_FTP_HOST }}
           SITE: ${{ inputs.site }}
-          PROD_USER: ${{ secrets.CPANEL_FTP_USER }}
-          PROD_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD }}
-          DEV_USER: ${{ secrets.CPANEL_FTP_USER_DEV }}
-          DEV_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD_DEV }}
+          FTP_USER: ${{ secrets.CPANEL_FTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD }}
         run: |
           set -euo pipefail
-          # Chosen here, not with `a && b || c` in the expression: a missing development secret must stop the run, not
-          # fall back to the production account.
           case "$SITE" in
-            production) FTP_USER=$PROD_USER; export LFTP_PASSWORD=$PROD_PASSWORD ;;
-            development) FTP_USER=$DEV_USER; export LFTP_PASSWORD=$DEV_PASSWORD ;;
+            production | development) DIR="/$SITE" ;;
             *) echo "::error::Unknown site '$SITE'"; exit 1 ;;
           esac
-          if [ -z "$FTP_USER" ] || [ -z "$LFTP_PASSWORD" ]; then
-            echo "::error::The FTP secrets for the $SITE site are missing; nothing was changed."
-            exit 1
-          fi
           FTPS="set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate true; set net:max-retries 3; set net:timeout 30"
-          # A failed login or listing stops here (set -e) rather than reading as an empty folder.
-          RAW=$(lftp --env-password -u "$FTP_USER" -e "$FTPS; cls -1a; bye" "$FTP_HOST")
+          # A failed login or listing stops here (set -e) rather than reading as an empty folder; so does a missing
+          # folder (cPanel creates it with the domain's document root).
+          RAW=$(lftp --env-password -u "$FTP_USER" -e "$FTPS; cd $DIR; cls -1a; bye" "$FTP_HOST")
           LISTING=$(printf '%s\n' "$RAW" | grep -vxE '(\.{1,2}/?)?' || true)
           if [ -n "$LISTING" ] && ! printf '%s\n' "$LISTING" | grep -qx '\.shifa-doctor-web'; then
-            echo "::error::The FTP account's folder is neither empty nor an earlier Shifa Doctor deploy; nothing was changed."
+            echo "::error::$DIR is neither empty nor an earlier Shifa Doctor deploy; nothing was changed."
             exit 1
           fi
           touch composeApp/build/dist/wasmJs/productionExecutable/.shifa-doctor-web
           lftp --env-password -u "$FTP_USER" \
-            -e "$FTPS; mirror --reverse --delete --no-perms --parallel=4 composeApp/build/dist/wasmJs/productionExecutable/ /; bye" \
+            -e "$FTPS; mirror --reverse --delete --no-perms --parallel=4 composeApp/build/dist/wasmJs/productionExecutable/ $DIR/; bye" \
             "$FTP_HOST"
