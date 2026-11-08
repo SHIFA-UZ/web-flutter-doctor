@@ -56,6 +56,17 @@ jobs:
           test -f "$DIST/.htaccess"
           ls -la "$DIST" | head -40
 
+      # The host's nginx (Engintron) serves .js files with its own 30-day cache, whatever .htaccess says. composeApp.js
+      # keeps its name between builds and names the .wasm files of its own build, which the next deploy deletes; so
+      # index.html (not cached) asks for it with this build's fingerprint, and a deploy reaches every browser at once.
+      - name: Fingerprint the script
+        run: |
+          set -euo pipefail
+          DIST=composeApp/build/dist/wasmJs/productionExecutable
+          V=$(sha256sum "$DIST/composeApp.js" | cut -c1-12)
+          sed -i "s|src=\"composeApp.js\"|src=\"composeApp.js?v=$V\"|" "$DIST/index.html"
+          grep -q "src=\"composeApp.js?v=$V\"" "$DIST/index.html"
+
       - name: Install lftp
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
