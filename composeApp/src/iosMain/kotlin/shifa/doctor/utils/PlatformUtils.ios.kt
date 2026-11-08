@@ -6,6 +6,8 @@ import kotlin.experimental.ExperimentalNativeApi
 @OptIn(ExperimentalNativeApi::class)
 actual val isDebugBuild: Boolean = Platform.isDebugBinary
 
+actual val isDevelopmentSite: Boolean = false
+
 actual val appVersion: String =
     NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "0"
 
