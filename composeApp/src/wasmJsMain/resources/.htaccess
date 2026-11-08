@@ -10,6 +10,7 @@ Options -Indexes -MultiViews
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
+RewriteCond %{REQUEST_URI} !^/\.well-known/
 RewriteCond %{REQUEST_URI} !^/composeResources/
 RewriteCond %{REQUEST_URI} !\.(js|mjs|wasm|json|map|png|webp|svg|ico|ttf|otf|woff2?)$ [NC]
 RewriteRule ^ index.html [L]

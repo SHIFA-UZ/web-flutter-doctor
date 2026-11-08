@@ -72,7 +72,8 @@ jobs:
 
       # --delete removes files of the previous build that this one no longer has. It only runs on a folder that is
       # empty or carries the marker an earlier deploy left, so an FTP account pointed at the wrong folder (home,
-      # public_html) fails instead of being emptied.
+      # public_html) fails instead of being emptied. .well-known belongs to the host's automatic SSL (ahost: never
+      # change or delete it): it doesn't count against an empty folder and the mirror leaves it alone.
       - name: Upload
         env:
           FTP_HOST: ${{ secrets.CPANEL_FTP_HOST }}
@@ -89,12 +90,12 @@ jobs:
           # A failed login or listing stops here (set -e) rather than reading as an empty folder; so does a missing
           # folder (cPanel creates it with the domain's document root).
           RAW=$(lftp --env-password -u "$FTP_USER" -e "$FTPS; cd $DIR; cls -1a; bye" "$FTP_HOST")
-          LISTING=$(printf '%s\n' "$RAW" | grep -vxE '(\.{1,2}/?)?' || true)
+          LISTING=$(printf '%s\n' "$RAW" | grep -vxE '(\.{1,2}|\.well-known)?/?' || true)
           if [ -n "$LISTING" ] && ! printf '%s\n' "$LISTING" | grep -qx '\.shifa-doctor-web'; then
             echo "::error::$DIR is neither empty nor an earlier Shifa Doctor deploy; nothing was changed."
             exit 1
           fi
           touch composeApp/build/dist/wasmJs/productionExecutable/.shifa-doctor-web
           lftp --env-password -u "$FTP_USER" \
-            -e "$FTPS; mirror --reverse --delete --no-perms --parallel=4 composeApp/build/dist/wasmJs/productionExecutable/ $DIR/; bye" \
+            -e "$FTPS; mirror --reverse --delete --no-perms --parallel=4 --exclude '^\.well-known/' composeApp/build/dist/wasmJs/productionExecutable/ $DIR/; bye" \
             "$FTP_HOST"
