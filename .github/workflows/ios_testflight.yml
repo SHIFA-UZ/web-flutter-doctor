@@ -85,14 +85,16 @@ jobs:
         with:
           xcode-version: '26.0'
 
-      # setup-xcode selects Xcode 26 but does NOT install its iOS runtime.
-      # Fail loudly if the download fails — a masked failure here surfaces
-      # later as a confusing build error.
-      - name: Install iOS platform
+      # Archiving for a device needs Xcode's iOS platform. The Intel image (macos-15-intel) ships it for Xcode 26.0.1
+      # (iOS 26.0 SDK and runtime), and there `xcodebuild -downloadPlatform iOS` fails ("Unable to connect to
+      # simulator"); so download only when it's missing, and fail loudly if it still is.
+      - name: Check the iOS platform
         run: |
           set -euo pipefail
-          xcodebuild -downloadPlatform iOS
-          xcodebuild -showsdks | grep -i ios
+          if ! xcodebuild -showsdks | grep -q 'iphoneos'; then
+            xcodebuild -downloadPlatform iOS
+          fi
+          xcodebuild -showsdks | grep 'iphoneos'
 
       # Xcode's "Compile Kotlin Framework" build phase runs Gradle.
       - name: Setup Java
