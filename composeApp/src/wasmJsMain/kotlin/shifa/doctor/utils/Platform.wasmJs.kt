@@ -3,6 +3,9 @@ package shifa.doctor.utils
 // The debug menu (demo data, development backend) and logging: a development build served from this machine only.
 actual val isDebugBuild: Boolean = WEB_DEBUG && isLocalHost()
 
+// The same bundle serves both sites (web_cpanel_deploy.yml); the address decides the backend.
+actual val isDevelopmentSite: Boolean = js("window.location.hostname === 'doctor-dev.shifa.uz'")
+
 actual val appVersion: String = WEB_VERSION
 
 actual val appBuild: String = WEB_BUILD

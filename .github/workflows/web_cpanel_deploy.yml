@@ -9,12 +9,23 @@ name: Deploy Doctor Web to cPanel
 #   CPANEL_FTP_USER      an FTP account whose directory is the site's folder (cPanel → FTP Accounts), e.g.
 #                        deploy@shifa.uz with directory doctor.shifa.uz: the deploy can't reach anything outside it
 #   CPANEL_FTP_PASSWORD  that account's password
+#   CPANEL_FTP_USER_DEV, CPANEL_FTP_PASSWORD_DEV  the same for the development site (doctor-dev.shifa.uz), e.g.
+#                        deploy-dev@shifa.uz with directory doctor-dev.shifa.uz
+#
+# Both sites get the same bundle: the web app opened at doctor-dev.shifa.uz talks to the development backend
+# (isDevelopmentSite), everywhere else to production.
 on:
   workflow_dispatch:
+    inputs:
+      site:
+        description: Which site
+        type: choice
+        options: [production, development]
+        default: production
 
-# One deploy at a time from any branch: they all write to the same folder.
+# One deploy at a time per site, from any branch: they all write to the same folder.
 concurrency:
-  group: doctor-web-cpanel
+  group: doctor-web-cpanel-${{ inputs.site }}
   cancel-in-progress: false
 
 jobs:
@@ -54,10 +65,24 @@ jobs:
       - name: Upload
         env:
           FTP_HOST: ${{ secrets.CPANEL_FTP_HOST }}
-          FTP_USER: ${{ secrets.CPANEL_FTP_USER }}
-          LFTP_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          SITE: ${{ inputs.site }}
+          PROD_USER: ${{ secrets.CPANEL_FTP_USER }}
+          PROD_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          DEV_USER: ${{ secrets.CPANEL_FTP_USER_DEV }}
+          DEV_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD_DEV }}
         run: |
           set -euo pipefail
+          # Chosen here, not with `a && b || c` in the expression: a missing development secret must stop the run, not
+          # fall back to the production account.
+          case "$SITE" in
+            production) FTP_USER=$PROD_USER; export LFTP_PASSWORD=$PROD_PASSWORD ;;
+            development) FTP_USER=$DEV_USER; export LFTP_PASSWORD=$DEV_PASSWORD ;;
+            *) echo "::error::Unknown site '$SITE'"; exit 1 ;;
+          esac
+          if [ -z "$FTP_USER" ] || [ -z "$LFTP_PASSWORD" ]; then
+            echo "::error::The FTP secrets for the $SITE site are missing; nothing was changed."
+            exit 1
+          fi
           FTPS="set cmd:fail-exit true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate true; set net:max-retries 3; set net:timeout 30"
           # A failed login or listing stops here (set -e) rather than reading as an empty folder.
           RAW=$(lftp --env-password -u "$FTP_USER" -e "$FTPS; cls -1a; bye" "$FTP_HOST")

@@ -21,7 +21,9 @@
                 justify-content: center; transition: opacity .25s; }
         #boot img { width: 96px; height: 96px; margin-bottom: 48px; }
     </style>
-    <script type="application/javascript" src="composeApp.js"></script>
+    <!-- A module: since Kotlin 2.4 the production bundle contains import.meta, which a classic script can't parse
+         (a blank page). Modules also run after the body is parsed. -->
+    <script type="module" src="composeApp.js"></script>
 </head>
 <body>
 <div id="composeApp"></div>
