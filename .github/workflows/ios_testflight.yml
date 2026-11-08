@@ -16,9 +16,12 @@ env:
 jobs:
   build-and-deploy-ios:
     name: Build and Deploy iOS to TestFlight
-    runs-on: macos-latest
-    # macOS minutes are billed at 10x. Cap so a hung run doesn't burn hours.
-    timeout-minutes: 40
+    # Intel, for its memory: the Kotlin/Native release link ran out of a 5 GB heap on the 7 GB Apple-silicon runner
+    # (macos-latest), even on Kotlin 2.4.21. The Intel runner has 14 GB and is free for this public repository too.
+    # macos-15-intel is the last Intel image (supported until about August 2027).
+    runs-on: macos-15-intel
+    # Cap so a hung run doesn't burn hours. Intel is slower than Apple silicon.
+    timeout-minutes: 90
 
     steps:
       #########################
@@ -195,11 +198,10 @@ jobs:
       #########################
 
       # Xcode's "Compile Kotlin Framework" phase reuses this; building it here prints Kotlin errors in full
-      # (fastlane only shows Xcode's summary). The runner has 7 GB in all: with Kotlin 2.4 the release link fits in a
-      # 5 GB heap (measured 2026-11-07: 16 min, about 4.3 GB live); the project's 6 GB would leave too little for the
-      # native compiler and the system.
+      # (fastlane only shows Xcode's summary). The release link needs more than 5 GB of heap (out of memory in
+      # devirtualization at 5 GB); 10 GB leaves 4 GB of the runner's 14 for the native tools and the system.
       - name: Build Kotlin framework
-        run: ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+        run: ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon "-Dorg.gradle.jvmargs=-Xmx10g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
 
       - name: Build, Sign and Upload to TestFlight with Fastlane
         working-directory: iosApp
