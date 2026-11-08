@@ -121,6 +121,15 @@ jobs:
           fi
           echo "$GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64" | base64 --decode > google-play-service-account.json
 
+      # Kept before the Play upload: when Play refuses the release (a missing Console declaration, for example), the
+      # bundle can still be downloaded here and uploaded by hand in Play Console.
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctor-release-${{ steps.version.outputs.build_number }}
+          path: composeApp/build/outputs/bundle/release/composeApp-release.aab
+          retention-days: 30
+
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
@@ -129,14 +138,6 @@ jobs:
           releaseFiles: composeApp/build/outputs/bundle/release/composeApp-release.aab
           track: ${{ inputs.track }}
           status: completed
-
-      - name: Upload AAB artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: doctor-release-${{ steps.version.outputs.build_number }}
-          path: composeApp/build/outputs/bundle/release/composeApp-release.aab
-          retention-days: 30
 
       - name: Cleanup sensitive files
         if: always()
