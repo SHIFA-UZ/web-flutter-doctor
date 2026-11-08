@@ -17,11 +17,12 @@ jobs:
   build-and-deploy-ios:
     name: Build and Deploy iOS to TestFlight
     # Intel, for its memory: the Kotlin/Native release link ran out of a 5 GB heap on the 7 GB Apple-silicon runner
-    # (macos-latest), even on Kotlin 2.4.21. The Intel runner has 14 GB and is free for this public repository too.
+    # (macos-latest), even on Kotlin 2.4.21; measured 2026-11-08, it keeps about 4.8 GB live and with a 6 GB heap did
+    # nothing but collect garbage. The Intel runner has 14 GB and is free for this public repository too.
     # macos-15-intel is the last Intel image (supported until about August 2027).
     runs-on: macos-15-intel
-    # Cap so a hung run doesn't burn hours. Intel is slower than Apple silicon.
-    timeout-minutes: 90
+    # Cap so a hung run doesn't burn hours. Intel is slower than Apple silicon: the link alone takes about 50 minutes.
+    timeout-minutes: 120
 
     steps:
       #########################
@@ -110,8 +111,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.konan
-          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
-          restore-keys: konan-${{ runner.os }}-
+          # The toolchain is per processor: runner.arch keeps the Intel copy apart from Apple silicon's (a cache key
+          # is never overwritten, so without it the Intel runs could never save theirs).
+          key: konan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-${{ runner.arch }}-
 
       #########################
       # PHASE 2: FIREBASE CONFIGURATION
@@ -199,11 +202,14 @@ jobs:
       # PHASE 6: FASTLANE - BUILD, SIGN, ARCHIVE & UPLOAD
       #########################
 
-      # Xcode's "Compile Kotlin Framework" phase reuses this; building it here prints Kotlin errors in full
-      # (fastlane only shows Xcode's summary). The release link needs more than 5 GB of heap (out of memory in
-      # devirtualization at 5 GB); 10 GB leaves 4 GB of the runner's 14 for the native tools and the system.
-      - name: Build Kotlin framework
-        run: ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon "-Dorg.gradle.jvmargs=-Xmx10g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+      # The Kotlin framework is built once, by Xcode's "Compile Kotlin Framework" phase during the archive. (A separate
+      # Gradle step before it was built again inside Xcode on CI, doubling an hour-long build.) That Gradle reads this
+      # file, which overrides the project's gradle.properties: the release link needs more than 5 GB of heap; 10 GB
+      # leaves 4 GB of the runner's 14 for the native tools and the system. Kotlin errors are in the uploaded build log.
+      - name: Give the Kotlin build its memory
+        run: |
+          mkdir -p ~/.gradle
+          echo 'org.gradle.jvmargs=-Xmx10g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8' >> ~/.gradle/gradle.properties
 
       - name: Build, Sign and Upload to TestFlight with Fastlane
         working-directory: iosApp
@@ -217,8 +223,9 @@ jobs:
       # PHASE 7: ARTIFACTS & CLEANUP
       #########################
 
+      # Also when the time cap cancels the run: the log shows how far the build got.
       - name: Upload build logs (on failure)
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: doctor-ios-logs-${{ steps.version.outputs.build_number }}
