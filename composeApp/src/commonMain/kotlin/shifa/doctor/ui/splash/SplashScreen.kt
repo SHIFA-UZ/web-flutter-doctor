@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -42,7 +41,6 @@ import androidx.compose.ui.unit.lerp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.session.Session
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.appName
@@ -50,7 +48,6 @@ import shifa.doctor.generated.resources.loading
 import shifa.doctor.generated.resources.maintenanceBody
 import shifa.doctor.generated.resources.maintenanceTitle
 import shifa.doctor.generated.resources.retry
-import shifa.doctor.generated.resources.shifa_mark
 import shifa.doctor.generated.resources.updateNow
 import shifa.doctor.generated.resources.updateRequiredBody
 import shifa.doctor.generated.resources.updateRequiredTitle
@@ -61,6 +58,7 @@ import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
 import shifa.doctor.ui.widgets.ShifaAppIcon
 import shifa.doctor.ui.widgets.ShifaPrimaryButton
+import shifa.doctor.utils.resourcesReady
 import shifa.doctor.utils.tr
 
 /** AUTH-01: plays the splash, shows a force-update or maintenance frame when the backend asks, then [onFinished]. */
@@ -75,10 +73,10 @@ fun SplashScreen(
     LaunchedEffect(state) { (state as? SplashUiState.Finished)?.let { finished(it.session) } }
     // Back from the store (or from anywhere) while the update frame shows: check the version again (flow §7).
     if (state is SplashUiState.UpdateRequired) LifecycleResumeEffect(Unit) { onPauseOrDispose { viewModel.retry() } }
-    // Plays once the splash can draw its icon (on the web, as index.html's frame lifts: until it loads, a vector is a
-    // 1 dp placeholder), so a slow first load doesn't hide it; its end lets the app go on.
+    // Plays once nothing is left to load (on the web, as index.html's frame lifts), so a slow first load neither hides
+    // it nor stutters it; its end lets the app go on.
     val progress = remember { Animatable(0f) }
-    val ready = painterResource(Res.drawable.shifa_mark).intrinsicSize.width > LocalDensity.current.density
+    val ready by resourcesReady
     LaunchedEffect(ready) {
         if (!ready) return@LaunchedEffect
         progress.animateTo(1f, tween(SPLASH_MS, easing = EaseInOutCubic))

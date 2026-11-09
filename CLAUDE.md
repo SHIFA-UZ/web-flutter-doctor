@@ -53,7 +53,10 @@ fixed and identical to the patient app's. Follow them for every new feature.
   resource once from the app's root; delete it when upgrading to Compose Multiplatform 1.12.2 or later (fixed there).
   Strings are the exception: CMP 1.10 reads each one separately on the web (the whole language file per string), so
   `AppLocale.wasmJs.kt` reads each language's `strings` and `strings_kit` .cvr once and `tr` looks keys up there. A
-  new `values/*.xml` string file goes into its `STRING_FILES`.
+  new `values/*.xml` string file goes into its `STRING_FILES`. Every resource URL carries the build's resource hash
+  (`index.html`'s `data-resources`, written by the deploy; `main.kt`), because the host's nginx lets browsers keep fonts
+  and icons for 60 days. `ResourceWarmup` also keeps index.html's loading frame up until the fonts and icons have
+  loaded (`resourcesReady`; the splash animates after it), so first-time work doesn't stutter the start on phones.
 - The **admin panel** (`/admin`, hostname-based) is **not** part of the KMP app (`ADMIN-*` tickets are parked); it
   stays a web product.
 - Doctor roles in the JWT (`DOCTOR`, `CLINIC_STAFF`, …) and clinic workspace mode are in scope; a clinic-staff user
@@ -235,12 +238,15 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   only `&`, `<`, `>` are XML-escaped. **Resolve strings with `tr(Res.string.x, args)` / `trPlural(Res.plurals.x, n,
   args)` from `utils/AppLocale.kt`, never `stringResource`**: they transliterate `uz` to Cyrillic when the doctor picked
   Ўзбекча (`LocalUzbekCyrillic`), template first, arguments after. Screen-reader labels come from strings too.
-  `StringsTest` checks keys, plurals and placeholders across locales. Manrope has no Қ Ғ Ҳ (lower case too):
-  `scripts/uzbek_cyrillic_glyphs.py` adds them to `composeResources/font`; re-run it whenever the fonts are replaced. The language (`LanguageStorage`: en, uz,
+  `StringsTest` checks keys, plurals and placeholders across locales, and that every character of every string (Ўзбекча
+  too) is in the fonts: the web has no system font to fall back to. Manrope lacks Қ Ғ Ҳ, ʻ ʼ and ⋮ ✓ ⚠ ◷:
+  `scripts/manrope_missing_glyphs.py` adds them to `composeResources/font`; re-run it whenever the fonts are replaced.
+  No emoji in the app's own texts (the web draws them as nothing). The language (`LanguageStorage`: en, uz,
   uz-Cyrl, ru; Uzbekistan defaults to uz) is applied by `ProvideAppLocale` in `App.kt` and synced to the backend
   with `PUT /doctors/me/language` (wired with the HTTP client).
 - Loading: every first load shows skeletons (`ShifaSkeleton`, `ShifaCardSkeleton`, `ShifaListSkeleton`…), not a
-  spinner. Errors show inline in a `ShifaBanner`, never a SnackBar. Lists pull to refresh.
+  spinner. An endless animation (shimmer, spinner, pulse) is read in a draw or `graphicsLayer` lambda, never in
+  composition: read in composition it recomposes on every frame, which stutters phones and the web. Errors show inline in a `ShifaBanner`, never a SnackBar. Lists pull to refresh.
 - Avatars without a photo, or whose photo fails to load, show the brand fallback picture (`ShifaAvatar`).
 - Keyboard: `MainActivity` is `adjustResize` and screens pad for the keyboard themselves (`imePadding`).
 - Trays and pop-ups (`ShifaTray`, `ShifaPopUp`) only draw; host them in `ModalBottomSheet` / `Dialog`.

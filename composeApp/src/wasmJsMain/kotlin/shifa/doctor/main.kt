@@ -2,6 +2,7 @@ package shifa.doctor
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
+import org.jetbrains.compose.resources.configureWebResources
 import shifa.doctor.utils.fadeBootFrame
 
 // kotlinx-datetime knows only UTC on the web until this module registers the IANA zones (the practice time zone).
@@ -12,6 +13,11 @@ external object JsJodaTimeZoneModule
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     JsJodaTimeZoneModule
+    // Fonts, icons and strings keep their names between builds, and the host's nginx lets browsers keep fonts and icons
+    // for 60 days: each URL carries the build's resource hash (index.html's data-resources, written by the deploy), so a
+    // deploy reaches every browser. Empty in local builds.
+    val version = resourceVersion()
+    configureWebResources { resourcePathMapping { path -> if (version.isEmpty()) "./$path" else "./$path?v=$version" } }
     bridgeBrowserBack()
     ComposeViewport("composeApp") {
         App()
@@ -21,6 +27,8 @@ fun main() {
 }
 
 private const val BOOT_FRAME_LIMIT_MS = 10_000
+
+private fun resourceVersion(): String = js("document.documentElement.dataset.resources || ''")
 
 /**
  * WEB-10: the browser's Back works as the app's Back. One history entry is kept armed; its Back reaches the app as

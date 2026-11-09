@@ -73,6 +73,11 @@ jobs:
           sed -i "s|<script type=\"module\" src=\"composeApp.js\"></script>|$PRELOAD<script type=\"module\" src=\"composeApp.js?v=$V\"></script>|" "$DIST/index.html"
           grep -q "src=\"composeApp.js?v=$V\"" "$DIST/index.html"
           test "$(grep -o 'rel="preload"' "$DIST/index.html" | wc -l)" -eq "$(ls "$DIST"/*.wasm | wc -l)"
+          # Fonts, icons and strings keep their names too (and nginx lets browsers keep fonts and icons for 60 days):
+          # the app adds this hash of all of them to their URLs (main.kt), so a changed font reaches every browser.
+          R=$(cd "$DIST" && find composeResources -type f | sort | xargs sha256sum | sha256sum | cut -c1-12)
+          sed -i "s|<html lang=\"en\">|<html lang=\"en\" data-resources=\"$R\">|" "$DIST/index.html"
+          grep -q "data-resources=\"$R\"" "$DIST/index.html"
 
       # The code is about 22 MB and the host sends it as is: .htaccess sends these Brotli copies instead (about 5 MB).
       - name: Compress the code and strings
