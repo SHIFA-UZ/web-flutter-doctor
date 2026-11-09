@@ -67,6 +67,41 @@ data class AppNotification(
     val carePartnershipId: Long? = null,
 ) {
     companion object {
+        /**
+         * PUSH-03: a push's `data` (backend `docs/api/push-notifications.md`) as the inbox row it stands for: the same
+         * keys, as strings, with the older names as fallbacks. Null without the row's id (nothing to read or mark).
+         */
+        fun fromPush(
+            data: Map<String, String>,
+            now: Instant,
+        ): AppNotification? {
+            fun long(vararg keys: String) = keys.firstNotNullOfOrNull { data[it]?.trim()?.toLongOrNull() }
+            return from(
+                NotificationDto(
+                    id = long("notificationId", "id"),
+                    type = data["type"],
+                    title = data["title"],
+                    message = data["message"],
+                    appointmentId = long("appointmentId"),
+                    appointmentStartAt = data["appointmentStartAt"],
+                    patientId = long("patientId"),
+                    patientName = data["patientName"],
+                    documentId = long("documentId"),
+                    documentTitle = data["documentTitle"],
+                    documentAccessRequestId = long("documentAccessRequestId"),
+                    taskId = long("taskId"),
+                    treatmentPlanId = long("treatmentPlanId"),
+                    patientFormId = long("patientFormId"),
+                    // `entityId` is the conversation only on chat pushes.
+                    conversationId =
+                        long("conversationId", "chatId")
+                            ?: long("entityId").takeIf { data["type"].orEmpty().uppercase().contains("MESSAGE") },
+                    carePartnershipId = long("carePartnershipId", "partnershipId"),
+                    createdAt = data["createdAt"]?.takeIf { PracticeClock.parseInstant(it) != null } ?: now.toString(),
+                ),
+            )
+        }
+
         /** Null without an id or a time (the row is skipped, not the page). */
         fun from(d: NotificationDto): AppNotification? {
             val type = d.type?.trim()?.uppercase().orEmpty()

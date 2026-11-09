@@ -4,16 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import shifa.doctor.data.badges.BadgesRepository
 import shifa.doctor.data.calendar.calendarRepository
 import shifa.doctor.data.calendar.changed
@@ -21,17 +25,23 @@ import shifa.doctor.data.chat.ChatReads
 import shifa.doctor.data.clinics.ClinicsRepository
 import shifa.doctor.data.clinics.clinicsRepository
 import shifa.doctor.data.forms.Icd10Hit
+import shifa.doctor.data.model.AppNotification
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.model.VisitKind
 import shifa.doctor.data.notifications.NotificationReads
+import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.profile.ProfileRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.push.Push
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.data.subscription.FeatureGate
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
+import shifa.doctor.ui.notifications.NotificationGo
+import shifa.doctor.ui.notifications.NotificationOpener
 import shifa.doctor.ui.profile.ProfileSection
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.currentInstant
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -262,6 +272,8 @@ data class ShellUiState(
     val notificationsFailed: Boolean = false,
     val followUpsFailed: Boolean = false,
     val profileFailed: Boolean = false,
+    // PUSH-03: where a tapped push leads, once found; the shell opens it over Home and clears it.
+    val pushGo: NotificationGo? = null,
 ) {
     val home: ShellTab get() = if (staff) ShellTab.Clinic else ShellTab.Home
 
@@ -292,6 +304,11 @@ class ShellViewModel(
     private val profile: ProfileRepository = profileRepository,
     private val clinics: ClinicsRepository = clinicsRepository,
     private val badges: BadgesRepository = BadgesRepository(),
+    // PUSH-02/03: a push's row is marked read and its target found as the inbox does it.
+    private val notifications: NotificationsRepository = NotificationsRepository(),
+    private val opener: NotificationOpener = NotificationOpener(),
+    private val pushes: Flow<Map<String, String>> = Push.received,
+    private val profileWaitMs: Long = PROFILE_WAIT_MS,
     // Leaving Shifa Intelligence: bookings, moves and cancellations made in the chat change the schedule, so today's
     // calendar reads again and every screen showing visits hears of it (flow 03 README §4).
     private val scheduleRefresh: suspend () -> Unit = {
@@ -327,6 +344,15 @@ class ShellViewModel(
         // CHAT-07: a conversation read in the thread or the list drops the Chat badge at once.
         // NOTIF-02: read in the inbox, the bell's count again.
         viewModelScope.launch { NotificationReads.changed.collect { refreshNotifications() } }
+        // PUSH-02: a push while the app is open: the bell's count, and what the push is about.
+        viewModelScope.launch {
+            pushes.collect { data ->
+                refreshNotifications()
+                val type = data["type"].orEmpty().uppercase()
+                if (type.startsWith("APPOINTMENT_")) scheduleRefresh()
+                if (type.contains("MESSAGE")) readChatUnread()
+            }
+        }
         viewModelScope.launch {
             ChatReads.changed.collect {
                 readChatUnread()
@@ -586,6 +612,61 @@ class ShellViewModel(
             }
     }
 
+    /**
+     * PUSH-03 (07 §2.3): a tapped push, from the foreground, the background or a cold start, opens what its inbox row
+     * would open, found the same way (an appointment on its practice day); the row is read at once, best effort.
+     * Without a row id: the inbox. An appointment that's gone leaves Home with the shell's notice.
+     */
+    fun openPush(data: Map<String, String>) {
+        val staff = _state.value.staff
+        val mine = ++pushTaps // a later tap wins over a slower earlier one
+        viewModelScope.launch {
+            val n = AppNotification.fromPush(data, currentInstant())
+            if (n == null) {
+                return@launch _state.update {
+                    if (mine == pushTaps) {
+                        it.copy(
+                            pushGo = NotificationGo.Inbox,
+                        )
+                    } else {
+                        it
+                    }
+                }
+            }
+            // On the side: a slow network never holds the target back.
+            launch { notifications.markRead(n.id) }
+            // Only an appointment needs the doctor's zone (its practice day); on a cold start the profile may still be
+            // loading.
+            val zone =
+                if (staff || !opener.slow(n, staff)) {
+                    null
+                } else {
+                    withTimeoutOrNull(profileWaitMs) { profile.me.filterNotNull().first() }?.profile?.timeZone
+                }
+            val go = opener.go(n, staff, PracticeClock(zone)) ?: NotificationGo.Inbox.takeIf { !opener.slow(n, staff) }
+            if (mine != pushTaps) return@launch
+            // A gone appointment: Home, under the notice the opener left.
+            if (go == null) pushOpened() else _state.update { it.copy(pushGo = go) }
+        }
+    }
+
+    private var pushTaps = 0
+
+    /** The shell took [ShellUiState.pushGo]: Home at its root, to open it over. */
+    fun pushOpened() {
+        switched = true
+        _state.update {
+            it.copy(
+                pushGo = null,
+                tab = it.home,
+                stacks = it.stacks - it.home,
+                moreOpen = false,
+                intelligence = false,
+                overIntelligence = emptyList(),
+            )
+        }
+    }
+
     fun openMore() = _state.update { it.copy(moreOpen = true) }
 
     fun closeMore() = _state.update { it.copy(moreOpen = false) }
@@ -656,3 +737,6 @@ class ShellViewModel(
         val CHAT_POLL = 10.seconds
     }
 }
+
+// PUSH-03: how long a cold start's tap waits for the profile (the practice time zone) before using the device's.
+private const val PROFILE_WAIT_MS = 5_000L

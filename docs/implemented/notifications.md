@@ -106,3 +106,43 @@ Built 2026-11-07 (the user's call, reversing that part of D-07). Board `DaInbox`
 - **Tests:** `NotificationsViewModelTest` (approve: one request for two taps, the row read and marked, the success
   notice; a refused decline leaves it waiting), `NotificationRulesTest` (when the buttons show), `DemoBackendTest`.
   Screenshot `Notifications_inbox` re-recorded (the request now has its buttons).
+
+## PUSH-01…03 · Push
+
+Built 2026-11-09 (D-15: at the very end). Spec 07 §2.3 (tap targets), §2.5; backend `docs/api/push-notifications.md`
+(BE-05 device tokens, BE-06 language and `data`).
+
+- **Bridge** (`data/push/Push.kt`): the platforms report the FCM token, pushes that arrive while the app is open and
+  tapped pushes. Android: `ShifaMessagingService` (`onNewToken`, `onMessageReceived`) and `MainActivity` (singleTop:
+  the tap's extras in `onCreate` and `onNewIntent`); iOS: `AppDelegate` as `UNUserNotificationCenterDelegate` and
+  `MessagingDelegate`, set before launch ends so a tap that started the app arrives. The web has no push.
+- **PUSH-01, the device on the account** (`PushRegistration`): `POST /doctors/me/fcm-tokens {token, platform}` once per
+  session and token (again when FCM refreshes it; the backend moves a token another account had). Sign-out removes it
+  with `DELETE /doctors/me/fcm-tokens/{token}`, carrying the ending session's token, in the background; a sign-in right
+  after waits for that removal. A session that ends on a 401 can't remove it: the next sign-in on the device moves it.
+  Clinic staff never register (the route is doctors-only). Permission is asked once the doctor is in: Android 13+
+  `POST_NOTIFICATIONS` (the system stops asking after two refusals), iOS authorization, then APNs registration. Android
+  channel `shifa_doctor_channel` (Flutter's id, so a doctor's settings carry over), also named in the manifest for
+  pushes the system shows; icon the white mark, colour teal.
+- **PUSH-02, while the app is open:** Android shows the backend's title and body (BE-06: already in the doctor's
+  language) once per row, the data riding along for the tap; iOS shows a banner. The bell's count reads again,
+  appointment pushes refresh the schedule, chat pushes the chat count, an open inbox its first page.
+- **PUSH-03, a tap** (open, background or cold start): it waits in `Push.tapped` until the shell takes it (signed out:
+  until the sign-in). `AppNotification.fromPush` reads the `data` as the inbox row (the same keys; `id`, `chatId`,
+  `partnershipId` as fallbacks; `entityId` only on chat pushes), the row is marked read on the side, and
+  `NotificationOpener` finds the target as the inbox does; it opens over Home at its root (`openOverHome`, shared with
+  Home's attention centre). Without a row id: the inbox. A gone appointment: Home under "This appointment no longer
+  exists". A later tap wins over a slower earlier one. Only an appointment waits for the profile (its practice day).
+- **Debug menu → Push** (signed in): this device's token (its end only), "Send a test push" (`POST
+  /doctors/me/test-notification`: every device of the doctor) and the newest inbox row of each type as a tapped push.
+- **Checked** on the Pixel 9 Pro emulator against dev (seed doctor): the permission prompt, a token for the debug
+  build (the refusal of 2026-11-04 is gone), `POST /doctors/me/fcm-tokens` 204, taps into the inbox, the Chat tab and,
+  from a cold start, Task Details; Back returns to Home. Not yet: a delivered push, because every FCM send failed on
+  the backend ("Not in GZIP format", firebase-admin 9.4.0 with Boot 4's httpclient5 5.6; fixed by firebase-admin
+  9.11.0 on the backend branch `fix/firebase-admin-gzip`). iOS needs the APNs key in Firebase (Cloud Messaging →
+  Apple app configuration) and a real device for a token.
+- **Tests:** `PushRegistrationTest` (once per session and token, staff and no token, a failure retried, sign-out with
+  the ended session's token, a sign-in after a sign-out in order), `AppNotificationFromPushTest`, `ShellViewModelTest`
+  (a chat tap opens its conversation over Home and reads the row, no row → inbox, foreground pushes refresh counts and
+  the schedule).
+

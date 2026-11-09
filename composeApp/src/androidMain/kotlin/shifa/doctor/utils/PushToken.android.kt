@@ -10,3 +10,5 @@ actual suspend fun currentPushToken(): String? =
             cont.resume(if (task.isSuccessful) task.result else null)
         }
     }
+
+actual val pushPlatform: String = "android"

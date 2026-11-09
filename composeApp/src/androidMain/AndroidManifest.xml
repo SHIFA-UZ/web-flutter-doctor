@@ -44,6 +44,18 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_accent" />
+        <!-- PUSH-01: pushes the system shows (app in the background) go to the app's channel, as Flutter's did. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="shifa_doctor_channel" />
+
+        <service
+            android:name=".utils.ShifaMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".utils.RecordingService"

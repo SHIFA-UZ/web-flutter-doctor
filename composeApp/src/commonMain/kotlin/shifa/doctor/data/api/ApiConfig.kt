@@ -1,5 +1,7 @@
 package shifa.doctor.data.api
 
+import io.ktor.http.encodeURLPathPart
+
 /** 15 §1 and 17 §1. Paths are written without `/api/`; [BASE_URL] ends with it. */
 object ApiConfig {
     const val BASE_URL = "https://api.shifa.uz/api/"
@@ -268,6 +270,15 @@ object ApiConfig {
         const val DOCTOR_CONTRACT = "doctors/me/contract"
         const val DOCTOR_CONTRACT_PDF = "doctors/me/contract/pdf"
         const val DOCTOR_LANGUAGE = "doctors/me/language"
+
+        // PUSH-01 (BE-05): this device's FCM token on the doctor's account; removed at sign-out.
+        const val DOCTOR_PUSH_TOKENS = "doctors/me/fcm-tokens"
+
+        fun doctorPushToken(token: String) = "$DOCTOR_PUSH_TOKENS/${token.encodeURLPathPart()}"
+
+        // A push to every device of the signed-in doctor (the debug menu's check).
+        const val DOCTOR_TEST_PUSH = "doctors/me/test-notification"
+
         const val PUBLIC_CONFIG = "public/config"
     }
 

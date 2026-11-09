@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +53,7 @@ import org.jetbrains.compose.resources.painterResource
 import shifa.doctor.data.catalog.Profession
 import shifa.doctor.data.model.CalendarEntry
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.push.Push
 import shifa.doctor.data.subscription.DoctorFeature
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.about
@@ -174,6 +176,7 @@ import shifa.doctor.ui.widgets.EmptyState
 import shifa.doctor.ui.widgets.LocalWideLayout
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.trackActivity
+import shifa.doctor.utils.AskPushPermission
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
 import shifa.doctor.utils.doctorDisplayName
@@ -236,8 +239,9 @@ fun MainScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
-    MainScreenContent(
-        state,
+    // PUSH-01: notifications allowed (asked once the doctor is in; staff get no pushes).
+    if (!staff) AskPushPermission()
+    val actions =
         ShellActions(
             select = viewModel::select,
             openPatientFromSearch = viewModel::openPatientFromSearch,
@@ -255,9 +259,21 @@ fun MainScreen(
                 viewModel.closeMore()
                 signOut.ask()
             },
-        ),
-        identity = shellIdentity(),
-    )
+        )
+    // PUSH-03: a tapped push, whenever it came (a cold start's waits here for the shell), opens over Home.
+    val tapped by Push.tapped.collectAsStateWithLifecycle()
+    LaunchedEffect(tapped) {
+        val data = tapped ?: return@LaunchedEffect
+        Push.tapped.value = null
+        viewModel.openPush(data)
+    }
+    val documentTitle = tr(Res.string.document)
+    LaunchedEffect(state.pushGo) {
+        val go = state.pushGo ?: return@LaunchedEffect
+        viewModel.pushOpened()
+        actions.openOverHome(go, documentTitle)
+    }
+    MainScreenContent(state, actions, identity = shellIdentity())
     SignOutSheet(question, signOut::confirm, signOut::cancel)
 }
 
@@ -272,6 +288,25 @@ private fun shellIdentity(): ShellIdentity? {
         profession?.let { Profession(it, null).label() },
         p.photoUrl,
     )
+}
+
+/** HOME-04, PUSH-03: a notification's target over Home (Back returns to it); chat is its tab, the inbox its own. */
+internal fun ShellActions.openOverHome(
+    go: NotificationGo,
+    documentTitle: String,
+) {
+    val opened = currentInstant().toEpochMilliseconds()
+    when (go) {
+        is NotificationGo.Appointment -> push(ShellRoute.Appointment(go.entry, opened))
+        is NotificationGo.Patient -> push(ShellRoute.Patient(go.id))
+        is NotificationGo.Document -> push(ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle))
+        NotificationGo.Chat -> select(ShellTab.Chat)
+        is NotificationGo.Conversation -> push(ShellRoute.Conversation(go.id, opened))
+        NotificationGo.Partnerships -> push(ShellRoute.Partnerships(null, null, opened))
+        is NotificationGo.Partnership -> push(ShellRoute.Partnership(go.id, opened))
+        is NotificationGo.Task -> push(ShellRoute.Task(go.id, opened))
+        NotificationGo.Inbox -> select(ShellTab.Notifications)
+    }
 }
 
 class ShellActions(
@@ -519,23 +554,7 @@ private fun RouteContent(
                         patients = { actions.select(ShellTab.Patients) },
                         seePlans = { actions.push(ShellRoute.Profile(ProfileSection.Subscription)) },
                         // HOME-04: a target opens over Home (Back returns to it); chat is its tab.
-                        openNotification = { go ->
-                            val opened = currentInstant().toEpochMilliseconds()
-                            when (go) {
-                                is NotificationGo.Appointment -> actions.push(ShellRoute.Appointment(go.entry, opened))
-                                is NotificationGo.Patient -> actions.push(ShellRoute.Patient(go.id))
-                                is NotificationGo.Document ->
-                                    actions.push(
-                                        ShellRoute.Document(go.patientId, go.documentId, go.title ?: documentTitle),
-                                    )
-                                NotificationGo.Chat -> actions.select(ShellTab.Chat)
-                                is NotificationGo.Conversation -> actions.push(ShellRoute.Conversation(go.id, opened))
-                                NotificationGo.Partnerships -> actions.push(ShellRoute.Partnerships(null, null, opened))
-                                is NotificationGo.Partnership -> actions.push(ShellRoute.Partnership(go.id, opened))
-                                is NotificationGo.Task -> actions.push(ShellRoute.Task(go.id, opened))
-                                NotificationGo.Inbox -> actions.select(ShellTab.Notifications)
-                            }
-                        },
+                        openNotification = { go -> actions.openOverHome(go, documentTitle) },
                     ),
                 )
             } else if (route.tab == ShellTab.Tasks && !staff) {
