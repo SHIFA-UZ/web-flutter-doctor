@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,12 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,15 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -80,10 +75,10 @@ fun SplashScreen(
     LaunchedEffect(state) { (state as? SplashUiState.Finished)?.let { finished(it.session) } }
     // Back from the store (or from anywhere) while the update frame shows: check the version again (flow §7).
     if (state is SplashUiState.UpdateRequired) LifecycleResumeEffect(Unit) { onPauseOrDispose { viewModel.retry() } }
-    // Plays once the splash can draw its name (on the web, as index.html's frame lifts), so a slow first load doesn't
-    // hide it; its end lets the app go on.
+    // Plays once the splash can draw its icon (on the web, as index.html's frame lifts: until it loads, a vector is a
+    // 1 dp placeholder), so a slow first load doesn't hide it; its end lets the app go on.
     val progress = remember { Animatable(0f) }
-    val ready = tr(Res.string.appName).isNotEmpty()
+    val ready = painterResource(Res.drawable.shifa_mark).intrinsicSize.width > LocalDensity.current.density
     LaunchedEffect(ready) {
         if (!ready) return@LaunchedEffect
         progress.animateTo(1f, tween(SPLASH_MS, easing = EaseInOutCubic))
@@ -121,16 +116,15 @@ fun SplashScreenContent(
         )
 }
 
-// The patient app's splash (Figma 1614:12212 → 1614:12237): two teal blobs part to show white, the glass tile's border
-// fades in and the mark turns from white to teal. No name under it: it would cross the blobs. [progress] 0 is the start, 1 the end. Nothing is focusable;
-// a screen reader hears "Shifa Doctor, Loading…" once.
+// The patient app's splash animation (Figma 1614:12212 → 1614:12237) around the doctor app's icon: two teal blobs part
+// to show white. [progress] 0 is the start, 1 the end. No name under the icon: it would cross the blobs. Nothing is
+// focusable; a screen reader hears "Shifa Doctor, Loading…" once.
 @Composable
 private fun Splash(
     progress: Float,
     onSkip: () -> Unit,
 ) {
     val label = "${tr(Res.string.appName)}, ${tr(Res.string.loading)}"
-    val tile = RoundedCornerShape(ShifaDimens.SplashTileRadius)
     Box(
         Modifier
             .fillMaxSize()
@@ -142,21 +136,7 @@ private fun Splash(
             .clearAndSetSemantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        // Figma also blurs the backdrop; skipped, as in the patient app (blur froze low-end Android GPUs).
-        Box(
-            Modifier
-                .size(ShifaDimens.SplashTile)
-                .clip(tile)
-                .background(ShifaColors.Raw.GlassTile)
-                .border(ShifaSize.S2, ShifaColors.Raw.GlassTileBorder.copy(alpha = progress), tile),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painterResource(Res.drawable.shifa_mark),
-                contentDescription = null,
-                tint = lerp(ShifaColors.Icon.Inverse, ShifaColors.Raw.SplashLogo, progress),
-            )
-        }
+        ShifaAppIcon(ShifaSize.S96) // the size of the iOS and Android launch screens' icon
     }
 }
 
@@ -233,4 +213,4 @@ private fun BootContent(
     )
 }
 
-private const val SPLASH_MS = 1_600 // as in the patient app
+private const val SPLASH_MS = 1_000 // the patient app takes 1.6 s; shortened so the doctor is in sooner

@@ -117,10 +117,8 @@ object ShifaDimens {
     val CalendarEventMin = 18.dp
     val CalendarEventTwoLines = 36.dp
 
-    // The splash, copied from the patient app (Figma 1614:12212 → 1614:12237). Blob centres are offsets from the
-    // screen centre; index.html repeats the start frame.
-    val SplashTile = 178.dp
-    val SplashTileRadius = 37.dp
+    // The splash's blobs, copied from the patient app (Figma 1614:12212 → 1614:12237). Blob centres are offsets from
+    // the screen centre; index.html repeats the start frame.
     val SplashBlobWidth = 891.563.dp
     val SplashBlobHeight = 609.879.dp
     val SplashBlobBlur = 25.dp
