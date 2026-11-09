@@ -22,3 +22,7 @@ actual fun AskPushPermission() {
         }
     }
 }
+
+actual fun browserNotificationPermission(): String? = null
+
+actual fun askBrowserNotifications(done: (String) -> Unit) = Unit

@@ -307,6 +307,7 @@
     <string name="bookingRangeUnavailable">Выбранный диапазон времени недоступен — календарь обновлён.</string>
     <string name="bookingSameDayPast">Это время сегодня уже прошло; запись сохранится как приём без записи.</string>
     <string name="boolean">Да/Нет</string>
+    <string name="browserSiteSettings">Разрешения этого сайта хранятся в браузере: нажмите на значок рядом с адресом и разрешите там.</string>
     <string name="bulkRetryComplete">Массовый повтор завершён: успешно %1$s, ошибок %2$s.</string>
     <string name="calendar">Календарь</string>
     <string name="calendarColleagueDoctorFallback">Врач №%1$s</string>
@@ -1949,9 +1950,13 @@
     <string name="notificationViewAppointment">Открыть запись</string>
     <string name="notificationViewResult">Посмотреть результат</string>
     <string name="notifications">Уведомления</string>
+    <string name="notificationsBlocked">Заблокированы в этом браузере</string>
     <string name="notificationsLoadFailed">Не удалось загрузить уведомления</string>
     <string name="notificationsMarkFailed">Не удалось отметить как прочитанное. Попробуйте ещё раз.</string>
+    <string name="notificationsOn">Включены</string>
     <string name="notificationsSystemSettings">Управление в настройках системы</string>
+    <string name="notificationsTapToAllow">Выключены · нажмите, чтобы разрешить</string>
+    <string name="notificationsUnsupported">Этот браузер не показывает уведомления</string>
     <string name="notifyPatient">Уведомить пациента</string>
     <string name="now">Сейчас</string>
     <string name="numeric">Числовой</string>

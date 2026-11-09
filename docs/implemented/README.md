@@ -83,7 +83,7 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 | SVC-01 Services & pricing | Done | Grouped list with prices per currency and location, editor with checked writes and validation, confirmed delete, clinic-managed read-only. See profile.md. |
 | SVC-02 Service groups | Done | Groups editor: rename, reorder (up / down), add, delete; saved in order, then the list reloads. See profile.md. |
 | SUB-02 Checkout and Stripe Connect | Done | Plan cards with prices and Upgrade, Stripe checkout and Connect onboarding in the in-app browser, plan re-read on return. See profile.md. |
-| SET-01 Settings | Done | Country, language row, starting screen, 2FA and encrypted-documents flags with queued whole-block PATCH; staff variant. See profile.md. |
+| SET-01 Settings | Done | Country, language row, starting screen with queued whole-block PATCH; staff variant. The 2FA and encrypted-documents switches are hidden (2026-11-09, the user's call: the backend only stores them, BE-38). Notifications on the web: the browser's permission, asked from the row. See profile.md. |
 | SET-02 Language | Done | Language screen in Settings (own names, applies at once); sync, mini toggle and regional default were already in place. See profile.md. |
 | SET-03 App-lock settings | Done | Section and strings were in place (LOCK-01, PROF-04); the Settings Security row now previews the lock state. See profile.md. |
 | TZ-1 Practice clock | Done | PracticeClock (CORE-09) plus shared date/time formatters and DST tests. See calendar.md. |
@@ -425,3 +425,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-09 · PUSH-01…03 · Push: device tokens on the doctor's account, foreground pushes, every tap opens its screen; debug push checks.
 - 2026-11-09 · PUSH-WEB · Push on the web: Firebase JS bridge in index.html, service worker, taps over Home.
 - 2026-11-09 · CHAT-05 · A PDF in a chat opens inside the app (like a photo) instead of the browser; Retry and "Open document" when it can't be read.
+- 2026-11-09 · WEB · PDFs on the web drawn by pdf.js (phone browsers only offered "Open"); Settings: 2FA and encrypted-documents switches hidden (nothing acted on them, BE-38), Notifications shows and asks the browser's permission, "Open settings" links on the web say where the browser keeps site permissions.

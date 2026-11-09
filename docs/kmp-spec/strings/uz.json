@@ -2935,5 +2935,10 @@
   "previousWeek": "Oldingi hafta",
   "nextWeek": "Keyingi hafta",
   "noAccountForEmail": "Bu email bilan Shifa hisobi topilmadi. Manzilni tekshiring yoki hisob yarating.",
-  "noAccountForPhone": "Bu telefon raqam bilan Shifa hisobi topilmadi. Raqamni tekshiring yoki email orqali kiring."
+  "noAccountForPhone": "Bu telefon raqam bilan Shifa hisobi topilmadi. Raqamni tekshiring yoki email orqali kiring.",
+  "browserSiteSettings": "Bu sayt ruxsatlari brauzerda saqlanadi: manzil yonidagi belgini bosing va u yerda ruxsat bering.",
+  "notificationsOn": "Yoqilgan",
+  "notificationsTapToAllow": "O'chiq · ruxsat berish uchun bosing",
+  "notificationsBlocked": "Bu brauzerda bloklangan",
+  "notificationsUnsupported": "Bu brauzer bildirishnomalarni ko'rsata olmaydi"
 }

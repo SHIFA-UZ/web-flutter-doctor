@@ -307,6 +307,7 @@
     <string name="bookingRangeUnavailable">Selected time range is no longer fully available — calendar refreshed.</string>
     <string name="bookingSameDayPast">This time has already passed today; it will be recorded as a walk-in.</string>
     <string name="boolean">Yes/No</string>
+    <string name="browserSiteSettings">Your browser keeps this site's permissions: tap the icon next to the address and allow it there.</string>
     <string name="bulkRetryComplete">Bulk retry complete: %1$s succeeded, %2$s failed.</string>
     <string name="calendar">Calendar</string>
     <string name="calendarColleagueDoctorFallback">Doctor #%1$s</string>
@@ -1949,9 +1950,13 @@
     <string name="notificationViewAppointment">View Appointment</string>
     <string name="notificationViewResult">View Result</string>
     <string name="notifications">Notifications</string>
+    <string name="notificationsBlocked">Blocked in this browser</string>
     <string name="notificationsLoadFailed">Couldn't load notifications</string>
     <string name="notificationsMarkFailed">Couldn't mark as read. Try again.</string>
+    <string name="notificationsOn">On</string>
     <string name="notificationsSystemSettings">Manage in system settings</string>
+    <string name="notificationsTapToAllow">Off · tap to allow</string>
+    <string name="notificationsUnsupported">This browser can't show notifications</string>
     <string name="notifyPatient">Notify patient</string>
     <string name="now">Now</string>
     <string name="numeric">Numeric</string>

@@ -38,3 +38,20 @@ private fun pushData(json: String): Map<String, String>? =
             .mapNotNull { (k, v) -> (v as? JsonPrimitive)?.takeIf { it.isString }?.let { k to it.content } }
             .toMap()
     }.getOrNull()
+
+actual fun browserNotificationPermission(): String? = notificationPermission()
+
+private fun notificationPermission(): String =
+    js(
+        "('Notification' in window) ? Notification.permission : 'unsupported'",
+    )
+
+actual fun askBrowserNotifications(done: (String) -> Unit) = requestPermission(done)
+
+// Answers "unsupported" without the API, "denied" if the request itself fails.
+private fun requestPermission(done: (String) -> Unit): Unit =
+    js(
+        """('Notification' in window)
+            ? Notification.requestPermission().then(function (p) { done(p) }, function () { done('denied') })
+            : done('unsupported')""",
+    )

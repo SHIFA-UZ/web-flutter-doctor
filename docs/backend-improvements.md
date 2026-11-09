@@ -640,3 +640,17 @@ Postgres refuses: with `DISTINCT`, every `ORDER BY` expression must be selected.
 **App until then:** the month's ledger and the dashboard's Outstanding list show "Couldn't load finance data." with the
 request id and Retry; "All time" works.
 
+
+## BE-38 Two-factor sign-in and encrypted documents are only stored flags
+
+**Needed by:** flow `08/10` (Settings, Security); ticket SET-01.
+
+**Now:** `PATCH /doctors/me/settings` stores `twoFA` and `encryptedDocs` (`doctor_settings.two_factor`,
+`encrypted_docs`), and nothing reads them: sign-in never asks for a second factor, and documents are stored the same
+either way (checked 2026-11-09).
+
+**Change:** if wanted, a real second factor at sign-in (an emailed or SMS code after the password, reusing the OTP
+paths), and a decision whether "encrypted documents" means anything beyond the storage's own encryption at rest.
+
+**App until then:** the two switches are hidden on every platform (2026-11-09, the user's call); the saved values go
+back unchanged in each settings save.
