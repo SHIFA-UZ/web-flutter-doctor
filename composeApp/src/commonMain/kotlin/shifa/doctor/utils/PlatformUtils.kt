@@ -14,3 +14,9 @@ expect val appBuild: String
 
 /** "android" or "ios": the key of per-platform values in the backend config (BE-04). */
 expect val platformName: String
+
+/** WEB-10: the page's path on the web ("/patients/12"); null on the phones. */
+expect fun browserPath(): String?
+
+/** WEB-10: shows [path] in the web's address bar, in place (Back stays the app's Back); nothing on the phones. */
+expect fun showBrowserPath(path: String)

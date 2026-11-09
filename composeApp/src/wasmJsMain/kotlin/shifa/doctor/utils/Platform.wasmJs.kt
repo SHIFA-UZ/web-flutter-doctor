@@ -12,5 +12,12 @@ actual val appBuild: String = WEB_BUILD
 
 actual val platformName: String = "web"
 
+actual fun browserPath(): String? = js("location.pathname")
+
+// Kept for main.kt's Back bridge, which re-arms its history entry with it.
+actual fun showBrowserPath(path: String) {
+    js("window.shifaPath = path; if (location.pathname !== path) history.replaceState(history.state, '', path)")
+}
+
 private fun isLocalHost(): Boolean =
     js("window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'")

@@ -15,3 +15,7 @@ actual val appBuild: String =
     NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleVersion") as? String ?: "0"
 
 actual val platformName: String = "ios"
+
+actual fun browserPath(): String? = null
+
+actual fun showBrowserPath(path: String) = Unit

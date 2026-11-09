@@ -41,6 +41,7 @@ import shifa.doctor.ui.notifications.NotificationGo
 import shifa.doctor.ui.notifications.NotificationOpener
 import shifa.doctor.ui.profile.ProfileSection
 import shifa.doctor.utils.PracticeClock
+import shifa.doctor.utils.browserPath
 import shifa.doctor.utils.currentInstant
 import kotlin.time.Duration.Companion.seconds
 
@@ -295,6 +296,24 @@ data class ShellUiState(
 }
 
 /**
+ * WEB-10: the web address of what the shell shows: the topmost screen [ShellViewModel.openPath] can open again (a
+ * patient outside a clinic's scope, a conversation, a task), else the tab. Screens opened from an object (an appointment,
+ * a form) show the address of what's under them.
+ */
+fun shellPath(s: ShellUiState): String {
+    val screen =
+        s.stack.asReversed().firstNotNullOfOrNull { r ->
+            when (r) {
+                is ShellRoute.Patient -> if (r.clinicId == null) "patients/${r.id}" else null
+                is ShellRoute.Conversation -> "chat/${r.id}"
+                is ShellRoute.Task -> "tasks/${r.id}"
+                else -> null
+            }
+        }
+    return "/" + (screen ?: s.tab.key)
+}
+
+/**
  * SHELL-01 (flow 01/16, 01 §6): the tab the doctor is on, each tab's own back stack (kept when switching), the More
  * sheet, and the start tab from the profile, applied once per session after it loads unless the doctor already
  * switched; a start tab the doctor can't use (Tasks below PREMIUM, Clinic without a clinic) falls back to Home.
@@ -309,6 +328,8 @@ class ShellViewModel(
     private val opener: NotificationOpener = NotificationOpener(),
     private val pushes: Flow<Map<String, String>> = Push.received,
     private val profileWaitMs: Long = PROFILE_WAIT_MS,
+    // WEB-10: the web address the app was opened at, applied instead of the saved start tab.
+    private val startPath: String? = browserPath(),
     // Leaving Shifa Intelligence: bookings, moves and cancellations made in the chat change the schedule, so today's
     // calendar reads again and every screen showing visits hears of it (flow 03 README §4).
     private val scheduleRefresh: suspend () -> Unit = {
@@ -362,7 +383,9 @@ class ShellViewModel(
             // Staff never call /doctors/me (it answers 403) and have no saved start tab (flow 01/18 §2, §4).
             if (staff) {
                 val me = profile.meProfile().getOrNull()
-                return@launch _state.update { it.copy(avatarUrl = me?.photoUrl, hasClinic = true) }
+                _state.update { it.copy(avatarUrl = me?.photoUrl, hasClinic = true) }
+                if (!switched) startPath?.let(::openPath)
+                return@launch
             }
             val clinicResult = clinics.mine()
             _state.update { it.copy(hasClinic = clinicResult.getOrNull()?.isNotEmpty() ?: false) }
@@ -372,6 +395,7 @@ class ShellViewModel(
             pending = null
             when {
                 waiting != null -> _state.update { it.copy(tab = clamp(waiting, it)) }
+                !switched && startPath?.let(::openPath) == true -> Unit
                 !switched -> {
                     val start = ShellTab.fromKey(me?.settings?.defaultStartTab) ?: ShellTab.Home
                     _state.update { it.copy(tab = clamp(start, it)) }
@@ -497,17 +521,42 @@ class ShellViewModel(
      * CHAT-07 (flow 07/07 §5, §10): the Chat tab with this patient's thread over its list, whatever the Chat stack held;
      * the patient stays in the Patients tab's stack, and Back from the thread leads to the list.
      */
-    fun openChatWithPatient(route: ShellRoute.PatientChat) {
+    fun openChatWithPatient(route: ShellRoute.PatientChat) = openOver(ShellTab.Chat, route)
+
+    /** [route] over [tab]'s root, whatever that tab's stack held; [tab] at its root if the doctor can't use it. */
+    private fun openOver(
+        tab: ShellTab,
+        route: ShellRoute,
+    ) {
+        if (clamp(tab, _state.value) != tab) return select(tab)
         switched = true
         ShellNotice.dismissSuccess()
         _state.update { s ->
             s.copy(
-                stacks = s.stacks + (ShellTab.Chat to listOf(ShellRoute.Root(ShellTab.Chat), route)),
-                tab = ShellTab.Chat,
+                stacks = s.stacks + (tab to listOf(ShellRoute.Root(tab), route)),
+                tab = tab,
                 moreOpen = false,
                 intelligence = false,
             )
         }
+    }
+
+    /**
+     * WEB-10: opens what a web address names ([shellPath]'s inverse): a tab ("/calendar"), or a patient, conversation or
+     * task by id over its tab's list ("/patients/12"). False when the address names no tab ("/", a stale link).
+     */
+    fun openPath(path: String): Boolean {
+        val parts = path.trim('/').split('/')
+        val tab = ShellTab.fromKey(parts[0]) ?: return false
+        val id = parts.getOrNull(1)?.toLongOrNull()
+        val opened = currentInstant().toEpochMilliseconds()
+        when {
+            id != null && tab == ShellTab.Patients -> openOver(tab, ShellRoute.Patient(id))
+            id != null && tab == ShellTab.Chat -> openOver(tab, ShellRoute.Conversation(id, opened))
+            id != null && tab == ShellTab.Tasks -> openTask(id, opened)
+            else -> select(tab)
+        }
+        return true
     }
 
     /**
