@@ -29,6 +29,7 @@ import shifa.doctor.data.subscription.DoctorTier
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.tasksNotOnPlan
 import shifa.doctor.stopAll
+import shifa.doctor.ui.notifications.NotificationGo
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShellViewModelTest {
@@ -95,6 +96,18 @@ class ShellViewModelTest {
             }, com.russhwolf.settings.MapSettings(), { "u1" }),
             BadgesRepository { client },
         ) { scheduleReads++ }.also { created += it }
+
+    private fun pushVm(
+        pushes: kotlinx.coroutines.flow.Flow<Map<String, String>> = kotlinx.coroutines.flow.emptyFlow(),
+    ) = ShellViewModel(
+        false,
+        profile,
+        ClinicsRepository({ client }, com.russhwolf.settings.MapSettings(), { "u1" }),
+        BadgesRepository { client },
+        notifications = shifa.doctor.data.notifications.NotificationsRepository { client },
+        pushes = pushes,
+        profileWaitMs = 1_000,
+    ) { scheduleReads++ }.also { created += it }
 
     private fun ShellViewModel.settle() {
         repeat(200) {
@@ -411,5 +424,47 @@ class ShellViewModelTest {
         waitFor { classToTest.state.value.hasClinic == false && !classToTest.state.value.canTasks }
         assertThat(classToTest.state.value.hasClinic).isFalse()
         assertThat(classToTest.state.value.canTasks).isFalse()
+    }
+
+    @Test
+    fun `a tapped chat push opens its conversation over Home at its root and reads its row`() {
+        val classToTest = pushVm()
+        classToTest.settle()
+        classToTest.select(ShellTab.Chat)
+        classToTest.openPush(mapOf("type" to "CHAT_MESSAGE", "notificationId" to "7", "conversationId" to "42"))
+        waitFor { classToTest.state.value.pushGo != null }
+        assertThat(classToTest.state.value.pushGo).isEqualTo(NotificationGo.Conversation(42))
+        assertThat(paths).contains("/api/notifications/7/read")
+        classToTest.pushOpened()
+        assertThat(classToTest.state.value.pushGo).isNull()
+        assertThat(classToTest.state.value.tab).isEqualTo(ShellTab.Home)
+        assertThat(classToTest.state.value.stack).hasSize(1)
+    }
+
+    @Test
+    fun `a push without its row's id opens the inbox`() {
+        val classToTest = pushVm()
+        classToTest.settle()
+        classToTest.openPush(mapOf("type" to "GENERAL"))
+        waitFor { classToTest.state.value.pushGo != null }
+        assertThat(classToTest.state.value.pushGo).isEqualTo(NotificationGo.Inbox)
+    }
+
+    @Test
+    fun `a push while the app is open reads the counts again, and the schedule for a visit`() {
+        val pushes = kotlinx.coroutines.flow.MutableSharedFlow<Map<String, String>>(extraBufferCapacity = 4)
+        val classToTest = pushVm(pushes)
+        classToTest.settle()
+        val bell = { paths.count { it.endsWith("notifications/unread/count") } }
+        val chat = { paths.count { it.endsWith("messages/unread-count") } }
+        val (bell0, chat0) = bell() to chat()
+        pushes.tryEmit(mapOf("type" to "APPOINTMENT_BOOKED_BY_PATIENT"))
+        waitFor { scheduleReads == 1 && bell() > bell0 }
+        assertThat(scheduleReads).isEqualTo(1)
+        assertThat(bell()).isGreaterThan(bell0)
+        pushes.tryEmit(mapOf("type" to "CHAT_MESSAGE"))
+        waitFor { chat() > chat0 }
+        assertThat(chat()).isGreaterThan(chat0)
+        assertThat(scheduleReads).isEqualTo(1)
     }
 }

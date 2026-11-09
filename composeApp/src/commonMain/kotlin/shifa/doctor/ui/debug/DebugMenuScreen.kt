@@ -30,8 +30,8 @@ import shifa.doctor.utils.tr
 
 /**
  * Debug menu (CORE-08), debug builds only, English (not translated): demo data, the development backend, and the
- * native spikes. Switching the backend signs out, because a token from one backend means nothing on the other.
- * Fake pushes come with the push tickets (PUSH-01, NOTIF-*), which define the payloads.
+ * native spikes and, signed in, push checks ([DebugPushSection]). Switching the backend signs out, because a token from
+ * one backend means nothing on the other.
  */
 @Composable
 fun DebugMenuScreen(
@@ -45,6 +45,7 @@ fun DebugMenuScreen(
     val demo by DemoMode.enabled.collectAsState()
     val gate by DemoMode.bootGate.collectAsState()
     val backend by BackendChoice.current.collectAsState()
+    val session by sessionRepository.session.collectAsState()
     if (spikes) {
         Column(modifier.fillMaxSize().statusBarsPadding()) {
             ShifaSubHeader("Native spikes", onBack = { spikes = false })
@@ -70,7 +71,10 @@ fun DebugMenuScreen(
                     )
                 },
                 onSignOut = onSignOut,
-                extra = extra,
+                extra = {
+                    extra()
+                    if (session != null) DebugPushSection()
+                },
             )
         }
     }

@@ -2,6 +2,7 @@ package shifa.doctor.ui.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +16,7 @@ import shifa.doctor.data.notifications.NotificationFilter
 import shifa.doctor.data.notifications.NotificationReads
 import shifa.doctor.data.notifications.NotificationsRepository
 import shifa.doctor.data.notifications.shows
+import shifa.doctor.data.push.Push
 import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.accessApprovedBanner
 import shifa.doctor.generated.resources.accessDecisionFailed
@@ -92,9 +94,15 @@ data class NotificationsUiState(
 class NotificationsViewModel(
     private val repo: NotificationsRepository = NotificationsRepository(),
     private val opener: NotificationOpener = NotificationOpener(),
+    pushes: Flow<Map<String, String>> = Push.received,
 ) : ViewModel() {
     private val _state = MutableStateFlow(NotificationsUiState())
     val state: StateFlow<NotificationsUiState> = _state.asStateFlow()
+
+    init {
+        // PUSH-02: a push while the inbox is open puts its row on top.
+        viewModelScope.launch { pushes.collect { if (_state.value.items != null) refresh() } }
+    }
 
     /** The first page once; [refresh] reads it again. */
     fun load() {

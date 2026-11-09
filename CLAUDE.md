@@ -135,7 +135,7 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
   `docs/implemented/foundation.md`): voice is `utils/VoiceRecorder` (AAC-LC `.m4a`, 16 kHz mono, 32 kbps:
   `MediaRecorder` / `AVAudioRecorder`) and `utils/AudioPlayer` (`MediaPlayer` / `AVPlayer`, one at a time); maps are
   `utils/MapPin` (osmdroid with OpenStreetMap tiles on Android, MapKit on iOS; no Google key, D-06); the FCM token is
-  `utils/currentPushToken()` (Android; iOS gets it in Swift with PUSH-01). Not spiked: Daily (needs a video
+  `utils/currentPushToken()` (Android; iOS's arrives in Swift and goes to `Push`). Not spiked: Daily (needs a video
   appointment's room token and the SDKs) and push delivery (needs the release key / a device).
 - Tests (`androidUnitTest`): JUnit4, Mockito-Kotlin, Turbine, Truth, kotlinx-coroutines-test, Roborazzi + Robolectric
   for screenshots, `multiplatform-settings-test` (`MapSettings`) for storage
@@ -206,9 +206,13 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   masked> <code> requestId=<id>`, `FAILED no response: <exception class>`, or an unreadable body. Network code outside
   `apiCall` (SSE streams, polling) logs its failures the same way. Debug builds only (release logs nothing); never log
   tokens, passwords, headers, request bodies or patient data (HIPAA: patient ids only).
-- Push: Firebase Messaging on both platforms; the token is sent (`PUT /doctors/me/fcm-token`) after login and on every
-  refresh, logout sends `""`. Taps (foreground, background and cold start) route like the inbox tray. Real time is
-  REST polling, no websockets.
+- Push (PUSH-01…03): Firebase Messaging on both platforms, bridged by `data/push/Push` (Android `ShifaMessagingService`
+  and `MainActivity`, iOS `AppDelegate`). `PushRegistration` adds the device (`POST /doctors/me/fcm-tokens`) once per
+  session and token and removes it at sign-out (`DELETE …/{token}`); never for clinic staff. Foreground pushes show on
+  channel `shifa_doctor_channel` (iOS: banner) and refresh the counts. Taps (foreground, background and cold start) open
+  what the inbox row would open, over Home (`AppNotification.fromPush` → `NotificationOpener`). Push data names
+  patients: never log it. Test from the debug menu (a backend test push, any inbox row as a tap). Real time is REST
+  polling, no websockets.
 
 ### UI layer
 - One `XxxUiState` `@Stable data class` per screen with defaults; derived flags as properties (`isInputValid`).

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.SessionEndReason
 import shifa.doctor.data.api.SessionEvents
+import shifa.doctor.data.push.pushRegistration
 import shifa.doctor.data.settings.LanguageRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.TokenStorage
@@ -45,6 +46,8 @@ class SessionRepository(
     private val settings: Settings = Settings(),
     private val language: LanguageRepository = languageRepository,
     private val nowEpochSeconds: () -> Long = { Clock.System.now().epochSeconds },
+    // PUSH-01: the doctor signed out of the session with this token (the app's instance unregisters the device).
+    private val signedOut: (String) -> Unit = {},
 ) : SynchronizedObject() {
     private val _session = MutableStateFlow<Session?>(null)
     val session: StateFlow<Session?> = _session.asStateFlow()
@@ -179,14 +182,15 @@ class SessionRepository(
 
     /**
      * The doctor signed out (one dialog, one navigation: the shell reacts to [session] turning null; Sign In says "You've
-     * signed out"). The app-lock PIN and the language stay (flow 08/15 §4). Unregistering the push token waits for the
-     * Firebase cleanup (D-15, PUSH-01).
+     * signed out"). The app-lock PIN and the language stay (flow 08/15 §4). The device stops ringing for this account
+     * (PUSH-01, in the background).
      */
     fun signOut() =
         synchronized(this) {
-            if (_session.value == null) return@synchronized
+            val token = _session.value?.token ?: return@synchronized
             clear()
             _ended.tryEmit(SessionEndReason.SignedOut)
+            signedOut(token)
         }
 
     /** The doctor deleted the account (BE-02): signed out with "Your account has been deleted" on Sign In. */
@@ -231,4 +235,4 @@ class SessionRepository(
     }
 }
 
-val sessionRepository by lazy { SessionRepository() }
+val sessionRepository by lazy { SessionRepository(signedOut = { pushRegistration.signedOut(it) }) }

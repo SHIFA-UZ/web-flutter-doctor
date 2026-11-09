@@ -61,7 +61,7 @@ Branch `feature/doctor-app-backend-asks` in `backend-kotlin-shifa` (2026-11-07),
 - **BE-04** Done: the `doctorApp` block from `system_config` keys `doctor_app.*` (empty = not set), cached 60 s. App:
   the splash already read it; unset values now arrive as `null` and are tolerated.
 - **BE-05** Done on the backend: `POST`/`DELETE /doctors/me/fcm-tokens`, pushes fan out to every device and the legacy
-  token, dead tokens dropped. App: waits for PUSH-01 (D-15).
+  token, dead tokens dropped. App: PUSH-01 registers and removes the device (2026-11-09).
 - **BE-06** Done: doctor pushes were already in the doctor's language; `data` now also carries `notificationId`,
   `treatmentPlanId`, `patientFormId`, `installmentItemId`, the appointment's `patientId`, `conversationId` and
   `carePartnershipId`, and the inbox rows carry the last two. Types and keys: backend `docs/api/push-notifications.md`.

@@ -32,6 +32,8 @@ import shifa.doctor.data.forms.formsRepository
 import shifa.doctor.data.locations.locationsRepository
 import shifa.doctor.data.patients.patientsRepository
 import shifa.doctor.data.profile.profileRepository
+import shifa.doctor.data.push.Push
+import shifa.doctor.data.push.pushRegistration
 import shifa.doctor.data.session.sessionRepository
 import shifa.doctor.data.settings.languageRepository
 import shifa.doctor.data.storage.languageStorage
@@ -58,6 +60,7 @@ import shifa.doctor.ui.widgets.trackActivity
 import shifa.doctor.utils.LocalUzbekCyrillic
 import shifa.doctor.utils.ProvideAppLocale
 import shifa.doctor.utils.ResourceWarmup
+import shifa.doctor.utils.currentPushToken
 import shifa.doctor.utils.isDebugBuild
 import kotlin.time.Duration.Companion.hours
 
@@ -70,6 +73,11 @@ fun App() {
     LaunchedEffect(session != null, language) {
         if (session != null) languageRepository.sync(language.backendCode)
     }
+    // PUSH-01: this device on the doctor's account, once per session and token (FCM may refresh the token any time; iOS
+    // reports it from Swift). A failure is tried again with the next session or token.
+    val pushDevice by Push.device.collectAsState()
+    LaunchedEffect(session != null) { if (session != null) currentPushToken()?.let(Push::onToken) }
+    LaunchedEffect(session?.token, pushDevice) { pushRegistration.register(session, pushDevice) }
     // App lock (LOCK-01): a restored or new session locks when the lock is on; so does coming back after 5 s away.
     LaunchedEffect(session?.token) {
         if (session != null) appLockRepository.onSessionStarted() else appLockRepository.onSessionEnded()
