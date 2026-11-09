@@ -417,3 +417,4 @@ Recorded so they are not re-litigated. IDs are from `17-master-plan.md` §3.
 - 2026-11-09 · WEB-11 · Splash shows the doctor app's icon and lasts 1 s; the web preloads its .wasm files.
 - 2026-11-09 · FONT-UZ · Қ қ Ғ ғ Ҳ ҳ added to Manrope: Ўзбекча no longer has blank letters on the web.
 - 2026-11-09 · FONT-UZ, WEB-11 · ʻ ʼ ⋮ ✓ ⚠ ◷ in the fonts, a font check over every string, versioned resource URLs, a smoother start and smoother page loads on phones.
+- 2026-11-09 · UI · Fields with a trailing button (password eye, Paste) are as tall as the others: the 44 touch target reaches into the padding instead of stretching the field (it was 60 against 46).

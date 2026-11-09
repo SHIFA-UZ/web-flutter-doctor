@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -116,8 +117,14 @@ fun ShifaInputField(
                             innerTextField()
                         }
                     }
-                    if (trailingIcon != null) {
+                    if (trailingIcon != null && multiline) {
                         trailingIcon()
+                    } else if (trailingIcon != null) {
+                        // As tall as the text: a 44 touch target (the password eye) reaches into the padding instead
+                        // of making this field taller than the ones beside it.
+                        Box(Modifier.height(ShifaSize.S30), contentAlignment = Alignment.Center) {
+                            Box(Modifier.wrapContentHeight(unbounded = true)) { trailingIcon() }
+                        }
                     } else if (enabled && clearable && value.isNotEmpty()) {
                         Icon(
                             painterResource(Res.drawable.ic_x_20),
