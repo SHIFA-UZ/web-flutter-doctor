@@ -87,15 +87,18 @@ class ShellViewModelTest {
 
     private var scheduleReads = 0
 
-    private fun vm(staff: Boolean = false) =
-        ShellViewModel(
-            staff,
-            profile,
-            ClinicsRepository({
-                client
-            }, com.russhwolf.settings.MapSettings(), { "u1" }),
-            BadgesRepository { client },
-        ) { scheduleReads++ }.also { created += it }
+    private fun vm(
+        staff: Boolean = false,
+        startPath: String? = null,
+    ) = ShellViewModel(
+        staff,
+        profile,
+        ClinicsRepository({
+            client
+        }, com.russhwolf.settings.MapSettings(), { "u1" }),
+        BadgesRepository { client },
+        startPath = startPath,
+    ) { scheduleReads++ }.also { created += it }
 
     private fun pushVm(
         pushes: kotlinx.coroutines.flow.Flow<Map<String, String>> = kotlinx.coroutines.flow.emptyFlow(),
@@ -152,6 +155,45 @@ class ShellViewModelTest {
         solo.settle()
         assertThat(solo.state.value.tab).isEqualTo(ShellTab.Home)
         assertThat(solo.state.value.hasClinic).isFalse()
+    }
+
+    @Test
+    fun `a web address opens its screen over its tab's list instead of the start tab`() {
+        val patient = vm(startPath = "/patients/12")
+        patient.settle()
+        assertThat(patient.state.value.stack)
+            .containsExactly(ShellRoute.Root(ShellTab.Patients), ShellRoute.Patient(12))
+            .inOrder()
+        assertThat(shellPath(patient.state.value)).isEqualTo("/patients/12")
+        patient.push(ShellRoute.Form(12, null, 1)) // a screen with no address of its own keeps the patient's
+        assertThat(shellPath(patient.state.value)).isEqualTo("/patients/12")
+        patient.back()
+        patient.back()
+        assertThat(shellPath(patient.state.value)).isEqualTo("/patients")
+        patient.push(ShellRoute.Patient(12, clinicId = 1)) // a clinic's scope isn't in the address
+        assertThat(shellPath(patient.state.value)).isEqualTo("/patients")
+
+        val thread = vm(startPath = "/chat/3")
+        thread.settle()
+        assertThat((thread.state.value.route as ShellRoute.Conversation).id).isEqualTo(3)
+        assertThat(shellPath(thread.state.value)).isEqualTo("/chat/3")
+
+        val task = vm(startPath = "/tasks/5")
+        task.settle()
+        assertThat((task.state.value.route as ShellRoute.Task).id).isEqualTo(5)
+
+        val tab = vm(startPath = "/reports")
+        tab.settle()
+        assertThat(tab.state.value.tab).isEqualTo(ShellTab.Reports)
+
+        val unknown = vm(startPath = "/nothing/here")
+        unknown.settle()
+        assertThat(unknown.state.value.tab).isEqualTo(ShellTab.Calendar) // the saved start tab
+
+        val staff = vm(staff = true, startPath = "/patients/12") // not a staff tab
+        repeat(200) { if (staff.state.value.avatarUrl == null) Thread.sleep(10) }
+        assertThat(staff.state.value.tab).isEqualTo(ShellTab.Clinic)
+        assertThat(staff.state.value.stack).containsExactly(ShellRoute.Root(ShellTab.Clinic))
     }
 
     @Test

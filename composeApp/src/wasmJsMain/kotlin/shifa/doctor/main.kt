@@ -45,7 +45,8 @@ private fun bridgeBrowserBack() {
         if (canvas) ['keydown', 'keyup'].forEach(function (type) {
             canvas.dispatchEvent(new KeyboardEvent(type, { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, composed: true }));
         });
-        history.pushState({ shifa: true }, '');
+        // The address of what the app shows (WEB-10), not the entry Back landed on.
+        history.pushState({ shifa: true }, '', window.shifaPath || location.pathname);
     });
 })()""",
     )

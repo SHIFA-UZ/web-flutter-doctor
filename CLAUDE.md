@@ -247,7 +247,7 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   `StringsTest` checks keys, plurals and placeholders across locales, and that every character of every string (Ўзбекча
   too) is in the fonts: the web has no system font to fall back to. Manrope lacks Қ Ғ Ҳ, ʻ ʼ and ⋮ ✓ ⚠ ◷:
   `scripts/manrope_missing_glyphs.py` adds them to `composeResources/font`; re-run it whenever the fonts are replaced.
-  No emoji in the app's own texts (the web draws them as nothing). The language (`LanguageStorage`: en, uz,
+  No emoji in the app's own texts: the web draws them only once its emoji font has loaded (`utils/EmojiFont.wasmJs.kt`, from jsDelivr after the start). The language (`LanguageStorage`: en, uz,
   uz-Cyrl, ru; Uzbekistan defaults to uz) is applied by `ProvideAppLocale` in `App.kt` and synced to the backend
   with `PUT /doctors/me/language` (wired with the HTTP client).
 - Loading: every first load shows skeletons (`ShifaSkeleton`, `ShifaCardSkeleton`, `ShifaListSkeleton`…), not a
