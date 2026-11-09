@@ -25,5 +25,12 @@ class DocumentViewerScreenshotTest {
     fun uploadDetails() = captureRoboImage("screenshots/Upload_details.png") { UploadDetailsPreview() }
 
     @Test
+    @Config(qualifiers = "w402dp-h1500dp-xhdpi")
+    fun editDocument() = captureRoboImage("screenshots/Document_edit.png") { EditDocumentPreview() }
+
+    @Test
+    fun deleteDocument() = captureRoboImage("screenshots/Document_delete.png") { DeleteDocumentPreview() }
+
+    @Test
     fun uploadStatus() = captureRoboImage("screenshots/Upload_status.png") { UploadStatusPreview() }
 }

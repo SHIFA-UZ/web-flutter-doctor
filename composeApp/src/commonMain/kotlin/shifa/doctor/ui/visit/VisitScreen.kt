@@ -208,6 +208,7 @@ import shifa.doctor.ui.calendar.NoShowQuestion
 import shifa.doctor.ui.calendar.SlotPickSheet
 import shifa.doctor.ui.calendar.status
 import shifa.doctor.ui.documents.DocumentCard
+import shifa.doctor.ui.documents.DocumentEditSheets
 import shifa.doctor.ui.documents.DocumentUploadViewModel
 import shifa.doctor.ui.documents.DocumentsActions
 import shifa.doctor.ui.documents.PatientDocumentsViewModel
@@ -721,6 +722,7 @@ private fun PatientParts(
                     cancelUpload = uploads::cancelUpload,
                     retryUpload = uploads::retry,
                     dismissUpload = { uploads.ui { it.copy(banner = null) } },
+                    edit = documents::startEdit,
                 ),
         ),
         docs,
@@ -733,6 +735,7 @@ private fun PatientParts(
         facts = facts,
     )
     UploadSheets(upload, uploads, sources)
+    DocumentEditSheets(docs.edit, documents)
 }
 
 @Composable

@@ -1013,6 +1013,9 @@
     <string name="deleteBlocked">Your account can't be deleted yet</string>
     <string name="deleteCertificateTitle">Delete certificate?</string>
     <string name="deleteCodeSent">We sent a 6-digit code to %1$s. Enter it to delete your account.</string>
+    <string name="deleteDocument">Delete document</string>
+    <string name="deleteDocumentBody">“%1$s” is removed from this patient's record for everyone who could see it.</string>
+    <string name="deleteDocumentQuestion">Delete this document?</string>
     <string name="deleteGroupBody">Its services stay and become ungrouped.</string>
     <string name="deleteGroupTitle">Delete group?</string>
     <string name="deleteLocation">Delete location</string>
@@ -1146,6 +1149,8 @@
     <string name="documentCategory_URINE_TEST">Urine test</string>
     <string name="documentCategory_VACCINATION_RECORD">Vaccination record</string>
     <string name="documentCategory_XRAY">X-ray</string>
+    <string name="documentDeleteFailed">Couldn't delete the document. Try again.</string>
+    <string name="documentDeletedNamed">Document “%1$s” deleted</string>
     <string name="documentEverything">Document everything</string>
     <string name="documentGenerated">Document generated successfully</string>
     <string name="documentGone">This document is no longer available.</string>
@@ -1155,6 +1160,7 @@
     <string name="documentSaveFailed">Couldn't save the file.</string>
     <string name="documentSaved">Saved to your device</string>
     <string name="documentTitle">Document Title</string>
+    <string name="documentUpdated">Document updated</string>
     <string name="documentUploaded">Document uploaded successfully</string>
     <string name="documentUploadedNamed">Document “%1$s” uploaded</string>
     <string name="documenting">Documenting…</string>
@@ -1192,6 +1198,7 @@
     <string name="durationMinutes">%1$s min</string>
     <string name="edit">Edit</string>
     <string name="editDetails">Edit details</string>
+    <string name="editDocument">Edit document</string>
     <string name="editForm">Edit form</string>
     <string name="editGroup">Edit group</string>
     <string name="editKey">Edit</string>

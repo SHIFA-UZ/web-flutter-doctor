@@ -2,10 +2,12 @@ package shifa.doctor.data.documents
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.onUpload
+import io.ktor.client.request.delete
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -17,6 +19,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import shifa.doctor.data.api.ApiConfig
 import shifa.doctor.data.api.apiCall
 import shifa.doctor.data.api.httpClient
@@ -119,6 +122,34 @@ class DocumentsRepository(
             append(HttpHeaders.ContentType, file.mime)
             // Quotes would end the header value early.
             append(HttpHeaders.ContentDisposition, "filename=\"${file.fileName.replace("\"", "")}\"")
+        }
+
+    /** BE-21: renames and recategorises a document the doctor uploaded (`PATCH …/documents/{id}`); 403 for others'. */
+    suspend fun edit(
+        patientId: Long,
+        documentId: Long,
+        title: String,
+        category: String,
+        clinicId: Long? = null,
+    ): Result<PatientDocument> =
+        apiCall<PatientDocument> {
+            client().patch(ApiConfig.Endpoints.patientDocument(patientId, documentId)) {
+                clinicId?.let { parameter("clinicId", it) }
+                contentType(ContentType.Application.Json)
+                setBody(JsonObject(mapOf("title" to JsonPrimitive(title), "category" to JsonPrimitive(category))))
+            }
+        }
+
+    /** BE-21: removes a document the doctor uploaded (204). The backend keeps it for the record, out of every list. */
+    suspend fun delete(
+        patientId: Long,
+        documentId: Long,
+        clinicId: Long? = null,
+    ): Result<Unit> =
+        apiCall<Unit> {
+            client().delete(ApiConfig.Endpoints.patientDocument(patientId, documentId)) {
+                clinicId?.let { parameter("clinicId", it) }
+            }
         }
 
     suspend fun requestAccess(

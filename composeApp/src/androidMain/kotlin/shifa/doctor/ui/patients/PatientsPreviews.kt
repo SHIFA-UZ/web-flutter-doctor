@@ -234,7 +234,7 @@ internal fun PatientDocumentsPreview() =
     PreviewTheme {
         PatientDetailContent(
             PatientDetailUiState(record, today = today, tab = RecordTab.Documents),
-            PatientDetailActions(),
+            PatientDetailActions(documents = shifa.doctor.ui.documents.DocumentsActions(edit = {})),
             shifa.doctor.ui.documents.PatientDocumentsUiState(
                 listOf(
                     shifa.doctor.data.model.PatientDocument(
@@ -251,6 +251,8 @@ internal fun PatientDocumentsPreview() =
                         "2026-10-21",
                         url = "f",
                         category = "INTERNAL_NOTE",
+                        // The doctor's own upload: Edit next to Open (BE-21).
+                        canEdit = true,
                     ),
                     shifa.doctor.data.model.PatientDocument(
                         8,

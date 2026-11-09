@@ -168,9 +168,11 @@ Legend: `{id}` = path parameter. `multipart` = `multipart/form-data`. `SSE` = se
 | GET | `/api/patients/{id}/appointments` | history with this doctor |
 | POST | `/api/patients/{id}/create-account` | → `{username, oneTimePassword}` |
 | POST | `/api/patients/{id}/send-test-sms` | 403 / 503 handled |
-| GET | `/api/patients/{id}/documents[?clinicId=]` | |
+| GET | `/api/patients/{id}/documents[?clinicId=]` | each row's `canEdit`: the signed-in doctor uploaded it (BE-21) |
 | POST | `/api/patients/{id}/documents[?clinicId=]` | multipart `file`, `title`, `category?`, `appointmentId?` |
 | PUT | `/api/patients/{id}/documents/{docId}[?clinicId=]` | multipart replace (form PDF) |
+| PATCH | `/api/patients/{id}/documents/{docId}[?clinicId=]` | `{title?, category?}`, own uploads only (403 otherwise); the row back (BE-21) |
+| DELETE | `/api/patients/{id}/documents/{docId}[?clinicId=]` | own uploads only; 204, soft delete (BE-21) |
 | GET | `/api/patients/{id}/documents/{docId}/download[?clinicId=]` | bytes + Content-Disposition |
 | POST | `/api/patients/{id}/documents/{docId}/request-access[?clinicId=]` | |
 | POST | `/api/document-access-requests/{id}/approve` | the owner (NOTIF-04) → `{id, status, …}`; twice is fine; after a rejection 400 |

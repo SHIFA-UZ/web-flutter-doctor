@@ -70,3 +70,32 @@ internal fun UploadStatusPreview() =
             )
         }
     }
+
+// BE-21: the doctor's own upload being renamed and given a new type, and the delete question.
+private val ownUpload =
+    shifa.doctor.data.model.PatientDocument(
+        7,
+        "Treatment notes",
+        "2026-10-21",
+        url = "f",
+        category = "INTERNAL_NOTE",
+        canEdit = true,
+    )
+
+@Composable
+internal fun EditDocumentPreview() =
+    PreviewTheme {
+        EditDocumentTray(
+            DocumentEdit(
+                ownUpload,
+                title = "Treatment notes, follow-up",
+                category = shifa.doctor.data.model.DocumentCategory.APPOINTMENT_NOTE,
+            ),
+            {},
+            {},
+            {},
+        )
+    }
+
+@Composable
+internal fun DeleteDocumentPreview() = PreviewTheme { DeleteDocumentDialog(ownUpload.title, busy = false, {}, {}) }

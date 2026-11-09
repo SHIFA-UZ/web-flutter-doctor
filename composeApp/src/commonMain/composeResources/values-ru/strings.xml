@@ -1013,6 +1013,9 @@
     <string name="deleteBlocked">Аккаунт пока нельзя удалить</string>
     <string name="deleteCertificateTitle">Удалить сертификат?</string>
     <string name="deleteCodeSent">Мы отправили 6-значный код на %1$s. Введите его, чтобы удалить аккаунт.</string>
+    <string name="deleteDocument">Удалить документ</string>
+    <string name="deleteDocumentBody">«%1$s» исчезнет из карты пациента у всех, кто мог его видеть.</string>
+    <string name="deleteDocumentQuestion">Удалить этот документ?</string>
     <string name="deleteGroupBody">Её услуги останутся и будут без группы.</string>
     <string name="deleteGroupTitle">Удалить группу?</string>
     <string name="deleteLocation">Удалить местоположение</string>
@@ -1146,6 +1149,8 @@
     <string name="documentCategory_URINE_TEST">Анализ мочи</string>
     <string name="documentCategory_VACCINATION_RECORD">Запись о вакцинации</string>
     <string name="documentCategory_XRAY">Рентген</string>
+    <string name="documentDeleteFailed">Не удалось удалить документ. Попробуйте ещё раз.</string>
+    <string name="documentDeletedNamed">Документ «%1$s» удалён</string>
     <string name="documentEverything">Задокументировать всё</string>
     <string name="documentGenerated">Документ успешно сгенерирован</string>
     <string name="documentGone">Этот документ больше недоступен.</string>
@@ -1155,6 +1160,7 @@
     <string name="documentSaveFailed">Не удалось сохранить файл.</string>
     <string name="documentSaved">Сохранено на устройстве</string>
     <string name="documentTitle">Название документа</string>
+    <string name="documentUpdated">Документ обновлён</string>
     <string name="documentUploaded">Документ успешно загружен</string>
     <string name="documentUploadedNamed">Документ «%1$s» загружен</string>
     <string name="documenting">Документирование…</string>
@@ -1192,6 +1198,7 @@
     <string name="durationMinutes">%1$s мин</string>
     <string name="edit">Изменить</string>
     <string name="editDetails">Изменить данные</string>
+    <string name="editDocument">Изменить документ</string>
     <string name="editForm">Изменить форму</string>
     <string name="editGroup">Изменить группу</string>
     <string name="editKey">Изменить</string>

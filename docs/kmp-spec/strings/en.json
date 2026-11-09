@@ -2940,5 +2940,12 @@
   "notificationsOn": "On",
   "notificationsTapToAllow": "Off · tap to allow",
   "notificationsBlocked": "Blocked in this browser",
-  "notificationsUnsupported": "This browser can't show notifications"
+  "notificationsUnsupported": "This browser can't show notifications",
+  "editDocument": "Edit document",
+  "deleteDocument": "Delete document",
+  "deleteDocumentQuestion": "Delete this document?",
+  "deleteDocumentBody": "“{title}” is removed from this patient's record for everyone who could see it.",
+  "documentUpdated": "Document updated",
+  "documentDeletedNamed": "Document “{title}” deleted",
+  "documentDeleteFailed": "Couldn't delete the document. Try again."
 }
