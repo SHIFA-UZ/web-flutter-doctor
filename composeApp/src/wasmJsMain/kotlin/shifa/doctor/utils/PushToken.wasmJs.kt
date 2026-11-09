@@ -1,6 +1,6 @@
 package shifa.doctor.utils
 
-// No push on the web (PUSH-01…03 cover the phones).
+// The web's token comes from index.html's `shifaPush` (AskPushPermission), straight to `Push`.
 actual suspend fun currentPushToken(): String? = null
 
 actual val pushPlatform: String = "web"

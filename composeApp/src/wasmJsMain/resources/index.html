@@ -33,6 +33,91 @@
     <!-- Phones of 3x and more draw at 2x: the app paints its whole canvas each frame, and 3x is 2.25 times the pixels of
          2x for text hardly anyone can tell apart. -->
     <script>if (window.devicePixelRatio > 2) Object.defineProperty(window, 'devicePixelRatio', { get: function () { return 2 } });</script>
+    <!-- PUSH on the web: the app calls shifaPush.start once a doctor is signed in (the SDK loads only then). The Firebase
+         web config and the Web Push key are public by design; firebase-messaging-sw.js repeats them. -->
+    <script>
+        window.shifaPush = (function () {
+            var SDK = 'https://www.gstatic.com/firebasejs/13.1.0/';
+            var CONFIG = {
+                apiKey: 'AIzaSyB8q7D4Fp1a9rtHzNxTtPdhGlPG-0n56HM',
+                authDomain: 'shifa-doctor-staging.firebaseapp.com',
+                projectId: 'shifa-doctor-staging',
+                storageBucket: 'shifa-doctor-staging.firebasestorage.app',
+                messagingSenderId: '55173524197',
+                appId: '1:55173524197:web:5db83dc4fe03cb3a92420c'
+            };
+            var VAPID = 'BADdv1OWqFIb_hOnX_3_synedY8DyZ9g8QhXczxoEOudCnKjYgfiaPtKjxQBD5RVhJoNjmeHoz3J_KrrANMoHIE';
+            var supported = 'serviceWorker' in navigator && 'Notification' in window && 'PushManager' in window;
+            var started = null;
+            // Taps, kept until the app takes them: one the service worker posts to a tab that's still loading or at
+            // Sign In, and the #push=… a tap opened the app with (then gone from the address).
+            var taps = [], onTapped = null;
+            function tap(json) { if (onTapped) onTapped(json); else taps.push(json); }
+            if (supported) {
+                navigator.serviceWorker.addEventListener('message', function (e) {
+                    if (e.data && e.data.shifaPushTap) tap(JSON.stringify(e.data.shifaPushTap));
+                });
+            }
+            var m = location.hash.match(/^#push=(.*)$/);
+            if (m) {
+                history.replaceState(history.state, '', location.pathname + location.search);
+                try { tap(decodeURIComponent(m[1])); } catch (e) {}
+            }
+            // onToken(token or null), onReceived(json), onTapped(json): the app's side (Push).
+            function start(onToken, onReceived, tapped) {
+                if (!supported) return;
+                onTapped = tapped;
+                taps.splice(0).forEach(tapped);
+                if (started) return started.then(function (token) { token(); });
+                started = Promise.all([
+                    // Ready: the worker is active before Firebase subscribes with it.
+                    navigator.serviceWorker.register('/firebase-messaging-sw.js').then(function () {
+                        return navigator.serviceWorker.ready;
+                    }),
+                    import(SDK + 'firebase-app.js'),
+                    import(SDK + 'firebase-messaging.js')
+                ]).then(function (r) {
+                    var reg = r[0], fm = r[2], messaging = fm.getMessaging(r[1].initializeApp(CONFIG));
+                    // The tab is open: the app refreshes, and the push shows as on a phone.
+                    fm.onMessage(messaging, function (p) {
+                        var data = p.data || {}, n = p.notification || {};
+                        onReceived(JSON.stringify(data));
+                        if (n.title || n.body) {
+                            reg.showNotification(n.title || '', {
+                                body: n.body || '', icon: '/icon-192.png', tag: data.notificationId || undefined,
+                                data: { shifaPushTap: data }
+                            });
+                        }
+                    });
+                    function token() {
+                        if (Notification.permission !== 'granted') return;
+                        fm.getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: reg })
+                            .then(onToken, function () { onToken(null); });
+                    }
+                    if (Notification.permission === 'default') {
+                        // Browsers only ask after a click or a key: the doctor's, until they answer.
+                        var ask = function () {
+                            Notification.requestPermission().then(function (p) {
+                                if (p === 'default') return;
+                                document.removeEventListener('click', ask, true);
+                                document.removeEventListener('keydown', ask, true);
+                                token();
+                            });
+                        };
+                        document.addEventListener('click', ask, true);
+                        document.addEventListener('keydown', ask, true);
+                    }
+                    token();
+                    return token;
+                }, function () {
+                    started = null; // a failed load (offline, blocked) is tried again on the next start
+                    return function () {};
+                });
+                return started;
+            }
+            return { start: start };
+        })();
+    </script>
     <!-- A module: since Kotlin 2.4 the production bundle contains import.meta, which a classic script can't parse
          (a blank page). Modules also run after the body is parsed. -->
     <script type="module" src="composeApp.js"></script>
