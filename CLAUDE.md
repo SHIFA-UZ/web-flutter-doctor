@@ -206,8 +206,9 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   masked> <code> requestId=<id>`, `FAILED no response: <exception class>`, or an unreadable body. Network code outside
   `apiCall` (SSE streams, polling) logs its failures the same way. Debug builds only (release logs nothing); never log
   tokens, passwords, headers, request bodies or patient data (HIPAA: patient ids only).
-- Push (PUSH-01…03): Firebase Messaging on both platforms, bridged by `data/push/Push` (Android `ShifaMessagingService`
-  and `MainActivity`, iOS `AppDelegate`). `PushRegistration` adds the device (`POST /doctors/me/fcm-tokens`) once per
+- Push (PUSH-01…03, PUSH-WEB): Firebase Messaging on all three platforms, bridged by `data/push/Push` (Android
+  `ShifaMessagingService` and `MainActivity`, iOS `AppDelegate`, web `index.html`'s `shifaPush` +
+  `firebase-messaging-sw.js`, which pin the Firebase JS SDK and the web config + VAPID key). `PushRegistration` adds the device (`POST /doctors/me/fcm-tokens`) once per
   session and token and removes it at sign-out (`DELETE …/{token}`); never for clinic staff. Foreground pushes show on
   channel `shifa_doctor_channel` (iOS: banner) and refresh the counts. Taps (foreground, background and cold start) open
   what the inbox row would open, over Home (`AppNotification.fromPush` → `NotificationOpener`). Push data names

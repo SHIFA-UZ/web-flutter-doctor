@@ -2,9 +2,10 @@ package shifa.doctor.utils
 
 /**
  * This device's FCM token, or null when there is none yet. Android asks Firebase; iOS's token arrives in Swift (the
- * `FirebaseMessaging` delegate, which hands it to `Push`), so the call returns null there; the web has no push.
+ * `FirebaseMessaging` delegate) and the web's from index.html's `shifaPush`; both hand it to `Push`, so the call returns
+ * null there.
  */
 expect suspend fun currentPushToken(): String?
 
-/** `android` or `ios`, as `POST /doctors/me/fcm-tokens` names the platform (`web` never registers). */
+/** `android`, `ios` or `web`, as `POST /doctors/me/fcm-tokens` names the platform. */
 expect val pushPlatform: String

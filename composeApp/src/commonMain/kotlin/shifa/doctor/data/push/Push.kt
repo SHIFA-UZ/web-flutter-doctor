@@ -10,16 +10,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import shifa.doctor.utils.pushPlatform
 
 /**
- * PUSH-01…03: what the platforms hand the shared code. Android's messaging service and activity, and iOS's AppDelegate
- * (Swift: `Push.shared`), report this device's FCM token, a push that arrived while the app was open, and a tapped push;
- * the web has no push. [PushRegistration] puts the token on the doctor's account; a tap waits in [tapped] until the shell
+ * PUSH-01…03: what the platforms hand the shared code. Android's messaging service and activity, iOS's AppDelegate
+ * (Swift: `Push.shared`) and the web's `shifaPush` bridge (index.html, firebase-messaging-sw.js) report this device's FCM
+ * token, a push that arrived while the app was open, and a tapped push. [PushRegistration] puts the token on the doctor's account; a tap waits in [tapped] until the shell
  * opens it (a cold start taps before anything is drawn, and a signed-out tap waits for the sign-in). Push data is never
  * logged: it names patients.
  */
 object Push {
     data class Device(
         val token: String,
-        // `android` or `ios`, as `POST /doctors/me/fcm-tokens` takes it.
+        // `android`, `ios` or `web`, as `POST /doctors/me/fcm-tokens` takes it.
         val platform: String,
     )
 

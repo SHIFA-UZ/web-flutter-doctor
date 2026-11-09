@@ -146,3 +146,24 @@ Built 2026-11-09 (D-15: at the very end). Spec 07 §2.3 (tap targets), §2.5; ba
   (a chat tap opens its conversation over Home and reads the row, no row → inbox, foreground pushes refresh counts and
   the schedule).
 
+## PUSH-WEB · Push on the web
+
+Built 2026-11-09 (the user's request). The same Firebase project; one web app registration
+(`1:55173524197:web:5db83dc4fe03cb3a92420c`) and one Web Push key (VAPID) serve doctor.shifa.uz and doctor-dev.shifa.uz,
+because both get the same bundle: each site's tokens go to its own backend, so dev and production never cross.
+
+- **Page** (`index.html`, `window.shifaPush`, inline because the host's nginx caches `.js` for 30 days): Firebase JS SDK
+  13.1.0 from gstatic, loaded only when the shell starts it (`AskPushPermission`, doctors only). It registers
+  `/firebase-messaging-sw.js`, waits for it to be active, and asks for permission on the doctor's first click or key
+  (browsers refuse a prompt without one; asked again until answered). The token goes to `Push` and registers as
+  `platform: web`, as on the phones. A push while the tab is open refreshes the app and shows as a notification.
+- **Service worker** (`firebase-messaging-sw.js`, site root): pushes while the tab is closed or in the background are
+  shown by the SDK (the backend's text). A click focuses an open Shifa tab and posts the push to it, or opens the app
+  with `#push=<ids>`: only ids and the type, never names (they would sit in the address and the history); the page
+  removes it at once. The page keeps such taps until the app takes them (a tab at Sign In opens it after the sign-in).
+- **Limits:** Chrome, Edge and Firefox (desktop and Android); Safari on iPhone only for a site added to the home screen
+  (iOS 16.4+). The browser key must allow the two sites and `http://localhost:8080` if it is restricted.
+- **Checked** in headless Chrome on a local build: the worker registers and activates, a 142-character token for this
+  web app and key, and a `#push=` tap handed over after a fresh load with the address cleaned. A delivered push needs the
+  backend's firebase-admin fix on dev and a real browser.
+
