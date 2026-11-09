@@ -53,6 +53,7 @@ import shifa.doctor.generated.resources.yourDataBody
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -67,7 +68,6 @@ import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSubHeader
 import shifa.doctor.ui.widgets.ShifaTray
-import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.rememberFileSaver
 import shifa.doctor.utils.rememberInAppBrowser
 import shifa.doctor.utils.tr
@@ -101,7 +101,7 @@ fun PrivacyScreen(
             back = onClose,
             openPrivacy = { if (!browser(PRIVACY_URL)) ShellNotice.pending.value = Notice(Res.string.aboutOpenFailed) },
             export = { viewModel.export(saver::saveFile) },
-            permissions = ::openAppSettings,
+            permissions = ::openPermissionSettings,
             dismissBanner = viewModel::dismissBanner,
             askDelete = viewModel::askDelete,
             continueDelete = viewModel::continueDelete,

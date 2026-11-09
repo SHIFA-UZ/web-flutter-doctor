@@ -12,6 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -19,6 +22,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,12 +48,15 @@ import shifa.doctor.generated.resources.appLockOff
 import shifa.doctor.generated.resources.appLockOn
 import shifa.doctor.generated.resources.biometricUnlock
 import shifa.doctor.generated.resources.country
-import shifa.doctor.generated.resources.encryptedDocuments
 import shifa.doctor.generated.resources.germany
 import shifa.doctor.generated.resources.language
 import shifa.doctor.generated.resources.legalAndSupport
 import shifa.doctor.generated.resources.notifications
+import shifa.doctor.generated.resources.notificationsBlocked
+import shifa.doctor.generated.resources.notificationsOn
 import shifa.doctor.generated.resources.notificationsSystemSettings
+import shifa.doctor.generated.resources.notificationsTapToAllow
+import shifa.doctor.generated.resources.notificationsUnsupported
 import shifa.doctor.generated.resources.otherCountry
 import shifa.doctor.generated.resources.privacyAndData
 import shifa.doctor.generated.resources.privacyAndDataHint
@@ -59,13 +66,13 @@ import shifa.doctor.generated.resources.settings
 import shifa.doctor.generated.resources.settingsGeneral
 import shifa.doctor.generated.resources.startTabHelper
 import shifa.doctor.generated.resources.startingScreen
-import shifa.doctor.generated.resources.twoFactorAuthentication
 import shifa.doctor.generated.resources.usa
 import shifa.doctor.generated.resources.uzbekistan
 import shifa.doctor.ui.emailcode.CodeBanner
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.ShellTab
 import shifa.doctor.ui.navigation.label
+import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.theme.ShifaTextStyles
@@ -75,9 +82,9 @@ import shifa.doctor.ui.widgets.ShifaSection
 import shifa.doctor.ui.widgets.ShifaSettingsItem
 import shifa.doctor.ui.widgets.ShifaSpinner
 import shifa.doctor.ui.widgets.ShifaSubHeader
-import shifa.doctor.ui.widgets.ShifaSwitchRow
 import shifa.doctor.ui.widgets.ShifaTray
-import shifa.doctor.utils.openAppSettings
+import shifa.doctor.utils.askBrowserNotifications
+import shifa.doctor.utils.browserNotificationPermission
 import shifa.doctor.utils.tr
 
 /** The country values the backend stores (English words, 08 §1.8) with their labels. */
@@ -303,28 +310,16 @@ fun SettingsContent(
                             } else {
                                 tr(Res.string.appLockOff)
                             },
-                        divider = s != null,
+                        divider = false,
                     )
-                    if (s != null) {
-                        SwitchRow(
-                            tr(Res.string.twoFactorAuthentication),
-                            s.twoFA,
-                        ) { v -> actions.change { it.copy(twoFA = v) } }
-                        SwitchRow(
-                            tr(Res.string.encryptedDocuments),
-                            s.encryptedDocs,
-                        ) { v -> actions.change { it.copy(encryptedDocs = v) } }
-                    }
+                    // No two-factor or encrypted-documents switches: the backend only stores those flags and nothing
+                    // acts on them (2026-11-09, the user's call; backend-improvements BE-38). Their values still go
+                    // back unchanged in every settings save.
                 }
             }
             ShifaSection(null) {
                 Column {
-                    // No in-app notification preferences: the OS decides (flow 08/10 §3.4).
-                    ShifaSettingsItem(
-                        tr(Res.string.notifications),
-                        ::openAppSettings,
-                        subtitle = tr(Res.string.notificationsSystemSettings),
-                    )
+                    NotificationsItem()
                     actions.privacy?.let {
                         ShifaSettingsItem(
                             tr(Res.string.privacyAndData),
@@ -373,9 +368,41 @@ fun SettingsContent(
     }
 }
 
+/**
+ * No in-app notification preferences. The phones: the OS settings decide (flow 08/10 §3.4). The web: this site's
+ * permission in the browser, asked from here while it hasn't been, else where the browser keeps it.
+ */
 @Composable
-private fun SwitchRow(
-    label: String,
-    checked: Boolean,
-    onChange: (Boolean) -> Unit,
-) = ShifaSwitchRow(label, checked, onChange, Modifier.padding(vertical = ShifaSpacing.Gap.Md))
+private fun NotificationsItem() {
+    var permission by remember { mutableStateOf(browserNotificationPermission()) }
+    // The browser can change it behind the row (the push prompt on a click, the site's settings): read it again.
+    // ponytail: a 1 s poll while Settings is open; navigator.permissions' change event if it ever matters.
+    if (permission != null) {
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(1000)
+                permission = browserNotificationPermission()
+            }
+        }
+    }
+    ShifaSettingsItem(
+        tr(Res.string.notifications),
+        {
+            when (permission) {
+                "default" -> askBrowserNotifications { permission = it }
+                "unsupported" -> Unit
+                else -> openPermissionSettings()
+            }
+        },
+        subtitle =
+            tr(
+                when (permission) {
+                    null -> Res.string.notificationsSystemSettings
+                    "granted" -> Res.string.notificationsOn
+                    "default" -> Res.string.notificationsTapToAllow
+                    "denied" -> Res.string.notificationsBlocked
+                    else -> Res.string.notificationsUnsupported
+                },
+            ),
+    )
+}

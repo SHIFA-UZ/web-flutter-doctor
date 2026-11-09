@@ -64,6 +64,7 @@ import shifa.doctor.generated.resources.waiting
 import shifa.doctor.generated.resources.waitingForPatient
 import shifa.doctor.generated.resources.youLeftTheCall
 import shifa.doctor.generated.resources.yourCameraPreview
+import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
 import shifa.doctor.ui.theme.ShifaSize
@@ -85,7 +86,6 @@ import shifa.doctor.ui.widgets.ShifaTagType
 import shifa.doctor.utils.VideoCall
 import shifa.doctor.utils.VideoTile
 import shifa.doctor.utils.currentInstant
-import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.tr
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -183,7 +183,7 @@ internal fun PreJoin(
                     Res.drawable.ic_alert_circle_16,
                     ShifaBannerType.Error,
                 )
-                ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
+                ShifaLink(tr(Res.string.openSettings), ::openPermissionSettings)
             }
             else ->
                 Text(

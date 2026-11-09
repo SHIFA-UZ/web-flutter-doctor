@@ -10,11 +10,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import org.jetbrains.compose.resources.StringResource
 import shifa.doctor.generated.resources.Res
+import shifa.doctor.generated.resources.browserSiteSettings
 import shifa.doctor.generated.resources.ic_check_circle_16
 import shifa.doctor.generated.resources.ic_info_16
 import shifa.doctor.ui.theme.ShifaSpacing
 import shifa.doctor.ui.widgets.ShifaBanner
 import shifa.doctor.ui.widgets.ShifaBannerType
+import shifa.doctor.utils.openAppSettings
+import shifa.doctor.utils.platformName
 import shifa.doctor.utils.tr
 
 /**
@@ -52,4 +55,12 @@ fun ShellNoticeBanner(modifier: Modifier = Modifier) {
             detail = it.requestId,
         )
     }
+}
+
+/**
+ * The app's page in the OS settings, where its permissions are. The web can't open the browser's settings, so there it
+ * says where they are instead of doing nothing.
+ */
+fun openPermissionSettings() {
+    if (platformName == "web") ShellNotice.pending.value = Notice(Res.string.browserSiteSettings) else openAppSettings()
 }

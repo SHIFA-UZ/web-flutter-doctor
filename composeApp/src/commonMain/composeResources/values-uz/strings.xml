@@ -307,6 +307,7 @@
     <string name="bookingRangeUnavailable">Tanlangan vaqt oralig'i mavjud emas — taqvim yangilandi.</string>
     <string name="bookingSameDayPast">Bu vaqt bugun o'tib ketgan; tashrif sifatida yoziladi.</string>
     <string name="boolean">Ha/Yo'q</string>
+    <string name="browserSiteSettings">Bu sayt ruxsatlari brauzerda saqlanadi: manzil yonidagi belgini bosing va u yerda ruxsat bering.</string>
     <string name="bulkRetryComplete">Ommaviy qayta urinish yakunlandi: %1$s muvaffaqiyatli, %2$s xato.</string>
     <string name="calendar">Taqvim</string>
     <string name="calendarColleagueDoctorFallback">Shifokor №%1$s</string>
@@ -1949,9 +1950,13 @@
     <string name="notificationViewAppointment">Uchrashuvni ko'rish</string>
     <string name="notificationViewResult">Natijani ko'rish</string>
     <string name="notifications">Bildirishnomalar</string>
+    <string name="notificationsBlocked">Bu brauzerda bloklangan</string>
     <string name="notificationsLoadFailed">Bildirishnomalarni yuklab bo'lmadi</string>
     <string name="notificationsMarkFailed">O'qilgan deb belgilab bo'lmadi. Qayta urinib ko'ring.</string>
+    <string name="notificationsOn">Yoqilgan</string>
     <string name="notificationsSystemSettings">Tizim sozlamalarida boshqarish</string>
+    <string name="notificationsTapToAllow">O'chiq · ruxsat berish uchun bosing</string>
+    <string name="notificationsUnsupported">Bu brauzer bildirishnomalarni ko'rsata olmaydi</string>
     <string name="notifyPatient">Bemorga xabar berish</string>
     <string name="now">Hozir</string>
     <string name="numeric">Raqamli</string>

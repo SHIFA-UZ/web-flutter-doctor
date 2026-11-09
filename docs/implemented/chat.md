@@ -140,8 +140,8 @@ Built 2026-11-05. Spec 07 §1.3–1.4, ticket CHAT-05, flow 07/06, board `DaChat
   08:31" and my tick, in the bubble's colours, at most 280 wide. Read out as "Patient, 08:31, Document,
   blood_test_results.pdf". A tap on a PDF (by name, else by the URL's path: `isPdf`) opens it in the app, the way a
   photo opens (2026-11-09, the user's call): `PdfViewer`, a dark full-screen dialog with Close and the name on top and
-  the pages below (`PdfView`: PdfRenderer with pinch zoom on Android, PDFKit on iOS, the browser's viewer in an iframe
-  on the web, which is why the bar sits above the document). The bytes come through `ChatRepository.file` (the signed
+  the pages below (`PdfView`: PdfRenderer with pinch zoom on Android, PDFKit on iOS, pdf.js on the web (2026-11-09: the browser's own viewer in an iframe only offered "Open" on phones), which is
+  why the bar sits above the document). The bytes come through `ChatRepository.file` (the signed
   URL, no token); a spinner while they load; on failure "Could not load" with Retry and "Open document", the old way
   out. Any other type opens outside the app (the in-app browser: the system shows the file or hands it on), "Cannot
   open document URL" when nothing can; without a URL the card is off with "File unavailable". The viewer is not in the

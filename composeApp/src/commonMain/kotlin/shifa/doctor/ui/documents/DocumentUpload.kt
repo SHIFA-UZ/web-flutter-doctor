@@ -446,7 +446,7 @@ internal fun CameraOff(onClose: () -> Unit) =
             tr(Res.string.openSettings),
             {
                 onClose()
-                shifa.doctor.utils.openAppSettings()
+                shifa.doctor.ui.navigation.openPermissionSettings()
             },
             icon = Res.drawable.ic_camera_22,
             cancelText = tr(Res.string.cancel),

@@ -9,3 +9,13 @@ import androidx.compose.runtime.Composable
  */
 @Composable
 expect fun AskPushPermission()
+
+/**
+ * The web's notification permission for this site: "granted", "default" (not asked yet), "denied" or "unsupported" (no
+ * notifications in this browser, e.g. Safari on an iPhone outside a home-screen app). Null on the phones: the OS
+ * settings decide there.
+ */
+expect fun browserNotificationPermission(): String?
+
+/** Web: asks the browser now (needs a tap) and hands back the answer; the push bridge picks up a grant itself. */
+expect fun askBrowserNotifications(done: (String) -> Unit)

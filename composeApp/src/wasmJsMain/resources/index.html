@@ -118,6 +118,82 @@
             return { start: start };
         })();
     </script>
+    <!-- PDFs on the web (utils/PdfView): pdf.js draws the pages, because phone browsers have no PDF viewer inside a page
+         (Chrome on Android shows an "Open" button instead). Loaded on the first PDF; the legacy build runs on older
+         phones too. -->
+    <script>
+        window.shifaPdf = (function () {
+            var CDN = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/';
+            var lib = null;
+            function load() {
+                if (!lib) {
+                    lib = import(CDN + 'legacy/build/pdf.min.mjs').then(function (pdfjs) {
+                        pdfjs.GlobalWorkerOptions.workerSrc = CDN + 'legacy/build/pdf.worker.min.mjs';
+                        return pdfjs;
+                    }, function (e) { lib = null; throw e; }); // offline or blocked: tried again next time
+                }
+                return lib;
+            }
+            // Fills [box] with the pages of the PDF at [url] (a blob URL), each as wide as the box, drawn as it nears the
+            // screen; onFail() when it can't be read. Returns a stop function for when the view leaves.
+            // ponytail: drawn pages stay in memory until the view closes; free far-away canvases if long PDFs strain phones.
+            function render(box, url, onFail) {
+                var stopped = false, task = null, observer = null;
+                function fail() { if (!stopped) onFail(); }
+                load().then(function (pdfjs) {
+                    if (stopped) return null; // closed while pdf.js loaded: the blob URL is already gone
+                    // Kept so stop() also ends a load still under way (and its worker).
+                    task = pdfjs.getDocument({
+                        url: url, cMapUrl: CDN + 'cmaps/', cMapPacked: true, standardFontDataUrl: CDN + 'standard_fonts/'
+                    });
+                    return task.promise;
+                }).then(function (pdf) {
+                    if (!pdf || stopped) return;
+                    var width = box.clientWidth || window.innerWidth;
+                    var ratio = Math.min(window.devicePixelRatio || 1, 2);
+                    observer = new IntersectionObserver(function (entries) {
+                        entries.forEach(function (e) {
+                            if (!e.isIntersecting || e.target.drawn) return;
+                            e.target.drawn = true;
+                            observer.unobserve(e.target);
+                            pdf.getPage(e.target.page).then(function (page) {
+                                if (stopped) return;
+                                var vp = page.getViewport({ scale: width / page.getViewport({ scale: 1 }).width * ratio });
+                                var canvas = e.target.firstChild;
+                                canvas.width = vp.width;
+                                canvas.height = vp.height;
+                                return page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                            }).catch(fail);
+                        });
+                    }, { root: box, rootMargin: '100% 0px' });
+                    var chain = Promise.resolve();
+                    for (var n = 1; n <= pdf.numPages; n++) {
+                        (function (n) {
+                            chain = chain.then(function () { return pdf.getPage(n); }).then(function (page) {
+                                if (stopped) return;
+                                var size = page.getViewport({ scale: 1 });
+                                var slot = document.createElement('div');
+                                slot.page = n;
+                                slot.style.cssText = 'background:#fff;margin:0 0 8px;aspect-ratio:' + size.width + '/' + size.height;
+                                var canvas = document.createElement('canvas');
+                                canvas.style.cssText = 'display:block;width:100%;height:100%';
+                                slot.appendChild(canvas);
+                                box.appendChild(slot);
+                                observer.observe(slot);
+                            });
+                        })(n);
+                    }
+                    return chain;
+                }).catch(fail);
+                return function () {
+                    stopped = true;
+                    if (observer) observer.disconnect();
+                    if (task) task.destroy(); // the document too, once loaded
+                };
+            }
+            return { render: render };
+        })();
+    </script>
     <!-- A module: since Kotlin 2.4 the production bundle contains import.meta, which a classic script can't parse
          (a blank page). Modules also run after the body is parsed. -->
     <script type="module" src="composeApp.js"></script>

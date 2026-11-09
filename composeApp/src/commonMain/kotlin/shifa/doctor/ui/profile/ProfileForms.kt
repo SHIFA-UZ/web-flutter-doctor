@@ -33,6 +33,7 @@ import shifa.doctor.generated.resources.ic_trash_22
 import shifa.doctor.generated.resources.keepEditing
 import shifa.doctor.generated.resources.openSettings
 import shifa.doctor.generated.resources.save
+import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaSize
 import shifa.doctor.ui.theme.ShifaSpacing
@@ -42,7 +43,6 @@ import shifa.doctor.ui.widgets.ShifaBannerType
 import shifa.doctor.ui.widgets.ShifaDialogSheet
 import shifa.doctor.ui.widgets.ShifaLink
 import shifa.doctor.ui.widgets.ShifaSubHeader
-import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.tr
 
 // What the profile edit forms (Personal information, Contact, Invoicing) share: the Back rules, the close after Save
@@ -179,5 +179,5 @@ internal fun CameraDeniedBanner(onClose: () -> Unit) =
             ShifaBannerType.Warning,
             onClose = onClose,
         )
-        ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
+        ShifaLink(tr(Res.string.openSettings), ::openPermissionSettings)
     }

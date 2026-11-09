@@ -130,7 +130,8 @@ listed in `04-design-system-and-ui-kit.md` §A only for comparison).
   donut, all within a few dozen lines each). PDF: backend rendering is requested (BE-01, D-05); until then the
   appointment summary and 025-2 use the platform PDF APIs behind `expect/actual` (Android `PdfDocument`, iOS
   `UIGraphicsPDFRenderer`; generation not spiked yet). Viewing is `utils/PdfView` (Android `PdfRenderer`, iOS
-  PDFKit), verified on both by the CORE-07 spike.
+  PDFKit), verified on both by the CORE-07 spike; the web draws pages with pdf.js (index.html's `shifaPdf`, pinned on
+  jsDelivr), because phone browsers show no PDF inside a page.
 - Native pieces proven by the CORE-07 spikes (debug Spikes screen, `ui/debug/SpikesScreen.kt`;
   `docs/implemented/foundation.md`): voice is `utils/VoiceRecorder` (AAC-LC `.m4a`, 16 kHz mono, 32 kbps:
   `MediaRecorder` / `AVAudioRecorder`) and `utils/AudioPlayer` (`MediaPlayer` / `AVPlayer`, one at a time); maps are

@@ -107,6 +107,7 @@ import shifa.doctor.ui.analytics.shortMonth
 import shifa.doctor.ui.emailcode.codeBanner
 import shifa.doctor.ui.navigation.Notice
 import shifa.doctor.ui.navigation.ShellNotice
+import shifa.doctor.ui.navigation.openPermissionSettings
 import shifa.doctor.ui.speech.RecordingPill
 import shifa.doctor.ui.theme.ShifaColors
 import shifa.doctor.ui.theme.ShifaRadius
@@ -125,7 +126,6 @@ import shifa.doctor.utils.DocumentKinds
 import shifa.doctor.utils.Playback
 import shifa.doctor.utils.PracticeClock
 import shifa.doctor.utils.currentInstant
-import shifa.doctor.utils.openAppSettings
 import shifa.doctor.utils.rememberAudioPlayer
 import shifa.doctor.utils.rememberCameraLauncher
 import shifa.doctor.utils.rememberDocumentPickerLauncher
@@ -344,7 +344,7 @@ internal fun ThreadContent(
     // The camera was refused (now or for good): say so, with the way to the OS settings (flow 07/05 §6).
     overlays.denied?.let { refused ->
         WarningStrip(tr(refused)) {
-            ShifaLink(tr(Res.string.openSettings), ::openAppSettings)
+            ShifaLink(tr(Res.string.openSettings), ::openPermissionSettings)
             ShifaLink(tr(Res.string.close), actions.dismissCamera)
         }
     }
