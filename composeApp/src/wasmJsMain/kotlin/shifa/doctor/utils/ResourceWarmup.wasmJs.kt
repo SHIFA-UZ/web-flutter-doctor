@@ -10,7 +10,6 @@ import shifa.doctor.generated.resources.Res
 import shifa.doctor.generated.resources.allDrawableResources
 import shifa.doctor.generated.resources.allFontResources
 import shifa.doctor.generated.resources.allPluralStringResources
-import shifa.doctor.generated.resources.appName
 import shifa.doctor.generated.resources.shifa_mark
 
 /**
@@ -26,11 +25,9 @@ actual fun ResourceWarmup() {
     Res.allFontResources.values.forEach { Font(it) }
     Res.allDrawableResources.values.forEach { painterResource(it) }
     Res.allPluralStringResources.values.forEach { pluralStringResource(it, 1) }
-    // index.html's loading frame stays until the splash can draw its icon and name: a string is empty and a vector is
-    // a 1 dp placeholder while they load.
-    val name = tr(Res.string.appName)
-    val mark = painterResource(Res.drawable.shifa_mark)
-    val ready = name.isNotEmpty() && mark.intrinsicSize.width > LocalDensity.current.density
+    // index.html's loading frame stays until the splash can draw its icon: a vector is a 1 dp placeholder while it
+    // loads. (The splash shows no text, so it doesn't wait for the strings.)
+    val ready = painterResource(Res.drawable.shifa_mark).intrinsicSize.width > LocalDensity.current.density
     LaunchedEffect(ready) { if (ready) fadeBootFrame(0) }
 }
 

@@ -15,9 +15,9 @@
         html, body { margin: 0; height: 100%; overflow: hidden; background: #F2F3F2; }
         #composeApp { width: 100%; height: 100%; }
         #composeApp canvas { display: block; } /* an inline canvas leaves a baseline gap that scrolls the page */
-        /* While the app downloads: the splash's first frame (SplashScreen.kt, ShifaDimens.Splash*), white under two teal
-           blobs and the glass tile with the white mark in the centre. main() fades it out once the app draws the
-           same frame. The mark breathes meanwhile, so a slow download doesn't look stuck. */
+        /* While the app downloads: the splash's first frame (SplashScreen.kt, ShifaDimens.SplashBlob*), white under two
+           teal blobs and the app icon in the centre. main() fades it out once the app draws the same frame. The icon
+           breathes meanwhile, so a slow download doesn't look stuck. */
         #boot { position: fixed; inset: 0; z-index: 1; overflow: hidden; background: #FFFFFF; display: flex;
                 align-items: center; justify-content: center; transition: opacity .25s; }
         /* An ellipse 941.6 x 644.1 (blob plus fade), turned 45°, its centre offset from the screen centre. */
@@ -26,11 +26,9 @@
                                             rgba(0, 163, 154, .325) 94.69%, rgba(0, 163, 154, 0) 100%); }
         .blob.a { left: calc(50% - 99.61px - 470.78px); top: calc(50% + 139.6px - 322.04px); }
         .blob.b { left: calc(50% - 10.16px - 470.78px); top: calc(50% - 233.16px - 322.04px); }
-        .tile { position: relative; width: 178px; height: 178px; border-radius: 37px;
-                background: rgba(255, 255, 255, .361); display: flex; align-items: center; justify-content: center; }
-        .tile svg { animation: breathe 1.6s ease-in-out infinite alternate; }
-        @keyframes breathe { to { opacity: .55; } }
-        @media (prefers-reduced-motion: reduce) { .tile svg { animation: none; } }
+        #boot img { position: relative; width: 96px; height: 96px; animation: breathe 1.6s ease-in-out infinite alternate; }
+        @keyframes breathe { to { opacity: .7; } }
+        @media (prefers-reduced-motion: reduce) { #boot img { animation: none; } }
     </style>
     <!-- A module: since Kotlin 2.4 the production bundle contains import.meta, which a classic script can't parse
          (a blank page). Modules also run after the body is parsed. -->
@@ -38,6 +36,6 @@
 </head>
 <body>
 <div id="composeApp"></div>
-<div id="boot"><div class="blob a"></div><div class="blob b"></div><div class="tile"><svg width="111" height="81" viewBox="0 0 111 81" fill="#FFFFFF" aria-hidden="true"><path d="M24.1449 0C24.2555 0 24.3659 0.00073858 24.4761 0.00221105V0H81.8351C85.704 0 88.8403 3.11751 88.8403 6.96316V8.09306C88.8403 11.9414 85.6997 15.06 81.8281 15.0562L24.4803 14.9994V15H24.4801C19.4796 15 15.4258 19.0294 15.4258 24C15.4258 28.932 19.4169 32.9373 24.3638 32.9993V32.9684L86.5529 32.9684V33.0018C86.6534 33.0006 86.754 33 86.8547 33C100.19 33 111 43.7452 111 57C111 70.2548 100.19 81 86.8547 81C86.754 81 86.6534 80.9994 86.5529 80.9982V81L27.7949 81C23.9261 81 20.7897 77.8825 20.7897 74.0368V72.9C20.7897 69.0544 23.9261 65.9368 27.7949 65.9368L86.5529 65.9368V66C91.538 65.9819 95.5736 61.9594 95.5736 57C95.5736 52.0406 91.538 48.0181 86.5529 48.0001V48.0316L24.3638 48.0316V47.999C24.2909 47.9997 24.218 48 24.1449 48C10.8101 48 0 37.2548 0 24C0 10.7452 10.8101 0 24.1449 0Z"/><path d="M95.69 7.615a7.655 7.615 0 1 0 15.31 0a7.655 7.615 0 1 0 -15.31 0Z"/><path d="M0 73.385a7.481 7.615 0 1 0 14.962 0a7.481 7.615 0 1 0 -14.962 0Z"/></svg></div></div>
+<div id="boot"><div class="blob a"></div><div class="blob b"></div><img src="icon-192.png" alt=""></div>
 </body>
 </html>

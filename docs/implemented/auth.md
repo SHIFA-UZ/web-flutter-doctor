@@ -8,7 +8,7 @@ Built 2026-11-04. Flow `docs/ux-flows/01-launch-auth-shell/01-splash.md`; board 
 (teal splash) and `showBoot` (force-update / maintenance frame).
 
 - **`SplashViewModel`** runs the session restore (local, 01 §2.9) and the boot check in parallel with the animation;
-  a returning doctor leaves when the 1.6 s animation ends (2026-11-09; it was 0.8 s), sooner with a tap (§7), or after 5 s
+  a returning doctor leaves when the 1 s animation ends (2026-11-09; it was 0.8 s), sooner with a tap (§7), or after 5 s
   if the animation never plays. `Finished(session)` goes to the shell, `Finished(null)` to sign-in.
 - **Boot check** (`data/config/PublicConfigRepository`, `GET /public/config`, no token): reads BE-04's `doctorApp` block
   leniently. Maintenance (`active`) wins and shows the backend's message in the app language, else the app's copy;
@@ -16,11 +16,12 @@ Built 2026-11-04. Flow `docs/ux-flows/01-launch-auth-shell/01-splash.md`; board 
   answer within 5 s (Ktor request timeout) means no gate, so launch is never blocked (flow §6). Dev today has no block
   (`{googleMapsApiKey, transcriptionFeedbackEnabled}`); `googleMapsApiKey` is ignored (D-06). The version check ignores
   a `-debug` suffix.
-- **Frames:** `SplashScreenContent(state, progress)`: since 2026-11-09 the patient app's animation (the user's call):
-  two teal blobs part to show white, the glass tile's border fades in and the Shifa mark turns from white to teal, over
-  1.6 s (EaseInOutCubic), no name under the tile (one screen-reader label, "Shifa Doctor, Loading..."). It starts once
-  the name string has loaded, so on the web it plays as index.html's loading frame (the same first frame, drawn in CSS)
-  lifts. Screenshots `Splash_loading.png` (start) and `Splash_loading_end.png`. The boot frame with the solid "S" tile, title,
+- **Frames:** `SplashScreenContent(state, progress)`: since 2026-11-09 the patient app's animation around the doctor
+  app's icon (the user's call): two teal blobs part to show white over 1 s (EaseInOutCubic; the patient app takes 1.6 s),
+  `ShifaAppIcon` at 96 dp in the centre as on the iOS and Android launch screens, no name (one screen-reader label,
+  "Shifa Doctor, Loading..."). It starts once the icon has loaded, so on the web it plays as index.html's loading frame
+  (the same first frame in CSS, `icon-192.png`) lifts. Screenshots `Splash_loading.png` (start) and
+  `Splash_loading_end.png`. The boot frame with the solid "S" tile, title,
   body and one button ("Update", or "Retry" with a busy state). Neither frame has a way past it. "Update" re-checks on
   return. Screenshots: `Splash_{loading,update,maintenance,maintenance_retrying}.png`.
 - **Top-level navigation** (`App.kt`): Splash → SignIn or Shell; a session that ends anywhere (sign-out, 401, expiry,

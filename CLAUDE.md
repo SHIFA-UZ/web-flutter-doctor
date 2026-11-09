@@ -235,7 +235,8 @@ iosApp/                     # Xcode host app (Swift bridges for Daily and push, 
   only `&`, `<`, `>` are XML-escaped. **Resolve strings with `tr(Res.string.x, args)` / `trPlural(Res.plurals.x, n,
   args)` from `utils/AppLocale.kt`, never `stringResource`**: they transliterate `uz` to Cyrillic when the doctor picked
   Ўзбекча (`LocalUzbekCyrillic`), template first, arguments after. Screen-reader labels come from strings too.
-  `StringsTest` checks keys, plurals and placeholders across locales. The language (`LanguageStorage`: en, uz,
+  `StringsTest` checks keys, plurals and placeholders across locales. Manrope has no Қ Ғ Ҳ (lower case too):
+  `scripts/uzbek_cyrillic_glyphs.py` adds them to `composeResources/font`; re-run it whenever the fonts are replaced. The language (`LanguageStorage`: en, uz,
   uz-Cyrl, ru; Uzbekistan defaults to uz) is applied by `ProvideAppLocale` in `App.kt` and synced to the backend
   with `PUT /doctors/me/language` (wired with the HTTP client).
 - Loading: every first load shows skeletons (`ShifaSkeleton`, `ShifaCardSkeleton`, `ShifaListSkeleton`…), not a

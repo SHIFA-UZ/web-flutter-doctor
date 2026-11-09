@@ -59,13 +59,20 @@ jobs:
       # The host's nginx (Engintron) serves .js files with its own 30-day cache, whatever .htaccess says. composeApp.js
       # keeps its name between builds and names the .wasm files of its own build, which the next deploy deletes; so
       # index.html (not cached) asks for it with this build's fingerprint, and a deploy reaches every browser at once.
+      # It also names this build's .wasm files for preloading: a first visit downloads them (about 5 MB) alongside
+      # composeApp.js instead of after it. `as="fetch" crossorigin` matches the requests composeApp.js makes.
       - name: Fingerprint the script
         run: |
           set -euo pipefail
           DIST=composeApp/build/dist/wasmJs/productionExecutable
           V=$(sha256sum "$DIST/composeApp.js" | cut -c1-12)
-          sed -i "s|src=\"composeApp.js\"|src=\"composeApp.js?v=$V\"|" "$DIST/index.html"
+          PRELOAD=""
+          for W in "$DIST"/*.wasm; do
+            PRELOAD="$PRELOAD<link rel=\"preload\" href=\"$(basename "$W")\" as=\"fetch\" crossorigin>"
+          done
+          sed -i "s|<script type=\"module\" src=\"composeApp.js\"></script>|$PRELOAD<script type=\"module\" src=\"composeApp.js?v=$V\"></script>|" "$DIST/index.html"
           grep -q "src=\"composeApp.js?v=$V\"" "$DIST/index.html"
+          test "$(grep -o 'rel="preload"' "$DIST/index.html" | wc -l)" -eq "$(ls "$DIST"/*.wasm | wc -l)"
 
       # The code is about 22 MB and the host sends it as is: .htaccess sends these Brotli copies instead (about 5 MB).
       - name: Compress the code and strings
